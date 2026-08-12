@@ -2,20 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
+import 'package:flutter_swipes/src/features/likes/data/repositories/likes_repository.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class WhoLikedYouScreen extends ConsumerWidget {
-  const WhoLikedYouScreen({super.key});
+/// Capacitor OwnerInterestedClients — applicants who liked my listings.
+class OwnerInterestedClientsScreen extends ConsumerWidget {
+  const OwnerInterestedClientsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(whoLikedYouProvider);
+    final async = ref.watch(interestedClientsProvider);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -33,13 +34,24 @@ class WhoLikedYouScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('WHO LIKED YOU', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
                         Text(
-                          'People who swiped right on your profile',
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+                          'INTERESTED CLIENTS',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                        ),
+                        Text(
+                          'People who liked your listings',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        ref.read(interestedClientsProvider.notifier).refresh(),
+                    icon: const Icon(Icons.sync_rounded, color: Colors.white70),
                   ),
                 ],
               ),
@@ -47,63 +59,93 @@ class WhoLikedYouScreen extends ConsumerWidget {
             Expanded(
               child: async.when(
                 loading: () => const Center(
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
-                    onPressed: () => ref.read(whoLikedYouProvider.notifier).refresh(),
+                    onPressed: () => ref
+                        .read(interestedClientsProvider.notifier)
+                        .refresh(),
                     child: const Text('Could not load — retry'),
                   ),
                 ),
-                data: (people) {
-                  if (people.isEmpty) {
+                data: (clients) {
+                  if (clients.isEmpty) {
                     return Center(
                       child: Text(
-                        'No profile likes yet.',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                        'No interested clients yet.',
+                        style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54),
                       ),
                     );
                   }
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                    itemCount: people.length,
+                    itemCount: clients.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final person = people[index];
-                      return _PersonCard(
-                        person: person,
+                      final client = clients[index];
+                      return _ClientCard(
+                        client: client,
                         onOpen: () {
-                          HapticFeedback.selectionClick();
                           Navigator.of(context).push(
-                            MaterialPageRoute<void>(
+                            MaterialPageRoute(
                               builder: (_) =>
-                                  ProfileDetailScreen(userId: person.userId),
+                                  ProfileDetailScreen(userId: client.userId),
                             ),
                           );
                         },
                         onMessage: () async {
                           HapticFeedback.mediumImpact();
                           final convoId = await SwipeRepository()
-                              .startConversation(ownerId: person.userId);
+                              .startConversation(ownerId: client.userId);
                           if (!context.mounted || convoId == null) return;
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => ChatScreen(
                                 conversation: ChatConversation(
                                   id: convoId,
-                                  otherUserId: person.userId,
-                                  name: person.name,
+                                  otherUserId: client.userId,
+                                  name: client.name,
                                   lastMessage: '',
                                   timestamp: 'now',
-                                  avatarUrl: person.primaryImage,
+                                  avatarUrl: client.primaryImage,
+                                  listingTag: client.likedListingTitle,
                                 ),
                               ),
                             ),
                           );
                         },
-                        onDismiss: () => ref
-                            .read(whoLikedYouProvider.notifier)
-                            .dismiss(person.userId),
+                        onDismiss: () async {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: const Color(0xFF14141A),
+                              title: const Text('Dismiss client?',
+                                  style: TextStyle(color: Colors.white)),
+                              content: Text(
+                                'Remove ${client.name} from interested clients?',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Dismiss'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (ok == true) {
+                            ref
+                                .read(interestedClientsProvider.notifier)
+                                .dismiss(client.userId);
+                          }
+                        },
                       );
                     },
                   );
@@ -117,15 +159,15 @@ class WhoLikedYouScreen extends ConsumerWidget {
   }
 }
 
-class _PersonCard extends StatelessWidget {
-  const _PersonCard({
-    required this.person,
+class _ClientCard extends StatelessWidget {
+  const _ClientCard({
+    required this.client,
     required this.onOpen,
     required this.onMessage,
     required this.onDismiss,
   });
 
-  final ProfileLike person;
+  final InterestedClient client;
   final VoidCallback onOpen;
   final VoidCallback onMessage;
   final VoidCallback onDismiss;
@@ -149,10 +191,10 @@ class _PersonCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: Colors.white12,
-                backgroundImage: person.primaryImage != null
-                    ? NetworkImage(person.primaryImage!)
+                backgroundImage: client.primaryImage != null
+                    ? NetworkImage(client.primaryImage!)
                     : null,
-                child: person.primaryImage == null
+                child: client.primaryImage == null
                     ? const Icon(Icons.person_rounded, color: Colors.white54)
                     : null,
               ),
@@ -162,29 +204,31 @@ class _PersonCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      person.name,
+                      client.name,
                       style: const TextStyle(
                           color: Colors.white, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (person.occupation != null) person.occupation!,
-                        if (person.age != null) '${person.age}',
-                      ].join(' · '),
-                      style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54, fontSize: 12),
-                    ),
-                    if (person.bio != null && person.bio!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                    if (client.likedListingTitle != null)
                       Text(
-                        person.bio!,
-                        maxLines: 2,
+                        'Liked: ${client.likedListingTitle}',
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70, fontSize: 12),
+                          color: AppTheme.brandPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ],
+                    if (client.occupation != null || client.age != null)
+                      Text(
+                        [
+                          if (client.occupation != null) client.occupation!,
+                          if (client.age != null) '${client.age}',
+                        ].join(' · '),
+                        style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54, fontSize: 12),
+                      ),
                   ],
                 ),
               ),
@@ -222,7 +266,8 @@ class _Back extends StatelessWidget {
           border: Border.all(color: Colors.white.withAlpha(40)),
         ),
         child: const Center(
-          child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+          child: Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.white, size: 18),
         ),
       ),
     );

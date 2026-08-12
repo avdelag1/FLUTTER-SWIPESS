@@ -8,12 +8,14 @@ import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
+import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_interested_clients_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
@@ -1361,6 +1363,22 @@ class _MoreToolsGrid extends StatelessWidget {
         'My listings',
         () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
+            )
+      ),
+      (
+        Icons.how_to_reg_outlined,
+        'Interested clients',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const OwnerInterestedClientsScreen(),
+              ),
+            )
+      ),
+      (
+        Icons.event_available_rounded,
+        'Saved events',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EventFavoritesScreen()),
             )
       ),
       (

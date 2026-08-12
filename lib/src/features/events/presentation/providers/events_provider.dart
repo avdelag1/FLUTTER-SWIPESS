@@ -77,3 +77,44 @@ final videoEventsProvider = Provider<List<Event>>((ref) {
 final categoriesProvider = Provider<List<String>>((ref) {
   return const ['All', 'Nightlife', 'Sports', 'Music', 'Art', 'Food'];
 });
+
+final eventByIdProvider = FutureProvider.family<Event?, String>((ref, id) {
+  return ref.read(eventRepositoryProvider).fetchById(id);
+});
+
+final eventFavoriteProvider =
+    FutureProvider.family<bool, String>((ref, eventId) {
+  return ref.read(eventRepositoryProvider).isFavorited(eventId);
+});
+
+class FavoritedEventsNotifier extends AsyncNotifier<List<Event>> {
+  @override
+  Future<List<Event>> build() {
+    return ref.read(eventRepositoryProvider).fetchFavoritedEvents();
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(eventRepositoryProvider).fetchFavoritedEvents(),
+    );
+  }
+
+  Future<void> remove(String eventId) async {
+    final previous = state.value ?? const <Event>[];
+    state = AsyncData(previous.where((e) => e.id != eventId).toList());
+    try {
+      await ref
+          .read(eventRepositoryProvider)
+          .setFavorited(eventId, favorited: false);
+      ref.invalidate(eventFavoriteProvider(eventId));
+    } catch (_) {
+      state = AsyncData(previous);
+    }
+  }
+}
+
+final favoritedEventsProvider =
+    AsyncNotifierProvider<FavoritedEventsNotifier, List<Event>>(
+  FavoritedEventsNotifier.new,
+);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -37,6 +39,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     final listingsAsync = ref.watch(likedListingsProvider);
+    final peopleAsync = ref.watch(likedPeopleProvider);
 
     return ColoredBox(
       color: Colors.black,
@@ -62,6 +65,23 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       ],
                     ),
                   ),
+                  if (_segment == 1) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const WhoLikedYouScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.favorite_rounded, size: 16),
+                        label: const Text('Who liked you'),
+                      ),
+                    ),
+                  ],
                   if (_segment == 0) ...[
                     const SizedBox(height: 12),
                     SizedBox(
@@ -152,18 +172,82 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
             ),
           ),
           if (_segment == 1)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const WhoLikedYouScreen()),
-                    );
-                  },
-                  child: const Text('Open who liked you →'),
+            peopleAsync.when(
+              loading: () => const SliverFillRemaining(
+                child: Center(
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2)),
+              ),
+              error: (_, _) => SliverFillRemaining(
+                child: Center(
+                  child: TextButton(
+                    onPressed: () =>
+                        ref.read(likedPeopleProvider.notifier).refresh(),
+                    child: const Text('Could not load people — retry'),
+                  ),
                 ),
               ),
+              data: (people) {
+                if (people.isEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Text(
+                        'Swipe right on people to save them here.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  );
+                }
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final person = people[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _LikedPersonCard(
+                            person: person,
+                            onOpen: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ProfileDetailScreen(
+                                      userId: person.userId),
+                                ),
+                              );
+                            },
+                            onMessage: () async {
+                              HapticFeedback.mediumImpact();
+                              final convoId = await SwipeRepository()
+                                  .startConversation(ownerId: person.userId);
+                              if (!context.mounted || convoId == null) return;
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ChatScreen(
+                                    conversation: ChatConversation(
+                                      id: convoId,
+                                      otherUserId: person.userId,
+                                      name: person.name,
+                                      lastMessage: '',
+                                      timestamp: 'now',
+                                      avatarUrl: person.primaryImage,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            onRemove: () => ref
+                                .read(likedPeopleProvider.notifier)
+                                .remove(person.userId),
+                          ),
+                        );
+                      },
+                      childCount: people.length,
+                    ),
+                  ),
+                );
+              },
             )
           else
             listingsAsync.when(
@@ -530,6 +614,84 @@ class _LikedCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LikedPersonCard extends StatelessWidget {
+  const _LikedPersonCard({
+    required this.person,
+    required this.onOpen,
+    required this.onMessage,
+    required this.onRemove,
+  });
+
+  final ProfileLike person;
+  final VoidCallback onOpen;
+  final VoidCallback onMessage;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(12),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.white.withAlpha(25)),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white12,
+                backgroundImage: person.primaryImage != null
+                    ? NetworkImage(person.primaryImage!)
+                    : null,
+                child: person.primaryImage == null
+                    ? const Icon(Icons.person_rounded, color: Colors.white54)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      person.name,
+                      style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (person.occupation != null) person.occupation!,
+                        if (person.age != null) '${person.age}',
+                      ].join(' · '),
+                      style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white54, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: onMessage,
+                icon: const Icon(Icons.chat_bubble_outline_rounded,
+                    color: Color(0xFFEB4898)),
+              ),
+              IconButton(
+                onPressed: onRemove,
+                icon: const Icon(Icons.close_rounded, color: Colors.white38),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
+import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/category_filter_chips.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
@@ -92,7 +93,10 @@ class EventsScreen extends ConsumerWidget {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => EventDetailScreen(event: event),
+                                  builder: (_) => EventDetailScreen(
+                                    event: event,
+                                    siblings: events,
+                                  ),
                                 ),
                               );
                             },
