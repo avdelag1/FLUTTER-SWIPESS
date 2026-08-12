@@ -90,4 +90,47 @@ class SwipeRepository {
 
     return match != null;
   }
+
+  /// Open or create a conversation with a listing owner (Capacitor match flow).
+  Future<String?> startConversation({
+    required String ownerId,
+    String? listingId,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return null;
+
+    try {
+      final data = await _client.rpc(
+        'start_conversation_with_message',
+        params: {
+          'p_other_user_id': ownerId,
+          'p_initial_message': 'Hi! I liked your listing on Swipess.',
+          'p_listing_id': listingId,
+        },
+      );
+      final row = data is List && data.isNotEmpty ? data.first : data;
+      if (row is Map && row['conversation_id'] != null) {
+        return row['conversation_id'] as String;
+      }
+    } catch (_) {
+      // Fall through to direct upsert
+    }
+
+    final existing = await _client
+        .from('conversations')
+        .select('id')
+        .eq('client_id', userId)
+        .eq('owner_id', ownerId)
+        .maybeSingle();
+    if (existing != null) return existing['id'] as String;
+
+    final inserted = await _client.from('conversations').insert({
+      'client_id': userId,
+      'owner_id': ownerId,
+      'listing_id': listingId,
+      'status': 'active',
+      'free_messaging': true,
+    }).select('id').single();
+    return inserted['id'] as String;
+  }
 }

@@ -1,41 +1,67 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
+import 'package:flutter_swipes/src/features/profile/domain/models/user_profile.dart';
 
 class ProfileRepository {
-  final SupabaseClient _client;
-
   ProfileRepository({SupabaseClient? client})
       : _client = client ?? Supabase.instance.client;
 
-  Future<Profile?> fetchCurrentProfile() async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return null;
+  final SupabaseClient _client;
 
-    final data = await _client
-        .from('profiles')
-        .select('id, full_name, username, avatar_url, bio, city, role, created_at, verified')
-        .eq('id', userId)
-        .maybeSingle();
-
-    if (data == null) return null;
-    return Profile.fromJson(data);
-  }
-
-  Future<void> updateProfile({
-    String? displayName,
-    String? bio,
-    String? city,
-  }) async {
+  Future<UserProfile?> fetchCurrent() async {
     final user = _client.auth.currentUser;
-    if (user == null) return;
+    if (user == null) return null;
 
-    final updates = <String, dynamic>{};
-    if (displayName != null) updates['full_name'] = displayName;
-    if (bio != null) updates['bio'] = bio;
-    if (city != null) updates['city'] = city;
+    try {
+      final client = await _client
+          .from('client_profiles')
+          .select('user_id, name, bio, city, profile_images')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (client != null) {
+        final images = client['profile_images'];
+        return UserProfile(
+          userId: user.id,
+          name: (client['name'] as String?)?.trim().isNotEmpty == true
+              ? client['name'] as String
+              : (user.email ?? 'Swipess member'),
+          bio: client['bio'] as String?,
+          city: client['city'] as String?,
+          avatarUrl: images is List && images.isNotEmpty
+              ? images.first.toString()
+              : user.userMetadata?['avatar_url'] as String?,
+          role: 'client',
+        );
+      }
+    } catch (_) {}
 
-    if (updates.isEmpty) return;
+    try {
+      final owner = await _client
+          .from('owner_profiles')
+          .select('user_id, business_name, city, profile_images')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (owner != null) {
+        final images = owner['profile_images'];
+        return UserProfile(
+          userId: user.id,
+          name: (owner['business_name'] as String?)?.trim().isNotEmpty == true
+              ? owner['business_name'] as String
+              : (user.email ?? 'Swipess member'),
+          city: owner['city'] as String?,
+          avatarUrl: images is List && images.isNotEmpty
+              ? images.first.toString()
+              : null,
+          role: 'owner',
+        );
+      }
+    } catch (_) {}
 
-    await _client.from('profiles').update(updates).eq('id', user.id);
+    return UserProfile(
+      userId: user.id,
+      name: user.userMetadata?['full_name'] as String? ??
+          user.email ??
+          'Swipess member',
+      avatarUrl: user.userMetadata?['avatar_url'] as String?,
+    );
   }
 }
