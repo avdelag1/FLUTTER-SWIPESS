@@ -1,8 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Premium swipe card with image background, gradient overlay, and glass info chips.
+/// Full-bleed listing reel card — Capacitor `SimpleSwipeCard` chrome.
 class SwipeCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -26,200 +27,208 @@ class SwipeCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: const Color(0x40FFFFFF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(120),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 40,
             offset: const Offset(0, 16),
-          ),
-          BoxShadow(
-            color: AppTheme.brandPrimary.withAlpha(30),
-            blurRadius: 60,
-            offset: const Offset(0, 30),
           ),
         ],
       ),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Image background
           if (imageUrl != null)
             Image.network(
               imageUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _buildFallbackGradient(),
+              errorBuilder: (context, error, stackTrace) => _fallback(),
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
-                return _buildFallbackGradient(
+                return _fallback(
                   child: Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white.withAlpha(127),
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                          : null,
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                   ),
                 );
               },
             )
           else
-            _buildFallbackGradient(),
-
-          // Bottom gradient overlay for text readability
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.4, 0.7, 1.0],
-                  colors: [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black.withAlpha(100),
-                    Colors.black.withAlpha(200),
-                  ],
-                ),
+            _fallback(),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.45, 1],
+                colors: [Colors.transparent, Color(0xCC000000)],
               ),
             ),
           ),
-
-          // Tags row at top
-          if (tags.isNotEmpty)
-            Positioned(
-              top: 16,
-              left: 16,
-              right: 16,
-              child: Row(
-                children: tags.take(3).map((tag) => Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: _GlassChip(label: tag),
-                )).toList(),
-              ),
+          Positioned(
+            top: 14,
+            left: 14,
+            child: Row(
+              children: [
+                _OutlineIcon(icon: Icons.flag_outlined),
+                const SizedBox(width: 8),
+                _OutlineIcon(icon: Icons.ios_share_rounded),
+              ],
             ),
-
-          // Price badge top-right
-          if (price != null)
-            Positioned(
-              top: 16,
-              right: 16,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.brandPrimary.withAlpha(50),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.brandPrimary.withAlpha(80), width: 1),
-                    ),
-                    child: Text(
-                      price!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          ),
+          Positioned(
+            top: 14,
+            right: 14,
+            child: Row(
+              children: [
+                _OutlineIcon(icon: Icons.map_outlined),
+                const SizedBox(width: 8),
+                _OutlineIcon(icon: Icons.more_horiz_rounded),
+              ],
             ),
-
-          // Bottom info
+          ),
           Positioned(
             left: 20,
-            right: 20,
-            bottom: 20,
+            right: 72,
+            bottom: 22,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (price != null)
+                  Text(
+                    price!,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                      shadows: const [Shadow(color: Colors.black, blurRadius: 16)],
+                    ),
+                  ),
+                const SizedBox(height: 4),
                 Text(
                   title,
-                  style: const TextStyle(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                    letterSpacing: -1,
-                    shadows: [
-                      Shadow(color: Colors.black, blurRadius: 20),
-                    ],
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.location_on_rounded, color: Colors.white.withAlpha(200), size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(200),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: -0.2,
-                        shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (tags.isNotEmpty) tags.take(2).join(' · '),
+                    subtitle,
+                  ].where((s) => s.isNotEmpty).join('  ·  '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ),
-
-          // Custom overlay (e.g. swipe direction indicator)
           ?overlay,
         ],
       ),
     );
   }
 
-  Widget _buildFallbackGradient({Widget? child}) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: child,
+  Widget _fallback({Widget? child}) {
+    return ColoredBox(
+      color: AppTheme.dashWell,
+      child: child ??
+          const Center(
+            child: Icon(Icons.image_outlined, color: Colors.white38, size: 40),
+          ),
     );
   }
 }
 
-class _GlassChip extends StatelessWidget {
-  final String label;
-  const _GlassChip({required this.label});
+class _OutlineIcon extends StatelessWidget {
+  const _OutlineIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+        color: Colors.black.withValues(alpha: 0.25),
+      ),
+      child: Icon(icon, color: Colors.white, size: 14),
+    );
+  }
+}
+
+class SwipeSideRail extends StatelessWidget {
+  const SwipeSideRail({
+    super.key,
+    this.onLike,
+    this.onShare,
+    this.onComment,
+  });
+
+  final VoidCallback? onLike;
+  final VoidCallback? onShare;
+  final VoidCallback? onComment;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(999),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          width: 48,
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(25),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withAlpha(40), width: 0.5),
+            color: Colors.black.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withAlpha(230),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _RailIcon(icon: Icons.favorite_border_rounded, onTap: onLike),
+              const SizedBox(height: 14),
+              _RailIcon(icon: Icons.ios_share_rounded, onTap: onShare),
+              const SizedBox(height: 14),
+              _RailIcon(icon: Icons.chat_bubble_outline_rounded, onTap: onComment),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RailIcon extends StatelessWidget {
+  const _RailIcon({required this.icon, this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onTap,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      icon: Icon(icon, color: Colors.white, size: 20),
     );
   }
 }

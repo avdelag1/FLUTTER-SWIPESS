@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -22,34 +21,46 @@ class AppBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(18),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(76),
-                    blurRadius: 40,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _NavItem(icon: Icons.local_fire_department_rounded, label: 'Discover', tab: NavTab.swipe, activeTab: activeTab, onTap: onTabSelected),
-                  _NavItem(icon: Icons.celebration_rounded, label: 'Events', tab: NavTab.events, activeTab: activeTab, onTap: onTabSelected),
-                  _AddButton(onTap: () { HapticFeedback.mediumImpact(); onTabSelected(NavTab.add); }),
-                  _NavItem(icon: Icons.chat_bubble_rounded, label: 'Messages', tab: NavTab.messages, activeTab: activeTab, onTap: onTabSelected, badge: unreadMessages),
-                  _NavItem(icon: Icons.person_rounded, label: 'Profile', tab: NavTab.profile, activeTab: activeTab, onTap: onTabSelected),
-                ],
+        padding: const EdgeInsets.fromLTRB(28, 0, 28, 14),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: DecoratedBox(
+              decoration: AppTheme.bottomDockDecoration,
+              child: SizedBox(
+                height: 58,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _DockIcon(
+                      icon: Icons.local_fire_department_rounded,
+                      active: activeTab == NavTab.swipe,
+                      onTap: () => onTabSelected(NavTab.swipe),
+                    ),
+                    _DockIcon(
+                      icon: Icons.celebration_rounded,
+                      active: activeTab == NavTab.events,
+                      onTap: () => onTabSelected(NavTab.events),
+                    ),
+                    _DockIcon(
+                      icon: Icons.add_rounded,
+                      active: false,
+                      emphasized: true,
+                      onTap: () => onTabSelected(NavTab.add),
+                    ),
+                    _DockIcon(
+                      icon: Icons.chat_bubble_rounded,
+                      active: activeTab == NavTab.messages,
+                      badge: unreadMessages,
+                      onTap: () => onTabSelected(NavTab.messages),
+                    ),
+                    _DockIcon(
+                      icon: Icons.person_rounded,
+                      active: activeTab == NavTab.profile,
+                      onTap: () => onTabSelected(NavTab.profile),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -59,125 +70,71 @@ class AppBottomNav extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final NavTab tab;
-  final NavTab activeTab;
-  final ValueChanged<NavTab> onTap;
-  final int badge;
-
-  const _NavItem({
+class _DockIcon extends StatelessWidget {
+  const _DockIcon({
     required this.icon,
-    required this.label,
-    required this.tab,
-    required this.activeTab,
+    required this.active,
     required this.onTap,
     this.badge = 0,
+    this.emphasized = false,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final isActive = tab == activeTab;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap(tab);
-        },
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: isActive
-                          ? AppTheme.brandPrimary.withAlpha(40)
-                          : Colors.transparent,
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 22,
-                      color: isActive
-                          ? AppTheme.brandPrimary
-                          : Colors.white.withAlpha(127),
-                    ),
-                  ),
-                  if (badge > 0)
-                    Positioned(
-                      top: -2,
-                      right: -4,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: AppTheme.brandPrimary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                        child: Text(
-                          badge > 9 ? '9+' : '$badge',
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                  color: isActive ? AppTheme.brandPrimary : Colors.white.withAlpha(102),
-                ),
-                child: Text(label),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AddButton extends StatelessWidget {
+  final IconData icon;
+  final bool active;
   final VoidCallback onTap;
-  const _AddButton({required this.onTap});
+  final int badge;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.brandPrimary.withAlpha(102),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: emphasized
+                    ? AppTheme.brandPrimary.withValues(alpha: 0.2)
+                    : active
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.transparent,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: emphasized
+                    ? const Color(0xFFFF4D6A)
+                    : active
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.82),
+              ),
             ),
+            if (badge > 0)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.brandPrimary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
           ],
         ),
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
     );
   }

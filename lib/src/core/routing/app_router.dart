@@ -1,34 +1,33 @@
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
-import 'package:flutter_swipes/src/features/auth/presentation/screens/login_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/auth_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/dashboard_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-  
+  final refresh = _RouterRefresh(ref);
+  ref.onDispose(refresh.dispose);
+
   return GoRouter(
     initialLocation: '/gate',
-    redirect: (context, state) async {
-      final user = authState.when(
-        data: (s) => s.session?.user,
-        loading: () => null,
-        error: (e, st) => null,
-      );
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final granted = ref.read(accessGrantedProvider).value ?? false;
+      final user = ref.read(currentUserProvider);
 
-      final isGranted = await AccessGrantService.isGranted();
+      if (!granted && loc != '/gate') return '/gate';
 
-      // Not yet granted access code → show gate
-      if (!isGranted) return '/gate';
+      if (granted && user == null) {
+        if (loc == '/gate') return '/welcome';
+        if (loc == '/dashboard') return '/welcome';
+      }
 
-      // Has access but not logged in → show login
-      if (user == null) return '/login';
-
-      // Logged in → go to dashboard
-      if (state.uri.toString() == '/gate' || state.uri.toString() == '/login') {
+      if (user != null &&
+          (loc == '/gate' || loc == '/welcome' || loc == '/auth')) {
         return '/dashboard';
       }
 
@@ -36,8 +35,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/gate', builder: (ctx, _) => const AccessCodeGateScreen()),
-      GoRoute(path: '/login', builder: (ctx, _) => const LoginScreen()),
+      GoRoute(path: '/welcome', builder: (ctx, _) => const WelcomeScreen()),
+      GoRoute(path: '/auth', builder: (ctx, _) => const AuthScreen()),
       GoRoute(path: '/dashboard', builder: (ctx, _) => const DashboardShell()),
     ],
   );
 });
+
+class _RouterRefresh extends ChangeNotifier {
+  _RouterRefresh(Ref ref) {
+    _authSub = ref.listen(authStateProvider, (_, _) => notifyListeners());
+    _grantSub = ref.listen(accessGrantedProvider, (_, _) => notifyListeners());
+  }
+
+  late final ProviderSubscription<AsyncValue<dynamic>> _authSub;
+  late final ProviderSubscription<AsyncValue<bool>> _grantSub;
+
+  @override
+  void dispose() {
+    _authSub.close();
+    _grantSub.close();
+    super.dispose();
+  }
+}

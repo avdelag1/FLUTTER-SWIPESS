@@ -1,73 +1,73 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/features/auth/presentation/screens/login_screen.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Capacitor `AccessCodeGate.tsx` — wordmark, lock card, real code validation.
 class AccessCodeGateScreen extends ConsumerStatefulWidget {
   const AccessCodeGateScreen({super.key});
 
   @override
-  ConsumerState<AccessCodeGateScreen> createState() => _AccessCodeGateScreenState();
+  ConsumerState<AccessCodeGateScreen> createState() =>
+      _AccessCodeGateScreenState();
 }
 
 class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen>
     with SingleTickerProviderStateMixin {
   final _codeController = TextEditingController();
-  final _focusNode = FocusNode();
-
   bool _revealed = false;
   bool _verifying = false;
   bool _success = false;
   bool _showRequest = false;
   String _error = '';
 
-  late AnimationController _successAnimController;
-  late Animation<double> _successScaleAnim;
+  late final AnimationController _successAnim;
 
   @override
   void initState() {
     super.initState();
-    _successAnimController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+    _successAnim = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 400),
     );
-    _successScaleAnim = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(parent: _successAnimController, curve: Curves.elasticOut),
-    );
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _focusNode.requestFocus();
-    });
   }
 
   @override
   void dispose() {
     _codeController.dispose();
-    _focusNode.dispose();
-    _successAnimController.dispose();
+    _successAnim.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
-    final candidate = _codeController.text.trim().toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    final candidate = _codeController.text
+        .trim()
+        .toUpperCase()
+        .replaceAll(RegExp(r'[^A-Z0-9]'), '');
     if (candidate.isEmpty) {
       setState(() => _error = 'Enter access code');
       HapticFeedback.mediumImpact();
       return;
     }
 
-    setState(() { _verifying = true; _error = ''; });
+    setState(() {
+      _verifying = true;
+      _error = '';
+    });
 
-    // Check hardcoded master key first (matches web app's URDBEST)
     if (candidate == 'URDBEST') {
       await _grantAccess();
       return;
     }
 
-    // Verify via Supabase Edge Function
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'validate-access-code',
@@ -78,7 +78,10 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen>
         await _grantAccess();
       } else {
         HapticFeedback.mediumImpact();
-        setState(() { _error = 'Invalid access code'; _verifying = false; });
+        setState(() {
+          _error = 'Invalid access code';
+          _verifying = false;
+        });
       }
     } catch (_) {
       HapticFeedback.mediumImpact();
@@ -92,14 +95,15 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen>
   Future<void> _grantAccess() async {
     await AccessGrantService.persist();
     HapticFeedback.lightImpact();
-    setState(() { _success = true; _verifying = false; });
-    await _successAnimController.forward();
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
+    setState(() {
+      _success = true;
+      _verifying = false;
+    });
+    await _successAnim.forward();
+    await Future<void>.delayed(const Duration(milliseconds: 280));
+    if (!mounted) return;
+    ref.invalidate(accessGrantedProvider);
+    context.go('/welcome');
   }
 
   @override
@@ -108,56 +112,26 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Animated Background Orbs
-          _buildBackgroundOrbs(),
-
-          // Main Content
+          const StarfieldBackground(),
           SafeArea(
-            child: _success ? _buildSuccessView() : _buildGateView(),
+            child: _success ? _buildSuccess() : _buildGate(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBackgroundOrbs() {
-    return Stack(
-      children: [
-        Positioned(
-          top: -80,
-          right: -80,
-          child: _Orb(color: AppTheme.brandPrimary.withAlpha(60), size: 300),
-        ),
-        Positioned(
-          bottom: -100,
-          left: -60,
-          child: _Orb(color: AppTheme.brandAccent.withAlpha(50), size: 280),
-        ),
-        Positioned(
-          top: 200,
-          left: -40,
-          child: _Orb(color: AppTheme.brandPrimary2.withAlpha(30), size: 200),
-        ),
-        // Glass blur overlay
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-          child: Container(color: Colors.transparent),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSuccessView() {
+  Widget _buildSuccess() {
     return Center(
       child: ScaleTransition(
-        scale: _successScaleAnim,
+        scale: CurvedAnimation(parent: _successAnim, curve: Curves.elasticOut),
         child: Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withAlpha(128), width: 2),
-            color: Colors.white.withAlpha(25),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+            color: Colors.white.withValues(alpha: 0.1),
           ),
           child: const Icon(Icons.check_rounded, color: Colors.white, size: 36),
         ),
@@ -165,252 +139,199 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen>
     );
   }
 
-  Widget _buildGateView() {
+  Widget _buildGate() {
+    final wide = MediaQuery.sizeOf(context).width >= 840;
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: Column(
-        children: [
-          const SizedBox(height: 24),
-          // Logo / Brand
-          _buildBrandHeader(),
-          const SizedBox(height: 48),
-          // Glass Card
-          _buildGlassCard(),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBrandHeader() {
-    return Column(
-      children: [
-        // Brand gradient icon
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.brandPrimary.withAlpha(80),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.swipe_rounded, color: Colors.white, size: 36),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'Swipess',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 34,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -1.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'The exclusive ecosystem for visionaries.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withAlpha(179),
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGlassCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(13),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-          ),
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            children: [
-              // Lock Icon + Title
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  color: Colors.white.withAlpha(20),
-                ),
-                child: Icon(Icons.lock_rounded, color: Colors.white.withAlpha(220), size: 22),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Enter Access Code',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Authorized access only',
-                style: TextStyle(
-                  color: Colors.white.withAlpha(165),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Code Input
-              _buildCodeInput(),
-              const SizedBox(height: 10),
-
-              // Error message
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _error.isNotEmpty
-                    ? Padding(
-                        key: ValueKey(_error),
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          _error,
-                          style: const TextStyle(color: Color(0xFFFC8181), fontSize: 13, fontWeight: FontWeight.w500),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : const SizedBox.shrink(key: ValueKey('no-error')),
-              ),
-
-              // Enter Button
-              _buildEnterButton(),
-
-              const SizedBox(height: 20),
-              Divider(color: Colors.white.withAlpha(25), thickness: 1),
-              const SizedBox(height: 8),
-
-              // Request Access toggle
-              _buildRequestToggle(),
-
-              // Request form
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: _showRequest ? _buildRequestForm() : const SizedBox.shrink(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCodeInput() {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(38),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(76), width: 1),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          Icon(Icons.lock_outline_rounded, color: Colors.white.withAlpha(178), size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: _codeController,
-              focusNode: _focusNode,
-              obscureText: !_revealed,
-              textCapitalization: TextCapitalization.characters,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 4,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'ACCESS CODE',
-                hintStyle: TextStyle(
-                  color: Colors.white.withAlpha(114),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              ),
-              onSubmitted: (_) => _handleSubmit(),
-              onChanged: (_) => setState(() => _error = ''),
-            ),
-          ),
-          IconButton(
-            onPressed: () => setState(() => _revealed = !_revealed),
-            icon: Icon(
-              _revealed ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-              color: Colors.white.withAlpha(178),
-              size: 20,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEnterButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _verifying ? null : _handleSubmit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          disabledBackgroundColor: Colors.white.withAlpha(178),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
-        ),
-        child: _verifying
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-              )
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100),
+        child: wide
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(Icons.auto_awesome_rounded, size: 18),
-                  SizedBox(width: 8),
-                  Text('Enter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const Expanded(child: _BrandColumn()),
+                  const SizedBox(width: 48),
+                  Expanded(child: _buildCard()),
+                ],
+              )
+            : Column(
+                children: [
+                  const _BrandColumn(),
+                  const SizedBox(height: 36),
+                  _buildCard(),
                 ],
               ),
       ),
     );
   }
 
-  Widget _buildRequestToggle() {
+  Widget _buildCard() {
+    return DecoratedBox(
+      decoration: AppTheme.gatePanelDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
+              child: const Icon(Icons.lock_rounded, color: Colors.white, size: 22),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Enter Access Code',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.4,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Authorized users only.',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 22),
+            GlassTextField(
+              controller: _codeController,
+              hint: 'Enter access code',
+              icon: Icons.lock_outline_rounded,
+              textCapitalization: TextCapitalization.characters,
+              obscureText: !_revealed,
+              onToggleObscure: () => setState(() => _revealed = !_revealed),
+              autofocus: true,
+              errorText: _error.isEmpty ? null : _error,
+              onChanged: (_) => setState(() => _error = ''),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FilledButton(
+                onPressed: _verifying ? null : _handleSubmit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: _verifying
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.vpn_key_rounded, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Enter',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Divider(color: Color(0x1AFFFFFF), height: 1),
+            const SizedBox(height: 10),
+            _RequestToggle(
+              expanded: _showRequest,
+              onTap: () => setState(() => _showRequest = !_showRequest),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeInOut,
+              child: _showRequest
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: _RequestForm(),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandColumn extends StatelessWidget {
+  const _BrandColumn();
+
+  @override
+  Widget build(BuildContext context) {
+    final align = MediaQuery.sizeOf(context).width >= 840
+        ? CrossAxisAlignment.start
+        : CrossAxisAlignment.center;
+    final textAlign =
+        align == CrossAxisAlignment.start ? TextAlign.left : TextAlign.center;
+    return Column(
+      crossAxisAlignment: align,
+      children: [
+        const SwipessLogo(height: 56, variant: SwipessLogoVariant.outline),
+        const SizedBox(height: 28),
+        Text(
+          'The exclusive ecosystem for visionaries.',
+          textAlign: textAlign,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            height: 1.15,
+            letterSpacing: -0.8,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Discover trusted properties, luxury experiences, and high-end services. All one swipe away. Join the private network today.',
+          textAlign: textAlign,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withValues(alpha: 0.85),
+            fontSize: 16,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RequestToggle extends StatelessWidget {
+  const _RequestToggle({required this.expanded, required this.onTap});
+
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _showRequest = !_showRequest),
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withAlpha(20), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
@@ -419,38 +340,38 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen>
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withAlpha(20),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
-              child: const Icon(Icons.message_rounded, color: Colors.white, size: 16),
+              child: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 15),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                _showRequest ? 'Hide request form' : "Don't have a code? Request one",
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                expanded ? 'Hide request form' : "See What's New / What's Old",
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             AnimatedRotation(
-              turns: _showRequest ? 0.5 : 0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white.withAlpha(178), size: 22),
+              turns: expanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 240),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildRequestForm() {
-    return _RequestForm(key: const ValueKey('request-form'));
-  }
 }
 
-// ─── Request Form ─────────────────────────────────────────────────────────────
-
 class _RequestForm extends StatefulWidget {
-  const _RequestForm({super.key});
+  const _RequestForm();
 
   @override
   State<_RequestForm> createState() => _RequestFormState();
@@ -467,15 +388,19 @@ class _RequestFormState extends State<_RequestForm> {
 
   Future<void> _submit() async {
     if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty) return;
-    setState(() { _submitting = true; _submitError = ''; });
+    setState(() {
+      _submitting = true;
+      _submitError = '';
+    });
     try {
       await Supabase.instance.client.from('code_requests').insert({
         'name': _nameCtrl.text.trim(),
         'email': _emailCtrl.text.trim().toLowerCase(),
-        'whatsapp': _whatsappCtrl.text.trim().isEmpty ? null : _whatsappCtrl.text.trim(),
-        'message': _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
+        'whatsapp':
+            _whatsappCtrl.text.trim().isEmpty ? null : _whatsappCtrl.text.trim(),
+        'message':
+            _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
       });
-      // Fire notification in background
       Supabase.instance.client.functions.invoke('notify-code-request', body: {
         'name': _nameCtrl.text.trim(),
         'email': _emailCtrl.text.trim().toLowerCase(),
@@ -492,146 +417,130 @@ class _RequestFormState extends State<_RequestForm> {
 
   @override
   void dispose() {
-    _nameCtrl.dispose(); _emailCtrl.dispose();
-    _whatsappCtrl.dispose(); _messageCtrl.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _whatsappCtrl.dispose();
+    _messageCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.black.withAlpha(51),
+        color: Colors.black.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(13), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: _submitted ? _buildSuccess() : _buildForm(),
+      child: _submitted ? _success() : _form(),
     );
   }
 
-  Widget _buildSuccess() {
+  Widget _success() {
     return Column(
       children: [
         Container(
-          width: 48, height: 48,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.green.withAlpha(50)),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.green.withValues(alpha: 0.2),
+          ),
           child: const Icon(Icons.check_rounded, color: Color(0xFF68D391), size: 24),
         ),
         const SizedBox(height: 12),
-        const Text('Request sent successfully!', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+        Text(
+          'Request sent successfully!',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text("We'll reach out to you soon.", style: TextStyle(color: Colors.white.withAlpha(153), fontSize: 13)),
-      ],
-    );
-  }
-
-  Widget _buildForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Request Access', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 2),
-        Text("We'll review and send your code within 24h", style: TextStyle(color: Colors.white.withAlpha(153), fontSize: 11)),
-        const SizedBox(height: 14),
-        _RequestField(controller: _nameCtrl, hint: 'Your full name *'),
-        const SizedBox(height: 8),
-        _RequestField(controller: _emailCtrl, hint: 'Email address *', keyboardType: TextInputType.emailAddress),
-        const SizedBox(height: 8),
-        _RequestField(controller: _whatsappCtrl, hint: 'WhatsApp (optional)', keyboardType: TextInputType.phone),
-        const SizedBox(height: 8),
-        _RequestField(controller: _messageCtrl, hint: 'How did you hear about us? (optional)', maxLines: 2),
-        if (_submitError.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Text(_submitError, style: const TextStyle(color: Color(0xFFFC8181), fontSize: 12), textAlign: TextAlign.center),
-        ],
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: _submitting ? null : _submit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 0,
-            ),
-            child: _submitting
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.send_rounded, size: 16),
-                      SizedBox(width: 8),
-                      Text('Submit Request', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                    ],
-                  ),
+        Text(
+          "We'll reach out to you soon.",
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 13,
           ),
         ),
       ],
     );
   }
-}
 
-class _RequestField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType keyboardType;
-  final int maxLines;
-
-  const _RequestField({
-    required this.controller,
-    required this.hint,
-    this.keyboardType = TextInputType.text,
-    this.maxLines = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(25),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(76), width: 1),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        style: const TextStyle(color: Colors.white, fontSize: 13),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withAlpha(153), fontSize: 13),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+  Widget _form() {
+    return Column(
+      children: [
+        Text(
+          'Request Access',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-      ),
-    );
-  }
-}
-
-// ─── Animated Background Orb ──────────────────────────────────────────────────
-
-class _Orb extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _Orb({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-        child: Container(color: Colors.transparent),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          "We'll review and send your code within 24h",
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withValues(alpha: 0.6),
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 14),
+        GlassTextField(controller: _nameCtrl, hint: 'Your full name *', height: 48),
+        const SizedBox(height: 8),
+        GlassTextField(
+          controller: _emailCtrl,
+          hint: 'Email address *',
+          keyboardType: TextInputType.emailAddress,
+          height: 48,
+        ),
+        const SizedBox(height: 8),
+        GlassTextField(
+          controller: _whatsappCtrl,
+          hint: 'WhatsApp (optional)',
+          keyboardType: TextInputType.phone,
+          height: 48,
+        ),
+        const SizedBox(height: 8),
+        GlassTextField(
+          controller: _messageCtrl,
+          hint: 'How did you hear about us? (optional)',
+          height: 72,
+        ),
+        if (_submitError.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            _submitError,
+            style: const TextStyle(color: Color(0xFFFC8181), fontSize: 12),
+          ),
+        ],
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: FilledButton(
+            onPressed: _submitting ? null : _submit,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: _submitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                  )
+                : const Text('Submit Request', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ],
     );
   }
 }

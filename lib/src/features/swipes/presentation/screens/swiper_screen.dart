@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_action_button_bar.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_card.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 
 /// The swipe tab content — lives inside DashboardShell.
@@ -53,48 +54,47 @@ class SwipeTabContent extends ConsumerWidget {
       ),
       data: (listings) => Column(
         children: [
-          // Push below the top bar
-          SizedBox(height: MediaQuery.of(context).padding.top + 64),
-
+          SizedBox(height: MediaQuery.of(context).padding.top + 56),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: SwipeableCardStack(
-                listings: listings,
-                onSwiped: (listing, direction) async {
-                  // Record to history for undo
-                  historyNotifier.push(listing);
-                  // Remove from feed
-                  feedNotifier.removeTop();
-                  // Record to Supabase
-                  if (direction == SwipeDirection.right) {
-                    await swipeRepo.likeListing(listing.id);
-                    // Check for match
-                    final isMatch = await swipeRepo.checkForMatch(listing.id);
-                    if (isMatch && context.mounted) {
-                      _showMatchDialog(context, listing.title ?? 'Listing');
-                    }
-                  } else {
-                    await swipeRepo.dislikeListing(listing.id);
-                  }
-                },
-                onTap: (listing) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ListingDetailScreen(listingId: listing.id),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+              child: Stack(
+                children: [
+                  SwipeableCardStack(
+                    listings: listings,
+                    onSwiped: (listing, direction) async {
+                      historyNotifier.push(listing);
+                      feedNotifier.removeTop();
+                      if (direction == SwipeDirection.right) {
+                        await swipeRepo.likeListing(listing.id);
+                        final isMatch = await swipeRepo.checkForMatch(listing.id);
+                        if (isMatch && context.mounted) {
+                          _showMatchDialog(context, listing.title ?? 'Listing');
+                        }
+                      } else {
+                        await swipeRepo.dislikeListing(listing.id);
+                      }
+                    },
+                    onTap: (listing) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ListingDetailScreen(listingId: listing.id),
+                        ),
+                      );
+                    },
+                  ),
+                  if (listings.isNotEmpty)
+                    const Positioned(
+                      right: 10,
+                      bottom: 28,
+                      child: SwipeSideRail(),
                     ),
-                  );
-                },
+                ],
               ),
             ),
           ),
-
-          // Swipe Action Buttons
           SwipeActionButtonBar(
-            onLike: () {
-              // Programmatic swipe right - would need a GlobalKey to trigger
-              // For now, the drag gesture is the primary input
-            },
+            onLike: () {},
             onDislike: () {},
             onUndo: () {
               final undone = historyNotifier.pop();
@@ -106,9 +106,7 @@ class SwipeTabContent extends ConsumerWidget {
             onMessage: () {},
             onInsights: () {},
           ),
-
-          // Space for bottom nav
-          const SizedBox(height: 80),
+          const SizedBox(height: 72),
         ],
       ),
     );
