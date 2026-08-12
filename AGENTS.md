@@ -1,6 +1,22 @@
 # AI Agent Instructions (AGENTS.md)
 
-Welcome, fellow AI Agent! When contributing to **Flutter Swipes**, you MUST follow these guidelines to ensure this remains the most organized, performant, and beautiful app ever.
+Welcome, fellow AI Agent. This is **Flutter Swipess** — a native rewrite of the Capacitor app **Swipess**.
+
+**Read `BRAIN.md` first.** It is the project brain: mission, design source of truth, and screen order.
+
+## 0. Design source of truth
+
+We are **closing the Capacitor design onto Flutter**, not inventing a new look.
+
+- Visual / UX source of truth: GitHub `avdelag1/swipess` (live: https://www.swipess.com)
+- This repo must look like that app (glass HUD, starfield gate/welcome/auth, category poker cards, brand tokens).
+- If it looks like a generic Flutter demo, it is wrong.
+- Skills: `.cursor/skills/close-capacitor-design/SKILL.md` and `.cursor/skills/swipess-build-order/SKILL.md`
+- Copy-paste prompts: `docs/PROMPTS.md`
+
+**Build order:** access gate → welcome → sign in/sign up → dashboard → photo swipe deck → remaining surfaces.
+
+Design passes may stub auth. A **bases** agent wires Supabase repositories, real OAuth, and persistence — without restyling.
 
 ## 1. Core Architecture
 - **State Management**: We use **Riverpod** (`flutter_riverpod`). Do NOT use raw `setState` for anything beyond simple local UI animations. All business logic must live in Notifier/AsyncNotifier classes.
@@ -27,6 +43,7 @@ lib/
 ```
 
 ## 3. UI / UX Principles
+- **Match Capacitor first**: tokens, type, chrome, and motion from `avdelag1/swipess`.
 - **Aesthetics are paramount**: Use smooth, native-feeling animations, gradients, glassmorphism, and micro-interactions. If it looks basic, you have failed.
 - **Performance**: Ensure 60fps (or 120fps) by avoiding expensive rebuilds. Use `const` widgets everywhere possible.
 - **Components**: Break down complex UI into small, reusable, stateless widgets. Avoid giant `build` methods.
@@ -36,4 +53,4 @@ lib/
 - Document any complex business logic with clear docstrings.
 - Always handle loading states and error states gracefully (never just show a blank screen).
 
-Follow these rules exactly, and we will build the best native swiping app in the world!
+Follow these rules exactly, and we will build the best native swiping app in the world.
