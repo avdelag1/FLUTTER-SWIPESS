@@ -27,7 +27,7 @@ class DiscoverHomeScreen extends StatefulWidget {
     required this.onOpenEvents,
   });
 
-  final VoidCallback onOpenSwipe;
+  final ValueChanged<String> onOpenSwipe;
   final VoidCallback onOpenEvents;
 
   @override
@@ -49,7 +49,7 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
               padding: EdgeInsets.fromLTRB(20, top + 72, 20, 0),
               child: Column(
                 children: [
-                  GlowSearchBar(onTap: widget.onOpenSwipe),
+                  GlowSearchBar(onTap: () => widget.onOpenSwipe('property')),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -62,7 +62,11 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
                             onTap: () {
                               HapticFeedback.selectionClick();
                               setState(() => _chip = i);
-                              if (i == 1) widget.onOpenEvents();
+                              if (i == 1) {
+                                widget.onOpenEvents();
+                              } else {
+                                widget.onOpenSwipe(i == 2 ? 'worker' : 'property');
+                              }
                             },
                           ),
                         ),
@@ -95,7 +99,7 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
                   return _PhotoTile(
                     image: card.photos.first,
                     label: card.label,
-                    onTap: widget.onOpenSwipe,
+                    onTap: () => widget.onOpenSwipe(_listingCategoryFor(card.id)),
                   );
                 },
                 childCount: 8,
@@ -106,6 +110,14 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
       ),
     );
   }
+}
+
+String _listingCategoryFor(String cardId) {
+  return switch (cardId) {
+    'pros' => 'worker',
+    'buyers' || 'renters' || 'leads' => 'property',
+    _ => cardId,
+  };
 }
 
 class _CategoryChip extends StatelessWidget {

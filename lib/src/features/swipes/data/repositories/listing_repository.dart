@@ -25,13 +25,17 @@ class ListingRepository {
   /// falls back to a direct query if the RPC doesn't exist yet.
   Future<List<Listing>> fetchSwipeFeed({
     String? category,
+    double? minPrice,
+    double? maxPrice,
+    int? minBeds,
+    bool? furnished,
+    bool? petFriendly,
     int limit = 20,
     int offset = 0,
   }) async {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId != null) {
-        // Try the smart RPC first
         final data = await _client.rpc('get_smart_listings', params: {
           'p_user_id': userId,
           'p_category': category ?? 'property',
@@ -39,22 +43,43 @@ class ListingRepository {
           'p_offset': offset,
         });
         if (data is List && data.isNotEmpty) {
-          return data
+          final listings = data
               .map((row) => Listing.fromJson(row as Map<String, dynamic>))
               .toList();
+          return _applyLocalFilters(
+            listings,
+            minPrice: minPrice,
+            maxPrice: maxPrice,
+            minBeds: minBeds,
+            furnished: furnished,
+            petFriendly: petFriendly,
+          );
         }
       }
     } catch (_) {
       // RPC might not exist — fall through to direct query
     }
 
-    // Fallback: direct query
-    return _fetchDirect(category: category, limit: limit, offset: offset);
+    return _fetchDirect(
+      category: category,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      minBeds: minBeds,
+      furnished: furnished,
+      petFriendly: petFriendly,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   /// Direct table query fallback (no RPC).
   Future<List<Listing>> _fetchDirect({
     String? category,
+    double? minPrice,
+    double? maxPrice,
+    int? minBeds,
+    bool? furnished,
+    bool? petFriendly,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -67,6 +92,21 @@ class ListingRepository {
     if (category != null && category.isNotEmpty) {
       query = query.eq('category', category);
     }
+    if (minPrice != null) {
+      query = query.gte('price', minPrice);
+    }
+    if (maxPrice != null) {
+      query = query.lte('price', maxPrice);
+    }
+    if (minBeds != null && minBeds > 0) {
+      query = query.gte('beds', minBeds);
+    }
+    if (furnished != null) {
+      query = query.eq('furnished', furnished);
+    }
+    if (petFriendly != null) {
+      query = query.eq('pet_friendly', petFriendly);
+    }
 
     final data = await query
         .order('created_at', ascending: false)
@@ -75,6 +115,28 @@ class ListingRepository {
     return (data as List)
         .map((row) => Listing.fromJson(row as Map<String, dynamic>))
         .toList();
+  }
+
+  List<Listing> _applyLocalFilters(
+    List<Listing> listings, {
+    double? minPrice,
+    double? maxPrice,
+    int? minBeds,
+    bool? furnished,
+    bool? petFriendly,
+  }) {
+    return listings.where((listing) {
+      if (minPrice != null && (listing.price ?? 0) < minPrice) return false;
+      if (maxPrice != null && (listing.price ?? 0) > maxPrice) return false;
+      if (minBeds != null && minBeds > 0 && (listing.beds ?? 0) < minBeds) {
+        return false;
+      }
+      if (furnished != null && listing.furnished != furnished) return false;
+      if (petFriendly != null && listing.petFriendly != petFriendly) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   /// Fetch a single listing by ID for the detail page.

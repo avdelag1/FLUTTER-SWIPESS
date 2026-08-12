@@ -8,11 +8,13 @@ class GlowSearchBar extends StatelessWidget {
     this.hint = 'Search Swipess',
     this.onTap,
     this.controller,
+    this.onChanged,
   });
 
   final String hint;
   final VoidCallback? onTap;
   final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +31,11 @@ class GlowSearchBar extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: IgnorePointer(
-                  ignoring: onTap != null,
+                  ignoring: onTap != null && onChanged == null,
                   child: TextField(
                     controller: controller,
-                    enabled: onTap == null,
+                    enabled: onTap == null || onChanged != null,
+                    onChanged: onChanged,
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,

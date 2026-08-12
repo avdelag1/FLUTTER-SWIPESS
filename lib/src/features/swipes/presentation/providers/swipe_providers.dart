@@ -74,7 +74,14 @@ class SwipeFeedNotifier extends AsyncNotifier<List<Listing>> {
   Future<List<Listing>> build() async {
     final filters = ref.watch(swipeFilterProvider);
     final repo = ref.read(listingRepositoryProvider);
-    return repo.fetchSwipeFeed(category: filters.category);
+    return repo.fetchSwipeFeed(
+      category: filters.category,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      minBeds: filters.minBeds,
+      furnished: filters.furnished,
+      petFriendly: filters.petFriendly,
+    );
   }
 
   void removeTop() {

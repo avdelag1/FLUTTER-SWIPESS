@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_action_button_bar.dart';
@@ -7,12 +10,18 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ca
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 
 /// The swipe tab content — lives inside DashboardShell.
-/// Now loads REAL listings from Supabase and records swipes.
-class SwipeTabContent extends ConsumerWidget {
+class SwipeTabContent extends ConsumerStatefulWidget {
   const SwipeTabContent({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SwipeTabContent> createState() => _SwipeTabContentState();
+}
+
+class _SwipeTabContentState extends ConsumerState<SwipeTabContent> {
+  final _stackKey = GlobalKey<SwipeableCardStackState>();
+
+  @override
+  Widget build(BuildContext context) {
     final feedAsync = ref.watch(swipeFeedProvider);
     final swipeRepo = ref.read(swipeRepositoryProvider);
     final feedNotifier = ref.read(swipeFeedProvider.notifier);
@@ -61,6 +70,7 @@ class SwipeTabContent extends ConsumerWidget {
               child: Stack(
                 children: [
                   SwipeableCardStack(
+                    key: _stackKey,
                     listings: listings,
                     onSwiped: (listing, direction) async {
                       historyNotifier.push(listing);
@@ -69,7 +79,7 @@ class SwipeTabContent extends ConsumerWidget {
                         await swipeRepo.likeListing(listing.id);
                         final isMatch = await swipeRepo.checkForMatch(listing.id);
                         if (isMatch && context.mounted) {
-                          _showMatchDialog(context, listing.title ?? 'Listing');
+                          _showMatchDialog(context, listing);
                         }
                       } else {
                         await swipeRepo.dislikeListing(listing.id);
@@ -84,18 +94,26 @@ class SwipeTabContent extends ConsumerWidget {
                     },
                   ),
                   if (listings.isNotEmpty)
-                    const Positioned(
+                    Positioned(
                       right: 10,
                       bottom: 28,
-                      child: SwipeSideRail(),
+                      child: SwipeSideRail(
+                        onLike: () =>
+                            _stackKey.currentState?.triggerSwipe(SwipeDirection.right),
+                        onComment: () {
+                          if (listings.isNotEmpty) {
+                            _openChat(listings.first);
+                          }
+                        },
+                      ),
                     ),
                 ],
               ),
             ),
           ),
           SwipeActionButtonBar(
-            onLike: () {},
-            onDislike: () {},
+            onLike: () => _stackKey.currentState?.triggerSwipe(SwipeDirection.right),
+            onDislike: () => _stackKey.currentState?.triggerSwipe(SwipeDirection.left),
             onUndo: () {
               final undone = historyNotifier.pop();
               if (undone != null) {
@@ -103,8 +121,18 @@ class SwipeTabContent extends ConsumerWidget {
                 swipeRepo.undoSwipe(undone.id);
               }
             },
-            onMessage: () {},
-            onInsights: () {},
+            onMessage: () {
+              if (listings.isNotEmpty) _openChat(listings.first);
+            },
+            onInsights: () {
+              if (listings.isNotEmpty) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ListingDetailScreen(listingId: listings.first.id),
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 72),
         ],
@@ -112,7 +140,30 @@ class SwipeTabContent extends ConsumerWidget {
     );
   }
 
-  void _showMatchDialog(BuildContext context, String listingTitle) {
+  Future<void> _openChat(Listing listing) async {
+    final ownerId = listing.ownerId;
+    if (ownerId == null) return;
+    final id = await ref.read(swipeRepositoryProvider).startConversation(
+          ownerId: ownerId,
+          listingId: listing.id,
+        );
+    if (!mounted || id == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          conversation: ChatConversation(
+            id: id,
+            otherUserId: ownerId,
+            name: listing.title ?? 'Listing owner',
+            lastMessage: '',
+            timestamp: '',
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMatchDialog(BuildContext context, Listing listing) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -135,7 +186,7 @@ class SwipeTabContent extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'You and the owner of "$listingTitle" are interested!',
+                'You and the owner of "${listing.title ?? 'this listing'}" are interested!',
                 style: TextStyle(color: Colors.white.withAlpha(178), fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -151,7 +202,10 @@ class SwipeTabContent extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _openChat(listing);
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,

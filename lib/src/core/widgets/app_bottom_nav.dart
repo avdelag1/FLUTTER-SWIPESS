@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 
-enum NavTab { swipe, events, add, messages, profile }
+enum NavTab { swipe, likes, events, add, messages, profile }
 
 class AppBottomNav extends StatelessWidget {
   final NavTab activeTab;
@@ -38,9 +38,9 @@ class AppBottomNav extends StatelessWidget {
                       onTap: () => onTabSelected(NavTab.swipe),
                     ),
                     _DockIcon(
-                      icon: Icons.celebration_rounded,
-                      active: activeTab == NavTab.events,
-                      onTap: () => onTabSelected(NavTab.events),
+                      icon: Icons.favorite_rounded,
+                      active: activeTab == NavTab.likes,
+                      onTap: () => onTabSelected(NavTab.likes),
                     ),
                     _DockIcon(
                       icon: Icons.add_rounded,
@@ -53,6 +53,11 @@ class AppBottomNav extends StatelessWidget {
                       active: activeTab == NavTab.messages,
                       badge: unreadMessages,
                       onTap: () => onTabSelected(NavTab.messages),
+                    ),
+                    _DockIcon(
+                      icon: Icons.celebration_rounded,
+                      active: activeTab == NavTab.events,
+                      onTap: () => onTabSelected(NavTab.events),
                     ),
                     _DockIcon(
                       icon: Icons.person_rounded,

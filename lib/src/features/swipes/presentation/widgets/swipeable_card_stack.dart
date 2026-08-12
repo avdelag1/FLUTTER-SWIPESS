@@ -30,10 +30,10 @@ class SwipeableCardStack extends StatefulWidget {
   });
 
   @override
-  State<SwipeableCardStack> createState() => _SwipeableCardStackState();
+  SwipeableCardStackState createState() => SwipeableCardStackState();
 }
 
-class _SwipeableCardStackState extends State<SwipeableCardStack>
+class SwipeableCardStackState extends State<SwipeableCardStack>
     with SingleTickerProviderStateMixin {
   Offset _dragOffset = Offset.zero;
   bool _isDragging = false;

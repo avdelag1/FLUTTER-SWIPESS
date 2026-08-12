@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -166,11 +167,15 @@ class _ProfileTopHeader extends StatelessWidget {
 
 // ─── Hero Section ─────────────────────────────────────────────────────────────
 
-class _ProfileHeroSection extends StatelessWidget {
+class _ProfileHeroSection extends ConsumerWidget {
   const _ProfileHeroSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(currentProfileProvider).value;
+    final name = profile?.name ?? 'Swipess member';
+    final avatar = profile?.avatarUrl;
+    final city = profile?.city;
     return Column(
       children: [
         // Avatar with gradient border ring & camera edit badge
@@ -201,18 +206,27 @@ class _ProfileHeroSection extends StatelessWidget {
                   color: Color(0xFF0A0A0C),
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.white.withAlpha(20),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color: Colors.white,
-                        size: 48,
-                      ),
-                    ),
-                  ),
+                  child: avatar != null
+                      ? Image.network(
+                          avatar,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.white.withAlpha(20),
+                            child: const Icon(
+                              Icons.person_rounded,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.white.withAlpha(20),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -244,8 +258,8 @@ class _ProfileHeroSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Alejandro Villarreal',
+            Text(
+              name,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
@@ -272,7 +286,9 @@ class _ProfileHeroSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            'Luxury Real Estate Investor & Property Enthusiast 🏙️ | Swiping for dream penthouses & architectural icons ✨',
+            profile?.bio?.isNotEmpty == true
+                ? profile!.bio!
+                : 'Member of the Swipess network',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withAlpha(180),
@@ -288,11 +304,11 @@ class _ProfileHeroSection extends StatelessWidget {
           alignment: WrapAlignment.center,
           spacing: 10,
           runSpacing: 8,
-          children: const [
+          children: [
             _InfoPill(
               icon: Icons.location_on_rounded,
               iconColor: AppTheme.brandPrimary,
-              label: 'Miami, FL',
+              label: city?.isNotEmpty == true ? city! : 'Swipess',
             ),
             _InfoPill(
               icon: Icons.calendar_month_rounded,

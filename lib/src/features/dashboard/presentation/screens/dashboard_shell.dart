@@ -8,6 +8,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/screens/swiper_s
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/messages_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/screens/likes_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 
 /// Persistent HUD shell — glass top pills + glowing dock, Capacitor chrome.
@@ -22,14 +24,24 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   NavTab _currentTab = NavTab.swipe;
   bool _inDeck = false;
 
+  void _openSwipe(String category) {
+    ref.read(swipeFilterProvider.notifier).setCategory(category);
+    setState(() {
+      _currentTab = NavTab.swipe;
+      _inDeck = true;
+    });
+  }
+
   Widget _buildBody() {
     switch (_currentTab) {
       case NavTab.swipe:
         if (_inDeck) return const SwipeTabContent();
         return DiscoverHomeScreen(
-          onOpenSwipe: () => setState(() => _inDeck = true),
+          onOpenSwipe: _openSwipe,
           onOpenEvents: () => setState(() => _currentTab = NavTab.events),
         );
+      case NavTab.likes:
+        return const LikesScreen();
       case NavTab.events:
         return const EventsScreen();
       case NavTab.messages:
@@ -38,10 +50,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         return const ProfileScreen();
       case NavTab.add:
         return DiscoverHomeScreen(
-          onOpenSwipe: () => setState(() {
-            _currentTab = NavTab.swipe;
-            _inDeck = true;
-          }),
+          onOpenSwipe: _openSwipe,
           onOpenEvents: () => setState(() => _currentTab = NavTab.events),
         );
     }
