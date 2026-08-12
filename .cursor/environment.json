@@ -1,0 +1,17 @@
+{
+  "name": "Flutter Swipes",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "flutter-web",
+      "description": "Flutter web dev server for the swipe app, served on port 8080.",
+      "command": "export PATH=\"$PATH:/home/ubuntu/flutter/bin\" && export CHROME_EXECUTABLE=/usr/local/bin/google-chrome && flutter run -d web-server --web-port 8080 --web-hostname 0.0.0.0"
+    }
+  ],
+  "ports": [
+    {
+      "name": "flutter-web",
+      "port": 8080
+    }
+  ]
+}
