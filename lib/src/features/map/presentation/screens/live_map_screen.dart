@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -76,9 +77,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate: AppConfig.hasMapboxToken
+                        ? 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}'
+                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    additionalOptions: AppConfig.hasMapboxToken
+                        ? {'accessToken': AppConfig.mapboxAccessToken}
+                        : const {},
                     userAgentPackageName: 'com.swipess.flutter',
+                    maxZoom: 19,
                   ),
                   MarkerLayer(
                     markers: [
