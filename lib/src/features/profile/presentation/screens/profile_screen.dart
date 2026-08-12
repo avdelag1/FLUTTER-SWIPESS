@@ -1,8 +1,22 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
+import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
+import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
+import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -55,38 +69,10 @@ class ProfileScreen extends ConsumerWidget {
                   const _GlassVipBanner(),
                   const SizedBox(height: 28),
 
-                  // Settings Menu (Edit Profile, Notifications, Privacy, Theme, Help)
-                  const _ProfileMenuSection(
-                    title: 'PREFERENCES',
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Edit Profile',
-                        subtitle: 'Update personal info, avatar & bio',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.notifications_none_rounded,
-                        title: 'Notifications',
-                        subtitle: 'Match alerts, messages & news',
-                        badge: '3',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.shield_outlined,
-                        title: 'Privacy & Security',
-                        subtitle: 'Account visibility & permissions',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.palette_outlined,
-                        title: 'Theme & Customization',
-                        subtitle: 'Dark glassmorphism theme',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.help_outline_rounded,
-                        title: 'Help & Support',
-                        subtitle: 'FAQs, contact support & feedback',
-                      ),
-                    ],
-                  ),
+                  const _ProfileHubSection(),
+                  const SizedBox(height: 24),
+
+                  const _ProfilePreferencesSection(),
                   const SizedBox(height: 24),
 
                   // Account section (Sign Out)
@@ -139,24 +125,32 @@ class _ProfileTopHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
-          ),
+        Row(
+          children: [
+            if (Navigator.of(context).canPop()) ...[
+              _GlassIconButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(width: 10),
+            ],
+            const Text(
+              'Profile',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
+              ),
+            ),
+          ],
         ),
         _GlassIconButton(
-          icon: Icons.settings_outlined,
+          icon: Icons.edit_outlined,
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Settings tapped'),
-                backgroundColor: Color(0xFF1E1E24),
-                duration: Duration(seconds: 1),
-              ),
+            HapticFeedback.lightImpact();
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
             );
           },
         ),
@@ -490,86 +484,94 @@ class _GlassVipBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.brandAccent.withAlpha(35),
-                AppTheme.brandPrimary.withAlpha(35),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SubscriptionPackagesScreen()),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.brandAccent.withAlpha(35),
+                  AppTheme.brandPrimary.withAlpha(35),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.brandPrimary.withAlpha(75),
+                width: 1,
+              ),
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.brandPrimary.withAlpha(75),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
+                    ),
                   ),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'SWIPESS VIP MEMBER',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Unlimited swipes & priority placement',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(175),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.brandPrimary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'PRO',
-                  style: TextStyle(
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
                     color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+                    size: 24,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'SWIPESS VIP MEMBER',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tap to view packages & upgrade',
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(175),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.brandPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'PRO',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -584,13 +586,131 @@ class _MenuItemData {
   final String title;
   final String subtitle;
   final String? badge;
+  final VoidCallback onTap;
 
   const _MenuItemData({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
     this.badge,
   });
+}
+
+class _ProfileHubSection extends ConsumerWidget {
+  const _ProfileHubSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _ProfileMenuSection(
+      title: 'HUB',
+      items: [
+        _MenuItemData(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'Escrow',
+          subtitle: 'Deposits held for contracts',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.folder_outlined,
+          title: 'Document vault',
+          subtitle: 'IDs, contracts & uploads',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.gavel_rounded,
+          title: 'Legal hub',
+          subtitle: 'Templates & digital contracts',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const LegalHubScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.videocam_outlined,
+          title: 'Video tours',
+          subtitle: 'Property walkthrough feed',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const VideoToursScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.people_outline_rounded,
+          title: 'Roommates',
+          subtitle: 'Match people sharing space',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.newspaper_outlined,
+          title: 'Local intel',
+          subtitle: 'Neighborhood updates',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.trending_up_rounded,
+          title: 'Market prices',
+          subtitle: 'Neighborhood averages',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.handyman_outlined,
+          title: 'Maintenance',
+          subtitle: 'Report & track property issues',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const MaintenanceRequestsScreen()),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfilePreferencesSection extends ConsumerWidget {
+  const _ProfilePreferencesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(unreadNotificationsProvider).value ?? 0;
+    return _ProfileMenuSection(
+      title: 'PREFERENCES',
+      items: [
+        _MenuItemData(
+          icon: Icons.person_outline_rounded,
+          title: 'Edit Profile',
+          subtitle: 'Update personal info, avatar & bio',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.notifications_none_rounded,
+          title: 'Notifications',
+          subtitle: 'Match alerts, messages & news',
+          badge: unread > 0 ? '$unread' : null,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.help_outline_rounded,
+          title: 'Help & Support',
+          subtitle: 'FAQs & guidance',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const FAQScreen()),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ProfileMenuSection extends StatelessWidget {
@@ -638,13 +758,8 @@ class _ProfileMenuSection extends StatelessWidget {
                       _GlassMenuItemTile(
                         item: item,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${item.title} tapped'),
-                              backgroundColor: const Color(0xFF1E1E24),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
+                          HapticFeedback.lightImpact();
+                          item.onTap();
                         },
                       ),
                       if (!isLast)

@@ -1,79 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
+import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BentoDashboardScreen extends ConsumerWidget {
   const BentoDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final location = ref.watch(discoveryLocationProvider);
+
     return Scaffold(
-      backgroundColor: Colors.black, // Matches neo-naive background
+      backgroundColor: Colors.black,
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // Search Bar Area
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Container(
-                height: 52,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color.fromRGBO(16, 16, 20, 1.0),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white.withAlpha(20), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withAlpha(150), blurRadius: 12, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.search_rounded, color: Colors.white.withAlpha(150), size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Ask AI to find anything...',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(150),
-                          fontSize: 15,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showAskSheet(context, ref);
+                },
+                child: Container(
+                  height: 52,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(16, 16, 20, 1.0),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white.withAlpha(20), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(150),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.search_rounded, color: Colors.white.withAlpha(150), size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Ask AI to find anything...',
+                          style: TextStyle(
+                            color: Colors.white.withAlpha(150),
+                            fontSize: 15,
+                          ),
                         ),
                       ),
-                    ),
-                    Icon(Icons.arrow_forward_rounded, color: Colors.white.withAlpha(150), size: 20),
-                  ],
+                      Icon(Icons.arrow_forward_rounded, color: Colors.white.withAlpha(150), size: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
-            
-            // Filter Pills (Matching DashboardFilters.tsx exactly)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  Expanded(child: _buildNeoNaiveFilterPill(Icons.location_on_rounded, 'Tulum, Mexico', const Color(0xFFFF6B6B), context, () {
-                    _showPlaceholderModal(context, 'Location / Map Search', Icons.map_rounded);
-                  })),
+                  Expanded(
+                    child: _buildNeoNaiveFilterPill(
+                      Icons.location_on_rounded,
+                      location.label,
+                      const Color(0xFFFF6B6B),
+                      () => _pickCity(context, ref),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildNeoNaiveFilterPill(Icons.calendar_today_rounded, 'Any date', const Color(0xFF4DABF7), context, () {
-                    _showPlaceholderModal(context, 'Dates / Calendar', Icons.date_range_rounded);
-                  })),
+                  Expanded(
+                    child: _buildNeoNaiveFilterPill(
+                      Icons.calendar_today_rounded,
+                      location.dateLabel,
+                      const Color(0xFF4DABF7),
+                      () => _pickDates(context, ref),
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildNeoNaiveFilterPill(Icons.people_alt_rounded, '2 guests', const Color(0xFFFFD43B), context, () {
-                    _showPlaceholderModal(context, 'Guests', Icons.people_alt_rounded);
-                  })),
+                  Expanded(
+                    child: _buildNeoNaiveFilterPill(
+                      Icons.people_alt_rounded,
+                      '${location.guests} guest${location.guests == 1 ? '' : 's'}',
+                      const Color(0xFFFFD43B),
+                      () => _pickGuests(context, ref),
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-
-            // Bento Grid (Matching all 11 items from BentoCategoryDashboard.tsx)
             Expanded(
               child: MasonryGridView.count(
                 crossAxisCount: 2,
@@ -96,25 +127,7 @@ class BentoDashboardScreen extends ConsumerWidget {
                     subtitle: item.subtitle,
                     imageUrl: item.imageUrl,
                     height: item.height,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      if (item.id == 'legal') {
-                        ref.read(navTabProvider.notifier).set(NavTab.legal);
-                        return;
-                      }
-                      if (item.id == 'seekers') {
-                        ref.read(navTabProvider.notifier).set(NavTab.seekers);
-                        return;
-                      }
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ClientSwipeContainer(
-                            categoryId: item.id == 'services' ? 'worker' : item.id,
-                            categoryTitle: item.title,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => _openBento(context, ref, item.id, item.title),
                   );
                 },
                 itemCount: _bentoItems.length,
@@ -126,28 +139,307 @@ class BentoDashboardScreen extends ConsumerWidget {
     );
   }
 
-  void _showPlaceholderModal(BuildContext context, String title, IconData icon) {
+  void _openBento(BuildContext context, WidgetRef ref, String id, String title) {
+    HapticFeedback.lightImpact();
+    switch (id) {
+      case 'legal':
+        ref.read(navTabProvider.notifier).set(NavTab.legal);
+        return;
+      case 'seekers':
+        ref.read(navTabProvider.notifier).set(NavTab.seekers);
+        return;
+      case 'premium':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SubscriptionPackagesScreen()),
+        );
+        return;
+      case 'video_tours':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const VideoToursScreen()),
+        );
+        return;
+      case 'roommates':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
+        );
+        return;
+      case 'intel':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
+        );
+        return;
+      case 'prices':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
+        );
+        return;
+      default:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ClientSwipeContainer(
+              categoryId: id == 'services' ? 'worker' : id,
+              categoryTitle: title,
+            ),
+          ),
+        );
+    }
+  }
+
+  Future<void> _pickCity(BuildContext context, WidgetRef ref) async {
+    final city = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppTheme.dashElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            children: [
+              Text('CHOOSE CITY', style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.map_rounded, color: AppTheme.brandPrimary),
+                title: const Text('Open live map', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LiveMapScreen()),
+                  );
+                },
+              ),
+              const Divider(color: Colors.white24),
+              for (final city in ListingTaxonomies.popularCities)
+                ListTile(
+                  title: Text(city, style: const TextStyle(color: Colors.white)),
+                  onTap: () => Navigator.pop(context, city),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (city != null) {
+      ref.read(discoveryLocationProvider.notifier).setCity(city);
+    }
+  }
+
+  Future<void> _pickDates(BuildContext context, WidgetRef ref) async {
+    const options = [
+      'Any date',
+      'This weekend',
+      'Next week',
+      'This month',
+      'Flexible',
+    ];
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppTheme.dashElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+            shrinkWrap: true,
+            children: [
+              Text('WHEN', style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+              const SizedBox(height: 8),
+              for (final option in options)
+                ListTile(
+                  title: Text(option, style: const TextStyle(color: Colors.white)),
+                  onTap: () => Navigator.pop(context, option),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (picked != null) {
+      ref.read(discoveryLocationProvider.notifier).setDateLabel(picked);
+    }
+  }
+
+  Future<void> _pickGuests(BuildContext context, WidgetRef ref) async {
+    var guests = ref.read(discoveryLocationProvider).guests;
+    final confirmed = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: AppTheme.dashElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('GUESTS', style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (guests > 1) {
+                              setModalState(() => guests -= 1);
+                            }
+                          },
+                          icon: const Icon(Icons.remove_circle_outline, color: Colors.white, size: 32),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            '$guests',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 40,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (guests < 16) {
+                              setModalState(() => guests += 1);
+                            }
+                          },
+                          icon: const Icon(Icons.add_circle_outline, color: Colors.white, size: 32),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(context, guests),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.brandPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text('Done'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (confirmed != null) {
+      ref.read(discoveryLocationProvider.notifier).setGuests(confirmed);
+    }
+  }
+
+  void _showAskSheet(BuildContext context, WidgetRef ref) {
     showGlassModal(
       context: context,
       builder: (context) {
         return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 64, color: AppTheme.brandPrimary),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14141A),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: Colors.white.withAlpha(30)),
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('QUICK FIND', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Jump into a surface — full Ask AI needs an API key later.',
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white60, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _AskChip(
+                        label: 'Live map',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const LiveMapScreen()),
+                          );
+                        },
+                      ),
+                      _AskChip(
+                        label: 'Video tours',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const VideoToursScreen()),
+                          );
+                        },
+                      ),
+                      _AskChip(
+                        label: 'Roommates',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
+                          );
+                        },
+                      ),
+                      _AskChip(
+                        label: 'Seekers',
+                        onTap: () {
+                          Navigator.pop(context);
+                          ref.read(navTabProvider.notifier).set(NavTab.seekers);
+                        },
+                      ),
+                      _AskChip(
+                        label: 'Local intel',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
+                          );
+                        },
+                      ),
+                      _AskChip(
+                        label: 'Market prices',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildNeoNaiveFilterPill(IconData icon, String text, Color washColor, BuildContext context, VoidCallback onTap) {
+  Widget _buildNeoNaiveFilterPill(
+    IconData icon,
+    String text,
+    Color washColor,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -167,7 +459,6 @@ class BentoDashboardScreen extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Wash Icon
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
@@ -196,6 +487,23 @@ class BentoDashboardScreen extends ConsumerWidget {
   }
 }
 
+class _AskChip extends StatelessWidget {
+  const _AskChip({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: onTap,
+      backgroundColor: Colors.white.withAlpha(18),
+      labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+      side: BorderSide(color: Colors.white.withAlpha(40)),
+    );
+  }
+}
+
 class _BentoCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -218,8 +526,8 @@ class _BentoCard extends StatelessWidget {
       child: Container(
         height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32), // Large corner radius like neo-frame
-          color: const Color.fromRGBO(22, 22, 28, 1.0), // --dash-elevated
+          borderRadius: BorderRadius.circular(32),
+          color: const Color.fromRGBO(22, 22, 28, 1.0),
           image: DecorationImage(
             image: NetworkImage(imageUrl),
             fit: BoxFit.cover,
@@ -274,7 +582,6 @@ class _BentoItemData {
   const _BentoItemData(this.id, this.title, this.subtitle, this.imageUrl, this.height);
 }
 
-// Exactly matches all 11 items from BentoCategoryDashboard.tsx
 const _bentoItems = [
   _BentoItemData('property', 'PROPERTIES', 'Find properties to buy or rent', 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=90', 260),
   _BentoItemData('events', 'EVENTS LIVE', 'Swipe event videos · tap to open', 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=90', 340),
@@ -285,6 +592,10 @@ const _bentoItems = [
   _BentoItemData('motorcycle', 'MOTORCYCLES', 'Motorcycles for sale or rent', 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=90', 340),
   _BentoItemData('bicycle', 'BICYCLES', 'Bicycles for sale or rent', 'https://images.unsplash.com/photo-1520188740392-563d1dc6d480?auto=format&fit=crop&w=800&q=90', 260),
   _BentoItemData('seekers', 'SEEKERS', 'People looking for workers', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=90', 260),
+  _BentoItemData('video_tours', 'VIDEO TOURS', 'Walkthroughs from owners', 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=90', 300),
+  _BentoItemData('roommates', 'ROOMMATES', 'Match people sharing space', 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=90', 260),
+  _BentoItemData('intel', 'LOCAL INTEL', 'Neighborhood updates', 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=90', 280),
+  _BentoItemData('prices', 'MARKET PRICES', 'Neighborhood price trends', 'https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=90', 260),
   _BentoItemData('legal', 'LEGAL SERVICES', 'Hire a top tier lawyer', 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=90', 340),
   _BentoItemData('premium', 'PREMIUM', 'Buy a package & get benefits', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=90', 260),
 ];
