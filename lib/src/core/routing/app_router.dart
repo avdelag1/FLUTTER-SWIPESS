@@ -5,7 +5,7 @@ import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/login_screen.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/swiper_screen.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/screens/dashboard_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -37,7 +37,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/gate', builder: (ctx, _) => const AccessCodeGateScreen()),
       GoRoute(path: '/login', builder: (ctx, _) => const LoginScreen()),
-      GoRoute(path: '/dashboard', builder: (ctx, _) => const SwiperScreen()),
+      GoRoute(path: '/dashboard', builder: (ctx, _) => const DashboardShell()),
     ],
   );
 });
