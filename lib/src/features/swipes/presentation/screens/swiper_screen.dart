@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/swipe_card.dart';
 
 class SwiperScreen extends ConsumerStatefulWidget {
@@ -43,6 +44,10 @@ class _SwiperScreenState extends ConsumerState<SwiperScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go('/dashboard'),
+        ),
         title: const Text('Swipess', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1)),
       ),
       body: SafeArea(
