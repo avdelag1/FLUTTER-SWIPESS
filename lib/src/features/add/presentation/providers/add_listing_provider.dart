@@ -19,6 +19,10 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(category: category, clearError: true);
   }
 
+  void setMode(ListingMode mode) {
+    state = state.copyWith(mode: mode, clearError: true);
+  }
+
   void toggleMode(ListingMode tapped) {
     if (state.mode == ListingMode.both) {
       state = state.copyWith(

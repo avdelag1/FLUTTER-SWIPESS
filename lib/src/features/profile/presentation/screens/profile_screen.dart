@@ -1,17 +1,23 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
@@ -19,902 +25,792 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/mainten
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/radio/presentation/screens/world_radio_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class ProfileScreen extends ConsumerWidget {
+/// Capacitor ClientProfile — identity, quests, action grid, share, feedback, PEARL.
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _questsOpen = false;
+  bool _moreOpen = false;
+  String? _feedbackCategory;
+  final _feedbackCtrl = TextEditingController();
+  bool _feedbackDone = false;
+  bool _feedbackSending = false;
+
+  @override
+  void dispose() {
+    _feedbackCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(currentProfileProvider);
+    final top = MediaQuery.paddingOf(context).top;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0C),
+      backgroundColor: const Color(0xFF0A0A0D),
       body: Stack(
         children: [
-          // Ambient background glow orbs for glassmorphism accenting
           Positioned(
-            top: -100,
-            right: -70,
-            child: _buildOrb(AppTheme.brandPrimary.withAlpha(45), 300),
+            top: -80,
+            right: -60,
+            child: _orb(AppTheme.brandPrimary.withAlpha(40), 260),
           ),
           Positioned(
-            top: 220,
-            left: -90,
-            child: _buildOrb(AppTheme.brandAccent.withAlpha(35), 260),
+            top: 280,
+            left: -100,
+            child: _orb(const Color(0xFF06B6D4).withAlpha(28), 220),
           ),
-          Positioned(
-            bottom: -60,
-            right: -50,
-            child: _buildOrb(AppTheme.brandPrimary.withAlpha(30), 220),
-          ),
-
-          // Main scrollable content
-          SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Top bar title header
-                  const _ProfileTopHeader(),
-                  const SizedBox(height: 24),
-
-                  // Hero section (avatar, name, bio, location, join date)
-                  const _ProfileHeroSection(),
-                  const SizedBox(height: 28),
-
-                  // Stats row (Listings, Swipes, Matches with animated feel)
-                  const _ProfileStatsRow(),
-                  const SizedBox(height: 28),
-
-                  // VIP Membership glass banner
-                  const _GlassVipBanner(),
-                  const SizedBox(height: 28),
-
-                  const _ProfileHubSection(),
-                  const SizedBox(height: 24),
-
-                  const _ProfilePreferencesSection(),
-                  const SizedBox(height: 24),
-
-                  // Account section (Sign Out)
-                  const _ProfileAccountSection(),
-                  const SizedBox(height: 32),
-
-                  // App version footer
-                  Text(
-                    'Swipess v1.0.0 • Build 42',
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(80),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+          async.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            ),
+            error: (_, _) => Center(
+              child: TextButton(
+                onPressed: () => ref.invalidate(currentProfileProvider),
+                child: const Text('Could not load profile — retry'),
               ),
             ),
+            data: (profile) {
+              final name = profile?.name ?? 'Identity';
+              final email = profile?.email ??
+                  Supabase.instance.client.auth.currentUser?.email ??
+                  '';
+              final avatar = profile?.avatarUrl;
+              final completion = profile?.completionPercent ?? 0;
+              final likes = ref.watch(whoLikedYouProvider).value?.length ?? 0;
+              final chats = ref.watch(conversationsProvider).value?.length ?? 0;
+
+              return ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20, top + 16, 20, 140),
+                children: [
+                  // Identity core
+                  Center(
+                    child: Column(
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 132,
+                              height: 132,
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                                ),
+                              ),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFF080C14),
+                                ),
+                                child: ClipOval(
+                                  child: avatar != null
+                                      ? Image.network(
+                                          avatar,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) =>
+                                              const Icon(Icons.person_rounded,
+                                                  color: Colors.white24, size: 56),
+                                        )
+                                      : const Icon(Icons.person_rounded,
+                                          color: Colors.white24, size: 56),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: -6,
+                              right: -6,
+                              child: GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const EditProfileScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18),
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFFF4D00), Color(0xFFFF6B00)],
+                                    ),
+                                    border: Border.all(
+                                      color: const Color(0xFF0A0A0D),
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(Icons.camera_alt_rounded,
+                                      color: Colors.white, size: 18),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          name.toUpperCase(),
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: -1.2,
+                            height: 1,
+                          ),
+                        ),
+                        if (email.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            email.toUpperCase(),
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.4,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // HUD stats
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.thumb_up_alt_outlined,
+                          iconColor: const Color(0xFFFF4D00),
+                          value: likes,
+                          label: 'LIKES',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const WhoLikedYouScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.auto_awesome_rounded,
+                          iconColor: const Color(0xFFEB4898),
+                          value: likes, // matches ≈ likes for now
+                          label: 'MATCHES',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            ref.read(navTabProvider.notifier).set(NavTab.likes);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatTile(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          iconColor: const Color(0xFFFF8C42),
+                          value: chats,
+                          label: 'MESSAGES',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            ref.read(navTabProvider.notifier).set(NavTab.messages);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Daily Quests
+                  _Panel(
+                    child: _DailyQuests(
+                      expanded: _questsOpen,
+                      onToggle: () => setState(() => _questsOpen = !_questsOpen),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Magic AI Profile
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Magic AI Profile needs an OpenAI key — edit profile for now.',
+                          ),
+                        ),
+                      );
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                      );
+                    },
+                    child: Container(
+                      height: 58,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF06B6D4).withAlpha(70),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded,
+                              color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            'MAGIC AI PROFILE',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: 2.2,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Action grid
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 1.45,
+                    children: [
+                      _ActionTile(
+                        label: 'EDIT PROFILE',
+                        icon: Icons.person_rounded,
+                        colors: const [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const EditProfileScreen(),
+                          ),
+                        ),
+                      ),
+                      _ActionTile(
+                        label: 'PROMOTE',
+                        icon: Icons.campaign_rounded,
+                        colors: const [Color(0xFFFF4D00), Color(0xFFFF8C00)],
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AdvertiseScreen(),
+                          ),
+                        ),
+                      ),
+                      _ActionTile(
+                        label: 'SEEKERS',
+                        icon: Icons.people_rounded,
+                        colors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          ref.read(navTabProvider.notifier).set(NavTab.seekers);
+                        },
+                      ),
+                      _ActionTile(
+                        label: 'TOKENS',
+                        icon: Icons.toll_rounded,
+                        colors: const [Color(0xFF10B981), Color(0xFF06B6D4)],
+                        onTap: () => showGlassModal(
+                          context: context,
+                          builder: (_) => const TokensModal(),
+                        ),
+                      ),
+                      _ActionTile(
+                        label: 'SETTINGS',
+                        icon: Icons.settings_rounded,
+                        colors: const [Color(0xFF64748B), Color(0xFF334155)],
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsScreen(),
+                          ),
+                        ),
+                      ),
+                      _ActionTile(
+                        label: 'SIGN OUT',
+                        icon: Icons.logout_rounded,
+                        colors: const [Color(0xFFEF4444), Color(0xFF991B1B)],
+                        onTap: () async {
+                          HapticFeedback.mediumImpact();
+                          await Supabase.instance.client.auth.signOut();
+                          if (context.mounted) Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SubscriptionPackagesScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      height: 88,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.workspace_premium_rounded,
+                              color: Colors.white, size: 28),
+                          const SizedBox(height: 6),
+                          Text(
+                            'PREMIUM',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: 2.4,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Share & Earn
+                  _Panel(
+                    child: _ShareEarn(
+                      profileId: profile?.userId ??
+                          Supabase.instance.client.auth.currentUser?.id ??
+                          '',
+                      profileName: name,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Feedback
+                  _Panel(
+                    padding: const EdgeInsets.all(18),
+                    child: _feedbackDone
+                        ? Column(
+                            children: [
+                              const Icon(Icons.check_circle_rounded,
+                                  color: Color(0xFF10B981), size: 44),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Thank you!',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => setState(() {
+                                  _feedbackDone = false;
+                                  _feedbackCtrl.clear();
+                                  _feedbackCategory = null;
+                                }),
+                                child: const Text('Send another'),
+                              ),
+                            ],
+                          )
+                        : _FeedbackForm(
+                            category: _feedbackCategory,
+                            controller: _feedbackCtrl,
+                            sending: _feedbackSending,
+                            onCategory: (c) =>
+                                setState(() => _feedbackCategory = c),
+                            onSubmit: _submitFeedback,
+                          ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Resident ID / PEARL
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const VapIdScreen()),
+                      );
+                    },
+                    child: _Panel(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFAFAF9), Color(0xFFE7E5E4)],
+                              ),
+                            ),
+                            child: const Icon(Icons.badge_rounded,
+                                color: Color(0xFF525252)),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'RESIDENT ID',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 15,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Open PEARL vault · Global Registry',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(14),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Text(
+                              'SYNC',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Seeker requests teaser
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      ref.read(navTabProvider.notifier).set(NavTab.seekers);
+                    },
+                    child: _Panel(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3B82F6).withAlpha(40),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.campaign_outlined,
+                                color: Color(0xFF60A5FA)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'SEEKER REQUESTS',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                Text(
+                                  'Browse people looking for homes & help',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded,
+                              color: Colors.white38),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  if (completion < 100) ...[
+                    const SizedBox(height: 14),
+                    _Panel(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.auto_awesome_rounded,
+                                  color: Color(0xFFEB4898), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'PROFILE COMPLETENESS',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white38,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '$completion%',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 22,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: completion / 100,
+                              minHeight: 10,
+                              backgroundColor: Colors.white.withAlpha(18),
+                              valueColor: const AlwaysStoppedAnimation(
+                                Color(0xFFFF4D00),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 18),
+                  // Language row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _LangChip(label: 'EN', active: true, onTap: () {}),
+                      const SizedBox(width: 8),
+                      _LangChip(label: 'ES', active: false, onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Spanish locale coming soon')),
+                        );
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // More tools (Flutter extras)
+                  GestureDetector(
+                    onTap: () => setState(() => _moreOpen = !_moreOpen),
+                    child: Row(
+                      children: [
+                        Text(
+                          'MORE TOOLS',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white38,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          _moreOpen
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white38,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_moreOpen) ...[
+                    const SizedBox(height: 12),
+                    _MoreToolsGrid(unread: ref.watch(unreadNotificationsProvider).value ?? 0),
+                  ],
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      'Swipess v1.0.0',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white24,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildOrb(Color color, double size) {
+  Future<void> _submitFeedback() async {
+    final msg = _feedbackCtrl.text.trim();
+    final cat = _feedbackCategory;
+    if (msg.isEmpty || cat == null) return;
+    setState(() => _feedbackSending = true);
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      await Supabase.instance.client.from('user_feedback').insert({
+        'user_id': user?.id,
+        'email': user?.email,
+        'category': cat,
+        'message': msg,
+      });
+    } catch (_) {
+      // Best-effort like Capacitor — still show thank you.
+    }
+    if (!mounted) return;
+    setState(() {
+      _feedbackSending = false;
+      _feedbackDone = true;
+    });
+  }
+
+  Widget _orb(Color color, double size) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-        child: Container(color: Colors.transparent),
+        filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
+        child: const SizedBox(),
       ),
     );
   }
 }
 
-// ─── Header Widget ────────────────────────────────────────────────────────────
-
-class _ProfileTopHeader extends StatelessWidget {
-  const _ProfileTopHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            if (Navigator.of(context).canPop()) ...[
-              _GlassIconButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                onTap: () => Navigator.of(context).pop(),
-              ),
-              const SizedBox(width: 10),
-            ],
-            const Text(
-              'Profile',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.8,
-              ),
-            ),
-          ],
-        ),
-        _GlassIconButton(
-          icon: Icons.edit_outlined,
-          onTap: () {
-            HapticFeedback.lightImpact();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Hero Section ─────────────────────────────────────────────────────────────
-
-class _ProfileHeroSection extends ConsumerWidget {
-  const _ProfileHeroSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(currentProfileProvider).value;
-    final name = profile?.name ?? 'Swipess member';
-    final avatar = profile?.avatarUrl;
-    final city = profile?.city;
-    return Column(
-      children: [
-        // Avatar with gradient border ring & camera edit badge
-        Stack(
-          children: [
-            Container(
-              width: 104,
-              height: 104,
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x66FF4D00),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF0A0A0C),
-                ),
-                child: ClipOval(
-                  child: avatar != null
-                      ? Image.network(
-                          avatar,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.white.withAlpha(20),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Colors.white,
-                              size: 48,
-                            ),
-                          ),
-                        )
-                      : Container(
-                          color: Colors.white.withAlpha(20),
-                          child: const Icon(
-                            Icons.person_rounded,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-                  ),
-                  border: Border.all(color: const Color(0xFF0A0A0C), width: 2),
-                ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // User Name + Verified Badge
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              name,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(width: 6),
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-              ).createShader(bounds),
-              child: const Icon(
-                Icons.verified_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        // Bio Text
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            profile?.bio?.isNotEmpty == true
-                ? profile!.bio!
-                : 'Member of the Swipess network',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withAlpha(180),
-              fontSize: 13,
-              height: 1.45,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Location & Join Date pills
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 8,
-          children: [
-            _InfoPill(
-              icon: Icons.location_on_rounded,
-              iconColor: AppTheme.brandPrimary,
-              label: city?.isNotEmpty == true ? city! : 'Swipess',
-            ),
-            _InfoPill(
-              icon: Icons.calendar_month_rounded,
-              iconColor: AppTheme.brandAccent,
-              label: 'Member since Jan 2024',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Info Pill ────────────────────────────────────────────────────────────────
-
-class _InfoPill extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
-  const _InfoPill({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withAlpha(220),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Animated Stats Row ───────────────────────────────────────────────────────
-
-class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow();
+class _Panel extends StatelessWidget {
+  const _Panel({required this.child, this.padding});
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          width: double.infinity,
+          padding: padding ?? const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(13),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withAlpha(25), width: 1),
+            color: Colors.white.withAlpha(12),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.white.withAlpha(28)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
-              _StatItem(
-                label: 'Listings',
-                targetValue: 12,
-                suffix: '',
-              ),
-              _StatDivider(),
-              _StatItem(
-                label: 'Swipes',
-                targetValue: 1482,
-                suffix: '',
-              ),
-              _StatDivider(),
-              _StatItem(
-                label: 'Matches',
-                targetValue: 94,
-                suffix: '',
-              ),
-            ],
-          ),
+          child: child,
         ),
       ),
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final int targetValue;
-  final String suffix;
-
-  const _StatItem({
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.icon,
+    required this.iconColor,
+    required this.value,
     required this.label,
-    required this.targetValue,
-    required this.suffix,
+    required this.onTap,
   });
 
-  String _formatNumber(int val) {
-    if (val >= 1000) {
-      final k = (val / 1000).toStringAsFixed(1);
-      return '${k}k';
-    }
-    return '$val';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: targetValue.toDouble()),
-          duration: const Duration(milliseconds: 1400),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Colors.white, Color(0xFFE2E8F0)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ).createShader(bounds),
-              child: Text(
-                '${_formatNumber(value.round())}$suffix',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withAlpha(140),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatDivider extends StatelessWidget {
-  const _StatDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 32,
-      color: Colors.white.withAlpha(25),
-    );
-  }
-}
-
-// ─── VIP Banner Card ─────────────────────────────────────────────────────────
-
-class _GlassVipBanner extends StatelessWidget {
-  const _GlassVipBanner();
+  final IconData icon;
+  final Color iconColor;
+  final int value;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SubscriptionPackagesScreen()),
-        );
+        onTap();
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.brandAccent.withAlpha(35),
-                  AppTheme.brandPrimary.withAlpha(35),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppTheme.brandPrimary.withAlpha(75),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.workspace_premium_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'SWIPESS VIP MEMBER',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tap to view packages & upgrade',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(175),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.brandPrimary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'PRO',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(12),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withAlpha(28)),
         ),
-      ),
-    );
-  }
-}
-
-// ─── Settings Menu Section ────────────────────────────────────────────────────
-
-class _MenuItemData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String? badge;
-  final VoidCallback onTap;
-
-  const _MenuItemData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.badge,
-  });
-}
-
-class _ProfileHubSection extends ConsumerWidget {
-  const _ProfileHubSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return _ProfileMenuSection(
-      title: 'HUB',
-      items: [
-        _MenuItemData(
-          icon: Icons.home_work_outlined,
-          title: 'My listings',
-          subtitle: 'Active, pending & sold assets',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.favorite_border_rounded,
-          title: 'Who liked you',
-          subtitle: 'Profile likes from other members',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const WhoLikedYouScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.bookmark_border_rounded,
-          title: 'Saved searches',
-          subtitle: 'Reuse discovery filters & alerts',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SavedSearchesScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.campaign_outlined,
-          title: 'Advertise',
-          subtitle: 'Submit a promo for review',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AdvertiseScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.radio_rounded,
-          title: 'World radio',
-          subtitle: 'Live station directory',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Escrow',
-          subtitle: 'Deposits held for contracts',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.folder_outlined,
-          title: 'Document vault',
-          subtitle: 'IDs, contracts & uploads',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.gavel_rounded,
-          title: 'Legal hub',
-          subtitle: 'Templates & digital contracts',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LegalHubScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.videocam_outlined,
-          title: 'Video tours',
-          subtitle: 'Property walkthrough feed',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const VideoToursScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.people_outline_rounded,
-          title: 'Roommates',
-          subtitle: 'Match people sharing space',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.newspaper_outlined,
-          title: 'Local intel',
-          subtitle: 'Neighborhood updates',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.trending_up_rounded,
-          title: 'Market prices',
-          subtitle: 'Neighborhood averages',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.handyman_outlined,
-          title: 'Maintenance',
-          subtitle: 'Report & track property issues',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const MaintenanceRequestsScreen()),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfilePreferencesSection extends ConsumerWidget {
-  const _ProfilePreferencesSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final unread = ref.watch(unreadNotificationsProvider).value ?? 0;
-    return _ProfileMenuSection(
-      title: 'PREFERENCES',
-      items: [
-        _MenuItemData(
-          icon: Icons.person_outline_rounded,
-          title: 'Edit Profile',
-          subtitle: 'Update personal info, avatar & bio',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.notifications_none_rounded,
-          title: 'Notifications',
-          subtitle: 'Match alerts, messages & news',
-          badge: unread > 0 ? '$unread' : null,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.help_outline_rounded,
-          title: 'Help & Support',
-          subtitle: 'FAQs & guidance',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const FAQScreen()),
-          ),
-        ),
-        _MenuItemData(
-          icon: Icons.settings_outlined,
-          title: 'Settings',
-          subtitle: 'Security, sounds & legal',
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileMenuSection extends StatelessWidget {
-  final String title;
-  final List<_MenuItemData> items;
-
-  const _ProfileMenuSection({
-    required this.title,
-    required this.items,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            title,
-            style: TextStyle(
-              color: Colors.white.withAlpha(120),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(13),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-              ),
-              child: Column(
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isLast = index == items.length - 1;
-                  return Column(
-                    children: [
-                      _GlassMenuItemTile(
-                        item: item,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          item.onTap();
-                        },
-                      ),
-                      if (!isLast)
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          indent: 60,
-                          endIndent: 16,
-                          color: Colors.white.withAlpha(18),
-                        ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlassMenuItemTile extends StatelessWidget {
-  final _MenuItemData item;
-  final VoidCallback onTap;
-
-  const _GlassMenuItemTile({
-    required this.item,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.white.withAlpha(20),
-      highlightColor: Colors.white.withAlpha(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
+        child: Column(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withAlpha(18),
-                border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-              ),
-              child: Icon(
-                item.icon,
-                color: Colors.white.withAlpha(230),
-                size: 20,
+            Icon(icon, color: iconColor, size: 20),
+            const SizedBox(height: 8),
+            Text(
+              '$value',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.8,
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(130),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white38,
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.6,
               ),
-            ),
-            if (item.badge != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.brandAccent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  item.badge!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white.withAlpha(120),
-              size: 22,
             ),
           ],
         ),
@@ -923,120 +819,483 @@ class _GlassMenuItemTile extends StatelessWidget {
   }
 }
 
-// ─── Account Section (Sign Out) ───────────────────────────────────────────────
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.label,
+    required this.icon,
+    required this.colors,
+    required this.onTap,
+  });
 
-class _ProfileAccountSection extends StatelessWidget {
-  const _ProfileAccountSection();
+  final String label;
+  final IconData icon;
+  final List<Color> colors;
+  final VoidCallback onTap;
 
-  Future<void> _handleSignOut(BuildContext context) async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signed out successfully'),
-            backgroundColor: Color(0xFF1E1E24),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign out error: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(colors: colors),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                fontSize: 11,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+class _DailyQuests extends StatelessWidget {
+  const _DailyQuests({required this.expanded, required this.onToggle});
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  static const _quests = [
+    ('Swipe 10 listings', 4, 10),
+    ('Send a message', 0, 1),
+    ('Complete profile', 1, 1),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onToggle,
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  color: AppTheme.brandPrimary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Daily Quests',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppTheme.brandPrimary.withAlpha(35),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppTheme.brandPrimary.withAlpha(80)),
+                ),
+                child: Text(
+                  '4 / 10',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.brandPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              Icon(
+                expanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                color: Colors.white54,
+              ),
+            ],
+          ),
+        ),
+        if (expanded) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: const LinearProgressIndicator(
+              value: 0.4,
+              minHeight: 8,
+              backgroundColor: Color(0x22FFFFFF),
+              valueColor: AlwaysStoppedAnimation(AppTheme.brandPrimary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Earn 10 points to unlock a free token!',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final q in _quests)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      q.$2 >= q.$3
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked,
+                      color: q.$2 >= q.$3
+                          ? const Color(0xFF10B981)
+                          : Colors.white38,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        q.$1,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${q.$2}/${q.$3}',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ShareEarn extends StatelessWidget {
+  const _ShareEarn({required this.profileId, required this.profileName});
+  final String profileId;
+  final String profileName;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = profileId.isEmpty
+        ? 'https://www.swipess.com'
+        : 'https://www.swipess.com/u/$profileId';
+
+    return Padding(
+      padding: const EdgeInsets.all(6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                  ),
+                ),
+                child: const Icon(Icons.share_rounded, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SHARE & EARN',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      'Get free messages for referrals',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(80),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    url,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    await Clipboard.setData(ClipboardData(text: url));
+                    HapticFeedback.selectionClick();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Invite link copied')),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      'COPY',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _SocialBtn(icon: Icons.chat_rounded, label: 'WA', onTap: () {}),
+              const SizedBox(width: 8),
+              _SocialBtn(icon: Icons.camera_alt_outlined, label: 'IG', onTap: () {}),
+              const SizedBox(width: 8),
+              _SocialBtn(icon: Icons.music_note_rounded, label: 'TT', onTap: () {}),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SocialBtn extends StatelessWidget {
+  const _SocialBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 42,
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedbackForm extends StatelessWidget {
+  const _FeedbackForm({
+    required this.category,
+    required this.controller,
+    required this.sending,
+    required this.onCategory,
+    required this.onSubmit,
+  });
+
+  final String? category;
+  final TextEditingController controller;
+  final bool sending;
+  final ValueChanged<String> onCategory;
+  final VoidCallback onSubmit;
+
+  static const cats = [
+    ('bug', 'Bug', Color(0xFFEF4444)),
+    ('feature', 'Feature', Color(0xFF6366F1)),
+    ('experience', 'UX', Color(0xFFF97316)),
+    ('compliment', 'Love', Color(0xFF10B981)),
+    ('other', 'Other', Color(0xFF94A3B8)),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            'ACCOUNT',
-            style: TextStyle(
-              color: Colors.white.withAlpha(120),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(13),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withAlpha(25), width: 1),
+                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
+                ),
               ),
-              child: InkWell(
-                onTap: () => _handleSignOut(context),
-                borderRadius: BorderRadius.circular(24),
-                splashColor: const Color(0xFFFF453A).withAlpha(30),
-                highlightColor: const Color(0xFFFF453A).withAlpha(15),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFFF453A).withAlpha(25),
-                          border: Border.all(
-                            color: const Color(0xFFFF453A).withAlpha(50),
-                            width: 1,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.logout_rounded,
-                          color: Color(0xFFFF453A),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Sign Out',
-                              style: TextStyle(
-                                color: Color(0xFFFF453A),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Log out of your Swipess session',
-                              style: TextStyle(
-                                color: Colors.white.withAlpha(130),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: Color(0xFFFF453A),
-                        size: 22,
-                      ),
-                    ],
+              child: const Icon(Icons.chat_bubble_outline_rounded,
+                  color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Send Feedback',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'Help us improve Swipess',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final c in cats)
+              GestureDetector(
+                onTap: () => onCategory(c.$1),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: category == c.$1
+                        ? c.$3.withAlpha(50)
+                        : Colors.white.withAlpha(10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: category == c.$1 ? c.$3 : Colors.white24,
+                    ),
+                  ),
+                  child: Text(
+                    c.$2,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: category == c.$1 ? c.$3 : Colors.white70,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller,
+          maxLines: 3,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Tell us what you think…',
+            hintStyle: TextStyle(color: Colors.white.withAlpha(90)),
+            filled: true,
+            fillColor: Colors.black.withAlpha(70),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: sending ? null : onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: Text(
+              sending ? 'Sending…' : 'Submit feedback',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
             ),
           ),
         ),
@@ -1045,37 +1304,166 @@ class _ProfileAccountSection extends StatelessWidget {
   }
 }
 
-// ─── Glass Icon Button Helper ─────────────────────────────────────────────────
-
-class _GlassIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _GlassIconButton({
-    required this.icon,
+class _LangChip extends StatelessWidget {
+  const _LangChip({
+    required this.label,
+    required this.active,
     required this.onTap,
   });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 48,
+        height: 36,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withAlpha(18),
-          border: Border.all(color: Colors.white.withAlpha(30), width: 1),
+          color: active
+              ? AppTheme.brandPrimary.withAlpha(40)
+              : Colors.white.withAlpha(12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: active ? AppTheme.brandPrimary : Colors.white24,
+          ),
         ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white.withAlpha(230),
-            size: 20,
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MoreToolsGrid extends StatelessWidget {
+  const _MoreToolsGrid({required this.unread});
+  final int unread;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <(IconData, String, VoidCallback)>[
+      (
+        Icons.home_work_outlined,
+        'My listings',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
+            )
+      ),
+      (
+        Icons.bookmark_border_rounded,
+        'Saved searches',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SavedSearchesScreen()),
+            )
+      ),
+      (
+        Icons.notifications_none_rounded,
+        unread > 0 ? 'Alerts ($unread)' : 'Notifications',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            )
+      ),
+      (
+        Icons.folder_outlined,
+        'Document vault',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
+            )
+      ),
+      (
+        Icons.account_balance_wallet_outlined,
+        'Escrow',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
+            )
+      ),
+      (
+        Icons.gavel_rounded,
+        'Legal hub',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LegalHubScreen()),
+            )
+      ),
+      (
+        Icons.videocam_outlined,
+        'Video tours',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const VideoToursScreen()),
+            )
+      ),
+      (
+        Icons.people_outline_rounded,
+        'Roommates',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
+            )
+      ),
+      (
+        Icons.newspaper_outlined,
+        'Local intel',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
+            )
+      ),
+      (
+        Icons.trending_up_rounded,
+        'Market prices',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
+            )
+      ),
+      (
+        Icons.handyman_outlined,
+        'Maintenance',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const MaintenanceRequestsScreen(),
+              ),
+            )
+      ),
+      (
+        Icons.radio_rounded,
+        'World radio',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
+            )
+      ),
+      (
+        Icons.help_outline_rounded,
+        'Help & FAQ',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const FAQScreen()),
+            )
+      ),
+    ];
+
+    return Column(
+      children: [
+        for (final item in items)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(item.$1, color: AppTheme.brandPrimary),
+            title: Text(
+              item.$2,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded,
+                color: Colors.white38),
+            onTap: item.$3,
+          ),
+      ],
     );
   }
 }
