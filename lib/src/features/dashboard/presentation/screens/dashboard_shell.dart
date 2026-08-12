@@ -3,31 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/messages_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/likes_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
-import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 
-enum NavTab { dashboard, likes, add, messages, idCard, seekers, filter, legal, events }
-
-class DashboardShell extends ConsumerStatefulWidget {
+class DashboardShell extends ConsumerWidget {
   const DashboardShell({super.key});
 
-  @override
-  ConsumerState<DashboardShell> createState() => _DashboardShellState();
-}
-
-class _DashboardShellState extends ConsumerState<DashboardShell> {
-  NavTab _currentTab = NavTab.dashboard;
-
-  Widget _buildBody() {
-    switch (_currentTab) {
+  Widget _buildBody(NavTab tab) {
+    switch (tab) {
       case NavTab.dashboard:
         return const BentoDashboardScreen();
       case NavTab.events:
@@ -35,7 +27,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       case NavTab.messages:
         return const MessagesScreen();
       case NavTab.idCard:
-        return const ProfileScreen();
+        return const VapIdScreen();
       case NavTab.likes:
         return const LikesScreen();
       case NavTab.add:
@@ -45,23 +37,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       case NavTab.legal:
         return const LegalHubScreen();
       case NavTab.filter:
-        return const SizedBox.shrink(); // Filter handled by bottom sheet
+        return const SizedBox.shrink();
     }
-  }
-
-  void _handleNavTap(NavTab tab) {
-    HapticFeedback.lightImpact();
-    
-    if (tab == NavTab.filter) {
-      FilterBottomSheet.show(context);
-      return;
-    }
-    
-    setState(() => _currentTab = tab);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentTab = ref.watch(navTabProvider);
+    final profile = ref.watch(currentProfileProvider).value;
     final bottomNavItems = [
       _BottomNavItem(id: NavTab.dashboard, icon: Icons.bolt_rounded),
       _BottomNavItem(id: NavTab.likes, icon: Icons.local_fire_department_rounded),
@@ -75,25 +58,23 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.black, // var(--dash-bg)
+      backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       extendBody: true,
       appBar: AppTopBar(
-        firstName: 'Alex',
-        avatarUrl: null, // Would be fetched from profile provider
-        onProfileTap: () => _handleNavTap(NavTab.idCard),
+        firstName: profile?.name.split(' ').first,
+        avatarUrl: profile?.avatarUrl,
+        onProfileTap: () => ref.read(navTabProvider.notifier).set(NavTab.idCard),
       ),
       body: Stack(
         children: [
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: KeyedSubtree(
-              key: ValueKey(_currentTab),
-              child: _buildBody(),
+              key: ValueKey(currentTab),
+              child: _buildBody(currentTab),
             ),
           ),
-          
-          // Bottom Navigation Liquid Glass
           Positioned(
             bottom: 32,
             left: 16,
@@ -117,9 +98,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: bottomNavItems.map((item) {
-                        final isSelected = _currentTab == item.id;
+                        final isSelected = currentTab == item.id;
                         return GestureDetector(
-                          onTap: () => _handleNavTap(item.id),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            if (item.id == NavTab.filter) {
+                              FilterBottomSheet.show(context);
+                              return;
+                            }
+                            ref.read(navTabProvider.notifier).set(item.id);
+                          },
                           behavior: HitTestBehavior.opaque,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -129,7 +117,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isSelected ? Colors.white.withAlpha(30) : Colors.transparent,
-                                border: Border.all(color: isSelected ? Colors.white.withAlpha(50) : Colors.transparent, width: 1),
+                                border: Border.all(
+                                  color: isSelected ? Colors.white.withAlpha(50) : Colors.transparent,
+                                  width: 1,
+                                ),
                               ),
                               child: Icon(
                                 item.icon,

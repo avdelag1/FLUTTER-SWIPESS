@@ -36,7 +36,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/gate', builder: (ctx, _) => const AccessCodeGateScreen()),
       GoRoute(path: '/welcome', builder: (ctx, _) => const WelcomeScreen()),
-      GoRoute(path: '/auth', builder: (ctx, _) => const AuthScreen()),
+      GoRoute(
+        path: '/auth',
+        builder: (ctx, _) {
+          final intent = ref.read(authIntentProvider);
+          return AuthScreen(mode: intent == AuthIntent.signup ? 'signup' : 'login');
+        },
+      ),
       GoRoute(path: '/dashboard', builder: (ctx, _) => const DashboardShell()),
     ],
   );

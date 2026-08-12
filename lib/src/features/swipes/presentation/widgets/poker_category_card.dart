@@ -54,7 +54,7 @@ class PokerCategoryCard extends StatelessWidget {
         child: Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()
-            ..scale(scale, scale, scale)
+            ..scaleByDouble(scale, scale, scale, 1)
             ..rotateZ(zRotation),
           child: _buildCardContent(),
         ),

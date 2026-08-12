@@ -27,7 +27,9 @@ class EventsNotifier extends AsyncNotifier<List<Event>> {
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => build());
+    state = await AsyncValue.guard(
+      () => ref.read(eventRepositoryProvider).fetchEvents(),
+    );
   }
 
   void toggleBookmark(String eventId) {
@@ -40,12 +42,36 @@ final eventsListProvider =
 
 final filteredEventsProvider = Provider<AsyncValue<List<Event>>>((ref) {
   final category = ref.watch(selectedCategoryProvider);
+  final query = ref.watch(eventSearchProvider).trim().toLowerCase();
   final eventsAsync = ref.watch(eventsListProvider);
-  
+
   return eventsAsync.whenData((events) {
-    if (category == 'All') return events;
-    return events.where((e) => e.category.toLowerCase() == category.toLowerCase()).toList();
+    return events.where((e) {
+      final matchesCategory = category == 'All' ||
+          e.category.toLowerCase() == category.toLowerCase();
+      final matchesQuery = query.isEmpty ||
+          e.title.toLowerCase().contains(query) ||
+          (e.location?.toLowerCase().contains(query) ?? false);
+      return matchesCategory && matchesQuery;
+    }).toList();
   });
+});
+
+class EventSearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String value) => state = value;
+}
+
+final eventSearchProvider =
+    NotifierProvider<EventSearchNotifier, String>(EventSearchNotifier.new);
+
+final videoEventsProvider = Provider<List<Event>>((ref) {
+  final events = ref.watch(eventsListProvider).value ?? const <Event>[];
+  return events
+      .where((e) => e.videoUrl != null && e.videoUrl!.trim().isNotEmpty)
+      .toList();
 });
 
 final categoriesProvider = Provider<List<String>>((ref) {

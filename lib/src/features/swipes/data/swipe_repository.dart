@@ -19,8 +19,7 @@ class SwipeRepository {
       final response = await query.order('created_at', ascending: false).limit(limit);
       
       return (response as List).map((row) => Listing.fromJson(row)).toList();
-    } catch (e) {
-      print('Error fetching swipe listings: $e');
+    } catch (_) {
       return [];
     }
   }
@@ -33,8 +32,8 @@ class SwipeRepository {
         'listing_id': listingId,
         'created_at': DateTime.now().toIso8601String(),
       });
-    } catch (e) {
-      print('Error registering swipe right: $e');
+    } catch (_) {
+      // Like write is best-effort so a swipe never blocks the deck.
     }
   }
 
@@ -46,8 +45,8 @@ class SwipeRepository {
         'listing_id': listingId,
         'created_at': DateTime.now().toIso8601String(),
       });
-    } catch (e) {
-      print('Error registering swipe left: $e');
+    } catch (_) {
+      // Pass write is best-effort so a swipe never blocks the deck.
     }
   }
 }

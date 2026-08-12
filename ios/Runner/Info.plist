@@ -66,6 +66,14 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>NSCameraUsageDescription</key>
+		<string>Swipess uses the camera so you can add listing photos and identity documents.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Swipess needs photo access to upload listing images and identity documents.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Swipess may save signed contracts and listing photos to your library.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Swipess uses the microphone when you record listing or event videos.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

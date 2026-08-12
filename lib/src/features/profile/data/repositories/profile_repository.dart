@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/user_profile.dart';
+import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 
 class ProfileRepository {
   ProfileRepository({SupabaseClient? client})
@@ -63,5 +64,39 @@ class ProfileRepository {
           'Swipess member',
       avatarUrl: user.userMetadata?['avatar_url'] as String?,
     );
+  }
+
+  Future<Profile?> fetchCurrentProfile() async {
+    final user = await fetchCurrent();
+    if (user == null) return null;
+    return Profile(
+      id: user.userId,
+      fullName: user.name,
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+      city: user.city,
+      role: user.role,
+    );
+  }
+
+  Future<void> updateProfile({
+    required String displayName,
+    String? bio,
+    String? city,
+  }) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+    try {
+      await _client.from('client_profiles').update({
+        'name': displayName,
+        'bio': bio,
+        'city': city,
+      }).eq('user_id', user.id);
+    } catch (_) {
+      await _client.from('owner_profiles').update({
+        'business_name': displayName,
+        'city': city,
+      }).eq('user_id', user.id);
+    }
   }
 }
