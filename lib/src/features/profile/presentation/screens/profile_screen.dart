@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/mainten
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
+import 'package:flutter_swipes/src/features/radio/presentation/screens/world_radio_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
@@ -640,6 +641,14 @@ class _ProfileHubSection extends ConsumerWidget {
           subtitle: 'Submit a promo for review',
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const AdvertiseScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.radio_rounded,
+          title: 'World radio',
+          subtitle: 'Live station directory',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
           ),
         ),
         _MenuItemData(
