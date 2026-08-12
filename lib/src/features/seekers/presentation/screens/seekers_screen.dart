@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_s
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_request.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/providers/seekers_provider.dart';
+import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_request_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -19,92 +20,118 @@ class SeekersScreen extends ConsumerWidget {
 
     return ColoredBox(
       color: AppTheme.dashBg,
-      child: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        ),
-        error: (e, _) => Center(
-          child: TextButton(
-            onPressed: () => ref.read(seekersProvider.notifier).refresh(),
-            child: const Text('Could not load seekers — retry'),
-          ),
-        ),
-        data: (requests) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(24, top + 64, 24, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SEEKER\nREQUESTS',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 28, height: 1.05),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'People looking for workers & help nearby',
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 13),
-                    ),
-                  ],
-                ),
+      child: Stack(
+        children: [
+          async.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                  color: Colors.white, strokeWidth: 2),
+            ),
+            error: (e, _) => Center(
+              child: TextButton(
+                onPressed: () => ref.read(seekersProvider.notifier).refresh(),
+                child: const Text('Could not load seekers — retry'),
               ),
-              Expanded(
-                child: requests.isEmpty
-                    ? Center(
-                        child: Text(
-                          'No open seeker requests right now.',
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+            ),
+            data: (requests) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(24, top + 64, 24, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SEEKER\nREQUESTS',
+                          style: AppTheme.displayItalic
+                              .copyWith(fontSize: 28, height: 1.05),
                         ),
-                      )
-                    : PageView.builder(
-                        controller: PageController(viewportFraction: 0.92),
-                        itemCount: requests.length,
-                        itemBuilder: (context, index) {
-                          final req = requests[index];
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(4, 8, 4, 120),
-                            child: _SeekerCard(
-                              request: req,
-                              onPass: () {
-                                HapticFeedback.lightImpact();
-                                ref.read(seekersProvider.notifier).dismiss(req.id);
-                              },
-                              onInterested: () async {
-                                HapticFeedback.mediumImpact();
-                                final ownerId = req.ownerId;
-                                if (ownerId != null) {
-                                  final convoId = await SwipeRepository()
-                                      .startConversation(ownerId: ownerId, listingId: req.id);
-                                  if (context.mounted && convoId != null) {
-                                    await Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => ChatScreen(
-                                          conversation: ChatConversation(
-                                            id: convoId,
-                                            otherUserId: ownerId,
-                                            name: req.seekerName,
-                                            lastMessage: '',
-                                            timestamp: 'now',
-                                            avatarUrl: req.seekerAvatar,
-                                            listingTag: req.title,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                }
-                                ref.read(seekersProvider.notifier).dismiss(req.id);
-                              },
+                        const SizedBox(height: 6),
+                        Text(
+                          'People looking for workers & help nearby',
+                          style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: requests.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No open seeker requests right now.',
+                              style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54),
                             ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+                          )
+                        : PageView.builder(
+                            controller: PageController(viewportFraction: 0.92),
+                            itemCount: requests.length,
+                            itemBuilder: (context, index) {
+                              final req = requests[index];
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(4, 8, 4, 120),
+                                child: _SeekerCard(
+                                  request: req,
+                                  onPass: () {
+                                    HapticFeedback.lightImpact();
+                                    ref
+                                        .read(seekersProvider.notifier)
+                                        .dismiss(req.id);
+                                  },
+                                  onInterested: () async {
+                                    HapticFeedback.mediumImpact();
+                                    final ownerId = req.ownerId;
+                                    if (ownerId != null) {
+                                      final convoId = await SwipeRepository()
+                                          .startConversation(
+                                              ownerId: ownerId,
+                                              listingId: req.id);
+                                      if (context.mounted && convoId != null) {
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => ChatScreen(
+                                              conversation: ChatConversation(
+                                                id: convoId,
+                                                otherUserId: ownerId,
+                                                name: req.seekerName,
+                                                lastMessage: '',
+                                                timestamp: 'now',
+                                                avatarUrl: req.seekerAvatar,
+                                                listingTag: req.title,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    ref
+                                        .read(seekersProvider.notifier)
+                                        .dismiss(req.id);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+          Positioned(
+            right: 20,
+            bottom: 100,
+            child: FloatingActionButton.extended(
+              onPressed: () => showSeekerRequestSheet(context, ref),
+              backgroundColor: AppTheme.brandPrimary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Post request'),
+            ),
+          ),
+        ],
       ),
     );
   }

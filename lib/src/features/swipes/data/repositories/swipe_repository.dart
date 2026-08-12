@@ -91,10 +91,68 @@ class SwipeRepository {
     return match != null;
   }
 
+  /// Record a right swipe (LIKE) on a profile (Cap roommate / client matching).
+  Future<void> likeProfile(String targetUserId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _client.from('likes').upsert({
+      'user_id': userId,
+      'target_id': targetUserId,
+      'target_type': 'profile',
+      'direction': 'right',
+      'dismiss_count': 0,
+    }, onConflict: 'user_id,target_id,target_type');
+  }
+
+  /// Record a left swipe (PASS) on a profile.
+  Future<void> dislikeProfile(String targetUserId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final existing = await _client
+        .from('likes')
+        .select('id, dismiss_count')
+        .eq('user_id', userId)
+        .eq('target_id', targetUserId)
+        .eq('target_type', 'profile')
+        .maybeSingle();
+
+    final currentCount = (existing?['dismiss_count'] as int?) ?? 0;
+    final newCount = currentCount + 1;
+    final cooldownUntil = newCount == 1
+        ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
+        : null;
+
+    await _client.from('likes').upsert({
+      'user_id': userId,
+      'target_id': targetUserId,
+      'target_type': 'profile',
+      'direction': 'left',
+      'dismiss_count': newCount,
+      'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+      'cooldown_until': ?cooldownUntil,
+    }, onConflict: 'user_id,target_id,target_type');
+  }
+
+  /// Undo the last profile swipe.
+  Future<void> undoProfileSwipe(String targetUserId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _client
+        .from('likes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('target_id', targetUserId)
+        .eq('target_type', 'profile');
+  }
+
   /// Open or create a conversation with a listing owner (Capacitor match flow).
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
+    String initialMessage = 'Hi! I liked your listing on Swipess.',
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
@@ -104,7 +162,7 @@ class SwipeRepository {
         'start_conversation_with_message',
         params: {
           'p_other_user_id': ownerId,
-          'p_initial_message': 'Hi! I liked your listing on Swipess.',
+          'p_initial_message': initialMessage,
           'p_listing_id': listingId,
         },
       );

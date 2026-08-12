@@ -22,6 +22,33 @@ class SeekersNotifier extends AsyncNotifier<List<SeekerRequest>> {
     if (current == null) return;
     state = AsyncData(current.where((r) => r.id != id).toList());
   }
+
+  Future<void> createRequest({
+    required String categoryId,
+    required String location,
+    String? subcategory,
+    String? description,
+    String? budget,
+    String pricingUnit = 'job',
+    List<String> days = const [],
+    String urgency = 'flexible',
+    String? time,
+    double? durationHours,
+  }) async {
+    await ref.read(seekerRepositoryProvider).createRequest(
+          categoryId: categoryId,
+          location: location,
+          subcategory: subcategory,
+          description: description,
+          budget: budget,
+          pricingUnit: pricingUnit,
+          days: days,
+          urgency: urgency,
+          time: time,
+          durationHours: durationHours,
+        );
+    await refresh();
+  }
 }
 
 final seekersProvider =
