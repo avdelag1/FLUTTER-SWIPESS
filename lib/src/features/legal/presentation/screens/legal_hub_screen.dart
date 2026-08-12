@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/documents/presentation/screens/docum
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/contracts_provider.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/contract_sign_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -49,10 +50,23 @@ class LegalHubScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               BrandGhostButton(
+                label: 'Lawyer services',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const LawyerServicesScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              BrandGhostButton(
                 label: 'Document vault',
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const DocumentVaultScreen(),
+                    ),
                   );
                 },
               ),

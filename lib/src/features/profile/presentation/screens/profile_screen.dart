@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_d
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
@@ -19,15 +20,19 @@ import 'package:flutter_swipes/src/features/notifications/presentation/providers
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/radio/presentation/screens/world_radio_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
+import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -1391,6 +1396,41 @@ class _MoreToolsGrid extends StatelessWidget {
         'Legal hub',
         () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const LegalHubScreen()),
+            )
+      ),
+      (
+        Icons.balance_rounded,
+        'Lawyer services',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LawyerServicesScreen()),
+            )
+      ),
+      (
+        Icons.work_outline_rounded,
+        'Worker discovery',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WorkerDiscoveryScreen()),
+            )
+      ),
+      (
+        Icons.card_giftcard_rounded,
+        'Resident perks',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PerksScreen()),
+            )
+      ),
+      (
+        Icons.info_outline_rounded,
+        'About Swipess',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            )
+      ),
+      (
+        Icons.qr_code_scanner_rounded,
+        'Validate PEARL',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const VapValidateScreen()),
             )
       ),
       (

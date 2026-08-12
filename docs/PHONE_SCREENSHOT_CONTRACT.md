@@ -56,6 +56,13 @@ Flutter must pass the “could be mistaken for swipess.app” test.
 - Step 1: large white category cards (Properties, Motos, Bikes, Yachts, Workers, Buyers, Renters, Leads).
 - Step 2: italic category title + coral **FILTERS**, rent/sale/both, budget pills, property extras, city, radius, **SCAN DECK** CTA.
 
+### Settings (ClientSettings)
+- Header: IDENTITY CONFIG · **SYSTEM SETTINGS**
+- Gradient tiles: Security, Verification, Preferences, Language, Maintenance, Contracts, Legal Services, Perks, FAQ, About, Contact.
+
+### Still Cap-only / deferred
+- Admin consoles, selfie/listing cameras, public share previews deep-links, RevenueCat/OpenAI keys, full i18n ES pack, DJ turntable (World Radio covers directory).
+
 ### PEARL / VAP ID
 - Custom header: flame · **PEARL** · edit · close (no main AppTopBar).
 - Title **PEARL**; white soft card on black.
