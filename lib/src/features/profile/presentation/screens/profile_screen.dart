@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
@@ -146,13 +147,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               bottom: -6,
                               right: -6,
                               child: GestureDetector(
-                                onTap: () {
+                                onTap: () async {
                                   HapticFeedback.lightImpact();
-                                  Navigator.of(context).push(
+                                  final url = await Navigator.of(context)
+                                      .push<String>(
                                     MaterialPageRoute(
-                                      builder: (_) => const EditProfileScreen(),
+                                      builder: (_) =>
+                                          const ProfileCameraScreen(
+                                        mode: ProfileCameraMode.selfie,
+                                      ),
                                     ),
                                   );
+                                  if (url != null) {
+                                    ref.invalidate(currentProfileProvider);
+                                  }
                                 },
                                 child: Container(
                                   width: 44,

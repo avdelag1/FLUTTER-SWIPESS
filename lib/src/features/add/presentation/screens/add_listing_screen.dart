@@ -9,7 +9,9 @@ import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddListingScreen extends ConsumerStatefulWidget {
   const AddListingScreen({
@@ -557,6 +559,53 @@ class _PhotosStep extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () =>
+                    ref.read(addListingProvider.notifier).pickPhotos(),
+                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                label: const Text('Gallery'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white38),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () async {
+                  final files = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ListingCameraScreen(
+                        maxPhotos: draft.maxPhotos,
+                        existingCount: draft.photos.length,
+                      ),
+                    ),
+                  );
+                  if (files is! List || files.isEmpty) return;
+                  final picked = files.whereType<XFile>().toList();
+                  if (picked.isEmpty) return;
+                  ref.read(addListingProvider.notifier).update(
+                        (d) => d.copyWith(
+                          photos: [...d.photos, ...picked]
+                              .take(draft.maxPhotos)
+                              .toList(),
+                        ),
+                      );
+                },
+                icon: const Icon(Icons.photo_camera_rounded, size: 18),
+                label: const Text('Camera'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.brandPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -569,7 +618,8 @@ class _PhotosStep extends ConsumerWidget {
           itemBuilder: (context, index) {
             if (index == draft.photos.length) {
               return GestureDetector(
-                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
+                onTap: () =>
+                    ref.read(addListingProvider.notifier).pickPhotos(),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(12),

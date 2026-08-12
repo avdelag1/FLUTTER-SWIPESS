@@ -240,6 +240,49 @@ class ListingRepository {
     throw Exception('Listing save failed after adapting to the live schema.');
   }
 
+  /// Cap PropertyManagement — change availability / status.
+  Future<void> updateListingStatus({
+    required String listingId,
+    required String status,
+  }) async {
+    final active = status == 'active' || status == 'available';
+    try {
+      await _client.from('listings').update({
+        'status': status,
+        'is_active': active,
+      }).eq('id', listingId);
+    } catch (_) {
+      await _client.from('listings').update({
+        'status': status,
+      }).eq('id', listingId);
+    }
+  }
+
+  Future<void> deleteListing(String listingId) async {
+    await _client.from('listings').delete().eq('id', listingId);
+  }
+
+  Future<void> appendListingImages({
+    required String listingId,
+    required List<String> imageUrls,
+  }) async {
+    final row = await _client
+        .from('listings')
+        .select('images')
+        .eq('id', listingId)
+        .maybeSingle();
+    final existing = <String>[];
+    final raw = row?['images'];
+    if (raw is List) {
+      existing.addAll(raw.map((e) => e.toString()));
+    }
+    final merged = [...existing, ...imageUrls];
+    await _client.from('listings').update({
+      'images': merged,
+      'image_url': merged.isNotEmpty ? merged.first : null,
+    }).eq('id', listingId);
+  }
+
   String _extensionFor(String name) {
     final lower = name.toLowerCase();
     if (lower.endsWith('.png')) return 'png';
