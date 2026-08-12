@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,6 +75,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     ),
                     const Spacer(),
                     _RoundIcon(
+                      icon: Icons.psychology_rounded,
+                      color: const Color(0xFF22D3EE),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showMemoryDrawer(context);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _RoundIcon(
                       icon: Icons.auto_awesome_rounded,
                       color: AppTheme.brandPrimary,
                       onTap: () {},
@@ -91,10 +101,18 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   children: [
                     Text(
-                      'Ask for properties, workers, seekers, or filters. Full AI answers need an API key — quick jumps work now.',
+                      'Ask for properties, workers, seekers, or filters. Open AI Memory to teach Bolt/Brain. Full LLM answers wait on your OpenAI key.',
                       style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
+                    _ActionPill(
+                      label: 'AI MEMORY · BRAIN',
+                      onTap: () {
+                        Navigator.pop(context);
+                        showMemoryDrawer(context);
+                      },
+                    ),
+                    const SizedBox(height: 10),
                     _ActionPill(
                       label: 'SWIPE DECK',
                       onTap: () {

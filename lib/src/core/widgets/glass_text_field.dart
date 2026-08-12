@@ -15,6 +15,7 @@ class GlassTextField extends StatelessWidget {
     this.errorText,
     this.onChanged,
     this.height = 56,
+    this.maxLines = 1,
     this.autofocus = false,
   });
 
@@ -28,16 +29,18 @@ class GlassTextField extends StatelessWidget {
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final double height;
+  final int maxLines;
   final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
     final hasError = errorText != null && errorText!.isNotEmpty;
+    final multi = maxLines > 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: height,
+          height: multi ? null : height,
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: AppTheme.inputFill,
@@ -47,20 +50,29 @@ class GlassTextField extends StatelessWidget {
               ),
             ),
             child: Row(
+              crossAxisAlignment:
+                  multi ? CrossAxisAlignment.start : CrossAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  const SizedBox(width: 16),
-                  Icon(icon, size: 18, color: const Color(0xB3FFFFFF)),
+                  SizedBox(width: 16, height: multi ? 52 : null),
+                  Padding(
+                    padding: EdgeInsets.only(top: multi ? 16 : 0),
+                    child: Icon(icon, size: 18, color: const Color(0xB3FFFFFF)),
+                  ),
                 ],
                 Expanded(
                   child: TextField(
                     controller: controller,
                     obscureText: obscureText,
                     autofocus: autofocus,
-                    keyboardType: keyboardType,
+                    keyboardType: multi
+                        ? TextInputType.multiline
+                        : keyboardType,
                     textCapitalization: textCapitalization,
                     autocorrect: false,
                     onChanged: onChanged,
+                    maxLines: maxLines,
+                    minLines: multi ? maxLines : 1,
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,

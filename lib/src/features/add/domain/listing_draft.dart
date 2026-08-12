@@ -10,7 +10,9 @@ class ListingDraft {
     this.category = ListingCategory.property,
     this.mode = ListingMode.rent,
     this.photos = const [],
+    this.video,
     this.title = '',
+    this.description = '',
     this.price = '',
     this.city = 'Tulum',
     this.country = 'Mexico',
@@ -42,6 +44,7 @@ class ListingDraft {
     this.maxPassengers = '',
     this.serviceCategory,
     this.traits = const [],
+    this.skills = const [],
     this.availability = const [],
     this.pricingUnit,
     this.languages = const [],
@@ -53,7 +56,11 @@ class ListingDraft {
   final ListingCategory category;
   final ListingMode mode;
   final List<XFile> photos;
+  /// Optional Cap 10s loop video for the swipe card.
+  final XFile? video;
   final String title;
+  /// Freeform Airbnb-style description (chips still auto-fill if empty).
+  final String description;
   final String price;
   final String city;
   final String country;
@@ -85,6 +92,8 @@ class ListingDraft {
   final String maxPassengers;
   final String? serviceCategory;
   final List<String> traits;
+  /// Cap SERVICE_SUBSPECIALTIES skills for the selected service.
+  final List<String> skills;
   final List<String> availability;
   final String? pricingUnit;
   final List<String> languages;
@@ -98,7 +107,7 @@ class ListingDraft {
       case ListingCategory.yacht:
         return 12;
       case ListingCategory.worker:
-        return 3;
+        return 8;
       case ListingCategory.motorcycle:
       case ListingCategory.bicycle:
         return 5;
@@ -123,7 +132,10 @@ class ListingDraft {
     ListingCategory? category,
     ListingMode? mode,
     List<XFile>? photos,
+    XFile? video,
+    bool clearVideo = false,
     String? title,
+    String? description,
     String? price,
     String? city,
     String? country,
@@ -156,6 +168,7 @@ class ListingDraft {
     String? maxPassengers,
     String? serviceCategory,
     List<String>? traits,
+    List<String>? skills,
     List<String>? availability,
     String? pricingUnit,
     List<String>? languages,
@@ -168,14 +181,17 @@ class ListingDraft {
       category: category ?? this.category,
       mode: mode ?? this.mode,
       photos: photos ?? this.photos,
+      video: clearVideo ? null : (video ?? this.video),
       title: title ?? this.title,
+      description: description ?? this.description,
       price: price ?? this.price,
       city: city ?? this.city,
       country: country ?? this.country,
       neighborhood: neighborhood ?? this.neighborhood,
       adjectives: adjectives ?? this.adjectives,
       sizes: sizes ?? this.sizes,
-      propertyType: clearPropertyType ? null : (propertyType ?? this.propertyType),
+      propertyType:
+          clearPropertyType ? null : (propertyType ?? this.propertyType),
       beds: beds ?? this.beds,
       baths: baths ?? this.baths,
       vibe: vibe ?? this.vibe,
@@ -200,6 +216,7 @@ class ListingDraft {
       maxPassengers: maxPassengers ?? this.maxPassengers,
       serviceCategory: serviceCategory ?? this.serviceCategory,
       traits: traits ?? this.traits,
+      skills: skills ?? this.skills,
       availability: availability ?? this.availability,
       pricingUnit: pricingUnit ?? this.pricingUnit,
       languages: languages ?? this.languages,

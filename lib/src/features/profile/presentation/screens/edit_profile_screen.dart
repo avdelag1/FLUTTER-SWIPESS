@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_providers.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -127,13 +128,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 Positioned(
                   bottom: 0,
                   right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: AppTheme.brandPrimary,
-                      shape: BoxShape.circle,
+                  child: GestureDetector(
+                    onTap: () async {
+                      final url = await Navigator.of(context).push<String>(
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileCameraScreen(
+                            mode: ProfileCameraMode.selfie,
+                          ),
+                        ),
+                      );
+                      if (url != null) {
+                        ref.invalidate(currentProfileProvider);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: AppTheme.brandPrimary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded,
+                          color: Colors.white, size: 20),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ],

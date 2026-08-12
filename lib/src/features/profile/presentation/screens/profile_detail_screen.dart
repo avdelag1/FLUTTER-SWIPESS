@@ -1,141 +1,429 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
 
-class ProfileDetailScreen extends StatelessWidget {
-  const ProfileDetailScreen({super.key});
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final publicProfileProvider =
+    FutureProvider.family<PublicMemberProfile?, String>((ref, userId) async {
+  final client = Supabase.instance.client;
+  try {
+    final row = await client
+        .from('client_profiles')
+        .select(
+          'user_id, name, age, bio, city, country, profile_images, intentions, vap_occupation, occupation',
+        )
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (row != null) {
+      final images = row['profile_images'];
+      return PublicMemberProfile(
+        userId: userId,
+        name: (row['name'] as String?)?.trim().isNotEmpty == true
+            ? row['name'] as String
+            : 'Swipess member',
+        age: (row['age'] as num?)?.toInt(),
+        bio: row['bio'] as String?,
+        city: row['city'] as String?,
+        country: row['country'] as String?,
+        occupation: (row['vap_occupation'] as String?) ??
+            (row['occupation'] as String?),
+        images: images is List
+            ? images.map((e) => e.toString()).toList()
+            : const [],
+        intentions: (row['intentions'] is List)
+            ? (row['intentions'] as List).whereType<String>().toList()
+            : const [],
+      );
+    }
+  } catch (_) {}
+  try {
+    final owner = await client
+        .from('owner_profiles')
+        .select('user_id, business_name, city, profile_images, bio')
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (owner != null) {
+      final images = owner['profile_images'];
+      return PublicMemberProfile(
+        userId: userId,
+        name: (owner['business_name'] as String?)?.trim().isNotEmpty == true
+            ? owner['business_name'] as String
+            : 'Owner',
+        bio: owner['bio'] as String?,
+        city: owner['city'] as String?,
+        images: images is List
+            ? images.map((e) => e.toString()).toList()
+            : const [],
+      );
+    }
+  } catch (_) {}
+  return null;
+});
+
+class PublicMemberProfile {
+  const PublicMemberProfile({
+    required this.userId,
+    required this.name,
+    this.age,
+    this.bio,
+    this.city,
+    this.country,
+    this.occupation,
+    this.images = const [],
+    this.intentions = const [],
+  });
+
+  final String userId;
+  final String name;
+  final int? age;
+  final String? bio;
+  final String? city;
+  final String? country;
+  final String? occupation;
+  final List<String> images;
+  final List<String> intentions;
+
+  String get locationLabel {
+    final parts =
+        [city, country].whereType<String>().where((s) => s.isNotEmpty);
+    return parts.isEmpty ? 'Swipess' : parts.join(', ');
+  }
+}
+
+/// Capacitor OwnerViewClientProfile / ProfileDetail — real member profile.
+class ProfileDetailScreen extends ConsumerWidget {
+  const ProfileDetailScreen({super.key, required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(publicProfileProvider(userId));
+    return async.when(
+      loading: () => const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        ),
+      ),
+      error: (e, _) => Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(publicProfileProvider(userId)),
+            child: Text('Could not load profile — retry ($e)'),
+          ),
+        ),
+      ),
+      data: (profile) {
+        if (profile == null) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: Text(
+                'Profile not found',
+                style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+              ),
+            ),
+          );
+        }
+        return _Body(profile: profile);
+      },
+    );
+  }
+}
+
+class _Body extends StatefulWidget {
+  const _Body({required this.profile});
+  final PublicMemberProfile profile;
+
+  @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  bool _messaging = false;
+
+  Future<void> _message() async {
+    setState(() => _messaging = true);
+    HapticFeedback.mediumImpact();
+    try {
+      final convoId = await SwipeRepository()
+          .startConversation(ownerId: widget.profile.userId);
+      if (!mounted || convoId == null) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            conversation: ChatConversation(
+              id: convoId,
+              otherUserId: widget.profile.userId,
+              name: widget.profile.name,
+              lastMessage: '',
+              timestamp: 'now',
+              avatarUrl: widget.profile.images.isNotEmpty
+                  ? widget.profile.images.first
+                  : null,
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _messaging = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final p = widget.profile;
+    final hero = p.images.isNotEmpty ? p.images.first : null;
+    final h = MediaQuery.sizeOf(context).height;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0A0A0D),
       body: Stack(
         children: [
-          Positioned.fill(child: Container(color: const Color(0xFF0A0A0D))),
-          
-          // Image Background
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: MediaQuery.of(context).size.height * 0.5,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network('https://images.unsplash.com/photo-1524504388940-b1c1722653e1', fit: BoxFit.cover),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.4, 1.0],
-                      colors: [Colors.transparent, const Color(0xFF0A0A0D)],
-                    ),
-                  ),
+            height: h * 0.52,
+            child: hero != null
+                ? Image.network(hero, fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const ColoredBox(
+                          color: Color(0xFF16161C),
+                        ))
+                : const ColoredBox(color: Color(0xFF16161C)),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: h * 0.52,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0A0A0D).withAlpha(240),
+                  ],
+                  stops: const [0.45, 1],
                 ),
-              ],
+              ),
             ),
           ),
-          
           SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(100),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(50)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      _Round(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () => Navigator.pop(context),
                       ),
-                      child: const Center(child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20)),
-                    ),
+                      const Spacer(),
+                      _Round(
+                        icon: Icons.verified_user_outlined,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const VapIdScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                
                 const Spacer(),
-                
-                // Profile Details
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(12),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-                    border: Border(top: BorderSide(color: Colors.white.withAlpha(25))),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(32)),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(14),
+                        border: Border(
+                          top: BorderSide(color: Colors.white.withAlpha(30)),
+                        ),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Sarah, 24', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                          Text(
+                            p.age != null
+                                ? '${p.name.toUpperCase()}, ${p.age}'
+                                : p.name.toUpperCase(),
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              Icon(Icons.location_on_rounded, color: const Color(0xFFFF4D00), size: 16),
-                              const SizedBox(width: 8),
-                              const Text('Miami, FL', style: TextStyle(color: Colors.white, fontSize: 14)),
-                              const SizedBox(width: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withAlpha(50),
-                                  borderRadius: BorderRadius.circular(4),
+                              const Icon(Icons.location_on_outlined,
+                                  color: Color(0xFFEB4898), size: 16),
+                              const SizedBox(width: 4),
+                              Text(
+                                p.locationLabel,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                child: const Text('VERIFIED', style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.w900)),
                               ),
+                              if (p.occupation != null) ...[
+                                const Text('  ·  ',
+                                    style: TextStyle(color: Colors.white38)),
+                                Expanded(
+                                  child: Text(
+                                    p.occupation!,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white54,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                          const SizedBox(height: 24),
-                          Text('ABOUT', style: TextStyle(color: Colors.white.withAlpha(127), fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Just moved to Miami. Looking for a modern apartment with a great view. Love design, tech, and fitness.',
-                            style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-                          ),
-                          const SizedBox(height: 32),
+                          if (p.bio?.trim().isNotEmpty == true) ...[
+                            const SizedBox(height: 14),
+                            Text(
+                              p.bio!,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white70,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                          if (p.intentions.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final i in p.intentions)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.brandPrimary.withAlpha(35),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(
+                                          color: AppTheme.brandPrimary
+                                              .withAlpha(90)),
+                                    ),
+                                    child: Text(
+                                      i,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (p.images.length > 1) ...[
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              height: 72,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: p.images.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, i) => ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Image.network(
+                                    p.images[i],
+                                    width: 72,
+                                    height: 72,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 18),
                           Row(
                             children: [
                               Expanded(
-                                child: Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: Colors.white.withAlpha(50)),
-                                  ),
-                                  child: const Center(
-                                    child: Text('REPORT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                                child: GestureDetector(
+                                  onTap: _messaging ? null : _message,
+                                  child: Container(
+                                    height: 54,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(999),
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFFF4D00),
+                                          Color(0xFFEB4898),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: _messaging
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              'MESSAGE',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1.4,
+                                              ),
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)]),
-                                    borderRadius: BorderRadius.circular(999),
-                                    boxShadow: [
-                                      BoxShadow(color: const Color(0xFFFF4D00).withAlpha(127), blurRadius: 24, offset: const Offset(0, 8)),
-                                    ],
-                                  ),
-                                  child: const Center(
-                                    child: Text('MESSAGE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1)),
-                                  ),
-                                ),
+                              const SizedBox(width: 10),
+                              _Round(
+                                icon: Icons.share_rounded,
+                                onTap: () async {
+                                  final url =
+                                      'https://www.swipess.com/u/${p.userId}';
+                                  await Clipboard.setData(
+                                      ClipboardData(text: url));
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('Profile link copied')),
+                                    );
+                                  }
+                                },
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
                         ],
                       ),
                     ),
@@ -145,6 +433,29 @@ class ProfileDetailScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Round extends StatelessWidget {
+  const _Round({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(140),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white38),
+        ),
+        child: Icon(icon, color: Colors.white, size: 18),
       ),
     );
   }

@@ -21,6 +21,25 @@ class EscrowNotifier extends AsyncNotifier<List<EscrowDeposit>> {
     await ref.read(escrowRepositoryProvider).updateStatus(id, status);
     await refresh();
   }
+
+  Future<void> createDeposit({
+    required double amount,
+    required String counterpartyId,
+    String currency = 'USD',
+    String? contractId,
+    String? notes,
+    bool asOwner = true,
+  }) async {
+    await ref.read(escrowRepositoryProvider).createDeposit(
+          amount: amount,
+          counterpartyId: counterpartyId,
+          currency: currency,
+          contractId: contractId,
+          notes: notes,
+          asOwner: asOwner,
+        );
+    await refresh();
+  }
 }
 
 final escrowProvider =

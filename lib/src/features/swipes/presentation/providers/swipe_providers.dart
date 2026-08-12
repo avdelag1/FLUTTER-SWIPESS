@@ -7,44 +7,76 @@ final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
   return SwipeRepository(Supabase.instance.client);
 });
 
-// A family provider to fetch listings by category
-final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((ref, category) async {
+/// Family provider to fetch listings by category.
+final swipeListingsProvider =
+    FutureProvider.family<List<Listing>, String>((ref, category) async {
   final repository = ref.read(swipeRepositoryProvider);
   return repository.fetchListings(category: category);
 });
 
+/// Capacitor-aligned client discovery filters.
 class SwipeFilter {
-  final String category;
-  final double? minPrice;
-  final double? maxPrice;
-  final int? minBeds;
-  final bool? furnished;
-  final bool? petFriendly;
-
   SwipeFilter({
     this.category = 'property',
+    this.interestType = 'both',
     this.minPrice,
     this.maxPrice,
+    this.priceRangeLabel,
     this.minBeds,
+    this.minBaths,
     this.furnished,
     this.petFriendly,
+    this.propertyTypes = const [],
+    this.city,
+    this.radiusKm = 50,
   });
+
+  final String category;
+  /// rent | sale | both
+  final String interestType;
+  final double? minPrice;
+  final double? maxPrice;
+  final String? priceRangeLabel;
+  final int? minBeds;
+  final int? minBaths;
+  final bool? furnished;
+  final bool? petFriendly;
+  final List<String> propertyTypes;
+  final String? city;
+  final double radiusKm;
 
   SwipeFilter copyWith({
     String? category,
+    String? interestType,
     double? minPrice,
     double? maxPrice,
+    String? priceRangeLabel,
     int? minBeds,
+    int? minBaths,
     bool? furnished,
     bool? petFriendly,
+    List<String>? propertyTypes,
+    String? city,
+    double? radiusKm,
+    bool clearPrice = false,
+    bool clearBeds = false,
+    bool clearBaths = false,
+    bool clearCity = false,
   }) {
     return SwipeFilter(
       category: category ?? this.category,
-      minPrice: minPrice ?? this.minPrice,
-      maxPrice: maxPrice ?? this.maxPrice,
-      minBeds: minBeds ?? this.minBeds,
+      interestType: interestType ?? this.interestType,
+      minPrice: clearPrice ? null : (minPrice ?? this.minPrice),
+      maxPrice: clearPrice ? null : (maxPrice ?? this.maxPrice),
+      priceRangeLabel:
+          clearPrice ? null : (priceRangeLabel ?? this.priceRangeLabel),
+      minBeds: clearBeds ? null : (minBeds ?? this.minBeds),
+      minBaths: clearBaths ? null : (minBaths ?? this.minBaths),
       furnished: furnished ?? this.furnished,
       petFriendly: petFriendly ?? this.petFriendly,
+      propertyTypes: propertyTypes ?? this.propertyTypes,
+      city: clearCity ? null : (city ?? this.city),
+      radiusKm: radiusKm ?? this.radiusKm,
     );
   }
 }
@@ -53,13 +85,27 @@ class SwipeFilterNotifier extends Notifier<SwipeFilter> {
   @override
   SwipeFilter build() => SwipeFilter();
 
-  void setCategory(String category) => state = state.copyWith(category: category);
-  void setPriceRange(double? minPrice, double? maxPrice) => state = state.copyWith(minPrice: minPrice, maxPrice: maxPrice);
-  void setMinBeds(int? minBeds) => state = state.copyWith(minBeds: minBeds);
-  void setFurnished(bool? furnished) => state = state.copyWith(furnished: furnished);
-  void setPetFriendly(bool? petFriendly) => state = state.copyWith(petFriendly: petFriendly);
+  void replace(SwipeFilter next) => state = next;
+
+  void setCategory(String category) =>
+      state = state.copyWith(category: category);
+
+  void setPriceRange(double? minPrice, double? maxPrice) =>
+      state = state.copyWith(minPrice: minPrice, maxPrice: maxPrice);
+
+  void setMinBeds(int? minBeds) => state = state.copyWith(
+        minBeds: minBeds,
+        clearBeds: minBeds == null,
+      );
+
+  void setFurnished(bool? furnished) =>
+      state = state.copyWith(furnished: furnished);
+
+  void setPetFriendly(bool? petFriendly) =>
+      state = state.copyWith(petFriendly: petFriendly);
+
   void reset() => state = SwipeFilter();
 }
 
-final swipeFilterProvider = NotifierProvider<SwipeFilterNotifier, SwipeFilter>(SwipeFilterNotifier.new);
-
+final swipeFilterProvider =
+    NotifierProvider<SwipeFilterNotifier, SwipeFilter>(SwipeFilterNotifier.new);

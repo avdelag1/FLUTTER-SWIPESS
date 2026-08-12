@@ -182,19 +182,67 @@ class ListingRepository {
     return urls;
   }
 
+  /// Cap `listing-videos` bucket — optional 10s loop for the swipe card.
+  Future<String?> uploadListingVideo({
+    required String userId,
+    required XFile file,
+  }) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.lengthInBytes > 50 * 1024 * 1024) {
+      throw Exception('Video must be under 50MB.');
+    }
+    final lower = file.name.toLowerCase();
+    final ext = lower.endsWith('.webm')
+        ? 'webm'
+        : lower.endsWith('.mov')
+            ? 'mov'
+            : 'mp4';
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final contentType = switch (ext) {
+      'webm' => 'video/webm',
+      'mov' => 'video/quicktime',
+      _ => 'video/mp4',
+    };
+    await _client.storage.from('listing-videos').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
+    return _client.storage.from('listing-videos').getPublicUrl(path);
+  }
+
   /// Insert a listing, stripping columns the live schema rejects — same
   /// retry strategy as Capacitor `saveListingWithSchemaRetry`.
   Future<Listing> createListing(Map<String, dynamic> payload) async {
+    return _saveWithSchemaRetry(payload, editingId: null);
+  }
+
+  /// Cap UnifiedListingForm edit path — update + schema-retry.
+  Future<Listing> updateListing(
+    String listingId,
+    Map<String, dynamic> payload,
+  ) {
+    final safe = Map<String, dynamic>.from(payload)..remove('user_id');
+    return _saveWithSchemaRetry(safe, editingId: listingId);
+  }
+
+  Future<Listing> _saveWithSchemaRetry(
+    Map<String, dynamic> payload, {
+    required String? editingId,
+  }) async {
     var safe = Map<String, dynamic>.from(payload);
     final removed = <String>{};
 
     for (var attempt = 0; attempt < 25; attempt++) {
       try {
-        final data = await _client
-            .from('listings')
-            .insert(safe)
-            .select()
-            .single();
+        final data = editingId == null
+            ? await _client.from('listings').insert(safe).select().single()
+            : await _client
+                .from('listings')
+                .update(safe)
+                .eq('id', editingId)
+                .select()
+                .single();
         return Listing.fromJson(data);
       } catch (error) {
         final message = error.toString();
@@ -209,6 +257,49 @@ class ListingRepository {
       }
     }
     throw Exception('Listing save failed after adapting to the live schema.');
+  }
+
+  /// Cap PropertyManagement — change availability / status.
+  Future<void> updateListingStatus({
+    required String listingId,
+    required String status,
+  }) async {
+    final active = status == 'active' || status == 'available';
+    try {
+      await _client.from('listings').update({
+        'status': status,
+        'is_active': active,
+      }).eq('id', listingId);
+    } catch (_) {
+      await _client.from('listings').update({
+        'status': status,
+      }).eq('id', listingId);
+    }
+  }
+
+  Future<void> deleteListing(String listingId) async {
+    await _client.from('listings').delete().eq('id', listingId);
+  }
+
+  Future<void> appendListingImages({
+    required String listingId,
+    required List<String> imageUrls,
+  }) async {
+    final row = await _client
+        .from('listings')
+        .select('images')
+        .eq('id', listingId)
+        .maybeSingle();
+    final existing = <String>[];
+    final raw = row?['images'];
+    if (raw is List) {
+      existing.addAll(raw.map((e) => e.toString()));
+    }
+    final merged = [...existing, ...imageUrls];
+    await _client.from('listings').update({
+      'images': merged,
+      'image_url': merged.isNotEmpty ? merged.first : null,
+    }).eq('id', listingId);
   }
 
   String _extensionFor(String name) {

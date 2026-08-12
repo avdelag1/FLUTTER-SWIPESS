@@ -1,60 +1,149 @@
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/config/app_config.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
-// IMPORTANT: Replace with actual RevenueCat API keys
-const _appleApiKey = 'appl_YOUR_APPLE_KEY_HERE';
-const _googleApiKey = 'goog_YOUR_GOOGLE_KEY_HERE';
-
+/// RevenueCat IAP — Cap subscription / tokens / restore.
 class PaymentService {
-  Future<void> init(String userId) async {
+  bool _configured = false;
+
+  bool get isConfigured => _configured;
+
+  String get _apiKey {
+    if (!kIsWeb) {
+      if (Platform.isIOS &&
+          AppConfig.revenueCatAppleApiKey.trim().isNotEmpty) {
+        return AppConfig.revenueCatAppleApiKey.trim();
+      }
+      if (Platform.isAndroid &&
+          AppConfig.revenueCatGoogleApiKey.trim().isNotEmpty) {
+        return AppConfig.revenueCatGoogleApiKey.trim();
+      }
+    }
+    return AppConfig.revenueCatApiKey.trim();
+  }
+
+  Future<void> init({String? userId}) async {
+    if (_configured) {
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          await Purchases.logIn(userId);
+        } catch (_) {}
+      }
+      return;
+    }
+    final key = _apiKey;
+    if (key.isEmpty) return;
+
     try {
-      await Purchases.setLogLevel(LogLevel.debug);
-      
-      PurchasesConfiguration? configuration;
-      if (Platform.isAndroid) {
-        configuration = PurchasesConfiguration(_googleApiKey);
-      } else if (Platform.isIOS) {
-        configuration = PurchasesConfiguration(_appleApiKey);
-      }
-      
-      if (configuration != null) {
+      await Purchases.setLogLevel(
+        kDebugMode ? LogLevel.debug : LogLevel.info,
+      );
+      final configuration = PurchasesConfiguration(key);
+      if (userId != null && userId.isNotEmpty) {
         configuration.appUserID = userId;
-        await Purchases.configure(configuration);
       }
-    } catch (_) {
-      // RevenueCat is optional until store keys are configured.
+      await Purchases.configure(configuration);
+      _configured = true;
+    } catch (e) {
+      debugPrint('RevenueCat init skipped: $e');
     }
   }
 
-  Future<List<Package>> getOfferings() async {
+  Future<void> identify(String userId) async {
+    if (!_configured || userId.isEmpty) return;
     try {
-      Offerings offerings = await Purchases.getOfferings();
-      if (offerings.current != null && offerings.current!.availablePackages.isNotEmpty) {
-        return offerings.current!.availablePackages;
+      await Purchases.logIn(userId);
+    } catch (_) {}
+  }
+
+  Future<void> logOut() async {
+    if (!_configured) return;
+    try {
+      await Purchases.logOut();
+    } catch (_) {}
+  }
+
+  Future<List<Package>> getOfferings() async {
+    if (!_configured) await init();
+    try {
+      final offerings = await Purchases.getOfferings();
+      final current = offerings.current;
+      if (current != null && current.availablePackages.isNotEmpty) {
+        return current.availablePackages;
       }
       return [];
     } on PlatformException {
+      return [];
+    } catch (_) {
       return [];
     }
   }
 
   Future<bool> purchasePackage(Package package) async {
+    if (!_configured) await init();
     try {
       await Purchases.purchase(PurchaseParams.package(package));
-      // Determine if token pack was purchased and update backend accordingly
       return true;
     } on PlatformException catch (e) {
       final errorCode = PurchasesErrorHelper.getErrorCode(e);
-      if (errorCode != PurchasesErrorCode.purchaseCancelledError) {
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
         return false;
       }
       return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> restorePurchases() async {
+    if (!_configured) await init();
+    try {
+      await Purchases.restorePurchases();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Cap-style RevenueCat paywall UI (requires offerings configured in RC).
+  Future<PaywallResult> presentPaywall() async {
+    if (!_configured) await init();
+    try {
+      return await RevenueCatUI.presentPaywall();
+    } catch (_) {
+      return PaywallResult.error;
+    }
+  }
+
+  Future<CustomerInfo?> customerInfo() async {
+    if (!_configured) await init();
+    try {
+      return await Purchases.getCustomerInfo();
+    } catch (_) {
+      return null;
     }
   }
 }
 
 final paymentServiceProvider = Provider<PaymentService>((ref) {
   return PaymentService();
+});
+
+/// Keeps RevenueCat appUserID in sync with Supabase auth.
+final revenueCatAuthSyncProvider = Provider<void>((ref) {
+  ref.listen(currentUserProvider, (previous, next) {
+    final payments = ref.read(paymentServiceProvider);
+    final user = next;
+    if (user != null) {
+      payments.identify(user.id);
+    } else {
+      payments.logOut();
+    }
+  });
 });

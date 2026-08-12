@@ -1,0 +1,476 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Capacitor ClientSecurity / settings nested sections.
+class SecurityScreen extends StatefulWidget {
+  const SecurityScreen({super.key, this.initialTab = 'security'});
+
+  /// security | verification | preferences | language
+  final String initialTab;
+
+  @override
+  State<SecurityScreen> createState() => _SecurityScreenState();
+}
+
+class _SecurityScreenState extends State<SecurityScreen> {
+  late String _tab;
+  final _current = TextEditingController();
+  final _next = TextEditingController();
+  final _confirm = TextEditingController();
+  bool _busy = false;
+  bool _sounds = true;
+  bool _haptics = true;
+  String _lang = 'en';
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = widget.initialTab;
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _sounds = prefs.getBool('swipe_sounds') ?? true;
+      _haptics = prefs.getBool('haptics') ?? true;
+      _lang = prefs.getString('locale') ?? 'en';
+    });
+  }
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _next.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = switch (_tab) {
+      'verification' => 'VERIFICATION',
+      'preferences' => 'PREFERENCES',
+      'language' => 'LANGUAGE',
+      _ => 'SECURITY PROTOCOL',
+    };
+    final subtitle = switch (_tab) {
+      'verification' => 'Protect your identity and access',
+      'preferences' => 'Sounds, haptics & feel',
+      'language' => 'Choose your locale',
+      _ => 'Protect your identity and access',
+    };
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0D),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+          children: [
+            Row(
+              children: [
+                _Back(onTap: () => Navigator.pop(context)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (_tab == 'security') ..._security(),
+            if (_tab == 'verification') ..._verification(context),
+            if (_tab == 'preferences') ..._preferences(),
+            if (_tab == 'language') ..._language(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _security() {
+    final email = Supabase.instance.client.auth.currentUser?.email ?? '—';
+    return [
+      _Panel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'ACCOUNT EMAIL',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              email,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'UPDATE PASSWORD',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 10),
+            GlassTextField(
+              controller: _current,
+              hint: 'Current password',
+              icon: Icons.lock_outline_rounded,
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+            GlassTextField(
+              controller: _next,
+              hint: 'New password',
+              icon: Icons.lock_rounded,
+              obscureText: true,
+            ),
+            const SizedBox(height: 10),
+            GlassTextField(
+              controller: _confirm,
+              hint: 'Confirm new password',
+              icon: Icons.lock_rounded,
+              obscureText: true,
+            ),
+            const SizedBox(height: 16),
+            BrandPrimaryButton(
+              label: _busy ? 'Saving…' : 'Save password',
+              loading: _busy,
+              onPressed: _busy ? null : _savePassword,
+            ),
+            const SizedBox(height: 18),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.phonelink_lock_rounded,
+                  color: AppTheme.brandPrimary),
+              title: Text(
+                '2FA Protocol',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              subtitle: Text(
+                '2FA & device verification — coming with security keys',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 14),
+      _Panel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'BLOCKED USERS',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white38,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No blocked members yet. Blocks from chat will appear here.',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white54,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _verification(BuildContext context) {
+    return [
+      _Panel(
+        child: Column(
+          children: [
+            const Icon(Icons.verified_user_rounded,
+                color: Color(0xFFE879F9), size: 42),
+            const SizedBox(height: 12),
+            Text(
+              'Resident verification',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upload identity docs in the vault, then complete your PEARL card.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white54,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 18),
+            BrandPrimaryButton(
+              label: 'Open document vault',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            BrandGhostButton(
+              label: 'Open PEARL ID',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const VapIdScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _preferences() {
+    return [
+      _Panel(
+        child: Column(
+          children: [
+            SwitchListTile.adaptive(
+              value: _sounds,
+              activeThumbColor: Colors.white,
+              activeTrackColor: AppTheme.brandPrimary,
+              title: Text(
+                'Swipe sounds',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              onChanged: (v) async {
+                setState(() => _sounds = v);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('swipe_sounds', v);
+              },
+            ),
+            SwitchListTile.adaptive(
+              value: _haptics,
+              activeThumbColor: Colors.white,
+              activeTrackColor: AppTheme.brandPrimary,
+              title: Text(
+                'Haptics',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              onChanged: (v) async {
+                setState(() => _haptics = v);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('haptics', v);
+                if (v) HapticFeedback.selectionClick();
+              },
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _language() {
+    return [
+      _Panel(
+        child: Row(
+          children: [
+            Expanded(
+              child: _Lang(
+                label: 'EN',
+                active: _lang == 'en',
+                onTap: () => _setLang('en'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _Lang(
+                label: 'ES',
+                active: _lang == 'es',
+                onTap: () => _setLang('es'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        'Full Spanish strings ship with the i18n pack — preference is saved now.',
+        style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+      ),
+    ];
+  }
+
+  Future<void> _setLang(String code) async {
+    setState(() => _lang = code);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('locale', code);
+    HapticFeedback.selectionClick();
+  }
+
+  Future<void> _savePassword() async {
+    if (_next.text.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 8 characters')),
+      );
+      return;
+    }
+    if (_next.text != _confirm.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('New passwords do not match')),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(password: _next.text),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password updated')),
+        );
+        _current.clear();
+        _next.clear();
+        _confirm.clear();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withAlpha(28)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _Back extends StatelessWidget {
+  const _Back({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(18),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withAlpha(35)),
+        ),
+        child: const Icon(Icons.arrow_back_ios_new_rounded,
+            color: Colors.white, size: 18),
+      ),
+    );
+  }
+}
+
+class _Lang extends StatelessWidget {
+  const _Lang({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 64,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: active
+              ? const LinearGradient(
+                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                )
+              : null,
+          color: active ? null : Colors.white.withAlpha(12),
+          border: Border.all(
+            color: active ? Colors.transparent : Colors.white24,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+          ),
+        ),
+      ),
+    );
+  }
+}

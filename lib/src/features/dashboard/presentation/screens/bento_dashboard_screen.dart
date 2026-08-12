@@ -12,7 +12,6 @@ import 'package:flutter_swipes/src/features/insights/presentation/screens/local_
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
-import 'package:flutter_swipes/src/features/radio/presentation/screens/world_radio_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
@@ -181,11 +180,6 @@ class BentoDashboardScreen extends ConsumerWidget {
       case 'roommates':
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
-        );
-        return;
-      case 'radio':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
         );
         return;
       case 'intel':
@@ -512,7 +506,6 @@ const _bentoItems = [
   _BentoItemData('roommates', 'ROOMMATES', 'Match people sharing space', 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=90', 260),
   _BentoItemData('intel', 'LOCAL INTEL', 'Neighborhood updates', 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=90', 280),
   _BentoItemData('prices', 'MARKET PRICES', 'Neighborhood price trends', 'https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=800&q=90', 260),
-  _BentoItemData('radio', 'WORLD RADIO', 'Live stations worldwide', 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=800&q=90', 280),
   _BentoItemData('legal', 'LEGAL SERVICES', 'Hire a top tier lawyer', 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=90', 340),
   _BentoItemData('premium', 'PREMIUM', 'Buy a package & get benefits', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=90', 260),
 ];

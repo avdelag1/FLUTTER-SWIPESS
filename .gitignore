@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local secrets — never commit real tokens
+dart_defines.json
+.env
+.env.*
+!.env.example
+!dart_defines.json.example

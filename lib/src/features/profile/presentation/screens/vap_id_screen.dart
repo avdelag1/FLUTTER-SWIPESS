@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
@@ -21,7 +22,7 @@ class VapIdScreen extends ConsumerWidget {
     ('passport', 'Passport'),
     ('government_id', 'Gov. ID'),
     ('drivers_license', 'License'),
-    ('six_month_lease', 'Lease'),
+    ('six_month_lease', '6-Month Lease'),
     ('recommendation', 'Recommendation'),
   ];
 
@@ -50,57 +51,70 @@ class VapIdScreen extends ConsumerWidget {
               'NX-${userId.substring(0, userId.length.clamp(0, 8)).toUpperCase()}';
           final validationUrl = 'https://www.swipess.com/verify/$userId';
 
-          return ListView(
-            padding: EdgeInsets.fromLTRB(20, top + 56, 20, 140),
+          return Column(
             children: [
-              Text(
-                'PEARL',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: -0.8,
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, top + 8, 16, 8),
+                child: Row(
+                  children: [
+                    _PearlRoundBtn(
+                      icon: Icons.local_fire_department_rounded,
+                      onTap: () {
+                        ref.read(navTabProvider.notifier).set(NavTab.likes);
+                      },
+                    ),
+                    Expanded(
+                      child: Text(
+                        'PEARL',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 3.2,
+                        ),
+                      ),
+                    ),
+                    _PearlRoundBtn(
+                      icon: Icons.edit_outlined,
+                      onTap: () => _edit(context, ref, data),
+                    ),
+                    const SizedBox(width: 8),
+                    _PearlRoundBtn(
+                      icon: Icons.close_rounded,
+                      onTap: () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          ref
+                              .read(navTabProvider.notifier)
+                              .set(NavTab.dashboard);
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Authorized resident vault · Virtual ID',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
-                  fontSize: 13,
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
+                  children: [
+                    _PearlCard(
+                      data: data,
+                      idNumber: idNumber,
+                      validationUrl: validationUrl,
+                      docsAsync: docs,
+                      vaultDocs: _vaultDocs,
+                      onOpenVault: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const DocumentVaultScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 20),
-              _PearlCard(
-                data: data,
-                idNumber: idNumber,
-                validationUrl: validationUrl,
-                docsAsync: docs,
-                vaultDocs: _vaultDocs,
-                onOpenVault: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DocumentVaultScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 18),
-              BrandGhostButton(
-                label: 'Edit PEARL card',
-                onPressed: () => _edit(context, ref, data),
-              ),
-              const SizedBox(height: 10),
-              BrandPrimaryButton(
-                label: 'Open document vault',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DocumentVaultScreen(),
-                    ),
-                  );
-                },
               ),
             ],
           );
@@ -198,6 +212,29 @@ class VapIdScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _PearlRoundBtn extends StatelessWidget {
+  const _PearlRoundBtn({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withAlpha(14),
+          border: Border.all(color: Colors.white.withAlpha(35)),
+        ),
+        child: Icon(icon, color: Colors.white, size: 18),
+      ),
     );
   }
 }

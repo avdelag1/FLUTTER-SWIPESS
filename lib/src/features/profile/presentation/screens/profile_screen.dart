@@ -7,27 +7,35 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
+import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_interested_clients_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
-import 'package:flutter_swipes/src/features/radio/presentation/screens/world_radio_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
+import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -138,13 +146,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               bottom: -6,
                               right: -6,
                               child: GestureDetector(
-                                onTap: () {
+                                onTap: () async {
                                   HapticFeedback.lightImpact();
-                                  Navigator.of(context).push(
+                                  final url = await Navigator.of(context)
+                                      .push<String>(
                                     MaterialPageRoute(
-                                      builder: (_) => const EditProfileScreen(),
+                                      builder: (_) =>
+                                          const ProfileCameraScreen(
+                                        mode: ProfileCameraMode.selfie,
+                                      ),
                                     ),
                                   );
+                                  if (url != null) {
+                                    ref.invalidate(currentProfileProvider);
+                                  }
                                 },
                                 child: Container(
                                   width: 44,
@@ -1359,6 +1374,27 @@ class _MoreToolsGrid extends StatelessWidget {
             )
       ),
       (
+        Icons.how_to_reg_outlined,
+        'Interested clients',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const OwnerInterestedClientsScreen(),
+              ),
+            )
+      ),
+      (
+        Icons.event_available_rounded,
+        'Saved events',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EventFavoritesScreen()),
+            )
+      ),
+      (
+        Icons.psychology_rounded,
+        'AI Memory / Brain',
+        () => showMemoryDrawer(context),
+      ),
+      (
         Icons.bookmark_border_rounded,
         'Saved searches',
         () => Navigator.of(context).push(
@@ -1391,6 +1427,41 @@ class _MoreToolsGrid extends StatelessWidget {
         'Legal hub',
         () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const LegalHubScreen()),
+            )
+      ),
+      (
+        Icons.balance_rounded,
+        'Lawyer services',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LawyerServicesScreen()),
+            )
+      ),
+      (
+        Icons.work_outline_rounded,
+        'Worker discovery',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const WorkerDiscoveryScreen()),
+            )
+      ),
+      (
+        Icons.card_giftcard_rounded,
+        'Resident perks',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PerksScreen()),
+            )
+      ),
+      (
+        Icons.info_outline_rounded,
+        'About Swipess',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutScreen()),
+            )
+      ),
+      (
+        Icons.qr_code_scanner_rounded,
+        'Validate PEARL',
+        () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const VapValidateScreen()),
             )
       ),
       (
@@ -1428,13 +1499,6 @@ class _MoreToolsGrid extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const MaintenanceRequestsScreen(),
               ),
-            )
-      ),
-      (
-        Icons.radio_rounded,
-        'World radio',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
             )
       ),
       (

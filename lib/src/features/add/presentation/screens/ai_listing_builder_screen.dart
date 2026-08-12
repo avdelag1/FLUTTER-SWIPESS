@@ -44,6 +44,35 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     });
   }
 
+  /// Local Cap-style polish until OpenAI keys arrive.
+  void _localEnhance() {
+    HapticFeedback.lightImpact();
+    final raw = _description.text.trim();
+    if (raw.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add a short description first')),
+      );
+      return;
+    }
+    final city = _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim();
+    final cat = switch (_category) {
+      'motorcycle' => 'motorcycle',
+      'bicycle' => 'bicycle',
+      'yacht' => 'yacht charter',
+      'worker' => 'professional service',
+      _ => 'property stay',
+    };
+    final polished =
+        'Discover this standout $cat in $city. $raw '
+        'Book through Swipess for verified hosts, secure messaging, and local-ready details.';
+    setState(() => _description.text = polished);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Local enhance applied — OpenAI polish unlocks with your key'),
+      ),
+    );
+  }
+
   Future<void> _create() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -58,15 +87,34 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     };
     notifier.reset();
     notifier.setCategory(cat);
+    final desc = _description.text.trim();
+    final adjectives = <String>[
+      if (desc.toLowerCase().contains('ocean') ||
+          desc.toLowerCase().contains('beach'))
+        'Oceanfront',
+      if (desc.toLowerCase().contains('pool')) 'Pool',
+      if (desc.toLowerCase().contains('luxury') ||
+          desc.toLowerCase().contains('premium'))
+        'Luxury',
+      if (desc.toLowerCase().contains('modern')) 'Modern',
+    ];
     notifier.update(
       (d) => d.copyWith(
         city: _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim(),
-        title: _description.text.trim().isEmpty
+        description: desc,
+        title: desc.isEmpty
             ? d.title
-            : (_description.text.trim().length > 48
-                ? '${_description.text.trim().substring(0, 48)}…'
-                : _description.text.trim()),
+            : (desc.length > 48 ? '${desc.substring(0, 48)}…' : desc),
         photos: [..._photos],
+        adjectives: adjectives.isEmpty ? d.adjectives : adjectives,
+        amenities: [
+          if (desc.toLowerCase().contains('wifi')) 'WiFi',
+          if (desc.toLowerCase().contains('pool')) 'Private Pool',
+          if (desc.toLowerCase().contains('ac') ||
+              desc.toLowerCase().contains('air'))
+            'AC',
+          ...d.amenities,
+        ],
       ),
     );
     if (!mounted) return;
@@ -197,13 +245,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                       Text('4. DESCRIPTION', style: _label),
                       const Spacer(),
                       TextButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('AI Enhance needs an OpenAI key — leave for the keys list'),
-                            ),
-                          );
-                        },
+                        onPressed: _localEnhance,
                         icon: const Icon(Icons.auto_awesome, size: 16, color: Color(0xFFC9B6FF)),
                         label: Text(
                           'AI ENHANCE',

@@ -64,6 +64,79 @@ class SeekerRepository {
     }).toList();
   }
 
+  /// Cap SeekerRequestDialog — post a `listing_type=request` / `mode=seek` listing.
+  Future<void> createRequest({
+    required String categoryId,
+    required String location,
+    String? subcategory,
+    String? description,
+    String? budget,
+    String pricingUnit = 'job',
+    List<String> days = const [],
+    String urgency = 'flexible',
+    DateTime? availableFrom,
+    String? time,
+    double? durationHours,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not signed in');
+
+    final title = subcategory == null || subcategory.isEmpty
+        ? '$categoryId needed'
+        : '$categoryId needed — $subcategory';
+
+    final payload = <String, dynamic>{
+      'owner_id': userId,
+      'user_id': userId,
+      'listing_type': 'request',
+      'mode': 'seek',
+      'is_active': true,
+      'category': categoryId,
+      'service_category': subcategory,
+      'title': title[0].toUpperCase() + title.substring(1),
+      'description': description,
+      'available_from': availableFrom?.toIso8601String().split('T').first,
+      'time_slots_available': time == null || time.isEmpty
+          ? null
+          : [
+              {'start': time},
+            ],
+      'minimum_booking_hours': durationHours,
+      'days_available': days.isEmpty ? null : days,
+      'price': double.tryParse(budget ?? '') ?? 0,
+      'pricing_unit': pricingUnit,
+      'location': location,
+      'city': location,
+      'status': urgency,
+    };
+    payload.removeWhere((_, v) => v == null);
+
+    // Schema-retry insert (same idea as listing save).
+    var safe = Map<String, dynamic>.from(payload);
+    final removed = <String>{};
+    for (var attempt = 0; attempt < 20; attempt++) {
+      try {
+        await _client.from('listings').insert(safe);
+        return;
+      } catch (error) {
+        final message = error.toString();
+        final match = RegExp(
+          r'''['"]([^'"]+)['"]\s+column|column\s+['"]([^'"]+)['"]|find the ['"]([^'"]+)['"] column''',
+          caseSensitive: false,
+        ).firstMatch(message);
+        final missing = match?.group(1) ?? match?.group(2) ?? match?.group(3);
+        if (missing == null ||
+            !safe.containsKey(missing) ||
+            removed.contains(missing)) {
+          rethrow;
+        }
+        removed.add(missing);
+        safe.remove(missing);
+      }
+    }
+    throw Exception('Could not post seeker request.');
+  }
+
   Future<Map<String, Map<String, dynamic>>> _loadProfiles(List<String> ids) async {
     if (ids.isEmpty) return {};
     final map = <String, Map<String, dynamic>>{};

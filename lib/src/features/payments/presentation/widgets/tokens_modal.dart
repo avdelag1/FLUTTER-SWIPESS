@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 class TokensModal extends ConsumerStatefulWidget {
   const TokensModal({super.key});
@@ -72,10 +73,31 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.white.withAlpha(30)),
               ),
-              child: const Text(
-                'No token packages available right now.\n(RevenueCat needs valid API keys)',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white),
+              child: Column(
+                children: [
+                  const Text(
+                    'No token packages in the current offering yet.\nOpen the RevenueCat paywall or add products in the dashboard.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () async {
+                      final result = await ref
+                          .read(paymentServiceProvider)
+                          .presentPaywall();
+                      if (!context.mounted) return;
+                      if (result == PaywallResult.purchased ||
+                          result == PaywallResult.restored) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Purchase successful!')),
+                        );
+                      }
+                    },
+                    child: const Text('Open paywall'),
+                  ),
+                ],
               ),
             )
           else
@@ -112,7 +134,27 @@ class _TokensModalState extends ConsumerState<TokensModal> {
               ),
             ),
             
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: TextButton(
+              onPressed: () async {
+                final ok = await ref.read(paymentServiceProvider).restorePurchases();
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok ? 'Purchases restored' : 'No previous purchases found',
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Restore Purchases',
+                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             height: 52,

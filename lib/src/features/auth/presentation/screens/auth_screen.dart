@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   final String mode;
@@ -166,7 +167,39 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ],
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () async {
+                                final email = _emailController.text.trim();
+                                final messenger = ScaffoldMessenger.of(context);
+                                if (email.isEmpty) {
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Enter your email first'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                try {
+                                  await Supabase.instance.client.auth
+                                      .resetPasswordForEmail(
+                                    email,
+                                    redirectTo:
+                                        'https://www.swipess.com/reset-password',
+                                  );
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Reset link sent — open it to set a new password',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(
+                                    SnackBar(content: Text('$e')),
+                                  );
+                                }
+                              },
                               style: TextButton.styleFrom(
                                 padding: EdgeInsets.zero,
                                 minimumSize: Size.zero,
