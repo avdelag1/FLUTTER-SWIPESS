@@ -71,19 +71,23 @@ class DashboardShell extends ConsumerWidget {
       _BottomNavItem(id: NavTab.events, icon: Icons.celebration_rounded),
     ];
 
+    final hideChrome = currentTab == NavTab.idCard;
+
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      appBar: AppTopBar(
-        firstName: profile?.name.split(' ').first,
-        avatarUrl: profile?.avatarUrl,
-        onProfileTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ProfileScreen()),
-          );
-        },
-      ),
+      appBar: hideChrome
+          ? null
+          : AppTopBar(
+              firstName: profile?.name.split(' ').first,
+              avatarUrl: profile?.avatarUrl,
+              onProfileTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+            ),
       body: Stack(
         children: [
           AnimatedSwitcher(

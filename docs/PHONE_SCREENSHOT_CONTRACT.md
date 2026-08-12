@@ -50,10 +50,17 @@ Flutter must pass the “could be mistaken for swipess.app” test.
 3. Wizard steps: **MEDIA → CATEGORY → DETAILS → PUBLISH** with green completed pills, red active pill, gradient progress line.
 4. AI Listing Builder: purple theme, category grid, photos, location, description + AI Enhance, CREATE AI LISTING.
 
+### Filters (ClientFilters — white sheet)
+- Full-height **white / soft gray** sheet (`#F7F7F8`), not dark glass.
+- Title: **SWIPESS FILTER** (FILTER in coral).
+- Step 1: large white category cards (Properties, Motos, Bikes, Yachts, Workers, Buyers, Renters, Leads).
+- Step 2: italic category title + coral **FILTERS**, rent/sale/both, budget pills, property extras, city, radius, **SCAN DECK** CTA.
+
 ### PEARL / VAP ID
+- Custom header: flame · **PEARL** · edit · close (no main AppTopBar).
 - Title **PEARL**; white soft card on black.
 - Authorized Resident + TXID.
-- Authorized Vault document rows (Passport, Gov ID, License, Lease, Recommendation).
+- Authorized Vault document rows (Passport, Gov ID, License, 6-Month Lease, Recommendation).
 - Virtual ID QR at bottom of white card.
 
 ### Intel Core (Ask AI)
