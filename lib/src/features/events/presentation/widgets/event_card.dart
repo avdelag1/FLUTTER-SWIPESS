@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 
 class EventCard extends StatelessWidget {
@@ -23,9 +23,9 @@ class EventCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: Colors.white.withAlpha(15),
+        color: AppTheme.dashElevated,
         border: Border.all(
-          color: Colors.white.withAlpha(45),
+          color: AppTheme.dashGlassBorder,
           width: 1,
         ),
         boxShadow: [
@@ -43,16 +43,16 @@ class EventCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: GestureDetector(
-            onTap: onTap,
+        child: GestureDetector(
+            onTap: () {
+              context.push('/event', extra: event);
+            },
             child: Stack(
               fit: StackFit.expand,
               children: [
                 // Background Image
                 Image.network(
-                  event.imageUrl,
+                  event.imageUrl ?? 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
@@ -126,8 +126,8 @@ class EventCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  event.badge.isNotEmpty
-                                      ? event.badge
+                                  (event.discountTag != null && event.discountTag!.isNotEmpty)
+                                      ? event.discountTag!
                                       : event.category,
                                   style: const TextStyle(
                                     color: Colors.white,
@@ -140,12 +140,8 @@ class EventCard extends StatelessWidget {
                             ),
                           ),
                           _buildGlassIconButton(
-                            icon: event.isBookmarked
-                                ? Icons.bookmark_rounded
-                                : Icons.bookmark_border_rounded,
-                            iconColor: event.isBookmarked
-                                ? AppTheme.brandPrimary
-                                : Colors.white.withAlpha(220),
+                            icon: Icons.bookmark_border_rounded,
+                            iconColor: Colors.white.withAlpha(220),
                             onTap: () {
                               HapticFeedback.lightImpact();
                               onBookmarkTap?.call();
@@ -168,7 +164,7 @@ class EventCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                event.dateTime,
+                                event.eventDate != null ? '${event.eventDate!.month}/${event.eventDate!.day}' : 'TBA',
                                 style: const TextStyle(
                                   color: AppTheme.brandPrimary,
                                   fontSize: 12,
@@ -206,7 +202,7 @@ class EventCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  event.location,
+                                  event.location ?? 'TBA',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -231,29 +227,23 @@ class EventCard extends StatelessWidget {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(22),
+                                  color: AppTheme.dashWell,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: Colors.white.withAlpha(35),
+                                    color: AppTheme.dashGlassBorder,
                                     width: 1,
                                   ),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(
-                                      Icons.people_alt_rounded,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '${_formatNumber(event.attendeeCount)} going',
-                                      style: TextStyle(
-                                        color: Colors.white.withAlpha(230),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
+                                      Text(
+                                        'View Details',
+                                        style: TextStyle(
+                                          color: Colors.white.withAlpha(230),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -284,7 +274,7 @@ class EventCard extends StatelessWidget {
                                   ],
                                 ),
                                 child: Text(
-                                  event.price,
+                                  event.priceText ?? (event.isFree ? 'Free' : 'Tickets'),
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
@@ -304,28 +294,21 @@ class EventCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 
   Widget _buildGlassPill({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(30),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withAlpha(45),
-              width: 1,
-            ),
-          ),
-          child: child,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.dashWell,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.dashGlassBorder,
+          width: 1,
         ),
       ),
+      child: child,
     );
   }
 
@@ -336,35 +319,20 @@ class EventCard extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(30),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withAlpha(45),
-                width: 1,
-              ),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppTheme.dashWell,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppTheme.dashGlassBorder,
+            width: 1,
           ),
         ),
+        child: Icon(icon, color: AppTheme.textPrimary, size: 20),
       ),
     );
   }
 
-  String _formatNumber(int number) {
-    if (number >= 1000) {
-      final formatted = (number / 1000).toStringAsFixed(1);
-      return formatted.endsWith('.0')
-          ? '${formatted.substring(0, formatted.length - 2)}k'
-          : '${formatted}k';
-    }
-    return number.toString();
-  }
 }

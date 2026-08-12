@@ -1,198 +1,203 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
-  final bool showBack;
-  final bool showProfile;
-  final bool showNotifications;
-  final int notificationCount;
+class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
+  final bool isDashboard;
   final String? avatarUrl;
+  final String? firstName;
   final VoidCallback? onProfileTap;
-  final VoidCallback? onNotificationTap;
-  final VoidCallback? onFilterTap;
-  final bool showFilter;
 
   const AppTopBar({
     super.key,
-    this.title = 'Swipess',
-    this.showBack = false,
-    this.showProfile = true,
-    this.showNotifications = true,
-    this.notificationCount = 0,
+    this.isDashboard = true,
     this.avatarUrl,
+    this.firstName,
     this.onProfileTap,
-    this.onNotificationTap,
-    this.onFilterTap,
-    this.showFilter = false,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => const Size.fromHeight(60);
 
   @override
-  Widget build(BuildContext context) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: preferredSize.height + MediaQuery.of(context).padding.top,
-          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(140),
-            border: Border(
-              bottom: BorderSide(color: Colors.white.withAlpha(18), width: 0.5),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                // Left — back or logo
-                if (showBack)
-                  _GlassPill(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: Icon(Icons.chevron_left_rounded, color: Colors.white.withAlpha(220), size: 22),
-                  )
-                else
-                  _buildLogo(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Determine chrome color based on theme (always light icons on black dashboard)
+    const iconColor = Colors.white;
 
-                const Spacer(),
-
-                // Center title on inner screens
-                if (showBack)
-                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
-
-                const Spacer(),
-
-                // Right actions
-                Row(
+    return Container(
+      height: preferredSize.height + MediaQuery.of(context).padding.top,
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, left: 12, right: 12),
+      decoration: const BoxDecoration(color: Colors.transparent),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // LEFT: Profile and Sparkles
+          Row(
+            children: [
+              _NeoNaivePill(
+                onTap: onProfileTap ?? () {},
+                wide: true,
+                child: Row(
                   children: [
-                    if (showFilter && onFilterTap != null) ...[
-                      _GlassPill(
-                        onTap: onFilterTap,
-                        child: Icon(Icons.tune_rounded, color: Colors.white.withAlpha(200), size: 18),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withAlpha(50),
+                        image: avatarUrl != null
+                            ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
+                            : null,
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (showNotifications) ...[
-                      _GlassPill(
-                        badge: notificationCount,
-                        onTap: onNotificationTap,
-                        child: Icon(Icons.notifications_rounded, color: Colors.white.withAlpha(200), size: 18),
+                      child: avatarUrl == null
+                          ? const Icon(Icons.person_rounded, size: 16, color: iconColor)
+                          : null,
+                    ),
+                    if (firstName != null && firstName!.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        firstName!,
+                        style: const TextStyle(
+                          color: iconColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (showProfile)
-                      _buildAvatar(),
+                    ]
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              _NeoNaivePill(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showPlaceholderModal(context, 'AI Upload Listing', Icons.auto_awesome_rounded);
+                },
+                child: _IconSlot(icon: Icons.auto_awesome_rounded, color: iconColor, wash: const Color(0xFF69DB7C)), // Mint
+              ),
+            ],
           ),
-        ),
+
+          // RIGHT: Tokens, Map, Theme, Notifications
+          Row(
+            children: [
+              _NeoNaivePill(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  showGlassModal(context: context, builder: (_) => const TokensModal());
+                },
+                child: _IconSlot(icon: Icons.workspace_premium_rounded, color: iconColor, wash: const Color(0xFFFFD43B)), // Lemon
+              ),
+              const SizedBox(width: 8),
+              _NeoNaivePill(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showPlaceholderModal(context, 'Live Map', Icons.public_rounded);
+                },
+                child: _IconSlot(icon: Icons.public_rounded, color: iconColor, wash: const Color(0xFF4DABF7)), // Sky
+              ),
+              const SizedBox(width: 8),
+              _NeoNaivePill(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  // Theme Toggle
+                },
+                child: const Icon(Icons.dark_mode_rounded, color: iconColor, size: 18),
+              ),
+              const SizedBox(width: 8),
+              _NeoNaivePill(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  _showPlaceholderModal(context, 'Notifications', Icons.notifications_rounded);
+                },
+                child: const Icon(Icons.notifications_rounded, color: iconColor, size: 18),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildLogo() {
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            gradient: const LinearGradient(
-              colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+  void _showPlaceholderModal(BuildContext context, String title, IconData icon) {
+    showGlassModal(
+      context: context,
+      builder: (context) {
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 64, color: AppTheme.brandPrimary),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+              ),
+            ],
           ),
-          child: const Icon(Icons.swipe_rounded, color: Colors.white, size: 16),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          'Swipess',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAvatar() {
-    return GestureDetector(
-      onTap: onProfileTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-          ),
-          border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
-        ),
-        child: avatarUrl != null
-            ? ClipOval(child: Image.network(avatarUrl!, fit: BoxFit.cover))
-            : const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-      ),
+        );
+      },
     );
   }
 }
 
-class _GlassPill extends StatelessWidget {
+class _NeoNaivePill extends StatelessWidget {
   final Widget child;
-  final VoidCallback? onTap;
-  final int badge;
+  final VoidCallback onTap;
+  final bool wide;
 
-  const _GlassPill({required this.child, this.onTap, this.badge = 0});
+  const _NeoNaivePill({
+    required this.child,
+    required this.onTap,
+    this.wide = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withAlpha(18),
-              border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-            ),
-            child: Center(child: child),
-          ),
-          if (badge > 0)
-            Positioned(
-              top: -2,
-              right: -2,
-              child: Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: AppTheme.brandPrimary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 1.5),
-                ),
-                child: Center(
-                  child: Text(
-                    badge > 9 ? '9+' : '$badge',
-                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ),
-        ],
+      child: Container(
+        height: 36,
+        padding: wide ? const EdgeInsets.symmetric(horizontal: 10) : null,
+        width: wide ? null : 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.transparent, // In TopBar.tsx, glass pill is transparent for header
+        ),
+        child: child,
       ),
+    );
+  }
+}
+
+class _IconSlot extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color wash;
+
+  const _IconSlot({
+    required this.icon,
+    required this.color,
+    required this.wash,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: wash.withAlpha(50),
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 14, color: wash), // Use wash color for the icon in neo-naive header
     );
   }
 }

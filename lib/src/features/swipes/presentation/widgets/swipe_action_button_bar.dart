@@ -22,50 +22,15 @@ class SwipeActionButtonBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _ActionButton(
-            icon: Icons.undo_rounded,
-            color: const Color(0xFF22C55E), // Green
-            size: 42,
-            iconSize: 22,
-            onTap: onUndo,
-            disabled: disabled || onUndo == null,
-          ),
-          _ActionButton(
-            icon: Icons.close_rounded,
-            color: const Color(0xFFEF4444), // Red
-            size: 60,
-            iconSize: 32,
-            onTap: onDislike,
-            disabled: disabled,
-          ),
-          _ActionButton(
-            icon: Icons.chat_bubble_rounded,
-            color: const Color(0xFF3B82F6), // Blue
-            size: 42,
-            iconSize: 20,
-            onTap: onMessage,
-            disabled: disabled || onMessage == null,
-          ),
-          _ActionButton(
-            icon: Icons.favorite_rounded,
-            color: const Color(0xFFFF5722), // Fire Orange
-            size: 60,
-            iconSize: 32,
-            onTap: onLike,
-            disabled: disabled,
-          ),
-          _ActionButton(
-            icon: Icons.remove_red_eye_rounded,
-            color: const Color(0xFF06B6D4), // Cyan
-            size: 42,
-            iconSize: 22,
-            onTap: onInsights,
-            disabled: disabled || onInsights == null,
-          ),
+          _ActionButton(icon: Icons.undo_rounded, color: const Color(0xFF22C55E), size: 48, iconSize: 22, onTap: onUndo, disabled: disabled),
+          _ActionButton(icon: Icons.close_rounded, color: const Color(0xFFEF4444), size: 68, iconSize: 34, onTap: onDislike, disabled: disabled),
+          _ActionButton(icon: Icons.chat_bubble_rounded, color: const Color(0xFF3B82F6), size: 48, iconSize: 20, onTap: onMessage, disabled: disabled),
+          _ActionButton(icon: Icons.local_fire_department_rounded, color: const Color(0xFFFF5722), size: 68, iconSize: 34, onTap: onLike, disabled: disabled),
+          _ActionButton(icon: Icons.remove_red_eye_rounded, color: const Color(0xFF06B6D4), size: 48, iconSize: 22, onTap: onInsights, disabled: disabled),
         ],
       ),
     );
@@ -80,34 +45,19 @@ class _ActionButton extends StatefulWidget {
   final VoidCallback? onTap;
   final bool disabled;
 
-  const _ActionButton({
-    required this.icon,
-    required this.color,
-    required this.size,
-    required this.iconSize,
-    this.onTap,
-    this.disabled = false,
-  });
+  const _ActionButton({required this.icon, required this.color, required this.size, required this.iconSize, this.onTap, this.disabled = false});
 
   @override
   State<_ActionButton> createState() => _ActionButtonState();
 }
 
-class _ActionButtonState extends State<_ActionButton>
-    with SingleTickerProviderStateMixin {
+class _ActionButtonState extends State<_ActionButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 100),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
   }
 
   @override
@@ -116,22 +66,9 @@ class _ActionButtonState extends State<_ActionButton>
     super.dispose();
   }
 
-  void _handleTapDown(TapDownDetails details) {
-    if (widget.disabled) return;
-    _controller.forward();
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    if (widget.disabled) return;
-    _controller.reverse();
-    HapticFeedback.lightImpact();
-    widget.onTap?.call();
-  }
-
-  void _handleTapCancel() {
-    if (widget.disabled) return;
-    _controller.reverse();
-  }
+  void _handleTapDown(_) => _controller.forward();
+  void _handleTapUp(_) { _controller.reverse(); if (widget.onTap != null) { HapticFeedback.lightImpact(); widget.onTap!(); } }
+  void _handleTapCancel() => _controller.reverse();
 
   @override
   Widget build(BuildContext context) {
@@ -140,33 +77,24 @@ class _ActionButtonState extends State<_ActionButton>
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
       child: ScaleTransition(
-        scale: _scaleAnimation,
+        scale: Tween<double>(begin: 1.0, end: 0.9).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic)),
         child: Container(
           width: widget.size,
           height: widget.size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: widget.color.withAlpha(widget.disabled ? 25 : 38),
-            boxShadow: widget.disabled
-                ? null
-                : [
-                    BoxShadow(
-                      color: widget.color.withAlpha(89),
-                      blurRadius: widget.size / 2.5,
-                      spreadRadius: 2,
-                    ),
-                  ],
-            border: Border.all(
-              color: widget.color.withAlpha(widget.disabled ? 51 : 127),
-              width: 1,
-            ),
+            color: widget.color.withAlpha(50),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withAlpha(100),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+            border: Border.all(color: widget.color.withAlpha(150), width: 1.5),
           ),
           child: Center(
-            child: Icon(
-              widget.icon,
-              size: widget.iconSize,
-              color: widget.color.withAlpha(widget.disabled ? 127 : 255),
-            ),
+            child: Icon(widget.icon, size: widget.iconSize, color: widget.color),
           ),
         ),
       ),

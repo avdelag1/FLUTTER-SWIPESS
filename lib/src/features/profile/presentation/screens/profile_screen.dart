@@ -2,7 +2,19 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/holographic_id_card.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
+import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
+import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
+import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
+import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
+import 'package:flutter_swipes/src/features/profile/data/profile_repository.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -10,884 +22,274 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0C),
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Ambient background glow orbs for glassmorphism accenting
-          Positioned(
-            top: -100,
-            right: -70,
-            child: _buildOrb(AppTheme.brandPrimary.withAlpha(45), 300),
+          // Ambient Background
+          Positioned.fill(
+            child: Container(color: const Color(0xFF0A0A0D)),
           ),
-          Positioned(
-            top: 220,
-            left: -90,
-            child: _buildOrb(AppTheme.brandAccent.withAlpha(35), 260),
-          ),
-          Positioned(
-            bottom: -60,
-            right: -50,
-            child: _buildOrb(AppTheme.brandPrimary.withAlpha(30), 220),
-          ),
-
-          // Main scrollable content
+          
           SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Top bar title header
-                  const _ProfileTopHeader(),
-                  const SizedBox(height: 24),
-
-                  // Hero section (avatar, name, bio, location, join date)
-                  const _ProfileHeroSection(),
-                  const SizedBox(height: 28),
-
-                  // Stats row (Listings, Swipes, Matches with animated feel)
-                  const _ProfileStatsRow(),
-                  const SizedBox(height: 28),
-
-                  // VIP Membership glass banner
-                  const _GlassVipBanner(),
-                  const SizedBox(height: 28),
-
-                  // Settings Menu (Edit Profile, Notifications, Privacy, Theme, Help)
-                  const _ProfileMenuSection(
-                    title: 'PREFERENCES',
-                    items: [
-                      _MenuItemData(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Edit Profile',
-                        subtitle: 'Update personal info, avatar & bio',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.notifications_none_rounded,
-                        title: 'Notifications',
-                        subtitle: 'Match alerts, messages & news',
-                        badge: '3',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.shield_outlined,
-                        title: 'Privacy & Security',
-                        subtitle: 'Account visibility & permissions',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.palette_outlined,
-                        title: 'Theme & Customization',
-                        subtitle: 'Dark glassmorphism theme',
-                      ),
-                      _MenuItemData(
-                        icon: Icons.help_outline_rounded,
-                        title: 'Help & Support',
-                        subtitle: 'FAQs, contact support & feedback',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Account section (Sign Out)
-                  const _ProfileAccountSection(),
-                  const SizedBox(height: 32),
-
-                  // App version footer
-                  Text(
-                    'Swipess v1.0.0 • Build 42',
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(80),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrb(Color color, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-        child: Container(color: Colors.transparent),
-      ),
-    );
-  }
-}
-
-// ─── Header Widget ────────────────────────────────────────────────────────────
-
-class _ProfileTopHeader extends StatelessWidget {
-  const _ProfileTopHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
-          ),
-        ),
-        _GlassIconButton(
-          icon: Icons.settings_outlined,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Settings tapped'),
-                backgroundColor: Color(0xFF1E1E24),
-                duration: Duration(seconds: 1),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Hero Section ─────────────────────────────────────────────────────────────
-
-class _ProfileHeroSection extends StatelessWidget {
-  const _ProfileHeroSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Avatar with gradient border ring & camera edit badge
-        Stack(
-          children: [
-            Container(
-              width: 104,
-              height: 104,
-              padding: const EdgeInsets.all(3),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x66FF4D00),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFF0A0A0C),
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.white.withAlpha(20),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color: Colors.white,
-                        size: 48,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-                  ),
-                  border: Border.all(color: const Color(0xFF0A0A0C), width: 2),
-                ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // User Name + Verified Badge
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Alejandro Villarreal',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(width: 6),
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-              ).createShader(bounds),
-              child: const Icon(
-                Icons.verified_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        // Bio Text
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            'Luxury Real Estate Investor & Property Enthusiast 🏙️ | Swiping for dream penthouses & architectural icons ✨',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withAlpha(180),
-              fontSize: 13,
-              height: 1.45,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Location & Join Date pills
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 8,
-          children: const [
-            _InfoPill(
-              icon: Icons.location_on_rounded,
-              iconColor: AppTheme.brandPrimary,
-              label: 'Miami, FL',
-            ),
-            _InfoPill(
-              icon: Icons.calendar_month_rounded,
-              iconColor: AppTheme.brandAccent,
-              label: 'Member since Jan 2024',
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-// ─── Info Pill ────────────────────────────────────────────────────────────────
-
-class _InfoPill extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
-  const _InfoPill({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withAlpha(220),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Animated Stats Row ───────────────────────────────────────────────────────
-
-class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(13),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: const [
-              _StatItem(
-                label: 'Listings',
-                targetValue: 12,
-                suffix: '',
-              ),
-              _StatDivider(),
-              _StatItem(
-                label: 'Swipes',
-                targetValue: 1482,
-                suffix: '',
-              ),
-              _StatDivider(),
-              _StatItem(
-                label: 'Matches',
-                targetValue: 94,
-                suffix: '',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final int targetValue;
-  final String suffix;
-
-  const _StatItem({
-    required this.label,
-    required this.targetValue,
-    required this.suffix,
-  });
-
-  String _formatNumber(int val) {
-    if (val >= 1000) {
-      final k = (val / 1000).toStringAsFixed(1);
-      return '${k}k';
-    }
-    return '$val';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: targetValue.toDouble()),
-          duration: const Duration(milliseconds: 1400),
-          curve: Curves.easeOutCubic,
-          builder: (context, value, child) {
-            return ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Colors.white, Color(0xFFE2E8F0)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ).createShader(bounds),
-              child: Text(
-                '${_formatNumber(value.round())}$suffix',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withAlpha(140),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatDivider extends StatelessWidget {
-  const _StatDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 32,
-      color: Colors.white.withAlpha(25),
-    );
-  }
-}
-
-// ─── VIP Banner Card ─────────────────────────────────────────────────────────
-
-class _GlassVipBanner extends StatelessWidget {
-  const _GlassVipBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.brandAccent.withAlpha(35),
-                AppTheme.brandPrimary.withAlpha(35),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.brandPrimary.withAlpha(75),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
-                  ),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              children: [
+                // Top Nav
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'SWIPESS VIP MEMBER',
+                      'YOUR ID',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Unlimited swipes & priority placement',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(175),
-                        fontSize: 12,
-                      ),
+                    _GlassPillButton(
+                      icon: Icons.settings_rounded,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                        );
+                      },
                     ),
                   ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.brandPrimary,
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 32),
+                
+                // Holographic ID
+                Consumer(
+                  builder: (context, ref, child) {
+                    final profileAsync = ref.watch(currentProfileProvider);
+                    return profileAsync.when(
+                      data: (profile) {
+                        if (profile == null) {
+                          // Fallback or unauthenticated
+                          return const HolographicIDCard(
+                            name: 'Guest User',
+                            idNumber: 'SWS-0000',
+                            occupation: 'Welcome',
+                            location: 'World',
+                            years: '0 yr',
+                            bio: 'Please log in to view your profile.',
+                          );
+                        }
+                        
+                        // Extract fields with fallbacks
+                        final name = profile['name'] ?? profile['full_name'] ?? 'Unknown User';
+                        final idNumber = profile['id']?.toString().substring(0, 8) ?? 'SWS-XXXX';
+                        final occupation = profile['occupation'] ?? 'Visionary';
+                        final location = profile['city'] ?? profile['location'] ?? 'Global';
+                        final years = '${profile['years_in_city'] ?? 1} yr';
+                        final bio = profile['bio'] ?? profile['vap_bio'] ?? 'Building the exclusive ecosystem for visionaries.';
+                        
+                        // Handle avatar which could be string or JSON
+                        String? avatarUrl;
+                        if (profile['avatar_url'] != null) {
+                          avatarUrl = profile['avatar_url'];
+                        } else if (profile['profile_images'] != null) {
+                          final images = profile['profile_images'];
+                          if (images is List && images.isNotEmpty) {
+                            avatarUrl = images.first.toString();
+                          } else if (images is String) {
+                            avatarUrl = images;
+                          }
+                        }
+
+                        return HolographicIDCard(
+                          name: name,
+                          idNumber: idNumber.toUpperCase(),
+                          occupation: occupation,
+                          location: location,
+                          years: years,
+                          bio: bio,
+                          avatarUrl: avatarUrl,
+                        );
+                      },
+                      loading: () => const SizedBox(
+                        height: 200, 
+                        child: Center(child: CircularProgressIndicator(color: Color(0xFFFF4D00))),
+                      ),
+                      error: (e, st) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
+                    );
+                  },
                 ),
-                child: const Text(
-                  'PRO',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
+                const SizedBox(height: 48),
+
+                // Settings List
+                _buildSettingsButton(Icons.edit_rounded, 'Edit Profile'),
+                const SizedBox(height: 12),
+                _buildSettingsButton(Icons.shield_rounded, 'Privacy & Security'),
+                const SizedBox(height: 12),
+                _buildSettingsButton(Icons.payment_rounded, 'Payment Methods'),
+                const SizedBox(height: 12),
+                _buildSettingsButton(Icons.notifications_rounded, 'Notifications'),
+                const SizedBox(height: 32),
+                
+                // Log Out
+                GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    decoration: BoxDecoration(
+                      color: AppTheme.brandPrimary.withAlpha(25),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: AppTheme.brandPrimary.withAlpha(50)),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'LOG OUT',
+                        style: TextStyle(
+                          color: AppTheme.brandPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                
+                const SizedBox(height: 32),
+                
+                // Navigation Actions
+                _buildProfileAction(context, 'Owner Dashboard', Icons.dashboard_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Roommate Matching', Icons.people_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Video Tours', Icons.play_circle_filled_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VideoToursScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Market Trends', Icons.bar_chart_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PriceTrackerScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Escrow Vault', Icons.shield_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Document Vault', Icons.folder_shared_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DocumentVaultScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Subscriptions & Upgrades', Icons.star_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SubscriptionPackagesScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Maintenance Requests', Icons.build_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MaintenanceRequestsScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'Local Intel', Icons.travel_explore_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocalIntelScreen()));
+                }),
+                const SizedBox(height: 16),
+                _buildProfileAction(context, 'FAQ & Help', Icons.help_outline_rounded, () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FAQScreen()));
+                }),
+                
+                const SizedBox(height: 120),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
-}
 
-// ─── Settings Menu Section ────────────────────────────────────────────────────
-
-class _MenuItemData {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String? badge;
-
-  const _MenuItemData({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.badge,
-  });
-}
-
-class _ProfileMenuSection extends StatelessWidget {
-  final String title;
-  final List<_MenuItemData> items;
-
-  const _ProfileMenuSection({
-    required this.title,
-    required this.items,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            title,
-            style: TextStyle(
-              color: Colors.white.withAlpha(120),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(13),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-              ),
-              child: Column(
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isLast = index == items.length - 1;
-                  return Column(
-                    children: [
-                      _GlassMenuItemTile(
-                        item: item,
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${item.title} tapped'),
-                              backgroundColor: const Color(0xFF1E1E24),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      ),
-                      if (!isLast)
-                        Divider(
-                          height: 1,
-                          thickness: 1,
-                          indent: 60,
-                          endIndent: 16,
-                          color: Colors.white.withAlpha(18),
-                        ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlassMenuItemTile extends StatelessWidget {
-  final _MenuItemData item;
-  final VoidCallback onTap;
-
-  const _GlassMenuItemTile({
-    required this.item,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
+  Widget _buildProfileAction(BuildContext context, String title, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
       onTap: onTap,
-      splashColor: Colors.white.withAlpha(20),
-      highlightColor: Colors.white.withAlpha(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(12),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withAlpha(25)),
+        ),
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withAlpha(18),
-                border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-              ),
-              child: Icon(
-                item.icon,
-                color: Colors.white.withAlpha(230),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 14),
+            Icon(icon, color: AppTheme.brandPrimary, size: 24),
+            const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withAlpha(130),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+              child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
             ),
-            if (item.badge != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.brandAccent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  item.badge!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white.withAlpha(120),
-              size: 22,
-            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white.withAlpha(100), size: 24),
           ],
         ),
       ),
     );
   }
-}
 
-// ─── Account Section (Sign Out) ───────────────────────────────────────────────
-
-class _ProfileAccountSection extends StatelessWidget {
-  const _ProfileAccountSection();
-
-  Future<void> _handleSignOut(BuildContext context) async {
-    try {
-      await Supabase.instance.client.auth.signOut();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signed out successfully'),
-            backgroundColor: Color(0xFF1E1E24),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign out error: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 10),
-          child: Text(
-            'ACCOUNT',
-            style: TextStyle(
-              color: Colors.white.withAlpha(120),
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+  Widget _buildSettingsButton(IconData icon, String title) {
+    return GestureDetector(
+      onTap: () {},
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(12),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withAlpha(25), width: 1),
             ),
-          ),
-        ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(13),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withAlpha(25), width: 1),
-              ),
-              child: InkWell(
-                onTap: () => _handleSignOut(context),
-                borderRadius: BorderRadius.circular(24),
-                splashColor: const Color(0xFFFF453A).withAlpha(30),
-                highlightColor: const Color(0xFFFF453A).withAlpha(15),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFFF453A).withAlpha(25),
-                          border: Border.all(
-                            color: const Color(0xFFFF453A).withAlpha(50),
-                            width: 1,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.logout_rounded,
-                          color: Color(0xFFFF453A),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Sign Out',
-                              style: TextStyle(
-                                color: Color(0xFFFF453A),
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Log out of your Swipess session',
-                              style: TextStyle(
-                                color: Colors.white.withAlpha(130),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: Color(0xFFFF453A),
-                        size: 22,
-                      ),
-                    ],
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white.withAlpha(200), size: 24),
+                const SizedBox(width: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
+                const Spacer(),
+                Icon(Icons.chevron_right_rounded, color: Colors.white.withAlpha(100), size: 24),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
-// ─── Glass Icon Button Helper ─────────────────────────────────────────────────
-
-class _GlassIconButton extends StatelessWidget {
+class _GlassPillButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _GlassIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _GlassPillButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withAlpha(18),
-          border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white.withAlpha(230),
-            size: 20,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(20),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withAlpha(40), width: 1),
+            ),
+            child: Center(child: Icon(icon, color: Colors.white, size: 24)),
           ),
         ),
       ),

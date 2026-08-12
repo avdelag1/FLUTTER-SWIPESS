@@ -1,108 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 
-/// Data model representing a conversation in the Swipess inbox.
-class Conversation {
-  final String id;
-  final String name;
-  final String lastMessage;
-  final String timestamp;
-  final int unreadCount;
-  final String avatarUrl;
-  final bool isOnline;
-  final String? listingTag;
-
-  const Conversation({
-    required this.id,
-    required this.name,
-    required this.lastMessage,
-    required this.timestamp,
-    required this.unreadCount,
-    required this.avatarUrl,
-    this.isOnline = false,
-    this.listingTag,
-  });
-}
-
-/// Riverpod Notifier for managing search text input state.
-class MessagesSearchQueryNotifier extends Notifier<String> {
-  @override
-  String build() => '';
-
-  void update(String query) => state = query;
-}
-
-final messagesSearchQueryProvider =
-    NotifierProvider<MessagesSearchQueryNotifier, String>(
-        MessagesSearchQueryNotifier.new);
-
-/// Riverpod provider delivering sample conversations filtered by search query.
-final conversationsProvider = Provider<List<Conversation>>((ref) {
-  const sampleConversations = [
-    Conversation(
-      id: '1',
-      name: 'Sophia Martinez',
-      lastMessage: 'Hey! Is the beachfront penthouse still available for viewing this weekend?',
-      timestamp: '2m ago',
-      unreadCount: 2,
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      isOnline: true,
-      listingTag: 'Miami Villa',
-    ),
-    Conversation(
-      id: '2',
-      name: 'Alexander Wright',
-      lastMessage: 'Awesome! Thanks for sending over the lease agreement details.',
-      timestamp: '15m ago',
-      unreadCount: 1,
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-      isOnline: true,
-      listingTag: 'Penthouse NYC',
-    ),
-    Conversation(
-      id: '3',
-      name: 'Elena Rostova',
-      lastMessage: 'Loved the property photos! Let\'s schedule a virtual tour soon.',
-      timestamp: '1h ago',
-      unreadCount: 0,
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
-      isOnline: false,
-      listingTag: 'Ocean View',
-    ),
-    Conversation(
-      id: '4',
-      name: 'Marcus Vance',
-      lastMessage: 'Sounds like a plan. I will follow up with the manager shortly.',
-      timestamp: '3h ago',
-      unreadCount: 3,
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-      isOnline: true,
-      listingTag: 'Malibu Estate',
-    ),
-    Conversation(
-      id: '5',
-      name: 'Isabella Cruz',
-      lastMessage: 'Great connecting with you on Swipess! Hope to talk soon.',
-      timestamp: 'Yesterday',
-      unreadCount: 0,
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-      isOnline: false,
-      listingTag: 'Downtown Loft',
-    ),
-  ];
-
-  final query = ref.watch(messagesSearchQueryProvider).trim().toLowerCase();
-  if (query.isEmpty) return sampleConversations;
-
-  return sampleConversations.where((item) {
-    final matchesName = item.name.toLowerCase().contains(query);
-    final matchesMsg = item.lastMessage.toLowerCase().contains(query);
-    final matchesTag = item.listingTag?.toLowerCase().contains(query) ?? false;
-    return matchesName || matchesMsg || matchesTag;
-  }).toList();
-});
+import 'package:flutter_swipes/src/features/messages/presentation/providers/message_providers.dart';
+import 'package:flutter_swipes/src/features/messages/domain/models/conversation.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 
 /// Premium glassmorphic Messages/Chat inbox screen for Swipess.
 class MessagesScreen extends ConsumerWidget {
@@ -110,67 +13,46 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final conversations = ref.watch(conversationsProvider);
+    final conversationsAsync = ref.watch(filteredConversationsProvider);
     final searchQuery = ref.watch(messagesSearchQueryProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.surfaceColor,
+      backgroundColor: AppTheme.dashBg,
       body: Stack(
         children: [
-          // Background ambient light gradients
-          Positioned(
-            top: -80,
-            right: -60,
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.brandPrimary.withAlpha(26),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 120,
-            left: -70,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.brandAccent.withAlpha(20),
-              ),
-            ),
-          ),
 
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  _buildHeader(conversations),
-                  const SizedBox(height: 16),
-                  _buildSearchBar(ref, searchQuery),
-                  const SizedBox(height: 16),
-                  _buildActiveMatchesRow(),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: conversations.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.separated(
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: conversations.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              return _ConversationTile(
-                                conversation: conversations[index],
-                              );
-                            },
-                          ),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: conversationsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
+                error: (error, _) => Center(child: Text('Error: $error', style: const TextStyle(color: Colors.white))),
+                data: (conversations) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    _buildHeader(conversations),
+                    const SizedBox(height: 16),
+                    _buildSearchBar(ref, searchQuery),
+                    const SizedBox(height: 16),
+                    _buildActiveMatchesRow(),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: conversations.isEmpty
+                          ? _buildEmptyState()
+                          : ListView.separated(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: conversations.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                return _ConversationTile(
+                                  conversation: conversations[index],
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -196,7 +78,7 @@ class MessagesScreen extends ConsumerWidget {
               child: const Text(
                 'Messages',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.5,
@@ -232,12 +114,12 @@ class MessagesScreen extends ConsumerWidget {
           height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withAlpha(18),
-            border: Border.all(color: Colors.white.withAlpha(30), width: 1),
+            color: AppTheme.dashWell,
+            border: Border.all(color: AppTheme.dashGlassBorder),
           ),
           child: IconButton(
             padding: EdgeInsets.zero,
-            icon: Icon(Icons.more_vert_rounded, color: Colors.white.withAlpha(200), size: 20),
+            icon: const Icon(Icons.more_vert_rounded, color: AppTheme.textSecondary, size: 20),
             onPressed: () {},
           ),
         ),
@@ -246,18 +128,14 @@ class MessagesScreen extends ConsumerWidget {
   }
 
   Widget _buildSearchBar(WidgetRef ref, String query) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(18),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-          ),
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppTheme.dashElevated,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.dashGlassBorder),
+      ),
           child: Row(
             children: [
               Icon(
@@ -269,13 +147,13 @@ class MessagesScreen extends ConsumerWidget {
               Expanded(
                 child: TextField(
                   onChanged: (val) {
-                    ref.read(messagesSearchQueryProvider.notifier).update(val);
+                    ref.read(messagesSearchQueryProvider.notifier).updateQuery(val);
                   },
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
-                  decoration: InputDecoration(
+                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 15),
+                  decoration: const InputDecoration(
                     hintText: 'Search messages, people or tags...',
                     hintStyle: TextStyle(
-                      color: Colors.white.withAlpha(100),
+                      color: AppTheme.textTertiary,
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
@@ -286,18 +164,16 @@ class MessagesScreen extends ConsumerWidget {
               if (query.isNotEmpty)
                 GestureDetector(
                   onTap: () {
-                    ref.read(messagesSearchQueryProvider.notifier).update('');
+                    ref.read(messagesSearchQueryProvider.notifier).updateQuery('');
                   },
-                  child: Icon(
+                  child: const Icon(
                     Icons.close_rounded,
-                    color: Colors.white.withAlpha(180),
+                    color: AppTheme.textSecondary,
                     size: 20,
                   ),
                 ),
             ],
           ),
-        ),
-      ),
     );
   }
 
@@ -335,7 +211,11 @@ class MessagesScreen extends ConsumerWidget {
               final isOnline = match['online'] as bool;
               return Column(
                 children: [
-                  Stack(
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileDetailScreen()));
+                    },
+                    child: Stack(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(2),
@@ -366,6 +246,7 @@ class MessagesScreen extends ConsumerWidget {
                           ),
                         ),
                     ],
+                  ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -435,212 +316,156 @@ class _ConversationTile extends StatelessWidget {
     required this.conversation,
   });
 
+  
   @override
   Widget build(BuildContext context) {
     final hasUnread = conversation.unreadCount > 0;
+    final name = conversation.clientProfile?.displayName ?? conversation.ownerProfile?.displayName ?? 'Unknown';
+    final avatarUrl = conversation.clientProfile?.avatarUrl ?? conversation.ownerProfile?.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
+    final lastMessage = conversation.lastMessageText ?? 'No messages yet';
+    final timestamp = conversation.lastMessageAt != null 
+        ? '${conversation.lastMessageAt!.month}/${conversation.lastMessageAt!.day}' 
+        : '';
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () {
+        context.push('/chat', extra: conversation);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: hasUnread
+              ? AppTheme.dashElevated
+              : AppTheme.dashWell,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
             color: hasUnread
-                ? Colors.white.withAlpha(22)
-                : Colors.white.withAlpha(12),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: hasUnread
-                  ? AppTheme.brandPrimary.withAlpha(80)
-                  : Colors.white.withAlpha(25),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(40),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                ? AppTheme.brandPrimary.withAlpha(128)
+                : AppTheme.dashGlassBorder,
+            width: 1,
           ),
-          child: Row(
-            children: [
-              // Avatar circle with gradient border & online dot
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: hasUnread
-                            ? [AppTheme.brandAccent, AppTheme.brandPrimary]
-                            : [Colors.white.withAlpha(60), Colors.white.withAlpha(20)],
-                      ),
+          boxShadow: hasUnread
+              ? [
+                  BoxShadow(
+                    color: AppTheme.brandPrimary.withAlpha(40),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: hasUnread
+                          ? [AppTheme.brandAccent, AppTheme.brandPrimary]
+                          : [Colors.white.withAlpha(60), Colors.white.withAlpha(20)],
                     ),
-                    child: CircleAvatar(
-                      radius: 26,
-                      backgroundColor: AppTheme.surfaceColor,
-                      child: ClipOval(
-                        child: Image.network(
-                          conversation.avatarUrl,
-                          width: 52,
-                          height: 52,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.white.withAlpha(20),
-                              child: Center(
-                                child: Text(
-                                  conversation.name.isNotEmpty
-                                      ? conversation.name[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: AppTheme.surfaceColor,
+                    child: ClipOval(
+                      child: Image.network(
+                        avatarUrl,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.white.withAlpha(20),
+                            child: Center(
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                  if (conversation.isOnline)
-                    Positioned(
-                      right: 2,
-                      bottom: 2,
-                      child: Container(
-                        width: 13,
-                        height: 13,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 16,
+                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    lastMessage,
+                    style: TextStyle(
+                      color: hasUnread ? AppTheme.textPrimary : AppTheme.textSecondary,
+                      fontSize: 13,
+                      fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
-
-              const SizedBox(width: 14),
-
-              // Conversation details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            conversation.name,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
-                              letterSpacing: -0.3,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (conversation.listingTag != null) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(18),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: Colors.white.withAlpha(30),
-                                width: 0.5,
-                              ),
-                            ),
-                            child: Text(
-                              conversation.listingTag!,
-                              style: TextStyle(
-                                color: Colors.white.withAlpha(180),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  timestamp,
+                  style: TextStyle(
+                    color: hasUnread ? AppTheme.brandPrimary : AppTheme.textTertiary,
+                    fontSize: 11,
+                    fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                if (hasUnread)
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: AppTheme.brandPrimary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: AppTheme.brandPrimary.withAlpha(120), blurRadius: 8, offset: const Offset(0, 2)),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      conversation.lastMessage,
-                      style: TextStyle(
-                        color: hasUnread
-                            ? Colors.white.withAlpha(230)
-                            : Colors.white.withAlpha(120),
-                        fontSize: 13,
-                        fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                    child: Text(
+                      '${conversation.unreadCount}',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              // Timestamp & Unread badge
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    conversation.timestamp,
-                    style: TextStyle(
-                      color: hasUnread
-                          ? AppTheme.brandPrimary
-                          : Colors.white.withAlpha(120),
-                      fontSize: 11,
-                      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  if (hasUnread)
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: AppTheme.brandPrimary,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.brandPrimary.withAlpha(120),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 20,
-                        minHeight: 20,
-                      ),
-                      child: Text(
-                        '${conversation.unreadCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  else
-                    const SizedBox(height: 20),
-                ],
-              ),
-            ],
-          ),
+                  )
+                else
+                  const SizedBox(height: 20),
+              ],
+            ),
+          ],
         ),
       ),
     );

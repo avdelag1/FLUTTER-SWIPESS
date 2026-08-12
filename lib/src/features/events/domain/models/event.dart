@@ -4,51 +4,49 @@ import 'package:flutter/foundation.dart';
 class Event {
   final String id;
   final String title;
+  final String? description;
   final String category;
-  final String dateTime;
-  final String location;
-  final int attendeeCount;
-  final String imageUrl;
-  final String price;
-  final String badge;
-  final bool isBookmarked;
+  final String? imageUrl;
+  final DateTime? eventDate;
+  final String? location;
+  final String? locationDetail;
+  final String? organizerName;
+  final bool isFree;
+  final String? priceText;
+  final String? promoText;
+  final String? discountTag;
 
   const Event({
     required this.id,
     required this.title,
-    required this.category,
-    required this.dateTime,
-    required this.location,
-    required this.attendeeCount,
-    required this.imageUrl,
-    this.price = 'Free',
-    this.badge = '',
-    this.isBookmarked = false,
+    this.description,
+    this.category = 'event',
+    this.imageUrl,
+    this.eventDate,
+    this.location,
+    this.locationDetail,
+    this.organizerName,
+    this.isFree = false,
+    this.priceText,
+    this.promoText,
+    this.discountTag,
   });
 
-  Event copyWith({
-    String? id,
-    String? title,
-    String? category,
-    String? dateTime,
-    String? location,
-    int? attendeeCount,
-    String? imageUrl,
-    String? price,
-    String? badge,
-    bool? isBookmarked,
-  }) {
+  factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      category: category ?? this.category,
-      dateTime: dateTime ?? this.dateTime,
-      location: location ?? this.location,
-      attendeeCount: attendeeCount ?? this.attendeeCount,
-      imageUrl: imageUrl ?? this.imageUrl,
-      price: price ?? this.price,
-      badge: badge ?? this.badge,
-      isBookmarked: isBookmarked ?? this.isBookmarked,
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      category: json['category'] as String? ?? 'event',
+      imageUrl: json['image_url'] as String?,
+      eventDate: json['event_date'] != null ? DateTime.tryParse(json['event_date'] as String) : null,
+      location: json['location'] as String?,
+      locationDetail: json['location_detail'] as String?,
+      organizerName: json['organizer_name'] as String?,
+      isFree: json['is_free'] as bool? ?? false,
+      priceText: json['price_text'] as String?,
+      promoText: json['promo_text'] as String?,
+      discountTag: json['discount_tag'] as String?,
     );
   }
 }

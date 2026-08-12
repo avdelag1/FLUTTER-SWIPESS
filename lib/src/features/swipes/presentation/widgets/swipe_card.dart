@@ -1,8 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 
-/// Premium swipe card with image background, gradient overlay, and glass info chips.
 class SwipeCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -26,17 +23,14 @@ class SwipeCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(32),
+        // Dynamic box shadow happens in SwipeableCardStack via transform, but we give a base one here
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(120),
             blurRadius: 40,
             offset: const Offset(0, 16),
-          ),
-          BoxShadow(
-            color: AppTheme.brandPrimary.withAlpha(30),
-            blurRadius: 60,
-            offset: const Offset(0, 30),
           ),
         ],
       ),
@@ -49,121 +43,81 @@ class SwipeCard extends StatelessWidget {
               imageUrl!,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => _buildFallbackGradient(),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _buildFallbackGradient(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white.withAlpha(127),
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  ),
-                );
-              },
             )
           else
             _buildFallbackGradient(),
 
-          // Bottom gradient overlay for text readability
+          // Bottom gradient overlay - heavily weighted at the bottom like React app
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.4, 0.7, 1.0],
+                  stops: const [0.5, 0.7, 0.9, 1.0],
                   colors: [
                     Colors.transparent,
-                    Colors.transparent,
-                    Colors.black.withAlpha(100),
-                    Colors.black.withAlpha(200),
+                    Colors.black.withAlpha(80),
+                    Colors.black.withAlpha(180),
+                    Colors.black.withAlpha(240),
                   ],
                 ),
               ),
             ),
           ),
 
-          // Tags row at top
-          if (tags.isNotEmpty)
-            Positioned(
-              top: 16,
-              left: 16,
-              right: 16,
-              child: Row(
-                children: tags.take(3).map((tag) => Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: _GlassChip(label: tag),
-                )).toList(),
-              ),
-            ),
-
-          // Price badge top-right
+          // Price badge top-left (Swipes puts tags top-left, price top-left)
           if (price != null)
             Positioned(
-              top: 16,
-              right: 16,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.brandPrimary.withAlpha(50),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.brandPrimary.withAlpha(80), width: 1),
-                    ),
-                    child: Text(
-                      price!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
+              top: 24,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(150),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withAlpha(50), width: 1),
+                ),
+                child: Text(
+                  price!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ),
 
-          // Bottom info
+          // Bottom info (Title and subtitle)
           Positioned(
             left: 20,
             right: 20,
-            bottom: 20,
+            bottom: 120, // Leave room for action buttons
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  title.toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
                     height: 1.1,
-                    letterSpacing: -1,
-                    shadows: [
-                      Shadow(color: Colors.black, blurRadius: 20),
-                    ],
+                    letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on_rounded, color: Colors.white.withAlpha(200), size: 14),
+                    Icon(Icons.location_on_rounded, color: Colors.white.withAlpha(200), size: 16),
                     const SizedBox(width: 4),
                     Text(
-                      subtitle,
+                      subtitle.isNotEmpty ? subtitle : 'Unknown Location',
                       style: TextStyle(
-                        color: Colors.white.withAlpha(200),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: -0.2,
-                        shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
+                        color: Colors.white.withAlpha(220),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -172,52 +126,20 @@ class SwipeCard extends StatelessWidget {
             ),
           ),
 
-          // Custom overlay (e.g. swipe direction indicator)
-          ?overlay,
+          // Overlay (Direction Stamps)
+          overlay ?? const SizedBox.shrink(),
         ],
       ),
     );
   }
 
-  Widget _buildFallbackGradient({Widget? child}) {
+  Widget _buildFallbackGradient() {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-        ),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _GlassChip extends StatelessWidget {
-  final String label;
-  const _GlassChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(25),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withAlpha(40), width: 0.5),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withAlpha(230),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ),
       ),
     );
