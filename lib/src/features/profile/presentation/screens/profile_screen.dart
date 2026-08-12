@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
@@ -1380,6 +1381,11 @@ class _MoreToolsGrid extends StatelessWidget {
         () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const EventFavoritesScreen()),
             )
+      ),
+      (
+        Icons.psychology_rounded,
+        'AI Memory / Brain',
+        () => showMemoryDrawer(context),
       ),
       (
         Icons.bookmark_border_rounded,

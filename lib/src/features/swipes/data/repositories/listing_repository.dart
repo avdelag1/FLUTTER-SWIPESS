@@ -182,6 +182,35 @@ class ListingRepository {
     return urls;
   }
 
+  /// Cap `listing-videos` bucket — optional 10s loop for the swipe card.
+  Future<String?> uploadListingVideo({
+    required String userId,
+    required XFile file,
+  }) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.lengthInBytes > 50 * 1024 * 1024) {
+      throw Exception('Video must be under 50MB.');
+    }
+    final lower = file.name.toLowerCase();
+    final ext = lower.endsWith('.webm')
+        ? 'webm'
+        : lower.endsWith('.mov')
+            ? 'mov'
+            : 'mp4';
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final contentType = switch (ext) {
+      'webm' => 'video/webm',
+      'mov' => 'video/quicktime',
+      _ => 'video/mp4',
+    };
+    await _client.storage.from('listing-videos').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
+    return _client.storage.from('listing-videos').getPublicUrl(path);
+  }
+
   /// Insert a listing, stripping columns the live schema rejects — same
   /// retry strategy as Capacitor `saveListingWithSchemaRetry`.
   Future<Listing> createListing(Map<String, dynamic> payload) async {

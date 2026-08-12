@@ -53,10 +53,22 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     );
   }
 
+  Future<void> pickVideo() async {
+    final picker = ImagePicker();
+    final file = await picker.pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(seconds: 30),
+    );
+    if (file == null) return;
+    state = state.copyWith(video: file, clearError: true);
+  }
+
   void removePhoto(int index) {
     final next = List.of(state.photos)..removeAt(index);
     state = state.copyWith(photos: next);
   }
+
+  void removeVideo() => state = state.copyWith(clearVideo: true);
 
   Future<bool> publish() async {
     final user = Supabase.instance.client.auth.currentUser;
@@ -83,7 +95,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         userId: user.id,
         files: state.photos,
       );
-      final payload = _payload(user.id, urls, coords);
+      String? videoUrl;
+      final video = state.video;
+      if (video != null) {
+        videoUrl = await repo.uploadListingVideo(
+          userId: user.id,
+          file: video,
+        );
+      }
+      final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       await repo.createListing(payload);
       state = const ListingDraft();
       return true;
@@ -99,8 +119,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   Map<String, dynamic> _payload(
     String userId,
     List<String> images,
-    ({double lat, double lng, String country, String state}) coords,
-  ) {
+    ({double lat, double lng, String country, String state}) coords, {
+    String? videoUrl,
+  }) {
     final draft = state;
     final isVehicle = draft.category == ListingCategory.motorcycle ||
         draft.category == ListingCategory.bicycle ||
@@ -137,6 +158,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'longitude': coords.lng,
       'images': images,
       'image_url': images.isNotEmpty ? images.first : null,
+      'video_url': videoUrl,
       'amenities': draft.amenities,
       'services_included': draft.included,
     };
@@ -156,8 +178,12 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (draft.category == ListingCategory.worker) {
       data['service_category'] = draft.serviceCategory;
       data['pricing_unit'] = _pricingUnitSlug(draft.pricingUnit);
-      data['skills'] = draft.traits;
+      data['skills'] = <String>{
+        ...draft.skills,
+        ...draft.traits,
+      }.toList();
       data['time_slots_available'] = draft.availability;
+      data['languages'] = draft.languages;
     }
 
     if (isVehicle) {
@@ -214,7 +240,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         return '$title in ${draft.city}';
       case ListingCategory.worker:
         final name = serviceCategoryLabel(draft.serviceCategory);
-        final adj = draft.traits.isNotEmpty ? '${draft.traits.first} ' : '';
+        final adj = draft.traits.isNotEmpty
+            ? '${draft.traits.first} '
+            : (draft.skills.isNotEmpty ? '${draft.skills.first} ' : '');
         return '$adj$name · ${draft.city}'.trim();
       case ListingCategory.motorcycle:
       case ListingCategory.bicycle:
@@ -233,6 +261,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
 
   String _description() {
     final draft = state;
+    if (draft.description.trim().isNotEmpty) return draft.description.trim();
     return ListingTaxonomies.joinChips([
       ...draft.adjectives.take(1),
       ...draft.sizes.take(1),
@@ -246,6 +275,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       ...draft.features,
       ...draft.vehicleIncluded,
       ...draft.traits,
+      ...draft.skills,
       ...draft.availability,
       if (draft.serviceCategory != null)
         serviceCategoryLabel(draft.serviceCategory),

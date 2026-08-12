@@ -24,16 +24,18 @@ class ChipSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xB3FFFFFF),
-            fontWeight: FontWeight.w800,
-            fontSize: 11,
-            letterSpacing: 1.6,
+        if (label.trim().isNotEmpty) ...[
+          Text(
+            label.toUpperCase(),
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xB3FFFFFF),
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+              letterSpacing: 1.6,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
+        ],
         Wrap(
           spacing: 8,
           runSpacing: 8,

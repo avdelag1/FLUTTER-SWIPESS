@@ -31,6 +31,7 @@ class AddListingScreen extends ConsumerStatefulWidget {
 class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   late final TextEditingController _title;
   late final TextEditingController _price;
+  late final TextEditingController _description;
   late final TextEditingController _neighborhood;
   late final TextEditingController _year;
   late final TextEditingController _mileage;
@@ -53,6 +54,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     final draft = ref.read(addListingProvider);
     _title = TextEditingController(text: draft.title);
     _price = TextEditingController(text: draft.price);
+    _description = TextEditingController(text: draft.description);
     _neighborhood = TextEditingController(text: draft.neighborhood);
     _year = TextEditingController(text: draft.year);
     _mileage = TextEditingController(text: draft.mileage);
@@ -94,6 +96,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   void dispose() {
     _title.dispose();
     _price.dispose();
+    _description.dispose();
     _neighborhood.dispose();
     _year.dispose();
     _mileage.dispose();
@@ -183,6 +186,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                     draft: draft,
                     title: _title,
                     price: _price,
+                    description: _description,
                     neighborhood: _neighborhood,
                     year: _year,
                     mileage: _mileage,
@@ -231,6 +235,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     notifier.update((current) => current.copyWith(
           title: _title.text,
           price: _price.text,
+          description: _description.text,
           neighborhood: _neighborhood.text,
           year: _year.text,
           mileage: _mileage.text,
@@ -543,14 +548,15 @@ class _PhotosStep extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Up to ${draft.maxPhotos} photos · first photo is the swipe cover',
+          'PHOTOS · up to ${draft.maxPhotos} · first is the swipe cover',
           style: GoogleFonts.plusJakartaSans(
             color: Colors.white70,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+            letterSpacing: 0.6,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -573,7 +579,8 @@ class _PhotosStep extends ConsumerWidget {
                       style: BorderStyle.solid,
                     ),
                   ),
-                  child: const Icon(Icons.add_a_photo_rounded, color: Colors.white70),
+                  child: const Icon(Icons.add_a_photo_rounded,
+                      color: Colors.white70),
                 ),
               );
             }
@@ -583,7 +590,7 @@ class _PhotosStep extends ConsumerWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: FutureBuilder<Uint8List>(
+                  child: FutureBuilder(
                     future: photo.readAsBytes(),
                     builder: (context, snap) {
                       if (!snap.hasData) {
@@ -606,10 +613,112 @@ class _PhotosStep extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (index == 0)
+                  Positioned(
+                    left: 6,
+                    bottom: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'COVER',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             );
           },
         ),
+        const SizedBox(height: 22),
+        Text(
+          'VIDEO · optional 10s loop for the swipe card',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white70,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (draft.video != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(12),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFEB4898).withAlpha(120)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.videocam_rounded, color: Color(0xFFEB4898)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    draft.video!.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () =>
+                      ref.read(addListingProvider.notifier).removeVideo(),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                ),
+              ],
+            ),
+          )
+        else
+          GestureDetector(
+            onTap: () => ref.read(addListingProvider.notifier).pickVideo(),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(10),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white24,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.video_call_rounded,
+                      color: Color(0xFFEB4898), size: 28),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Upload looping video',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Stand out on the deck · under 50MB',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -620,6 +729,7 @@ class _DetailsStep extends ConsumerWidget {
     required this.draft,
     required this.title,
     required this.price,
+    required this.description,
     required this.neighborhood,
     required this.year,
     required this.mileage,
@@ -633,6 +743,7 @@ class _DetailsStep extends ConsumerWidget {
   final ListingDraft draft;
   final TextEditingController title;
   final TextEditingController price;
+  final TextEditingController description;
   final TextEditingController neighborhood;
   final TextEditingController year;
   final TextEditingController mileage;
@@ -655,6 +766,17 @@ class _DetailsStep extends ConsumerWidget {
           hint: draft.category == ListingCategory.worker ? 'Rate' : 'Price',
           icon: Icons.attach_money_rounded,
           keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 12),
+        GlassTextField(
+          controller: description,
+          hint: draft.category == ListingCategory.property
+              ? 'Description — Airbnb-style story of the stay'
+              : draft.category == ListingCategory.worker
+                  ? 'Describe your service, experience, and vibe'
+                  : 'Description — optional if chips below tell the story',
+          icon: Icons.notes_rounded,
+          maxLines: 5,
         ),
         const SizedBox(height: 16),
         ChipSelector(
@@ -928,27 +1050,63 @@ class _DetailsStep extends ConsumerWidget {
   }
 
   List<Widget> _worker(AddListingNotifier n) {
+    final skills = skillsForService(draft.serviceCategory);
     return [
-      ChipSelector(
-        label: 'Service',
-        options: serviceCategories.map((s) => s.label).toList(),
-        selected: draft.serviceCategory == null
-            ? const []
-            : [serviceCategoryLabel(draft.serviceCategory)],
-        multi: false,
-        onChanged: (v) {
-          if (v.isEmpty) {
-            n.update((c) => c.copyWith(serviceCategory: null));
-            return;
-          }
-          final match = serviceCategories.firstWhere(
-            (s) => s.label == v.first,
-            orElse: () => serviceCategories.last,
-          );
-          n.update((c) => c.copyWith(serviceCategory: match.value));
-        },
+      Text(
+        'SERVICE TYPE',
+        style: GoogleFonts.plusJakartaSans(
+          color: Colors.white54,
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+          letterSpacing: 1.2,
+        ),
       ),
-      const SizedBox(height: 20),
+      const SizedBox(height: 10),
+      for (final group in serviceGroups) ...[
+        Text(
+          group.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            color: AppTheme.brandPrimary,
+            fontWeight: FontWeight.w900,
+            fontSize: 10,
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ChipSelector(
+          label: '',
+          options: serviceCategoriesInGroup(group).map((s) => s.label).toList(),
+          selected: draft.serviceCategory == null
+              ? const []
+              : [serviceCategoryLabel(draft.serviceCategory)],
+          multi: false,
+          onChanged: (v) {
+            if (v.isEmpty) {
+              n.update((c) =>
+                  c.copyWith(serviceCategory: null, skills: const []));
+              return;
+            }
+            final match = serviceCategories.firstWhere(
+              (s) => s.label == v.first,
+              orElse: () => serviceCategories.last,
+            );
+            n.update((c) => c.copyWith(
+                  serviceCategory: match.value,
+                  skills: const [],
+                ));
+          },
+        ),
+        const SizedBox(height: 14),
+      ],
+      if (skills.isNotEmpty) ...[
+        ChipSelector(
+          label: 'Skills / specialties',
+          options: skills,
+          selected: draft.skills,
+          onChanged: (v) => n.update((c) => c.copyWith(skills: v)),
+        ),
+        const SizedBox(height: 20),
+      ],
       ChipSelector(
         label: 'Traits',
         options: ListingTaxonomies.workerTraits,
