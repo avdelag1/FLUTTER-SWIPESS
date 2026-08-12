@@ -5,14 +5,15 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_swipes/main.dart';
+import 'package:flutter_swipes/src/app.dart';
 
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const NativeSwipeApp());
+    await tester.pumpWidget(const ProviderScope(child: NativeSwipeApp()));
     
     // Verify that the title is present.
     expect(find.text('Discover'), findsOneWidget);
