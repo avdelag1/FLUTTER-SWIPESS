@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/screens/swiper_s
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/messages_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 
 /// The main dashboard shell — persists BottomNav across all tabs,
 /// mirroring the web app's PersistentDashboardLayout.
@@ -60,7 +61,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       appBar: AppTopBar(
         title: _tabTitle(),
         showFilter: _currentTab == NavTab.swipe,
-        onFilterTap: () {},
+        onFilterTap: () => FilterBottomSheet.show(context),
         onProfileTap: () => setState(() => _currentTab = NavTab.profile),
         onNotificationTap: () {},
       ),
