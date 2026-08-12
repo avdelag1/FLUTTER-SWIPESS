@@ -4,6 +4,9 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -99,7 +102,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               _NeoNaivePill(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  _showPlaceholderModal(context, 'Live Map', Icons.public_rounded);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LiveMapScreen()),
+                  );
                 },
                 child: _IconSlot(icon: Icons.public_rounded, color: iconColor, wash: const Color(0xFF4DABF7)), // Sky
               ),
@@ -115,9 +120,35 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               _NeoNaivePill(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  _showPlaceholderModal(context, 'Notifications', Icons.notifications_rounded);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                  );
                 },
-                child: const Icon(Icons.notifications_rounded, color: iconColor, size: 18),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_rounded, color: iconColor, size: 18),
+                    ref.watch(unreadNotificationsProvider).when(
+                          data: (count) {
+                            if (count <= 0) return const SizedBox.shrink();
+                            return Positioned(
+                              right: -4,
+                              top: -4,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.brandPrimary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            );
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, _) => const SizedBox.shrink(),
+                        ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -126,26 +157,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 
-  void _showPlaceholderModal(BuildContext context, String title, IconData icon) {
-    showGlassModal(
-      context: context,
-      builder: (context) {
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 64, color: AppTheme.brandPrimary),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
 
 class _NeoNaivePill extends StatelessWidget {

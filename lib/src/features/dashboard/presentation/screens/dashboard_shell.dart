@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/messages_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/likes_screen.dart';
@@ -64,7 +65,11 @@ class DashboardShell extends ConsumerWidget {
       appBar: AppTopBar(
         firstName: profile?.name.split(' ').first,
         avatarUrl: profile?.avatarUrl,
-        onProfileTap: () => ref.read(navTabProvider.notifier).set(NavTab.idCard),
+        onProfileTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          );
+        },
       ),
       body: Stack(
         children: [

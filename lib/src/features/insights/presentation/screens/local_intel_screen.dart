@@ -1,58 +1,216 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/insights/domain/local_intel_post.dart';
+import 'package:flutter_swipes/src/features/insights/presentation/providers/insights_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class LocalIntelScreen extends StatelessWidget {
+class LocalIntelScreen extends ConsumerStatefulWidget {
   const LocalIntelScreen({super.key});
 
   @override
+  ConsumerState<LocalIntelScreen> createState() => _LocalIntelScreenState();
+}
+
+class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
+  String _category = 'all';
+
+  static const _categories = {
+    'all': 'Latest',
+    'infrastructure': 'Urban',
+    'events': 'Social',
+    'coworking': 'Work',
+    'dining': 'Gastro',
+    'safety': 'Safety',
+    'general': 'General',
+  };
+
+  @override
   Widget build(BuildContext context) {
+    final async = ref.watch(localIntelProvider);
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(child: Container(color: const Color(0xFF0A0A0D))),
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(20),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withAlpha(40)),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Row(
+                children: [
+                  _BackButton(onTap: () => Navigator.of(context).pop()),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('LOCAL INTEL', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                        Text(
+                          'Verified neighborhood updates',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54,
+                            fontSize: 11,
+                            letterSpacing: 0.6,
                           ),
-                          child: const Center(child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20)),
                         ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 44,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  for (final entry in _categories.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(entry.value),
+                        selected: _category == entry.key,
+                        onSelected: (_) => setState(() => _category = entry.key),
+                        selectedColor: AppTheme.brandPrimary,
+                        backgroundColor: Colors.white.withAlpha(14),
+                        labelStyle: TextStyle(
+                          color: _category == entry.key ? Colors.white : Colors.white70,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                        side: BorderSide(color: Colors.white.withAlpha(30)),
                       ),
-                      const SizedBox(width: 20),
-                      const Text(
-                        'LOCAL INTEL',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, letterSpacing: -0.5),
-                      ),
-                    ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: async.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                ),
+                error: (_, _) => Center(
+                  child: TextButton(
+                    onPressed: () => ref.invalidate(localIntelProvider),
+                    child: const Text('Could not load intel — retry'),
                   ),
                 ),
-                
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    padding: const EdgeInsets.all(24),
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    children: [
-                      _buildIntelCard('Safety Score', '92/100', Icons.shield_rounded, Colors.green),
-                      _buildIntelCard('Walkability', '85/100', Icons.directions_walk_rounded, Colors.blue),
-                      _buildIntelCard('Nightlife', '98/100', Icons.nightlife_rounded, Colors.purple),
-                      _buildIntelCard('Restaurants', '140+', Icons.restaurant_rounded, Colors.amber),
-                    ],
+                data: (posts) {
+                  final filtered = _category == 'all'
+                      ? posts
+                      : posts.where((p) => p.category == _category).toList();
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No intel posts yet.',
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) => _IntelCard(post: filtered[index]),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IntelCard extends StatelessWidget {
+  const _IntelCard({required this.post});
+  final LocalIntelPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final when = post.publishedAt == null
+        ? null
+        : DateFormat.MMMd().add_jm().format(post.publishedAt!.toLocal());
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withAlpha(25)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(post.imageUrl!, fit: BoxFit.cover),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.category.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.brandPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
                   ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  post.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (post.content.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    post.content,
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 13, height: 1.4),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (post.neighborhood != null)
+                      Text(
+                        post.neighborhood!,
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 11),
+                      ),
+                    const Spacer(),
+                    if (when != null)
+                      Text(
+                        when,
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 11),
+                      ),
+                    if (post.sourceUrl != null) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () async {
+                          final uri = Uri.tryParse(post.sourceUrl!);
+                          if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        },
+                        icon: const Icon(Icons.open_in_new_rounded, color: Colors.white54, size: 18),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -61,24 +219,27 @@ class LocalIntelScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildIntelCard(String title, String value, IconData icon, MaterialColor color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withAlpha(100)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color.shade300, size: 32),
-          const SizedBox(height: 12),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          Text(title, style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 12)),
-        ],
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(20),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withAlpha(40)),
+        ),
+        child: const Center(
+          child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+        ),
       ),
     );
   }
