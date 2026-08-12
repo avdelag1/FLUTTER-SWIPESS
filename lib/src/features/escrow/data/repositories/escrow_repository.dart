@@ -36,4 +36,27 @@ class EscrowRepository {
     };
     await _client.from('escrow_deposits').update(patch).eq('id', id);
   }
+
+  /// Create a security deposit linked to an optional contract.
+  Future<EscrowDeposit> createDeposit({
+    required double amount,
+    required String counterpartyId,
+    String currency = 'USD',
+    String? contractId,
+    String? notes,
+    bool asOwner = true,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not signed in');
+    final row = await _client.from('escrow_deposits').insert({
+      'amount': amount,
+      'currency': currency,
+      'status': 'pending',
+      'contract_id': contractId,
+      'notes': notes,
+      'owner_id': asOwner ? userId : counterpartyId,
+      'client_id': asOwner ? counterpartyId : userId,
+    }).select().single();
+    return EscrowDeposit.fromJson(row);
+  }
 }

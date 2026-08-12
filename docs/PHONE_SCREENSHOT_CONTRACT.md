@@ -61,7 +61,7 @@ Flutter must pass the “could be mistaken for swipess.app” test.
 - Gradient tiles: Security, Verification, Preferences, Language, Maintenance, Contracts, Legal Services, Perks, FAQ, About, Contact.
 
 ### Still Cap-only / deferred
-- Admin consoles, selfie/listing cameras, public share previews deep-links, RevenueCat/OpenAI keys, full i18n ES pack, DJ turntable (World Radio covers directory).
+- Admin consoles, RevenueCat/OpenAI keys, full i18n ES pack.
 
 ### PEARL / VAP ID
 - Custom header: flame · **PEARL** · edit · close (no main AppTopBar).

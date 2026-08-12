@@ -34,7 +34,6 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_s
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
-import 'package:flutter_swipes/src/features/radio/presentation/screens/world_radio_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
@@ -1500,13 +1499,6 @@ class _MoreToolsGrid extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => const MaintenanceRequestsScreen(),
               ),
-            )
-      ),
-      (
-        Icons.radio_rounded,
-        'World radio',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
             )
       ),
       (

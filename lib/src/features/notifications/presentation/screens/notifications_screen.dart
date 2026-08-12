@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/utils/notification_navigation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -93,9 +94,13 @@ class NotificationsScreen extends ConsumerWidget {
                             final n = items[index];
                             return _NotificationTile(
                               notification: n,
-                              onTap: () => ref
-                                  .read(notificationsProvider.notifier)
-                                  .markRead(n.id),
+                              onTap: () async {
+                                await ref
+                                    .read(notificationsProvider.notifier)
+                                    .markRead(n.id);
+                                if (!context.mounted) return;
+                                await openNotificationTarget(context, n);
+                              },
                               onDismiss: () => ref
                                   .read(notificationsProvider.notifier)
                                   .dismiss(n.id),
