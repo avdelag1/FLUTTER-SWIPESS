@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:video_player/video_player.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
@@ -57,9 +60,25 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final picker = ImagePicker();
     final file = await picker.pickVideo(
       source: ImageSource.gallery,
-      maxDuration: const Duration(seconds: 30),
+      maxDuration: const Duration(seconds: 10),
     );
     if (file == null) return;
+    // Cap VideoCropper max = 10s loop / boomerang.
+    try {
+      final controller = VideoPlayerController.file(File(file.path));
+      await controller.initialize();
+      final duration = controller.value.duration;
+      await controller.dispose();
+      if (duration > const Duration(seconds: 10, milliseconds: 500)) {
+        state = state.copyWith(
+          error:
+              'Video must be 10 seconds or less (Cap looping card). Trim it first.',
+        );
+        return;
+      }
+    } catch (_) {
+      // If duration can't be probed, still accept — upload path enforces size.
+    }
     state = state.copyWith(video: file, clearError: true);
   }
 

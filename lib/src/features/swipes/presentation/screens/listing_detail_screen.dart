@@ -433,7 +433,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                     ),
                                   )
                                 : Text(
-                                    'MESSAGE',
+                                    listing.category == 'worker'
+                                        ? 'HIRE / MESSAGE'
+                                        : 'MESSAGE',
                                     style: GoogleFonts.plusJakartaSans(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w900,

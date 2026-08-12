@@ -1,3 +1,4 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/profile/data/repositories/maintenance_repository.dart';
@@ -22,12 +23,14 @@ class MaintenanceNotifier extends AsyncNotifier<List<MaintenanceRequest>> {
     required String description,
     String category = 'other',
     String priority = 'medium',
+    List<XFile> photos = const [],
   }) async {
     await ref.read(maintenanceRepositoryProvider).create(
           title: title,
           description: description,
           category: category,
           priority: priority,
+          photos: photos,
         );
     await refresh();
   }

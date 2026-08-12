@@ -214,16 +214,35 @@ class ListingRepository {
   /// Insert a listing, stripping columns the live schema rejects — same
   /// retry strategy as Capacitor `saveListingWithSchemaRetry`.
   Future<Listing> createListing(Map<String, dynamic> payload) async {
+    return _saveWithSchemaRetry(payload, editingId: null);
+  }
+
+  /// Cap UnifiedListingForm edit path — update + schema-retry.
+  Future<Listing> updateListing(
+    String listingId,
+    Map<String, dynamic> payload,
+  ) {
+    final safe = Map<String, dynamic>.from(payload)..remove('user_id');
+    return _saveWithSchemaRetry(safe, editingId: listingId);
+  }
+
+  Future<Listing> _saveWithSchemaRetry(
+    Map<String, dynamic> payload, {
+    required String? editingId,
+  }) async {
     var safe = Map<String, dynamic>.from(payload);
     final removed = <String>{};
 
     for (var attempt = 0; attempt < 25; attempt++) {
       try {
-        final data = await _client
-            .from('listings')
-            .insert(safe)
-            .select()
-            .single();
+        final data = editingId == null
+            ? await _client.from('listings').insert(safe).select().single()
+            : await _client
+                .from('listings')
+                .update(safe)
+                .eq('id', editingId)
+                .select()
+                .single();
         return Listing.fromJson(data);
       } catch (error) {
         final message = error.toString();

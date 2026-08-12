@@ -759,7 +759,7 @@ class _PhotosStep extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Stand out on the deck · under 50MB',
+                    '10-second loop · under 50MB',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white54,
                       fontSize: 12,

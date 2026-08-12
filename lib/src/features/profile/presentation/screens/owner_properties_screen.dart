@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
@@ -393,6 +394,19 @@ class _AssetCard extends ConsumerWidget {
                     padding: EdgeInsets.all(8),
                     child: Icon(Icons.tune_rounded, color: Colors.white70, size: 20),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Edit',
+                  onPressed: () async {
+                    final updated = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => EditListingScreen(listing: listing),
+                      ),
+                    );
+                    if (updated == true) onChanged();
+                  },
+                  icon: const Icon(Icons.edit_rounded,
+                      color: Colors.white70, size: 20),
                 ),
                 IconButton(
                   tooltip: 'Add photos',

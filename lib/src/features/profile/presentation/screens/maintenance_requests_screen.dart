@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -5,7 +7,9 @@ import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/profile/domain/maintenance_request.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/maintenance_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
+/// Cap `/client/maintenance` — report + track issues with category/priority/photos.
 class MaintenanceRequestsScreen extends ConsumerStatefulWidget {
   const MaintenanceRequestsScreen({super.key});
 
@@ -17,6 +21,22 @@ class MaintenanceRequestsScreen extends ConsumerStatefulWidget {
 class _MaintenanceRequestsScreenState
     extends ConsumerState<MaintenanceRequestsScreen> {
   String _filter = 'all';
+
+  static const _categories = [
+    ('plumbing', 'Plumbing', Icons.plumbing_rounded),
+    ('electrical', 'Electrical', Icons.bolt_rounded),
+    ('ac', 'AC / Cooling', Icons.ac_unit_rounded),
+    ('appliance', 'Appliance', Icons.kitchen_rounded),
+    ('structural', 'Structural', Icons.apartment_rounded),
+    ('other', 'Other', Icons.more_horiz_rounded),
+  ];
+
+  static const _priorities = [
+    ('low', 'Low', Color(0xFFF43F5E)),
+    ('medium', 'Medium', Color(0xFFFBBF24)),
+    ('high', 'High', Color(0xFFFB923C)),
+    ('urgent', 'Urgent', Color(0xFFEF4444)),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +70,8 @@ class _MaintenanceRequestsScreenState
                         border: Border.all(color: Colors.white.withAlpha(40)),
                       ),
                       child: const Center(
-                        child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                        child: Icon(Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white, size: 18),
                       ),
                     ),
                   ),
@@ -59,10 +80,13 @@ class _MaintenanceRequestsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('MAINTENANCE', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                        Text('MAINTENANCE',
+                            style:
+                                AppTheme.displayItalic.copyWith(fontSize: 22)),
                         Text(
                           'Report and track property issues',
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 11),
+                          style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white54, fontSize: 11),
                         ),
                       ],
                     ),
@@ -76,7 +100,12 @@ class _MaintenanceRequestsScreenState
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  for (final f in const ['all', 'submitted', 'in_progress', 'resolved'])
+                  for (final f in const [
+                    'all',
+                    'submitted',
+                    'in_progress',
+                    'resolved',
+                  ])
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
@@ -99,11 +128,13 @@ class _MaintenanceRequestsScreenState
             Expanded(
               child: async.when(
                 loading: () => const Center(
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
-                    onPressed: () => ref.read(maintenanceProvider.notifier).refresh(),
+                    onPressed: () =>
+                        ref.read(maintenanceProvider.notifier).refresh(),
                     child: const Text('Could not load requests — retry'),
                   ),
                 ),
@@ -115,7 +146,8 @@ class _MaintenanceRequestsScreenState
                     return Center(
                       child: Text(
                         'No maintenance requests yet.',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                        style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54),
                       ),
                     );
                   }
@@ -123,7 +155,8 @@ class _MaintenanceRequestsScreenState
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                     itemCount: filtered.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => _Ticket(request: filtered[index]),
+                    itemBuilder: (context, index) =>
+                        _Ticket(request: filtered[index]),
                   );
                 },
               ),
@@ -150,6 +183,11 @@ class _MaintenanceRequestsScreenState
   Future<void> _showCreateSheet(BuildContext context) async {
     final title = TextEditingController();
     final description = TextEditingController();
+    var category = 'other';
+    var priority = 'medium';
+    final photos = <XFile>[];
+    var submitting = false;
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -158,48 +196,225 @@ class _MaintenanceRequestsScreenState
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            24,
-            20,
-            MediaQuery.viewInsetsOf(context).bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('NEW REQUEST', style: AppTheme.displayItalic.copyWith(fontSize: 18)),
-              const SizedBox(height: 16),
-              GlassTextField(controller: title, hint: 'Title', icon: Icons.build_rounded),
-              const SizedBox(height: 10),
-              GlassTextField(
-                controller: description,
-                hint: 'Describe the issue',
-                icon: Icons.notes_rounded,
+        return StatefulBuilder(
+          builder: (context, setModal) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                24,
+                20,
+                MediaQuery.viewInsetsOf(context).bottom + 24,
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    if (title.text.trim().isEmpty) return;
-                    await ref.read(maintenanceProvider.notifier).create(
-                          title: title.text.trim(),
-                          description: description.text.trim(),
-                        );
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.brandPrimary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text('Submit'),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('NEW REQUEST',
+                        style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                    const SizedBox(height: 16),
+                    GlassTextField(
+                      controller: title,
+                      hint: 'Issue title',
+                      icon: Icons.build_rounded,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'CATEGORY',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final c in _categories)
+                          ChoiceChip(
+                            avatar: Icon(c.$3, size: 16, color: Colors.white70),
+                            label: Text(c.$2),
+                            selected: category == c.$1,
+                            onSelected: (_) =>
+                                setModal(() => category = c.$1),
+                            selectedColor: AppTheme.brandPrimary,
+                            backgroundColor: Colors.white.withAlpha(12),
+                            labelStyle: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                            side: BorderSide(color: Colors.white.withAlpha(30)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'PRIORITY',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (final p in _priorities)
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: ChoiceChip(
+                                label: Text(p.$2),
+                                selected: priority == p.$1,
+                                onSelected: (_) =>
+                                    setModal(() => priority = p.$1),
+                                selectedColor: p.$3.withAlpha(80),
+                                backgroundColor: Colors.white.withAlpha(12),
+                                labelStyle: TextStyle(
+                                  color: priority == p.$1 ? p.$3 : Colors.white70,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11,
+                                ),
+                                side: BorderSide(
+                                  color: priority == p.$1
+                                      ? p.$3
+                                      : Colors.white.withAlpha(30),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    GlassTextField(
+                      controller: description,
+                      hint: 'Describe the issue',
+                      icon: Icons.notes_rounded,
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'PHOTOS (OPTIONAL)',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 72,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          for (var i = 0; i < photos.length; i++)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Image.file(
+                                      File(photos[i].path),
+                                      width: 72,
+                                      height: 72,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: GestureDetector(
+                                      onTap: () => setModal(
+                                          () => photos.removeAt(i)),
+                                      child: Container(
+                                        width: 22,
+                                        height: 22,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withAlpha(180),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close,
+                                            color: Colors.white, size: 12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (photos.length < 5)
+                            GestureDetector(
+                              onTap: () async {
+                                final picked =
+                                    await ImagePicker().pickMultiImage(
+                                  limit: 5 - photos.length,
+                                );
+                                if (picked.isEmpty) return;
+                                setModal(() => photos.addAll(picked));
+                              },
+                              child: Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white24,
+                                    style: BorderStyle.solid,
+                                  ),
+                                  color: Colors.white.withAlpha(10),
+                                ),
+                                child: const Icon(Icons.camera_alt_rounded,
+                                    color: Colors.white54),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: submitting
+                            ? null
+                            : () async {
+                                if (title.text.trim().isEmpty) return;
+                                setModal(() => submitting = true);
+                                try {
+                                  await ref
+                                      .read(maintenanceProvider.notifier)
+                                      .create(
+                                        title: title.text.trim(),
+                                        description: description.text.trim(),
+                                        category: category,
+                                        priority: priority,
+                                        photos: List<XFile>.from(photos),
+                                      );
+                                  if (context.mounted) Navigator.pop(context);
+                                } catch (_) {
+                                  setModal(() => submitting = false);
+                                }
+                              },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.brandPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        child: Text(submitting ? 'Submitting…' : 'Submit request'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -249,19 +464,29 @@ class _Ticket extends StatelessWidget {
               children: [
                 Text(
                   request.title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   [
+                    request.categoryLabel,
+                    if (request.priority != null)
+                      request.priority!.toUpperCase(),
                     if (request.propertyLabel != null) request.propertyLabel!,
-                    if (request.priority != null) request.priority!,
                   ].join(' · '),
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+                  style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white54, fontSize: 12),
                 ),
               ],
             ),
           ),
+          if (request.photoUrls.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Icon(Icons.photo_rounded,
+                  color: Colors.white38, size: 18),
+            ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -270,7 +495,10 @@ class _Ticket extends StatelessWidget {
             ),
             child: Text(
               request.statusLabel,
-              style: TextStyle(color: _statusColor, fontSize: 11, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                  color: _statusColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800),
             ),
           ),
         ],
