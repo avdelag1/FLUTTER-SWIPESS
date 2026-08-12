@@ -30,10 +30,37 @@ class EventsScreen extends ConsumerWidget {
                 padding: EdgeInsets.fromLTRB(20, top + 72, 20, 0),
                 child: Column(
                   children: [
-                    GlowSearchBar(
-                      hint: 'Search events',
-                      onChanged: (value) =>
-                          ref.read(eventSearchProvider.notifier).set(value),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GlowSearchBar(
+                            hint: 'Search events',
+                            onChanged: (value) =>
+                                ref.read(eventSearchProvider.notifier).set(value),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const EventFavoritesScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(12),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: const Icon(Icons.favorite_rounded,
+                                color: Color(0xFFF43F5E)),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 14),
                     const CategoryFilterChips(),
