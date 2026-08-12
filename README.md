@@ -1,6 +1,8 @@
-# flutter_swipes
+# Flutter Swipess
 
-A new Flutter project.
+Native Flutter rewrite of [Swipess](https://www.swipess.com) (`avdelag1/swipess`).
+
+**Design source of truth is the live Capacitor app, not a new Flutter look.** Agents: read `BRAIN.md` and `docs/DESIGN_CONTRACT.md` first. To start a design pass, paste a prompt from `docs/PROMPTS.md`.
 
 ## Getting Started
 
