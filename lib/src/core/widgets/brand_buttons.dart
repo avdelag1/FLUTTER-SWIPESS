@@ -59,29 +59,35 @@ class BrandPrimaryButton extends StatelessWidget {
                 : null,
             child: Opacity(
               opacity: enabled ? 1 : 0.4,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (loading)
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: foregroundColor,
-                      ),
-                    )
-                  else ...[
-                    if (icon != null) ...[
-                      Icon(icon, size: 18, color: foregroundColor),
-                      const SizedBox(width: 10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (loading)
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: foregroundColor,
+                          ),
+                        )
+                      else ...[
+                        if (icon != null) ...[
+                          Icon(icon, size: 18, color: foregroundColor),
+                          const SizedBox(width: 10),
+                        ],
+                        Text(
+                          label.toUpperCase(),
+                          style: AppTheme.buttonLabel.copyWith(color: foregroundColor),
+                        ),
+                      ],
                     ],
-                    Text(
-                      label.toUpperCase(),
-                      style: AppTheme.buttonLabel.copyWith(color: foregroundColor),
-                    ),
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -127,15 +133,19 @@ class BrandGhostButton extends StatelessWidget {
                     HapticFeedback.lightImpact();
                     onPressed?.call();
                   },
-            child: Center(
-              child: Text(
-                label.toUpperCase(),
-                style: AppTheme.buttonLabel.copyWith(
-                  color: Colors.white,
-                  fontSize: 15,
-                  shadows: const [
-                    Shadow(color: Color(0x66000000), blurRadius: 4),
-                  ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label.toUpperCase(),
+                  style: AppTheme.buttonLabel.copyWith(
+                    color: Colors.white,
+                    fontSize: 15,
+                    shadows: const [
+                      Shadow(color: Color(0x66000000), blurRadius: 4),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -182,21 +192,27 @@ class SocialAuthButton extends StatelessWidget {
                     HapticFeedback.mediumImpact();
                     onPressed?.call();
                   },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                leading,
-                const SizedBox(width: 12),
-                Text(
-                  label.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    letterSpacing: 2.2,
-                  ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    leading,
+                    const SizedBox(width: 12),
+                    Text(
+                      label.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        letterSpacing: 2.2,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

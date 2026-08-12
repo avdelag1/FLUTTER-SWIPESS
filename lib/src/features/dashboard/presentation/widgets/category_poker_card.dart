@@ -160,14 +160,20 @@ class _CategoryPokerCardState extends State<CategoryPokerCard> {
                           children: [
                             Icon(widget.card.icon, color: Colors.white, size: 20),
                             const SizedBox(width: 10),
-                            Text(
-                              'ENGAGE DISCOVERY',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontStyle: FontStyle.italic,
-                                letterSpacing: 2.2,
-                                fontSize: 13,
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'ENGAGE DISCOVERY',
+                                  maxLines: 1,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontStyle: FontStyle.italic,
+                                    letterSpacing: 2.2,
+                                    fontSize: 13,
+                                  ),
+                                ),
                               ),
                             ),
                           ],

@@ -52,63 +52,85 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: const Alignment(0, 0.1),
-                        child: FractionallySizedBox(
-                          widthFactor: 0.92,
-                          heightFactor: 0.72,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: AppTheme.dashWell.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Row(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stacked = constraints.maxWidth < 560;
+                      final deck = CardSwiper(
+                        controller: _controller,
+                        cardsCount: dashboardCategories.length,
+                        numberOfCardsDisplayed: 3,
+                        backCardOffset: const Offset(0, 18),
+                        padding: EdgeInsets.zero,
+                        isLoop: true,
+                        onSwipe: (previous, current, direction) {
+                          setState(() => _topIndex = current ?? 0);
+                          return true;
+                        },
+                        cardBuilder: (
+                          context,
+                          index,
+                          horizontalThresholdPercentage,
+                          verticalThresholdPercentage,
+                        ) {
+                          return CategoryPokerCard(
+                            card: dashboardCategories[index],
+                            isTop: index == _topIndex,
+                            onEngage: () => context.go('/swipes'),
+                          );
+                        },
+                      );
+
+                      return Stack(
                         children: [
-                          const Expanded(
-                            flex: 55,
-                            child: Padding(
-                              padding: EdgeInsets.only(right: 8, top: 8, bottom: 8),
-                              child: EventsTeaserCard(),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 45,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: CardSwiper(
-                                controller: _controller,
-                                cardsCount: dashboardCategories.length,
-                                numberOfCardsDisplayed: 3,
-                                backCardOffset: const Offset(0, 18),
-                                padding: EdgeInsets.zero,
-                                isLoop: true,
-                                onSwipe: (previous, current, direction) {
-                                  setState(() => _topIndex = current ?? 0);
-                                  return true;
-                                },
-                                cardBuilder: (
-                                  context,
-                                  index,
-                                  horizontalThresholdPercentage,
-                                  verticalThresholdPercentage,
-                                ) {
-                                  return CategoryPokerCard(
-                                    card: dashboardCategories[index],
-                                    isTop: index == _topIndex,
-                                    onEngage: () => context.go('/swipes'),
-                                  );
-                                },
+                          Align(
+                            alignment: const Alignment(0, 0.1),
+                            child: FractionallySizedBox(
+                              widthFactor: 0.92,
+                              heightFactor: 0.72,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: AppTheme.dashWell.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(40),
+                                ),
                               ),
                             ),
                           ),
+                          if (stacked)
+                            Column(
+                              children: [
+                                const SizedBox(
+                                  height: 160,
+                                  width: double.infinity,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(bottom: 10),
+                                    child: EventsTeaserCard(),
+                                  ),
+                                ),
+                                Expanded(child: deck),
+                              ],
+                            )
+                          else
+                            Row(
+                              children: [
+                                const Expanded(
+                                  flex: 55,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                                    child: EventsTeaserCard(),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 45,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    child: deck,
+                                  ),
+                                ),
+                              ],
+                            ),
                         ],
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),

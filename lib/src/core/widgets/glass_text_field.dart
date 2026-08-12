@@ -124,11 +124,13 @@ class AgreeCheckbox extends StatelessWidget {
     required this.value,
     required this.onChanged,
     required this.child,
+    this.expand = true,
   });
 
   final bool value;
   final ValueChanged<bool> onChanged;
   final Widget child;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +138,7 @@ class AgreeCheckbox extends StatelessWidget {
       onTap: () => onChanged(!value),
       behavior: HitTestBehavior.opaque,
       child: Row(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AnimatedContainer(
@@ -155,7 +158,7 @@ class AgreeCheckbox extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: 12),
-          Expanded(child: child),
+          if (expand) Expanded(child: child) else child,
         ],
       ),
     );

@@ -150,7 +150,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 360),
-                      child: Column(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Column(
                         children: [
                           Align(
                             alignment: Alignment.centerLeft,
@@ -229,6 +231,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 children: [
                                   AgreeCheckbox(
                                     value: _rememberMe,
+                                    expand: false,
                                     onChanged: (v) => setState(() => _rememberMe = v),
                                     child: Text(
                                       'REMEMBER ME',
@@ -241,16 +244,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     ),
                                   ),
                                   const Spacer(),
-                                  TextButton(
-                                    onPressed: () => setState(() => _forgot = true),
-                                    child: Text(
-                                      'FORGOT ACCESS CODE?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: const Color(0xB3FFFFFF),
-                                        fontWeight: FontWeight.w800,
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 10,
-                                        letterSpacing: 1.6,
+                                  Flexible(
+                                    child: TextButton(
+                                      onPressed: () => setState(() => _forgot = true),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          'FORGOT ACCESS CODE?',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: const Color(0xB3FFFFFF),
+                                            fontWeight: FontWeight.w800,
+                                            fontStyle: FontStyle.italic,
+                                            fontSize: 10,
+                                            letterSpacing: 1.6,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -408,6 +416,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           ],
                         ],
                       ),
+                    ),
                     ),
                   ),
                 ),

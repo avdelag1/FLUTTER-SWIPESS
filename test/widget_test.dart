@@ -82,6 +82,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('SIGN IN'), findsOneWidget);
     expect(find.text('CREATE ACCOUNT'), findsOneWidget);
