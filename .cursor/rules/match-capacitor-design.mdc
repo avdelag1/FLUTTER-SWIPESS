@@ -1,0 +1,32 @@
+---
+description: Flutter Swipess must match the live Capacitor app. Always apply. Do not invent a new look.
+alwaysApply: true
+---
+
+# Match Capacitor Swipess — always on
+
+You are in **FLUTTER-SWIPESS**, a native rewrite of **avdelag1/swipess** (live: https://www.swipess.com).
+
+Read `BRAIN.md` and `docs/DESIGN_CONTRACT.md` before writing or restyling any UI.
+
+## Source of truth
+
+- Visual / UX: GitHub `avdelag1/swipess` (clone to `/tmp/swipess` if needed).
+- This Flutter repo must **look like that app**.
+- The owner already likes that design. Do not “improve,” simplify, or replace it with a generic Flutter / Material / glassmorphism demo.
+
+## Hard bans
+
+- Do not invent a new visual language.
+- Do not wrap `AppBar` + two circular buttons and call it Swipess.
+- Do not add decorative gradient orbs, gradient app-icon tiles, or Tinder-style colored circle action rows unless Capacitor has them.
+- Do not skip cloning / reading the matching Capacitor file for the screen you are building.
+- “Make it beautiful” means **close the Capacitor look**, not invent a prettier one.
+
+## Build order
+
+access gate → welcome (LOG IN / CREATE ACCOUNT) → auth form → dashboard HUD → photo swipe deck → rest.
+
+Stay in the design lane (stubs OK) unless the user asks for bases (real Supabase / OAuth).
+
+Gate demo code: `URDBEST`.
