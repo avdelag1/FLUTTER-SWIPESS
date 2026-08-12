@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 
 class BentoDashboardScreen extends ConsumerWidget {
   const BentoDashboardScreen({super.key});
@@ -81,6 +82,15 @@ class BentoDashboardScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(bottom: 120),
                 itemBuilder: (context, index) {
                   final item = _bentoItems[index];
+                  if (item.id == 'events') {
+                    return SizedBox(
+                      height: item.height,
+                      child: EventsTeaserCard(
+                        onTap: () =>
+                            ref.read(navTabProvider.notifier).set(NavTab.events),
+                      ),
+                    );
+                  }
                   return _BentoCard(
                     title: item.title,
                     subtitle: item.subtitle,
@@ -88,10 +98,18 @@ class BentoDashboardScreen extends ConsumerWidget {
                     height: item.height,
                     onTap: () {
                       HapticFeedback.lightImpact();
+                      if (item.id == 'legal') {
+                        ref.read(navTabProvider.notifier).set(NavTab.legal);
+                        return;
+                      }
+                      if (item.id == 'seekers') {
+                        ref.read(navTabProvider.notifier).set(NavTab.seekers);
+                        return;
+                      }
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => ClientSwipeContainer(
-                            categoryId: item.id,
+                            categoryId: item.id == 'services' ? 'worker' : item.id,
                             categoryTitle: item.title,
                           ),
                         ),

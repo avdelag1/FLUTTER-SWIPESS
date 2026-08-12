@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -77,7 +78,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               _NeoNaivePill(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  _showPlaceholderModal(context, 'AI Upload Listing', Icons.auto_awesome_rounded);
+                  ref.read(navTabProvider.notifier).set(NavTab.add);
                 },
                 child: _IconSlot(icon: Icons.auto_awesome_rounded, color: iconColor, wash: const Color(0xFF69DB7C)), // Mint
               ),

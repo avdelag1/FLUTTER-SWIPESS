@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 
 /// Shows a bottom sheet with a frosted glass background overlay.
 Future<T?> showGlassModal<T>({

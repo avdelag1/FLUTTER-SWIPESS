@@ -1,38 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_card.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
+final listingByIdProvider = FutureProvider.family<Listing?, String>((ref, id) {
+  return ref.read(listingRepositoryProvider).fetchById(id);
+});
+
 class ListingDetailScreen extends ConsumerWidget {
   final Listing? listingData;
+  final String? listingId;
 
   const ListingDetailScreen({
     super.key,
-    required this.listingData,
+    this.listingData,
+    this.listingId,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (listingData != null) {
+      return _ListingDetailBody(listing: listingData!);
+    }
+    final id = listingId;
+    if (id == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text('Listing not found', style: TextStyle(color: Colors.white))),
+      );
+    }
+    final async = ref.watch(listingByIdProvider(id));
+    return async.when(
+      loading: () => const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+      ),
+      error: (e, _) => Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text('Could not load listing: $e', style: const TextStyle(color: Colors.white))),
+      ),
+      data: (listing) {
+        if (listing == null) {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(child: Text('Listing not found', style: TextStyle(color: Colors.white))),
+          );
+        }
+        return _ListingDetailBody(listing: listing);
+      },
+    );
+  }
+}
+
+class _ListingDetailBody extends StatelessWidget {
+  const _ListingDetailBody({required this.listing});
+  final Listing listing;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background Dimmer
-          Positioned.fill(
-            child: Container(color: Colors.black),
-          ),
-          
-          // Full Screen Static Card
+          const Positioned.fill(child: ColoredBox(color: Colors.black)),
           Positioned.fill(
             child: SwipeCard(
-              title: listingData?.title ?? 'Unknown',
-              subtitle: listingData?.location ?? 'No Location',
-              imageUrl: listingData?.images.isNotEmpty == true ? listingData!.images.first : null,
-              price: listingData?.price != null ? '\$${listingData!.price}' : null,
+              title: listing.title ?? 'Unknown',
+              subtitle: listing.formattedLocation,
+              imageUrl: listing.primaryImage,
+              price: listing.formattedPrice,
             ),
           ),
-          
-          // Top Nav (Back Button)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -57,8 +96,6 @@ class ListingDetailScreen extends ConsumerWidget {
               ),
             ),
           ),
-          
-          // Action Bar Override
           Positioned(
             bottom: 40,
             left: 24,

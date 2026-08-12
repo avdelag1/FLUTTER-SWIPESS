@@ -28,6 +28,60 @@ class AppTheme {
   // Backward compatibility
   static const Color brandPrimary2 = Color(0xFFFF6B35);
   static const Color glassBg = Color(0x1CFFFFFF);
+  static const Color inputFill = Color(0x14FFFFFF);
+
+  static TextStyle get displayItalic => GoogleFonts.plusJakartaSans(
+        color: Colors.white,
+        fontWeight: FontWeight.w900,
+        fontStyle: FontStyle.italic,
+        letterSpacing: -0.5,
+      );
+
+  static TextStyle get buttonLabel => GoogleFonts.plusJakartaSans(
+        color: Colors.white,
+        fontWeight: FontWeight.w800,
+        fontSize: 14,
+        letterSpacing: 2.2,
+      );
+
+  static BoxDecoration glassPill({bool glowing = false}) {
+    return BoxDecoration(
+      color: dashWell.withAlpha(240),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: Colors.white.withAlpha(28), width: 1.5),
+      boxShadow: [
+        if (glowing)
+          BoxShadow(
+            color: brandPrimary.withAlpha(50),
+            blurRadius: 28,
+            offset: const Offset(0, 8),
+          ),
+        BoxShadow(
+          color: Colors.black.withAlpha(150),
+          blurRadius: 24,
+          offset: const Offset(0, 12),
+        ),
+      ],
+    );
+  }
+
+  static const double radiusCard = 32;
+
+  static TextStyle get kicker => GoogleFonts.plusJakartaSans(
+        color: const Color(0xB3FFFFFF),
+        fontWeight: FontWeight.w800,
+        fontSize: 10,
+        letterSpacing: 2,
+      );
+
+  static BoxDecoration get bottomDockDecoration => BoxDecoration(
+        color: dashWell.withAlpha(240),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withAlpha(20), width: 1.5),
+        boxShadow: const [
+          BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 12)),
+        ],
+      );
 
   static ThemeData get darkTheme {
     return ThemeData(

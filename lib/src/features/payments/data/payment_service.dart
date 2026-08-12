@@ -23,8 +23,8 @@ class PaymentService {
         configuration.appUserID = userId;
         await Purchases.configure(configuration);
       }
-    } catch (e) {
-      print('Error initializing RevenueCat: $e');
+    } catch (_) {
+      // RevenueCat is optional until store keys are configured.
     }
   }
 
@@ -35,21 +35,20 @@ class PaymentService {
         return offerings.current!.availablePackages;
       }
       return [];
-    } on PlatformException catch (e) {
-      print('Error fetching offerings: $e');
+    } on PlatformException {
       return [];
     }
   }
 
   Future<bool> purchasePackage(Package package) async {
     try {
-      await Purchases.purchaseStoreProduct(package.storeProduct);
+      await Purchases.purchase(PurchaseParams.package(package));
       // Determine if token pack was purchased and update backend accordingly
       return true;
     } on PlatformException catch (e) {
       final errorCode = PurchasesErrorHelper.getErrorCode(e);
       if (errorCode != PurchasesErrorCode.purchaseCancelledError) {
-        print('Error purchasing package: $e');
+        return false;
       }
       return false;
     }

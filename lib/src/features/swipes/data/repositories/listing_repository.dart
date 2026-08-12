@@ -1,5 +1,11 @@
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+
+final listingRepositoryProvider = Provider<ListingRepository>((ref) {
+  return ListingRepository();
+});
 
 /// Repository abstraction for listing data from Supabase.
 /// Never call Supabase directly from the UI — always go through here.
@@ -149,5 +155,86 @@ class ListingRepository {
 
     if (data == null) return null;
     return Listing.fromJson(data);
+  }
+
+  /// Upload listing photos to the `listing-images` bucket (Capacitor path).
+  Future<List<String>> uploadListingPhotos({
+    required String userId,
+    required List<XFile> files,
+  }) async {
+    final urls = <String>[];
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
+      final bytes = await file.readAsBytes();
+      final ext = _extensionFor(file.name);
+      final path =
+          '$userId/${DateTime.now().millisecondsSinceEpoch}-$i.$ext';
+      await _client.storage.from('listing-images').uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(
+              contentType: _contentTypeFor(ext),
+              upsert: true,
+            ),
+          );
+      urls.add(_client.storage.from('listing-images').getPublicUrl(path));
+    }
+    return urls;
+  }
+
+  /// Insert a listing, stripping columns the live schema rejects — same
+  /// retry strategy as Capacitor `saveListingWithSchemaRetry`.
+  Future<Listing> createListing(Map<String, dynamic> payload) async {
+    var safe = Map<String, dynamic>.from(payload);
+    final removed = <String>{};
+
+    for (var attempt = 0; attempt < 25; attempt++) {
+      try {
+        final data = await _client
+            .from('listings')
+            .insert(safe)
+            .select()
+            .single();
+        return Listing.fromJson(data);
+      } catch (error) {
+        final message = error.toString();
+        final missing = _missingColumn(message);
+        if (missing == null ||
+            !safe.containsKey(missing) ||
+            removed.contains(missing)) {
+          rethrow;
+        }
+        removed.add(missing);
+        safe.remove(missing);
+      }
+    }
+    throw Exception('Listing save failed after adapting to the live schema.');
+  }
+
+  String _extensionFor(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.png')) return 'png';
+    if (lower.endsWith('.webp')) return 'webp';
+    if (lower.endsWith('.heic')) return 'jpg';
+    return 'jpg';
+  }
+
+  String _contentTypeFor(String ext) {
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
+  }
+
+  String? _missingColumn(String message) {
+    final quoted = RegExp(
+      r'''['"]([^'"]+)['"]\s+column|column\s+['"]([^'"]+)['"]|find the ['"]([^'"]+)['"] column''',
+      caseSensitive: false,
+    ).firstMatch(message);
+    return quoted?.group(1) ?? quoted?.group(2) ?? quoted?.group(3);
   }
 }

@@ -156,7 +156,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack> with SingleTicke
     return Positioned.fill(
       child: Transform(
         alignment: Alignment.center,
-        transform: Matrix4.identity()..scale(scale, scale, scale),
+        transform: Matrix4.identity()..scaleByDouble(scale, scale, scale, 1),
         child: Opacity(
           opacity: opacity.clamp(0.0, 1.0),
           child: IgnorePointer(
@@ -197,7 +197,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack> with SingleTicke
             ..rotateY(_rotateY)
             ..rotateZ(_rotation)
             // scale down slightly at far edges
-            ..scale(1.0 - (_swipeProgress * 0.07), 1.0 - (_swipeProgress * 0.07), 1.0 - (_swipeProgress * 0.07)),
+            ..scaleByDouble(1.0 - (_swipeProgress * 0.07), 1.0 - (_swipeProgress * 0.07), 1.0 - (_swipeProgress * 0.07), 1),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(32),

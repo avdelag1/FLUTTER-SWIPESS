@@ -7,7 +7,7 @@ import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   final String mode;
-  const AuthScreen({super.key, required this.mode});
+  const AuthScreen({super.key, this.mode = 'login'});
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();

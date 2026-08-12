@@ -4,14 +4,14 @@ import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_sc
 import 'package:flutter/material.dart';
 
 void main() {
-  testWidgets('Welcome screen shows Log In and Create Account', (tester) async {
+  testWidgets('Welcome screen shows Sign In and Create Account', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(home: WelcomeScreen()),
       ),
     );
     await tester.pump();
-    expect(find.text('LOG IN'), findsOneWidget);
+    expect(find.text('SIGN IN'), findsOneWidget);
     expect(find.text('CREATE ACCOUNT'), findsOneWidget);
   });
 }

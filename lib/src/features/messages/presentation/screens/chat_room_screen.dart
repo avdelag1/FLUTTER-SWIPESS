@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/features/messages/domain/models/conversation.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/providers/message_providers.dart';
+import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
-  final Conversation conversation;
+  final ChatConversation conversation;
 
   const ChatRoomScreen({
     super.key,
@@ -33,10 +33,12 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
     try {
       final repo = ref.read(messageRepositoryProvider);
-      await repo.sendMessage(widget.conversation.id, text);
+      await repo.sendMessage(
+        conversationId: widget.conversation.id,
+        text: text,
+      );
       _textController.clear();
-      // Refresh messages
-      ref.invalidate(chatMessagesProvider(widget.conversation.id));
+      ref.invalidate(conversationMessagesProvider(widget.conversation.id));
       
       // Scroll to bottom after a delay to allow list to rebuild
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -70,9 +72,10 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final messagesAsync = ref.watch(chatMessagesProvider(widget.conversation.id));
-    final name = widget.conversation.clientProfile?.displayName ?? widget.conversation.ownerProfile?.displayName ?? 'Unknown';
-    final avatarUrl = widget.conversation.clientProfile?.avatarUrl ?? widget.conversation.ownerProfile?.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
+    final messagesAsync = ref.watch(conversationMessagesProvider(widget.conversation.id));
+    final name = widget.conversation.name;
+    final avatarUrl = widget.conversation.avatarUrl ??
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
     return Scaffold(
@@ -153,7 +156,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                           border: isMe ? null : Border.all(color: AppTheme.dashGlassBorder),
                         ),
                         child: Text(
-                          msg.messageText ?? '',
+                          msg.text,
                           style: const TextStyle(
                             color: AppTheme.textPrimary,
                             fontSize: 15,
