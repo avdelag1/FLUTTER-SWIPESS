@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 
-enum NavTab { swipe, likes, events, add, messages, profile }
+// Re-export so any old imports still work
+export 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart' show NavTab;
 
 class AppBottomNav extends StatelessWidget {
   final NavTab activeTab;
@@ -34,8 +36,8 @@ class AppBottomNav extends StatelessWidget {
                   children: [
                     _DockIcon(
                       icon: Icons.local_fire_department_rounded,
-                      active: activeTab == NavTab.swipe,
-                      onTap: () => onTabSelected(NavTab.swipe),
+                      active: activeTab == NavTab.dashboard,
+                      onTap: () => onTabSelected(NavTab.dashboard),
                     ),
                     _DockIcon(
                       icon: Icons.favorite_rounded,
@@ -61,8 +63,8 @@ class AppBottomNav extends StatelessWidget {
                     ),
                     _DockIcon(
                       icon: Icons.person_rounded,
-                      active: activeTab == NavTab.profile,
-                      onTap: () => onTabSelected(NavTab.profile),
+                      active: activeTab == NavTab.idCard,
+                      onTap: () => onTabSelected(NavTab.idCard),
                     ),
                   ],
                 ),
