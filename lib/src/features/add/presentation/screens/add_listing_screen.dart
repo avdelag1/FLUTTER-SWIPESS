@@ -12,7 +12,10 @@ import 'package:flutter_swipes/src/features/add/presentation/providers/add_listi
 import 'package:google_fonts/google_fonts.dart';
 
 class AddListingScreen extends ConsumerStatefulWidget {
-  const AddListingScreen({super.key});
+  const AddListingScreen({super.key, this.initialCategory});
+
+  /// Optional category id from create-listing chooser (`property`, `worker`, …).
+  final String? initialCategory;
 
   @override
   ConsumerState<AddListingScreen> createState() => _AddListingScreenState();
@@ -44,6 +47,26 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     _berths = TextEditingController(text: draft.berths);
     _guests = TextEditingController(text: draft.maxPassengers);
     _model = TextEditingController(text: draft.model ?? '');
+
+    final initial = widget.initialCategory;
+    if (initial != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final cat = switch (initial) {
+          'motorcycle' => ListingCategory.motorcycle,
+          'bicycle' => ListingCategory.bicycle,
+          'yacht' => ListingCategory.yacht,
+          'worker' => ListingCategory.worker,
+          _ => ListingCategory.property,
+        };
+        final notifier = ref.read(addListingProvider.notifier);
+        if (ref.read(addListingProvider).category != cat) {
+          notifier.setCategory(cat);
+        }
+        if (ref.read(addListingProvider).step == 0) {
+          notifier.setStep(1);
+        }
+      });
+    }
   }
 
   @override
