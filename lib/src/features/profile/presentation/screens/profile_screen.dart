@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
@@ -270,16 +271,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Magic AI Profile needs an OpenAI key — edit profile for now.',
-                          ),
-                        ),
-                      );
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                      );
+                      showMagicAiProfileSheet(context);
                     },
                     child: Container(
                       height: 58,

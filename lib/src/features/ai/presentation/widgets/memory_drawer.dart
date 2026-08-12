@@ -6,7 +6,7 @@ import 'package:flutter_swipes/src/features/ai/domain/user_memory.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap MemoryDrawer — AI Memory sheet (OpenAI wiring waits on keys).
+/// Cap MemoryDrawer — AI Memory sheet (Bolt/Brain via edge functions).
 Future<void> showMemoryDrawer(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
@@ -68,7 +68,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(memoriesProvider);
-    final brain = ref.watch(aiBrainConfigProvider);
+    final edgeReady = ref.watch(aiEdgeReadyProvider);
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final height = MediaQuery.sizeOf(context).height * 0.78;
 
@@ -125,9 +125,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                           ),
                         ),
                         Text(
-                          brain.isReady
-                              ? 'Brain online · keys loaded'
-                              : 'Bolt / Brain ready — paste OpenAI key later',
+                          edgeReady
+                              ? 'Brain online · Supabase Edge AI'
+                              : 'Sign in to unlock Bolt / Brain',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white54,
                             fontSize: 11,

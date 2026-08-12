@@ -158,9 +158,11 @@ class ListingRepository {
   }
 
   /// Upload listing photos to the `listing-images` bucket (Capacitor path).
+  /// Runs Cap `moderate-image` after each upload (fail-open on infra errors).
   Future<List<String>> uploadListingPhotos({
     required String userId,
     required List<XFile> files,
+    Future<void> Function(String publicUrl)? moderateImage,
   }) async {
     final urls = <String>[];
     for (var i = 0; i < files.length; i++) {
@@ -177,7 +179,18 @@ class ListingRepository {
               upsert: true,
             ),
           );
-      urls.add(_client.storage.from('listing-images').getPublicUrl(path));
+      final url = _client.storage.from('listing-images').getPublicUrl(path);
+      if (moderateImage != null) {
+        try {
+          await moderateImage(url);
+        } catch (e) {
+          try {
+            await _client.storage.from('listing-images').remove([path]);
+          } catch (_) {}
+          rethrow;
+        }
+      }
+      urls.add(url);
     }
     return urls;
   }

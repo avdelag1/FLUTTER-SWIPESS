@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
@@ -268,16 +269,26 @@ class _AssetCard extends ConsumerWidget {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     final repo = ref.read(listingRepositoryProvider);
-    final urls = await repo.uploadListingPhotos(
-      userId: user.id,
-      files: files,
-    );
-    await repo.appendListingImages(listingId: listing.id, imageUrls: urls);
-    onChanged();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Added ${urls.length} photo(s)')),
+    final ai = ref.read(aiEdgeRepositoryProvider);
+    try {
+      final urls = await repo.uploadListingPhotos(
+        userId: user.id,
+        files: files,
+        moderateImage: ai.assertImageSafe,
       );
+      await repo.appendListingImages(listingId: listing.id, imageUrls: urls);
+      onChanged();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Added ${urls.length} photo(s)')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
     }
   }
 

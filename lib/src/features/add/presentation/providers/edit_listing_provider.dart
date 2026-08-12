@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
@@ -236,11 +237,13 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     state = current.copyWith(saving: true, clearError: true);
     try {
       final repo = ref.read(listingRepositoryProvider);
+      final ai = ref.read(aiEdgeRepositoryProvider);
       final uploaded = current.newPhotos.isEmpty
           ? <String>[]
           : await repo.uploadListingPhotos(
               userId: user.id,
               files: current.newPhotos,
+              moderateImage: ai.assertImageSafe,
             );
       final images = [...current.existingImages, ...uploaded];
       final payload = <String, dynamic>{
