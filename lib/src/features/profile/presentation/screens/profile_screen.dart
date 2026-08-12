@@ -9,11 +9,16 @@ import 'package:flutter_swipes/src/features/insights/presentation/screens/local_
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
@@ -606,6 +611,38 @@ class _ProfileHubSection extends ConsumerWidget {
       title: 'HUB',
       items: [
         _MenuItemData(
+          icon: Icons.home_work_outlined,
+          title: 'My listings',
+          subtitle: 'Active, pending & sold assets',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.favorite_border_rounded,
+          title: 'Who liked you',
+          subtitle: 'Profile likes from other members',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const WhoLikedYouScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.bookmark_border_rounded,
+          title: 'Saved searches',
+          subtitle: 'Reuse discovery filters & alerts',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SavedSearchesScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.campaign_outlined,
+          title: 'Advertise',
+          subtitle: 'Submit a promo for review',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AdvertiseScreen()),
+          ),
+        ),
+        _MenuItemData(
           icon: Icons.account_balance_wallet_outlined,
           title: 'Escrow',
           subtitle: 'Deposits held for contracts',
@@ -706,6 +743,14 @@ class _ProfilePreferencesSection extends ConsumerWidget {
           subtitle: 'FAQs & guidance',
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const FAQScreen()),
+          ),
+        ),
+        _MenuItemData(
+          icon: Icons.settings_outlined,
+          title: 'Settings',
+          subtitle: 'Security, sounds & legal',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
           ),
         ),
       ],
