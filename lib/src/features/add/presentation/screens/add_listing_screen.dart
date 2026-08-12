@@ -12,7 +12,17 @@ import 'package:flutter_swipes/src/features/add/presentation/providers/add_listi
 import 'package:google_fonts/google_fonts.dart';
 
 class AddListingScreen extends ConsumerStatefulWidget {
-  const AddListingScreen({super.key});
+  const AddListingScreen({
+    super.key,
+    this.initialCategory,
+    this.initialMode,
+  });
+
+  /// Optional category id from create-listing chooser (`property`, `worker`, …).
+  final String? initialCategory;
+
+  /// Optional rent / sale / both from listing-type chooser.
+  final ListingMode? initialMode;
 
   @override
   ConsumerState<AddListingScreen> createState() => _AddListingScreenState();
@@ -30,6 +40,13 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   late final TextEditingController _guests;
   late final TextEditingController _model;
 
+  static const _steps = [
+    (0, 'Media', Icons.upload_rounded),
+    (1, 'Category', Icons.grid_view_rounded),
+    (2, 'Details', Icons.description_outlined),
+    (3, 'Publish', Icons.shield_outlined),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +61,33 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     _berths = TextEditingController(text: draft.berths);
     _guests = TextEditingController(text: draft.maxPassengers);
     _model = TextEditingController(text: draft.model ?? '');
+
+    final initial = widget.initialCategory;
+    final mode = widget.initialMode;
+    if (initial != null || mode != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final notifier = ref.read(addListingProvider.notifier);
+        if (initial != null) {
+          final cat = switch (initial) {
+            'motorcycle' => ListingCategory.motorcycle,
+            'bicycle' => ListingCategory.bicycle,
+            'yacht' => ListingCategory.yacht,
+            'worker' => ListingCategory.worker,
+            _ => ListingCategory.property,
+          };
+          if (ref.read(addListingProvider).category != cat) {
+            notifier.setCategory(cat);
+          }
+        }
+        if (mode != null) {
+          notifier.setMode(mode);
+        }
+        // Cap wizard: Media first when category already chosen.
+        if (ref.read(addListingProvider).step == 0 && initial != null) {
+          // stay on Media (step 0)
+        }
+      });
+    }
   }
 
   @override
@@ -65,27 +109,66 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   Widget build(BuildContext context) {
     final draft = ref.watch(addListingProvider);
     final top = MediaQuery.paddingOf(context).top;
+    final stepMeta = _steps[draft.step.clamp(0, _steps.length - 1)];
 
     return ColoredBox(
       color: AppTheme.dashBg,
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(24, top + 64, 24, 12),
+            padding: EdgeInsets.fromLTRB(20, top + 56, 20, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  draft.step == 0
-                      ? 'WHAT ARE WE\nADDING TODAY?'
-                      : _stepTitle(draft.step),
-                  style: AppTheme.displayItalic.copyWith(
-                    fontSize: 28,
-                    height: 1.05,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'STEP ${draft.step + 1} OF ${_steps.length}',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            stepMeta.$2.toUpperCase(),
+                            style: AppTheme.displayItalic.copyWith(
+                              fontSize: 26,
+                              height: 1.05,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _WizardStepPills(
+                  current: draft.step,
+                  steps: _steps,
+                  onSelect: (i) =>
+                      ref.read(addListingProvider.notifier).setStep(i),
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: (draft.step + 1) / _steps.length,
+                    minHeight: 3,
+                    backgroundColor: Colors.white.withAlpha(20),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)),
                   ),
                 ),
-                const SizedBox(height: 16),
-                _StepDots(step: draft.step),
               ],
             ),
           ),
@@ -93,21 +176,23 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 160),
               children: [
-                if (draft.step == 0) _CategoryStep(draft: draft),
-                if (draft.step == 1) _PhotosStep(draft: draft),
-                if (draft.step == 2) _DetailsStep(
-                  draft: draft,
-                  title: _title,
-                  price: _price,
-                  neighborhood: _neighborhood,
-                  year: _year,
-                  mileage: _mileage,
-                  engine: _engine,
-                  length: _length,
-                  berths: _berths,
-                  guests: _guests,
-                  model: _model,
-                ),
+                if (draft.step == 0) _PhotosStep(draft: draft),
+                if (draft.step == 1) _CategoryStep(draft: draft),
+                if (draft.step == 2)
+                  _DetailsStep(
+                    draft: draft,
+                    title: _title,
+                    price: _price,
+                    neighborhood: _neighborhood,
+                    year: _year,
+                    mileage: _mileage,
+                    engine: _engine,
+                    length: _length,
+                    berths: _berths,
+                    guests: _guests,
+                    model: _model,
+                  ),
+                if (draft.step == 3) _PublishStep(draft: draft),
                 if (draft.error != null) ...[
                   const SizedBox(height: 16),
                   Text(
@@ -123,12 +208,13 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                 if (draft.step > 0)
                   BrandGhostButton(
                     label: 'Back',
-                    onPressed: () =>
-                        ref.read(addListingProvider.notifier).setStep(draft.step - 1),
+                    onPressed: () => ref
+                        .read(addListingProvider.notifier)
+                        .setStep(draft.step - 1),
                   ),
                 if (draft.step > 0) const SizedBox(height: 12),
                 BrandPrimaryButton(
-                  label: draft.step == 2 ? 'Publish listing' : 'Continue',
+                  label: draft.step == 3 ? 'Publish listing' : 'Continue',
                   loading: draft.publishing,
                   onPressed: draft.publishing ? null : () => _next(draft),
                 ),
@@ -138,17 +224,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         ],
       ),
     );
-  }
-
-  String _stepTitle(int step) {
-    switch (step) {
-      case 1:
-        return 'ADD PHOTOS';
-      case 2:
-        return 'DETAILS';
-      default:
-        return 'NEW LISTING';
-    }
   }
 
   Future<void> _next(ListingDraft draft) async {
@@ -165,7 +240,13 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           maxPassengers: _guests.text,
           model: _model.text.trim().isEmpty ? current.model : _model.text.trim(),
         ));
-    if (draft.step < 2) {
+    if (draft.step == 0 && draft.photos.isEmpty) {
+      notifier.update(
+        (c) => c.copyWith(error: 'Add at least one photo to continue.'),
+      );
+      return;
+    }
+    if (draft.step < 3) {
       notifier.setStep(draft.step + 1);
       return;
     }
@@ -178,33 +259,208 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             : (ref.read(addListingProvider).error ?? 'Could not save listing')),
       ),
     );
+    if (ok) Navigator.of(context).maybePop();
   }
 }
 
-class _StepDots extends StatelessWidget {
-  const _StepDots({required this.step});
-  final int step;
+class _WizardStepPills extends StatelessWidget {
+  const _WizardStepPills({
+    required this.current,
+    required this.steps,
+    required this.onSelect,
+  });
+
+  final int current;
+  final List<(int, String, IconData)> steps;
+  final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var i = 0; i < 3; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: i == step ? 28 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: i == step ? AppTheme.brandPrimary : Colors.white.withAlpha(40),
-              borderRadius: BorderRadius.circular(999),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final step in steps) ...[
+            GestureDetector(
+              onTap: () => onSelect(step.$1),
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: step.$1 == current
+                      ? AppTheme.brandPrimary
+                      : step.$1 < current
+                          ? const Color(0x2610B981)
+                          : Colors.white.withAlpha(12),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: step.$1 == current
+                        ? AppTheme.brandPrimary
+                        : step.$1 < current
+                            ? const Color(0x4D10B981)
+                            : Colors.white24,
+                  ),
+                  boxShadow: step.$1 == current
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.brandPrimary.withAlpha(90),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      step.$1 < current
+                          ? Icons.check_rounded
+                          : step.$3,
+                      size: 12,
+                      color: step.$1 == current
+                          ? Colors.white
+                          : step.$1 < current
+                              ? const Color(0xFF34D399)
+                              : Colors.white54,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      step.$2,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: step.$1 == current
+                            ? Colors.white
+                            : step.$1 < current
+                                ? const Color(0xFF34D399)
+                                : Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _PublishStep extends StatelessWidget {
+  const _PublishStep({required this.draft});
+  final ListingDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Review & publish',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Confirm your listing looks right. Publishing makes it live on the swipe deck.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white60,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 18),
+        _ReviewRow(label: 'Category', value: draft.category.name.toUpperCase()),
+        _ReviewRow(label: 'Mode', value: draft.modeValue.toUpperCase()),
+        _ReviewRow(label: 'Photos', value: '${draft.photos.length}'),
+        _ReviewRow(
+          label: 'Title',
+          value: draft.title.trim().isEmpty ? '(auto)' : draft.title,
+        ),
+        _ReviewRow(
+          label: 'Price',
+          value: draft.price.trim().isEmpty ? '—' : draft.price,
+        ),
+        _ReviewRow(label: 'City', value: draft.city),
+        if (draft.neighborhood.trim().isNotEmpty)
+          _ReviewRow(label: 'Neighborhood', value: draft.neighborhood),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0x2610B981),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x4D10B981)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: Color(0xFF34D399)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Your listing will appear for seekers matching this category and location.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFFA7F3D0),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 }
+
+class _ReviewRow extends StatelessWidget {
+  const _ReviewRow({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label.toUpperCase(),
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white38,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Cap wizard chrome: Media → Category → Details → Publish
 
 class _CategoryStep extends ConsumerWidget {
   const _CategoryStep({required this.draft});

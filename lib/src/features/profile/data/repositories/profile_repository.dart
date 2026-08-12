@@ -15,11 +15,13 @@ class ProfileRepository {
     try {
       final client = await _client
           .from('client_profiles')
-          .select('user_id, name, bio, city, profile_images')
+          .select('user_id, name, bio, city, age, interests, profile_images')
           .eq('user_id', user.id)
           .maybeSingle();
       if (client != null) {
         final images = client['profile_images'];
+        final imageList = images is List ? images : const [];
+        final interestsRaw = client['interests'];
         return UserProfile(
           userId: user.id,
           name: (client['name'] as String?)?.trim().isNotEmpty == true
@@ -27,9 +29,15 @@ class ProfileRepository {
               : (user.email ?? 'Swipess member'),
           bio: client['bio'] as String?,
           city: client['city'] as String?,
-          avatarUrl: images is List && images.isNotEmpty
-              ? images.first.toString()
+          age: (client['age'] as num?)?.toInt(),
+          interests: interestsRaw is List
+              ? interestsRaw.whereType<String>().toList()
+              : const [],
+          imageCount: imageList.length,
+          avatarUrl: imageList.isNotEmpty
+              ? imageList.first.toString()
               : user.userMetadata?['avatar_url'] as String?,
+          email: user.email,
           role: 'client',
         );
       }
@@ -43,15 +51,16 @@ class ProfileRepository {
           .maybeSingle();
       if (owner != null) {
         final images = owner['profile_images'];
+        final imageList = images is List ? images : const [];
         return UserProfile(
           userId: user.id,
           name: (owner['business_name'] as String?)?.trim().isNotEmpty == true
               ? owner['business_name'] as String
               : (user.email ?? 'Swipess member'),
           city: owner['city'] as String?,
-          avatarUrl: images is List && images.isNotEmpty
-              ? images.first.toString()
-              : null,
+          imageCount: imageList.length,
+          avatarUrl: imageList.isNotEmpty ? imageList.first.toString() : null,
+          email: user.email,
           role: 'owner',
         );
       }
@@ -63,6 +72,7 @@ class ProfileRepository {
           user.email ??
           'Swipess member',
       avatarUrl: user.userMetadata?['avatar_url'] as String?,
+      email: user.email,
     );
   }
 

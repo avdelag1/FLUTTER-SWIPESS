@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
@@ -33,43 +33,62 @@ class BentoDashboardScreen extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  _showAskSheet(context, ref);
-                },
-                child: Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color.fromRGBO(16, 16, 20, 1.0),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white.withAlpha(20), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(150),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search_rounded, color: Colors.white.withAlpha(150), size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Ask AI to find anything...',
-                          style: TextStyle(
-                            color: Colors.white.withAlpha(150),
-                            fontSize: 15,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      showIntelCoreSheet(context);
+                    },
+                    child: Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(16, 16, 20, 1.0),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: const Color(0xFF4DABF7), width: 1.6),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF4DABF7).withAlpha(90),
+                            blurRadius: 18,
+                            spreadRadius: 0.5,
                           ),
-                        ),
+                          BoxShadow(
+                            color: Colors.black.withAlpha(150),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      Icon(Icons.arrow_forward_rounded, color: Colors.white.withAlpha(150), size: 20),
-                    ],
+                      child: Row(
+                        children: [
+                          Icon(Icons.search_rounded, color: Colors.white.withAlpha(150), size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Ask AI to find anything...',
+                              style: TextStyle(
+                                color: Colors.white.withAlpha(150),
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_rounded, color: Colors.white.withAlpha(150), size: 20),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'AI-powered · Answers are generated by AI. AI can make mistakes. Consider verifying important information.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -348,107 +367,6 @@ class BentoDashboardScreen extends ConsumerWidget {
     }
   }
 
-  void _showAskSheet(BuildContext context, WidgetRef ref) {
-    showGlassModal(
-      context: context,
-      builder: (context) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF14141A),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withAlpha(30)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('QUICK FIND', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Jump into a surface — full Ask AI needs an API key later.',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white60, fontSize: 13),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _AskChip(
-                        label: 'Live map',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LiveMapScreen()),
-                          );
-                        },
-                      ),
-                      _AskChip(
-                        label: 'Video tours',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const VideoToursScreen()),
-                          );
-                        },
-                      ),
-                      _AskChip(
-                        label: 'Roommates',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
-                          );
-                        },
-                      ),
-                      _AskChip(
-                        label: 'Seekers',
-                        onTap: () {
-                          Navigator.pop(context);
-                          ref.read(navTabProvider.notifier).set(NavTab.seekers);
-                        },
-                      ),
-                      _AskChip(
-                        label: 'Local intel',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
-                          );
-                        },
-                      ),
-                      _AskChip(
-                        label: 'World radio',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const WorldRadioScreen()),
-                          );
-                        },
-                      ),
-                      _AskChip(
-                        label: 'Market prices',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildNeoNaiveFilterPill(
     IconData icon,
     String text,
@@ -498,23 +416,6 @@ class BentoDashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AskChip extends StatelessWidget {
-  const _AskChip({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      label: Text(label),
-      onPressed: onTap,
-      backgroundColor: Colors.white.withAlpha(18),
-      labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
-      side: BorderSide(color: Colors.white.withAlpha(40)),
     );
   }
 }
