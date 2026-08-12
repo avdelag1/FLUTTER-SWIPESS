@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import '../widgets/swipe_card.dart';
 
 class SwiperScreen extends ConsumerStatefulWidget {
@@ -15,24 +16,20 @@ class _SwiperScreenState extends ConsumerState<SwiperScreen> {
 
   final List<SwipeCard> cards = const [
     SwipeCard(
-      title: 'Vibrant Sunset',
-      description: 'Discover the beauty of the dusk.',
-      colors: [Color(0xFFFF512F), Color(0xFFF09819)],
+      title: 'Discover 2026',
+      description: 'The future of Swipess, now entirely native.',
     ),
     SwipeCard(
-      title: 'Ocean Deep',
-      description: 'Dive into the unknown.',
-      colors: [Color(0xFF2193b0), Color(0xFF6dd5ed)],
+      title: 'Fluid Gestures',
+      description: 'Feel the 120fps spring physics.',
     ),
     SwipeCard(
-      title: 'Forest Whisper',
-      description: 'Nature is calling you.',
-      colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
+      title: 'Cinematic Shadows',
+      description: 'Directly translated from your CSS tokens.',
     ),
     SwipeCard(
-      title: 'Cosmic Void',
-      description: 'Journey to the stars.',
-      colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+      title: 'Native Power',
+      description: 'Connected directly to your Supabase.',
     ),
   ];
 
@@ -46,7 +43,7 @@ class _SwiperScreenState extends ConsumerState<SwiperScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Discover', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Swipess', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1)),
       ),
       body: SafeArea(
         child: Column(
@@ -68,33 +65,68 @@ class _SwiperScreenState extends ConsumerState<SwiperScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 30.0, top: 10.0),
+              padding: const EdgeInsets.only(bottom: 40.0, top: 10.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  FloatingActionButton(
+                  _buildActionButton(
+                    icon: Icons.close_rounded,
+                    color: Colors.white,
+                    bgColor: AppTheme.glassBg,
                     onPressed: () => controller.swipe(CardSwiperDirection.left),
-                    backgroundColor: Colors.white12,
-                    elevation: 0,
-                    child: const Icon(Icons.close, color: Colors.redAccent, size: 30),
                   ),
-                  FloatingActionButton(
-                    onPressed: () => controller.swipe(CardSwiperDirection.top),
-                    backgroundColor: Colors.white12,
-                    elevation: 0,
-                    child: const Icon(Icons.star, color: Colors.blueAccent, size: 30),
-                  ),
-                  FloatingActionButton(
+                  const SizedBox(width: 24),
+                  _buildActionButton(
+                    icon: Icons.favorite_rounded,
+                    color: Colors.white,
+                    bgColor: AppTheme.brandPrimary,
                     onPressed: () => controller.swipe(CardSwiperDirection.right),
-                    backgroundColor: Colors.white12,
-                    elevation: 0,
-                    child: const Icon(Icons.favorite, color: Colors.greenAccent, size: 30),
+                    isPrimary: true,
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onPressed,
+    bool isPrimary = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withAlpha(25),
+          width: 1,
+        ),
+        boxShadow: isPrimary
+            ? [
+                BoxShadow(
+                  color: AppTheme.brandPrimary.withAlpha(100),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                )
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withAlpha(50),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                )
+              ],
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: isPrimary ? 40 : 32),
+        padding: EdgeInsets.all(isPrimary ? 20 : 16),
+        onPressed: onPressed,
       ),
     );
   }
