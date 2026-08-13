@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -112,6 +113,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 onPressed: () => context.go('/welcome'),
                 icon: const Icon(Icons.arrow_back_ios_new_rounded,
                     color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Center(
+              child: SwipessLogo(
+                height: 36,
+                variant: SwipessLogoVariant.outline,
               ),
             ),
             const SizedBox(height: 24),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -105,6 +106,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 64),
+                      const Center(
+                        child: SwipessLogo(
+                          height: 40,
+                          variant: SwipessLogoVariant.outline,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
                       Text(
                         _isLogin ? 'Welcome back' : 'Create an account',
                         style: const TextStyle(

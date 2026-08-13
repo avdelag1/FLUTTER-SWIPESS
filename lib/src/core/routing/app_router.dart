@@ -62,7 +62,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      final granted = ref.read(accessGrantedProvider).value ?? false;
+      final grantedAsync = ref.read(accessGrantedProvider);
+      // While grant status is still loading, don't bounce the user.
+      if (grantedAsync.isLoading) return null;
+      final granted = grantedAsync.value ?? false;
       final user = ref.read(currentUserProvider);
 
       final publicExact = {
