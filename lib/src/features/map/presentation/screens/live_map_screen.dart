@@ -1,8 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/config/app_config.dart';
-import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
@@ -22,15 +24,18 @@ class LiveMapScreen extends ConsumerStatefulWidget {
 class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   String _category = 'all';
   Listing? _selected;
+  bool _menuOpen = false;
+  bool _radiusOpen = false;
   final _mapController = MapController();
+  double _zoom = 11;
 
   static const _categories = [
-    ('all', 'All'),
-    ('property', 'Homes'),
-    ('motorcycle', 'Motos'),
-    ('bicycle', 'Bikes'),
-    ('yacht', 'Yachts'),
-    ('worker', 'Workers'),
+    ('all', 'All', Icons.public_rounded),
+    ('property', 'Homes', Icons.apartment_rounded),
+    ('motorcycle', 'Motos', Icons.two_wheeler_rounded),
+    ('bicycle', 'Bikes', Icons.pedal_bike_rounded),
+    ('yacht', 'Yachts', Icons.sailing_rounded),
+    ('worker', 'Workers', Icons.people_alt_rounded),
   ];
 
   /// Cap pin pressure — too many Marker widgets rebuild-locks the map.
@@ -59,7 +64,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final filtered = _filtered(listings);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0A0A12),
       body: Stack(
         children: [
           // Always mounted — never gate the map behind listing Future.
@@ -140,48 +145,184 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
               ),
             ),
           SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: Row(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HudCircle(
+                    icon: Icons.close_rounded,
+                    onTap: () => Navigator.of(context).pop(),
+                  ),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _GlassCircle(
-                        icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: () => Navigator.of(context).pop(),
+                      _HudCircle(
+                        icon: _menuOpen
+                            ? Icons.close_rounded
+                            : Icons.menu_rounded,
+                        onTap: () => setState(() {
+                          _menuOpen = !_menuOpen;
+                          if (_menuOpen) _radiusOpen = false;
+                        }),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
+                      if (_menuOpen) ...[
+                        const SizedBox(height: 8),
+                        _HudCircle(
+                          icon: Icons.search_rounded,
                           onTap: () => _pickCity(context),
+                        ),
+                        const SizedBox(height: 8),
+                        _HudCircle(
+                          icon: Icons.navigation_rounded,
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            _mapController.move(
+                              center,
+                              _zoomForRadius(radiusKm),
+                            );
+                          },
+                          accent: true,
+                        ),
+                        const SizedBox(height: 8),
+                        for (final c in _categories.take(3))
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _HudCircle(
+                              icon: c.$3,
+                              selected: _category == c.$1,
+                              onTap: () => setState(() {
+                                _category = c.$1;
+                                _selected = null;
+                              }),
+                            ),
+                          ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom-left Cap controls
+          Positioned(
+            left: 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xF2161B27),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white.withAlpha(30)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF34D399),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF34D399).withAlpha(180),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'You are here',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        _mapController.move(
+                          center,
+                          _zoomForRadius(radiusKm),
+                        );
+                      },
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF0072FF),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0x660072FF),
+                              blurRadius: 12,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.navigation_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() {
+                            _radiusOpen = !_radiusOpen;
+                            if (_radiusOpen) _menuOpen = false;
+                          }),
                           child: Container(
-                            height: 48,
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(180),
+                              color: const Color(0xF2161B27),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                  color: Colors.white.withAlpha(40)),
+                              border:
+                                  Border.all(color: Colors.white.withAlpha(30)),
                             ),
                             child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.location_on_rounded,
-                                    color: AppTheme.brandPrimary, size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    location.label,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                    color: Colors.white, size: 16),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '$radiusKm km',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color(0xFF00C6FF),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
                                   ),
                                 ),
-                                const Icon(Icons.expand_more_rounded,
-                                    color: Colors.white70),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  _radiusOpen
+                                      ? Icons.expand_less_rounded
+                                      : Icons.expand_more_rounded,
+                                  color: Colors.white70,
+                                  size: 18,
+                                ),
                               ],
                             ),
                           ),
@@ -214,21 +355,20 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                               fontWeight: FontWeight.w800,
                               fontSize: 11,
                             ),
-                            side: BorderSide(
-                                color: Colors.white.withAlpha(40)),
                           ),
-                        ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+
           if (_selected != null)
             Positioned(
               left: 16,
               right: 16,
-              bottom: 28,
+              bottom: MediaQuery.paddingOf(context).bottom + 120,
               child: _PreviewCard(
                 listing: _selected!,
                 onOpen: () {
@@ -248,9 +388,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 
   Future<void> _pickCity(BuildContext context) async {
+    final cities = [
+      'Tulum',
+      'Cancún',
+      'Playa del Carmen',
+      'Mérida',
+      'Mexico City',
+    ];
     final city = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppTheme.dashElevated,
+      backgroundColor: const Color(0xFF12161F),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -261,7 +408,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
             Text('CHOOSE CITY',
                 style: AppTheme.displayItalic.copyWith(fontSize: 18)),
             const SizedBox(height: 12),
-            for (final city in ListingTaxonomies.popularCities)
+            for (final city in cities)
               ListTile(
                 title: Text(city, style: const TextStyle(color: Colors.white)),
                 onTap: () => Navigator.pop(context, city),
@@ -273,16 +420,25 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     if (city != null && mounted) {
       ref.read(discoveryLocationProvider.notifier).setCity(city);
       final loc = ref.read(discoveryLocationProvider);
-      _mapController.move(LatLng(loc.latitude, loc.longitude), 12);
+      _mapController.move(
+        LatLng(loc.latitude, loc.longitude),
+        _zoomForRadius(loc.radiusKm),
+      );
       setState(() => _selected = null);
     }
   }
 }
 
-class _Pin extends StatelessWidget {
-  const _Pin({required this.listing, required this.selected});
-  final Listing listing;
-  final bool selected;
+class _MapCluster {
+  const _MapCluster({required this.point, required this.listings});
+  final LatLng point;
+  final List<Listing> listings;
+  int get count => listings.length;
+}
+
+class _ClusterBubble extends StatelessWidget {
+  const _ClusterBubble({required this.count});
+  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -305,6 +461,7 @@ class _Pin extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
+        child: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }
@@ -352,20 +509,25 @@ class _PreviewCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       listing.title ?? 'Listing',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w800),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     Text(
                       listing.formattedLocation,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54, fontSize: 12),
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -375,7 +537,7 @@ class _PreviewCard extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 8),
                     GestureDetector(
                       onTap: onOpen,
                       child: Text(
@@ -398,29 +560,6 @@ class _PreviewCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _GlassCircle extends StatelessWidget {
-  const _GlassCircle({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.black.withAlpha(180),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(40)),
-        ),
-        child: Icon(icon, color: Colors.white, size: 18),
       ),
     );
   }

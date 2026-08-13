@@ -9,6 +9,7 @@ class DiscoveryLocation {
     required this.longitude,
     this.guests = 2,
     this.dateLabel = 'Any date',
+    this.radiusKm = 50,
   });
 
   final String city;
@@ -17,6 +18,7 @@ class DiscoveryLocation {
   final double longitude;
   final int guests;
   final String dateLabel;
+  final int radiusKm;
 
   String get label => '$city, $country';
 
@@ -27,6 +29,7 @@ class DiscoveryLocation {
     double? longitude,
     int? guests,
     String? dateLabel,
+    int? radiusKm,
   }) {
     return DiscoveryLocation(
       city: city ?? this.city,
@@ -35,6 +38,7 @@ class DiscoveryLocation {
       longitude: longitude ?? this.longitude,
       guests: guests ?? this.guests,
       dateLabel: dateLabel ?? this.dateLabel,
+      radiusKm: radiusKm ?? this.radiusKm,
     );
   }
 }
@@ -68,6 +72,10 @@ class DiscoveryLocationNotifier extends Notifier<DiscoveryLocation> {
 
   void setDateLabel(String label) {
     state = state.copyWith(dateLabel: label);
+  }
+
+  void setRadiusKm(int km) {
+    state = state.copyWith(radiusKm: km.clamp(1, 500));
   }
 }
 
