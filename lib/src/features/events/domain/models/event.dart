@@ -16,6 +16,9 @@ class Event {
   final String? organizerName;
   final String? organizerPhotoUrl;
   final String? organizerWhatsapp;
+  final String? organizerInstagram;
+  final String? organizerWebsite;
+  final String? organizerFacebook;
   final bool isFree;
   final String? priceText;
   final String? promoText;
@@ -36,6 +39,9 @@ class Event {
     this.organizerName,
     this.organizerPhotoUrl,
     this.organizerWhatsapp,
+    this.organizerInstagram,
+    this.organizerWebsite,
+    this.organizerFacebook,
     this.isFree = false,
     this.priceText,
     this.promoText,
@@ -62,6 +68,17 @@ class Event {
 
   String get shareUrl => 'https://www.swipess.com/explore/events/$id';
 
+  bool get hasWhatsApp {
+    final d = (organizerWhatsapp ?? '').replaceAll(RegExp(r'\D'), '');
+    return d.length >= 8;
+  }
+
+  bool get hasConnectLinks =>
+      hasWhatsApp ||
+      (organizerInstagram?.trim().isNotEmpty ?? false) ||
+      (organizerWebsite?.trim().isNotEmpty ?? false) ||
+      (organizerFacebook?.trim().isNotEmpty ?? false);
+
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       id: json['id'] as String,
@@ -82,6 +99,12 @@ class Event {
       organizerName: json['organizer_name'] as String?,
       organizerPhotoUrl: json['organizer_photo_url'] as String?,
       organizerWhatsapp: json['organizer_whatsapp'] as String?,
+      organizerInstagram: (json['organizer_instagram'] ?? json['instagram'])
+          as String?,
+      organizerWebsite:
+          (json['organizer_website'] ?? json['website']) as String?,
+      organizerFacebook:
+          (json['organizer_facebook'] ?? json['facebook']) as String?,
       isFree: json['is_free'] as bool? ?? false,
       priceText: json['price_text'] as String?,
       promoText: json['promo_text'] as String?,

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/event_connect.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/events/presentation/widgets/event_connect_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -105,17 +107,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _whatsApp() async {
-    final raw = event.organizerWhatsapp;
-    if (raw == null || raw.trim().isEmpty) return;
+    if (!event.hasWhatsApp) return;
     HapticFeedback.heavyImpact();
-    final phone = raw.replaceAll(RegExp(r'\D'), '');
-    final msg = Uri.encodeComponent(
-      'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+    await EventConnect.open(
+      EventConnect.whatsAppUri(
+        event.organizerWhatsapp,
+        message: 'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+      ),
     );
-    final uri = Uri.parse('https://wa.me/$phone?text=$msg');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   void _goSibling(String? id) {
@@ -543,6 +542,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           ),
                         ),
                       ],
+                      if (event.hasConnectLinks) ...[
+                        const SizedBox(height: 28),
+                        EventConnectBar(
+                          event: event,
+                          message:
+                              'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -566,7 +573,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
               child: Row(
                 children: [
-                  if (event.organizerWhatsapp?.trim().isNotEmpty == true)
+                  if (event.hasWhatsApp)
                     Expanded(
                       child: GestureDetector(
                         onTap: _whatsApp,
@@ -592,7 +599,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   color: Colors.white, size: 22),
                               const SizedBox(width: 10),
                               Text(
-                                'SECURE ENTRY',
+                                'WHATSAPP',
                                 style: GoogleFonts.plusJakartaSans(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w900,

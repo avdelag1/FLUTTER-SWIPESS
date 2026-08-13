@@ -30,18 +30,28 @@ class AdminRepository {
   }
 
   Future<List<AdminEventRow>> fetchEvents() async {
-    final rows = await _client
-        .from('events')
-        .select(
-          'id, title, category, image_url, event_date, location, is_published, is_approved, organizer_whatsapp',
-        )
-        .order('created_at', ascending: false)
-        .limit(200);
-    return [
-      for (final row in rows as List)
-        if (row is Map)
-          AdminEventRow.fromJson(Map<String, dynamic>.from(row)),
-    ];
+    Future<List<AdminEventRow>> run(String select) async {
+      final rows = await _client
+          .from('events')
+          .select(select)
+          .order('created_at', ascending: false)
+          .limit(200);
+      return [
+        for (final row in rows as List)
+          if (row is Map)
+            AdminEventRow.fromJson(Map<String, dynamic>.from(row)),
+      ];
+    }
+
+    try {
+      return await run(
+        'id, title, category, image_url, event_date, location, is_published, is_approved, organizer_name, organizer_whatsapp, organizer_instagram, organizer_website, organizer_facebook',
+      );
+    } catch (_) {
+      return run(
+        'id, title, category, image_url, event_date, location, is_published, is_approved, organizer_name, organizer_whatsapp',
+      );
+    }
   }
 
   Future<List<PromoSubmission>> fetchSubmissions() async {
@@ -65,7 +75,24 @@ class AdminRepository {
 
   Future<void> upsertEvent(AdminEventDraft draft, {String? editingId}) async {
     final uid = _client.auth.currentUser?.id;
-    final payload = draft.toPayload(createdBy: editingId == null ? uid : null);
+    final createdBy = editingId == null ? uid : null;
+    try {
+      await _writeEvent(
+        draft.toPayload(createdBy: createdBy),
+        editingId: editingId,
+      );
+    } catch (_) {
+      await _writeEvent(
+        draft.toPayload(createdBy: createdBy, includeSocials: false),
+        editingId: editingId,
+      );
+    }
+  }
+
+  Future<void> _writeEvent(
+    Map<String, dynamic> payload, {
+    String? editingId,
+  }) async {
     if (editingId != null) {
       await _client.from('events').update(payload).eq('id', editingId);
     } else {
@@ -84,7 +111,7 @@ class AdminRepository {
   }
 
   Future<void> approveSubmission(PromoSubmission sub) async {
-    await _client.from('events').insert({
+    final payload = <String, dynamic>{
       'title': sub.title,
       'description': sub.description,
       'category': sub.eventType ?? 'promo',
@@ -92,10 +119,17 @@ class AdminRepository {
       'location': sub.location,
       'organizer_name': sub.contactName,
       'organizer_whatsapp': sub.contactPhone,
+      'organizer_website': sub.website,
       'is_approved': true,
       'is_published': true,
       'created_by': sub.userId,
-    });
+    };
+    try {
+      await _client.from('events').insert(payload);
+    } catch (_) {
+      payload.remove('organizer_website');
+      await _client.from('events').insert(payload);
+    }
     await _client
         .from('business_promo_submissions')
         .update({'status': 'approved'}).eq('id', sub.id);
