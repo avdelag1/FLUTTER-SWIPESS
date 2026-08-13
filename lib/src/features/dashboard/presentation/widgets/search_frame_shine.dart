@@ -3,11 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-/// Cap `.neo-search-frame-glow` plus an inner traveling sheen.
-///
-/// Frame: a 3.6s conic hotspot racing around the pill outline.
-/// Inside: a soft blue-white blade that sweeps the well so the AI bar
-/// actually lights up, not just its border.
+/// Cap AI search light: quiet most of the time, then a ~1s snap
+/// every 10 seconds — inner sheen plus outline hotspot, then dark again.
 class SearchFrameShine extends StatefulWidget {
   const SearchFrameShine({
     super.key,
@@ -18,32 +15,38 @@ class SearchFrameShine extends StatefulWidget {
   final Widget child;
   final Color color;
 
+  /// Full loop. Shine occupies the first [shineFraction] of this.
+  @visibleForTesting
+  static const Duration cycle = Duration(seconds: 10);
+
+  /// First 10% of the cycle (~1s) is the snap. The rest is dark.
+  @visibleForTesting
+  static const double shineFraction = 0.10;
+
+  @visibleForTesting
+  static bool isShineWindow(double progress) =>
+      progress >= 0 && progress <= shineFraction;
+
   @override
   State<SearchFrameShine> createState() => _SearchFrameShineState();
 }
 
 class _SearchFrameShineState extends State<SearchFrameShine>
-    with TickerProviderStateMixin {
-  late final AnimationController _frame;
-  late final AnimationController _inner;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _cycle;
 
   @override
   void initState() {
     super.initState();
-    _frame = AnimationController(
+    _cycle = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3600),
-    )..repeat();
-    _inner = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: SearchFrameShine.cycle,
     )..repeat();
   }
 
   @override
   void dispose() {
-    _frame.dispose();
-    _inner.dispose();
+    _cycle.dispose();
     super.dispose();
   }
 
@@ -58,11 +61,11 @@ class _SearchFrameShineState extends State<SearchFrameShine>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: AnimatedBuilder(
-                animation: _inner,
+                animation: _cycle,
                 builder: (context, _) {
                   return CustomPaint(
                     painter: _InnerSheenPainter(
-                      progress: _inner.value,
+                      progress: _cycle.value,
                       color: widget.color,
                     ),
                   );
@@ -78,11 +81,11 @@ class _SearchFrameShineState extends State<SearchFrameShine>
           bottom: -2,
           child: IgnorePointer(
             child: AnimatedBuilder(
-              animation: _frame,
+              animation: _cycle,
               builder: (context, _) {
                 return CustomPaint(
                   painter: _FrameShinePainter(
-                    progress: _frame.value,
+                    progress: _cycle.value,
                     color: widget.color,
                   ),
                 );
@@ -101,12 +104,19 @@ class _InnerSheenPainter extends CustomPainter {
     required this.color,
   });
 
+  /// 0–1 over a 10s cycle. Shine lives in the first 10% (~1s).
   final double progress;
   final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
+    if (!SearchFrameShine.isShineWindow(progress)) return;
+
+    final local =
+        (progress / SearchFrameShine.shineFraction).clamp(0.0, 1.0);
+    final envelope = math.sin(local * math.pi);
+    if (envelope <= 0.02) return;
 
     final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(
@@ -116,22 +126,20 @@ class _InnerSheenPainter extends CustomPainter {
     canvas.save();
     canvas.clipRRect(rrect);
 
-    // Ambient wash along the top lip — glass catch-light.
     final wash = Paint()
       ..shader = ui.Gradient.linear(
-        Offset(0, 0),
+        Offset.zero,
         Offset(0, size.height * 0.55),
         [
-          color.withValues(alpha: 0.16),
-          Colors.white.withValues(alpha: 0.04),
+          color.withValues(alpha: 0.22 * envelope),
+          Colors.white.withValues(alpha: 0.08 * envelope),
           Colors.transparent,
         ],
         const [0.0, 0.35, 1.0],
       );
     canvas.drawRRect(rrect, wash);
 
-    // Traveling blade inside the well.
-    final x = -size.width * 0.45 + (size.width * 1.9 * progress);
+    final x = -size.width * 0.45 + (size.width * 1.9 * local);
     final bladeRect = Rect.fromLTWH(
       x,
       -4,
@@ -145,9 +153,9 @@ class _InnerSheenPainter extends CustomPainter {
         bladeRect.topRight,
         [
           Colors.transparent,
-          color.withValues(alpha: 0.18),
-          Colors.white.withValues(alpha: 0.42),
-          color.withValues(alpha: 0.18),
+          color.withValues(alpha: 0.22 * envelope),
+          Colors.white.withValues(alpha: 0.50 * envelope),
+          color.withValues(alpha: 0.22 * envelope),
           Colors.transparent,
         ],
         const [0.0, 0.32, 0.5, 0.68, 1.0],
@@ -167,13 +175,19 @@ class _FrameShinePainter extends CustomPainter {
     required this.color,
   });
 
-  /// 0–1 over a 3.6s spin, matching Cap `neo-search-glow-spin`.
+  /// 0–1 over a 10s cycle. Shine lives in the first 10% (~1s).
   final double progress;
   final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
+    if (!SearchFrameShine.isShineWindow(progress)) return;
+
+    final local =
+        (progress / SearchFrameShine.shineFraction).clamp(0.0, 1.0);
+    final envelope = math.sin(local * math.pi);
+    if (envelope <= 0.02) return;
 
     final rect = Offset.zero & size;
     final rrect = RRect.fromRectAndRadius(
@@ -181,17 +195,16 @@ class _FrameShinePainter extends CustomPainter {
       Radius.circular(size.height / 2),
     );
     final shader = SweepGradient(
-      transform: GradientRotation(progress * math.pi * 2),
+      transform: GradientRotation(local * math.pi * 2),
       colors: [
         Colors.transparent,
-        color.withValues(alpha: 0.08),
-        color.withValues(alpha: 0.95),
-        Colors.white,
-        color.withValues(alpha: 0.95),
-        Colors.transparent,
+        color.withValues(alpha: 0.12 * envelope),
+        color.withValues(alpha: 0.95 * envelope),
+        Colors.white.withValues(alpha: envelope),
+        color.withValues(alpha: 0.95 * envelope),
         Colors.transparent,
       ],
-      stops: const [0.0, 0.78, 0.88, 0.93, 0.97, 0.995, 1.0],
+      stops: const [0.0, 0.78, 0.88, 0.93, 0.97, 1.0],
     ).createShader(rect);
 
     final paint = Paint()
