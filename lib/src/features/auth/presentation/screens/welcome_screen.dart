@@ -120,12 +120,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                     children: [
                                       Icon(Icons.login_rounded, size: 18),
                                       SizedBox(width: 10),
-                                      Text(
-                                        'SIGN IN',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 2,
+                                      Flexible(
+                                        child: Text(
+                                          'SIGN IN',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -151,12 +154,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                     children: [
                                       Icon(Icons.auto_awesome_rounded, size: 18),
                                       SizedBox(width: 10),
-                                      Text(
-                                        'CREATE ACCOUNT',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 2,
+                                      Flexible(
+                                        child: Text(
+                                          'CREATE ACCOUNT',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 2,
+                                          ),
                                         ),
                                       ),
                                     ],
