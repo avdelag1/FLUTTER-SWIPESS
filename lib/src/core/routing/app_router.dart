@@ -476,15 +476,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
     _authSub = ref.listen(authStateProvider, (_, _) => notifyListeners());
+    _userSub = ref.listen(currentUserProvider, (_, _) => notifyListeners());
     _grantSub = ref.listen(accessGrantedProvider, (_, _) => notifyListeners());
   }
 
   late final ProviderSubscription<AsyncValue<dynamic>> _authSub;
+  late final ProviderSubscription<dynamic> _userSub;
   late final ProviderSubscription<AsyncValue<bool>> _grantSub;
 
   @override
   void dispose() {
     _authSub.close();
+    _userSub.close();
     _grantSub.close();
     super.dispose();
   }

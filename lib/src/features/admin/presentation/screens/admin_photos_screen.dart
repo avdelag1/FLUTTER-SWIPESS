@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/admin/data/admin_repository.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/providers/admin_provider.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
@@ -38,10 +39,10 @@ class AdminPhotosScreen extends ConsumerWidget {
                 for (final f in folders)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(f.$2),
+                    child: NeoNaiveChip(
+                      label: f.$2,
                       selected: folder == f.$1,
-                      onSelected: (_) =>
+                      onSelected: () =>
                           ref.read(adminPhotoFolderProvider.notifier).set(f.$1),
                     ),
                   ),

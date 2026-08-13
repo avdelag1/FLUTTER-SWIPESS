@@ -404,34 +404,25 @@ class _AuthorizedVault extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          docsAsync.when(
-            loading: () => LinearProgressIndicator(color: t.accent, minHeight: 2),
-            error: (_, _) => Text(
-              'Could not load vault docs',
-              style: GoogleFonts.plusJakartaSans(
-                color: t.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-            data: (items) {
-              return Column(
-                children: [
-                  for (final entry in vapVaultDocTypes) ...[
-                    _VaultDocRow(
-                      theme: t,
-                      typeKey: entry.$1,
-                      label: entry.$2,
-                      doc: items
-                          .where((d) => d.documentType == entry.$1)
-                          .firstOrNull,
-                      onPreview: onPreview,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+          if (docsAsync.isLoading && docsAsync.value == null)
+            LinearProgressIndicator(color: t.accent, minHeight: 2)
+          else
+            Column(
+              children: [
+                for (final entry in vapVaultDocTypes) ...[
+                  _VaultDocRow(
+                    theme: t,
+                    typeKey: entry.$1,
+                    label: entry.$2,
+                    doc: (docsAsync.value ?? const <LegalDocument>[])
+                        .where((d) => d.documentType == entry.$1)
+                        .firstOrNull,
+                    onPreview: onPreview,
+                  ),
+                  const SizedBox(height: 8),
                 ],
-              );
-            },
-          ),
+              ],
+            ),
         ],
       ),
     );

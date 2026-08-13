@@ -9,15 +9,30 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
   return Supabase.instance.client.auth.onAuthStateChange;
 });
 
-/// Convenient shortcut to the current user.
-final currentUserProvider = Provider<User?>((ref) {
-  final authState = ref.watch(authStateProvider);
-  return authState.when(
-    data: (state) => state.session?.user,
-    loading: () => null,
-    error: (e, st) => null,
-  );
-});
+/// Live session user. A [Notifier] so email login can stamp the user
+/// immediately — a plain Provider stays cached as `null` until the
+/// auth stream emits, and the router then bounces LOG IN back to Welcome.
+class CurrentUserNotifier extends Notifier<User?> {
+  @override
+  User? build() {
+    ref.listen<AsyncValue<AuthState>>(authStateProvider, (_, next) {
+      state = next.value?.session?.user ??
+          Supabase.instance.client.auth.currentUser;
+    });
+    return Supabase.instance.client.auth.currentUser;
+  }
+
+  /// Call after `signInWithPassword` / sign-up so GoRouter sees the
+  /// session on the same frame as `context.go(dashboard)`.
+  void apply(User? user) {
+    state = user ?? Supabase.instance.client.auth.currentUser;
+  }
+
+  void clear() => state = null;
+}
+
+final currentUserProvider =
+    NotifierProvider<CurrentUserNotifier, User?>(CurrentUserNotifier.new);
 
 /// Access-code gate state. AsyncNotifier so grant flips true immediately
 /// (FutureProvider invalidate left `.value` null → router treated as denied).

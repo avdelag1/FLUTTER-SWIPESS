@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -45,6 +47,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     HapticFeedback.mediumImpact();
     try {
       await ref.read(authRepositoryProvider).signInWithOAuth(provider);
+      ref.read(currentUserProvider.notifier).apply(
+            Supabase.instance.client.auth.currentUser,
+          );
       if (!mounted) return;
       context.go(AppPaths.clientDashboard);
     } catch (e) {
@@ -63,11 +68,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     
     final repo = ref.read(authRepositoryProvider);
     try {
+      final AuthResponse res;
       if (_isLogin) {
-        await repo.signInWithEmailPassword(_emailController.text, _passwordController.text);
+        res = await repo.signInWithEmailPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
       } else {
-        await repo.signUpWithEmailPassword(_emailController.text, _passwordController.text);
+        res = await repo.signUpWithEmailPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
       }
+      ref.read(currentUserProvider.notifier).apply(res.user);
       if (!mounted) return;
       context.go(AppPaths.clientDashboard);
     } catch (e) {
@@ -87,6 +100,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          const StarfieldBackground(),
           SafeArea(
             child: Stack(
               children: [
@@ -126,8 +140,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       const SizedBox(height: 64),
                       const Center(
                         child: SwipessLogo(
-                          height: 40,
-                          variant: SwipessLogoVariant.outline,
+                          width: 220,
+                          variant: SwipessLogoVariant.transparent,
                         ),
                       ),
                       const SizedBox(height: 32),

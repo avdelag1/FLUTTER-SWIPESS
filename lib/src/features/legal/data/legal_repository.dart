@@ -6,16 +6,19 @@ class LegalRepository {
   final SupabaseClient _client;
 
   Future<List<LegalServicePackage>> fetchActivePackages() async {
-    final response = await _client
-        .from('legal_service_packages')
-        .select()
-        .eq('is_active', true)
-        .order('category')
-        .order('price');
-        
-    return (response as List<dynamic>)
-        .map((e) => LegalServicePackage.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _client
+          .from('legal_service_packages')
+          .select()
+          .eq('is_active', true)
+          .order('category')
+          .order('price');
+      return (response as List<dynamic>)
+          .map((e) => LegalServicePackage.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<void> submitLegalCase({
