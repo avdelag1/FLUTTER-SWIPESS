@@ -55,8 +55,11 @@ dependencies:
   cross_file: ^0.3.4
   flutter_map: ^8.3.1
   latlong2: ^0.10.1
-  intl: ^0.20.3
+  intl: ^0.20.2
   purchases_ui_flutter: ^10.8.0
+  record: ^6.1.2
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +91,7 @@ flutter:
     - assets/images/onboarding/
     - assets/brand/
     - assets/filters/
+    - assets/i18n/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

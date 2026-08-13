@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/camera/data/video_recut.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
@@ -26,6 +27,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   double _start = 0;
   double _end = VideoCropperScreen.maxSeconds;
   bool _ready = false;
+  bool _processing = false;
   String? _error;
 
   @override
@@ -79,11 +81,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     super.dispose();
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
+    if (_processing || !_ready) return;
     HapticFeedback.mediumImpact();
     final window = _end - _start;
-    if (_duration > VideoCropperScreen.maxSeconds + 0.5 &&
-        window > VideoCropperScreen.maxSeconds + 0.05) {
+    if (window > VideoCropperScreen.maxSeconds + 0.05) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Slide the 10s window, then confirm the loop.'),
@@ -91,17 +93,24 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       );
       return;
     }
-    if (_duration > VideoCropperScreen.maxSeconds + 0.5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Pick a clip that is 10 seconds or less — Cap cards loop 10s.',
-          ),
-        ),
+    setState(() => _processing = true);
+    try {
+      await _player?.pause();
+      final cropped = await recutVideoWindow(
+        source: widget.file,
+        start: _start,
+        end: _end,
       );
-      return;
+      if (!mounted) return;
+      Navigator.pop(context, cropped);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _processing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not recut video — try a shorter clip.')),
+        );
+      }
     }
-    Navigator.pop(context, widget.file);
   }
 
   @override
@@ -202,7 +211,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                     width: double.infinity,
                     height: 52,
                     child: FilledButton(
-                      onPressed: _ready ? _confirm : null,
+                      onPressed: (_ready && !_processing) ? _confirm : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: AppTheme.brandPrimary,
                         shape: RoundedRectangleBorder(
@@ -210,7 +219,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                         ),
                       ),
                       child: Text(
-                        'USE CLIP',
+                        _processing ? 'PROCESSING…' : 'LOOP & SAVE',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.4,

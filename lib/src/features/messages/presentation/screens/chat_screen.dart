@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/messages/presentation/providers/mess
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_documents_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -29,6 +30,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _sending = false;
   bool _showEmoji = false;
   bool _showSearch = false;
+  bool _recording = false;
+  bool _transcribing = false;
 
   static const _orange = AppTheme.brandPrimary;
   static const _emojis = [
@@ -60,6 +63,58 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  Future<void> _toggleVoice() async {
+    final repo = ref.read(voiceTranscribeRepositoryProvider);
+    if (_recording) {
+      setState(() {
+        _recording = false;
+        _transcribing = true;
+      });
+      try {
+        final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
+        final text = await repo.stop(language: lang);
+        if (text.trim().isNotEmpty && mounted) {
+          _controller.text = text.trim();
+          _controller.selection = TextSelection.collapsed(
+            offset: _controller.text.length,
+          );
+        }
+      } on VoiceTranscribeException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(e.message)));
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                t(ref, 'flutter.voiceFailed', 'Voice transcription failed'),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _transcribing = false);
+      }
+      return;
+    }
+    final ok = await repo.start();
+    if (!ok) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              t(ref, 'flutter.micDenied', 'Microphone permission denied'),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    setState(() => _recording = true);
   }
 
   Future<void> _send([String? preset]) async {
@@ -507,6 +562,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
                           onSubmitted: (_) => _send(),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      _RoundIcon(
+                        icon: _recording
+                            ? Icons.mic_rounded
+                            : Icons.mic_none_rounded,
+                        active: _recording || _transcribing,
+                        onTap: _transcribing ? () {} : _toggleVoice,
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_category_photos_screen.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_eventos_screen.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_photos_screen.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/core/routing/cap_placeholder_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
@@ -445,32 +448,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state) => const MessagesScreen(),
       ),
       GoRoute(
-        path: '/admin/eventos',
-        builder: (ctx, _) => const CapPlaceholderScreen(
-          title: 'Admin Events',
-          path: '/admin/eventos',
-        ),
+        path: AppPaths.adminEventos,
+        builder: (ctx, _) => const AdminEventosScreen(),
       ),
       GoRoute(
-        path: '/admin/photos',
-        builder: (ctx, _) => const CapPlaceholderScreen(
-          title: 'Admin Photos',
-          path: '/admin/photos',
-        ),
+        path: AppPaths.adminPhotos,
+        builder: (ctx, _) => const AdminPhotosScreen(),
       ),
       GoRoute(
-        path: '/admin/category-photos',
-        builder: (ctx, _) => const CapPlaceholderScreen(
-          title: 'Admin Category Photos',
-          path: '/admin/category-photos',
-        ),
+        path: AppPaths.adminCategoryPhotos,
+        builder: (ctx, _) => const AdminCategoryPhotosScreen(),
       ),
       GoRoute(
-        path: '/admin/performance',
-        builder: (ctx, _) => const CapPlaceholderScreen(
-          title: 'Admin Performance',
-          path: '/admin/performance',
-        ),
+        path: AppPaths.adminPerformance,
+        builder: (ctx, _) => const AdminPerformanceScreen(),
       ),
       GoRoute(
         path: '*',

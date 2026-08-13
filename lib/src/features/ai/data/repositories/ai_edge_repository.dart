@@ -429,6 +429,122 @@ class AiEdgeRepository {
         .trim();
     return cleaned;
   }
+
+  /// Cap `useConciergeAI` token loop — yields SSE deltas as they arrive.
+  Stream<String> chatConciergeTokens({
+    required List<AiChatMessage> messages,
+    String? character,
+    Map<String, dynamic>? locationContext,
+    String? preferredIntent,
+  }) async* {
+    final apiMessages = [
+      for (final m in messages)
+        if (m.content.trim().isNotEmpty)
+          {'role': m.role, 'content': m.content.trim()},
+    ];
+    if (apiMessages.length > 12) {
+      apiMessages.removeRange(0, apiMessages.length - 12);
+    }
+    final lastUser = messages.reversed
+        .where((m) => m.role == 'user')
+        .map((m) => m.content)
+        .firstOrNull;
+    final intent = preferredIntent ??
+        (lastUser != null && _profileIntent.hasMatch(lastUser)
+            ? 'profiles'
+            : null);
+    final payload = <String, dynamic>{
+      'messages': apiMessages,
+      'stream': true,
+      if (character != null && character.isNotEmpty) 'character': character,
+      if (locationContext != null && locationContext.isNotEmpty)
+        'locationContext': locationContext,
+      'preferredIntent': ?intent,
+    };
+
+    final url = Uri.parse(
+      '${SupabaseService.supabaseUrl}/functions/v1/ai-concierge',
+    );
+    final token =
+        _client.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
+    final request = http.Request('POST', url)
+      ..headers.addAll({
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        'apikey': SupabaseService.anonKey,
+        'Accept': 'text/event-stream',
+      })
+      ..body = jsonEncode(payload);
+
+    late http.StreamedResponse resp;
+    try {
+      resp = await _http.send(request).timeout(_timeout);
+    } catch (_) {
+      throw AiUnavailableException(
+        'AI is temporarily unavailable. Try again in a moment.',
+      );
+    }
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      final body = await resp.stream.bytesToString();
+      throw AiUnavailableException(
+        _httpErrorMessage(
+          http.Response(body, resp.statusCode, headers: resp.headers),
+        ),
+      );
+    }
+
+    final contentType = resp.headers['content-type'] ?? '';
+    var carry = '';
+    await for (final chunk in resp.stream.transform(utf8.decoder)) {
+      carry += chunk;
+      if (contentType.contains('text/event-stream') ||
+          carry.trimLeft().startsWith('data:')) {
+        final parsed = _consumeSse(carry);
+        carry = parsed.rest;
+        if (parsed.delta.isNotEmpty) yield parsed.delta;
+      }
+    }
+    if (carry.trim().isNotEmpty) {
+      if (carry.trimLeft().startsWith('data:')) {
+        final parsed = _consumeSse('$carry\n');
+        if (parsed.delta.isNotEmpty) yield parsed.delta;
+      } else {
+        final reply = _parseConciergeReply(_tryJson(carry) ?? carry);
+        if (reply != null && reply.isNotEmpty) yield reply;
+      }
+    }
+  }
+
+  static ({String delta, String rest}) _consumeSse(String raw) {
+    final buf = StringBuffer();
+    final lines = raw.split('\n');
+    final incomplete = !raw.endsWith('\n');
+    final complete = incomplete ? lines.sublist(0, lines.length - 1) : lines;
+    final rest = incomplete ? lines.last : '';
+    for (var line in complete) {
+      if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
+      if (line.startsWith(':') || line.trim().isEmpty) continue;
+      if (!line.startsWith('data:')) continue;
+      final jsonStr = line.substring(5).trim();
+      if (jsonStr.isEmpty || jsonStr == '[DONE]') continue;
+      try {
+        final parsed = jsonDecode(jsonStr);
+        final delta = _deltaFromChunk(parsed);
+        if (delta != null && delta.isNotEmpty) buf.write(delta);
+      } catch (_) {
+        // Keep incomplete JSON in rest by prepending — skip for now.
+      }
+    }
+    return (delta: buf.toString(), rest: rest);
+  }
+
+  static dynamic _tryJson(String raw) {
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class AiChatMessage {
