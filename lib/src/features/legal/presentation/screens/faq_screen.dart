@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FAQScreen extends StatelessWidget {
@@ -7,27 +9,8 @@ class FAQScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Ambient Glow Background
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(0, -0.8),
-                  radius: 1.2,
-                  colors: [
-                    Color(0xFF16161C),
-                    Colors.black,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          
-          CustomScrollView(
+    return NeoNaiveScaffold(
+      body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
@@ -103,8 +86,6 @@ class FAQScreen extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
     );
   }
 
@@ -116,7 +97,7 @@ class FAQScreen extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFFFF4D00),
+              color: AppTheme.brandPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 2.0,

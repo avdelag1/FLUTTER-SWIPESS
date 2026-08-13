@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -103,10 +106,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-          children: [
+      body: Stack(
+        children: [
+          const StarfieldBackground(),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+              children: [
             Align(
               alignment: Alignment.centerLeft,
               child: IconButton(
@@ -123,6 +129,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            NeoNaiveCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
             Text('RESET PASSWORD',
                 style: AppTheme.displayItalic.copyWith(fontSize: 28)),
             const SizedBox(height: 8),
@@ -204,25 +214,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   style: const TextStyle(color: Color(0xFFF87171))),
             ],
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: FilledButton(
-                onPressed: _busy ? null : _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
-                ),
-                child: Text(
-                  _busy ? 'Updating…' : 'UPDATE PASSWORD',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
+            BrandPrimaryButton(
+              label: _busy ? 'Updating…' : 'Update password',
+              loading: _busy,
+              onPressed: _busy ? null : _submit,
+            ),
+                ],
               ),
             ),
           ],
         ),
+          ),
+        ],
       ),
     );
   }

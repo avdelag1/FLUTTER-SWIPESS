@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -33,8 +35,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -111,8 +112,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     runSpacing: 8,
                     children: [
                       for (final t in _topics)
-                        ChoiceChip(
-                          label: Text(t.$2),
+                        NeoNaiveChip(
+                          label: t.$2,
                           selected: _topic == t.$1,
                           onSelected: (_) => setState(() => _topic = t.$1),
                           selectedColor: AppTheme.brandPrimary,
@@ -134,21 +135,10 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     maxLines: 4,
                   ),
                   const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _emailSupport,
-                      icon: const Icon(Icons.mail_rounded),
-                      label: const Text('Email Support'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.brandPrimary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                    ),
+                  BrandPrimaryButton(
+                    label: 'Email Support',
+                    icon: Icons.mail_rounded,
+                    onPressed: _emailSupport,
                   ),
                 ],
               ),

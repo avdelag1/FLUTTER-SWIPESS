@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -19,45 +22,51 @@ class CapPlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(title, style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w600)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/client/dashboard');
-            }
-          },
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              path,
-              style: GoogleFonts.jetBrainsMono(
-                color: AppTheme.brandAccent,
-                fontSize: 13,
-              ),
+      backgroundColor: AppTheme.dashBg,
+      body: AmbientPageBackground(
+        fill: true,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CapBackButton(),
+                const SizedBox(height: 24),
+                Text(
+                  title.toUpperCase(),
+                  style: AppTheme.displayItalic.copyWith(fontSize: 32),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  path,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.brandPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                NeoNaiveCard(
+                  child: Text(
+                    note ??
+                        'This Capacitor route is registered for parity. UI is still being ported.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white.withAlpha(200),
+                      fontSize: 15,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                BrandPrimaryButton(
+                  label: 'Back to dashboard',
+                  onPressed: () => context.go('/client/dashboard'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              note ??
-                  'This Capacitor route is registered for parity. UI is still being ported.',
-              style: GoogleFonts.spaceGrotesk(
-                color: Colors.white.withAlpha(200),
-                fontSize: 16,
-                height: 1.4,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_request.dart';
@@ -18,11 +19,15 @@ class SeekersScreen extends ConsumerWidget {
     final async = ref.watch(seekersProvider);
     final top = MediaQuery.paddingOf(context).top;
 
-    return ColoredBox(
-      color: AppTheme.dashBg,
-      child: Stack(
-        children: [
-          async.when(
+    return NeoNaiveScaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showSeekerRequestSheet(context, ref),
+        backgroundColor: AppTheme.brandPrimary,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Post request'),
+      ),
+      body: async.when(
             loading: () => const Center(
               child: CircularProgressIndicator(
                   color: Colors.white, strokeWidth: 2),
@@ -38,7 +43,7 @@ class SeekersScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: EdgeInsets.fromLTRB(24, top + 64, 24, 12),
+                    padding: EdgeInsets.fromLTRB(24, top + 16, 24, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -119,19 +124,6 @@ class SeekersScreen extends ConsumerWidget {
                 ],
               );
             },
-          ),
-          Positioned(
-            right: 20,
-            bottom: 100,
-            child: FloatingActionButton.extended(
-              onPressed: () => showSeekerRequestSheet(context, ref),
-              backgroundColor: AppTheme.brandPrimary,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Post request'),
-            ),
-          ),
-        ],
       ),
     );
   }

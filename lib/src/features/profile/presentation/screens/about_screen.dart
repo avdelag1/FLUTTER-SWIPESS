@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor AboutPage — mission + owner/client benefits.
@@ -32,7 +33,9 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0D),
-      body: SafeArea(
+      body: AmbientPageBackground(
+        fill: true,
+        child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
           children: [
@@ -112,6 +115,7 @@ class AboutScreen extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

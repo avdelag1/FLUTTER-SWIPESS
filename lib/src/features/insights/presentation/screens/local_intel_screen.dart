@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/insights/domain/local_intel_post.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/providers/insights_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,8 +32,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(localIntelProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,8 +71,8 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                   for (final entry in _categories.entries)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(entry.value),
+                      child: NeoNaiveChip(
+                        label: entry.value,
                         selected: _category == entry.key,
                         onSelected: (_) => setState(() => _category = entry.key),
                         selectedColor: AppTheme.brandPrimary,

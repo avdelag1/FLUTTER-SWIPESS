@@ -12,6 +12,7 @@ class VapIdCard {
     this.languages = const [],
     this.interests = const [],
     this.avatarUrl,
+    this.createdAt,
   });
 
   final String userId;
@@ -26,6 +27,7 @@ class VapIdCard {
   final List<String> languages;
   final List<String> interests;
   final String? avatarUrl;
+  final DateTime? createdAt;
 
   String get displayName =>
       (name != null && name!.trim().isNotEmpty) ? name!.trim() : 'Resident';
@@ -55,6 +57,9 @@ class VapIdCard {
       languages: _strings(json['languages'] ?? json['vap_languages']),
       interests: _strings(json['interests'] ?? json['vap_interests']),
       avatarUrl: json['avatar_url'] as String? ?? json['vap_avatar'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
     );
   }
 

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/profile/domain/maintenance_request.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/maintenance_provider.dart';
@@ -42,8 +44,7 @@ class _MaintenanceRequestsScreenState
   Widget build(BuildContext context) {
     final async = ref.watch(maintenanceProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context),
         backgroundColor: AppTheme.brandPrimary,
@@ -108,8 +109,8 @@ class _MaintenanceRequestsScreenState
                   ])
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(_label(f)),
+                      child: NeoNaiveChip(
+                        label: _label(f),
                         selected: _filter == f,
                         onSelected: (_) => setState(() => _filter = f),
                         selectedColor: AppTheme.brandPrimary,
@@ -234,9 +235,8 @@ class _MaintenanceRequestsScreenState
                       runSpacing: 8,
                       children: [
                         for (final c in _categories)
-                          ChoiceChip(
-                            avatar: Icon(c.$3, size: 16, color: Colors.white70),
-                            label: Text(c.$2),
+                          NeoNaiveChip(
+                            label: c.$2,
                             selected: category == c.$1,
                             onSelected: (_) =>
                                 setModal(() => category = c.$1),
@@ -268,10 +268,10 @@ class _MaintenanceRequestsScreenState
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.only(right: 6),
-                              child: ChoiceChip(
-                                label: Text(p.$2),
+                              child: NeoNaiveChip(
+                                label: p.$2,
                                 selected: priority == p.$1,
-                                onSelected: (_) =>
+                                onSelected: () =>
                                     setModal(() => priority = p.$1),
                                 selectedColor: p.$3.withAlpha(80),
                                 backgroundColor: Colors.transparent,
@@ -377,38 +377,29 @@ class _MaintenanceRequestsScreenState
                       ),
                     ),
                     const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: submitting
-                            ? null
-                            : () async {
-                                if (title.text.trim().isEmpty) return;
-                                setModal(() => submitting = true);
-                                try {
-                                  await ref
-                                      .read(maintenanceProvider.notifier)
-                                      .create(
-                                        title: title.text.trim(),
-                                        description: description.text.trim(),
-                                        category: category,
-                                        priority: priority,
-                                        photos: List<XFile>.from(photos),
-                                      );
-                                  if (context.mounted) Navigator.pop(context);
-                                } catch (_) {
-                                  setModal(() => submitting = false);
-                                }
-                              },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.brandPrimary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: Text(submitting ? 'Submitting…' : 'Submit request'),
-                      ),
+                    BrandPrimaryButton(
+                      label: submitting ? 'Submitting…' : 'Submit request',
+                      loading: submitting,
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              if (title.text.trim().isEmpty) return;
+                              setModal(() => submitting = true);
+                              try {
+                                await ref
+                                    .read(maintenanceProvider.notifier)
+                                    .create(
+                                      title: title.text.trim(),
+                                      description: description.text.trim(),
+                                      category: category,
+                                      priority: priority,
+                                      photos: List<XFile>.from(photos),
+                                    );
+                                if (context.mounted) Navigator.pop(context);
+                              } catch (_) {
+                                setModal(() => submitting = false);
+                              }
+                            },
                     ),
                   ],
                 ),
@@ -439,6 +430,7 @@ class _Ticket extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final urgent = request.priority == 'urgent';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

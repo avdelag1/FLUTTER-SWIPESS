@@ -220,8 +220,8 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
             children: [
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  GlassIconCircle(
+                    icon: Icons.arrow_back_ios_new_rounded,
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
@@ -267,7 +267,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: _ActionCard(
                       title: 'CONTRACTS',
                       icon: Icons.edit_document,
-                      color: Colors.blue.withAlpha(30),
+                      color: Colors.white.withAlpha(12),
                       onTap: () => context.push(AppPaths.clientContracts),
                     ),
                   ),
@@ -276,7 +276,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: _ActionCard(
                       title: 'LAWYERS',
                       icon: Icons.gavel_rounded,
-                      color: Colors.purple.withAlpha(30),
+                      color: Colors.white.withAlpha(12),
                       onTap: () => context.push(AppPaths.clientLegalServices),
                     ),
                   ),
@@ -335,8 +335,6 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               
               const SizedBox(height: 48),
             ],
-          ),
-        ],
       ),
     );
   }

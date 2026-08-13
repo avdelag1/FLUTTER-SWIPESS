@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
@@ -41,8 +42,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
     final async = ref.watch(myListingsProvider(_statusKey));
     final stats = ref.watch(ownerListingsStatsProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showCreateListingChooser(context),
         backgroundColor: AppTheme.brandPrimary,
@@ -109,8 +109,8 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                   final selected = _selectedTab == i;
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                      label: Text(_tabs[i].$2),
+                    child: NeoNaiveChip(
+                      label: _tabs[i].$2,
                       selected: selected,
                       onSelected: (_) => setState(() => _selectedTab = i),
                       selectedColor: AppTheme.brandPrimary,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -16,8 +17,7 @@ class PaymentResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -42,7 +42,18 @@ class PaymentResultScreen extends StatelessWidget {
                     color: success
                         ? const Color(0xFF10B981)
                         : const Color(0xFFEF4444),
+                    width: 2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (success
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444))
+                          .withAlpha(90),
+                      blurRadius: 28,
+                      spreadRadius: 6,
+                    ),
+                  ],
                 ),
                 child: Icon(
                   success ? Icons.check_rounded : Icons.close_rounded,

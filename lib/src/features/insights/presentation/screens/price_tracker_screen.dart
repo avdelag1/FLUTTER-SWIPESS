@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/insights/domain/price_point.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/providers/insights_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,8 +22,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
     final async = ref.watch(priceHistoryProvider);
     final currency = NumberFormat.compactCurrency(symbol: '\$');
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,8 +286,8 @@ class _ZoneChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
+      child: NeoNaiveChip(
+        label: label,
         selected: selected,
         onSelected: (_) => onTap(),
         selectedColor: AppTheme.brandPrimary,

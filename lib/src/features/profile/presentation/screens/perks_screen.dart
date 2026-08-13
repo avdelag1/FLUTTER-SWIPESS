@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -29,34 +30,9 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
     final user = ref.watch(currentUserProvider);
     final residentId = (user?.id ?? 'SWIPESS').substring(0, 8).toUpperCase();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+    return NeoNaiveScaffold(
       body: Stack(
         children: [
-          Positioned(
-            top: -80,
-            left: -40,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFF43F5E).withAlpha(28),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -60,
-            right: -40,
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF7C3AED).withAlpha(28),
-              ),
-            ),
-          ),
           SafeArea(
             child: Column(
               children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/utils/notification_navigation.dart';
@@ -16,8 +17,7 @@ class NotificationsScreen extends ConsumerWidget {
     final async = ref.watch(notificationsProvider);
     final top = MediaQuery.paddingOf(context).top;
 
-    return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+    return NeoNaiveScaffold(
       body: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -187,12 +187,12 @@ class _NotificationTile extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: notification.isRead
-                ? Colors.white.withAlpha(8)
-                : Colors.white.withAlpha(16),
-            borderRadius: BorderRadius.circular(22),
+                ? Colors.white.withAlpha(12)
+                : AppTheme.brandPrimary.withAlpha(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: notification.isRead
-                  ? Colors.white.withAlpha(15)
+                  ? Colors.white.withAlpha(25)
                   : AppTheme.brandPrimary.withAlpha(80),
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
@@ -24,8 +25,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(swipeListingsProvider('worker'));
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           children: [
@@ -89,8 +89,8 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                   ])
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(p.$2),
+                      child: NeoNaiveChip(
+                        label: p.$2,
                         selected: _pricing == p.$1,
                         onSelected: (_) => setState(() => _pricing = p.$1),
                         selectedColor: AppTheme.brandPrimary,
@@ -115,8 +115,8 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: const Text('All services'),
+                    child: NeoNaiveChip(
+                      label: 'All services',
                       selected: _service == null,
                       onSelected: (_) => setState(() => _service = null),
                       selectedColor: AppTheme.brandPrimary,
@@ -132,8 +132,8 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                   for (final s in serviceCategories.take(24))
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(s.label),
+                      child: NeoNaiveChip(
+                        label: s.label,
                         selected: _service == s.value,
                         onSelected: (_) =>
                             setState(() => _service = s.value),

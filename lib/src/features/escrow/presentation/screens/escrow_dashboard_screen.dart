@@ -1,6 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/escrow/domain/escrow_deposit.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/providers/escrow_provider.dart';
@@ -19,8 +22,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     final top = MediaQuery.paddingOf(context).top;
 
-    return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+    return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context, ref),
         backgroundColor: AppTheme.brandPrimary,
@@ -58,6 +60,8 @@ class EscrowDashboardScreen extends ConsumerWidget {
                 'Track and manage security deposits from contracts.',
                 style: GoogleFonts.plusJakartaSans(color: Colors.white70),
               ),
+              const SizedBox(height: 20),
+              _EscrowMetrics(deposits: deposits),
               const SizedBox(height: 20),
               if (deposits.isEmpty)
                 Padding(
@@ -163,16 +167,23 @@ class EscrowDashboardScreen extends ConsumerWidget {
                       maxLines: 2,
                     ),
                     const SizedBox(height: 12),
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'I am the owner holding the deposit',
-                        style:
-                            GoogleFonts.plusJakartaSans(color: Colors.white),
-                      ),
-                      value: asOwner,
-                      activeTrackColor: AppTheme.brandPrimary,
-                      onChanged: (v) => setModal(() => asOwner = v),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'I am the owner holding the deposit',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        CupertinoSwitch(
+                          value: asOwner,
+                          activeTrackColor: AppTheme.brandPrimary,
+                          onChanged: (v) => setModal(() => asOwner = v),
+                        ),
+                      ],
                     ),
                     if (contracts.isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -190,10 +201,10 @@ class EscrowDashboardScreen extends ConsumerWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          ChoiceChip(
-                            label: const Text('None'),
+                          NeoNaiveChip(
+                            label: 'None',
                             selected: selectedContract == null,
-                            onSelected: (_) =>
+                            onSelected: () =>
                                 setModal(() => selectedContract = null),
                             selectedColor: AppTheme.brandPrimary,
                             backgroundColor: Colors.transparent,
@@ -203,13 +214,10 @@ class EscrowDashboardScreen extends ConsumerWidget {
                             side: BorderSide(color: Colors.transparent),
                           ),
                           for (final c in contracts.take(6))
-                            ChoiceChip(
-                              label: Text(
-                                c.title,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            NeoNaiveChip(
+                              label: c.title,
                               selected: selectedContract?.id == c.id,
-                              onSelected: (_) => setModal(() {
+                              onSelected: () => setModal(() {
                                 selectedContract = c;
                                 final me = Supabase
                                     .instance.client.auth.currentUser?.id;
@@ -236,56 +244,46 @@ class EscrowDashboardScreen extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: submitting
-                            ? null
-                            : () async {
-                                final parsed =
-                                    double.tryParse(amount.text.trim());
-                                final other = counterparty.text.trim();
-                                if (parsed == null ||
-                                    parsed <= 0 ||
-                                    other.isEmpty) {
-                                  return;
-                                }
-                                setModal(() => submitting = true);
-                                try {
-                                  await ref
-                                      .read(escrowProvider.notifier)
-                                      .createDeposit(
-                                        amount: parsed,
-                                        counterpartyId: other,
-                                        contractId: selectedContract?.id,
-                                        notes: notes.text.trim().isEmpty
-                                            ? null
-                                            : notes.text.trim(),
-                                        asOwner: asOwner,
-                                      );
-                                  if (context.mounted) Navigator.pop(context);
-                                } catch (e) {
-                                  setModal(() => submitting = false);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(
-                                              e.toString().replaceFirst(
-                                                  'Exception: ', ''))),
+                    BrandPrimaryButton(
+                      label: submitting ? 'Creating…' : 'Create deposit',
+                      loading: submitting,
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              final parsed =
+                                  double.tryParse(amount.text.trim());
+                              final other = counterparty.text.trim();
+                              if (parsed == null ||
+                                  parsed <= 0 ||
+                                  other.isEmpty) {
+                                return;
+                              }
+                              setModal(() => submitting = true);
+                              try {
+                                await ref
+                                    .read(escrowProvider.notifier)
+                                    .createDeposit(
+                                      amount: parsed,
+                                      counterpartyId: other,
+                                      contractId: selectedContract?.id,
+                                      notes: notes.text.trim().isEmpty
+                                          ? null
+                                          : notes.text.trim(),
+                                      asOwner: asOwner,
                                     );
-                                  }
+                                if (context.mounted) Navigator.pop(context);
+                              } catch (e) {
+                                setModal(() => submitting = false);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            e.toString().replaceFirst(
+                                                'Exception: ', ''))),
+                                  );
                                 }
-                              },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.brandPrimary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: Text(
-                            submitting ? 'Creating…' : 'Create deposit'),
-                      ),
+                              }
+                            },
                     ),
                   ],
                 ),
@@ -294,6 +292,98 @@ class EscrowDashboardScreen extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _EscrowMetrics extends StatelessWidget {
+  const _EscrowMetrics({required this.deposits});
+  final List<EscrowDeposit> deposits;
+
+  @override
+  Widget build(BuildContext context) {
+    double sum(String status) => deposits
+        .where((d) => d.status == status)
+        .fold(0, (a, d) => a + d.amount);
+    final held = sum('held');
+    final released = sum('released');
+    final pending = deposits.where((d) => d.status == 'pending').length;
+    return Row(
+      children: [
+        Expanded(
+          child: _MetricTile(
+            label: 'HELD',
+            value: '\$${held.toStringAsFixed(0)}',
+            color: const Color(0xFF4DABF7),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MetricTile(
+            label: 'RELEASED',
+            value: '\$${released.toStringAsFixed(0)}',
+            color: const Color(0xFFFB7185),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _MetricTile(
+            label: 'PENDING',
+            value: '$pending',
+            color: const Color(0xFFFBBF24),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withAlpha(70)),
+        boxShadow: [
+          BoxShadow(color: color.withAlpha(28), blurRadius: 18),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.6,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -318,7 +408,7 @@ class _DepositCard extends StatelessWidget {
       case 'held':
         return const Color(0xFF4DABF7);
       case 'released':
-        return const Color(0xFFFC567E);
+        return const Color(0xFFFB7185);
       case 'disputed':
         return const Color(0xFFEF4444);
       default:

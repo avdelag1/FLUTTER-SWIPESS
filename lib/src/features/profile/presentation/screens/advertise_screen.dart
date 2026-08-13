@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -333,8 +334,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       _ => 1.0,
     };
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           children: [

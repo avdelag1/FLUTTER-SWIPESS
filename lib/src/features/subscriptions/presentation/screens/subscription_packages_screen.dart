@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/screens/payment_result_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -94,8 +95,7 @@ class _SubscriptionPackagesScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           children: [
@@ -191,7 +191,7 @@ class _SubscriptionPackagesScreenState
                                   package.storeProduct.description,
                                 package.identifier,
                               ],
-                              color: const Color(0xFFFF4D00),
+                              color: const Color(0xFFFBBF24),
                               isPopular: package.packageType ==
                                   PackageType.monthly,
                               onSelect:
