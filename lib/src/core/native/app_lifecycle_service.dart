@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/native/local_notifications_service.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/profile/data/profile_gps_service.dart';
 
 final localNotificationsProvider = Provider<LocalNotificationsService>((ref) {
   return LocalNotificationsService();
@@ -32,6 +34,12 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
     notifications.initialize().then((_) => notifications.cancelReengagement());
   }
 
+  void _refreshGps({required bool force}) {
+    final userId = ref.read(currentUserProvider)?.id;
+    if (userId == null) return;
+    ref.read(profileGpsServiceProvider).refresh(userId: userId, force: force);
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -49,6 +57,9 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
     switch (state) {
       case AppLifecycleState.resumed:
         notifications.cancelReengagement();
+        // Cap refreshed the phone position on every resume, throttled to one
+        // full read every two minutes.
+        _refreshGps(force: false);
       case AppLifecycleState.paused:
         notifications.scheduleReengagement();
       case AppLifecycleState.inactive:
@@ -59,5 +70,17 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    // Signing in is Cap's forced refresh; signing out drops the throttle so the
+    // next account does not inherit it.
+    ref.listen(currentUserProvider, (previous, next) {
+      if (next?.id == previous?.id) return;
+      if (next == null) {
+        ref.read(profileGpsServiceProvider).reset();
+      } else {
+        _refreshGps(force: true);
+      }
+    });
+    return widget.child;
+  }
 }

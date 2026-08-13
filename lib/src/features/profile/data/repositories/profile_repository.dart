@@ -89,6 +89,30 @@ class ProfileRepository {
     );
   }
 
+  /// Cap `persistClientProfileGps`. Stamps `location_source = 'device'` so the
+  /// Passport map can tell a real phone position from a city-centroid backfill,
+  /// and falls back to plain coordinates on a database that predates those two
+  /// columns. Throttling is the caller's job — see `ProfileGpsService`.
+  Future<void> persistDeviceLocation({
+    required String userId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      await _client.from('client_profiles').update({
+        'latitude': latitude,
+        'longitude': longitude,
+        'location_updated_at': DateTime.now().toUtc().toIso8601String(),
+        'location_source': 'device',
+      }).eq('user_id', userId);
+    } catch (_) {
+      await _client.from('client_profiles').update({
+        'latitude': latitude,
+        'longitude': longitude,
+      }).eq('user_id', userId);
+    }
+  }
+
   Future<void> updateProfile({
     required String displayName,
     String? bio,
