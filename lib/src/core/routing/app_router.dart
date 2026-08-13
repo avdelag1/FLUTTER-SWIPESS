@@ -7,6 +7,8 @@ import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/auth_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_onboarding_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/not_found_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
@@ -91,6 +93,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (granted && user == null) {
         if (loc == AppPaths.gate) return AppPaths.welcome;
+        if (loc == AppPaths.onboarding) return null;
         if (loc == AppPaths.legacyDashboard ||
             loc == AppPaths.clientDashboard) {
           return AppPaths.welcome;
@@ -100,6 +103,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (user != null &&
           (loc == AppPaths.gate ||
               loc == AppPaths.welcome ||
+              loc == AppPaths.onboarding ||
               loc == AppPaths.auth)) {
         return AppPaths.clientDashboard;
       }
@@ -129,6 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.welcome,
         builder: (ctx, _) => const WelcomeScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.onboarding,
+        builder: (ctx, _) => LegendaryOnboardingScreen(
+          onFinish: () => ctx.go(AppPaths.welcome),
+        ),
       ),
       GoRoute(
         path: AppPaths.auth,
@@ -463,10 +473,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '*',
-        builder: (ctx, state) => CapPlaceholderScreen(
-          title: 'Not found',
+        builder: (ctx, state) => NotFoundScreen(
           path: state.uri.toString(),
-          note: 'No Flutter screen is mapped for this Capacitor path yet.',
         ),
       ),
     ],

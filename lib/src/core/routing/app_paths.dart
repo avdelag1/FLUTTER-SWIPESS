@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 abstract final class AppPaths {
   static const gate = '/gate';
   static const welcome = '/welcome';
+  static const onboarding = '/onboarding';
   static const auth = '/auth';
   static const resetPassword = '/reset-password';
 
