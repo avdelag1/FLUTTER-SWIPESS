@@ -31,5 +31,10 @@
   "flutter.upload": "Subir",
   "flutter.noPhotos": "No hay fotos en esta carpeta",
   "flutter.copyUrl": "Copiar URL",
-  "flutter.poweredGroq": "CON GROQ · LLAMA 3.3"
+  "flutter.poweredGroq": "CON GROQ · LLAMA 3.3",
+  "flutter.vapRetry": "No se pudo cargar PEARL — reintentar",
+  "flutter.vapEdit": "EDITAR PEARL",
+  "flutter.vapSave": "Guardar tarjeta",
+  "flutter.vapVault": "BÓVEDA AUTORIZADA",
+  "flutter.vapDocs": "Documentos de verificación"
 }

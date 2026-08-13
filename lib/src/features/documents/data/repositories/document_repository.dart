@@ -70,10 +70,13 @@ class DocumentRepository {
     await _client.from('legal_documents').delete().eq('id', doc.id);
   }
 
-  Future<String> signedUrl(LegalDocument doc) async {
-    final data = await _client.storage
+  Future<String> signedUrl(LegalDocument doc, {int expiresIn = 120}) {
+    return signedUrlForPath(doc.filePath, expiresIn: expiresIn);
+  }
+
+  Future<String> signedUrlForPath(String filePath, {int expiresIn = 120}) {
+    return _client.storage
         .from('legal-documents')
-        .createSignedUrl(doc.filePath, 60);
-    return data;
+        .createSignedUrl(filePath, expiresIn);
   }
 }

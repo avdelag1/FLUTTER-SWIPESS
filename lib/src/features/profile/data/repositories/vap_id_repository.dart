@@ -56,6 +56,43 @@ class VapIdRepository {
     );
   }
 
+  /// Public PEARL lookup used by `/vap-validate/:id`.
+  Future<VapIdCard?> lookupResident(String userId) async {
+    if (userId.isEmpty) return null;
+    try {
+      final card = await _client
+          .from('vap_id_cards')
+          .select()
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (card != null) {
+        return VapIdCard.fromJson(card, userId);
+      }
+    } catch (_) {}
+
+    try {
+      final legacy = await _client
+          .from('client_profiles')
+          .select(
+            'vap_bio, vap_occupation, vap_city, vap_nationality, vap_years_in_city, vap_languages, vap_interests, vap_avatar, name, age, country, profile_images',
+          )
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (legacy != null) {
+        final images = legacy['profile_images'];
+        return VapIdCard.fromJson({
+          ...legacy,
+          'bio': legacy['vap_bio'],
+          'occupation': legacy['vap_occupation'],
+          'city': legacy['vap_city'],
+          'avatar_url': legacy['vap_avatar'] ??
+              (images is List && images.isNotEmpty ? images.first : null),
+        }, userId);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> save(VapIdCard card) async {
     final user = _client.auth.currentUser;
     if (user == null) throw Exception('Not signed in');

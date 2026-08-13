@@ -58,6 +58,7 @@ dependencies:
   intl: ^0.20.2
   purchases_ui_flutter: ^10.8.0
   record: ^6.1.2
+  qr_flutter: ^4.1.0
   flutter_localizations:
     sdk: flutter
 

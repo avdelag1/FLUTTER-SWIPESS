@@ -31,5 +31,10 @@
   "flutter.upload": "Upload",
   "flutter.noPhotos": "No photos in this folder",
   "flutter.copyUrl": "Copy URL",
-  "flutter.poweredGroq": "POWERED BY GROQ · LLAMA 3.3"
+  "flutter.poweredGroq": "POWERED BY GROQ · LLAMA 3.3",
+  "flutter.vapRetry": "Could not load PEARL — retry",
+  "flutter.vapEdit": "EDIT PEARL",
+  "flutter.vapSave": "Save card",
+  "flutter.vapVault": "AUTHORIZED VAULT",
+  "flutter.vapDocs": "Verification documents"
 }

@@ -46,7 +46,6 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/s
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Capacitor ClientProfile — identity, quests, action grid, share, feedback, PEARL.
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -512,7 +511,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         HolographicIDCard(
                           name: name,
                           idNumber:
-                              'SWS-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
+                              'NX-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
                           avatarUrl: avatar,
                           occupation: profile?.role ?? 'Client',
                           location: profile?.city ?? '',
