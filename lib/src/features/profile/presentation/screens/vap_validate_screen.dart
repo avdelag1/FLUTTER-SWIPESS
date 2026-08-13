@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/profile/data/repositories/vap_id_repository.dart';
+import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Capacitor VapValidate — public-ish PEARL / resident verification lookup.
+/// Capacitor VapValidate — public PEARL / resident verification lookup.
 class VapValidateScreen extends ConsumerStatefulWidget {
   const VapValidateScreen({super.key, this.userId});
 
@@ -16,7 +17,7 @@ class VapValidateScreen extends ConsumerStatefulWidget {
 
 class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   late final TextEditingController _id;
-  Map<String, dynamic>? _data;
+  VapIdCard? _data;
   bool _loading = false;
   String? _error;
 
@@ -36,7 +37,10 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   }
 
   Future<void> _lookup() async {
-    final id = _id.text.trim();
+    var id = _id.text.trim();
+    if (id.toUpperCase().startsWith('NX-')) {
+      id = id.substring(3);
+    }
     if (id.isEmpty) return;
     setState(() {
       _loading = true;
@@ -44,14 +48,8 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
       _data = null;
     });
     try {
-      final client = Supabase.instance.client;
-      final row = await client
-          .from('client_profiles')
-          .select(
-            'name, vap_city, city, country, vap_occupation, occupation, vap_nationality, created_at',
-          )
-          .eq('user_id', id)
-          .maybeSingle();
+      final row =
+          await ref.read(vapIdRepositoryProvider).lookupResident(id);
       if (!mounted) return;
       if (row == null) {
         setState(() {
@@ -176,7 +174,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      ((_data!['name'] as String?) ?? 'Resident').toUpperCase(),
+                      _data!.displayName.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
                         color: const Color(0xFF1A1A1A),
                         fontWeight: FontWeight.w900,
@@ -187,9 +185,8 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                     const SizedBox(height: 8),
                     Text(
                       [
-                        _data!['vap_occupation'] ?? _data!['occupation'],
-                        _data!['vap_city'] ?? _data!['city'],
-                        _data!['country'],
+                        _data!.occupation,
+                        _data!.locationLabel,
                       ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
                       style: GoogleFonts.plusJakartaSans(
                         color: const Color(0x99000000),

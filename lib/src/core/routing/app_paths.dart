@@ -65,6 +65,11 @@ abstract final class AppPaths {
   static const faqOwner = '/faq/owner';
   static const map = '/map';
 
+  static const adminEventos = '/admin/eventos';
+  static const adminPhotos = '/admin/photos';
+  static const adminCategoryPhotos = '/admin/category-photos';
+  static const adminPerformance = '/admin/performance';
+
   static const paymentSuccess = '/payment/success';
   static const paymentCancel = '/payment/cancel';
 

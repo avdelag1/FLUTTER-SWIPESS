@@ -34,10 +34,20 @@ class LegalDocument {
     );
   }
 
+  bool get isImage {
+    final mime = mimeType?.toLowerCase() ?? '';
+    if (mime.startsWith('image/')) return true;
+    return RegExp(
+      r'\.(jpe?g|png|webp|gif|heic)$',
+      caseSensitive: false,
+    ).hasMatch(fileName);
+  }
+
   String get category {
     switch (documentType) {
       case 'rental_agreement':
       case 'ownership_deed':
+      case 'six_month_lease':
         return 'contracts';
       case 'government_id':
       case 'passport':
@@ -60,13 +70,17 @@ class LegalDocument {
       case 'fideicomiso':
         return 'Fideicomiso';
       case 'government_id':
-        return 'Government ID';
+        return 'Gov. ID';
       case 'passport':
         return 'Passport';
       case 'rfc':
         return 'RFC Document';
       case 'drivers_license':
         return 'License';
+      case 'six_month_lease':
+        return '6-Month Lease';
+      case 'recommendation':
+        return 'Recommendation';
       default:
         return 'Other';
     }
@@ -88,16 +102,38 @@ class DocTypeOption {
 
 const documentTypeOptions = [
   DocTypeOption('rental_agreement', 'Rental Agreement', 'contracts'),
+  DocTypeOption('six_month_lease', '6-Month Lease', 'contracts'),
   DocTypeOption('ownership_deed', 'Ownership Deed', 'contracts'),
   DocTypeOption('fideicomiso', 'Fideicomiso', 'fideicomiso'),
-  DocTypeOption('government_id', 'Government ID', 'identity'),
+  DocTypeOption('government_id', 'Gov. ID', 'identity'),
   DocTypeOption('passport', 'Passport', 'identity'),
+  DocTypeOption('drivers_license', 'License', 'identity'),
   DocTypeOption('rfc', 'RFC Document', 'identity'),
+  DocTypeOption('recommendation', 'Recommendation', 'other'),
   DocTypeOption('other', 'Other', 'other'),
+];
+
+/// Cap VAP vault slots shown on the PEARL card.
+const vapVaultDocTypes = [
+  ('passport', 'Passport'),
+  ('government_id', 'Gov. ID'),
+  ('drivers_license', 'License'),
+  ('six_month_lease', '6-Month Lease'),
+  ('recommendation', 'Recommendation'),
 ];
 
 String detectDocType(String fileName) {
   final lower = fileName.toLowerCase();
+  if (lower.contains('recommend') ||
+      lower.contains('reference') ||
+      lower.contains('carta')) {
+    return 'recommendation';
+  }
+  if (lower.contains('6-month') ||
+      lower.contains('six month') ||
+      lower.contains('six_month')) {
+    return 'six_month_lease';
+  }
   if (lower.contains('rental') ||
       lower.contains('lease') ||
       lower.contains('contrato')) {
@@ -113,9 +149,12 @@ String detectDocType(String fileName) {
     return 'passport';
   }
   if (lower.contains('rfc')) return 'rfc';
-  if (lower.contains('ine') ||
-      lower.contains('license') ||
-      lower.contains('id')) {
+  if (lower.contains('license') ||
+      lower.contains('licencia') ||
+      lower.contains('driver')) {
+    return 'drivers_license';
+  }
+  if (lower.contains('ine') || lower.contains('id')) {
     return 'government_id';
   }
   return 'other';

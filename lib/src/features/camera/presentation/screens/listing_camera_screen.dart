@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/camera/data/bake_camera_filter.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/widgets/camera_filters_strip.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -62,7 +63,27 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
     }
   }
 
-  void _done() => Navigator.pop(context, List<XFile>.from(_shots));
+  Future<void> _done() async {
+    if (_shots.isEmpty) return;
+    if (_filter == CapCameraFilter.none) {
+      Navigator.pop(context, List<XFile>.from(_shots));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final baked = <XFile>[];
+      for (final shot in _shots) {
+        baked.add(
+          await bakeCameraFilter(source: shot, filter: _filter.colorFilter),
+        );
+      }
+      if (mounted) Navigator.pop(context, baked);
+    } catch (_) {
+      if (mounted) Navigator.pop(context, List<XFile>.from(_shots));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +118,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: _shots.isEmpty ? null : _done,
+                    onPressed: _shots.isEmpty || _busy ? null : _done,
                     child: const Text('DONE'),
                   ),
                 ],

@@ -41,3 +41,10 @@ final filteredDocumentsProvider = Provider<AsyncValue<List<LegalDocument>>>((ref
     return items.where((d) => d.category == tab).toList();
   });
 });
+
+/// Short-lived signed URL for vault / PEARL previews (Cap uses 120s).
+final documentSignedUrlProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, filePath) async {
+  if (filePath.isEmpty) return null;
+  return ref.read(documentRepositoryProvider).signedUrlForPath(filePath);
+});

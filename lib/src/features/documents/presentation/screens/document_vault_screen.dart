@@ -7,8 +7,9 @@ import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/features/documents/data/repositories/document_repository.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
+import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/doc_type_specimen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class DocumentVaultScreen extends ConsumerWidget {
   const DocumentVaultScreen({super.key, this.embedded = false});
@@ -116,7 +117,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                     final doc = docs[index];
                     return _DocCard(
                       doc: doc,
-                      onOpen: () => _open(context, ref, doc),
+                      onOpen: () => _open(context, doc),
                       onDelete: () => _delete(context, ref, doc),
                     );
                   },
@@ -190,24 +191,8 @@ class DocumentVaultScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _open(
-    BuildContext context,
-    WidgetRef ref,
-    LegalDocument doc,
-  ) async {
-    try {
-      final url = await ref.read(documentRepositoryProvider).signedUrl(doc);
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open file: $e')),
-        );
-      }
-    }
+  Future<void> _open(BuildContext context, LegalDocument doc) async {
+    await showDocumentPreviewDialog(context, doc);
   }
 
   Future<void> _delete(
@@ -287,18 +272,18 @@ class _DocCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(20),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              doc.category == 'identity'
-                  ? Icons.badge_rounded
-                  : Icons.description_rounded,
-              color: Colors.white,
+          GestureDetector(
+            onTap: onOpen,
+            child: Container(
+              width: 56,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withAlpha(28)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: DocTypeSpecimen(documentType: doc.documentType),
             ),
           ),
           const SizedBox(width: 14),
@@ -325,7 +310,7 @@ class _DocCard extends StatelessWidget {
           ),
           IconButton(
             onPressed: onOpen,
-            icon: Icon(Icons.download_rounded, color: Colors.white.withAlpha(180)),
+            icon: Icon(Icons.visibility_rounded, color: Colors.white.withAlpha(180)),
           ),
           IconButton(
             onPressed: onDelete,

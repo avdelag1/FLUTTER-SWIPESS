@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
@@ -78,6 +79,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   bool _showHistory = false;
   bool _loading = false;
   bool _bootstrapped = false;
+  bool _recording = false;
+  bool _transcribing = false;
 
   static const _starters = [
     'Find people looking to buy houses',
@@ -118,6 +121,46 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     });
   }
 
+  Future<void> _toggleVoice() async {
+    final repo = ref.read(voiceTranscribeRepositoryProvider);
+    if (_recording) {
+      setState(() {
+        _recording = false;
+        _transcribing = true;
+      });
+      try {
+        final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
+        final text = await repo.stop(language: lang);
+        if (text.trim().isNotEmpty && mounted) {
+          await _submit(text.trim());
+        }
+      } on VoiceTranscribeException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t(ref, 'flutter.voiceFailed', 'Voice transcription failed'))),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _transcribing = false);
+      }
+      return;
+    }
+    final ok = await repo.start();
+    if (!ok) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t(ref, 'flutter.micDenied', 'Microphone permission denied'))),
+        );
+      }
+      return;
+    }
+    setState(() => _recording = true);
+  }
+
   Future<void> _submit([String? preset]) async {
     final q = (preset ?? _controller.text).trim();
     if (q.isEmpty || _loading) return;
@@ -135,9 +178,12 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       for (final m in _messages)
         AiChatMessage(role: m.role, content: m.content),
     ];
-    String reply;
+    String reply = '';
     try {
-      reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
+      setState(() {
+        _messages.add(const _ChatBubble(role: 'assistant', content: ''));
+      });
+      await for (final delta in ref.read(aiEdgeRepositoryProvider).chatConciergeTokens(
             messages: history,
             locationContext: {
               'passportMode': false,
@@ -146,11 +192,50 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               'userLongitude': loc.longitude,
               'radiusKm': loc.radiusKm,
             },
-          );
+          )) {
+        if (!mounted) return;
+        reply += delta;
+        setState(() {
+          _messages[_messages.length - 1] =
+              _ChatBubble(role: 'assistant', content: reply);
+        });
+        _scrollToEnd();
+      }
+      if (reply.trim().isEmpty) {
+        reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
+              messages: history,
+              locationContext: {
+                'passportMode': false,
+                'passportLabel': loc.label,
+                'userLatitude': loc.latitude,
+                'userLongitude': loc.longitude,
+                'radiusKm': loc.radiusKm,
+              },
+              stream: false,
+            );
+        if (mounted) {
+          setState(() {
+            _messages[_messages.length - 1] =
+                _ChatBubble(role: 'assistant', content: reply);
+          });
+        }
+      }
     } on AiUnavailableException catch (e) {
       reply = e.message;
+      if (mounted) {
+        setState(() {
+          _messages[_messages.length - 1] =
+              _ChatBubble(role: 'assistant', content: reply);
+        });
+      }
     } catch (_) {
       reply = 'AI is temporarily unavailable. Try again in a moment.';
+      if (mounted) {
+        setState(() {
+          _messages[_messages.length - 1] =
+              _ChatBubble(role: 'assistant', content: reply);
+        });
+      }
     }
     if (!mounted) return;
     final parsed = ConciergeParse.of(reply);
@@ -161,7 +246,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       _applyConciergeFilter(parsed.filterAction!);
     }
     setState(() {
-      _messages.add(_ChatBubble(role: 'assistant', content: reply));
       _loading = false;
     });
     _scrollToEnd();
@@ -485,11 +569,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       ),
                     ] else ...[
                       for (final m in _messages) _Bubble(message: m),
-                      if (_loading)
+                      if (_loading &&
+                          (_messages.isEmpty ||
+                              _messages.last.content.trim().isEmpty))
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'Thinking…',
+                            t(ref, 'flutter.thinking', 'Thinking…'),
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white38,
                               fontSize: 12,
@@ -535,7 +621,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 child: Column(
                   children: [
                     Text(
-                      '✨ AI-powered · Answers are generated by AI. AI can make mistakes. Consider verifying important information.',
+                      '✨ ${t(ref, 'flutter.aiDisclaimer', 'AI-powered · Answers are generated by AI. AI can make mistakes. Consider verifying important information.')}',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white38,
@@ -559,8 +645,18 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 Icon(Icons.timer_outlined,
                                     color: Colors.white.withAlpha(120), size: 20),
                                 const SizedBox(width: 8),
-                                Icon(Icons.mic_none_rounded,
-                                    color: Colors.white.withAlpha(120), size: 20),
+                                GestureDetector(
+                                  onTap: (_loading || _transcribing) ? null : _toggleVoice,
+                                  child: Icon(
+                                    _recording
+                                        ? Icons.mic_rounded
+                                        : Icons.mic_none_rounded,
+                                    color: _recording
+                                        ? AppTheme.brandPrimary
+                                        : Colors.white.withAlpha(120),
+                                    size: 20,
+                                  ),
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextField(
@@ -569,7 +665,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
                                       border: InputBorder.none,
-                                      hintText: 'Ask anything...',
+                                      hintText: _recording
+                                          ? t(ref, 'flutter.listening', 'Listening…')
+                                          : _transcribing
+                                              ? t(ref, 'flutter.transcribing', 'Transcribing…')
+                                              : t(ref, 'flutter.askAnything', 'Ask anything...'),
                                       hintStyle: TextStyle(
                                         color: Colors.white.withAlpha(100),
                                       ),
