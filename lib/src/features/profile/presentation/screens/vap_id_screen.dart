@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -22,6 +23,21 @@ class VapIdScreen extends ConsumerStatefulWidget {
 }
 
 class _VapIdScreenState extends ConsumerState<VapIdScreen> {
+  // Cap `VapIdCardModal` enables the privacy screen while the card is open: it
+  // carries identity documents, so it stays out of screenshots, screen
+  // recordings and the task-switcher thumbnail.
+  @override
+  void initState() {
+    super.initState();
+    PrivacyScreen.enable();
+  }
+
+  @override
+  void dispose() {
+    PrivacyScreen.disable();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(vapIdProvider);

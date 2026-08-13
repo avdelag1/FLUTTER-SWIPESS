@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
@@ -23,7 +24,10 @@ class DocumentVaultScreen extends ConsumerWidget {
     final tab = ref.watch(documentFilterProvider);
     final top = MediaQuery.paddingOf(context).top;
 
-    return ColoredBox(
+    // Cap `DocumentVault.tsx` enables the privacy screen on mount — passports,
+    // leases and IDs live here.
+    return PrivacyScreenGuard(
+      child: ColoredBox(
       color: AppTheme.dashBg,
       child: AmbientPageBackground(
         fill: true,
@@ -130,6 +134,7 @@ class DocumentVaultScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     ),
     );
   }

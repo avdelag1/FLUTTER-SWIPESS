@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -20,16 +21,21 @@ class VapIdModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GeniePanel(
-      onDismissed: () => ref.read(overlayModalsProvider.notifier).closeVapId(),
-      builder: (context, dismiss) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-            child: _VapIdModalBody(onClose: dismiss),
-          ),
-        );
-      },
+    // Cap `VapIdCardModal` calls enablePrivacyScreen on mount: the card carries
+    // identity documents, so it stays out of screenshots and the app switcher.
+    return PrivacyScreenGuard(
+      child: GeniePanel(
+        onDismissed: () =>
+            ref.read(overlayModalsProvider.notifier).closeVapId(),
+        builder: (context, dismiss) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+              child: _VapIdModalBody(onClose: dismiss),
+            ),
+          );
+        },
+      ),
     );
   }
 }
