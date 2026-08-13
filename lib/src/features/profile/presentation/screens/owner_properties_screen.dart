@@ -45,7 +45,6 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
     return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showCreateListingChooser(context),
-        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Add listing'),
@@ -65,7 +64,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -227,7 +226,6 @@ class _AssetCard extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF14141A),
         title: const Text('Delete listing?',
             style: TextStyle(color: Colors.white)),
         content: Text(
@@ -301,7 +299,7 @@ class _AssetCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

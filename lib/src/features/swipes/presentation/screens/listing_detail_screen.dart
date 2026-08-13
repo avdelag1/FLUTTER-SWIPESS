@@ -37,7 +37,6 @@ class ListingDetailScreen extends ConsumerWidget {
     final id = listingId;
     if (id == null) {
       return const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: Text('Listing not found', style: TextStyle(color: Colors.white)),
         ),
@@ -46,13 +45,11 @@ class ListingDetailScreen extends ConsumerWidget {
     final async = ref.watch(listingByIdProvider(id));
     return async.when(
       loading: () => const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: TextButton(
             onPressed: () => ref.invalidate(listingByIdProvider(id)),
@@ -63,7 +60,6 @@ class ListingDetailScreen extends ConsumerWidget {
       data: (listing) {
         if (listing == null) {
           return const Scaffold(
-            backgroundColor: Colors.black,
             body: Center(
               child: Text('Listing not found',
                   style: TextStyle(color: Colors.white)),
@@ -175,7 +171,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -489,7 +484,7 @@ class _CircleBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(150),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Icon(icon, color: Colors.white, size: size > 50 ? 22 : 18),
       ),

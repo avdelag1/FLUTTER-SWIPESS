@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 /// Cap `EventsVideoQuickFilter` — segments + shared mute + advance on end.
+///
+/// Plays on web too (one HTML5 video). Falls back to demo clips when the
+/// events feed has no `video_url` rows yet.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -24,6 +28,28 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   int _index = 0;
   String? _boundUrl;
   double _dragDx = 0;
+  bool _binding = false;
+
+  static const _demo = <Event>[
+    Event(
+      id: 'demo-event-butterfly',
+      title: 'Sunset Sessions',
+      category: 'Music',
+      imageUrl:
+          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80',
+      videoUrl:
+          'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+    ),
+    Event(
+      id: 'demo-event-bee',
+      title: 'Beach Party',
+      category: 'Nightlife',
+      imageUrl:
+          'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80',
+      videoUrl:
+          'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+    ),
+  ];
 
   @override
   void dispose() {
@@ -32,39 +58,82 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     super.dispose();
   }
 
+  List<Event> _videos(List<Event> fromApi) {
+    if (fromApi.isNotEmpty) return fromApi;
+    return _demo;
+  }
+
   void _onTick() {
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
-    final videos = ref.read(videoEventsProvider);
+    final videos = _videos(ref.read(videoEventsProvider));
     if (videos.length <= 1) return;
-    if (player.value.position >= player.value.duration &&
-        player.value.duration > Duration.zero) {
+    final pos = player.value.position;
+    final dur = player.value.duration;
+    if (dur > Duration.zero && pos >= dur - const Duration(milliseconds: 120)) {
       _index = (_index + 1) % videos.length;
       _bind(videos);
     }
   }
 
   Future<void> _bind(List<Event> videos) async {
+    if (_binding) return;
     if (videos.isEmpty) return;
     if (_index >= videos.length) _index = 0;
-    final url = videos[_index].videoUrl;
-    if (url == null || url == _boundUrl) return;
+    final url = videos[_index].videoUrl?.trim();
+    if (url == null || url.isEmpty) return;
+    if (url == _boundUrl &&
+        _player != null &&
+        _player!.value.isInitialized) {
+      return;
+    }
+
+    _binding = true;
     _boundUrl = url;
     final previous = _player;
     previous?.removeListener(_onTick);
-    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    // Web autoplay requires muted start; Cap mute toggle unmutes after gesture.
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
     _player = next;
     try {
       await next.initialize();
+      if (!mounted || _boundUrl != url) {
+        await next.dispose();
+        if (identical(_player, next)) {
+          _player = null;
+          _boundUrl = null;
+        }
+        return;
+      }
       await next.setLooping(videos.length == 1);
-      final soundOn = ref.read(deckSoundOnProvider);
-      await next.setVolume(soundOn ? 1 : 0);
+      // Always mute before first play so browsers allow autoplay.
+      await next.setVolume(0);
       await next.play();
+      final soundOn = ref.read(deckSoundOnProvider);
+      if (soundOn && !kIsWeb) {
+        await next.setVolume(1);
+      } else if (soundOn && kIsWeb) {
+        // Web: only unmute after a user gesture (mute button).
+        await next.setVolume(0);
+      }
       next.addListener(_onTick);
       if (mounted) setState(() {});
     } catch (_) {
+      // Skip broken clip and try the next one once.
+      if (mounted && videos.length > 1) {
+        _index = (_index + 1) % videos.length;
+        _boundUrl = null;
+        _binding = false;
+        await previous?.dispose();
+        await _bind(videos);
+        return;
+      }
       if (mounted) setState(() {});
     } finally {
+      _binding = false;
       await previous?.dispose();
     }
   }
@@ -79,13 +148,14 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   @override
   Widget build(BuildContext context) {
-    final videos = ref.watch(videoEventsProvider);
+    final apiVideos = ref.watch(videoEventsProvider);
+    final videos = _videos(apiVideos);
     final soundOn = ref.watch(deckSoundOnProvider);
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _player?.setVolume(on ? 1 : 0);
     });
     ref.listen<List<Event>>(videoEventsProvider, (_, next) {
-      _bind(next);
+      _bind(_videos(next));
     });
     if (videos.isNotEmpty && _player == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -115,16 +185,26 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
           fit: StackFit.expand,
           children: [
             if (ready)
-              FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _player!.value.size.width,
-                  height: _player!.value.size.height,
-                  child: VideoPlayer(_player!),
+              Positioned.fill(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(
+                    width: _player!.value.size.width,
+                    height: _player!.value.size.height,
+                    child: VideoPlayer(_player!),
+                  ),
                 ),
               )
             else if (current?.imageUrl != null)
-              Image.network(current!.imageUrl!, fit: BoxFit.cover)
+              current!.imageUrl!.startsWith('assets/')
+                  ? Image.asset(current.imageUrl!, fit: BoxFit.cover)
+                  : Image.network(
+                      current.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          Image.asset(AppAssets.filterEvents, fit: BoxFit.cover),
+                    )
             else
               Image.asset(AppAssets.filterEvents, fit: BoxFit.cover),
             const DecoratedBox(
@@ -137,9 +217,12 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               ),
             ),
             if (!ready)
-              const Center(
-                child: Icon(Icons.celebration_outlined,
-                    color: Color(0xB3FFFFFF), size: 40),
+              Center(
+                child: Icon(
+                  Icons.celebration_outlined,
+                  color: const Color(0xB3FFFFFF),
+                  size: kIsWeb ? 36 : 40,
+                ),
               ),
             Positioned(
               top: 10,
@@ -170,7 +253,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               child: GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
+                  final next = !ref.read(deckSoundOnProvider);
                   ref.read(deckSoundOnProvider.notifier).toggle();
+                  // Web unmute must happen in this tap gesture.
+                  _player?.setVolume(next ? 1 : 0);
+                  if (next) {
+                    _player?.play();
+                  }
                 },
                 child: Container(
                   width: 28,
@@ -178,7 +267,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(120),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Icon(
                     soundOn
@@ -206,7 +295,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    current?.title ?? 'Local Event',
+                    current?.title ?? 'Discover Local',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(

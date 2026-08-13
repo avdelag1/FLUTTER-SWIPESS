@@ -13,7 +13,6 @@ Future<void> showLegalSheet(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (context) => _LegalSheet(doc: doc, onAgree: onAgree),
   );
 }
@@ -63,7 +62,6 @@ class _LegalSheet extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close, color: Colors.white),
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0x1AFFFFFF),
                       ),
                     ),
                   ],
@@ -135,7 +133,6 @@ class _LegalSheet extends StatelessWidget {
                   height: 56,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                       shape: const StadiumBorder(),
                     ),

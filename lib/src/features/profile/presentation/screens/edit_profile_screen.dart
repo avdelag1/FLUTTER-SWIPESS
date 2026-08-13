@@ -2,14 +2,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_providers.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -30,7 +30,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void initState() {
     super.initState();
     final profile = ref.read(currentProfileProvider).value;
-    _nameController = TextEditingController(text: profile?.displayName ?? '');
+    _nameController = TextEditingController(text: profile?.name ?? '');
     _bioController = TextEditingController(text: profile?.bio ?? '');
     _cityController = TextEditingController(text: profile?.city ?? '');
   }
@@ -70,7 +70,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    setState(() { _isSaving = true; });
+    setState(() => _isSaving = true);
     try {
       final repo = ref.read(profileRepositoryProvider);
       await repo.updateProfile(
@@ -92,9 +92,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() { _isSaving = false; });
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -103,33 +101,61 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final profile = ref.watch(currentProfileProvider).value;
     final avatarUrl = profile?.avatarUrl ??
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
-    final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: AppTheme.surfaceColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: ClipRRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: AppBar(
-              backgroundColor: Colors.transparent,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => context.pop(),
               ),
               title: Text(
                 'EDIT IDENTITY',
-                style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                style: AppTheme.displayItalic.copyWith(fontSize: 18),
               ),
+              actions: [
+                if (_isSaving)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: AppTheme.brandPrimary,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                else
+                  TextButton(
+                    onPressed: _saveProfile,
+                    child: Text(
+                      'Save',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppTheme.brandPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, top + 12, 20, 40),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Stack(
@@ -161,8 +187,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           color: AppTheme.brandPrimary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.camera_alt_rounded,
-                            color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -170,16 +199,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
             const SizedBox(height: 28),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'DISPLAY NAME',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.4,
-                ),
+            Text(
+              'DISPLAY NAME',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.4,
               ),
             ),
             const SizedBox(height: 8),
@@ -189,16 +215,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               icon: Icons.person_outline_rounded,
             ),
             const SizedBox(height: 18),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'CITY',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.4,
-                ),
+            Text(
+              'CITY',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.4,
               ),
             ),
             const SizedBox(height: 8),
@@ -245,7 +268,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             const SizedBox(height: 8),
             GlassTextField(
               controller: _bioController,
-              hint: 'Tell people about yourself',
+              hint: 'Bio',
               icon: Icons.notes_rounded,
               maxLines: 4,
             ),

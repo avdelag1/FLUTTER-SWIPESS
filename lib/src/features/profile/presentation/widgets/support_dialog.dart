@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -10,7 +9,6 @@ Future<void> showSupportDialog(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => const _SupportDialogSheet(),
   );
 }
@@ -78,7 +76,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0D).withAlpha(240),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: ListView(
         padding: EdgeInsets.fromLTRB(24, 18, 24, bottom + 28),
@@ -168,12 +166,17 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
             runSpacing: 8,
             children: [
               for (final c in _categories)
-                NeoNaiveChip(
-                  label: c.$2,
+                ChoiceChip(
+                  label: Text(c.$2),
                   selected: _category == c.$1,
-                  onSelected: () => setState(() => _category = c.$1),
+                  onSelected: (_) => setState(() => _category = c.$1),
                   selectedColor: AppTheme.brandPrimary,
-                  icon: c.$3,
+                  labelStyle: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                  avatar: Icon(c.$3, size: 14, color: Colors.white70),
                 ),
             ],
           ),
@@ -184,11 +187,16 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: NeoNaiveChip(
-                      label: p.$2,
+                    child: ChoiceChip(
+                      label: Center(child: Text(p.$2)),
                       selected: _priority == p.$1,
-                      onSelected: () => setState(() => _priority = p.$1),
+                      onSelected: (_) => setState(() => _priority = p.$1),
                       selectedColor: const Color(0xFFF59E0B),
+                      labelStyle: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                 ),
@@ -229,7 +237,6 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 elevation: 0,
                 shape: RoundedRectangleBorder(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/insights/domain/local_intel_post.dart';
@@ -41,7 +42,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
-                  _BackButton(onTap: () => Navigator.of(context).pop()),
+                  CapBackButton(onTap: () => Navigator.of(context).pop()),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -135,7 +136,7 @@ class _IntelCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -214,26 +215,3 @@ class _IntelCard extends StatelessWidget {
   }
 }
 
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
-        ),
-        child: const Center(
-          child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-        ),
-      ),
-    );
-  }
-}

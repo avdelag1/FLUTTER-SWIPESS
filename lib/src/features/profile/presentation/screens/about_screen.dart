@@ -32,7 +32,6 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
@@ -49,7 +48,7 @@ class AboutScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.transparent),
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
                     child: const Icon(Icons.arrow_back_ios_new_rounded,
                         color: Colors.white, size: 18),
@@ -144,7 +143,7 @@ class _Benefit extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

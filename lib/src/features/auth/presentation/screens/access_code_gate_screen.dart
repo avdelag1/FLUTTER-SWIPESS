@@ -7,8 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AccessCodeGateScreen extends ConsumerStatefulWidget {
@@ -91,10 +89,8 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          const StarfieldBackground(),
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
@@ -139,8 +135,8 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
         SwipessLogo(
-          width: isDesktop ? 280 : 240,
-          variant: SwipessLogoVariant.transparent,
+          height: isDesktop ? 56 : 48,
+          variant: SwipessLogoVariant.outline,
         ),
         const SizedBox(height: 24),
         Text(
@@ -173,7 +169,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               alignment: Alignment.center,
               child: const Text('Download on the App Store', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -218,16 +214,11 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SwipessLogo(
-                  width: 200,
-                  variant: SwipessLogoVariant.transparent,
-                ),
-                const SizedBox(height: 20),
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(24),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(Icons.lock_rounded, color: Colors.white, size: 24),
@@ -269,7 +260,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         children: [
@@ -314,7 +305,6 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       child: ElevatedButton(
         onPressed: _verifying ? null : _handleSubmit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           elevation: 8,
@@ -343,7 +333,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Row(
           children: [
@@ -380,7 +370,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(50),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.transparent),
+            border: Border.all(color: Colors.white, width: 1.5),
           ),
           child: Column(
             children: [
@@ -406,7 +396,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(50),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Column(
           children: [
@@ -424,7 +414,6 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
               child: ElevatedButton(
                 onPressed: _handleRequest,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -443,7 +432,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(

@@ -7,9 +7,7 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
-import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
@@ -39,7 +37,6 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_pr
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_card_theme_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
@@ -82,10 +79,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final muted = MatteSurface.muted(context);
 
     return Scaffold(
-      backgroundColor: MatteSurface.canvas(context),
-      body: AmbientPageBackground(
-        fill: true,
-        child: async.when(
+      body: Stack(
+        children: [
+          Positioned(
+            top: -80,
+            right: -60,
+            child: _orb(AppTheme.brandPrimary.withAlpha(40), 260),
+          ),
+          Positioned(
+            top: 280,
+            left: -100,
+            child: _orb(const Color(0xFF06B6D4).withAlpha(28), 220),
+          ),
+          async.when(
             loading: () => Center(
               child: CircularProgressIndicator(color: ink, strokeWidth: 2),
             ),
@@ -267,7 +273,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Magic AI Profile — compact row, color lives in the chip only.
+                  // Magic AI Profile
                   GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
@@ -275,60 +281,54 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
                     child: Container(
                       height: 58,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: MatteSurface.cardFill(context),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: MatteSurface.hairline(context)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF06B6D4).withAlpha(70),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
-                              ),
-                            ),
-                            child: const Icon(Icons.auto_awesome_rounded,
-                                color: Colors.white, size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'MAGIC AI PROFILE',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: ink,
-                                fontWeight: FontWeight.w900,
-                                fontStyle: FontStyle.italic,
-                                letterSpacing: 1.6,
-                                fontSize: 13,
-                              ),
+                          const Icon(Icons.auto_awesome_rounded,
+                              color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Magic AI Profile',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: 2.2,
+                              fontSize: 14,
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: Colors.white38),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
 
-                  // Action grid — small neo-naive tiles, colorful icon chip only.
+                  // Action grid
                   GridView.count(
-                    crossAxisCount: 3,
+                    crossAxisCount: 2,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 0.92,
+                    childAspectRatio: 1.45,
                     children: [
                       _ActionTile(
                         label: 'Edit Profile',
                         icon: Icons.person_rounded,
-                        chipColor: const Color(0xFFFF4D00),
+                        colors: const [Color(0xFFFF4D00), Color(0xFFEB4898)],
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const EditProfileScreen(),
@@ -336,9 +336,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       _ActionTile(
-                        label: 'Promote',
+                        label: 'Promote Event',
                         icon: Icons.campaign_rounded,
-                        chipColor: const Color(0xFFFF8C42),
+                        colors: const [Color(0xFFFF4D00), Color(0xFFFF8C00)],
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const AdvertiseScreen(),
@@ -348,7 +348,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _ActionTile(
                         label: 'Seekers',
                         icon: Icons.people_rounded,
-                        chipColor: const Color(0xFF3B82F6),
+                        colors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
                         onTap: () {
                           context.go(AppPaths.exploreSeekers);
                         },
@@ -356,7 +356,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _ActionTile(
                         label: 'Tokens',
                         icon: Icons.toll_rounded,
-                        chipColor: const Color(0xFF10B981),
+                        colors: const [Color(0xFF10B981), Color(0xFF06B6D4)],
                         onTap: () => showGlassModal(
                           context: context,
                           builder: (_) => const TokensModal(),
@@ -365,7 +365,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _ActionTile(
                         label: 'Settings',
                         icon: Icons.settings_rounded,
-                        chipColor: const Color(0xFF94A3B8),
+                        colors: const [Color(0xFF64748B), Color(0xFF334155)],
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const SettingsScreen(),
@@ -375,11 +375,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _ActionTile(
                         label: 'Sign Out',
                         icon: Icons.logout_rounded,
-                        chipColor: const Color(0xFFEF4444),
+                        colors: const [Color(0xFFEF4444), Color(0xFF991B1B)],
                         onTap: () async {
                           HapticFeedback.mediumImpact();
                           await Supabase.instance.client.auth.signOut();
-                          ref.read(currentUserProvider.notifier).clear();
                           if (context.mounted) context.go(AppPaths.auth);
                         },
                       ),
@@ -396,54 +395,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     },
                     child: Container(
-                      height: 64,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      height: 88,
                       decoration: BoxDecoration(
-                        color: MatteSurface.cardFill(context),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: MatteSurface.hairline(context)),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        ),
                       ),
-                      child: Row(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(13),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                              ),
-                            ),
-                            child: const Icon(Icons.workspace_premium_rounded,
-                                color: Colors.white, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'PREMIUM',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: ink,
-                                    fontWeight: FontWeight.w900,
-                                    fontStyle: FontStyle.italic,
-                                    letterSpacing: 1.8,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                Text(
-                                  'Unlock packages & perks',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: muted,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
+                          const Icon(Icons.workspace_premium_rounded,
+                              color: Colors.white, size: 28),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Premium',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              letterSpacing: 2.4,
+                              fontSize: 13,
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: Colors.white38),
                         ],
                       ),
                     ),
@@ -538,7 +512,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                         ),
                         HolographicIDCard(
-                          theme: ref.watch(vapCardThemeProvider),
                           name: name,
                           idNumber:
                               'NX-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
@@ -641,7 +614,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: LinearProgressIndicator(
                               value: completion / 100,
                               minHeight: 10,
-                              backgroundColor: Colors.transparent,
                               valueColor: const AlwaysStoppedAnimation(
                                 Color(0xFFFF4D00),
                               ),
@@ -762,7 +734,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               );
             },
           ),
-        ),
+        ],
+      ),
     );
   }
 
@@ -787,6 +760,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _feedbackSending = false;
       _feedbackDone = true;
     });
+  }
+
+  Widget _orb(Color color, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
+        child: const SizedBox(),
+      ),
+    );
   }
 }
 
@@ -877,60 +862,44 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-/// Small neo-naive action tile — neutral glass card, colorful part is only
-/// the icon chip. Replaces the full-bleed gradient squares.
 class _ActionTile extends StatelessWidget {
   const _ActionTile({
     required this.label,
     required this.icon,
-    required this.chipColor,
+    required this.colors,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
-  final Color chipColor;
+  final List<Color> colors;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: MatteSurface.hairline(context)),
+          gradient: LinearGradient(colors: colors),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: chipColor.withAlpha(36),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: chipColor.withAlpha(90)),
-              ),
-              child: Icon(icon, color: chipColor, size: 18),
-            ),
+            Icon(icon, color: Colors.white, size: 28),
             const SizedBox(height: 8),
             Text(
               label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.plusJakartaSans(
-                color: ink,
-                fontWeight: FontWeight.w800,
-                fontSize: 10,
-                letterSpacing: 0.4,
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                fontSize: 11,
+                letterSpacing: 1.4,
               ),
             ),
           ],
@@ -985,7 +954,7 @@ class _DailyQuests extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.transparent),
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
                 child: Text(
                   async.isLoading
@@ -1014,7 +983,6 @@ class _DailyQuests extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: board.progressPercent,
               minHeight: 8,
-              backgroundColor: const Color(0x22FFFFFF),
               valueColor: const AlwaysStoppedAnimation(AppTheme.brandPrimary),
             ),
           ),
@@ -1208,7 +1176,6 @@ class _ShareEarn extends StatelessWidget {
                 showInviteFriendsDialog(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -1461,11 +1428,11 @@ class _FeedbackForm extends StatelessWidget {
             fillColor: Colors.black.withAlpha(70),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.transparent),
+              borderSide: BorderSide(color: Colors.white, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.transparent),
+              borderSide: BorderSide(color: Colors.white, width: 1),
             ),
           ),
         ),
@@ -1475,7 +1442,6 @@ class _FeedbackForm extends StatelessWidget {
           child: ElevatedButton(
             onPressed: sending ? null : onSubmit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(

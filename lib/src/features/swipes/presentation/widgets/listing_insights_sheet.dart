@@ -14,7 +14,6 @@ Future<void> showListingInsightsSheet(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _InsightsSheet(
       listing: listing,
       onMessage: onMessage,
@@ -298,7 +297,6 @@ class _InsightsSheet extends StatelessWidget {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.brandPrimary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

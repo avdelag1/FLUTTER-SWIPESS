@@ -12,7 +12,6 @@ Future<void> showSeekerRequestSheet(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppTheme.dashElevated,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
@@ -103,7 +102,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                 ),
               ],
             ),
@@ -137,7 +136,6 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 FilledButton(
                   onPressed: _submitting ? null : _primaryAction,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.brandPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 22, vertical: 14),
@@ -182,12 +180,12 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             decoration: BoxDecoration(
               color: selected
                   ? AppTheme.brandPrimary.withAlpha(40)
-                  : Colors.white.withAlpha(10),
+                  : Theme.of(context).colorScheme.onSurface.withAlpha(10),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: selected
                     ? AppTheme.brandPrimary
-                    : Colors.white.withAlpha(25),
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(25),
               ),
             ),
             child: Column(
@@ -205,7 +203,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w800,
                     fontSize: 11,
                   ),
@@ -226,7 +224,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           Text(
             'SUBCATEGORY',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
               fontWeight: FontWeight.w800,
               fontSize: 11,
               letterSpacing: 1.2,
@@ -292,7 +290,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'DAYS',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -314,13 +312,6 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                   }
                 }),
                 selectedColor: AppTheme.brandPrimary.withAlpha(80),
-                backgroundColor: Colors.transparent,
-                labelStyle: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-                side: BorderSide(color: Colors.transparent),
               ),
           ],
         ),
@@ -328,7 +319,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'PRICING',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -351,7 +342,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'URGENCY',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,

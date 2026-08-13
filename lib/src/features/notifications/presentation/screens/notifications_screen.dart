@@ -173,7 +173,7 @@ class _NotificationTile extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: Colors.red.withAlpha(50),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(22),
         ),
         child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
@@ -200,7 +200,6 @@ class _NotificationTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                backgroundColor: _color.withAlpha(40),
                 child: Icon(_icon, color: _color, size: 18),
               ),
               const SizedBox(width: 12),

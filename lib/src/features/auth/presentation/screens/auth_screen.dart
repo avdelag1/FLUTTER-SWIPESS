@@ -56,7 +56,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString()),
-        backgroundColor: Colors.red,
       ));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -88,7 +87,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString()),
-        backgroundColor: Colors.red,
       ));
     } finally {
       if (mounted) {
@@ -100,7 +98,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
           const StarfieldBackground(),
@@ -123,7 +120,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
                 ),
@@ -262,7 +259,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _handleSubmit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _isLogin ? AppTheme.brandPrimary : AppTheme.dashWell,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                             elevation: 0,
@@ -289,7 +285,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _isLogin ? AppTheme.dashWell : AppTheme.brandPrimary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                             elevation: 0,
@@ -372,11 +367,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       child: ElevatedButton(
         onPressed: onTap,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
-            side: const BorderSide(color: Colors.transparent),
           ),
           elevation: 0,
         ),

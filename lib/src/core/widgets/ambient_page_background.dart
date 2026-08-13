@@ -91,7 +91,6 @@ class NeoNaivePage extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       body: AmbientPageBackground(
         fill: true,
         child: scrollable
@@ -148,7 +147,7 @@ class NeoNaiveGroup extends StatelessWidget {
         children: [
           for (var i = 0; i < children.length; i++) ...[
             if (i > 0)
-              Divider(height: 1, thickness: 1, color: Colors.white.withAlpha(20)),
+              Divider(height: 1, thickness: 1, color: Colors.transparent),
             children[i],
           ],
         ],
@@ -171,7 +170,6 @@ class NeoNaiveScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       floatingActionButton: floatingActionButton,
       body: AmbientPageBackground(fill: true, child: body),
     );
@@ -206,26 +204,25 @@ class NeoNaiveChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? selectedColor.withAlpha(selectedColor == AppTheme.brandPrimary ? 255 : 80) : Colors.white.withAlpha(12),
+          color: selected ? selectedColor : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? selectedColor : Colors.white.withAlpha(30),
+            color: selected ? selectedColor : Colors.white,
+            width: 1.5,
           ),
-          boxShadow: selected
-              ? [BoxShadow(color: selectedColor.withAlpha(40), blurRadius: 12)]
-              : const [],
+          boxShadow: const [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: Colors.white),
+              Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurface),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w800,
                 fontSize: 11,
                 letterSpacing: 0.6,

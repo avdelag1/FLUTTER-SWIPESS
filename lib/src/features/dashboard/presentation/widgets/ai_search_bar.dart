@@ -39,7 +39,7 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
     final fill = AppTheme.wellFor(isLight: isLight);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     return Container(
-      height: 58,
+      height: 56,
       decoration: BoxDecoration(
         color: fill,
         borderRadius: BorderRadius.circular(999),
@@ -69,8 +69,9 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
               textInputAction: TextInputAction.search,
               style: GoogleFonts.plusJakartaSans(
                 color: ink,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                letterSpacing: -0.1,
               ),
               cursorColor: glow,
               decoration: InputDecoration(
@@ -78,9 +79,10 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                 isDense: true,
                 hintText: 'Ask AI to find anything...',
                 hintStyle: GoogleFonts.plusJakartaSans(
-                  color: ink.withAlpha(150),
+                  color: ink.withAlpha(140),
                   fontWeight: FontWeight.w500,
-                  fontSize: 15,
+                  fontSize: 14,
+                  letterSpacing: -0.1,
                 ),
               ),
               onSubmitted: (_) => _runSearch(),

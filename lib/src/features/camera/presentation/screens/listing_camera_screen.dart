@@ -88,7 +88,6 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
@@ -185,7 +184,6 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                                     setState(() => _shots.removeAt(i)),
                                 child: const CircleAvatar(
                                   radius: 12,
-                                  backgroundColor: Colors.black54,
                                   child: Icon(Icons.close,
                                       size: 14, color: Colors.white),
                                 ),
@@ -211,7 +209,6 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                       label: const Text('Gallery'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white38),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
@@ -224,7 +221,6 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                       icon: const Icon(Icons.camera_alt_rounded),
                       label: Text(_busy ? '…' : 'CAPTURE'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.brandPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),

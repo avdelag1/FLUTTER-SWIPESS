@@ -201,7 +201,6 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
                     child: ElevatedButton(
                       onPressed: _next,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -223,7 +222,6 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
                       onPressed: _finish,
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.black,
-                        backgroundColor: Colors.white.withAlpha(180),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 22,
                           vertical: 10,

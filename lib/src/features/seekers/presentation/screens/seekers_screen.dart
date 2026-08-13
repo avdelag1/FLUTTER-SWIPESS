@@ -22,7 +22,6 @@ class SeekersScreen extends ConsumerWidget {
     return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showSeekerRequestSheet(context, ref),
-        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Post request'),
@@ -164,7 +163,7 @@ class _SeekerCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -211,7 +210,6 @@ class _SeekerCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: _accent.withAlpha(80),
                   backgroundImage: request.seekerAvatar != null
                       ? NetworkImage(request.seekerAvatar!)
                       : null,
@@ -263,7 +261,6 @@ class _SeekerCard extends StatelessWidget {
                     onPressed: onPass,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.transparent),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                     ),
@@ -275,7 +272,6 @@ class _SeekerCard extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onInterested,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _accent,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),

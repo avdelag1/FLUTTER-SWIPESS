@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
-import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/domain/roommate_profile.dart';
@@ -33,7 +32,6 @@ class _RoommateMatchingScreenState
     final async = ref.watch(roommatesProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -129,7 +127,6 @@ class _RoommateMatchingScreenState
                             : () => _swipe(current, like: false),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.transparent),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
@@ -142,9 +139,7 @@ class _RoommateMatchingScreenState
                     IconButton.filled(
                       onPressed: _busy ? null : () => _message(current),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.transparent,
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.transparent),
                         padding: const EdgeInsets.all(14),
                       ),
                       icon: const Icon(Icons.chat_bubble_outline_rounded),
@@ -155,7 +150,6 @@ class _RoommateMatchingScreenState
                         onPressed:
                             _busy ? null : () => _swipe(current, like: true),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.brandPrimary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -252,7 +246,6 @@ class _RoommateMatchingScreenState
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -332,20 +325,22 @@ class _RoommateMatchingScreenState
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      NeoNaiveChip(
-                        label: 'Any',
+                      ChoiceChip(
+                        label: const Text('Any'),
                         selected: draft.city == null,
-                        onSelected: () => setModal(
+                        onSelected: (_) => setModal(
                           () => draft = draft.copyWith(clearCity: true),
                         ),
+                        selectedColor: AppTheme.brandPrimary,
                       ),
                       for (final city in ListingTaxonomies.popularCities.take(8))
-                        NeoNaiveChip(
-                          label: city,
+                        ChoiceChip(
+                          label: Text(city),
                           selected: draft.city == city,
-                          onSelected: () => setModal(
+                          onSelected: (_) => setModal(
                             () => draft = draft.copyWith(city: city),
                           ),
+                          selectedColor: AppTheme.brandPrimary,
                         ),
                     ],
                   ),
@@ -359,7 +354,6 @@ class _RoommateMatchingScreenState
                         Navigator.pop(context);
                       },
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.brandPrimary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

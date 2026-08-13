@@ -111,7 +111,7 @@ class _SubscriptionPackagesScreenState
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,

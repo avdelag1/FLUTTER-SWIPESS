@@ -25,7 +25,6 @@ class EscrowDashboardScreen extends ConsumerWidget {
     return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context, ref),
-        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('New deposit'),
@@ -125,7 +124,6 @@ class EscrowDashboardScreen extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -341,7 +339,7 @@ class _MetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: color.withAlpha(70)),
         boxShadow: [
@@ -424,7 +422,7 @@ class _DepositCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +430,6 @@ class _DepositCard extends StatelessWidget {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: _color.withAlpha(40),
                 child: Icon(_icon, color: _color, size: 18),
               ),
               const SizedBox(width: 12),
@@ -491,7 +488,6 @@ class _DepositCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onHeld,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999)),
@@ -510,7 +506,6 @@ class _DepositCard extends StatelessWidget {
                       onPressed: onRelease,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.transparent),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999)),
                       ),

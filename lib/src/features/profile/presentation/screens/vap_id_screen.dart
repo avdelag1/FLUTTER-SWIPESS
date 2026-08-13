@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -11,28 +9,29 @@ import 'package:flutter_swipes/src/features/documents/presentation/providers/doc
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_card_theme_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Capacitor PEARL / VAP ID — full-frame themed vault card.
-class VapIdScreen extends ConsumerWidget {
+class VapIdScreen extends ConsumerStatefulWidget {
   const VapIdScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VapIdScreen> createState() => _VapIdScreenState();
+}
+
+class _VapIdScreenState extends ConsumerState<VapIdScreen> {
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(vapIdProvider);
     final docs = ref.watch(documentsProvider);
     final userId = ref.watch(currentUserProvider)?.id ?? 'resident';
-    final themeIndex = ref.watch(vapCardThemeIndexProvider).value ?? 0;
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final theme = VapCardTheme.themes[themeIndex];
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0D),
+      color: Colors.black, // Pure black background
       child: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -52,66 +51,20 @@ class VapIdScreen extends ConsumerWidget {
           return Column(
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(10, top + 6, 10, 6),
+                padding: EdgeInsets.fromLTRB(16, top + 16, 16, 16),
                 child: Row(
                   children: [
-                    _PearlRoundBtn(
-                      icon: Icons.water_drop_outlined,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        ref.read(vapCardThemeIndexProvider.notifier).cycle();
-                      },
-                    ),
-                    const SizedBox(width: 8),
                     Expanded(
-                      child: Column(
-                        children: [
-                          Text(
-                            theme.name.toUpperCase(),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 2.6,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (var i = 0;
-                                  i < VapCardTheme.themes.length;
-                                  i++) ...[
-                                if (i > 0) const SizedBox(width: 5),
-                                GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    ref
-                                        .read(vapCardThemeIndexProvider.notifier)
-                                        .setIndex(i);
-                                  },
-                                  child: Container(
-                                    width: i == themeIndex ? 10 : 7,
-                                    height: i == themeIndex ? 10 : 7,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: VapCardTheme.themes[i].swatch,
-                                      border: Border.all(
-                                        color: i == themeIndex
-                                            ? Colors.white
-                                            : Colors.white38,
-                                        width: i == themeIndex ? 1.5 : 1,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ],
+                      child: Text(
+                        'STARK', // Just a label now
+                        textAlign: TextAlign.left,
+                        maxLines: 1,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.6,
+                        ),
                       ),
                     ),
                     _PearlRoundBtn(
@@ -134,18 +87,14 @@ class VapIdScreen extends ConsumerWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(0, 8, 0, bottom),
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    child: ThemedVapCard(
-                      key: ValueKey(themeIndex),
-                      theme: theme,
-                      data: data,
-                      idNumber: idNumber,
-                      validationUrl: validationUrl,
-                      docsAsync: docs,
-                      onPreview: (doc) => showDocumentPreviewDialog(context, doc),
-                    ),
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, bottom),
+                  child: ThemedVapCard(
+                    theme: VapCardTheme.themes.first,
+                    data: data,
+                    idNumber: idNumber,
+                    validationUrl: validationUrl,
+                    docsAsync: docs,
+                    onPreview: (doc) => showDocumentPreviewDialog(context, doc),
                   ),
                 ),
               ),
@@ -170,9 +119,10 @@ class VapIdScreen extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
+      backgroundColor: Colors.black, // Stark background
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        side: BorderSide(color: Colors.white, width: 1.5), // Stark border
       ),
       builder: (context) {
         return Padding(
@@ -187,8 +137,13 @@ class VapIdScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  t(ref, 'flutter.vapEdit', 'EDIT PEARL'),
-                  style: AppTheme.displayItalic.copyWith(fontSize: 20),
+                  t(ref, 'flutter.vapEdit', 'EDIT ID'),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 GlassTextField(
@@ -265,7 +220,7 @@ class _PearlRoundBtn extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.transparent,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Icon(icon, color: Colors.white, size: 18),
       ),

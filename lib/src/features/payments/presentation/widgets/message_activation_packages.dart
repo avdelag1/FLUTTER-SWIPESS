@@ -71,7 +71,7 @@ class MessageActivationPackages extends ConsumerWidget {
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.transparent),
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -206,7 +206,6 @@ Future<void> showMessageActivationPackages(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (context) {
       return DraggableScrollableSheet(
         initialChildSize: 0.88,
@@ -217,7 +216,7 @@ Future<void> showMessageActivationPackages(
             decoration: BoxDecoration(
               color: const Color(0xFF050505),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border.all(color: Colors.transparent),
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Column(
               children: [

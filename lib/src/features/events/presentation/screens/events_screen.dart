@@ -107,74 +107,74 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 left: 12,
                 right: 12,
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _TopIcon(
+                      icon: Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      onTap: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(AppPaths.clientDashboard);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: SizedBox(
-                        height: 40,
+                        height: 62,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           children: [
-                            for (final c in ref.watch(categoriesProvider))
+                            for (final c in ref.watch(eventCategoriesProvider))
                               Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: GestureDetector(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: _EventCategoryRing(
+                                  category: c,
+                                  active: _category == c.key,
                                   onTap: () {
                                     HapticFeedback.lightImpact();
                                     setState(() {
-                                      _category = c;
+                                      _category = c.key;
                                       _index = 0;
                                     });
                                     ref
                                         .read(selectedCategoryProvider.notifier)
-                                        .setCategory(c);
+                                        .setCategory(c.key);
                                     if (_pages.hasClients) {
                                       _pages.jumpToPage(0);
                                     }
                                   },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: _category == c
-                                          ? AppTheme.brandPrimary
-                                          : Colors.black.withAlpha(120),
-                                      borderRadius: BorderRadius.circular(999),
-                                      border: Border.all(
-                                        color: _category == c
-                                            ? AppTheme.brandPrimary
-                                            : Colors.white30,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      c.toUpperCase(),
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 10,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                  ),
                                 ),
                               ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: _EventCategoryRing(
+                                category: const EventFeedCategory(
+                                  key: 'likes',
+                                  label: 'My Likes',
+                                  icon: Icons.favorite_rounded,
+                                  image: 'assets/filters/events.jpg',
+                                  color: Color(0xFFEC4899),
+                                ),
+                                active: false,
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  context.push(AppPaths.exploreEventsLikes);
+                                },
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _TopIcon(
-                      icon: Icons.favorite_rounded,
-                      color: const Color(0xFFF43F5E),
-                      onTap: () {
-                        context.push(AppPaths.exploreEventsLikes);
-                      },
                     ),
                   ],
                 ),
               ),
               // Progress ticks like stories
               Positioned(
-                top: MediaQuery.paddingOf(context).top + 52,
+                top: MediaQuery.paddingOf(context).top + 78,
                 left: 16,
                 right: 16,
                 child: Row(
@@ -218,14 +218,114 @@ class _TopIcon extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color: Colors.black.withAlpha(120),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white30),
+          color: Colors.black.withAlpha(150),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withAlpha(40)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(80),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        child: Icon(icon, color: color, size: 18),
+        child: Icon(icon, color: color, size: 20),
+      ),
+    );
+  }
+}
+
+/// Cap `EventCategoryCircle` — gradient ring when active + photo + label.
+class _EventCategoryRing extends StatelessWidget {
+  const _EventCategoryRing({
+    required this.category,
+    required this.active,
+    required this.onTap,
+  });
+
+  final EventFeedCategory category;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 52,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              padding: const EdgeInsets.all(1.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: active
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                      )
+                    : null,
+                color: active ? null : Colors.white.withAlpha(40),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFEB4898).withAlpha(70),
+                          blurRadius: 12,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF0A0A0B), width: 1.5),
+                  color: const Color(0xFF1A1A1B),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: category.image.startsWith('assets/')
+                    ? Image.asset(
+                        category.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Icon(
+                          category.icon,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                      )
+                    : Image.network(
+                        category.image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Icon(
+                          category.icon,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              category.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: active ? Colors.white : Colors.white70,
+                fontWeight: FontWeight.w800,
+                fontSize: 9,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

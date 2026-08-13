@@ -18,7 +18,6 @@ class FilterBottomSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => const FilterBottomSheet(),
     );
   }
@@ -173,7 +172,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final bottom = MediaQuery.paddingOf(context).bottom;
     if (widget.asPage) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF7F7F8),
         body: _filterBody(context, bottom, null),
       );
     }
@@ -455,7 +453,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             onPressed: _reset,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF0A0A0D),
-                              side: const BorderSide(color: Colors.black26),
                               padding:
                                   const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -502,7 +499,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
                                 foregroundColor: Colors.white,
                                 padding:

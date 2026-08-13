@@ -1,12 +1,7 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `native/HolographicIDCard` — profile preview of the PEARL vault.
-/// Colors follow [theme] (the same theme picked on the nav-bar VAP ID card),
-/// and the gloss layer only reacts to drag/tilt — no auto-looping shimmer.
 class HolographicIDCard extends StatefulWidget {
-  final VapCardTheme theme;
   final String name;
   final String idNumber;
   final String? avatarUrl;
@@ -17,7 +12,6 @@ class HolographicIDCard extends StatefulWidget {
 
   const HolographicIDCard({
     super.key,
-    required this.theme,
     required this.name,
     required this.idNumber,
     this.avatarUrl,
@@ -31,8 +25,24 @@ class HolographicIDCard extends StatefulWidget {
   State<HolographicIDCard> createState() => _HolographicIDCardState();
 }
 
-class _HolographicIDCardState extends State<HolographicIDCard> {
+class _HolographicIDCardState extends State<HolographicIDCard> with SingleTickerProviderStateMixin {
   Offset _tilt = Offset.zero;
+  late AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
 
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
@@ -42,21 +52,14 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
   }
 
   void _onPanEnd(DragEndDetails details) {
-    setState(() => _tilt = Offset.zero);
+    setState(() {
+      _tilt = Offset.zero;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = widget.theme;
-    final initials = widget.name
-        .split(' ')
-        .map((n) => n.isNotEmpty ? n[0] : '')
-        .take(2)
-        .join('')
-        .toUpperCase();
-    // Shimmer only appears while tilted — no auto-repeat, matches Cap's
-    // hover/drag-driven gloss instead of a constantly spinning brightness.
-    final tiltStrength = (_tilt.dx.abs() + _tilt.dy.abs()).clamp(0.0, 0.4);
+    final initials = widget.name.split(' ').map((n) => n.isNotEmpty ? n[0] : '').take(2).join('').toUpperCase();
 
     return GestureDetector(
       onPanUpdate: _onPanUpdate,
@@ -69,7 +72,7 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
           return Transform(
             alignment: FractionalOffset.center,
             transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
+              ..setEntry(3, 2, 0.001) // perspective
               ..rotateX(-tilt.dy)
               ..rotateY(tilt.dx),
             child: child,
@@ -78,16 +81,12 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: t.gradient,
-            ),
+            color: const Color(0xFF0A0F1A),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: t.tagBorder, width: 1.2),
+            border: Border.all(color: Colors.transparent, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(t.isDark ? 90 : 40),
+                color: const Color(0xFFFF4D00).withAlpha(25),
                 blurRadius: 40,
                 offset: const Offset(0, 20),
               ),
@@ -97,45 +96,52 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
             borderRadius: BorderRadius.circular(40),
             child: Stack(
               children: [
+                // Micro-circuit background pattern (simulated with GridPaper)
                 Positioned.fill(
                   child: Opacity(
                     opacity: 0.03,
                     child: GridPaper(
-                      color: t.textPrimary,
+                      color: Colors.white,
                       interval: 16,
                       divisions: 1,
                       subdivisions: 1,
                     ),
                   ),
                 ),
-                if (tiltStrength > 0.01)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Opacity(
-                        opacity: (tiltStrength / 0.4).clamp(0.0, 1.0),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment(-1 + _tilt.dx * 4, -1),
-                              end: Alignment(1 + _tilt.dx * 4, 1),
-                              colors: [
-                                Colors.transparent,
-                                (t.isDark ? Colors.white : Colors.black)
-                                    .withAlpha(30),
-                                Colors.transparent,
-                              ],
-                              stops: const [0.35, 0.5, 0.65],
-                            ),
+
+                // Shimmer Overlay
+                Positioned.fill(
+                  child: AnimatedBuilder(
+                    animation: _shimmerController,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            stops: const [0.0, 0.45, 0.5, 0.55, 1.0],
+                            colors: [
+                              Colors.transparent,
+                              Colors.white.withAlpha(12),
+                              Colors.white.withAlpha(50),
+                              Colors.white.withAlpha(12),
+                              Colors.transparent,
+                            ],
+                            transform: GradientRotation(_shimmerController.value * 2 * pi),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
+                ),
+
+                // Card Content
                 Padding(
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,13 +151,12 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.public,
-                                      size: 12, color: t.accent),
+                                  Icon(Icons.public, size: 12, color: const Color(0xFFFF4D00).withAlpha(150)),
                                   const SizedBox(width: 8),
                                   Text(
                                     'SWIPESS GLOBAL REGISTRY',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: t.accent,
+                                    style: TextStyle(
+                                      color: const Color(0xFFFF4D00).withAlpha(150),
                                       fontSize: 8,
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 4,
@@ -160,10 +165,10 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
                                 ],
                               ),
                               const SizedBox(height: 4),
-                              Text(
+                              const Text(
                                 'RESIDENT ID',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: t.textPrimary,
+                                style: TextStyle(
+                                  color: Colors.white,
                                   fontSize: 24,
                                   fontWeight: FontWeight.w900,
                                   fontStyle: FontStyle.italic,
@@ -176,133 +181,112 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: t.tagBg,
+                              color: const Color(0xFFFF4D00).withAlpha(25),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: t.tagBorder),
+                              border: Border.all(color: const Color(0xFFFF4D00).withAlpha(50)),
                             ),
-                            child: Center(
-                              child: Icon(Icons.verified_user_rounded,
-                                  color: t.badge, size: 20),
+                            child: const Center(
+                              child: Icon(Icons.verified_user_rounded, color: Color(0xFFFF4D00), size: 20),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
+
+                      // Identity Row
                       Row(
                         children: [
+                          // Avatar
                           Container(
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: t.tagBg,
-                              border: Border.all(color: t.tagBorder, width: 2),
+                              color: const Color(0xFFFF4D00).withAlpha(50),
+                              border: Border.all(color: const Color(0xFFFF4D00).withAlpha(75), width: 2),
                               image: widget.avatarUrl != null
-                                  ? DecorationImage(
-                                      image: NetworkImage(widget.avatarUrl!),
-                                      fit: BoxFit.cover,
-                                    )
+                                  ? DecorationImage(image: NetworkImage(widget.avatarUrl!), fit: BoxFit.cover)
                                   : null,
                             ),
                             child: widget.avatarUrl == null
                                 ? Center(
                                     child: Text(
                                       initials,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: t.accent,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 18,
-                                      ),
+                                      style: const TextStyle(color: Color(0xFFFF4D00), fontWeight: FontWeight.w900, fontSize: 18),
                                     ),
                                   )
                                 : null,
                           ),
                           const SizedBox(width: 12),
+                          // Name & ID
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   widget.name.toUpperCase(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: t.textPrimary,
+                                  style: const TextStyle(
+                                    color: Colors.white,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w900,
+                                    letterSpacing: 0,
                                   ),
                                 ),
                                 Text(
                                   widget.idNumber,
-                                  style: GoogleFonts.robotoMono(
-                                    color: t.accent,
+                                  style: TextStyle(
+                                    color: const Color(0xFFFF4D00).withAlpha(150),
                                     fontSize: 9,
+                                    fontFamily: 'monospace',
                                     letterSpacing: 2,
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          // Badges
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF22C55E).withAlpha(30),
-                              border: Border.all(
-                                  color: const Color(0xFF22C55E)
-                                      .withAlpha(60)),
+                              color: Colors.transparent,
+                              border: Border.all(color: Colors.transparent),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(
-                              'ACTIVE',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF22C55E),
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
-                            ),
+                            child: const Text('ACTIVE', style: TextStyle(color: Colors.green, fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 1)),
                           ),
                           const SizedBox(width: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: t.tagBg,
-                              border: Border.all(color: t.tagBorder),
+                              color: const Color(0xFFFF4D00).withAlpha(25),
+                              border: Border.all(color: const Color(0xFFFF4D00).withAlpha(50)),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(
-                              'VERIFIED',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: t.accent,
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
-                            ),
+                            child: const Text('VERIFIED', style: TextStyle(color: Color(0xFFFF4D00), fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 1)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
+
+                      // Details Row
                       Row(
                         children: [
-                          _buildDetail(t, Icons.work_rounded, widget.occupation),
+                          _buildDetail(Icons.work_rounded, widget.occupation),
                           const SizedBox(width: 16),
-                          _buildDetail(
-                              t, Icons.location_on_rounded, widget.location),
+                          _buildDetail(Icons.location_on_rounded, widget.location),
                           const SizedBox(width: 16),
-                          _buildDetail(
-                              t, Icons.access_time_rounded, widget.years),
+                          _buildDetail(Icons.access_time_rounded, widget.years),
                         ],
                       ),
                       const SizedBox(height: 16),
+
+                      // Bio
                       Text(
                         widget.bio,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: t.textSecondary,
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(127),
                           fontSize: 10,
                           height: 1.5,
                           fontStyle: FontStyle.italic,
@@ -319,17 +303,15 @@ class _HolographicIDCardState extends State<HolographicIDCard> {
     );
   }
 
-  Widget _buildDetail(VapCardTheme t, IconData icon, String text) {
-    if (text.isEmpty) return const SizedBox.shrink();
+  Widget _buildDetail(IconData icon, String text) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: t.accent),
+        Icon(icon, size: 12, color: const Color(0xFFFF4D00).withAlpha(150)),
         const SizedBox(width: 4),
         Text(
           text,
-          style: GoogleFonts.plusJakartaSans(
-            color: t.textSecondary,
+          style: const TextStyle(
+            color: Colors.grey,
             fontSize: 10,
             fontWeight: FontWeight.w700,
           ),

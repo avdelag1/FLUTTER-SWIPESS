@@ -132,7 +132,6 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
         : 'OWNER CAMERA';
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
@@ -210,7 +209,6 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                           label: const Text('Gallery'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white38),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
@@ -222,7 +220,6 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                           icon: const Icon(Icons.camera_alt_rounded),
                           label: const Text('Capture'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppTheme.brandPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
@@ -235,7 +232,6 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                     child: FilledButton(
                       onPressed: _shot == null || _busy ? null : _upload,
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFEB4898),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: Text(

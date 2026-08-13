@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/data/repositories/event_repository.dart';
@@ -74,9 +75,82 @@ final videoEventsProvider = Provider<List<Event>>((ref) {
       .toList();
 });
 
-final categoriesProvider = Provider<List<String>>((ref) {
-  return const ['All', 'Nightlife', 'Sports', 'Music', 'Art', 'Food'];
+final eventCategoriesProvider = Provider<List<EventFeedCategory>>((ref) {
+  return eventFeedCategories;
 });
+
+/// Cap `CATEGORIES` chip model for EventosFeed rings.
+class EventFeedCategory {
+  const EventFeedCategory({
+    required this.key,
+    required this.label,
+    required this.icon,
+    required this.image,
+    required this.color,
+  });
+
+  final String key;
+  final String label;
+  final IconData icon;
+  final String image;
+  final Color color;
+}
+
+/// Cap `CATEGORIES` from `eventsData.ts` — photo rings + labels.
+const eventFeedCategories = <EventFeedCategory>[
+  EventFeedCategory(
+    key: 'All',
+    label: 'All',
+    icon: Icons.auto_awesome_rounded,
+    image: 'assets/filters/events.jpg',
+    color: Color(0xFFF97316),
+  ),
+  EventFeedCategory(
+    key: 'Nightlife',
+    label: 'Beach',
+    icon: Icons.beach_access_rounded,
+    image:
+        'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=200&q=80',
+    color: Color(0xFF0EA5E9),
+  ),
+  EventFeedCategory(
+    key: 'Art',
+    label: 'Jungle',
+    icon: Icons.park_rounded,
+    image: 'assets/filters/property_jungle.jpg',
+    color: Color(0xFF22C55E),
+  ),
+  EventFeedCategory(
+    key: 'Music',
+    label: 'Music',
+    icon: Icons.music_note_rounded,
+    image:
+        'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=200&q=80',
+    color: Color(0xFF8B5CF6),
+  ),
+  EventFeedCategory(
+    key: 'Food',
+    label: 'Restaurants',
+    icon: Icons.restaurant_rounded,
+    image:
+        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=200&q=80',
+    color: Color(0xFFEF4444),
+  ),
+  EventFeedCategory(
+    key: 'Sports',
+    label: 'Deals',
+    icon: Icons.local_offer_rounded,
+    image:
+        'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=200&q=80',
+    color: Color(0xFFFACC15),
+  ),
+];
+
+/// Legacy string list used by older call sites.
+final categoriesProvider = Provider<List<String>>((ref) {
+  return eventFeedCategories.map((c) => c.key).toList(growable: false);
+});
+
 
 final eventByIdProvider = FutureProvider.family<Event?, String>((ref, id) {
   return ref.read(eventRepositoryProvider).fetchById(id);

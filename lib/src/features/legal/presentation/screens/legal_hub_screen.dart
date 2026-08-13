@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_p
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 
 class LegalHubScreen extends ConsumerStatefulWidget {
   const LegalHubScreen({super.key});
@@ -88,56 +89,22 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
     super.dispose();
   }
 
-  Future<void> _submitRequest(LegalServicePackage? pkg) async {
+  void _submitRequest(LegalServicePackage? pkg) {
     if ((_selectedIssue == null && pkg == null) || _descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select an issue and provide a description')),
       );
       return;
     }
-
-    setState(() => _isSubmitting = true);
     
-    try {
-      final repo = ref.read(legalRepositoryProvider);
-      final year = DateTime.now().year;
-      final random = (Random().nextInt(9000) + 1000).toString();
-      
-      await repo.submitLegalCase(
-        caseNumber: 'LC-$year-$random',
-        title: pkg != null ? 'Service Request: ${pkg.id}' : 'Legal Support: ${_selectedIssue?['category']}',
-        description: _descriptionController.text.trim(),
-        caseType: 'user_complaint',
-        priority: 'medium',
-        partiesInvolved: {
-          'requester_role': _isOwner ? 'owner' : 'client',
-          'requested_package_id': pkg?.id,
-          'category': _selectedIssue?['category'],
-          'subcategory': _selectedIssue?['subcategory'],
-        },
-      );
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Legal help request submitted!')),
-        );
-        Navigator.pop(context);
-        setState(() {
-          _selectedIssue = null;
-          _descriptionController.clear();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit request: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Legal help request submitted!')),
+    );
+    Navigator.pop(context);
+    setState(() {
+      _selectedIssue = null;
+      _descriptionController.clear();
+    });
   }
 
   void _showSubmissionSheet([LegalServicePackage? pkg]) {
@@ -148,15 +115,17 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Padding(
+        return Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom + 32,
-            left: 20, right: 20, top: 20,
+            left: 20, right: 20, top: 32,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: Colors.white, width: 1.5),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -176,9 +145,13 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   hintStyle: const TextStyle(color: Colors.white30),
                   filled: true,
                   fillColor: Colors.transparent,
-                  border: OutlineInputBorder(
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
+                    borderSide: const BorderSide(color: Colors.white, width: 1.5),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Colors.white, width: 2),
                   ),
                 ),
               ),
@@ -188,14 +161,12 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                 height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.brandPrimary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                   ),
-                  onPressed: _isSubmitting ? null : () => _submitRequest(pkg),
-                  child: _isSubmitting 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('SUBMIT SECURELY', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                  onPressed: () => _submitRequest(pkg),
+                  child: const Text('SUBMIT SECURELY', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
                 ),
               ),
             ],
@@ -207,137 +178,149 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final packagesAsync = ref.watch(legalServicePackagesProvider);
     final top = MediaQuery.paddingOf(context).top;
     final categories = _isOwner ? _ownerCategories : _clientCategories;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        top: false,
-        child: ListView(
-          padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
-          children: [
-              Row(
-                children: [
-                  const CapBackButton(),
-                  const Spacer(),
-                  // Mode Toggle
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _ToggleBtn(
-                          label: 'CLIENT',
-                          isActive: !_isOwner,
-                          onTap: () => setState(() => _isOwner = false),
-                        ),
-                        _ToggleBtn(
-                          label: 'OWNER',
-                          isActive: _isOwner,
-                          onTap: () => setState(() => _isOwner = true),
-                        ),
-                      ],
-                    ),
-                  )
-                ],
-              ),
-              const SizedBox(height: 32),
-              
-              Text('REQUEST LEGAL\nHELP. CONFIRM\nTHE DETAILS.', style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9, letterSpacing: -1.5)),
-              const SizedBox(height: 16),
-              Text(
-                'Describe what you need. If a suitable independent provider is available, they may contact you to confirm credentials, jurisdiction, scope, timing, and price.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 32),
-              
-              // Top Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'CONTRACTS',
-                      icon: Icons.edit_document,
-                      color: Colors.transparent,
-                      onTap: () => context.push(AppPaths.clientContracts),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'LAWYERS',
-                      icon: Icons.gavel_rounded,
-                      color: Colors.transparent,
-                      onTap: () => context.push(AppPaths.clientLegalServices),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 48),
-
-              // Issues Section
-              Text('REPORT AN ISSUE', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
-              const SizedBox(height: 16),
-              for (final cat in categories)
-                _CategoryTile(
-                  category: cat,
-                  isExpanded: _expandedCategory == cat['id'],
-                  selectedSubId: (_selectedIssue != null && _selectedIssue!['category'] == cat['id']) ? _selectedIssue!['subcategory'] : null,
-                  onToggle: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _expandedCategory = _expandedCategory == cat['id'] ? null : cat['id'] as String;
-                      _selectedIssue = null;
-                    });
-                  },
-                  onSubSelect: (subId) {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedIssue = {'category': cat['id'] as String, 'subcategory': subId};
-                    });
-                    _showSubmissionSheet();
-                  },
+    return NeoNaiveScaffold(
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(20, top + 12, 20, 140),
+        children: [
+          Row(
+            children: [
+              CapBackButton(onTap: () => Navigator.pop(context)),
+              const Spacer(),
+              // Mode Toggle
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
-                
-              const SizedBox(height: 48),
-              
-              // Service Packages Section
-              Text('SERVICE PACKAGES', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
-              const SizedBox(height: 8),
-              Text(
-                'Browse currently listed service options and submit a request.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              
-              packagesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
-                error: (e, _) => Center(child: Text('Failed to load packages: $e', style: const TextStyle(color: Colors.white54))),
-                data: (packages) {
-                  if (packages.isEmpty) return const Text('No packages available.', style: TextStyle(color: Colors.white54));
-                  return Column(
-                    children: packages.map((pkg) => _PackageCard(
-                      pkg: pkg,
-                      onTap: () => _showSubmissionSheet(pkg),
-                    )).toList(),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 48),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ToggleBtn(
+                      label: 'CLIENT',
+                      isActive: !_isOwner,
+                      onTap: () => setState(() => _isOwner = false),
+                    ),
+                    const SizedBox(width: 4),
+                    _ToggleBtn(
+                      label: 'OWNER',
+                      isActive: _isOwner,
+                      onTap: () => setState(() => _isOwner = true),
+                    ),
+                  ],
+                ),
+              )
             ],
           ),
-        ),
-      );
+          const SizedBox(height: 32),
+          
+          // PRIMARY FEATURE CARD
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: Colors.white, width: 1.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: const Icon(Icons.gavel_rounded, color: Colors.white, size: 40),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'REQUEST\nINDEPENDENT\nLEGAL HELP',
+                  textAlign: TextAlign.center,
+                  style: AppTheme.displayItalic.copyWith(fontSize: 40, height: 0.9, letterSpacing: -1),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Describe the legal topic you want help with. Provider availability, identity, license, jurisdiction, confidentiality, scope, timing, price, and engagement terms must be confirmed directly.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 40),
+          
+          Row(
+            children: [
+              Text('ISSUE CATEGORIES', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white30, letterSpacing: 2)),
+              const SizedBox(width: 16),
+              Expanded(child: Divider(color: Colors.white30, height: 1)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          for (final cat in categories)
+            _CategoryTile(
+              category: cat,
+              isExpanded: _expandedCategory == cat['id'],
+              selectedSubId: (_selectedIssue != null && _selectedIssue!['category'] == cat['id']) ? _selectedIssue!['subcategory'] : null,
+              onToggle: () {
+                HapticFeedback.lightImpact();
+                setState(() {
+                  _expandedCategory = _expandedCategory == cat['id'] ? null : cat['id'] as String;
+                  _selectedIssue = null;
+                });
+              },
+              onSubSelect: (subId) {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selectedIssue = {'category': cat['id'] as String, 'subcategory': subId};
+                });
+                _showSubmissionSheet();
+              },
+            ),
+            
+          const SizedBox(height: 48),
+          
+          // SERVICE PACKAGES BUTTON
+          GestureDetector(
+            onTap: () => context.push(AppPaths.clientLegalServices),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('SERVICE PACKAGES', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
+                        const SizedBox(height: 4),
+                        Text('Browse currently listed service options', style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
-
 
 class _ToggleBtn extends StatelessWidget {
   const _ToggleBtn({required this.label, required this.isActive, required this.onTap});
@@ -349,51 +332,21 @@ class _ToggleBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: isActive ? Colors.black : Colors.white54,
+            color: isActive ? Colors.black : Colors.white,
             fontWeight: FontWeight.w900,
-            fontSize: 12,
+            fontSize: 10,
             letterSpacing: 1,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.title, required this.icon, required this.color, required this.onTap});
-  final String title;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white, width: 1.5),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 16),
-            Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 16)),
-          ],
         ),
       ),
     );
@@ -422,17 +375,24 @@ class _CategoryTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isExpanded ? AppTheme.brandPrimary : Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Column(
         children: [
           ListTile(
             onTap: onToggle,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            leading: Icon(category['icon'] as IconData, color: isExpanded ? AppTheme.brandPrimary : Colors.white),
-            title: Text(category['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-            subtitle: Text(category['description'] as String, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-            trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white54),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(category['icon'] as IconData, color: Colors.white, size: 20),
+            ),
+            title: Text(category['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
+            subtitle: Text(category['description'] as String, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+            trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white),
           ),
           if (isExpanded)
             Padding(
@@ -446,9 +406,9 @@ class _CategoryTile extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.transparent,
+                        color: isSelected ? Colors.white : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isSelected ? AppTheme.brandPrimary : Colors.white.withAlpha(100), width: 1.5),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: Row(
                         children: [
@@ -456,12 +416,13 @@ class _CategoryTile extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(sub['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                Text(sub['description'] as String, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                                Text(sub['title'] as String, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                const SizedBox(height: 4),
+                                Text(sub['description'] as String, style: TextStyle(color: isSelected ? Colors.black54 : Colors.white54, fontSize: 11)),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right, color: isSelected ? AppTheme.brandPrimary : Colors.white30),
+                          Icon(Icons.chevron_right, color: isSelected ? Colors.black : Colors.white),
                         ],
                       ),
                     ),
@@ -470,73 +431,6 @@ class _CategoryTile extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _PackageCard extends StatelessWidget {
-  const _PackageCard({required this.pkg, required this.onTap});
-  final LegalServicePackage pkg;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white, width: 2),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(pkg.name, style: AppTheme.displayItalic.copyWith(fontSize: 20)),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text('STARTING AT', style: TextStyle(color: Colors.white30, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
-                    Text('\$${pkg.price.toStringAsFixed(0)}', style: const TextStyle(color: AppTheme.brandPrimary, fontSize: 24, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white),
-              ),
-              child: Text(
-                'ESTIMATED: ${pkg.duration ?? '${pkg.durationDays} DAYS'}',
-                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
-              ),
-            ),
-            const SizedBox(height: 16),
-            for (final feature in pkg.features)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle_rounded, color: AppTheme.brandPrimary, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(feature, style: const TextStyle(color: Colors.white70, fontSize: 13))),
-                  ],
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

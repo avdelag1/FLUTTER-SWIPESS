@@ -89,7 +89,6 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
     final isLast = _index == _slides.length - 1;
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -133,16 +132,12 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                             onPressed: _finish,
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
-                              backgroundColor: Colors.black.withAlpha(120),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 10,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
-                                side: BorderSide(
-                                  color: Colors.transparent,
-                                ),
                               ),
                             ),
                             child: Text(
@@ -200,7 +195,6 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                         child: ElevatedButton(
                           onPressed: _next,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -274,7 +268,7 @@ class _VapPreviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(120),

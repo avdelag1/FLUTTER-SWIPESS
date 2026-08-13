@@ -85,10 +85,11 @@ class _Chip extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(12),
+          color: active ? AppTheme.brandPrimary : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(28),
+            color: active ? AppTheme.brandPrimary : Colors.white,
+            width: 1.5,
           ),
         ),
         child: Text(

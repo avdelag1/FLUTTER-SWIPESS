@@ -1,10 +1,11 @@
-import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:video_player/video_player.dart';
 
 bool isQuickFilterVideoUrl(String url) {
@@ -17,10 +18,10 @@ bool isQuickFilterVideoUrl(String url) {
       lower.contains('/videos/');
 }
 
-/// Global cap so the bento grid cannot spawn N simultaneous HTML5 videos
-/// (the main FPS killer on Flutter web).
+/// Global cap so the bento grid cannot spawn N simultaneous HTML5 videos.
 class _VideoBudget {
-  static const maxActive = 2;
+  /// Web: keep stills on regular tiles — EventsTeaser owns the one video slot.
+  static int get maxActive => kIsWeb ? 0 : 2;
   static int _active = 0;
 
   static bool tryAcquire() {
@@ -34,27 +35,26 @@ class _VideoBudget {
   }
 }
 
-/// Cap `QuickFilterImage` — multi-media carousel with story segments + mute.
-///
-/// Rotates every ~6.5s (user Cap-parity ask). Supports network photos, asset
-/// photos, and looping videos with a shared deck mute control.
+/// Cap `QuickFilterImage` — unique shuffled pool + staggered round-robin rotate.
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
     super.key,
     required this.sources,
-    this.animationDelay = Duration.zero,
+    this.rotateSlot = 0,
+    this.slotCount = 1,
     this.showMute = true,
-    this.rotateEvery = const Duration(milliseconds: 6500),
     this.enableVideo = true,
   });
 
   final List<String> sources;
-  final Duration animationDelay;
-  final bool showMute;
-  final Duration rotateEvery;
 
-  /// When false, video URLs are skipped (still photos only) — use for
-  /// off-screen / lower bento tiles to keep the dashboard snappy.
+  /// Index in the round-robin (0 = first card to advance).
+  final int rotateSlot;
+
+  /// Total participating quick-filter slots on the dashboard.
+  final int slotCount;
+
+  final bool showMute;
   final bool enableVideo;
 
   @override
@@ -63,44 +63,49 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
 
 class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   int _index = 0;
-  Timer? _timer;
+  late List<String> _pool;
   VideoPlayerController? _video;
   String? _boundVideoUrl;
   double _dragDx = 0;
   bool _holdsBudgetSlot = false;
 
   List<String> get _sources {
-    if (widget.sources.isEmpty) return const <String>[];
-    if (widget.enableVideo) return widget.sources;
-    final stills = widget.sources
-        .where((u) => !isQuickFilterVideoUrl(u))
-        .toList(growable: false);
-    return stills.isEmpty ? widget.sources : stills;
+    if (_pool.isEmpty) return const <String>[];
+    if (widget.enableVideo) return _pool;
+    final stills =
+        _pool.where((u) => !isQuickFilterVideoUrl(u)).toList(growable: false);
+    return stills.isEmpty ? _pool : stills;
   }
 
   @override
   void initState() {
     super.initState();
-    _scheduleRotate();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncVideo());
+    _reshuffle(widget.sources);
   }
 
   @override
   void didUpdateWidget(covariant QuickFilterMedia oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.sources != widget.sources ||
+    if (!listEquals(oldWidget.sources, widget.sources) ||
         oldWidget.enableVideo != widget.enableVideo) {
-      _index = 0;
-      _scheduleRotate();
+      _reshuffle(widget.sources);
       _syncVideo();
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _disposeVideo();
     super.dispose();
+  }
+
+  void _reshuffle(List<String> sources) {
+    _pool = List<String>.from(sources);
+    if (_pool.length > 1) {
+      _pool.shuffle(math.Random(DateTime.now().microsecondsSinceEpoch ^
+          widget.rotateSlot * 7919));
+    }
+    _index = 0;
   }
 
   void _disposeVideo() {
@@ -111,16 +116,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     _video?.dispose();
     _video = null;
     _boundVideoUrl = null;
-  }
-
-  void _scheduleRotate() {
-    _timer?.cancel();
-    if (_sources.length <= 1) return;
-    final first = widget.rotateEvery + widget.animationDelay;
-    _timer = Timer(first, () {
-      _advance(1);
-      _timer = Timer.periodic(widget.rotateEvery, (_) => _advance(1));
-    });
   }
 
   void _advance(int delta) {
@@ -146,8 +141,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       return;
     }
 
-    // Skip decode when the concurrent video budget is exhausted (common on
-    // Flutter web where each VideoPlayer is an expensive HTML5 element).
     if (!_holdsBudgetSlot && !_VideoBudget.tryAcquire()) {
       _disposeVideo();
       if (mounted) setState(() {});
@@ -201,7 +194,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
           ),
         );
       }
-      // Prefer a cheap placeholder over blocking on video init.
       return const ColoredBox(color: Color(0xFF16161C));
     }
     if (url.startsWith('assets/')) {
@@ -215,7 +207,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     }
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final logicalW = MediaQuery.sizeOf(context).width;
-    // Bento tiles are ~half width; decode closer to on-screen pixels.
     final cacheW = (logicalW * dpr * 0.55).round().clamp(320, 900);
     return Image.network(
       url,
@@ -239,6 +230,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     final soundOn = ref.watch(deckSoundOnProvider);
     ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
 
+    // Round-robin: only this card advances when the global tick lands on its slot.
+    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      final slots = widget.slotCount.clamp(1, 64);
+      if (next % slots == widget.rotateSlot % slots) {
+        _advance(1);
+      }
+    });
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
@@ -246,7 +245,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
         if (_dragDx.abs() > 20) {
           HapticFeedback.selectionClick();
           _advance(_dragDx < 0 ? 1 : -1);
-          _scheduleRotate();
         }
         _dragDx = 0;
       },
@@ -299,7 +297,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(120),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Icon(
                     soundOn

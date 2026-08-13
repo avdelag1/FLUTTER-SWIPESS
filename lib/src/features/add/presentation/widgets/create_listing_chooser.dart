@@ -11,7 +11,6 @@ Future<void> showCreateListingChooser(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (context) => const _CreateListingChooser(),
   );
 }
@@ -239,7 +238,7 @@ class _ModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF16161C),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Row(
           children: [
@@ -335,7 +334,7 @@ class _MagicCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4DABF7).withAlpha(60),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -401,7 +400,7 @@ class _ManualTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF16161C),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: Row(
                 children: [
@@ -482,7 +481,7 @@ class _Close extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
       ),

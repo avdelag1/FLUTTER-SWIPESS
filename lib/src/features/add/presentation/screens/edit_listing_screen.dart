@@ -69,7 +69,6 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     final state = ref.watch(editListingProvider);
     if (state == null) {
       return const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
@@ -77,7 +76,6 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
@@ -93,7 +91,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,

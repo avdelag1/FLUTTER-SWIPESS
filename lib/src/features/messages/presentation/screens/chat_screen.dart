@@ -161,7 +161,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       body: Column(
         children: [
           Padding(
@@ -189,7 +188,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ),
                             child: CircleAvatar(
                               radius: 20,
-                              backgroundColor: const Color(0xFF121212),
                               backgroundImage:
                                   widget.conversation.avatarUrl != null
                                       ? NetworkImage(
@@ -308,11 +306,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: BorderSide(color: Colors.white, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: BorderSide(color: Colors.white, width: 1),
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(999)),
@@ -465,7 +463,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xE6121214),
                         borderRadius: BorderRadius.circular(32),
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: Wrap(
                         spacing: 4,
@@ -697,7 +695,7 @@ class _ThreadEmpty extends StatelessWidget {
                     const Color(0x337C3AED),
                   ],
                 ),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: Icon(icon, color: Colors.white, size: 36),
             ),

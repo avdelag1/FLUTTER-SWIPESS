@@ -1,0 +1,46 @@
+diff --git a/lib/src/features/profile/presentation/screens/settings_screen.dart b/lib/src/features/profile/presentation/screens/settings_screen.dart
+index 0372623..7602463 100644
+--- a/lib/src/features/profile/presentation/screens/settings_screen.dart
++++ b/lib/src/features/profile/presentation/screens/settings_screen.dart
+@@ -21,7 +21,6 @@ class SettingsScreen extends StatelessWidget {
+   @override
+   Widget build(BuildContext context) {
+     return Scaffold(
+-      backgroundColor: const Color(0xFF0A0A0D),
+       body: AmbientPageBackground(
+         fill: true,
+         child: SafeArea(
+@@ -190,7 +189,6 @@ class SettingsScreen extends StatelessWidget {
+               onPressed: () => _resetPassword(context),
+               style: OutlinedButton.styleFrom(
+                 foregroundColor: Colors.white70,
+-                side: BorderSide(color: Colors.transparent),
+                 padding: const EdgeInsets.symmetric(vertical: 16),
+                 shape: RoundedRectangleBorder(
+                   borderRadius: BorderRadius.circular(16),
+@@ -243,7 +241,7 @@ class SettingsScreen extends StatelessWidget {
+                       ),
+                     ),
+                   ),
+-                  Divider(height: 1, color: Colors.white.withAlpha(20)),
++                  Divider(height: 1, color: Colors.transparent),
+                   SizedBox(
+                     width: double.infinity,
+                     child: TextButton(
+@@ -301,7 +299,6 @@ class SettingsScreen extends StatelessWidget {
+     final ok = await showDialog<bool>(
+       context: context,
+       builder: (context) => AlertDialog(
+-        backgroundColor: const Color(0xFF16161C),
+         title: const Text('Delete account?', style: TextStyle(color: Colors.white)),
+         content: const Text(
+           'This signs you out. Full deletion needs the account-delete Edge Function — wire that when the endpoint is ready.',
+@@ -435,7 +432,7 @@ class _RoundBack extends StatelessWidget {
+         decoration: BoxDecoration(
+           color: Colors.transparent,
+           shape: BoxShape.circle,
+-          border: Border.all(color: Colors.transparent),
++          border: Border.all(color: Colors.white, width: 1.5),
+         ),
+         child: const Icon(Icons.arrow_back_ios_new_rounded,
+             color: Colors.white, size: 18),

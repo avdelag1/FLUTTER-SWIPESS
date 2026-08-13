@@ -70,11 +70,16 @@ class DashboardShell extends ConsumerWidget {
     final hideChrome = currentTab == NavTab.idCard;
     final isLight = ref.watch(isLightThemeProvider);
     final chromeVisible = ref.watch(chromeVisibilityProvider);
-    final syncChrome = currentTab == NavTab.dashboard;
-    final showChrome = !syncChrome || chromeVisible;
+    final showChrome = chromeVisible;
     final canvas = AppTheme.canvasFor(isLight: isLight);
-    final dockFill = isLight ? Colors.white : Colors.black;
-    final dockBorder = isLight ? Colors.black : Colors.white;
+    // Cap `getBottomNavChrome` — neo-naïve glass + hard ink ring.
+    final dockFill = isLight
+        ? const Color(0xF5FFFFFF)
+        : const Color(0xF5101016);
+    final dockBorder =
+        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(230);
+    final dockHardShadow =
+        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(90);
 
     return Scaffold(
       backgroundColor: canvas,
@@ -105,7 +110,18 @@ class DashboardShell extends ConsumerWidget {
             ),
       body: Stack(
         children: [
-          child,
+          NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollUpdateNotification) {
+                ref.read(chromeVisibilityProvider.notifier).onScroll(
+                      pixels: notification.metrics.pixels,
+                      delta: notification.scrollDelta ?? 0,
+                    );
+              }
+              return false; // let the notification bubble up if needed
+            },
+            child: child,
+          ),
           Positioned(
             bottom: 18,
             left: 0,
@@ -115,79 +131,81 @@ class DashboardShell extends ConsumerWidget {
               duration: Duration(milliseconds: showChrome ? 360 : 340),
               curve: const Cubic(0.25, 0.1, 0.25, 1),
               child: AnimatedSlide(
-                offset: showChrome ? Offset.zero : const Offset(0, 0.15),
+                offset: showChrome ? Offset.zero : const Offset(0, 0.5),
                 duration: Duration(milliseconds: showChrome ? 360 : 340),
                 curve: const Cubic(0.25, 0.1, 0.25, 1),
-                child: IgnorePointer(
-                  ignoring: !showChrome,
-                  child: SafeArea(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 340),
-                        child: Container(
-                          height: 52,
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          decoration: BoxDecoration(
-                            color: dockFill,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: dockBorder,
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(isLight ? 40 : 160),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: [
-                                for (var i = 0; i < bottomNavItems.length; i++)
-                                  _DockButton(
-                                    item: bottomNavItems[i],
-                                    wash: _washes[i % _washes.length],
-                                    selected: currentTab == bottomNavItems[i].id,
-                                    isLight: isLight,
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      final id = bottomNavItems[i].id;
-                                      if (id == NavTab.filter) {
-                                        FilterBottomSheet.show(context);
-                                        return;
-                                      }
-                                      if (id == NavTab.add) {
-                                        showCreateListingChooser(context);
-                                        return;
-                                      }
-                                      if (id == NavTab.ai) {
-                                        showIntelCoreSheet(context);
-                                        return;
-                                      }
-                                      // Cap SEEKERS dock opens SeekerRequestDialog.
-                                      if (id == NavTab.seekers) {
-                                        showSeekerRequestSheet(context, ref);
-                                        return;
-                                      }
-                                      ref.read(navTabProvider.notifier).set(id);
-                                      context.go(AppPaths.pathForTab(id));
-                                    },
-                                  ),
-                              ],
-                            ),
-                          ),
+                child: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 340),
+                  child: Container(
+                    height: 52,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: dockFill,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: dockBorder,
+                        width: 2.25,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: dockHardShadow,
+                          offset: const Offset(1.5, 1.5),
+                          blurRadius: 0,
                         ),
+                        BoxShadow(
+                          color: Colors.black.withAlpha(isLight ? 40 : 160),
+                          blurRadius: 22,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          for (var i = 0; i < bottomNavItems.length; i++)
+                            _DockButton(
+                              item: bottomNavItems[i],
+                              wash: _washes[i % _washes.length],
+                              selected: currentTab == bottomNavItems[i].id,
+                              isLight: isLight,
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                final id = bottomNavItems[i].id;
+                                if (id == NavTab.filter) {
+                                  FilterBottomSheet.show(context);
+                                  return;
+                                }
+                                if (id == NavTab.add) {
+                                  showCreateListingChooser(context);
+                                  return;
+                                }
+                                if (id == NavTab.ai) {
+                                  showIntelCoreSheet(context);
+                                  return;
+                                }
+                                // Cap SEEKERS dock opens SeekerRequestDialog.
+                                if (id == NavTab.seekers) {
+                                  showSeekerRequestSheet(context, ref);
+                                  return;
+                                }
+                                ref.read(navTabProvider.notifier).set(id);
+                                context.go(AppPaths.pathForTab(id));
+                              },
+                            ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
             ),
+          ),
+          ),
           ),
           PushNotificationPrompt(enabled: user != null),
           GuidedTourOverlay(enabled: user != null),
@@ -228,13 +246,11 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ink = isLight ? const Color(0xFF141414) : Colors.white;
-    final discFill = isLight
-        ? const Color(0xFFF5F5F7)
-        : const Color(0xF0101016);
-    final glyph = item.accent
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    // Cap: active = full ink; inactive muted. No circular glass discs.
+    final color = item.accent
         ? const Color(0xFFFF4D6A)
-        : (selected ? ink : ink.withAlpha(isLight ? 200 : 150));
+        : (selected ? ink : ink.withAlpha(isLight ? 140 : 170));
 
     return GestureDetector(
       onTap: onTap,
@@ -243,57 +259,46 @@ class _DockButton extends StatelessWidget {
         width: 44,
         height: 44,
         child: Center(
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: discFill,
-              border: Border.all(
-                color: isLight
-                    ? const Color(0xFF141414)
-                    : Colors.white.withAlpha(242),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isLight
-                      ? Colors.black.withAlpha(30)
-                      : Colors.white.withAlpha(55),
-                  blurRadius: isLight ? 8 : 14,
-                  offset: const Offset(1, 1),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Cap neo-naive nav wash (coral/sky/lemon/mint/violet).
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      wash.withAlpha(selected || item.accent ? 90 : 45),
+                      wash.withAlpha(0),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
+              ),
+              if (item.accent)
                 Container(
-                  width: 26,
-                  height: 26,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      center: const Alignment(-0.2, -0.2),
-                      colors: [
-                        wash.withAlpha(isLight ? 150 : 90),
-                        wash.withAlpha(0),
-                      ],
+                    border: Border.all(
+                      color: const Color(0xFFFF4D6A),
+                      width: 1.5,
                     ),
                   ),
                 ),
-                item.useAiIcon
-                    ? CustomPaint(
-                        painter: _AiRobotPainter(color: glyph),
-                        size: const Size(18, 18),
-                      )
-                    : Icon(
-                        item.icon,
-                        size: item.accent ? 22 : 18,
-                        color: glyph,
-                      ),
-              ],
-            ),
+              item.useAiIcon
+                  ? CustomPaint(
+                      painter: _AiRobotPainter(color: color),
+                      size: const Size(18, 18),
+                    )
+                  : Icon(
+                      item.icon,
+                      size: item.accent ? 22 : 18,
+                      color: color,
+                    ),
+            ],
           ),
         ),
       ),

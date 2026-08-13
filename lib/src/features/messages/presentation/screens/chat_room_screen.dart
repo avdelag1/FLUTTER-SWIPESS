@@ -79,11 +79,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight + 10),
         child: AppBar(
-          backgroundColor: AppTheme.dashElevated,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary, size: 20),

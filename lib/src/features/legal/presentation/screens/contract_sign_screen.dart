@@ -47,7 +47,6 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
   Widget build(BuildContext context) {
     final contract = widget.contract;
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       appBar: AppBar(
         title: Text(contract.title, style: AppTheme.displayItalic.copyWith(fontSize: 18)),
       ),
@@ -59,7 +58,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.transparent),
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Text(
               contract.content?.trim().isNotEmpty == true

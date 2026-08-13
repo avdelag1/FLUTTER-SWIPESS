@@ -47,7 +47,6 @@ class _MaintenanceRequestsScreenState
     return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context),
-        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('New'),
@@ -68,7 +67,7 @@ class _MaintenanceRequestsScreenState
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -185,7 +184,6 @@ class _MaintenanceRequestsScreenState
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -259,7 +257,7 @@ class _MaintenanceRequestsScreenState
                                 selected: priority == p.$1,
                                 onSelected: () =>
                                     setModal(() => priority = p.$1),
-                                selectedColor: p.$3,
+                                selectedColor: p.$3.withAlpha(80),
                               ),
                             ),
                           ),
@@ -409,21 +407,9 @@ class _Ticket extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: urgent ? const Color(0xFFEF4444).withAlpha(14) : Colors.transparent,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: urgent
-              ? const Color(0xFFEF4444).withAlpha(90)
-              : Colors.transparent,
-        ),
-        boxShadow: urgent
-            ? [
-                BoxShadow(
-                  color: const Color(0xFFEF4444).withAlpha(30),
-                  blurRadius: 16,
-                ),
-              ]
-            : null,
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         children: [

@@ -72,7 +72,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         onNotification: _onScroll,
         child: ListView(
           controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 120),
+          padding: const EdgeInsets.fromLTRB(12, 110, 12, 120),
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
@@ -599,7 +599,6 @@ class _BentoCardState extends State<_BentoCard> {
             children: [
               QuickFilterMedia(
                 sources: widget.media,
-                animationDelay: widget.stagger,
                 enableVideo: widget.enableVideo,
               ),
               const DecoratedBox(

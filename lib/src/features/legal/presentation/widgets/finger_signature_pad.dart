@@ -40,7 +40,6 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
             children: [
               Signature(
                 controller: widget.controller,
-                backgroundColor: Colors.transparent,
               ),
               if (!widget.controller.isNotEmpty)
                 IgnorePointer(

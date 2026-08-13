@@ -94,7 +94,6 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF16161C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           match ? 'Remove Match?' : 'Remove from likes?',
@@ -151,7 +150,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(5),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: well,
                       borderRadius: BorderRadius.circular(22),
@@ -227,8 +226,8 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       trailing: IconButton(
                         onPressed: () =>
                             ref.read(likedListingsProvider.notifier).refresh(),
-                        icon: const Icon(Icons.sync_rounded,
-                            color: Colors.white70),
+                        icon: Icon(Icons.sync_rounded,
+                            color: MatteSurface.muted(context)),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -243,8 +242,8 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
-                          const Icon(Icons.swap_vert_rounded,
-                              color: Colors.white38, size: 18),
+                          Icon(Icons.swap_vert_rounded,
+                              color: MatteSurface.muted(context), size: 18),
                           const SizedBox(width: 6),
                           for (final s in _sorts)
                             _SortChip(
@@ -494,18 +493,28 @@ class _Seg extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           gradient: selected ? _LikesScreenState._gradient : null,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFFF4D00).withAlpha(90),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
-          label,
+          label.toUpperCase(),
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
             color: selected ? Colors.white : muted,
             fontWeight: FontWeight.w900,
-            fontSize: 13,
+            fontSize: 11,
+            letterSpacing: 1.6,
           ),
         ),
       ),
@@ -528,6 +537,9 @@ class _HChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final well = MatteSurface.well(context);
+    final hairline = MatteSurface.hairline(context);
     return SizedBox(
       height: 44,
       child: ListView(
@@ -545,21 +557,23 @@ class _HChips extends StatelessWidget {
                     gradient: selected == item.$1
                         ? _LikesScreenState._gradient
                         : null,
-                    color: selected == item.$1 ? null : const Color(0xFF1A1A20),
+                    color: selected == item.$1 ? null : well,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: Colors.white.withAlpha(selected == item.$1 ? 0 : 40),
+                      color: selected == item.$1 ? Colors.transparent : hairline,
                       width: 1.5,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(item.$3, size: 14, color: Colors.white),
+                      Icon(item.$3,
+                          size: 14,
+                          color: selected == item.$1 ? Colors.white : ink),
                       const SizedBox(width: 6),
                       Text(
                         item.$2,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: selected == item.$1 ? Colors.white : ink,
                           fontWeight: FontWeight.w800,
                           fontSize: 12,
                         ),
@@ -588,6 +602,8 @@ class _SortChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final well = MatteSurface.well(context);
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
@@ -596,13 +612,16 @@ class _SortChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             gradient: selected ? _LikesScreenState._gradient : null,
-            color: selected ? null : const Color(0xFF1A1A20),
+            color: selected ? null : well,
             borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? Colors.transparent : MatteSurface.hairline(context),
+            ),
           ),
           child: Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: selected ? Colors.white : ink,
               fontWeight: FontWeight.w800,
               fontSize: 11,
             ),
@@ -663,7 +682,10 @@ class _Spinner extends StatelessWidget {
   Widget build(BuildContext context) {
     return const SliverFillRemaining(
       child: Center(
-        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        child: CircularProgressIndicator(
+          color: Color(0xFFFF4D00),
+          strokeWidth: 2,
+        ),
       ),
     );
   }

@@ -67,7 +67,6 @@ class AdminPhotosScreen extends ConsumerWidget {
                 icon: const Icon(Icons.upload_rounded, size: 16),
                 label: Text(t(ref, 'flutter.upload', 'Upload')),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                 ),
               ),
             ),

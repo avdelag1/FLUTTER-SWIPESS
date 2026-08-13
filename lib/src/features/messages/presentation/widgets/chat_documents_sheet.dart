@@ -16,7 +16,6 @@ Future<void> showChatDocumentsSheet(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _ChatDocumentsSheet(conversationId: conversationId),
   );
 }
@@ -139,7 +138,7 @@ class _DocRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         children: [

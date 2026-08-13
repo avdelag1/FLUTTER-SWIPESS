@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_s
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 /// Capacitor OwnerInterestedClients — applicants who liked my listings.
 class OwnerInterestedClientsScreen extends ConsumerWidget {
@@ -28,7 +29,7 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
-                  _Back(onTap: () => Navigator.pop(context)),
+                  CapBackButton(onTap: () => Navigator.pop(context)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -121,7 +122,6 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                           final ok = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              backgroundColor: const Color(0xFF14141A),
                               title: const Text('Dismiss client?',
                                   style: TextStyle(color: Colors.white)),
                               content: Text(
@@ -184,13 +184,12 @@ class _ClientCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.transparent),
+            border: Border.all(color: Colors.white, width: 1.5),
           ),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: Colors.white12,
                 backgroundImage: client.primaryImage != null
                     ? NetworkImage(client.primaryImage!)
                     : null,
@@ -249,27 +248,3 @@ class _ClientCard extends StatelessWidget {
   }
 }
 
-class _Back extends StatelessWidget {
-  const _Back({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
-        ),
-        child: const Center(
-          child: Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white, size: 18),
-        ),
-      ),
-    );
-  }
-}

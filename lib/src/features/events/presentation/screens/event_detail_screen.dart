@@ -160,7 +160,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ].join(' — ');
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
           CustomScrollView(
@@ -486,7 +485,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 28,
-                                backgroundColor: Colors.white12,
                                 backgroundImage:
                                     event.organizerPhotoUrl != null
                                         ? NetworkImage(event.organizerPhotoUrl!)

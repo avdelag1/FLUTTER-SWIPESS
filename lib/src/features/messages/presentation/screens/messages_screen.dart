@@ -36,12 +36,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final well = MatteSurface.well(context);
+    final isLight = MatteSurface.isLight(context);
 
     return Scaffold(
       backgroundColor: MatteSurface.canvas(context),
       body: Stack(
         children: [
-          // Ambient Background
+          // Soft brand ambient (Cap inbox glow)
           Positioned(
             top: -50,
             right: -100,
@@ -50,8 +51,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.transparent,
-                backgroundBlendMode: BlendMode.screen,
+                color: AppTheme.brandPrimary.withAlpha(isLight ? 18 : 28),
               ),
             ),
           ),
@@ -71,16 +71,57 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    'INBOX',
-                    style: AppTheme.displayItalic.copyWith(
-                      fontSize: 48,
-                      height: 0.9,
-                      color: ink,
-                    ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEB4898),
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEB4898).withAlpha(70),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.chat_bubble_rounded,
+                            color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'MESSAGES',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFFEB4898),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                fontStyle: FontStyle.italic,
+                                letterSpacing: 4,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'INBOX',
+                              style: AppTheme.displayItalic.copyWith(
+                                fontSize: 40,
+                                height: 0.95,
+                                color: ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -231,92 +272,137 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   }
 
   Widget _buildSectionToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: MatteSurface.cardFill(context),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(4),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _TogglePill(
+          label: 'CHATS',
+          icon: Icons.inbox_rounded,
+          isActive: _activeSection == 'chats',
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _activeSection = 'chats');
+          },
+        ),
+        const SizedBox(width: 8),
+        _TogglePill(
+          label: 'DOCUMENTS',
+          icon: Icons.folder_special_rounded,
+          isActive: _activeSection == 'documents',
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _activeSection = 'documents');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilters() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          _TogglePill(
-            label: 'CHATS',
-            isActive: _activeSection == 'chats',
+          _FilterChip(
+            label: 'INBOX',
+            icon: Icons.inbox_rounded,
+            isActive: _activeFilter == 'all',
             onTap: () {
               HapticFeedback.lightImpact();
-              setState(() => _activeSection = 'chats');
+              setState(() => _activeFilter = 'all');
             },
           ),
-          _TogglePill(
-            label: 'DOCUMENTS',
-            isActive: _activeSection == 'documents',
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'PRIORITY',
+            icon: Icons.auto_awesome_rounded,
+            isActive: _activeFilter == 'unread',
             onTap: () {
               HapticFeedback.lightImpact();
-              setState(() => _activeSection = 'documents');
+              setState(() => _activeFilter = 'unread');
+            },
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'ARCHIVE',
+            icon: Icons.archive_outlined,
+            isActive: _activeFilter == 'archived',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _activeFilter = 'archived');
             },
           ),
         ],
       ),
     );
   }
-
-  Widget _buildFilters() {
-    return Row(
-      children: [
-        _FilterChip(
-          label: 'ALL',
-          isActive: _activeFilter == 'all',
-          onTap: () {
-            HapticFeedback.lightImpact();
-            setState(() => _activeFilter = 'all');
-          },
-        ),
-        const SizedBox(width: 8),
-        _FilterChip(
-          label: 'UNREAD',
-          isActive: _activeFilter == 'unread',
-          onTap: () {
-            HapticFeedback.lightImpact();
-            setState(() => _activeFilter = 'unread');
-          },
-        ),
-      ],
-    );
-  }
 }
 
 class _TogglePill extends StatelessWidget {
-  const _TogglePill({required this.label, required this.isActive, required this.onTap});
+  const _TogglePill({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+    this.icon,
+  });
   final String label;
   final bool isActive;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
-    final isLight = MatteSurface.isLight(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive
-              ? (isLight ? ink : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
+          gradient: isActive
+              ? const LinearGradient(
+                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                )
+              : null,
+          color: isActive ? null : MatteSurface.cardFill(context),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
             color: isActive
-                ? (isLight ? Colors.white : Colors.black)
-                : muted,
-            fontWeight: FontWeight.w900,
-            fontSize: 12,
-            letterSpacing: 1,
+                ? Colors.white.withAlpha(50)
+                : MatteSurface.hairline(context),
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFFEB4898).withAlpha(90),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 12,
+                color: isActive
+                    ? Colors.white
+                    : const Color(0xFFEB4898),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: isActive ? Colors.white : muted,
+                fontWeight: FontWeight.w900,
+                fontSize: 9,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -324,35 +410,68 @@ class _TogglePill extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.isActive, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+    this.icon,
+  });
   final String label;
   final bool isActive;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     final isLight = MatteSurface.isLight(context);
+    final rose = const Color(0xFFF43F5E);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
-              ? (isLight ? ink : Colors.white)
+              ? (isLight
+                  ? const Color(0xFFFFF1F2)
+                  : rose.withAlpha(40))
               : MatteSurface.cardFill(context),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
             color: isActive
-                ? (isLight ? Colors.white : Colors.black)
-                : ink,
-            fontWeight: FontWeight.w900,
-            fontSize: 11,
-            letterSpacing: 1,
+                ? rose.withAlpha(isLight ? 100 : 80)
+                : MatteSurface.hairline(context),
           ),
+          boxShadow: isActive && !isLight
+              ? [
+                  BoxShadow(
+                    color: rose.withAlpha(50),
+                    blurRadius: 12,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 12,
+                color: isActive ? rose : const Color(0xFFEB4898),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: isActive ? rose : muted,
+                fontWeight: FontWeight.w900,
+                fontSize: 9,
+                letterSpacing: 1.6,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -392,7 +511,6 @@ class _ChatTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: MatteSurface.well(context),
                   backgroundImage: conversation.avatarUrl != null 
                     ? NetworkImage(conversation.avatarUrl!) 
                     : null,
