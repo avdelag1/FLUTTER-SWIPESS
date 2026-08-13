@@ -125,7 +125,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     HapticFeedback.mediumImpact();
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Filters applied — your deck is updating.')),
+      const SnackBar(content: Text('Filters applied. Your deck is updating.')),
     );
   }
 
@@ -185,7 +185,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           icon: const Icon(Icons.chevron_left_rounded,
                               color: Color(0xFF0A0A0D)),
                           label: Text(
-                            'BACK',
+                            'Back',
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF0A0A0D),
                               fontWeight: FontWeight.w900,
@@ -217,7 +217,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           icon: const Icon(Icons.chevron_left_rounded,
                               color: Color(0xFF0A0A0D)),
                           label: Text(
-                            'BACK',
+                            'Back',
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF0A0A0D),
                               fontWeight: FontWeight.w900,
@@ -420,7 +420,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               ),
                             ),
                             child: Text(
-                              'RESET',
+                              'Reset Parameters',
                               style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.4,
@@ -451,8 +451,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             child: ElevatedButton.icon(
                               onPressed: _apply,
                               icon: const Icon(Icons.search_rounded),
-                              label: Text(
-                                'SCAN DECK',
+                          label: Text(
+                            'Apply Filters',
                                 style: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 1.4,
@@ -485,21 +485,21 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   String get _detailTitle {
     switch (_activeCategory) {
       case 'motorcycle':
-        return 'MOTO';
+        return 'Moto';
       case 'bicycle':
-        return 'BICYCLE';
+        return 'Bicycle';
       case 'yacht':
-        return 'YACHT';
+        return 'Yacht';
       case 'worker':
-        return 'WORKER';
+        return 'Worker';
       case 'buyers':
-        return 'BUYERS';
+        return 'Buyers';
       case 'renters':
-        return 'RENTERS';
+        return 'Renters';
       case 'leads':
-        return 'LEADS';
+        return 'Leads';
       default:
-        return 'PROPERTY';
+        return 'Property';
     }
   }
 
@@ -540,7 +540,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           ),
         ),
         Text(
-          'FILTER YOUR BEST DEAL',
+          'Filter Your Best Deal',
           style: GoogleFonts.plusJakartaSans(
             color: Colors.black45,
             fontSize: 10,

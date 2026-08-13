@@ -108,6 +108,17 @@ class LikesRepository {
         .eq('target_type', 'profile');
   }
 
+  Future<void> removeLikedListing(String listingId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    await _client
+        .from('likes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('target_id', listingId)
+        .eq('target_type', 'listing');
+  }
+
   /// Capacitor OwnerInterestedClients — people who liked my listings.
   Future<List<InterestedClient>> fetchInterestedClients() async {
     final userId = _client.auth.currentUser?.id;

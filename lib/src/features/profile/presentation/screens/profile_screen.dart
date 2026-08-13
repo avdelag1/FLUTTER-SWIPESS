@@ -35,6 +35,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_s
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/holographic_id_card.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
@@ -220,7 +221,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           icon: Icons.thumb_up_alt_outlined,
                           iconColor: const Color(0xFFFF4D00),
                           value: likes,
-                          label: 'LIKES',
+                          label: 'Likes',
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => const WhoLikedYouScreen(),
@@ -233,8 +234,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: _StatTile(
                           icon: Icons.auto_awesome_rounded,
                           iconColor: const Color(0xFFEB4898),
-                          value: likes, // matches ≈ likes for now
-                          label: 'MATCHES',
+                          value: likes,
+                          label: 'Total Matches',
                           onTap: () {
                             context.go(AppPaths.clientLikedProperties);
                           },
@@ -246,7 +247,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           icon: Icons.chat_bubble_outline_rounded,
                           iconColor: const Color(0xFFFF8C42),
                           value: chats,
-                          label: 'MESSAGES',
+                          label: 'Messages',
                           onTap: () {
                             context.go(AppPaths.messages);
                           },
@@ -293,7 +294,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               color: Colors.white, size: 20),
                           const SizedBox(width: 10),
                           Text(
-                            'MAGIC AI PROFILE',
+                            'Magic AI Profile',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
@@ -318,7 +319,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     childAspectRatio: 1.45,
                     children: [
                       _ActionTile(
-                        label: 'EDIT PROFILE',
+                        label: 'Edit Profile',
                         icon: Icons.person_rounded,
                         colors: const [Color(0xFFFF4D00), Color(0xFFEB4898)],
                         onTap: () => Navigator.of(context).push(
@@ -328,7 +329,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       _ActionTile(
-                        label: 'PROMOTE',
+                        label: 'Promote Event',
                         icon: Icons.campaign_rounded,
                         colors: const [Color(0xFFFF4D00), Color(0xFFFF8C00)],
                         onTap: () => Navigator.of(context).push(
@@ -338,7 +339,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       _ActionTile(
-                        label: 'SEEKERS',
+                        label: 'Seekers',
                         icon: Icons.people_rounded,
                         colors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
                         onTap: () {
@@ -346,7 +347,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         },
                       ),
                       _ActionTile(
-                        label: 'TOKENS',
+                        label: 'Tokens',
                         icon: Icons.toll_rounded,
                         colors: const [Color(0xFF10B981), Color(0xFF06B6D4)],
                         onTap: () => showGlassModal(
@@ -355,7 +356,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       _ActionTile(
-                        label: 'SETTINGS',
+                        label: 'Settings',
                         icon: Icons.settings_rounded,
                         colors: const [Color(0xFF64748B), Color(0xFF334155)],
                         onTap: () => Navigator.of(context).push(
@@ -365,7 +366,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       _ActionTile(
-                        label: 'SIGN OUT',
+                        label: 'Sign Out',
                         icon: Icons.logout_rounded,
                         colors: const [Color(0xFFEF4444), Color(0xFF991B1B)],
                         onTap: () async {
@@ -401,7 +402,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               color: Colors.white, size: 28),
                           const SizedBox(height: 6),
                           Text(
-                            'PREMIUM',
+                            'Premium',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
@@ -444,6 +445,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   fontSize: 18,
                                 ),
                               ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Your feedback helps us build a better Swipess.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54,
+                                  fontSize: 13,
+                                ),
+                              ),
                               TextButton(
                                 onPressed: () => setState(() {
                                   _feedbackDone = false;
@@ -465,74 +475,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Resident ID / PEARL
+                  // Holographic Identity Vault
                   GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
                       context.go(AppPaths.clientVapId);
                     },
-                    child: _Panel(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFAFAF9), Color(0xFFE7E5E4)],
-                              ),
-                            ),
-                            child: const Icon(Icons.badge_rounded,
-                                color: Color(0xFF525252)),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'RESIDENT ID',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: 15,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Open PEARL vault · Global Registry',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.white.withAlpha(14),
                               borderRadius: BorderRadius.circular(999),
                               border: Border.all(color: Colors.white24),
                             ),
                             child: Text(
-                              'SYNC',
+                              'Sync Protocol',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
+                                color: Colors.white70,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        HolographicIDCard(
+                          name: name,
+                          idNumber:
+                              'SWS-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
+                          avatarUrl: avatar,
+                          occupation: profile?.role ?? 'Client',
+                          location: profile?.city ?? '',
+                          years: profile?.age?.toString() ?? '',
+                          bio: profile?.bio ?? '',
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -562,7 +544,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'SEEKER REQUESTS',
+                                  'Seeker Requests',
                                   style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w900,
@@ -571,7 +553,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'Browse people looking for homes & help',
+                                  'Post what professional you need',
                                   style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -599,7 +581,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   color: Color(0xFFEB4898), size: 18),
                               const SizedBox(width: 8),
                               Text(
-                                'PROFILE COMPLETENESS',
+                                'Profile Completeness',
                                 style: GoogleFonts.plusJakartaSans(
                                   color: Colors.white38,
                                   fontSize: 10,
@@ -636,6 +618,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
 
+                  const SizedBox(height: 18),
+                  _Panel(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEB4898),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0x80EB4898),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Global Activity',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Likes, matches, and messages from your network show up here.',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 18),
                   // Language row
                   Row(
@@ -1178,10 +1204,10 @@ class _FeedbackForm extends StatelessWidget {
   final VoidCallback onSubmit;
 
   static const cats = [
-    ('bug', 'Bug', Color(0xFFEF4444)),
-    ('feature', 'Feature', Color(0xFF6366F1)),
-    ('experience', 'UX', Color(0xFFF97316)),
-    ('compliment', 'Love', Color(0xFF10B981)),
+    ('bug', 'Bug / Issue', Color(0xFFEF4444)),
+    ('feature', 'Feature Request', Color(0xFF6366F1)),
+    ('experience', 'App Experience', Color(0xFFF97316)),
+    ('compliment', 'Compliment', Color(0xFF10B981)),
     ('other', 'Other', Color(0xFF94A3B8)),
   ];
 
@@ -1267,7 +1293,7 @@ class _FeedbackForm extends StatelessWidget {
           maxLines: 3,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: 'Tell us what you think…',
+            hintText: 'Tell us what\'s on your mind…',
             hintStyle: TextStyle(color: Colors.white.withAlpha(90)),
             filled: true,
             fillColor: Colors.black.withAlpha(70),
@@ -1295,7 +1321,7 @@ class _FeedbackForm extends StatelessWidget {
               ),
             ),
             child: Text(
-              sending ? 'Sending…' : 'Submit feedback',
+              sending ? 'Sending…' : 'Send Feedback',
               style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
             ),
           ),

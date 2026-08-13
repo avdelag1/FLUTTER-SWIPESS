@@ -7,7 +7,6 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -55,12 +54,6 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
       );
       return;
     }
-    if (!ref.read(aiEdgeReadyProvider)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to use AI Enhance')),
-      );
-      return;
-    }
     setState(() => _enhancing = true);
     final polished = await ref.read(aiEdgeRepositoryProvider).enhanceText(
           text: raw,
@@ -98,7 +91,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     final city = _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim();
 
     Map<String, dynamic> parsed = const {};
-    if (desc.isNotEmpty && ref.read(aiEdgeReadyProvider)) {
+    if (desc.isNotEmpty) {
       parsed = await ref.read(aiEdgeRepositoryProvider).extractListing(
             category: _category,
             prompt: desc,

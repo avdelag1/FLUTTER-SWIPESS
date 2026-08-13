@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_gesture_hints.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
@@ -372,6 +373,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       ],
                     ),
                   ),
+                ),
+
+              if (widget.isTop)
+                SwipeGestureHints(
+                  hidden: _zoomed ||
+                      widget.likeOpacity > 0.08 ||
+                      widget.nopeOpacity > 0.08,
                 ),
 
               // Photo segments

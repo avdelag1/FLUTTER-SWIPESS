@@ -7,9 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
-import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AccessCodeGateScreen extends ConsumerStatefulWidget {
   const AccessCodeGateScreen({super.key});
@@ -92,10 +92,13 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-          child: LayoutBuilder(
+      body: Stack(
+        children: [
+          const StarfieldBackground(),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+              child: LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 900;
               if (isDesktop) {
@@ -123,8 +126,10 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                 ],
               );
             },
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -141,10 +146,10 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
         Text(
           'The exclusive ecosystem for visionaries.',
           textAlign: isDesktop ? TextAlign.left : TextAlign.center,
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
             fontSize: isDesktop ? 42 : 28,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
             height: 1.2,
           ),
         ),

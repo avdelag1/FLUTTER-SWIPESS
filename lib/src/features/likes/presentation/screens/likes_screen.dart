@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/widgets/premium_liked_card.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Cap `UnifiedLikes` + `ClientLikedProperties` + `LikedClients`.
 class LikesScreen extends ConsumerStatefulWidget {
   const LikesScreen({super.key});
 
@@ -20,7 +22,7 @@ class LikesScreen extends ConsumerStatefulWidget {
 }
 
 class _LikesScreenState extends ConsumerState<LikesScreen> {
-  int _segment = 0; // 0 listings, 1 people
+  int _segment = 0;
   String _category = 'all';
   String _sort = 'newest';
   final _search = TextEditingController();
@@ -29,10 +31,102 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
     colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
   );
 
+  static const _listingCats = [
+    ('all', 'All Favorites', Icons.local_fire_department_rounded),
+    ('property', 'Properties', Icons.home_rounded),
+    ('motorcycle', 'Motorcycles', Icons.two_wheeler_rounded),
+    ('bicycle', 'Bicycles', Icons.pedal_bike_rounded),
+    ('worker', 'Workers', Icons.work_rounded),
+    ('roommate', 'Roommates', Icons.people_rounded),
+  ];
+
+  static const _peopleCats = [
+    ('all', 'All Talents', Icons.auto_awesome_rounded),
+    ('renter', 'Renters', Icons.key_rounded),
+    ('worker', 'Workers', Icons.work_rounded),
+    ('buyer', 'Buyers', Icons.sell_rounded),
+  ];
+
+  static const _sorts = [
+    ('newest', 'Newest'),
+    ('oldest', 'Oldest'),
+    ('price_up', 'Price ↑'),
+    ('price_down', 'Price ↓'),
+    ('az', 'A → Z'),
+  ];
+
   @override
   void dispose() {
     _search.dispose();
     super.dispose();
+  }
+
+  Future<void> _openChat({
+    required String userId,
+    required String name,
+    String? avatar,
+    String? listingId,
+  }) async {
+    HapticFeedback.mediumImpact();
+    final convoId = await SwipeRepository().startConversation(
+      ownerId: userId,
+      listingId: listingId,
+    );
+    if (!mounted || convoId == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          conversation: ChatConversation(
+            id: convoId,
+            otherUserId: userId,
+            name: name,
+            lastMessage: '',
+            timestamp: 'now',
+            avatarUrl: avatar,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _confirmRemove(String title, {required bool match}) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF16161C),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          match ? 'Remove Match?' : 'Remove from likes?',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        content: Text(
+          match
+              ? 'Are you sure you want to remove $title?'
+              : 'Are you sure you want to remove "$title" from your likes?',
+          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'REMOVE',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFE4007C),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
   }
 
   @override
@@ -52,95 +146,91 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(12),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withAlpha(25)),
+                      color: const Color(0xFF0F0F14),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: Colors.white.withAlpha(28)),
                     ),
                     child: Row(
                       children: [
-                        Expanded(child: _Seg(label: 'LIKED LISTINGS', selected: _segment == 0, onTap: () => setState(() => _segment = 0))),
-                        Expanded(child: _Seg(label: 'LIKED PEOPLE', selected: _segment == 1, onTap: () => setState(() => _segment = 1))),
+                        Expanded(
+                          child: _Seg(
+                            label: 'Liked Listings',
+                            selected: _segment == 0,
+                            onTap: () => setState(() => _segment = 0),
+                          ),
+                        ),
+                        Expanded(
+                          child: _Seg(
+                            label: 'Liked People',
+                            selected: _segment == 1,
+                            onTap: () => setState(() => _segment = 1),
+                          ),
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 14),
                   if (_segment == 1) ...[
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const WhoLikedYouScreen(),
+                    Row(
+                      children: [
+                        Text(
+                          'Your Talents',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const WhoLikedYouScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Liked Me',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFE4007C),
+                              fontWeight: FontWeight.w800,
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.favorite_rounded, size: 16),
-                        label: const Text('Who liked you'),
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                  if (_segment == 0) ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 38,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _Chip(
-                            label: 'All Favorites',
-                            icon: Icons.local_fire_department_rounded,
-                            selected: _category == 'all',
-                            onTap: () => setState(() => _category = 'all'),
-                          ),
-                          _Chip(
-                            label: 'Properties',
-                            icon: Icons.home_rounded,
-                            selected: _category == 'property',
-                            onTap: () => setState(() => _category = 'property'),
-                          ),
-                          _Chip(
-                            label: 'Vehicles',
-                            icon: Icons.directions_car_rounded,
-                            selected: _category == 'vehicle',
-                            onTap: () => setState(() => _category = 'vehicle'),
-                          ),
-                          IconButton(
-                            onPressed: () => ref.read(likedListingsProvider.notifier).refresh(),
-                            icon: const Icon(Icons.sync_rounded, color: Colors.white70, size: 20),
-                          ),
-                        ],
+                    const SizedBox(height: 8),
+                    _HChips(
+                      items: _peopleCats,
+                      selected: _category,
+                      onTap: (id) => setState(() => _category = id),
+                    ),
+                    const SizedBox(height: 10),
+                    _SearchField(
+                      controller: _search,
+                      hint: 'Search talents...',
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ] else ...[
+                    _HChips(
+                      items: _listingCats,
+                      selected: _category,
+                      onTap: (id) => setState(() => _category = id),
+                      trailing: IconButton(
+                        onPressed: () =>
+                            ref.read(likedListingsProvider.notifier).refresh(),
+                        icon: const Icon(Icons.sync_rounded,
+                            color: Colors.white70),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF14141A),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white.withAlpha(40)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search_rounded, color: Colors.white54, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: _search,
-                              onChanged: (_) => setState(() {}),
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'Search title, description, location...',
-                                hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    _SearchField(
+                      controller: _search,
+                      hint: 'Search title, description, location...',
+                      onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 10),
                     SizedBox(
@@ -148,20 +238,14 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
-                          const Icon(Icons.swap_vert_rounded, color: Colors.white38, size: 18),
+                          const Icon(Icons.swap_vert_rounded,
+                              color: Colors.white38, size: 18),
                           const SizedBox(width: 6),
-                          for (final s in const [
-                            ('newest', 'NEWEST'),
-                            ('oldest', 'OLDEST'),
-                            ('price_up', 'PRICE ↑'),
-                            ('price_down', 'PRICE ↓'),
-                            ('az', 'A → Z'),
-                          ])
-                            _Chip(
+                          for (final s in _sorts)
+                            _SortChip(
                               label: s.$2,
                               selected: _sort == s.$1,
                               onTap: () => setState(() => _sort = s.$1),
-                              compact: true,
                             ),
                         ],
                       ),
@@ -173,11 +257,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
           ),
           if (_segment == 1)
             peopleAsync.when(
-              loading: () => const SliverFillRemaining(
-                child: Center(
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2)),
-              ),
+              loading: () => const _Spinner(),
               error: (_, _) => SliverFillRemaining(
                 child: Center(
                   child: TextButton(
@@ -188,87 +268,88 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                 ),
               ),
               data: (people) {
-                if (people.isEmpty) {
-                  return const SliverFillRemaining(
+                final q = _search.text.trim().toLowerCase();
+                final filtered = people.where((p) {
+                  if (q.isEmpty) return true;
+                  return p.name.toLowerCase().contains(q) ||
+                      (p.occupation ?? '').toLowerCase().contains(q);
+                }).toList();
+                if (filtered.isEmpty) {
+                  return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(
-                      child: Text(
-                        'Swipe right on people to save them here.',
-                        style: TextStyle(color: Colors.white70),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: CapEmptyState(
+                        variant: CapEmptyVariant.likes,
+                        icon: Icons.favorite_border_rounded,
+                        title: 'Network Empty.',
+                        description:
+                            'Your matches will appear here. Start scanning to find talent.',
+                        actionLabel: 'EXPLORE',
+                        onAction: () => Navigator.of(context).maybePop(),
                       ),
                     ),
                   );
                 }
                 return SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final person = people[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _LikedPersonCard(
-                            person: person,
-                            onOpen: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => ProfileDetailScreen(
-                                      userId: person.userId),
-                                ),
-                              );
-                            },
-                            onMessage: () async {
-                              HapticFeedback.mediumImpact();
-                              final convoId = await SwipeRepository()
-                                  .startConversation(ownerId: person.userId);
-                              if (!context.mounted || convoId == null) return;
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => ChatScreen(
-                                    conversation: ChatConversation(
-                                      id: convoId,
-                                      otherUserId: person.userId,
-                                      name: person.name,
-                                      lastMessage: '',
-                                      timestamp: 'now',
-                                      avatarUrl: person.primaryImage,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            onRemove: () => ref
-                                .read(likedPeopleProvider.notifier)
-                                .remove(person.userId),
-                          ),
-                        );
-                      },
-                      childCount: people.length,
-                    ),
+                  sliver: SliverList.separated(
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (context, i) {
+                      final person = filtered[i];
+                      return PremiumLikedCard(
+                        isProfile: true,
+                        imageUrl: person.primaryImage,
+                        title: person.name,
+                        subtitle: [
+                          if (person.occupation != null) person.occupation!,
+                          if (person.age != null) '${person.age} years old',
+                        ].join(' · '),
+                        category: 'Profile',
+                        description: person.bio,
+                        onMessage: () => _openChat(
+                          userId: person.userId,
+                          name: person.name,
+                          avatar: person.primaryImage,
+                        ),
+                        onView: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ProfileDetailScreen(userId: person.userId),
+                            ),
+                          );
+                        },
+                        onRemove: () async {
+                          final ok = await _confirmRemove(person.name,
+                              match: true);
+                          if (!ok) return;
+                          await ref
+                              .read(likedPeopleProvider.notifier)
+                              .remove(person.userId);
+                        },
+                      );
+                    },
                   ),
                 );
               },
             )
           else
             listingsAsync.when(
-              loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-              ),
+              loading: () => const _Spinner(),
               error: (_, _) => SliverFillRemaining(
                 child: Center(
                   child: TextButton(
-                    onPressed: () => ref.read(likedListingsProvider.notifier).refresh(),
+                    onPressed: () =>
+                        ref.read(likedListingsProvider.notifier).refresh(),
                     child: const Text('Could not load likes — retry'),
                   ),
                 ),
               ),
               data: (listings) {
                 var filtered = listings.where((l) {
-                  if (_category == 'property' && l.category != 'property') return false;
-                  if (_category == 'vehicle' &&
-                      l.category != 'motorcycle' &&
-                      l.category != 'bicycle' &&
-                      l.category != 'yacht') {
+                  if (_category != 'all' && l.category != _category) {
                     return false;
                   }
                   final q = _search.text.trim().toLowerCase();
@@ -277,11 +358,11 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       (l.city ?? '').toLowerCase().contains(q) ||
                       (l.description ?? '').toLowerCase().contains(q);
                 }).toList();
-
                 filtered = [...filtered]..sort((a, b) {
                     switch (_sort) {
                       case 'oldest':
-                        return (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0));
+                        return (a.createdAt ?? DateTime(0))
+                            .compareTo(b.createdAt ?? DateTime(0));
                       case 'price_up':
                         return (a.price ?? 0).compareTo(b.price ?? 0);
                       case 'price_down':
@@ -289,51 +370,108 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       case 'az':
                         return (a.title ?? '').compareTo(b.title ?? '');
                       default:
-                        return (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0));
+                        return (b.createdAt ?? DateTime(0))
+                            .compareTo(a.createdAt ?? DateTime(0));
                     }
                   });
-
                 if (filtered.isEmpty) {
-                  return const SliverFillRemaining(
+                  return SliverFillRemaining(
                     hasScrollBody: false,
-                    child: Center(
-                      child: Text('Swipe right to save listings here.', style: TextStyle(color: Colors.white70)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: CapEmptyState(
+                        variant: CapEmptyVariant.likes,
+                        icon: Icons.favorite_border_rounded,
+                        title: 'Pure Potential.',
+                        description:
+                            'Your favorite listings will appear here. Start swiping to fill your world.',
+                        actionLabel: 'EXPLORE WORLD',
+                        onAction: () => Navigator.of(context).maybePop(),
+                      ),
                     ),
                   );
                 }
-
                 return SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index == 0) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              '● ${filtered.length} SAVED ESSENTIALS',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFFEB4898),
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                          );
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: _LikedCard(listing: filtered[index - 1]),
+                  sliver: SliverList.separated(
+                    itemCount: filtered.length + 1,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Text(
+                          '● ${filtered.length} Saved Essentials',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFFE4007C),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                            letterSpacing: 0.4,
+                          ),
                         );
-                      },
-                      childCount: filtered.length + 1,
-                    ),
+                      }
+                      return _ListingCard(
+                        listing: filtered[index - 1],
+                        onMessage: (l) => _openChat(
+                          userId: l.ownerId ?? '',
+                          name: l.title ?? 'Owner',
+                          avatar: l.primaryImage,
+                          listingId: l.id,
+                        ),
+                        onRemove: (l) async {
+                          final ok = await _confirmRemove(
+                            l.title ?? 'this listing',
+                            match: false,
+                          );
+                          if (!ok) return;
+                          await ref
+                              .read(likedListingsProvider.notifier)
+                              .remove(l.id);
+                        },
+                      );
+                    },
                   ),
                 );
               },
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ListingCard extends StatelessWidget {
+  const _ListingCard({
+    required this.listing,
+    required this.onMessage,
+    required this.onRemove,
+  });
+
+  final Listing listing;
+  final void Function(Listing) onMessage;
+  final void Function(Listing) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final unit = listing.pricingUnit;
+    final price = listing.price;
+    return PremiumLikedCard(
+      imageUrl: listing.primaryImage,
+      title: listing.title ?? 'Listing',
+      subtitle: listing.city ?? listing.location ?? listing.neighborhood ?? '',
+      category: listing.category ?? listing.propertyType ?? 'Listing',
+      description: listing.description,
+      bedsLabel: listing.beds != null ? '${listing.beds}' : null,
+      priceLabel: price == null
+          ? null
+          : '\$${price.toStringAsFixed(0)}${unit != null ? '/$unit' : '/mo'}',
+      onMessage: () => onMessage(listing),
+      onView: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ListingDetailScreen(listingData: listing),
+          ),
+        );
+      },
+      onRemove: () => onRemove(listing),
     );
   }
 }
@@ -353,17 +491,15 @@ class _Seg extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           gradient: selected ? _LikesScreenState._gradient : null,
-          color: selected ? null : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
+            color: selected ? Colors.white : Colors.white54,
             fontWeight: FontWeight.w900,
-            fontSize: 11,
-            letterSpacing: 0.4,
+            fontSize: 13,
           ),
         ),
       ),
@@ -371,20 +507,78 @@ class _Seg extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
+class _HChips extends StatelessWidget {
+  const _HChips({
+    required this.items,
+    required this.selected,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final List<(String, String, IconData)> items;
+  final String selected;
+  final ValueChanged<String> onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => onTap(item.$1),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: selected == item.$1
+                        ? _LikesScreenState._gradient
+                        : null,
+                    color: selected == item.$1 ? null : const Color(0xFF1A1A20),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withAlpha(selected == item.$1 ? 0 : 40),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(item.$3, size: 14, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        item.$2,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  const _SortChip({
     required this.label,
     required this.selected,
     required this.onTap,
-    this.icon,
-    this.compact = false,
   });
-
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final IconData? icon;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -393,29 +587,19 @@ class _Chip extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14, vertical: compact ? 7 : 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             gradient: selected ? _LikesScreenState._gradient : null,
             color: selected ? null : const Color(0xFF1A1A20),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withAlpha(selected ? 0 : 25)),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 14, color: Colors.white),
-                const SizedBox(width: 6),
-              ],
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                ),
-              ),
-            ],
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+            ),
           ),
         ),
       ),
@@ -423,194 +607,40 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _LikedCard extends StatelessWidget {
-  const _LikedCard({required this.listing});
-  final Listing listing;
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.hint,
+    required this.onChanged,
+  });
+  final TextEditingController controller;
+  final String hint;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF14141A),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: Colors.white.withAlpha(30)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withAlpha(40)),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          AspectRatio(
-            aspectRatio: 16 / 11,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (listing.primaryImage != null)
-                  Image.network(listing.primaryImage!, fit: BoxFit.cover)
-                else
-                  const ColoredBox(color: Color(0xFF16161C)),
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(140),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      (listing.category ?? 'LISTING').toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(140),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.delete_outline_rounded, color: Colors.white70, size: 18),
-                  ),
-                ),
-                Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: 12,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        listing.title ?? 'Untitled',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_rounded, color: Color(0xFFEB4898), size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            listing.city ?? listing.formattedLocation,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFEB4898),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (listing.bedrooms != null) ...[
-                      const Icon(Icons.bed_rounded, color: Colors.white70, size: 16),
-                      const SizedBox(width: 4),
-                      Text('${listing.bedrooms}', style: const TextStyle(color: Colors.white70)),
-                      const SizedBox(width: 12),
-                    ],
-                    if (listing.price != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: const Color(0xFFEB4898)),
-                        ),
-                        child: Text(
-                          '\$${listing.price!.toStringAsFixed(0)}/month',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFFEB4898),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                if ((listing.description ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    listing.description!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () async {
-                          HapticFeedback.mediumImpact();
-                          final ownerId = listing.ownerId;
-                          if (ownerId == null) return;
-                          final convoId = await SwipeRepository()
-                              .startConversation(ownerId: ownerId, listingId: listing.id);
-                          if (!context.mounted || convoId == null) return;
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatScreen(
-                                conversation: ChatConversation(
-                                  id: convoId,
-                                  otherUserId: ownerId,
-                                  name: listing.title ?? 'Owner',
-                                  lastMessage: '',
-                                  timestamp: 'now',
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.chat_bubble_rounded, size: 16),
-                        label: const Text('MESSAGE'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFEB4898),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ListingDetailScreen(listingData: listing),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.visibility_outlined, size: 16),
-                        label: const Text('VIEW'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withAlpha(60)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          const Icon(Icons.search_rounded, color: Colors.white54, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+              ),
             ),
           ),
         ],
@@ -619,79 +649,13 @@ class _LikedCard extends StatelessWidget {
   }
 }
 
-class _LikedPersonCard extends StatelessWidget {
-  const _LikedPersonCard({
-    required this.person,
-    required this.onOpen,
-    required this.onMessage,
-    required this.onRemove,
-  });
-
-  final ProfileLike person;
-  final VoidCallback onOpen;
-  final VoidCallback onMessage;
-  final VoidCallback onRemove;
-
+class _Spinner extends StatelessWidget {
+  const _Spinner();
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(25)),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white12,
-                backgroundImage: person.primaryImage != null
-                    ? NetworkImage(person.primaryImage!)
-                    : null,
-                child: person.primaryImage == null
-                    ? const Icon(Icons.person_rounded, color: Colors.white54)
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      person.name,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (person.occupation != null) person.occupation!,
-                        if (person.age != null) '${person.age}',
-                      ].join(' · '),
-                      style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: onMessage,
-                icon: const Icon(Icons.chat_bubble_outline_rounded,
-                    color: Color(0xFFEB4898)),
-              ),
-              IconButton(
-                onPressed: onRemove,
-                icon: const Icon(Icons.close_rounded, color: Colors.white38),
-              ),
-            ],
-          ),
-        ),
+    return const SliverFillRemaining(
+      child: Center(
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
       ),
     );
   }

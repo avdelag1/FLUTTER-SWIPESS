@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -47,12 +46,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (raw.length < 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Write a short bio first')),
-      );
-      return;
-    }
-    if (!ref.read(aiEdgeReadyProvider)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to use AI Enhance')),
       );
       return;
     }
