@@ -1,4 +1,4 @@
-package com.example.flutter_swipes
+package com.swipess.mobile
 
 import io.flutter.embedding.android.FlutterActivity
 

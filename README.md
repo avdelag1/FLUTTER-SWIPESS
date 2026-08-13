@@ -4,16 +4,34 @@ Native Flutter rewrite of [Swipess](https://www.swipess.com) (`avdelag1/swipess`
 
 **Design source of truth is the live Capacitor app, not a new Flutter look.** Agents: read `BRAIN.md` and `docs/DESIGN_CONTRACT.md` first. To start a design pass, paste a prompt from `docs/PROMPTS.md`.
 
-## Getting Started
+Migration state lives in [`MIGRATION_PROGRESS.md`](MIGRATION_PROGRESS.md).
 
-This project is a starting point for a Flutter application.
+## Running it
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+flutter pub get
+flutter run                      # device or emulator
+flutter run -d chrome            # web
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Supabase URL and anon key fall back to the shared project. To point somewhere
+else, copy `dart_defines.json.example` to `dart_defines.json` and run with
+`--dart-define-from-file=dart_defines.json`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Native app
+
+Both platforms ship as `com.swipess.mobile`, the same identifier as the
+Capacitor build, so this installs over it as an update.
+
+| | |
+|---|---|
+| Android release signing | reads `android/key.properties` (git-ignored); falls back to debug keys when absent |
+| Deep links | App Links / Universal Links on `swipess.com`, `www.swipess.com`, `swipess.app`, plus a `swipess://` scheme |
+| Verification files | `assetlinks.json` and `apple-app-site-association` still have to be served from those hosts — see `MIGRATION_PROGRESS.md` |
+
+## Checks
+
+```bash
+flutter analyze
+flutter test
+```

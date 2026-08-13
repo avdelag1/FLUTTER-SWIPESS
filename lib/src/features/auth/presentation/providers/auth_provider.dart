@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 
 enum AuthIntent { login, signup }
@@ -28,7 +29,11 @@ class CurrentUserNotifier extends Notifier<User?> {
     state = user ?? Supabase.instance.client.auth.currentUser;
   }
 
-  void clear() => state = null;
+  void clear() {
+    // Signing out invalidates any share link the previous session had queued.
+    ref.read(pendingDeepLinkProvider).clear();
+    state = null;
+  }
 }
 
 final currentUserProvider =

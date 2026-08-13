@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Flutter Swipes</string>
+		<string>Swipess</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>flutter_swipes</string>
+		<string>Swipess</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -73,11 +73,47 @@
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Swipess may save signed contracts and listing photos to your library.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Swipess uses the microphone when you record listing or event videos.</string>
+		<string>Swipess uses the microphone so you can dictate messages to the AI concierge and record voice notes on listings.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Swipess uses speech recognition to turn your voice into text when you search listings or dictate messages.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Swipess uses your location to show nearby listings and match you with local services.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Swipess uses your location to show nearby listings and match you with local services.</string>
+		<key>NSContactsUsageDescription</key>
+		<string>Swipess can share listings with your contacts if you choose to.</string>
+		<key>NSCalendarsUsageDescription</key>
+		<string>Swipess adds events to your calendar so you never miss experiences, workshops, or ceremonies.</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Swipess uses Face ID for secure authentication.</string>
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
+		<!-- canLaunchUrl returns false for these schemes unless they are declared. -->
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>https</string>
+			<string>http</string>
+			<string>mailto</string>
+			<string>tel</string>
+			<string>whatsapp</string>
+			<string>instagram</string>
+			<string>fb</string>
+		</array>
+		<!-- Custom-scheme fallback for share links; the https equivalents arrive as
+		     Universal Links via Runner.entitlements. -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>com.swipess.mobile</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>swipess</string>
+				</array>
+			</dict>
+		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

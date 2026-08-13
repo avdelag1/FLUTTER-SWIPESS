@@ -4,12 +4,19 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- record: voice notes on listings and AI concierge dictation. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <!-- Android 13+ runtime notification opt-in. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
     <application
-        android:label="flutter_swipes"
+        android:label="@string/app_name"
         android:name="${applicationName}"
+        android:allowBackup="false"
+        android:supportsRtl="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -32,6 +39,39 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Verified App Links for the share/recovery URLs the app hands out.
+                 Only the paths GoRouter can actually resolve are claimed, so
+                 marketing pages on the same host still open in the browser.
+                 Requires /.well-known/assetlinks.json on each host — see
+                 MIGRATION_PROGRESS.md. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="${appLinkHost}"/>
+                <data android:scheme="https" android:host="${appLinkHostAlt}"/>
+                <data android:scheme="https" android:host="${appLinkHostApp}"/>
+                <data android:path="/reset-password"/>
+                <data android:pathPrefix="/listing/"/>
+                <data android:pathPrefix="/u/"/>
+                <data android:pathPrefix="/profile/"/>
+                <data android:pathPrefix="/explore/events/"/>
+                <data android:pathPrefix="/vap-validate/"/>
+                <data android:pathPrefix="/preview/"/>
+                <data android:pathPrefix="/payment/"/>
+                <data android:pathPrefix="/s/"/>
+            </intent-filter>
+
+            <!-- Custom scheme fallback. Works with no server-side association
+                 file, so swipess://listing/<id> resolves even before App Link
+                 verification is provisioned. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="swipess"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -48,6 +88,29 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher's canLaunchUrl returns false on Android 11+ unless the
+             target intent is declared here. Without these the promoter WhatsApp
+             button, "add to calendar" and the invite sheet silently do nothing. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="mailto"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="*/*"/>
         </intent>
     </queries>
 </manifest>
