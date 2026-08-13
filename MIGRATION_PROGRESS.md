@@ -6,8 +6,33 @@ Tracking the final stretch of the **Swipess** rewrite from the Capacitor/React a
 Design source of truth stays `BRAIN.md` + `docs/DESIGN_CONTRACT.md`. This file tracks
 **migration completeness**, not visual parity.
 
-**Status: code-complete. Two hosting steps remain before deep links verify in
-production — see [Handover](#handover-not-code).**
+**Status: in progress. The Dart surfaces and the native shell are done; the
+behaviours Capacitor got from its plugin list are being ported now — see
+[Audit — plugin parity](#audit--plugin-parity-2026-08-13-second-pass).**
+
+---
+
+## Audit — plugin parity (2026-08-13, second pass)
+
+The first pass called the migration code-complete because every route had a
+screen and `android/` + `ios/` had been rebuilt. That missed a category: the
+**twenty-five Capacitor plugins in `package.json`**. Each one is a behaviour the
+shipped app has. A plugin with no Flutter counterpart is a feature that quietly
+disappeared in the rewrite, and none of them show up as an analyzer warning.
+
+| Capacitor plugin | Behaviour | Flutter |
+|---|---|---|
+| `@capacitor/status-bar` | overlay bars, `Style.Dark`, flips with the theme | **added** — `SystemChromeService` |
+| `@capacitor/app` (`backButton`) | close overlay → walk up → exit | **added** — `GlobalBackButtonDispatcher` |
+| `@capacitor-community/privacy-screen` | screenshot block on VAP ID / vault | **added** — `PrivacyScreen` + `FLAG_SECURE` / iOS cover |
+| `@capacitor/network` | offline / back-online toasts | **added** — `ConnectivityService` |
+| `@capacitor/local-notifications` | 3-day and 7-day re-engagement nudges | **added** — `ReengagementNotifications` |
+| `@capacitor-community/in-app-review` | store review after a 2nd match | **added** — `AppReview` |
+| `@capawesome/capacitor-badge` | unread count on the app icon | **added** — `AppBadge` |
+| `@capacitor/app` (`appStateChange`) | schedule / clear on background | **added** — `AppLifecycleService` |
+| biometric, apple-sign-in, camera, geolocation, haptics, keyboard, preferences, share, splash-screen, browser, purchase | — | already ported (`local_auth`, `sign_in_with_apple`, `image_picker`, `geolocator`, `HapticFeedback`, framework insets, `shared_preferences`, `share_plus`, `flutter_native_splash`, `url_launcher`, `purchases_flutter`) |
+| `@capacitor-community/contacts` | contact picker in the invite sheet | share sheet only — see [Still open](#still-open-out-of-scope-for-the-migration) |
+| `@capacitor/push-notifications` | remote push | deliberate stub — see [Still open](#still-open-out-of-scope-for-the-migration) |
 
 ---
 
@@ -156,3 +181,9 @@ _(newest last)_
   resume, password-recovery routing, pure testable `AppRedirect`.
 - **2026-08-13** — Migration scratch files and the last placeholder screen removed;
   remaining template naming replaced across web and desktop scaffolding.
+- **2026-08-13** — Second-pass audit against the Capacitor plugin list; found the
+  native *behaviours* (not screens) that had no Flutter counterpart.
+- **2026-08-13** — System bars owned from Dart: edge to edge, transparent, icon
+  brightness follows the matte theme, black window behind the Flutter UI.
+- **2026-08-13** — Android Back walks up the hierarchy again instead of closing
+  the app from any `context.go` destination.
