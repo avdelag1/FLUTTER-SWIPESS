@@ -30,19 +30,22 @@ class SwipessLogo extends StatelessWidget {
       width: width,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
-      errorBuilder: (_, _, _) => Text(
-        'SWIPESS',
-        style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
-          fontSize: (height ?? 48) * 0.42,
-          fontWeight: FontWeight.w900,
-          fontStyle: FontStyle.italic,
-          letterSpacing: 3,
-          shadows: const [
-            Shadow(offset: Offset(2, 3), blurRadius: 0, color: Colors.black),
-          ],
-        ),
-      ),
+      errorBuilder: (_, _, _) {
+        final px = height ?? ((width ?? 220) * 0.28);
+        return Text(
+          'SWIPESS',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: px.clamp(36.0, 88.0),
+            fontWeight: FontWeight.w900,
+            fontStyle: FontStyle.italic,
+            letterSpacing: 3,
+            shadows: const [
+              Shadow(offset: Offset(2, 3), blurRadius: 0, color: Colors.black),
+            ],
+          ),
+        );
+      },
     );
   }
 }

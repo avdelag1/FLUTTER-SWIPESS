@@ -23,8 +23,24 @@ class AuthRepository {
     return _auth.signInWithPassword(email: email, password: password);
   }
 
-  Future<AuthResponse> signUpWithEmailPassword(String email, String password) {
-    return _auth.signUp(email: email, password: password);
+  Future<AuthResponse> signUpWithEmailPassword(
+    String email,
+    String password, {
+    String? name,
+  }) async {
+    final trimmed = name?.trim() ?? '';
+    final res = await _auth.signUp(
+      email: email,
+      password: password,
+      data: {
+        'role': 'client',
+        'name': trimmed,
+        'full_name': trimmed,
+      },
+    );
+    if (res.session != null) return res;
+    // Cap auto-signs in when email confirmation is off so signup lands on dashboard.
+    return _auth.signInWithPassword(email: email, password: password);
   }
 
   Future<void> signOut() => _auth.signOut();
