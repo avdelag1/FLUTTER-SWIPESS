@@ -33,6 +33,8 @@ class Listing {
   final bool? isActive;
   final int? likes;
   final int? views;
+  /// Cap `has_verified_documents` — drives the violet Verified pill on swipe.
+  final bool hasVerifiedDocuments;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   // Vehicle fields
@@ -76,6 +78,7 @@ class Listing {
     this.isActive,
     this.likes,
     this.views,
+    this.hasVerifiedDocuments = false,
     this.createdAt,
     this.updatedAt,
     this.vehicleBrand,
@@ -120,6 +123,9 @@ class Listing {
       isActive: json['is_active'] as bool?,
       likes: json['likes'] as int?,
       views: json['views'] as int?,
+      hasVerifiedDocuments: json['has_verified_documents'] == true ||
+          json['background_check_verified'] == true ||
+          json['insurance_verified'] == true,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
       vehicleBrand: json['vehicle_brand'] as String?,

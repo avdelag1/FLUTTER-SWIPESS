@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 
 /// Cap `TopBar` — neo-naïve glass pills + colored icon washes.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -106,7 +108,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 hardShadow: hardShadow,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  ref.read(navTabProvider.notifier).set(NavTab.add);
+                  showCreateListingChooser(context);
                 },
                 child: _WashIcon(
                   wash: const Color(0xFF69DB7C),
@@ -181,7 +183,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 hardShadow: hardShadow,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.push(AppPaths.notifications);
+                  showGlassModal(
+                    context: context,
+                    builder: (_) => const NotificationsScreen(),
+                  );
                 },
                 child: Stack(
                   clipBehavior: Clip.none,

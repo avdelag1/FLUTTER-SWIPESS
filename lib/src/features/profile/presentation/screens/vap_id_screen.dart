@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_pro
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
+import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
 import 'package:go_router/go_router.dart';
@@ -88,6 +89,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(0, 0, 0, bottom),
                   child: ThemedVapCard(
+                    theme: VapCardTheme.themes.first,
                     data: data,
                     idNumber: idNumber,
                     validationUrl: validationUrl,

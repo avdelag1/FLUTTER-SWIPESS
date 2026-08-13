@@ -8,6 +8,8 @@ class Profile {
   final String? role;
   final DateTime? createdAt;
   final bool verified;
+  final double? latitude;
+  final double? longitude;
 
   const Profile({
     required this.id,
@@ -19,6 +21,8 @@ class Profile {
     this.role,
     this.createdAt,
     this.verified = false,
+    this.latitude,
+    this.longitude,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,8 @@ class Profile {
       role: json['role'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
       verified: json['verified'] as bool? ?? false,
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
     );
   }
 

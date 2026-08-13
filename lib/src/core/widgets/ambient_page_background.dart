@@ -216,13 +216,13 @@ class NeoNaiveChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: Colors.white),
+              Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurface),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w800,
                 fontSize: 11,
                 letterSpacing: 0.6,

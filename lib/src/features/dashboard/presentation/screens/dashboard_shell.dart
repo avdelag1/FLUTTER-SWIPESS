@@ -70,8 +70,7 @@ class DashboardShell extends ConsumerWidget {
     final hideChrome = currentTab == NavTab.idCard;
     final isLight = ref.watch(isLightThemeProvider);
     final chromeVisible = ref.watch(chromeVisibilityProvider);
-    final syncChrome = currentTab == NavTab.dashboard;
-    final showChrome = !syncChrome || chromeVisible;
+    final showChrome = chromeVisible;
     final canvas = AppTheme.canvasFor(isLight: isLight);
     // Cap `getBottomNavChrome` — neo-naïve glass + hard ink ring.
     final dockFill = isLight
@@ -111,12 +110,31 @@ class DashboardShell extends ConsumerWidget {
             ),
       body: Stack(
         children: [
-          child,
+          NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollUpdateNotification) {
+                ref.read(chromeVisibilityProvider.notifier).onScroll(
+                      pixels: notification.metrics.pixels,
+                      delta: notification.scrollDelta ?? 0,
+                    );
+              }
+              return false; // let the notification bubble up if needed
+            },
+            child: child,
+          ),
           Positioned(
             bottom: 18,
             left: 0,
             right: 0,
-            child: SafeArea(
+            child: AnimatedOpacity(
+              opacity: showChrome ? 1 : 0,
+              duration: Duration(milliseconds: showChrome ? 360 : 340),
+              curve: const Cubic(0.25, 0.1, 0.25, 1),
+              child: AnimatedSlide(
+                offset: showChrome ? Offset.zero : const Offset(0, 0.5),
+                duration: Duration(milliseconds: showChrome ? 360 : 340),
+                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                child: SafeArea(
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 340),
@@ -186,6 +204,8 @@ class DashboardShell extends ConsumerWidget {
                 ),
               ),
             ),
+          ),
+          ),
           ),
           PushNotificationPrompt(enabled: user != null),
           GuidedTourOverlay(enabled: user != null),

@@ -9,6 +9,9 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
@@ -23,7 +26,7 @@ class LiveMapScreen extends ConsumerStatefulWidget {
 
 class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   String _category = 'all';
-  Listing? _selected;
+  MapPin? _selected;
   bool _menuOpen = false;
   bool _radiusOpen = false;
   final _mapController = MapController();
@@ -55,8 +58,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     return 8.6;
   }
 
-  List<_MapCluster> _cluster(List<Listing> listings, double zoom) {
-    if (listings.isEmpty) return const [];
+  List<_MapCluster> _cluster(List<MapPin> pins, double zoom) {
+    if (pins.isEmpty) return const [];
     final cell = zoom >= 13
         ? 0.01
         : zoom >= 11
@@ -64,25 +67,22 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
             : zoom >= 9
                 ? 0.12
                 : 0.28;
-    final buckets = <String, List<Listing>>{};
-    for (final l in listings) {
-      final lat = l.latitude;
-      final lng = l.longitude;
-      if (lat == null || lng == null) continue;
+    final buckets = <String, List<MapPin>>{};
+    for (final p in pins) {
       final key =
-          '${(lat / cell).floor()}_${(lng / cell).floor()}';
-      buckets.putIfAbsent(key, () => []).add(l);
+          '${(p.lat / cell).floor()}_${(p.lng / cell).floor()}';
+      buckets.putIfAbsent(key, () => []).add(p);
     }
     return [
       for (final group in buckets.values)
         _MapCluster(
           point: LatLng(
-            group.map((e) => e.latitude!).reduce((a, b) => a + b) /
+            group.map((e) => e.lat).reduce((a, b) => a + b) /
                 group.length,
-            group.map((e) => e.longitude!).reduce((a, b) => a + b) /
+            group.map((e) => e.lng).reduce((a, b) => a + b) /
                 group.length,
           ),
-          listings: group,
+          pins: group,
         ),
     ];
   }
@@ -90,31 +90,47 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   @override
   Widget build(BuildContext context) {
     final location = ref.watch(discoveryLocationProvider);
-    final async = ref.watch(mapListingsProvider);
+    final asyncListings = ref.watch(mapListingsProvider);
+    final asyncProfiles = ref.watch(mapProfilesProvider);
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
+    
+    final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
+    final hasError = asyncListings.hasError && asyncProfiles.hasError;
 
     return Scaffold(
       body: Stack(
         children: [
-          async.when(
-            loading: () => const Center(
+          if (isLoading)
+            const Center(
               child: CircularProgressIndicator(
                 color: Color(0xFF00C6FF),
                 strokeWidth: 2,
               ),
-            ),
-            error: (e, _) => Center(
+            )
+          else if (hasError)
+            Center(
               child: TextButton(
-                onPressed: () => ref.invalidate(mapListingsProvider),
-                child: const Text('Could not load map pins — retry'),
+                onPressed: () {
+                  ref.invalidate(mapListingsProvider);
+                  ref.invalidate(mapProfilesProvider);
+                },
+                child: const Text('Could not load map pins — retry', style: TextStyle(color: Colors.white)),
               ),
-            ),
-            data: (listings) {
+            )
+          else
+            Builder(builder: (context) {
+              final listings = asyncListings.value ?? [];
+              final profiles = asyncProfiles.value ?? [];
+              
+              final List<MapPin> allPins = [
+                ...listings.map((l) => MapPin.listing(l)),
+                ...profiles.map((p) => MapPin.profile(p)),
+              ];
               final filtered = _category == 'all'
-                  ? listings
-                  : listings
-                      .where((l) => (l.category ?? '') == _category)
+                  ? allPins
+                  : allPins
+                      .where((p) => p.isListing && (p.listing?.category ?? '') == _category)
                       .toList();
               final clusters = _cluster(filtered, _zoom);
               return FlutterMap(
@@ -170,7 +186,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                             onTap: () {
                               HapticFeedback.selectionClick();
                               if (c.count == 1) {
-                                setState(() => _selected = c.listings.first);
+                                setState(() => _selected = c.pins.first);
                               } else {
                                 _mapController.move(
                                   c.point,
@@ -185,8 +201,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                   ),
                 ],
               );
-            },
-          ),
+            }),
 
           // Cap HUD — X left, Menu right
           SafeArea(
@@ -432,14 +447,23 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
               right: 16,
               bottom: MediaQuery.paddingOf(context).bottom + 120,
               child: _PreviewCard(
-                listing: _selected!,
+                pin: _selected!,
                 onOpen: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ListingDetailScreen(listingData: _selected!),
-                    ),
-                  );
+                  if (_selected!.isListing) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ListingDetailScreen(listingData: _selected!.listing!),
+                      ),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProfileDetailScreen(userId: _selected!.profile!.id),
+                      ),
+                    );
+                  }
                 },
                 onClose: () => setState(() => _selected = null),
               ),
@@ -490,11 +514,32 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 }
 
+
+class MapPin {
+  final bool isListing;
+  final Listing? listing;
+  final Profile? profile;
+  final double lat;
+  final double lng;
+
+  MapPin.listing(this.listing)
+      : isListing = true,
+        profile = null,
+        lat = listing!.latitude!,
+        lng = listing.longitude!;
+
+  MapPin.profile(this.profile)
+      : isListing = false,
+        listing = null,
+        lat = profile!.latitude!,
+        lng = profile.longitude!;
+}
+
 class _MapCluster {
-  const _MapCluster({required this.point, required this.listings});
+  const _MapCluster({required this.point, required this.pins});
   final LatLng point;
-  final List<Listing> listings;
-  int get count => listings.length;
+  final List<MapPin> pins;
+  int get count => pins.length;
 }
 
 class _ClusterBubble extends StatelessWidget {
@@ -588,17 +633,22 @@ class _HudCircle extends StatelessWidget {
 
 class _PreviewCard extends StatelessWidget {
   const _PreviewCard({
-    required this.listing,
+    required this.pin,
     required this.onOpen,
     required this.onClose,
   });
 
-  final Listing listing;
+  final MapPin pin;
   final VoidCallback onOpen;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
+    final title = pin.isListing ? (pin.listing?.title ?? 'Listing') : pin.profile?.displayName ?? 'User';
+    final subtitle = pin.isListing ? (pin.listing?.formattedLocation ?? '') : (pin.profile?.city ?? '');
+    final price = pin.isListing ? (pin.listing?.formattedPrice ?? '') : (pin.profile?.role ?? '');
+    final imageUrl = pin.isListing ? pin.listing?.primaryImage : pin.profile?.avatarUrl;
+    
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -613,8 +663,8 @@ class _PreviewCard extends StatelessWidget {
             SizedBox(
               width: 96,
               height: 96,
-              child: listing.primaryImage != null
-                  ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
+              child: imageUrl != null
+                  ? Image.network(imageUrl, fit: BoxFit.cover)
                   : const ColoredBox(color: Color(0xFF22222A)),
             ),
             Expanded(
@@ -625,7 +675,7 @@ class _PreviewCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      listing.title ?? 'Listing',
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -633,28 +683,31 @@ class _PreviewCard extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    Text(
-                      listing.formattedLocation,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
-                        fontSize: 12,
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      listing.formattedPrice,
-                      style: const TextStyle(
-                        color: AppTheme.brandPrimary,
-                        fontWeight: FontWeight.w900,
+                    if (price.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        price,
+                        style: const TextStyle(
+                          color: AppTheme.brandPrimary,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 8),
                     GestureDetector(
                       onTap: onOpen,
                       child: Text(
-                        'OPEN DETAILS →',
+                        pin.isListing ? 'OPEN DETAILS →' : 'VIEW PROFILE →',
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,

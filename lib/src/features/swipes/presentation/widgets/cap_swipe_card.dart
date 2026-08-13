@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_gesture_hints.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
@@ -375,13 +375,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
 
-              if (widget.isTop)
-                SwipeGestureHints(
-                  hidden: _zoomed ||
-                      widget.likeOpacity > 0.08 ||
-                      widget.nopeOpacity > 0.08,
-                ),
-
               // Photo segments
               if (!_zoomed && media.length > 1)
                 Positioned(
@@ -417,18 +410,73 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
 
+              // Cap Verified pill (violet glass)
+              if (!_zoomed && widget.listing.hasVerifiedDocuments)
+                Positioned(
+                  top: 66,
+                  left: 18,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(90),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: Colors.white.withAlpha(70)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF8B5CF6).withAlpha(100),
+                              blurRadius: 16,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFA78BFA),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'VERIFIED',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
               // Top-left back
               if (!_zoomed && widget.onBack != null)
                 Positioned(
                   top: 10,
                   left: 10,
                   child: _GlassCircle(
+                    size: 48,
+                    iconSize: 28,
                     icon: Icons.chevron_left_rounded,
                     onTap: widget.onBack!,
                   ),
                 ),
 
-              // Top-right undo + mute
+              // Top-right return (one-shot undo) + mute
               if (!_zoomed)
                 Positioned(
                   top: 10,
@@ -437,13 +485,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     children: [
                       if (widget.canUndo && widget.onUndo != null)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.only(bottom: 10),
                           child: _GlassCircle(
-                            icon: Icons.replay_rounded,
+                            size: 44,
+                            iconSize: 22,
+                            icon: Icons.undo_rounded,
                             onTap: widget.onUndo!,
                           ),
                         ),
                       _GlassCircle(
+                        size: 32,
+                        iconSize: 16,
                         icon: soundOn
                             ? Icons.volume_up_rounded
                             : Icons.volume_off_rounded,
@@ -479,8 +531,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       _GlassCircle(
+                        size: 58,
+                        iconSize: 22,
                         icon: Icons.map_rounded,
                         onTap: () {
                           HapticFeedback.lightImpact();
@@ -494,7 +548,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
               // Right action rail
               if (!_zoomed && widget.isTop && widget.railVisible)
                 Positioned(
-                  right: 10,
+                  right: 12,
                   bottom: 120,
                   child: _ActionRail(
                     onAi: widget.onOpenAi,
@@ -550,11 +604,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(150),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white24),
+                          color: const Color(0x8C141418),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(140),
+                              blurRadius: 32,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -677,23 +737,30 @@ class _Stamp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLike = text == 'LIKE';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isLike ? 28 : 36,
+        vertical: isLike ? 12 : 20,
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color, width: 4),
-        color: color.withAlpha(45),
+        borderRadius: BorderRadius.circular(isLike ? 24 : 999),
+        border: isLike ? Border.all(color: color, width: 4) : null,
+        color: Colors.black.withAlpha(isLike ? 50 : 0),
         boxShadow: [
-          BoxShadow(color: color.withAlpha(80), blurRadius: 18),
+          BoxShadow(color: color.withAlpha(100), blurRadius: 24),
         ],
       ),
       child: Text(
         text,
         style: TextStyle(
           color: color,
-          fontSize: 34,
+          fontSize: isLike ? 48 : 44,
           fontWeight: FontWeight.w900,
-          letterSpacing: 2,
+          letterSpacing: -1.5,
+          shadows: [
+            Shadow(color: color.withAlpha(180), blurRadius: 20),
+          ],
         ),
       ),
     );
@@ -717,46 +784,62 @@ class _ActionRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withAlpha(100),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _RailBtn(
-            onTap: onAi,
-            child: Text(
-              'AI',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 11,
+    // Cap: rounded-3xl glass column, 46×46 tap targets, frameless icons.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(77),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withAlpha(77)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(128),
+                blurRadius: 48,
+                offset: const Offset(0, 16),
               ),
-            ),
+            ],
           ),
-          _RailBtn(
-            onTap: onShare,
-            child: const Icon(Icons.share_rounded, color: Colors.white, size: 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _RailBtn(
+                onTap: onAi,
+                child: Text(
+                  'AI',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              _RailBtn(
+                onTap: onShare,
+                child: const Icon(Icons.share_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              _RailBtn(
+                onTap: onMessage,
+                child: const Icon(Icons.chat_bubble_outline_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              _RailBtn(
+                onTap: onInsights,
+                child: const Icon(Icons.bar_chart_rounded,
+                    color: Colors.white, size: 20),
+              ),
+              _RailBtn(
+                onTap: onReport,
+                child: const Icon(Icons.flag_outlined,
+                    color: Colors.white, size: 20),
+              ),
+            ],
           ),
-          _RailBtn(
-            onTap: onMessage,
-            child: const Icon(Icons.chat_bubble_outline_rounded,
-                color: Colors.white, size: 18),
-          ),
-          _RailBtn(
-            onTap: onInsights,
-            child: const Icon(Icons.bar_chart_rounded,
-                color: Colors.white, size: 18),
-          ),
-          _RailBtn(
-            onTap: onReport,
-            child: const Icon(Icons.flag_outlined, color: Colors.white, size: 18),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -775,29 +858,48 @@ class _RailBtn extends StatelessWidget {
         onTap?.call();
       },
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(width: 40, height: 40, child: Center(child: child)),
+      child: SizedBox(width: 46, height: 46, child: Center(child: child)),
     );
   }
 }
 
 class _GlassCircle extends StatelessWidget {
-  const _GlassCircle({required this.icon, required this.onTap});
+  const _GlassCircle({
+    required this.icon,
+    required this.onTap,
+    this.size = 36,
+    this.iconSize = 18,
+  });
   final IconData icon;
   final VoidCallback onTap;
+  final double size;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.black.withAlpha(110),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(77),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withAlpha(77)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(128),
+                  blurRadius: 48,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: iconSize),
+          ),
         ),
-        child: Icon(icon, color: Colors.white, size: 18),
       ),
     );
   }
@@ -812,9 +914,9 @@ class _GlassPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withAlpha(120),
+        color: Colors.black.withAlpha(77),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withAlpha(77)),
       ),
       child: child,
     );

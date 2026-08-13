@@ -49,7 +49,8 @@ class ClientSwipeContainer extends ConsumerStatefulWidget {
 
 class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   List<Listing>? _deck;
-  final List<Listing> _passed = [];
+  /// One-shot return: only the most recent swipe can be restored once.
+  Listing? _undoable;
   late String _categoryId;
   bool _demoMatchShown = false;
   bool _retrying = false;
@@ -71,7 +72,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     if (oldWidget.categoryId != widget.categoryId) {
       _categoryId = widget.categoryId;
       _deck = null;
-      _passed.clear();
+      _undoable = null;
     }
   }
 
@@ -135,10 +136,11 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 
   void _undo() {
-    if (_passed.isEmpty || _deck == null) return;
+    final last = _undoable;
+    if (last == null || _deck == null) return;
     HapticFeedback.selectionClick();
     setState(() {
-      final last = _passed.removeLast();
+      _undoable = null;
       _deck = [last, ..._deck!];
     });
     ref.read(chromeRevealProvider.notifier).reveal();
@@ -181,7 +183,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
         setState(() {
           _categoryId = cat;
           _deck = null;
-          _passed.clear();
+          _undoable = null;
         });
         ref.read(chromeRevealProvider.notifier).reveal();
       },
@@ -269,7 +271,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                         : SwipeableCardStack(
                             listings: deck,
                             railVisible: chrome.railVisible,
-                            canUndo: _passed.isNotEmpty,
+                            canUndo: _undoable != null,
                             onUndo: _undo,
                             onBack: () => Navigator.of(context).pop(),
                             onSummonChrome: () {
@@ -312,7 +314,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                             },
                             onSwiped: (listing, direction) {
                               setState(() {
-                                _passed.add(listing);
+                                _undoable = listing;
                                 _deck = List<Listing>.from(deck)
                                   ..removeWhere((l) => l.id == listing.id);
                               });

@@ -5,7 +5,6 @@ import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
-/// Capacitor LawyerServicesPage — package catalog (static Cap categories).
 class LawyerServicesScreen extends StatefulWidget {
   const LawyerServicesScreen({super.key});
 
@@ -49,152 +48,206 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
     final visible = _category == 'all'
         ? _packages
         : _packages.where((p) => p.category == _category).toList();
+    final top = MediaQuery.paddingOf(context).top;
 
     return NeoNaiveScaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Row(
-                children: [
-                  CapBackButton(onTap: () => Navigator.pop(context)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('LEGAL SERVICES',
-                            style: AppTheme.displayItalic.copyWith(fontSize: 22)),
-                        Text(
-                          'Lawyer packages & contract drafts',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, top + 12, 20, 24),
+            child: Row(
+              children: [
+                CapBackButton(onTap: () => Navigator.pop(context)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('SERVICE PACKAGES',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 24, letterSpacing: -0.5)),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Lawyer packages & contract drafts',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white54,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            SizedBox(
-              height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  for (final c in _categories)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: NeoNaiveChip(
-                        label: c.$2,
-                        selected: _category == c.$1,
-                        onSelected: () => setState(() => _category = c.$1),
-                        selectedColor: AppTheme.brandPrimary,
+          ),
+          SizedBox(
+            height: 38,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              children: [
+                for (final c in _categories)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _category = c.$1);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _category == c.$1 ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (c.$3 != null) ...[
+                              Icon(c.$3, size: 14, color: _category == c.$1 ? Colors.black : Colors.white),
+                              const SizedBox(width: 6),
+                            ],
+                            Text(
+                              c.$2,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: _category == c.$1 ? Colors.black : Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 11,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-                itemCount: visible.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, i) {
-                  final pkg = visible[i];
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                pkg.name,
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+              itemCount: visible.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 16),
+              itemBuilder: (context, i) {
+                final pkg = visible[i];
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              pkg.name,
+                              style: AppTheme.displayItalic.copyWith(
+                                color: Colors.white,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'STARTING AT',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 8,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                              Text(
+                                '\$${pkg.price}',
                                 style: GoogleFonts.plusJakartaSans(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 16,
+                                  fontSize: 24,
                                 ),
                               ),
-                            ),
-                            Text(
-                              '\$${pkg.price}',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: AppTheme.brandPrimary,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: Colors.white, width: 1),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          pkg.description,
+                        child: Text(
+                          'ESTIMATED: ~${pkg.days} DAYS',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white60,
-                            fontSize: 13,
-                            height: 1.35,
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(Icons.schedule_rounded,
-                                size: 14, color: Colors.white.withAlpha(140)),
-                            const SizedBox(width: 4),
-                            Text(
-                              '~${pkg.days} days',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Spacer(),
-                            TextButton(
-                              onPressed: () {
-                                HapticFeedback.mediumImpact();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Request logged for ${pkg.name}. A provider will confirm scope & quote.',
-                                    ),
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppTheme.brandPrimary,
-                              ),
-                              child: Text(
-                                'REQUEST',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        pkg.description,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Request logged for ${pkg.name}. A provider will confirm scope & quote.',
                                 ),
                               ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                          ],
+                          ),
+                          child: Text(
+                            'REQUEST SERVICE',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.5,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -208,4 +261,3 @@ class _Pkg {
   final int price;
   final int days;
 }
-
