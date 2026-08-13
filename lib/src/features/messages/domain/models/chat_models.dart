@@ -9,6 +9,7 @@ class ChatConversation {
     this.avatarUrl,
     this.listingTag,
     this.isOnline = false,
+    this.archived = false,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class ChatConversation {
   final String? avatarUrl;
   final String? listingTag;
   final bool isOnline;
+  final bool archived;
 }
 
 class ChatMessage {

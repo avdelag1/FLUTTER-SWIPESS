@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/messages_documents_library.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/message_activation_packages.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -214,7 +215,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         var filtered = items.where((c) {
                           if (q.isNotEmpty && !c.name.toLowerCase().contains(q)) return false;
                           if (_activeFilter == 'unread' && c.unreadCount == 0) return false;
-                          if (_activeFilter == 'archived') return false; // not implemented in mock yet
+                          if (_activeFilter == 'archived' && !c.archived) {
+                            return false;
+                          }
+                          if (_activeFilter != 'archived' && c.archived) {
+                            return false;
+                          }
                           return true;
                         }).toList();
                         
@@ -238,30 +244,26 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
                           itemCount: filtered.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) => _ChatTile(conversation: filtered[index]),
+                          itemBuilder: (context, index) {
+                            final conversation = filtered[index];
+                            return GestureDetector(
+                              onLongPress: conversation.archived
+                                  ? null
+                                  : () {
+                                      HapticFeedback.mediumImpact();
+                                      ref
+                                          .read(conversationsProvider.notifier)
+                                          .archive(conversation.id);
+                                    },
+                              child: _ChatTile(conversation: conversation),
+                            );
+                          },
                         );
                       },
                     ),
                   ),
                 ] else ...[
-                  // Documents Section Placeholder
-                  Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.folder_shared_rounded, size: 64, color: ink.withAlpha(40)),
-                          const SizedBox(height: 16),
-                          Text(
-                            'DOCUMENTS',
-                            style: AppTheme.displayItalic.copyWith(fontSize: 24, color: muted),
-                          ),
-                          const SizedBox(height: 8),
-                          Text('Shared contracts and files will appear here.', style: TextStyle(color: muted)),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const Expanded(child: MessagesDocumentsLibrary()),
                 ],
               ],
             ),

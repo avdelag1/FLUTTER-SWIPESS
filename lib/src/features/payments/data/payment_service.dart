@@ -76,6 +76,11 @@ class PaymentService {
       if (current != null && current.availablePackages.isNotEmpty) {
         return current.availablePackages;
       }
+      for (final offering in offerings.all.values) {
+        if (offering.availablePackages.isNotEmpty) {
+          return offering.availablePackages;
+        }
+      }
       return [];
     } on PlatformException {
       return [];
@@ -103,8 +108,8 @@ class PaymentService {
   Future<bool> restorePurchases() async {
     if (!_configured) await init();
     try {
-      await Purchases.restorePurchases();
-      return true;
+      final info = await Purchases.restorePurchases();
+      return info.entitlements.active.isNotEmpty;
     } catch (_) {
       return false;
     }

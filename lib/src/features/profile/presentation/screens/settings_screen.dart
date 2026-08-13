@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/legal_sheet.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
@@ -9,17 +11,21 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/about_s
 import 'package:flutter_swipes/src/features/profile/presentation/screens/contact_support_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/support_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/security_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Capacitor ClientSettings — SYSTEM SETTINGS with neo-naive grouped rows.
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+/// Capacitor ClientSettings / OwnerSettings.
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key, this.audience = 'client'});
+
+  final String audience;
+
+  bool get _isOwner => audience == 'owner';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: AmbientPageBackground(
         fill: true,
@@ -112,17 +118,27 @@ class SettingsScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 22),
-            _GroupLabel('CONTRACTS & SERVICES'),
+            _GroupLabel(_isOwner ? 'LISTINGS & CONTRACTS' : 'CONTRACTS & SERVICES'),
             const SizedBox(height: 10),
             NeoNaiveGroup(
               children: [
-                _SettingsRow(
-                  icon: Icons.handyman_rounded,
-                  label: 'MAINTENANCE',
-                  description: 'Report & track property issues',
-                  colors: const [Color(0xFF2DD4BF), Color(0xFF5EEAD4)],
-                  onTap: () => _push(context, const MaintenanceRequestsScreen()),
-                ),
+                if (_isOwner)
+                  _SettingsRow(
+                    icon: Icons.apartment_rounded,
+                    label: 'PROPERTIES',
+                    description: 'Your listings and brand assets',
+                    colors: const [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                    onTap: () => _push(context, const OwnerPropertiesScreen()),
+                  )
+                else
+                  _SettingsRow(
+                    icon: Icons.handyman_rounded,
+                    label: 'MAINTENANCE',
+                    description: 'Report & track property issues',
+                    colors: const [Color(0xFF2DD4BF), Color(0xFF5EEAD4)],
+                    onTap: () =>
+                        _push(context, const MaintenanceRequestsScreen()),
+                  ),
                 _SettingsRow(
                   icon: Icons.description_rounded,
                   label: 'CONTRACTS',
@@ -137,13 +153,14 @@ class SettingsScreen extends StatelessWidget {
                   colors: const [Color(0xFF312E81), Color(0xFF6366F1)],
                   onTap: () => _push(context, const LawyerServicesScreen()),
                 ),
-                _SettingsRow(
-                  icon: Icons.card_giftcard_rounded,
-                  label: 'PERKS',
-                  description: 'Resident offers & partner discounts',
-                  colors: const [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                  onTap: () => _push(context, const PerksScreen()),
-                ),
+                if (!_isOwner)
+                  _SettingsRow(
+                    icon: Icons.card_giftcard_rounded,
+                    label: 'PERKS',
+                    description: 'Resident offers & partner discounts',
+                    colors: const [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                    onTap: () => _push(context, const PerksScreen()),
+                  ),
               ],
             ),
             const SizedBox(height: 22),
@@ -154,7 +171,10 @@ class SettingsScreen extends StatelessWidget {
               label: 'FAQ',
               description: 'Common questions & guidance',
               colors: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
-              onTap: () => _push(context, const FAQScreen()),
+              onTap: () => _push(
+                context,
+                FAQScreen(audience: _isOwner ? 'owner' : 'client'),
+              ),
             ),
             _GradTile(
               icon: Icons.info_rounded,
@@ -185,28 +205,13 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => showLegalSheet(context, doc: LegalDoc.terms),
             ),
             const SizedBox(height: 28),
-            _GradTile(
-              icon: Icons.info_rounded,
-              label: 'ABOUT SWIPESS',
-              description: 'Mission & how the protocol works',
-              colors: const [Color(0xFF4C1D95), Color(0xFFA855F7)],
-              onTap: () => _push(context, const AboutScreen()),
-            ),
-            _GradTile(
-              icon: Icons.mail_outline_rounded,
-              label: 'CONTACT',
-              description: 'Email the Swipess team',
-              colors: const [Color(0xFF64748B), Color(0xFF94A3B8)],
-              onTap: () => _push(context, const ContactSupportScreen()),
-            ),
-            const SizedBox(height: 28),
             NeoNaiveCard(
               child: Column(
                 children: [
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () => _resetPassword(context),
+                      onPressed: () => _resetPassword(context, ref),
                       child: Text(
                         'RESET PASSWORD',
                         style: GoogleFonts.plusJakartaSans(
@@ -221,7 +226,7 @@ class SettingsScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
-                      onPressed: () => _confirmDelete(context),
+                      onPressed: () => _confirmDelete(context, ref),
                       child: Text(
                         'SIGN OUT / DELETE ACCOUNT',
                         style: GoogleFonts.plusJakartaSans(
@@ -247,19 +252,20 @@ class SettingsScreen extends StatelessWidget {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
   }
 
-  Future<void> _resetPassword(BuildContext context) async {
-    final email = Supabase.instance.client.auth.currentUser?.email;
-    if (email == null || email.isEmpty) {
+  Future<void> _resetPassword(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(authRepositoryProvider);
+    final userEmail = repo.currentEmail;
+    if (userEmail == null || userEmail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No email on this account')),
       );
       return;
     }
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      await repo.resetPassword(userEmail);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Recovery email sent to $email')),
+          SnackBar(content: Text('Recovery email sent to $userEmail')),
         );
       }
     } catch (e) {
@@ -271,7 +277,7 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context) async {
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -293,7 +299,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      await Supabase.instance.client.auth.signOut();
+      await ref.read(authRepositoryProvider).signOut();
     }
   }
 }
@@ -354,12 +360,14 @@ class _SettingsRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(14),
+                  Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 1.1,
+                      fontSize: 14,
                     ),
                   ),
                   Text(

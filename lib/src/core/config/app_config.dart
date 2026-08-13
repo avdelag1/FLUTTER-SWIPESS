@@ -27,6 +27,18 @@ class AppConfig {
     defaultValue: '',
   );
 
+  /// Google Sign-In web/server client ID (`….apps.googleusercontent.com`).
+  static const googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '',
+  );
+
+  /// iOS OAuth client ID for native Google Sign-In.
+  static const googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+    defaultValue: '',
+  );
+
   static bool get hasMapboxToken => mapboxAccessToken.trim().isNotEmpty;
   static bool get hasRevenueCatKey => revenueCatApiKey.trim().isNotEmpty ||
       revenueCatAppleApiKey.trim().isNotEmpty ||

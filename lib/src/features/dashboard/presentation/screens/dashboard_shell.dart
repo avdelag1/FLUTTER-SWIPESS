@@ -10,6 +10,8 @@ import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
+import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
@@ -17,10 +19,17 @@ import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:go_router/go_router.dart';
 
-class DashboardShell extends ConsumerWidget {
+class DashboardShell extends ConsumerStatefulWidget {
   const DashboardShell({super.key, required this.child});
 
   final Widget child;
+
+  @override
+  ConsumerState<DashboardShell> createState() => _DashboardShellState();
+}
+
+class _DashboardShellState extends ConsumerState<DashboardShell> {
+  bool _eventsMounted = false;
 
   static const _washes = [
     Color(0xFFFF6B6B), // coral
@@ -31,8 +40,12 @@ class DashboardShell extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    final isDashboard = location == AppPaths.clientDashboard ||
+        location == AppPaths.legacyDashboard;
+    final isEvents = location == AppPaths.exploreEvents;
+    if (isEvents) _eventsMounted = true;
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
     final user = ref.watch(currentUserProvider);
@@ -123,7 +136,27 @@ class DashboardShell extends ConsumerWidget {
               }
               return false; // let the notification bubble up if needed
             },
-            child: child,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Offstage(
+                  offstage: !isDashboard,
+                  child: TickerMode(
+                    enabled: isDashboard,
+                    child: const BentoDashboardScreen(),
+                  ),
+                ),
+                if (_eventsMounted)
+                  Offstage(
+                    offstage: !isEvents,
+                    child: TickerMode(
+                      enabled: isEvents,
+                      child: const EventsScreen(),
+                    ),
+                  ),
+                if (!isDashboard && !isEvents) widget.child,
+              ],
+            ),
           ),
           Positioned(
             bottom: 18,

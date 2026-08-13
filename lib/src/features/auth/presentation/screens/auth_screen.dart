@@ -54,6 +54,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       context.go(AppPaths.clientDashboard);
     } catch (e) {
       if (!mounted) return;
+      final message = e.toString();
+      if (message.contains('CANCELLED') ||
+          message.contains('canceled') ||
+          message.contains('Cancelled')) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(e.toString()),
       ));
@@ -220,12 +226,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   return;
                                 }
                                 try {
-                                  await Supabase.instance.client.auth
-                                      .resetPasswordForEmail(
-                                    email,
-                                    redirectTo:
-                                        'https://www.swipess.com/reset-password',
-                                  );
+                                  await ref
+                                      .read(authRepositoryProvider)
+                                      .resetPassword(email);
                                   if (!mounted) return;
                                   messenger.showSnackBar(
                                     const SnackBar(

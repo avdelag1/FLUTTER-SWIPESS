@@ -18,6 +18,31 @@ class ConversationsNotifier extends AsyncNotifier<List<ChatConversation>> {
       () => ref.read(messageRepositoryProvider).fetchConversations(),
     );
   }
+
+  Future<void> archive(String conversationId) async {
+    await ref
+        .read(messageRepositoryProvider)
+        .archiveConversation(conversationId);
+    final current = state.value ?? const <ChatConversation>[];
+    state = AsyncData([
+      for (final item in current)
+        if (item.id == conversationId)
+          ChatConversation(
+            id: item.id,
+            otherUserId: item.otherUserId,
+            name: item.name,
+            lastMessage: item.lastMessage,
+            timestamp: item.timestamp,
+            unreadCount: item.unreadCount,
+            avatarUrl: item.avatarUrl,
+            listingTag: item.listingTag,
+            isOnline: item.isOnline,
+            archived: true,
+          )
+        else
+          item,
+    ]);
+  }
 }
 
 final conversationsProvider =

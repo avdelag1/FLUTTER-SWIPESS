@@ -39,6 +39,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/mainten
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
+import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/holographic_id_card.dart';
@@ -375,7 +376,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         colors: const [Color(0xFF64748B), Color(0xFF334155)],
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const SettingsScreen(),
+                            builder: (_) => SettingsScreen(
+                              audience: profile?.role == 'owner'
+                                  ? 'owner'
+                                  : 'client',
+                            ),
                           ),
                         ),
                       ),
@@ -385,7 +390,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         colors: const [Color(0xFFEF4444), Color(0xFF991B1B)],
                         onTap: () async {
                           HapticFeedback.mediumImpact();
-                          await Supabase.instance.client.auth.signOut();
+                          await ref.read(authRepositoryProvider).signOut();
                           if (context.mounted) context.go(AppPaths.auth);
                         },
                       ),

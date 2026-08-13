@@ -16,13 +16,11 @@ import 'package:flutter_swipes/src/features/auth/presentation/screens/reset_pass
 import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/dashboard_shell.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_route_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/contracts_screen.dart';
@@ -253,7 +251,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppPaths.clientDashboard,
-            builder: (ctx, _) => const BentoDashboardScreen(),
+            builder: (ctx, _) => const SizedBox.shrink(),
           ),
           GoRoute(
             path: AppPaths.clientLikedProperties,
@@ -265,7 +263,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppPaths.exploreEvents,
-            builder: (ctx, _) => const EventsScreen(),
+            builder: (ctx, _) => const SizedBox.shrink(),
           ),
           GoRoute(
             path: AppPaths.exploreSeekers,
@@ -294,11 +292,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Full-screen authenticated Cap routes (no bottom dock)
       GoRoute(
         path: AppPaths.clientSettings,
-        builder: (ctx, _) => const SettingsScreen(),
+        builder: (ctx, _) => const SettingsScreen(audience: 'client'),
       ),
       GoRoute(
         path: AppPaths.ownerSettings,
-        builder: (ctx, _) => const SettingsScreen(),
+        builder: (ctx, _) => const SettingsScreen(audience: 'owner'),
       ),
       GoRoute(
         path: AppPaths.clientWhoLikedYou,

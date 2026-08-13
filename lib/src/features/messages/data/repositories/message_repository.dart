@@ -56,6 +56,7 @@ class MessageRepository {
         timestamp: _relative(row['last_message_at'] as String? ?? last?['at'] as String?),
         unreadCount: last?['unread'] == true && last?['sender'] != userId ? 1 : 0,
         listingTag: listing?['title'] as String?,
+        archived: row['status'] == 'archived',
       );
     }).toList();
   }
@@ -133,6 +134,16 @@ class MessageRepository {
     await _client.from('conversations').update({
       'last_message_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('id', conversationId);
+  }
+
+  Future<void> archiveConversation(String conversationId) async {
+    try {
+      await _client.from('conversations').update({
+        'status': 'archived',
+      }).eq('id', conversationId);
+    } catch (_) {
+      // Column may not exist on older schemas; filter still works locally.
+    }
   }
 
   Future<Map<String, Map<String, dynamic>>> _loadProfiles(List<String> ids) async {
