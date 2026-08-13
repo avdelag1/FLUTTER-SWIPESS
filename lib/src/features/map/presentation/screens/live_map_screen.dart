@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -27,7 +25,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   bool _menuOpen = false;
   bool _radiusOpen = false;
   final _mapController = MapController();
-  double _zoom = 11;
 
   static const _categories = [
     ('all', 'All', Icons.public_rounded),
@@ -55,6 +52,15 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     return base.take(_maxPins).toList();
   }
 
+  double _zoomForRadius(int km) {
+    if (km <= 5) return 13.2;
+    if (km <= 10) return 12.4;
+    if (km <= 25) return 11.4;
+    if (km <= 50) return 10.6;
+    if (km <= 100) return 9.6;
+    return 8.6;
+  }
+
   @override
   Widget build(BuildContext context) {
     final location = ref.watch(discoveryLocationProvider);
@@ -62,6 +68,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final center = LatLng(location.latitude, location.longitude);
     final listings = async.asData?.value ?? const <Listing>[];
     final filtered = _filtered(listings);
+    final radiusKm = location.radiusKm;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A12),
@@ -327,9 +334,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
@@ -356,9 +363,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                               fontSize: 11,
                             ),
                           ),
-                      ],
-                    ),
-                  ],
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -429,16 +436,11 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   }
 }
 
-class _MapCluster {
-  const _MapCluster({required this.point, required this.listings});
-  final LatLng point;
-  final List<Listing> listings;
-  int get count => listings.length;
-}
+class _Pin extends StatelessWidget {
+  const _Pin({required this.listing, required this.selected});
 
-class _ClusterBubble extends StatelessWidget {
-  const _ClusterBubble({required this.count});
-  final int count;
+  final Listing listing;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -451,6 +453,13 @@ class _ClusterBubble extends StatelessWidget {
           color: selected ? AppTheme.brandPrimary : Colors.white,
           width: 2,
         ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Center(
         child: Text(
@@ -459,6 +468,42 @@ class _ClusterBubble extends StatelessWidget {
             color: selected ? AppTheme.brandPrimary : Colors.white,
             fontSize: 9,
             fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudCircle extends StatelessWidget {
+  const _HudCircle({
+    required this.icon,
+    required this.onTap,
+    this.selected = false,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool selected;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: selected || accent
+              ? Colors.black.withAlpha(160)
+              : Colors.black.withAlpha(90),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF00C6FF)
+                : Colors.white.withAlpha(40),
           ),
         ),
         child: Icon(icon, color: Colors.white, size: 16),
