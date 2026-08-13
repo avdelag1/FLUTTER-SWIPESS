@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
+import 'package:flutter_swipes/src/features/messages/domain/models/document_attachment.dart'
+    as docs;
 
 class MessageRepository {
   MessageRepository({SupabaseClient? client})
@@ -130,6 +132,25 @@ class MessageRepository {
       'message_text': text.trim(),
       'content': text.trim(),
       'message_type': 'text',
+    });
+    await _client.from('conversations').update({
+      'last_message_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', conversationId);
+  }
+
+  Future<void> sendDocumentMessage({
+    required String conversationId,
+    required docs.DocumentAttachment attachment,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    await _client.from('conversation_messages').insert({
+      'conversation_id': conversationId,
+      'sender_id': userId,
+      'message_text': attachment.title,
+      'content': attachment.title,
+      'message_type': attachment.isContract ? 'contract' : 'document',
+      'attachments': [attachment.toJson()],
     });
     await _client.from('conversations').update({
       'last_message_at': DateTime.now().toUtc().toIso8601String(),
