@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor Intel Core — chats via Supabase `ai-concierge` edge function.
-Future<void> showIntelCoreSheet(BuildContext context) {
+/// Pass [initialQuery] when the dashboard AI bar already has text (Cap openAIChat(q)).
+Future<void> showIntelCoreSheet(
+  BuildContext context, {
+  String initialQuery = '',
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: const Color(0xF20A0A0C),
-    builder: (context) => const _IntelCoreSheet(),
+    builder: (context) => _IntelCoreSheet(initialQuery: initialQuery),
   );
 }
 
@@ -26,7 +31,9 @@ class _ChatBubble {
 }
 
 class _IntelCoreSheet extends ConsumerStatefulWidget {
-  const _IntelCoreSheet();
+  const _IntelCoreSheet({this.initialQuery = ''});
+
+  final String initialQuery;
 
   @override
   ConsumerState<_IntelCoreSheet> createState() => _IntelCoreSheetState();
@@ -38,6 +45,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   final _messages = <_ChatBubble>[];
   bool _showHistory = false;
   bool _loading = false;
+  bool _bootstrapped = false;
 
   static const _starters = [
     'Find people looking to buy houses',
@@ -45,6 +53,20 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     'Show me all rental properties',
     'Show me available houses',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final seed = widget.initialQuery.trim();
+    if (seed.isNotEmpty) {
+      _controller.text = seed;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _bootstrapped) return;
+        _bootstrapped = true;
+        _submit(seed);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -116,20 +138,77 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     _scrollToEnd();
   }
 
+  /// Cap-style curated routing from typed intent before falling back to chat.
   bool _tryQuickNav(String q) {
-    if (q.contains('seeker') ||
-        q.contains('worker') ||
-        q.contains('hire') ||
-        q.contains('maintenance')) {
+    // Map / location / city
+    if (RegExp(r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b')
+        .hasMatch(q)) {
       Navigator.pop(context);
-      ref.read(navTabProvider.notifier).set(NavTab.seekers);
+      context.push(AppPaths.map);
       return true;
     }
-    if (q.contains('filter')) {
+
+    // People / seekers / profiles / users
+    if (RegExp(
+          r'\b(people|person|user|users|profile|profiles|roommate|roommates|seeker|seekers|who.?s looking|looking for)\b',
+        ).hasMatch(q)) {
       Navigator.pop(context);
-      ref.read(navTabProvider.notifier).set(NavTab.dashboard);
+      context.go(AppPaths.exploreSeekers);
       return true;
     }
+
+    // Workers / services / maintenance
+    if (RegExp(r'\b(worker|workers|hire|service|services|maintenance|plumber|cleaner)\b')
+        .hasMatch(q)) {
+      Navigator.pop(context);
+      context.push(AppPaths.clientServices);
+      return true;
+    }
+
+    // Events
+    if (RegExp(r'\b(event|events|party|nightlife|concert)\b').hasMatch(q)) {
+      Navigator.pop(context);
+      context.go(AppPaths.exploreEvents);
+      return true;
+    }
+
+    // Listings / homes / rent / buy
+    if (RegExp(
+          r'\b(listing|listings|property|properties|home|homes|house|houses|apartment|rent|rental|buy|sale|yacht|moto|motorcycle|bike|bicycle)\b',
+        ).hasMatch(q)) {
+      String category = 'property';
+      String title = 'PROPERTIES';
+      if (q.contains('yacht')) {
+        category = 'yacht';
+        title = 'YACHTS';
+      } else if (q.contains('moto') || q.contains('motorcycle')) {
+        category = 'motorcycle';
+        title = 'MOTORCYCLES';
+      } else if (q.contains('bike') || q.contains('bicycle')) {
+        category = 'bicycle';
+        title = 'BICYCLES';
+      } else if (q.contains('worker') || q.contains('service')) {
+        category = 'worker';
+        title = 'WORKERS';
+      }
+      Navigator.pop(context);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ClientSwipeContainer(
+            categoryId: category,
+            categoryTitle: title,
+          ),
+        ),
+      );
+      return true;
+    }
+
+    if (q.contains('filter') || q.contains('filters')) {
+      Navigator.pop(context);
+      context.go(AppPaths.clientFilters);
+      return true;
+    }
+
     return false;
   }
 
@@ -210,50 +289,32 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   children: [
                     if (_messages.isEmpty) ...[
                       Text(
-                        'Ask for properties, workers, seekers, or filters. Open AI Memory to teach Bolt/Brain. Answers come from Supabase Edge Functions (Groq + fallbacks).',
+                        'Type what you need — people, listings, a city on the map, workers, events. Or ask Intel Core anything.',
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white54,
                           fontSize: 13,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _ActionPill(
-                        label: 'AI MEMORY · BRAIN',
-                        onTap: () {
-                          Navigator.pop(context);
-                          showMemoryDrawer(context);
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _ActionPill(
-                        label: 'SWIPE DECK',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ClientSwipeContainer(
-                                categoryId: 'property',
-                                categoryTitle: 'PROPERTIES',
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final item in _starters)
+                            ActionChip(
+                              label: Text(
+                                item,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
+                              backgroundColor: Colors.white.withAlpha(14),
+                              side: BorderSide(color: Colors.white.withAlpha(30)),
+                              onPressed: _loading ? null : () => _submit(item),
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _ActionPill(
-                        label: 'APPLYING SEARCH FILTERS',
-                        onTap: () {
-                          Navigator.pop(context);
-                          ref.read(navTabProvider.notifier).set(NavTab.dashboard);
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _ActionPill(
-                        label: 'OPEN SEEKERS',
-                        onTap: () {
-                          Navigator.pop(context);
-                          ref.read(navTabProvider.notifier).set(NavTab.seekers);
-                        },
+                        ],
                       ),
                     ] else ...[
                       for (final m in _messages) _Bubble(message: m),
@@ -503,37 +564,6 @@ class _RoundIcon extends StatelessWidget {
           border: Border.all(color: Colors.white.withAlpha(35)),
         ),
         child: Icon(icon, color: color ?? Colors.white, size: 18),
-      ),
-    );
-  }
-}
-
-class _ActionPill extends StatelessWidget {
-  const _ActionPill({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A20),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withAlpha(30)),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
-            color: AppTheme.brandPrimary,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.6,
-          ),
-        ),
       ),
     );
   }
