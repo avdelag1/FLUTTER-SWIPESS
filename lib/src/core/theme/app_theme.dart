@@ -68,6 +68,89 @@ class AppTheme {
         border: Border.all(color: Colors.white.withAlpha(25)),
       );
 
+  /// Cap `.qf-neo-frame` — organic ink-stamp border on quick-filter cards.
+  static const BorderRadius qfNeoFrameRadius = BorderRadius.only(
+    topLeft: Radius.circular(29.6),
+    topRight: Radius.circular(32.8),
+    bottomRight: Radius.circular(28),
+    bottomLeft: Radius.circular(32),
+  );
+
+  static BoxDecoration qfNeoFrame({required bool isLight}) => BoxDecoration(
+        color: elevatedFor(isLight: isLight),
+        borderRadius: qfNeoFrameRadius,
+        border: Border.all(
+          color: isLight
+              ? const Color(0x85141414)
+              : const Color(0x6BFFFFFF),
+          width: 1.75,
+        ),
+        boxShadow: isLight
+            ? const [
+                BoxShadow(
+                  color: Color(0x47141414),
+                  offset: Offset(1, 1),
+                ),
+                BoxShadow(
+                  color: Color(0x6B000000),
+                  blurRadius: 32,
+                  offset: Offset(0, -12),
+                ),
+              ]
+            : const [
+                BoxShadow(
+                  color: Color(0x38FFFFFF),
+                  offset: Offset(1, 1),
+                ),
+                BoxShadow(
+                  color: Color(0x0FFFFFFF),
+                  blurRadius: 14,
+                ),
+                BoxShadow(
+                  color: Color(0x8C000000),
+                  blurRadius: 36,
+                  offset: Offset(0, -12),
+                ),
+              ],
+      );
+
+  /// Cap `.neo-naive-pill` filter chip on dashboard.
+  static BoxDecoration dashboardFilterPill({required bool isLight}) =>
+      BoxDecoration(
+        color: isLight
+            ? const Color(0xFAFFFFFF)
+            : const Color(0xF50E0E14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isLight
+              ? const Color(0xFF141414)
+              : const Color(0xF2FFFFFF),
+          width: 2.5,
+        ),
+        boxShadow: isLight
+            ? const [
+                BoxShadow(
+                  color: Color(0xFF141414),
+                  offset: Offset(1.5, 1.5),
+                ),
+                BoxShadow(
+                  color: Color(0x12141414),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ]
+            : const [
+                BoxShadow(
+                  color: Color(0x73FFFFFF),
+                  offset: Offset(1.5, 1.5),
+                ),
+                BoxShadow(
+                  color: Color(0x1FFFFFFF),
+                  blurRadius: 16,
+                ),
+              ],
+      );
+
   static TextStyle get displayItalic => GoogleFonts.plusJakartaSans(
         color: Colors.white,
         fontWeight: FontWeight.w900,
