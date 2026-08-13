@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -48,6 +49,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   double _zoom = MapCameraMath.openAltitudeZoom;
   late final AnimationController _fly;
   bool _didFly = false;
+  bool _mapReady = false;
 
   static const _categories = [
     ('all', 'All', Icons.public_rounded),
@@ -80,18 +82,31 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   double _zoomForRadius(int km) => MapCameraMath.zoomForRadiusKm(km);
 
+  void _safeMove(LatLng dest, double zoom, {double rotation = 0}) {
+    if (!_mapReady) return;
+    try {
+      _mapController.moveAndRotate(dest, zoom, rotation);
+    } catch (_) {}
+  }
+
   void _startDroneFlyIn(LatLng center, int radiusKm) {
     if (_didFly) return;
     _didFly = true;
     final startZ = MapCameraMath.openAltitudeZoom;
     final endZ = _zoomForRadius(radiusKm);
-    final startBank = MapCameraMath.openBankDegrees;
+    // Web: skip bank rotation — rotated raster tiles often fail to paint.
+    final startBank = kIsWeb ? 0.0 : MapCameraMath.openBankDegrees;
     _fly.addListener(() {
-      if (!mounted) return;
+      if (!mounted || !_mapReady) return;
       final t = Curves.easeInOutCubic.transform(_fly.value);
       final z = startZ + (endZ - startZ) * t;
       final bank = startBank * (1 - t);
-      _mapController.moveAndRotate(center, z, bank);
+      _safeMove(center, z, rotation: bank);
+    });
+    _fly.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _safeMove(center, endZ);
+      }
     });
     _fly.forward();
   }
@@ -133,9 +148,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
     
-    final listings = asyncListings.value ?? [];
+    final listingsRaw = asyncListings.value ?? [];
     final profiles = asyncProfiles.value ?? [];
     final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
+    final listings = listingsRaw.isNotEmpty
+        ? listingsRaw
+        : _demoListings(center, location.city);
     const haversine = Distance();
     bool inRadius(double lat, double lng) {
       return haversine.as(
@@ -147,10 +165,11 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     }
 
     return Material(
-      color: const Color(0xFF0A0A12),
+      color: const Color(0xFF1A1A2E),
       child: Stack(
         children: [
-          Builder(builder: (context) {
+          Positioned.fill(
+            child: Builder(builder: (context) {
               final List<MapPin> allPins = [
                 if (_layer != 'people')
                   ...listings
@@ -180,11 +199,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: MapCameraMath.openAltitudeZoom,
-                  initialRotation: MapCameraMath.openBankDegrees,
+                  initialRotation: kIsWeb ? 0 : MapCameraMath.openBankDegrees,
                   minZoom: 3,
                   maxZoom: 18,
-                  backgroundColor: const Color(0xFF0A0A12),
-                  onMapReady: () => _startDroneFlyIn(center, radiusKm),
+                  backgroundColor: const Color(0xFF1A1A2E),
+                  onMapReady: () {
+                    _mapReady = true;
+                    _startDroneFlyIn(center, radiusKm);
+                  },
                   onTap: (_, _) => setState(() {
                     _selected = null;
                     _menuOpen = false;
@@ -203,12 +225,27 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ),
                 children: [
                   TileLayer(
+                    urlTemplate: MapBasemap.streetsUrl,
+                    subdomains: MapBasemap.subdomains,
+                    userAgentPackageName: MapBasemap.userAgentPackageName,
+                    tileDimension: 256,
+                    maxNativeZoom: 19,
+                  ),
+                  TileLayer(
                     urlTemplate: MapBasemap.urlTemplate,
-                    fallbackUrl: MapBasemap.fallbackUrl,
                     additionalOptions: MapBasemap.additionalOptions,
                     userAgentPackageName: MapBasemap.userAgentPackageName,
-                    maxZoom: 19,
+                    tileDimension: 256,
+                    maxNativeZoom: 19,
                   ),
+                  if (MapBasemap.labelsUrl != null)
+                    TileLayer(
+                      urlTemplate: MapBasemap.labelsUrl!,
+                      subdomains: MapBasemap.subdomains,
+                      userAgentPackageName: MapBasemap.userAgentPackageName,
+                      tileDimension: 256,
+                      maxNativeZoom: 19,
+                    ),
                   CircleLayer(
                     circles: [
                       CircleMarker(
@@ -242,30 +279,34 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         ),
                       ),
                       for (final c in clusters)
-                        Marker(
-                          point: c.point,
-                          width: c.count >= 10 ? 56 : 48,
-                          height: c.count >= 10 ? 56 : 48,
-                          child: GestureDetector(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              if (c.count == 1) {
-                                setState(() => _selected = c.pins.first);
-                              } else {
-                                _mapController.move(
+                        if (c.count == 1)
+                          _pinMarker(
+                            c.pins.first,
+                            selected: _selected != null &&
+                                _samePin(_selected!, c.pins.first),
+                          )
+                        else
+                          Marker(
+                            point: c.point,
+                            width: c.count >= 10 ? 56 : 48,
+                            height: c.count >= 10 ? 56 : 48,
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                _safeMove(
                                   c.point,
                                   math.min(_zoom + 1.6, 16),
                                 );
-                              }
-                            },
-                            child: _ClusterBubble(count: c.count),
+                              },
+                              child: _ClusterBubble(count: c.count),
+                            ),
                           ),
-                        ),
                     ],
                   ),
                 ],
               );
             }),
+          ),
           if (isLoading)
             const Positioned(
               top: 0,
@@ -396,7 +437,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     GestureDetector(
                       onTap: () {
                         HapticFeedback.mediumImpact();
-                        _mapController.move(
+                        _safeMove(
                           center,
                           _zoomForRadius(radiusKm),
                         );
@@ -487,7 +528,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                                           .read(
                                               discoveryLocationProvider.notifier)
                                           .setRadiusKm(km);
-                                      _mapController.move(
+                                      _safeMove(
                                         center,
                                         _zoomForRadius(km),
                                       );
@@ -615,7 +656,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                                 latitude: city.lat,
                                 longitude: city.lng,
                               );
-                          _mapController.move(
+                          _safeMove(
                             LatLng(city.lat, city.lng),
                             _zoomForRadius(radiusKm),
                           );
@@ -672,16 +713,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         final loc = ref.read(discoveryLocationProvider);
-        _mapController.moveAndRotate(
+        _safeMove(
           LatLng(loc.latitude, loc.longitude),
           _zoomForRadius(loc.radiusKm),
-          0,
         );
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
         ),
       );
       ref.read(discoveryLocationProvider.notifier).setCoordinates(
@@ -690,21 +731,88 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             latitude: pos.latitude,
             longitude: pos.longitude,
           );
-      _mapController.moveAndRotate(
+      _safeMove(
         LatLng(pos.latitude, pos.longitude),
         _zoomForRadius(ref.read(discoveryLocationProvider).radiusKm),
-        0,
       );
       ref.invalidate(mapListingsProvider);
       ref.invalidate(mapProfilesProvider);
     } catch (_) {
       final loc = ref.read(discoveryLocationProvider);
-      _mapController.moveAndRotate(
+      _safeMove(
         LatLng(loc.latitude, loc.longitude),
         _zoomForRadius(loc.radiusKm),
-        0,
       );
     }
+  }
+
+  static bool _samePin(MapPin a, MapPin b) {
+    if (a.isListing != b.isListing) return false;
+    if (a.isListing) return a.listing?.id == b.listing?.id;
+    return a.profile?.id == b.profile?.id;
+  }
+
+  Marker _pinMarker(MapPin pin, {required bool selected}) {
+    if (pin.isListing) {
+      final title = pin.listing?.title ?? 'Listing';
+      final short = title.length > 18 ? '${title.substring(0, 15)}…' : title;
+      return Marker(
+        point: LatLng(pin.lat, pin.lng),
+        width: 148,
+        height: 28,
+        alignment: Alignment.center,
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _selected = pin);
+          },
+          child: _ListingPill(label: short, selected: selected),
+        ),
+      );
+    }
+    final name = pin.profile?.displayName ?? 'User';
+    return Marker(
+      point: LatLng(pin.lat, pin.lng),
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selected = pin);
+        },
+        child: _ProfileDot(
+          imageUrl: pin.profile?.avatarUrl,
+          initial: name.isNotEmpty ? name[0].toUpperCase() : '?',
+          selected: selected,
+        ),
+      ),
+    );
+  }
+
+  static List<Listing> _demoListings(LatLng center, String city) {
+    const photo =
+        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80';
+    const offsets = <(double, double, String, double)>[
+      (0.018, -0.012, 'Tranquil Oasis', 2400),
+      (-0.014, 0.016, 'Jungle Villa', 3100),
+      (0.008, 0.022, 'Beach Studio', 1800),
+      (-0.02, -0.018, 'Casa Azul', 2650),
+    ];
+    return [
+      for (var i = 0; i < offsets.length; i++)
+        Listing(
+          id: 'map-demo-$i',
+          title: offsets[i].$3,
+          category: 'property',
+          city: city,
+          price: offsets[i].$4,
+          currency: 'USD',
+          latitude: center.latitude + offsets[i].$1,
+          longitude: center.longitude + offsets[i].$2,
+          images: const [photo],
+        ),
+    ];
   }
 }
 
@@ -734,6 +842,113 @@ class _MapCluster {
   final LatLng point;
   final List<MapPin> pins;
   int get count => pins.length;
+}
+
+class _ListingPill extends StatelessWidget {
+  const _ListingPill({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(5, 0, 8, 0),
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? const Color(0xFF00C6FF) : const Color(0xFF1D4ED8),
+          width: 2,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x380F172A),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: selected ? const Color(0xFF00E5FF) : const Color(0xFF3B82F6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: selected ? Colors.white : const Color(0xFF0F172A),
+                fontSize: selected ? 11 : 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDot extends StatelessWidget {
+  const _ProfileDot({
+    required this.imageUrl,
+    required this.initial,
+    required this.selected,
+  });
+
+  final String? imageUrl;
+  final String initial;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF312E81),
+        border: Border.all(
+          color: selected ? const Color(0xFFC7D2FE) : Colors.white,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: selected
+                ? const Color(0x88818CF8)
+                : const Color(0x590F172A),
+            blurRadius: 8,
+          ),
+        ],
+        image: imageUrl != null && imageUrl!.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(imageUrl!),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: imageUrl == null || imageUrl!.isEmpty
+          ? Text(
+              initial,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+          : null,
+    );
+  }
 }
 
 class _ClusterBubble extends StatelessWidget {

@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
+import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
+import 'package:flutter_swipes/src/core/widgets/soft_paywall.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/widgets/premium_liked_card.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `ClientWhoLikedYou` — Fan Base / Interested Entities.
@@ -85,31 +89,30 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Container(
-                height: 64,
+              child: LiquidGlassPanel(
+                borderRadius: 24,
+                blur: LiquidGlass.blurSm,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF14141A),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search_rounded, color: Colors.white54),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        controller: _search,
-                        onChanged: (_) => setState(() {}),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'Search connections...',
-                          hintStyle: TextStyle(color: Colors.white38),
+                child: SizedBox(
+                  height: 64,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded, color: Colors.white54),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _search,
+                          onChanged: (_) => setState(() {}),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Search connections...',
+                            hintStyle: TextStyle(color: Colors.white38),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -153,17 +156,33 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                     separatorBuilder: (_, _) => const SizedBox(height: 14),
                     itemBuilder: (context, index) {
                       if (index == 0) {
-                        return Text(
-                          '${filtered.length} Connections',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${filtered.length} Connections',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (filtered.length > 2) ...[
+                              const SizedBox(height: 12),
+                              TrialLimitBanner(
+                                current: 2,
+                                limit: 2,
+                                featureName: 'free Fan Base peeks',
+                                onUpgrade: () =>
+                                    context.push(AppPaths.subscriptionPackages),
+                              ),
+                            ],
+                          ],
                         );
                       }
                       final person = filtered[index - 1];
-                      return PremiumLikedCard(
+                      final cardIndex = index - 1;
+                      final card = PremiumLikedCard(
                         isProfile: true,
                         imageUrl: person.primaryImage,
                         title: person.name,
@@ -178,18 +197,16 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                           final convoId = await SwipeRepository()
                               .startConversation(ownerId: person.userId);
                           if (!context.mounted || convoId == null) return;
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatScreen(
-                                conversation: ChatConversation(
-                                  id: convoId,
-                                  otherUserId: person.userId,
-                                  name: person.name,
-                                  lastMessage: '',
-                                  timestamp: 'now',
-                                  avatarUrl: person.primaryImage,
-                                ),
-                              ),
+                          await showChatPopup(
+                            context,
+                            isNewConversation: true,
+                            conversation: ChatConversation(
+                              id: convoId,
+                              otherUserId: person.userId,
+                              name: person.name,
+                              lastMessage: '',
+                              timestamp: 'now',
+                              avatarUrl: person.primaryImage,
                             ),
                           );
                         },
@@ -202,6 +219,16 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                           );
                         },
                         onRemove: () => _dismiss(person),
+                      );
+                      // Cap SoftPaywall FeaturePreview — soft-lock beyond first two.
+                      return SoftPaywallPreview(
+                        isLocked: cardIndex >= 2,
+                        featureName: 'Full Fan Base',
+                        description:
+                            'Unlock every connection who liked your profile.',
+                        onUpgrade: () =>
+                            context.push(AppPaths.subscriptionPackages),
+                        child: card,
                       );
                     },
                   );

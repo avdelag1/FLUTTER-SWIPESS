@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 
 /// Cap black-matte / white-matte surface helpers from [ThemeData.brightness].
 abstract final class MatteSurface {
@@ -23,10 +24,18 @@ abstract final class MatteSurface {
       ? const Color(0xFF5C5C66)
       : AppTheme.textSecondary;
 
-  static Color hairline(BuildContext context) =>
-      isLight(context) ? Colors.black.withAlpha(28) : Colors.white;
+  /// Cap soft hairline — `border-white/10` dark, not solid white.
+  static Color hairline(BuildContext context) => isLight(context)
+      ? Colors.black.withAlpha(28)
+      : NexusTheme.border;
 
+  /// Cap soft panel fill — `#141418` dark / white light.
   static Color cardFill(BuildContext context) => isLight(context)
       ? Colors.white
-      : Colors.transparent;
+      : NexusTheme.cardDark;
+
+  static Color accent(BuildContext context) => AppTheme.brandAccent;
+
+  static Color glass(BuildContext context) =>
+      isLight(context) ? Colors.white.withAlpha(180) : NexusTheme.glass;
 }

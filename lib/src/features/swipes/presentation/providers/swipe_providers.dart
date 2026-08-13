@@ -100,6 +100,85 @@ class SwipeFilter {
   }
 }
 
+/// Cap `useClientFilterPreferences` field mapping onto the Flutter `SwipeFilter`
+/// the filter sheet already exposes (category, interest, price, beds/baths,
+/// furnished/pet-friendly, property types, one city).
+extension SwipeFilterPreferencesMapping on SwipeFilter {
+  Map<String, dynamic> toPreferencesPayload() {
+    final listingTypes = switch (interestType) {
+      'sale' => const ['buy'],
+      'both' => const ['rent', 'buy'],
+      _ => const ['rent'],
+    };
+    return {
+      'interested_in_properties': category == 'property',
+      'interested_in_motorcycles': category == 'motorcycle',
+      'interested_in_bicycles': category == 'bicycle',
+      'interested_in_vehicles': category == 'yacht',
+      'preferred_listing_types': listingTypes,
+      'price_min': minPrice,
+      'price_max': maxPrice,
+      'min_bedrooms': minBeds,
+      'min_bathrooms': minBaths,
+      'furnished_required': furnished ?? false,
+      'pet_friendly_required': petFriendly ?? false,
+      'property_types': propertyTypes,
+      'location_zones': city != null ? [city] : const <String>[],
+    };
+  }
+
+  /// Merges a persisted `client_filter_preferences` row onto [base], keeping
+  /// [base]'s value for any column that's null/missing.
+  static SwipeFilter mergeFromPreferencesRow(
+    SwipeFilter base,
+    Map<String, dynamic> row,
+  ) {
+    var category = base.category;
+    if (row['interested_in_motorcycles'] == true) {
+      category = 'motorcycle';
+    } else if (row['interested_in_bicycles'] == true) {
+      category = 'bicycle';
+    } else if (row['interested_in_vehicles'] == true) {
+      category = 'yacht';
+    } else if (row['interested_in_properties'] == true) {
+      category = 'property';
+    }
+
+    final listingTypes = (row['preferred_listing_types'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const <String>[];
+    final hasRent = listingTypes.contains('rent');
+    final hasBuy = listingTypes.contains('buy');
+    final interestType = hasRent && hasBuy
+        ? 'both'
+        : hasBuy
+            ? 'sale'
+            : (hasRent ? 'rent' : base.interestType);
+
+    final locationZones = (row['location_zones'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const <String>[];
+
+    return base.copyWith(
+      category: category,
+      interestType: interestType,
+      minPrice: (row['price_min'] as num?)?.toDouble(),
+      maxPrice: (row['price_max'] as num?)?.toDouble(),
+      minBeds: (row['min_bedrooms'] as num?)?.toInt(),
+      minBaths: (row['min_bathrooms'] as num?)?.toInt(),
+      furnished: row['furnished_required'] as bool?,
+      petFriendly: row['pet_friendly_required'] as bool?,
+      propertyTypes: (row['property_types'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          base.propertyTypes,
+      city: locationZones.isNotEmpty ? locationZones.first : base.city,
+    );
+  }
+}
+
 class SwipeFilterNotifier extends Notifier<SwipeFilter> {
   @override
   SwipeFilter build() => SwipeFilter();

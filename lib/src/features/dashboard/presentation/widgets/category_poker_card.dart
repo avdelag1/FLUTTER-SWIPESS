@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/category_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -130,21 +131,10 @@ class _CategoryPokerCardState extends State<CategoryPokerCard> {
                 SizedBox(
                   width: double.infinity,
                   height: 56,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0x40FFFFFF)),
-                      gradient: const LinearGradient(
-                        colors: [Color(0x40FFFFFF), Color(0x1AFFFFFF)],
-                      ),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x80000000),
-                          blurRadius: 40,
-                          offset: Offset(0, 18),
-                        ),
-                      ],
-                    ),
+                  child: LiquidGlassPanel(
+                    borderRadius: 16,
+                    blur: LiquidGlass.blurSm,
+                    weight: LiquidGlassWeight.thin,
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -158,8 +148,6 @@ class _CategoryPokerCardState extends State<CategoryPokerCard> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(widget.card.icon, color: Colors.white, size: 20),
-                            const SizedBox(width: 10),
                             Flexible(
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,

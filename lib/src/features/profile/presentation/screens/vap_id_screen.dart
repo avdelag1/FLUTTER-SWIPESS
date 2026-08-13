@@ -14,7 +14,26 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+
+import 'dart:ui'; // Ensure dart:ui is available for ImageFilter
+
+Future<void> showVapIdModal(BuildContext context) async {
+  await showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'VAP ID',
+    barrierColor: Colors.black54,
+    pageBuilder: (context, anim1, anim2) {
+      return FadeTransition(
+        opacity: anim1,
+        child: const VapIdScreen(),
+      );
+    },
+  );
+}
+
 class VapIdScreen extends ConsumerStatefulWidget {
+
   const VapIdScreen({super.key});
 
   @override
@@ -30,9 +49,13 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return ColoredBox(
-      color: Colors.black, // Pure black background
-      child: async.when(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: ColoredBox(
+          color: Colors.black.withAlpha(140),
+          child: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
@@ -101,6 +124,8 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
             ],
           );
         },
+        ),
+      ),
       ),
     );
   }

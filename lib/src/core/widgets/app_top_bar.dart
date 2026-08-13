@@ -7,8 +7,10 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `TopBar` — neo-naïve glass pills + colored icon washes.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -32,6 +34,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final tokens = ref.watch(tokenBalanceProvider);
     // Cap `getTopBarChrome` / glassSurface (web solid neo-naïve).
     final pillFill = isLight
         ? const Color(0xF5FFFFFF) // rgba(255,255,255,0.96)
@@ -130,11 +133,27 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 },
                 child: _WashIcon(
                   wash: const Color(0xFFFFD43B),
-                  badge: true,
-                  child: Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 16,
-                    color: ink,
+                  badge: tokens > 0,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 16,
+                        color: ink,
+                      ),
+                      if (tokens > 0) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '$tokens',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),

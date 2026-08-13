@@ -7,7 +7,7 @@ import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_p
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/widgets/premium_liked_card.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
@@ -74,18 +74,16 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       listingId: listingId,
     );
     if (!mounted || convoId == null) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          conversation: ChatConversation(
-            id: convoId,
-            otherUserId: userId,
-            name: name,
-            lastMessage: '',
-            timestamp: 'now',
-            avatarUrl: avatar,
-          ),
-        ),
+    await showChatPopup(
+      context,
+      isNewConversation: true,
+      conversation: ChatConversation(
+        id: convoId,
+        otherUserId: userId,
+        name: name,
+        lastMessage: '',
+        timestamp: 'now',
+        avatarUrl: avatar,
       ),
     );
   }

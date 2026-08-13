@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
+import 'package:flutter_swipes/src/features/moderation/presentation/widgets/report_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -156,20 +157,18 @@ class _BodyState extends State<_Body> {
       final convoId = await SwipeRepository()
           .startConversation(ownerId: widget.profile.userId);
       if (!mounted || convoId == null) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(
-            conversation: ChatConversation(
-              id: convoId,
-              otherUserId: widget.profile.userId,
-              name: widget.profile.name,
-              lastMessage: '',
-              timestamp: 'now',
-              avatarUrl: widget.profile.images.isNotEmpty
-                  ? widget.profile.images.first
-                  : null,
-            ),
-          ),
+      await showChatPopup(
+        context,
+        isNewConversation: true,
+        conversation: ChatConversation(
+          id: convoId,
+          otherUserId: widget.profile.userId,
+          name: widget.profile.name,
+          lastMessage: '',
+          timestamp: 'now',
+          avatarUrl: widget.profile.images.isNotEmpty
+              ? widget.profile.images.first
+              : null,
         ),
       );
     } finally {
@@ -230,6 +229,16 @@ class _BodyState extends State<_Body> {
                         onTap: () => Navigator.pop(context),
                       ),
                       const Spacer(),
+                      _Round(
+                        icon: Icons.flag_outlined,
+                        onTap: () => showReportDialog(
+                          context,
+                          category: ReportCategory.userProfile,
+                          reportedUserId: widget.profile.userId,
+                          reportedUserName: p.name,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       _Round(
                         icon: Icons.verified_user_outlined,
                         onTap: () {

@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Swipess Brand Colors
-  static const Color brandPrimary = Color(0xFFFF4D00); // --btn-primary-bg
-  static const Color brandAccent = Color(0xFFFC567E); // --accent-primary
-  /// Rosa Mexicano — Cap `--color-brand-accent-2` / mexican-pink. The
-  /// vivid red-magenta the landing CTA and hero wordmark use when we
-  /// need a punchier fill than orange `#FF4D00`.
-  static const Color mexicanRed = Color(0xFFE4007C);
+  // Cap `tokens.css` + `nexusTheme.ts`
+  static const Color brandPrimary = Color(0xFFFF4D00); // --color-brand-primary
+  static const Color brandAccent = NexusTheme.rose; // Cap rose / pink accent
+  static const Color brandAccent2 = NexusTheme.mexicanPink;
 
   // Black Matte Backgrounds
   static const Color background = Color(0xFF0C0C0D); // --background
-  static const Color surfaceColor = Color(0xFF0C0C0D); 
-  
+  static const Color surfaceColor = Color(0xFF0C0C0D);
+
   // Dashboard Depth Layers (black-matte)
   static const Color dashBg = Color(0xFF0A0A0D); // --dash-bg
   static const Color dashWell = Color(0xFF101014); // --dash-well
@@ -32,12 +31,14 @@ class AppTheme {
 
   static Color elevatedFor({required bool isLight}) =>
       isLight ? lightDashElevated : dashElevated;
-  
-  // Glass & Borders
+
+  // Glass & Borders — Cap soft glass, not hard white frames
   static const Color dashGlass = Color(0x84121218); // rgba(18, 18, 24, 0.52)
   static const Color dashGlassStrong = Color(0xB716161E); // rgba(22, 22, 30, 0.72)
   static const Color dashGlassBorder = Color(0x19FFFFFF); // rgba(255, 255, 255, 0.10)
-  
+  static const Color nexusBorder = NexusTheme.border;
+  static const Color nexusGlass = NexusTheme.glass;
+
   // Text Colors
   static const Color textPrimary = Color(0xFFFAFAFA); // --text-primary
   static const Color textSecondary = Color(0xFFBFC6D4); // --text-secondary
@@ -47,6 +48,32 @@ class AppTheme {
   static const Color brandPrimary2 = Color(0xFFFF6B35);
   static const Color glassBg = Color(0x1CFFFFFF);
   static const Color inputFill = Color(0x14FFFFFF);
+
+  /// Cap warm orange→rose used on dock/profile CTAs.
+  static const LinearGradient warmBrandGradient = NexusTheme.warm;
+
+  /// iOS / web status + nav bar chrome for Cap dark matte.
+  static const SystemUiOverlayStyle systemDark = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarBrightness: Brightness.dark, // iOS: dark canvas → light icons
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: dashBg,
+    systemNavigationBarIconBrightness: Brightness.light,
+    systemNavigationBarDividerColor: Colors.transparent,
+  );
+
+  /// Cap white-matte status chrome.
+  static const SystemUiOverlayStyle systemLight = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarBrightness: Brightness.light,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: lightDashBg,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemNavigationBarDividerColor: Colors.transparent,
+  );
+
+  static SystemUiOverlayStyle systemFor({required bool isLight}) =>
+      isLight ? systemLight : systemDark;
 
   /// Cap neo-naive ink-stamp card (dark). Organic radii, 2.25px frame.
   static const BorderRadius neoNaiveRadius = BorderRadius.only(
@@ -62,7 +89,8 @@ class AppTheme {
         border: Border.all(color: const Color(0xEBFFFFFF), width: 2.25),
         boxShadow: const [
           BoxShadow(color: Color(0x66FFFFFF), offset: Offset(1.5, 1.5)),
-          BoxShadow(color: Color(0x59000000), blurRadius: 22, offset: Offset(0, 8)),
+          BoxShadow(
+              color: Color(0x59000000), blurRadius: 22, offset: Offset(0, 8)),
         ],
       );
 
@@ -70,6 +98,16 @@ class AppTheme {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white, width: 1.5),
+      );
+
+  /// Cap soft surface card (messages/legal panels) — not ink-stamp.
+  static BoxDecoration softSurfaceCard({required bool isLight}) =>
+      BoxDecoration(
+        color: isLight ? Colors.white.withAlpha(200) : NexusTheme.cardDark,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isLight ? Colors.black.withAlpha(28) : NexusTheme.border,
+        ),
       );
 
   /// Cap `.qf-neo-frame` — organic ink-stamp border on quick-filter cards.
@@ -85,35 +123,39 @@ class AppTheme {
         borderRadius: qfNeoFrameRadius,
         border: Border.all(
           color: isLight
-              ? const Color(0x85141414)
-              : const Color(0x6BFFFFFF),
-          width: 1.75,
+              ? const Color(0xFF141414)
+              : const Color(0xEBFFFFFF),
+          width: 2.35,
         ),
         boxShadow: isLight
             ? const [
                 BoxShadow(
-                  color: Color(0x47141414),
-                  offset: Offset(1, 1),
+                  color: Color(0xFF141414),
+                  offset: Offset(1.5, 1.5),
                 ),
                 BoxShadow(
-                  color: Color(0x6B000000),
-                  blurRadius: 32,
-                  offset: Offset(0, -12),
+                  color: Color(0x59000000),
+                  blurRadius: 36,
+                  offset: Offset(0, 14),
                 ),
               ]
-            : const [
+            : [
                 BoxShadow(
-                  color: Color(0x38FFFFFF),
-                  offset: Offset(1, 1),
+                  color: Colors.white.withAlpha(102),
+                  offset: const Offset(1.5, 1.5),
                 ),
                 BoxShadow(
-                  color: Color(0x0FFFFFFF),
-                  blurRadius: 14,
+                  color: Colors.white.withAlpha(56),
+                  blurRadius: 18,
                 ),
                 BoxShadow(
+                  color: Colors.white.withAlpha(26),
+                  blurRadius: 40,
+                ),
+                const BoxShadow(
                   color: Color(0x8C000000),
                   blurRadius: 36,
-                  offset: Offset(0, -12),
+                  offset: Offset(0, 14),
                 ),
               ],
       );
@@ -204,7 +246,8 @@ class AppTheme {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.transparent, width: 1.5),
         boxShadow: const [
-          BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 12)),
+          BoxShadow(
+              color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 12)),
         ],
       );
 
@@ -215,6 +258,7 @@ class AppTheme {
         brightness: Brightness.dark,
         surface: surfaceColor,
         primary: brandPrimary,
+        secondary: brandAccent,
       ),
       useMaterial3: true,
       scaffoldBackgroundColor: surfaceColor,
@@ -224,6 +268,7 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: systemDark,
       ),
     );
   }
@@ -238,6 +283,7 @@ class AppTheme {
         brightness: Brightness.light,
         surface: surface,
         primary: brandPrimary,
+        secondary: brandAccent,
       ),
       useMaterial3: true,
       scaffoldBackgroundColor: bg,
@@ -248,6 +294,7 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
         foregroundColor: Color(0xFF0A0A0D),
+        systemOverlayStyle: systemLight,
       ),
       cardColor: surface,
       dividerColor: Color(0x1A000000),
@@ -258,17 +305,17 @@ class AppTheme {
         color: glassBg,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withAlpha(51), // 0.2 opacity
+          color: Colors.white.withAlpha(51),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(127), // 0.5 opacity
+            color: Colors.black.withAlpha(127),
             blurRadius: 64,
             offset: const Offset(0, 24),
           ),
           BoxShadow(
-            color: Colors.black.withAlpha(63), // 0.25 opacity
+            color: Colors.black.withAlpha(63),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),

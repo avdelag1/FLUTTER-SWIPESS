@@ -11,7 +11,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
@@ -27,6 +27,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_report_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_share_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/match_celebrate_modal.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/pull_down_to_dismiss.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_error_state.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_exhausted_state.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
@@ -120,18 +121,16 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
           listingId: listing.id,
         );
     if (!mounted || convoId == null) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          conversation: ChatConversation(
-            id: convoId,
-            otherUserId: ownerId,
-            name: listing.title ?? 'Owner',
-            lastMessage: '',
-            timestamp: 'now',
-            listingTag: listing.title,
-          ),
-        ),
+    await showChatPopup(
+      context,
+      isNewConversation: true,
+      conversation: ChatConversation(
+        id: convoId,
+        otherUserId: ownerId,
+        name: listing.title ?? 'Owner',
+        lastMessage: '',
+        timestamp: 'now',
+        listingTag: listing.title,
       ),
     );
   }
@@ -238,7 +237,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
 
     return Scaffold(
       extendBody: true,
-      body: listingsAsync.when(
+      body: PullDownToDismiss(
+        onDismiss: () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        },
+        child: listingsAsync.when(
         loading: () => const SwipeLoadingSkeleton(),
         error: (err, _) => SwipeErrorState(
           isRetrying: _retrying,
@@ -384,6 +389,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
             ],
           );
         },
+      ),
       ),
     );
   }

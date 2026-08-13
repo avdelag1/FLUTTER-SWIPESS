@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_queue.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Repository for recording swipe actions (likes / dislikes) to the `likes` table.
@@ -6,24 +9,64 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// - 1st left swipe → 5-day cooldown
 /// - 2nd left swipe → permanent pass
 /// - right swipe → liked
+///
+/// Network write failures are queued locally (Cap `offlineSwipeQueue.ts`) and
+/// flushed on app start, resume, and after the next successful swipe path.
 class SwipeRepository {
   final SupabaseClient _client;
+  final OfflineSwipeQueue _offlineQueue;
 
-  SwipeRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  SwipeRepository({
+    SupabaseClient? client,
+    OfflineSwipeQueue? offlineQueue,
+  })  : _client = client ?? Supabase.instance.client,
+        _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
+
+  /// Flush any locally queued swipes (Cap `syncQueuedSwipes`).
+  Future<({int synced, int failed})> flushOfflineQueue() =>
+      _offlineQueue.flush();
+
+  Future<void> _afterSuccessfulWrite() async {
+    // Cap: flush on next successful swipe path.
+    unawaited(_offlineQueue.flush());
+  }
+
+  Future<void> _queueOnNetworkFailure({
+    required Object error,
+    required String targetId,
+    required String direction,
+    required String targetType,
+  }) async {
+    if (!OfflineSwipeQueue.isNetworkFailure(error)) throw error;
+    await _offlineQueue.enqueue(
+      targetId: targetId,
+      direction: direction,
+      targetType: targetType,
+    );
+  }
 
   /// Record a right swipe (LIKE) on a listing.
   Future<void> likeListing(String targetId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
 
-    await _client.from('likes').upsert({
-      'user_id': userId,
-      'target_id': targetId,
-      'target_type': 'listing',
-      'direction': 'right',
-      'dismiss_count': 0,
-    }, onConflict: 'user_id,target_id,target_type');
+    try {
+      await _client.from('likes').upsert({
+        'user_id': userId,
+        'target_id': targetId,
+        'target_type': 'listing',
+        'direction': 'right',
+        'dismiss_count': 0,
+      }, onConflict: 'user_id,target_id,target_type');
+      await _afterSuccessfulWrite();
+    } catch (e) {
+      await _queueOnNetworkFailure(
+        error: e,
+        targetId: targetId,
+        direction: 'right',
+        targetType: 'listing',
+      );
+    }
   }
 
   /// Record a left swipe (PASS/DISLIKE) on a listing.
@@ -31,33 +74,43 @@ class SwipeRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
 
-    // Check if there's already a dismiss record
-    final existing = await _client
-        .from('likes')
-        .select('id, dismiss_count')
-        .eq('user_id', userId)
-        .eq('target_id', targetId)
-        .eq('target_type', 'listing')
-        .maybeSingle();
+    try {
+      // Check if there's already a dismiss record
+      final existing = await _client
+          .from('likes')
+          .select('id, dismiss_count')
+          .eq('user_id', userId)
+          .eq('target_id', targetId)
+          .eq('target_type', 'listing')
+          .maybeSingle();
 
-    final currentCount = (existing?['dismiss_count'] as int?) ?? 0;
-    final newCount = currentCount + 1;
+      final currentCount = (existing?['dismiss_count'] as int?) ?? 0;
+      final newCount = currentCount + 1;
 
-    // 1st dismiss = 5-day cooldown, 2nd+ = permanent pass
-    final cooldownUntil = newCount == 1
-        ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
-        : null;
+      // 1st dismiss = 5-day cooldown, 2nd+ = permanent pass
+      final cooldownUntil = newCount == 1
+          ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
+          : null;
 
-    await _client.from('likes').upsert({
-      'user_id': userId,
-      'target_id': targetId,
-      'target_type': 'listing',
-      'direction': 'left',
-      'dismiss_count': newCount,
-      'dismissed_at': DateTime.now().toUtc().toIso8601String(),
-      // ignore: use_null_aware_elements
-      if (cooldownUntil != null) 'cooldown_until': cooldownUntil,
-    }, onConflict: 'user_id,target_id,target_type');
+      await _client.from('likes').upsert({
+        'user_id': userId,
+        'target_id': targetId,
+        'target_type': 'listing',
+        'direction': 'left',
+        'dismiss_count': newCount,
+        'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+        // ignore: use_null_aware_elements
+        if (cooldownUntil != null) 'cooldown_until': cooldownUntil,
+      }, onConflict: 'user_id,target_id,target_type');
+      await _afterSuccessfulWrite();
+    } catch (e) {
+      await _queueOnNetworkFailure(
+        error: e,
+        targetId: targetId,
+        direction: 'left',
+        targetType: 'listing',
+      );
+    }
   }
 
   /// Undo the last swipe on a listing (delete the record).
@@ -96,13 +149,23 @@ class SwipeRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
 
-    await _client.from('likes').upsert({
-      'user_id': userId,
-      'target_id': targetUserId,
-      'target_type': 'profile',
-      'direction': 'right',
-      'dismiss_count': 0,
-    }, onConflict: 'user_id,target_id,target_type');
+    try {
+      await _client.from('likes').upsert({
+        'user_id': userId,
+        'target_id': targetUserId,
+        'target_type': 'profile',
+        'direction': 'right',
+        'dismiss_count': 0,
+      }, onConflict: 'user_id,target_id,target_type');
+      await _afterSuccessfulWrite();
+    } catch (e) {
+      await _queueOnNetworkFailure(
+        error: e,
+        targetId: targetUserId,
+        direction: 'right',
+        targetType: 'profile',
+      );
+    }
   }
 
   /// Record a left swipe (PASS) on a profile.
@@ -110,29 +173,39 @@ class SwipeRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
 
-    final existing = await _client
-        .from('likes')
-        .select('id, dismiss_count')
-        .eq('user_id', userId)
-        .eq('target_id', targetUserId)
-        .eq('target_type', 'profile')
-        .maybeSingle();
+    try {
+      final existing = await _client
+          .from('likes')
+          .select('id, dismiss_count')
+          .eq('user_id', userId)
+          .eq('target_id', targetUserId)
+          .eq('target_type', 'profile')
+          .maybeSingle();
 
-    final currentCount = (existing?['dismiss_count'] as int?) ?? 0;
-    final newCount = currentCount + 1;
-    final cooldownUntil = newCount == 1
-        ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
-        : null;
+      final currentCount = (existing?['dismiss_count'] as int?) ?? 0;
+      final newCount = currentCount + 1;
+      final cooldownUntil = newCount == 1
+          ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
+          : null;
 
-    await _client.from('likes').upsert({
-      'user_id': userId,
-      'target_id': targetUserId,
-      'target_type': 'profile',
-      'direction': 'left',
-      'dismiss_count': newCount,
-      'dismissed_at': DateTime.now().toUtc().toIso8601String(),
-      'cooldown_until': ?cooldownUntil,
-    }, onConflict: 'user_id,target_id,target_type');
+      await _client.from('likes').upsert({
+        'user_id': userId,
+        'target_id': targetUserId,
+        'target_type': 'profile',
+        'direction': 'left',
+        'dismiss_count': newCount,
+        'dismissed_at': DateTime.now().toUtc().toIso8601String(),
+        'cooldown_until': ?cooldownUntil,
+      }, onConflict: 'user_id,target_id,target_type');
+      await _afterSuccessfulWrite();
+    } catch (e) {
+      await _queueOnNetworkFailure(
+        error: e,
+        targetId: targetUserId,
+        direction: 'left',
+        targetType: 'profile',
+      );
+    }
   }
 
   /// Undo the last profile swipe.

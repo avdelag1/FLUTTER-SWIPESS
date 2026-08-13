@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_match_score.dart';
@@ -519,14 +520,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             onTap: widget.onUndo!,
                           ),
                         ),
-                      _GlassCircle(
-                        size: 32,
-                        iconSize: 16,
-                        icon: soundOn
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
+                      _MuteIconButton(
+                        soundOn: soundOn,
                         onTap: () {
                           HapticFeedback.selectionClick();
+                          unlockDeckMedia();
                           ref.read(deckSoundOnProvider.notifier).toggle();
                         },
                       ),
@@ -534,12 +532,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
 
-              // Mid-right KM + map (outside rail column)
+              // Cap right column: KM (top rail) → Map 58px → glass action rail.
+              // Map sits just above the bottom-right rail (not mid-height).
               if (!_zoomed && widget.isTop && widget.railVisible)
                 Positioned(
-                  right: 10,
-                  top: MediaQuery.sizeOf(context).height * 0.22,
+                  right: 12,
+                  bottom: 120,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       _GlassPill(
                         child: Column(
@@ -567,21 +567,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                           widget.onOpenMap?.call();
                         },
                       ),
+                      const SizedBox(height: 10),
+                      _ActionRail(
+                        onAi: widget.onOpenAi,
+                        onShare: widget.onShare,
+                        onMessage: widget.onMessage,
+                        onInsights: widget.onInsights,
+                        onReport: widget.onReport,
+                      ),
                     ],
-                  ),
-                ),
-
-              // Right action rail
-              if (!_zoomed && widget.isTop && widget.railVisible)
-                Positioned(
-                  right: 12,
-                  bottom: 120,
-                  child: _ActionRail(
-                    onAi: widget.onOpenAi,
-                    onShare: widget.onShare,
-                    onMessage: widget.onMessage,
-                    onInsights: widget.onInsights,
-                    onReport: widget.onReport,
                   ),
                 ),
 
@@ -924,6 +918,41 @@ class _GlassCircle extends StatelessWidget {
               ],
             ),
             child: Icon(icon, color: Colors.white, size: iconSize),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Deck mute — soft dark chip, no white ring (Cap volume icon).
+class _MuteIconButton extends StatelessWidget {
+  const _MuteIconButton({required this.soundOn, required this.onTap});
+
+  final bool soundOn;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(110),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+              color: Colors.white,
+              size: 15,
+            ),
           ),
         ),
       ),
