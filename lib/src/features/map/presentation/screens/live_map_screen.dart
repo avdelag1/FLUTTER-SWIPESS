@@ -165,7 +165,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     }
 
     return Material(
-      color: const Color(0xFF0A0A12),
+      color: const Color(0xFF1A1A2E),
       child: Stack(
         children: [
           Positioned.fill(
@@ -202,7 +202,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   initialRotation: kIsWeb ? 0 : MapCameraMath.openBankDegrees,
                   minZoom: 3,
                   maxZoom: 18,
-                  backgroundColor: const Color(0xFF0A0A12),
+                  backgroundColor: const Color(0xFF1A1A2E),
                   onMapReady: () {
                     _mapReady = true;
                     _startDroneFlyIn(center, radiusKm);
@@ -225,19 +225,26 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ),
                 children: [
                   TileLayer(
+                    urlTemplate: MapBasemap.streetsUrl,
+                    subdomains: MapBasemap.subdomains,
+                    userAgentPackageName: MapBasemap.userAgentPackageName,
+                    tileDimension: 256,
+                    maxNativeZoom: 19,
+                  ),
+                  TileLayer(
                     urlTemplate: MapBasemap.urlTemplate,
-                    fallbackUrl: MapBasemap.fallbackUrl,
                     additionalOptions: MapBasemap.additionalOptions,
                     userAgentPackageName: MapBasemap.userAgentPackageName,
                     tileDimension: 256,
-                    maxZoom: 19,
+                    maxNativeZoom: 19,
                   ),
                   if (MapBasemap.labelsUrl != null)
                     TileLayer(
                       urlTemplate: MapBasemap.labelsUrl!,
+                      subdomains: MapBasemap.subdomains,
                       userAgentPackageName: MapBasemap.userAgentPackageName,
                       tileDimension: 256,
-                      maxZoom: 19,
+                      maxNativeZoom: 19,
                     ),
                   CircleLayer(
                     circles: [
@@ -272,25 +279,28 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         ),
                       ),
                       for (final c in clusters)
-                        Marker(
-                          point: c.point,
-                          width: c.count >= 10 ? 56 : 48,
-                          height: c.count >= 10 ? 56 : 48,
-                          child: GestureDetector(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              if (c.count == 1) {
-                                setState(() => _selected = c.pins.first);
-                              } else {
+                        if (c.count == 1)
+                          _pinMarker(
+                            c.pins.first,
+                            selected: _selected != null &&
+                                _samePin(_selected!, c.pins.first),
+                          )
+                        else
+                          Marker(
+                            point: c.point,
+                            width: c.count >= 10 ? 56 : 48,
+                            height: c.count >= 10 ? 56 : 48,
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
                                 _safeMove(
                                   c.point,
                                   math.min(_zoom + 1.6, 16),
                                 );
-                              }
-                            },
-                            child: _ClusterBubble(count: c.count),
+                              },
+                              child: _ClusterBubble(count: c.count),
+                            ),
                           ),
-                        ),
                     ],
                   ),
                 ],
@@ -736,6 +746,50 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     }
   }
 
+  static bool _samePin(MapPin a, MapPin b) {
+    if (a.isListing != b.isListing) return false;
+    if (a.isListing) return a.listing?.id == b.listing?.id;
+    return a.profile?.id == b.profile?.id;
+  }
+
+  Marker _pinMarker(MapPin pin, {required bool selected}) {
+    if (pin.isListing) {
+      final title = pin.listing?.title ?? 'Listing';
+      final short = title.length > 18 ? '${title.substring(0, 15)}…' : title;
+      return Marker(
+        point: LatLng(pin.lat, pin.lng),
+        width: 148,
+        height: 28,
+        alignment: Alignment.center,
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _selected = pin);
+          },
+          child: _ListingPill(label: short, selected: selected),
+        ),
+      );
+    }
+    final name = pin.profile?.displayName ?? 'User';
+    return Marker(
+      point: LatLng(pin.lat, pin.lng),
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selected = pin);
+        },
+        child: _ProfileDot(
+          imageUrl: pin.profile?.avatarUrl,
+          initial: name.isNotEmpty ? name[0].toUpperCase() : '?',
+          selected: selected,
+        ),
+      ),
+    );
+  }
+
   static List<Listing> _demoListings(LatLng center, String city) {
     const photo =
         'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80';
@@ -788,6 +842,113 @@ class _MapCluster {
   final LatLng point;
   final List<MapPin> pins;
   int get count => pins.length;
+}
+
+class _ListingPill extends StatelessWidget {
+  const _ListingPill({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(5, 0, 8, 0),
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? const Color(0xFF00C6FF) : const Color(0xFF1D4ED8),
+          width: 2,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x380F172A),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: selected ? const Color(0xFF00E5FF) : const Color(0xFF3B82F6),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: selected ? Colors.white : const Color(0xFF0F172A),
+                fontSize: selected ? 11 : 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDot extends StatelessWidget {
+  const _ProfileDot({
+    required this.imageUrl,
+    required this.initial,
+    required this.selected,
+  });
+
+  final String? imageUrl;
+  final String initial;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF312E81),
+        border: Border.all(
+          color: selected ? const Color(0xFFC7D2FE) : Colors.white,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: selected
+                ? const Color(0x88818CF8)
+                : const Color(0x590F172A),
+            blurRadius: 8,
+          ),
+        ],
+        image: imageUrl != null && imageUrl!.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(imageUrl!),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: imageUrl == null || imageUrl!.isEmpty
+          ? Text(
+              initial,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+          : null,
+    );
+  }
 }
 
 class _ClusterBubble extends StatelessWidget {

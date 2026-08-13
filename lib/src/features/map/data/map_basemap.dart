@@ -5,6 +5,13 @@ import 'package:flutter_swipes/src/core/config/app_config.dart';
 abstract final class MapBasemap {
   static bool get _mapbox => AppConfig.mapboxAccessToken.trim().isNotEmpty;
 
+  /// Dark streets always sit under aerial tiles so a failed satellite
+  /// request never leaves a blank (blue) canvas.
+  static const streetsUrl =
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+
+  static const subdomains = ['a', 'b', 'c', 'd'];
+
   /// Satellite-first (Cap drone pass). Esri is CORS-safe on web.
   static String get urlTemplate {
     if (_mapbox) {
@@ -13,14 +20,10 @@ abstract final class MapBasemap {
     return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
   }
 
-  /// Dark streets if aerial tiles 404.
-  static const fallbackUrl =
-      'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-
   /// Place names over satellite (Cap satellite-streets).
   static String? get labelsUrl => _mapbox
       ? null
-      : 'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png';
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}@2x.png';
 
   static Map<String, String> get additionalOptions => _mapbox
       ? {'accessToken': AppConfig.mapboxAccessToken.trim()}
