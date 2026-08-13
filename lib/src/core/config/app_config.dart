@@ -23,7 +23,7 @@ class AppConfig {
 
   /// Mapbox **public** token (`pk.…`).
   /// Prefer `--dart-define=MAPBOX_ACCESS_TOKEN=…` / `dart_defines.json`.
-  /// Cap ships a public fallback so the map never stays blank when env is missing.
+  /// Empty → Esri satellite + Carto labels (the old Cap `pk.` is revoked).
   static const mapboxAccessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
     defaultValue: '',

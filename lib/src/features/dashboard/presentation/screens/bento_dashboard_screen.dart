@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/chunky_ink_pill.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_search_bar.dart';
@@ -358,7 +359,7 @@ class _SearchChromeWell extends StatelessWidget {
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 768),
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.fromLTRB(6, 6, 10, 10),
             margin: const EdgeInsets.only(bottom: 6),
             decoration: BoxDecoration(
               color: well,
@@ -393,7 +394,7 @@ class _SearchChromeWell extends StatelessWidget {
                         onTap: onPickCity,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _DashboardFilterPill(
                         isLight: isLight,
@@ -403,7 +404,7 @@ class _SearchChromeWell extends StatelessWidget {
                         onTap: onPickDates,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _DashboardFilterPill(
                         isLight: isLight,
@@ -448,10 +449,12 @@ class _DashboardFilterPill extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap();
       },
-      child: Container(
+      child: ChunkyInkPill(
+        isLight: isLight,
         height: 40,
+        depth: 4,
+        closedFrame: false,
         padding: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: AppTheme.dashboardFilterPill(isLight: isLight),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
