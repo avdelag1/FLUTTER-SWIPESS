@@ -44,11 +44,35 @@ class AppTheme {
   static const Color glassBg = Color(0x1CFFFFFF);
   static const Color inputFill = Color(0x14FFFFFF);
 
+  /// Cap neo-naive ink-stamp card (dark). Organic radii, 2.25px frame.
+  static const BorderRadius neoNaiveRadius = BorderRadius.only(
+    topLeft: Radius.circular(25),
+    topRight: Radius.circular(28),
+    bottomRight: Radius.circular(23),
+    bottomLeft: Radius.circular(27),
+  );
+
+  static BoxDecoration get neoNaiveCard => BoxDecoration(
+        color: const Color(0xF50E0E14),
+        borderRadius: neoNaiveRadius,
+        border: Border.all(color: const Color(0xEBFFFFFF), width: 2.25),
+        boxShadow: const [
+          BoxShadow(color: Color(0x66FFFFFF), offset: Offset(1.5, 1.5)),
+          BoxShadow(color: Color(0x59000000), blurRadius: 22, offset: Offset(0, 8)),
+        ],
+      );
+
+  static BoxDecoration get glassCard => BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withAlpha(25)),
+      );
+
   static TextStyle get displayItalic => GoogleFonts.plusJakartaSans(
         color: Colors.white,
         fontWeight: FontWeight.w900,
         fontStyle: FontStyle.italic,
-        letterSpacing: -0.5,
+        letterSpacing: -1.0,
       );
 
   static TextStyle get buttonLabel => GoogleFonts.plusJakartaSans(

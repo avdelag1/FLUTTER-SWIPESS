@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/features/documents/data/repositories/document_repository.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
@@ -24,7 +25,9 @@ class DocumentVaultScreen extends ConsumerWidget {
 
     return ColoredBox(
       color: AppTheme.dashBg,
-      child: Column(
+      child: AmbientPageBackground(
+        fill: true,
+        child: Column(
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(20, embedded ? top + 64 : top + 16, 20, 0),
@@ -127,6 +130,7 @@ class DocumentVaultScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

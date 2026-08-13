@@ -4,6 +4,30 @@ Agents only follow what is **in this repo** plus **the prompt you paste**. Mergi
 
 ---
 
+## Core design prompt (attach to EVERY request)
+
+Neo-naive / Cap tokens. Source of truth is still `avdelag1/swipess` — clone to `/tmp/swipess` and match the real screen. Do not invent radio (removed). Do not ship Material AppBars.
+
+```text
+UI / UX AESTHETIC DIRECTIVE: Flutter Swipess uses a neo-naive aesthetic.
+Match the original React/Capacitor project.
+
+Canvas: Colors.black / Color(0xFF0A0A0D). Use AmbientPageBackground
+(monochrome wells — no colorful orbs).
+Brand primary: #FF4D00 for CTAs, active tabs, highlights.
+Type: GoogleFonts.plusJakartaSans. Headers w900 italic letterSpacing: -1.0.
+Cards: frosted glass Colors.white.withAlpha(12), border white.withAlpha(25),
+radius 24 — or Cap neo-naive ink-stamp frames (NeoNaiveCard / NeoNaiveGroup).
+Buttons: stadium pills (radius 999), #FF4D00, bold caps letterSpacing 2.0.
+Inputs: GlassTextField only. Never Material TextField chrome.
+If it looks like a standard Material app, it failed.
+```
+
+Shared widgets: `AmbientPageBackground`, `NeoNaiveCard`, `NeoNaiveGroup`,
+`GlassTextField`, `BrandPrimaryButton`, `PulsingVerifiedBadge`.
+
+---
+
 ## Close the design (Flutter ← Capacitor)
 
 Use this when you want screens to look like swipess.com / the screenshots you already have.

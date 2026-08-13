@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
@@ -21,7 +22,9 @@ class ContractsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.dashBg,
-      body: async.when(
+      body: AmbientPageBackground(
+        fill: true,
+        child: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
@@ -77,6 +80,7 @@ class ContractsScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 

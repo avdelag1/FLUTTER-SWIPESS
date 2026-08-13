@@ -1,6 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
@@ -10,17 +14,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Capacitor ClientSecurity / settings nested sections.
-class SecurityScreen extends StatefulWidget {
+class SecurityScreen extends ConsumerStatefulWidget {
   const SecurityScreen({super.key, this.initialTab = 'security'});
 
   /// security | verification | preferences | language
   final String initialTab;
 
   @override
-  State<SecurityScreen> createState() => _SecurityScreenState();
+  ConsumerState<SecurityScreen> createState() => _SecurityScreenState();
 }
 
-class _SecurityScreenState extends State<SecurityScreen> {
+class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   late String _tab;
   final _current = TextEditingController();
   final _next = TextEditingController();
@@ -43,7 +47,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     setState(() {
       _sounds = prefs.getBool('swipe_sounds') ?? true;
       _haptics = prefs.getBool('haptics') ?? true;
-      _lang = prefs.getString('locale') ?? 'en';
+      _lang = ref.read(appLocaleProvider).code;
     });
   }
 
@@ -72,7 +76,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0D),
-      body: SafeArea(
+      body: AmbientPageBackground(
+        fill: true,
+        child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
           children: [
@@ -105,6 +111,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -274,34 +281,19 @@ class _SecurityScreenState extends State<SecurityScreen> {
       _Panel(
         child: Column(
           children: [
-            SwitchListTile.adaptive(
+            _PrefSwitch(
+              label: 'Swipe sounds',
               value: _sounds,
-              activeThumbColor: Colors.white,
-              activeTrackColor: AppTheme.brandPrimary,
-              title: Text(
-                'Swipe sounds',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
               onChanged: (v) async {
                 setState(() => _sounds = v);
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('swipe_sounds', v);
               },
             ),
-            SwitchListTile.adaptive(
+            Divider(height: 1, color: Colors.white.withAlpha(20)),
+            _PrefSwitch(
+              label: 'Haptics',
               value: _haptics,
-              activeThumbColor: Colors.white,
-              activeTrackColor: AppTheme.brandPrimary,
-              title: Text(
-                'Haptics',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
               onChanged: (v) async {
                 setState(() => _haptics = v);
                 final prefs = await SharedPreferences.getInstance();
@@ -348,8 +340,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   Future<void> _setLang(String code) async {
     setState(() => _lang = code);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('locale', code);
+    await ref.read(appLocaleProvider.notifier).setCode(code);
     HapticFeedback.selectionClick();
   }
 
@@ -400,11 +391,7 @@ class _Panel extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(28)),
-      ),
+      decoration: AppTheme.glassCard,
       child: child,
     );
   }
@@ -428,6 +415,43 @@ class _Back extends StatelessWidget {
         ),
         child: const Icon(Icons.arrow_back_ios_new_rounded,
             color: Colors.white, size: 18),
+      ),
+    );
+  }
+}
+
+class _PrefSwitch extends StatelessWidget {
+  const _PrefSwitch({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          CupertinoSwitch(
+            value: value,
+            activeTrackColor: AppTheme.brandPrimary,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

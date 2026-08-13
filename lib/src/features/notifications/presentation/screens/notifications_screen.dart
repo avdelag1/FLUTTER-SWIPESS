@@ -187,12 +187,12 @@ class _NotificationTile extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: notification.isRead
-                ? Colors.white.withAlpha(8)
-                : Colors.white.withAlpha(16),
-            borderRadius: BorderRadius.circular(22),
+                ? Colors.white.withAlpha(12)
+                : AppTheme.brandPrimary.withAlpha(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: notification.isRead
-                  ? Colors.white.withAlpha(15)
+                  ? Colors.white.withAlpha(25)
                   : AppTheme.brandPrimary.withAlpha(80),
             ),
           ),

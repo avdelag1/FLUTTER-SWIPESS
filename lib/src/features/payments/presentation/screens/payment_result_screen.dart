@@ -42,7 +42,18 @@ class PaymentResultScreen extends StatelessWidget {
                     color: success
                         ? const Color(0xFF10B981)
                         : const Color(0xFFEF4444),
+                    width: 2,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (success
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444))
+                          .withAlpha(90),
+                      blurRadius: 28,
+                      spreadRadius: 6,
+                    ),
+                  ],
                 ),
                 child: Icon(
                   success ? Icons.check_rounded : Icons.close_rounded,
