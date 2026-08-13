@@ -20,6 +20,7 @@ import 'package:flutter_swipes/src/features/events/presentation/screens/event_fa
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/contracts_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
@@ -306,11 +307,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.clientContracts,
-        builder: (ctx, _) => const CapPlaceholderScreen(
-          title: 'Contracts',
-          path: AppPaths.clientContracts,
-          note: 'Use Legal Hub contracts list — full Cap contracts page pending.',
-        ),
+        builder: (ctx, _) => const ContractsScreen(),
       ),
       GoRoute(
         path: AppPaths.ownerContracts,
@@ -342,7 +339,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.clientFilters,
-        builder: (ctx, _) => const _FiltersRouteScreen(),
+        builder: (ctx, _) => const FilterBottomSheet(asPage: true),
       ),
       GoRoute(
         path: AppPaths.ownerFilters,
@@ -475,39 +472,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
-
-class _FiltersRouteScreen extends StatefulWidget {
-  const _FiltersRouteScreen();
-
-  @override
-  State<_FiltersRouteScreen> createState() => _FiltersRouteScreenState();
-}
-
-class _FiltersRouteScreenState extends State<_FiltersRouteScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      FilterBottomSheet.show(context).whenComplete(() {
-        if (!mounted) return;
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go(AppPaths.clientDashboard);
-        }
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.black,
-      body: SizedBox.shrink(),
-    );
-  }
-}
 
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {

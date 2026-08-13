@@ -31,11 +31,15 @@ class ListingRepository {
   /// falls back to a direct query if the RPC doesn't exist yet.
   Future<List<Listing>> fetchSwipeFeed({
     String? category,
+    String? interestType,
     double? minPrice,
     double? maxPrice,
     int? minBeds,
+    int? minBaths,
     bool? furnished,
     bool? petFriendly,
+    List<String> propertyTypes = const [],
+    String? city,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -54,11 +58,15 @@ class ListingRepository {
               .toList();
           return _applyLocalFilters(
             listings,
+            interestType: interestType,
             minPrice: minPrice,
             maxPrice: maxPrice,
             minBeds: minBeds,
+            minBaths: minBaths,
             furnished: furnished,
             petFriendly: petFriendly,
+            propertyTypes: propertyTypes,
+            city: city,
           );
         }
       }
@@ -68,11 +76,15 @@ class ListingRepository {
 
     return _fetchDirect(
       category: category,
+      interestType: interestType,
       minPrice: minPrice,
       maxPrice: maxPrice,
       minBeds: minBeds,
+      minBaths: minBaths,
       furnished: furnished,
       petFriendly: petFriendly,
+      propertyTypes: propertyTypes,
+      city: city,
       limit: limit,
       offset: offset,
     );
@@ -81,11 +93,15 @@ class ListingRepository {
   /// Direct table query fallback (no RPC).
   Future<List<Listing>> _fetchDirect({
     String? category,
+    String? interestType,
     double? minPrice,
     double? maxPrice,
     int? minBeds,
+    int? minBaths,
     bool? furnished,
     bool? petFriendly,
+    List<String> propertyTypes = const [],
+    String? city,
     int limit = 20,
     int offset = 0,
   }) async {
@@ -95,8 +111,17 @@ class ListingRepository {
         .eq('is_active', true)
         .eq('status', 'active');
 
-    if (category != null && category.isNotEmpty) {
+    if (category != null &&
+        category.isNotEmpty &&
+        category != 'all' &&
+        category != 'recommended' &&
+        category != 'popular') {
       query = query.eq('category', category);
+    }
+    if (interestType != null &&
+        interestType.isNotEmpty &&
+        interestType != 'both') {
+      query = query.eq('listing_type', interestType);
     }
     if (minPrice != null) {
       query = query.gte('price', minPrice);
@@ -107,11 +132,20 @@ class ListingRepository {
     if (minBeds != null && minBeds > 0) {
       query = query.gte('beds', minBeds);
     }
+    if (minBaths != null && minBaths > 0) {
+      query = query.gte('baths', minBaths);
+    }
     if (furnished != null) {
       query = query.eq('furnished', furnished);
     }
     if (petFriendly != null) {
       query = query.eq('pet_friendly', petFriendly);
+    }
+    if (city != null && city.trim().isNotEmpty) {
+      query = query.ilike('city', '%${city.trim()}%');
+    }
+    if (propertyTypes.isNotEmpty) {
+      query = query.inFilter('property_type', propertyTypes);
     }
 
     final data = await query
@@ -125,21 +159,40 @@ class ListingRepository {
 
   List<Listing> _applyLocalFilters(
     List<Listing> listings, {
+    String? interestType,
     double? minPrice,
     double? maxPrice,
     int? minBeds,
+    int? minBaths,
     bool? furnished,
     bool? petFriendly,
+    List<String> propertyTypes = const [],
+    String? city,
   }) {
     return listings.where((listing) {
-      if (minPrice != null && (listing.price ?? 0) < minPrice) return false;
-      if (maxPrice != null && (listing.price ?? 0) > maxPrice) return false;
-      if (minBeds != null && minBeds > 0 && (listing.beds ?? 0) < minBeds) {
+      if (interestType != null &&
+          interestType != 'both' &&
+          listing.listingType != null &&
+          listing.listingType != interestType) {
         return false;
       }
+      if (minPrice != null && (listing.price ?? 0) < minPrice) return false;
+      if (maxPrice != null && (listing.price ?? 0) > maxPrice) return false;
+      final beds = listing.beds ?? listing.bedrooms ?? 0;
+      if (minBeds != null && minBeds > 0 && beds < minBeds) return false;
+      final baths = (listing.baths ?? listing.bathrooms ?? 0).ceil();
+      if (minBaths != null && minBaths > 0 && baths < minBaths) return false;
       if (furnished != null && listing.furnished != furnished) return false;
       if (petFriendly != null && listing.petFriendly != petFriendly) {
         return false;
+      }
+      if (propertyTypes.isNotEmpty) {
+        final pt = listing.propertyType;
+        if (pt == null || !propertyTypes.contains(pt)) return false;
+      }
+      if (city != null && city.trim().isNotEmpty) {
+        final c = (listing.city ?? '').toLowerCase();
+        if (!c.contains(city.trim().toLowerCase())) return false;
       }
       return true;
     }).toList();

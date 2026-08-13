@@ -1,17 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
   return SwipeRepository(Supabase.instance.client);
 });
 
-/// Family provider to fetch listings by category.
+/// Family provider to fetch listings by category — respects active Cap filters.
 final swipeListingsProvider =
     FutureProvider.family<List<Listing>, String>((ref, category) async {
-  final repository = ref.read(swipeRepositoryProvider);
-  return repository.fetchListings(category: category);
+  final filters = ref.watch(swipeFilterProvider);
+  final repository = ref.read(listingRepositoryProvider);
+  final effectiveCategory =
+      (category == 'all' || category == 'recommended' || category == 'popular')
+          ? filters.category
+          : category;
+
+  return repository.fetchSwipeFeed(
+    category: effectiveCategory,
+    interestType: filters.interestType,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    minBeds: filters.minBeds,
+    minBaths: filters.minBaths,
+    furnished: filters.furnished,
+    petFriendly: filters.petFriendly,
+    propertyTypes: filters.propertyTypes,
+    city: filters.city,
+    limit: 40,
+  );
 });
 
 /// Capacitor-aligned client discovery filters.

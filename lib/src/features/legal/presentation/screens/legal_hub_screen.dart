@@ -1,203 +1,554 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
-import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
-import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/providers/contracts_provider.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/contract_sign_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
+import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class LegalHubScreen extends ConsumerWidget {
+class LegalHubScreen extends ConsumerStatefulWidget {
   const LegalHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(contractsProvider);
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    final top = MediaQuery.paddingOf(context).top;
+  ConsumerState<LegalHubScreen> createState() => _LegalHubScreenState();
+}
 
-    return ColoredBox(
-      color: AppTheme.dashBg,
-      child: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        ),
-        error: (e, _) => Center(
-          child: TextButton(
-            onPressed: () => ref.read(contractsProvider.notifier).refresh(),
-            child: const Text('Could not load contracts — retry'),
-          ),
-        ),
-        data: (contracts) {
-          return ListView(
-            padding: EdgeInsets.fromLTRB(24, top + 64, 24, 140),
-            children: [
-              Text('LEGAL HUB', style: AppTheme.displayItalic.copyWith(fontSize: 32)),
-              const SizedBox(height: 8),
-              Text(
-                'Create contracts, upload files, and sign with your finger.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white70),
-              ),
-              const SizedBox(height: 24),
-              BrandPrimaryButton(
-                label: 'New contract',
-                icon: Icons.edit_document,
-                onPressed: () => _pickTemplate(context, ref),
-              ),
-              const SizedBox(height: 12),
-              BrandGhostButton(
-                label: 'Lawyer services',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const LawyerServicesScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              BrandGhostButton(
-                label: 'Document vault',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const DocumentVaultScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 28),
-              if (contracts.isEmpty)
-                Text(
-                  'No contracts yet. Start from a template, then sign it here.',
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white54),
-                )
-              else
-                for (final contract in contracts) ...[
-                  _ContractTile(
-                    contract: contract,
-                    needsSign: userId != null && contract.needsSignature(userId),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ContractSignScreen(contract: contract),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
-            ],
-          );
-        },
-      ),
-    );
+class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
+  bool _isOwner = false;
+  String? _expandedCategory;
+  Map<String, String>? _selectedIssue;
+  final _descriptionController = TextEditingController();
+  bool _isSubmitting = false;
+
+  static const _clientCategories = [
+    {
+      'id': 'landlord-issues',
+      'title': 'Landlord Issues',
+      'icon': Icons.home_rounded,
+      'description': 'Problems with your landlord or property owner',
+      'subcategories': [
+        {'id': 'lease-violation', 'title': 'Lease Violations', 'description': 'Landlord not following the lease terms'},
+        {'id': 'security-deposit', 'title': 'Security Deposit Disputes', 'description': 'Issues recovering your deposit'},
+        {'id': 'maintenance', 'title': 'Maintenance Issues', 'description': 'Landlord not maintaining the property'},
+      ]
+    },
+    {
+      'id': 'rent-issues',
+      'title': 'Rent & Payment Issues',
+      'icon': Icons.attach_money_rounded,
+      'description': 'Disputes about rent payments or charges',
+      'subcategories': [
+        {'id': 'rent-increase', 'title': 'Unlawful Rent Increase', 'description': 'Rent raised without proper notice'},
+        {'id': 'hidden-fees', 'title': 'Hidden Fees', 'description': 'Unexpected charges not in the lease'},
+      ]
+    },
+    {
+      'id': 'contract-issues',
+      'title': 'Contract & Agreement Issues',
+      'icon': Icons.description_rounded,
+      'description': 'Problems with rental agreements or contracts',
+      'subcategories': [
+        {'id': 'unfair-terms', 'title': 'Unfair Contract Terms', 'description': 'One-sided or illegal clauses'},
+        {'id': 'early-termination', 'title': 'Early Termination', 'description': 'Need to break lease early'},
+      ]
+    }
+  ];
+
+  static const _ownerCategories = [
+    {
+      'id': 'tenant-issues',
+      'title': 'Tenant Issues',
+      'icon': Icons.person_off_rounded,
+      'description': 'Problems with tenants or renters',
+      'subcategories': [
+        {'id': 'non-payment', 'title': 'Non-Payment of Rent', 'description': 'Tenant not paying rent on time'},
+        {'id': 'property-damage', 'title': 'Property Damage', 'description': 'Tenant damaged the property'},
+        {'id': 'eviction-process', 'title': 'Eviction Process', 'description': 'Need help with legal eviction'},
+      ]
+    },
+    {
+      'id': 'contract-legal',
+      'title': 'Lease & Contract Agreements',
+      'icon': Icons.description_rounded,
+      'description': 'Legal help with contracts and leases',
+      'subcategories': [
+        {'id': 'lease-creation', 'title': 'Lease Agreement Creation', 'description': 'Create legally binding leases'},
+        {'id': 'rental-rules', 'title': 'Rental Rules Documentation', 'description': 'Create enforceable property rules'},
+      ]
+    },
+  ];
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
   }
 
-  Future<void> _pickTemplate(BuildContext context, WidgetRef ref) async {
-    final template = await showModalBottomSheet<ContractTemplate>(
+  Future<void> _submitRequest(LegalServicePackage? pkg) async {
+    if ((_selectedIssue == null && pkg == null) || _descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an issue and provide a description')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    
+    try {
+      final repo = ref.read(legalRepositoryProvider);
+      final year = DateTime.now().year;
+      final random = (Random().nextInt(9000) + 1000).toString();
+      
+      await repo.submitLegalCase(
+        caseNumber: 'LC-$year-$random',
+        title: pkg != null ? 'Service Request: ${pkg.id}' : 'Legal Support: ${_selectedIssue?['category']}',
+        description: _descriptionController.text.trim(),
+        caseType: 'user_complaint',
+        priority: 'medium',
+        partiesInvolved: {
+          'requester_role': _isOwner ? 'owner' : 'client',
+          'requested_package_id': pkg?.id,
+          'category': _selectedIssue?['category'],
+          'subcategory': _selectedIssue?['subcategory'],
+        },
+      );
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Legal help request submitted!')),
+        );
+        Navigator.pop(context);
+        setState(() {
+          _selectedIssue = null;
+          _descriptionController.clear();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit request: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showSubmissionSheet([LegalServicePackage? pkg]) {
+    if (pkg != null) {
+      _descriptionController.text = 'I\'m interested in the "${pkg.name}" legal service package. Please contact me with more details.';
+    }
+    
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom + 32,
+            left: 20, right: 20, top: 20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TEMPLATES', style: AppTheme.displayItalic.copyWith(fontSize: 20)),
-              const SizedBox(height: 12),
-              for (final item in contractTemplates)
-                ListTile(
-                  title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                  subtitle: Text(item.description, style: const TextStyle(color: Colors.white54)),
-                  onTap: () => Navigator.pop(context, item),
+              Text(
+                pkg != null ? 'REQUEST SERVICE' : 'DESCRIBE ISSUE', 
+                style: AppTheme.displayItalic.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _descriptionController,
+                maxLines: 4,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Provide details about your situation...',
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  filled: true,
+                  fillColor: Colors.white.withAlpha(10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.brandPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                  ),
+                  onPressed: _isSubmitting ? null : () => _submitRequest(pkg),
+                  child: _isSubmitting 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('SUBMIT SECURELY', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                ),
+              ),
             ],
           ),
         );
       },
     );
-    if (template == null) return;
-    try {
-      final created = await ref.read(contractsProvider.notifier).create(template);
-      if (!context.mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ContractSignScreen(contract: created)),
-      );
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not create contract: $e')),
-        );
-      }
-    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final packagesAsync = ref.watch(legalServicePackagesProvider);
+    final top = MediaQuery.paddingOf(context).top;
+    final categories = _isOwner ? _ownerCategories : _clientCategories;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Ambient Background Mock
+          Positioned(
+            top: -100, right: -100,
+            child: Container(
+              width: 300, height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.brandPrimary.withAlpha(20),
+                backgroundBlendMode: BlendMode.screen,
+              ),
+            ),
+          ),
+          
+          ListView(
+            padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => context.pop(),
+                  ),
+                  const Spacer(),
+                  // Mode Toggle
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ToggleBtn(
+                          label: 'CLIENT',
+                          isActive: !_isOwner,
+                          onTap: () => setState(() => _isOwner = false),
+                        ),
+                        _ToggleBtn(
+                          label: 'OWNER',
+                          isActive: _isOwner,
+                          onTap: () => setState(() => _isOwner = true),
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 32),
+              
+              Text('LEGAL CENTER', style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9)),
+              const SizedBox(height: 16),
+              Text(
+                'Secure legal terminal for Swipess protocols, terms of use, and professional legal dispatch.',
+                style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 32),
+              
+              // Top Actions
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActionCard(
+                      title: 'CONTRACTS',
+                      icon: Icons.edit_document,
+                      color: Colors.blue.withAlpha(30),
+                      onTap: () => context.push(AppPaths.clientContracts),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActionCard(
+                      title: 'LAWYERS',
+                      icon: Icons.gavel_rounded,
+                      color: Colors.purple.withAlpha(30),
+                      onTap: () => context.push(AppPaths.clientLegalServices),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 48),
+
+              // Issues Section
+              Text('REPORT AN ISSUE', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
+              const SizedBox(height: 16),
+              for (final cat in categories)
+                _CategoryTile(
+                  category: cat,
+                  isExpanded: _expandedCategory == cat['id'],
+                  selectedSubId: (_selectedIssue != null && _selectedIssue!['category'] == cat['id']) ? _selectedIssue!['subcategory'] : null,
+                  onToggle: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _expandedCategory = _expandedCategory == cat['id'] ? null : cat['id'] as String;
+                      _selectedIssue = null;
+                    });
+                  },
+                  onSubSelect: (subId) {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedIssue = {'category': cat['id'] as String, 'subcategory': subId};
+                    });
+                    _showSubmissionSheet();
+                  },
+                ),
+                
+              const SizedBox(height: 48),
+              
+              // Service Packages Section
+              Text('SERVICE PACKAGES', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
+              const SizedBox(height: 8),
+              Text(
+                'Browse currently listed service options and submit a request.',
+                style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              
+              packagesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
+                error: (e, _) => Center(child: Text('Failed to load packages: $e', style: const TextStyle(color: Colors.white54))),
+                data: (packages) {
+                  if (packages.isEmpty) return const Text('No packages available.', style: TextStyle(color: Colors.white54));
+                  return Column(
+                    children: packages.map((pkg) => _PackageCard(
+                      pkg: pkg,
+                      onTap: () => _showSubmissionSheet(pkg),
+                    )).toList(),
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 48),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _ContractTile extends StatelessWidget {
-  const _ContractTile({
-    required this.contract,
-    required this.needsSign,
-    required this.onTap,
-  });
-
-  final DigitalContract contract;
-  final bool needsSign;
+class _ToggleBtn extends StatelessWidget {
+  const _ToggleBtn({required this.label, required this.isActive, required this.onTap});
+  final String label;
+  final bool isActive;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: isActive ? Colors.black : Colors.white54,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            letterSpacing: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({required this.title, required this.icon, required this.color, required this.onTap});
+  final String title;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: color,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withAlpha(25)),
+          border: Border.all(color: Colors.white.withAlpha(20)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.description_rounded, color: Colors.white),
-            const SizedBox(width: 14),
-            Expanded(
+            Icon(icon, color: Colors.white, size: 28),
+            const SizedBox(height: 16),
+            Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({
+    required this.category,
+    required this.isExpanded,
+    required this.selectedSubId,
+    required this.onToggle,
+    required this.onSubSelect,
+  });
+
+  final Map<String, dynamic> category;
+  final bool isExpanded;
+  final String? selectedSubId;
+  final VoidCallback onToggle;
+  final Function(String) onSubSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: isExpanded ? AppTheme.brandPrimary.withAlpha(50) : Colors.white.withAlpha(10)),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            onTap: onToggle,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: Icon(category['icon'] as IconData, color: isExpanded ? AppTheme.brandPrimary : Colors.white),
+            title: Text(category['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+            subtitle: Text(category['description'] as String, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white54),
+          ),
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    contract.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
+                children: (category['subcategories'] as List).map((sub) {
+                  final isSelected = selectedSubId == sub['id'];
+                  return GestureDetector(
+                    onTap: () => onSubSelect(sub['id'] as String),
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.brandPrimary.withAlpha(20) : Colors.white.withAlpha(5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: isSelected ? AppTheme.brandPrimary : Colors.transparent),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(sub['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                Text(sub['description'] as String, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.chevron_right, color: isSelected ? AppTheme.brandPrimary : Colors.white30),
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    contract.statusLabel,
-                    style: TextStyle(
-                      color: needsSign ? AppTheme.brandPrimary : Colors.white54,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
-            Icon(
-              needsSign ? Icons.draw_rounded : Icons.chevron_right_rounded,
-              color: Colors.white70,
+        ],
+      ),
+    );
+  }
+}
+
+class _PackageCard extends StatelessWidget {
+  const _PackageCard({required this.pkg, required this.onTap});
+  final LegalServicePackage pkg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(10),
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: Colors.white.withAlpha(15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(pkg.name, style: AppTheme.displayItalic.copyWith(fontSize: 20)),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text('STARTING AT', style: TextStyle(color: Colors.white30, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                    Text('\$${pkg.price.toStringAsFixed(0)}', style: const TextStyle(color: AppTheme.brandPrimary, fontSize: 24, fontWeight: FontWeight.w900)),
+                  ],
+                ),
+              ],
             ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'ESTIMATED: ${pkg.duration ?? '${pkg.durationDays} DAYS'}',
+                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final feature in pkg.features)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_rounded, color: AppTheme.brandPrimary, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(feature, style: const TextStyle(color: Colors.white70, fontSize: 13))),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
