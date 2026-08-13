@@ -57,6 +57,10 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     );
   }
 
+  void setVideo(XFile file) {
+    state = state.copyWith(video: file, clearError: true);
+  }
+
   Future<void> pickVideo() async {
     final picker = ImagePicker();
     final file = await picker.pickVideo(

@@ -109,6 +109,18 @@ class SwipeFilterNotifier extends Notifier<SwipeFilter> {
   void setCategory(String category) =>
       state = state.copyWith(category: category);
 
+  void setInterestType(String type) {
+    final mapped = type == 'buy' ? 'sale' : type;
+    state = state.copyWith(interestType: mapped);
+  }
+
+  void setCity(String? city) => state = state.copyWith(
+        city: city,
+        clearCity: city == null || city.trim().isEmpty,
+      );
+
+  void setRadiusKm(double km) => state = state.copyWith(radiusKm: km);
+
   void setPriceRange(double? minPrice, double? maxPrice) =>
       state = state.copyWith(minPrice: minPrice, maxPrice: maxPrice);
 
