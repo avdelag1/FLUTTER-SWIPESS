@@ -557,83 +557,93 @@ class _EmptyGallery extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Icon(
-                searching
-                    ? Icons.search_rounded
-                    : Icons.auto_awesome_rounded,
-                size: 48,
-                color: searching
-                    ? const Color(0x996366F1)
-                    : const Color(0x99EB4898),
-              ),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              searching ? 'SCAN NEGATIVE' : 'GALLERY EMPTY',
-              style: AppTheme.displayItalic.copyWith(fontSize: 26),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              searching
-                  ? 'No assets found matching current scan parameters. Adjust filters.'
-                  : 'Your asset inventory is currently offline. Deploy your first listing to begin broadcast.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-                fontStyle: FontStyle.italic,
-                height: 1.4,
-              ),
-            ),
-            if (!searching) ...[
-              const SizedBox(height: 28),
-              GestureDetector(
-                onTap: onDeploy,
-                child: Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE11D48), Color(0xFFEB4898)],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.white12),
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    child: Icon(
+                      searching
+                          ? Icons.search_rounded
+                          : Icons.auto_awesome_rounded,
+                      size: 48,
+                      color: searching
+                          ? const Color(0x996366F1)
+                          : const Color(0x99EB4898),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add_rounded, color: Colors.white),
-                      const SizedBox(width: 8),
-                      Text(
-                        'DEPLOY FIRST LISTING',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontStyle: FontStyle.italic,
-                          letterSpacing: 1.2,
+                  const SizedBox(height: 28),
+                  Text(
+                    searching ? 'SCAN NEGATIVE' : 'GALLERY EMPTY',
+                    style: AppTheme.displayItalic.copyWith(fontSize: 26),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    searching
+                        ? 'No assets found matching current scan parameters. Adjust filters.'
+                        : 'Your asset inventory is currently offline. Deploy your first listing to begin broadcast.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                  if (!searching) ...[
+                    const SizedBox(height: 28),
+                    GestureDetector(
+                      onTap: onDeploy,
+                      child: Container(
+                        height: 52,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFE11D48), Color(0xFFEB4898)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.add_rounded, color: Colors.white),
+                              const SizedBox(width: 8),
+                              Text(
+                                'DEPLOY FIRST LISTING',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontStyle: FontStyle.italic,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -6,11 +6,18 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_p
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
 void main() {
-  testWidgets('Listing Control chrome matches Cap asset terminal', (tester) async {
+  Future<void> pumpListingControl(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          myListingsProvider.overrideWith((ref, status) async => const <Listing>[]),
+          myListingsProvider.overrideWith(
+            (ref, status) async => const <Listing>[],
+          ),
           ownerListingsStatsProvider.overrideWith(
             (ref) async => const OwnerListingsStats(
               total: 0,
@@ -26,6 +33,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
+  }
+
+  testWidgets('Listing Control chrome matches Cap asset terminal', (tester) async {
+    await pumpListingControl(tester);
 
     expect(find.text('LISTING CONTROL'), findsOneWidget);
     expect(find.text('REAL-TIME ASSET MANAGEMENT PROTOCOL'), findsOneWidget);
@@ -39,24 +50,7 @@ void main() {
   });
 
   testWidgets('spark opens the create-listing multi-option sheet', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          myListingsProvider.overrideWith((ref, status) async => const <Listing>[]),
-          ownerListingsStatsProvider.overrideWith(
-            (ref) async => const OwnerListingsStats(
-              total: 0,
-              active: 0,
-              views: 0,
-              avgPrice: 0,
-            ),
-          ),
-        ],
-        child: const MaterialApp(home: OwnerPropertiesScreen()),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+    await pumpListingControl(tester);
 
     await tester.tap(find.byKey(const Key('listing-control-spark')));
     await tester.pump();

@@ -321,12 +321,15 @@ class _MagicCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        'MAGIC AI LISTING',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
+                      Flexible(
+                        child: Text(
+                          'MAGIC AI LISTING',
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
