@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
@@ -12,7 +14,9 @@ import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_reposit
 import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_message_bubble.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_welcome_grid.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
@@ -86,12 +90,6 @@ Future<void> showIntelCoreSheet(
   );
 }
 
-class _ChatBubble {
-  const _ChatBubble({required this.role, required this.content});
-  final String role;
-  final String content;
-}
-
 class _IntelCoreSheet extends ConsumerStatefulWidget {
   const _IntelCoreSheet({this.initialQuery = '', this.onClose});
 
@@ -105,37 +103,37 @@ class _IntelCoreSheet extends ConsumerStatefulWidget {
 class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
-  final _messages = <_ChatBubble>[];
+  final _messages = <IntelChatBubble>[];
+  final _saved = <Map<String, dynamic>>[];
   bool _showHistory = false;
+  bool _showPersona = false;
   bool _loading = false;
   bool _bootstrapped = false;
   bool _recording = false;
   bool _transcribing = false;
   bool _privacyAccepted = false;
+  bool _autoSend = false;
+  int? _countdown;
+  Timer? _countdownTimer;
   String _character = 'default';
+  String? _speakingId;
   final _tts = FlutterTts();
 
-  static const _personas = <(String, String)>[
-    ('default', 'Swipess AI'),
-    ('kyle', 'Kyle'),
-    ('beaugosse', 'Beau Gosse'),
-    ('donajkiin', "Don Aj K'iin"),
-    ('botbetter', 'Bot Better'),
-    ('lunashanti', 'Luna Shanti'),
-    ('ezriyah', 'Ezriyah'),
-  ];
-
-  static const _starters = [
-    'Find people looking to buy houses',
-    'Find maintenance workers',
-    'Show me all rental properties',
-    'Show me available houses',
+  static const _personas = <(String, String, String, Color)>[
+    ('default', 'Swipess AI', 'Global Discovery', Color(0xFFFF3D00)),
+    ('kyle', 'Kyle', 'Market Hustler', Color(0xFFFB923C)),
+    ('beaugosse', 'Beau Gosse', 'Social Alpha', Color(0xFFA855F7)),
+    ('donajkiin', "Don Aj K'iin", 'Mayan Wisdom', Color(0xFF10B981)),
+    ('botbetter', 'Bot Better', 'Luxury Analyst', Color(0xFFEC4899)),
+    ('lunashanti', 'Luna Shanti', 'Boho Spirit', Color(0xFFA78BFA)),
+    ('ezriyah', 'Ezriyah', 'Integration Coach', Color(0xFF14B8A6)),
   ];
 
   @override
   void initState() {
     super.initState();
     _loadPrivacy();
+    _loadSaved();
     final seed = widget.initialQuery.trim();
     if (seed.isNotEmpty) _privacyAccepted = true;
     if (seed.isNotEmpty) {
@@ -150,6 +148,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _controller.dispose();
     _scroll.dispose();
     _tts.stop();
@@ -163,49 +162,73 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     if (mounted) setState(() => _privacyAccepted = ok);
   }
 
+  Future<void> _loadSaved() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('Swipess-ai-conversations');
+      if (raw == null) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      final list = <Map<String, dynamic>>[];
+      for (final row in decoded) {
+        if (row is Map) list.add(Map<String, dynamic>.from(row));
+      }
+      if (mounted) {
+        setState(() {
+          _saved
+            ..clear()
+            ..addAll(list);
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _acceptPrivacy() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('Swipess_ai_privacy', 'true');
     setState(() => _privacyAccepted = true);
   }
 
-  Future<void> _speak(String text) async {
+  Future<void> _speak(IntelChatBubble message) async {
     try {
+      if (_speakingId == message.id) {
+        await _tts.stop();
+        if (mounted) setState(() => _speakingId = null);
+        return;
+      }
       await _tts.setLanguage(
         ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US',
       );
       await _tts.setSpeechRate(0.48);
-      await _tts.speak(text.replaceAll(RegExp(r'\[[^\]]+\]'), ''));
+      setState(() => _speakingId = message.id);
+      await _tts.speak(message.content.replaceAll(RegExp(r'\[[^\]]+\]'), ''));
     } catch (_) {}
   }
 
   Future<void> _persistHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('Swipess-ai-conversations');
-      final list = <Map<String, dynamic>>[];
-      if (raw != null) {
-        final decoded = jsonDecode(raw);
-        if (decoded is List) {
-          for (final row in decoded) {
-            if (row is Map) {
-              list.add(Map<String, dynamic>.from(row));
-            }
-          }
-        }
-      }
+      final list = [..._saved];
       list.insert(0, {
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'title': _messages.firstOrNull?.content ?? 'Chat',
         'messages': [
           for (final m in _messages.take(50))
-            {'role': m.role, 'content': m.content},
+            {'role': m.role, 'content': m.content, 'provider': m.provider},
         ],
       });
+      final trimmed = list.take(20).toList();
       await prefs.setString(
         'Swipess-ai-conversations',
-        jsonEncode(list.take(20).toList()),
+        jsonEncode(trimmed),
       );
+      if (mounted) {
+        setState(() {
+          _saved
+            ..clear()
+            ..addAll(trimmed);
+        });
+      }
     } catch (_) {}
   }
 
@@ -235,12 +258,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         }
       } on VoiceTranscribeException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(t(ref, 'flutter.voiceFailed', 'Voice transcription failed'))),
+            SnackBar(
+              content: Text(
+                t(ref, 'flutter.voiceFailed', 'Voice transcription failed'),
+              ),
+            ),
           );
         }
       } finally {
@@ -252,7 +280,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t(ref, 'flutter.micDenied', 'Microphone permission denied'))),
+          SnackBar(
+            content: Text(
+              t(ref, 'flutter.micDenied', 'Microphone permission denied'),
+            ),
+          ),
         );
       }
       return;
@@ -260,14 +292,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     setState(() => _recording = true);
   }
 
+  String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
+
   Future<void> _submit([String? preset]) async {
+    _cancelCountdown();
     final q = (preset ?? _controller.text).trim();
     if (q.isEmpty || _loading) return;
     HapticFeedback.selectionClick();
     _controller.clear();
 
     setState(() {
-      _messages.add(_ChatBubble(role: 'user', content: q));
+      _messages.add(IntelChatBubble(id: _newId(), role: 'user', content: q));
       _loading = true;
     });
     _scrollToEnd();
@@ -278,26 +313,30 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         AiChatMessage(role: m.role, content: m.content),
     ];
     String reply = '';
+    final assistantId = _newId();
     try {
       setState(() {
-        _messages.add(const _ChatBubble(role: 'assistant', content: ''));
+        _messages.add(
+          IntelChatBubble(id: assistantId, role: 'assistant', content: ''),
+        );
       });
-      await for (final delta in ref.read(aiEdgeRepositoryProvider).chatConciergeTokens(
-            messages: history,
-            character: _character == 'default' ? null : _character,
-            locationContext: {
-              'passportMode': false,
-              'passportLabel': loc.label,
-              'userLatitude': loc.latitude,
-              'userLongitude': loc.longitude,
-              'radiusKm': loc.radiusKm,
-            },
-          )) {
+      await for (final delta
+          in ref.read(aiEdgeRepositoryProvider).chatConciergeTokens(
+                messages: history,
+                character: _character == 'default' ? null : _character,
+                locationContext: {
+                  'passportMode': false,
+                  'passportLabel': loc.label,
+                  'userLatitude': loc.latitude,
+                  'userLongitude': loc.longitude,
+                  'radiusKm': loc.radiusKm,
+                },
+              )) {
         if (!mounted) return;
         reply += delta;
         setState(() {
           _messages[_messages.length - 1] =
-              _ChatBubble(role: 'assistant', content: reply);
+              _messages.last.copyWith(content: reply);
         });
         _scrollToEnd();
       }
@@ -317,7 +356,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         if (mounted) {
           setState(() {
             _messages[_messages.length - 1] =
-                _ChatBubble(role: 'assistant', content: reply);
+                _messages.last.copyWith(content: reply);
           });
         }
       }
@@ -326,7 +365,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       if (mounted) {
         setState(() {
           _messages[_messages.length - 1] =
-              _ChatBubble(role: 'assistant', content: reply);
+              _messages.last.copyWith(content: reply);
         });
       }
     } catch (_) {
@@ -334,14 +373,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       if (mounted) {
         setState(() {
           _messages[_messages.length - 1] =
-              _ChatBubble(role: 'assistant', content: reply);
+              _messages.last.copyWith(content: reply);
         });
       }
     }
     if (!mounted) return;
     final parsed = ConciergeParse.of(reply);
     if (parsed.passportCity != null && parsed.passportCity!.trim().isNotEmpty) {
-      ref.read(discoveryLocationProvider.notifier).setCity(parsed.passportCity!.trim());
+      ref
+          .read(discoveryLocationProvider.notifier)
+          .setCity(parsed.passportCity!.trim());
     }
     if (parsed.filterAction != null) {
       _applyConciergeFilter(parsed.filterAction!);
@@ -356,14 +397,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   void _dismiss() {
     if (widget.onClose != null) {
       widget.onClose!();
-    } else if (Navigator.of(context).canPop()) {
-      _dismiss();
+      return;
+    }
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
     }
   }
 
   /// Cap-style curated routing — follow-up chips after Intel Core replies.
   void _openIntent(String q) {
-    // Map / location / city
     if (RegExp(r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b')
         .hasMatch(q)) {
       _dismiss();
@@ -371,7 +413,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
-    // People / seekers / profiles / users
     if (RegExp(
           r'\b(people|person|user|users|profile|profiles|roommate|roommates|seeker|seekers|who.?s looking|looking for)\b',
         ).hasMatch(q)) {
@@ -380,7 +421,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
-    // Workers / services / maintenance
     if (RegExp(r'\b(worker|workers|hire|service|services|maintenance|plumber|cleaner)\b')
         .hasMatch(q)) {
       _dismiss();
@@ -388,14 +428,12 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
-    // Events
     if (RegExp(r'\b(event|events|party|nightlife|concert)\b').hasMatch(q)) {
       _dismiss();
       context.go(AppPaths.exploreEvents);
       return;
     }
 
-    // Listings / homes / rent / buy
     if (RegExp(
           r'\b(listing|listings|property|properties|home|homes|house|houses|apartment|rent|rental|buy|sale|yacht|moto|motorcycle|bike|bicycle)\b',
         ).hasMatch(q)) {
@@ -565,425 +603,565 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     setState(() {
       _messages.clear();
       _showHistory = false;
+      _showPersona = false;
     });
+  }
+
+  void _restoreSaved(Map<String, dynamic> row) {
+    final raw = row['messages'];
+    final restored = <IntelChatBubble>[];
+    if (raw is List) {
+      for (final item in raw) {
+        if (item is! Map) continue;
+        restored.add(
+          IntelChatBubble(
+            id: _newId(),
+            role: item['role']?.toString() ?? 'assistant',
+            content: item['content']?.toString() ?? '',
+            provider: item['provider']?.toString() ?? 'groq',
+          ),
+        );
+      }
+    }
+    setState(() {
+      _messages
+        ..clear()
+        ..addAll(restored);
+      _showHistory = false;
+    });
+  }
+
+  void _copy(IntelChatBubble m) {
+    final parsed = m.isUser ? null : ConciergeParse.of(m.content);
+    final text = parsed?.cleanContent.isNotEmpty == true
+        ? parsed!.cleanContent
+        : m.content;
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Telemetry Copied')),
+    );
+  }
+
+  void _delete(IntelChatBubble m) {
+    setState(() {
+      _messages.removeWhere((row) => row.id == m.id);
+    });
+  }
+
+  void _edit(IntelChatBubble m) {
+    _controller.text = m.content;
+    _controller.selection = TextSelection.collapsed(offset: m.content.length);
+  }
+
+  void _resend(IntelChatBubble m) {
+    if (m.isUser) {
+      _submit(m.content);
+      return;
+    }
+    final idx = _messages.indexWhere((row) => row.id == m.id);
+    String? prompt;
+    if (idx > 0) {
+      for (var i = idx - 1; i >= 0; i--) {
+        if (_messages[i].isUser) {
+          prompt = _messages[i].content;
+          break;
+        }
+      }
+    }
+    if (prompt == null) return;
+    setState(() {
+      _messages.removeWhere((row) => row.id == m.id);
+    });
+    _submit(prompt);
+  }
+
+  void _translate(IntelChatBubble m) {
+    final parsed = ConciergeParse.of(m.content);
+    final text = parsed.cleanContent.isNotEmpty ? parsed.cleanContent : m.content;
+    _submit('Translate the following to Spanish:\n\n$text');
+  }
+
+  void _onComposerChanged(String value) {
+    if (!_autoSend) return;
+    if (value.trim().isEmpty) {
+      _cancelCountdown();
+      return;
+    }
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    setState(() => _countdown = 3);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final next = (_countdown ?? 1) - 1;
+      if (next <= 0) {
+        timer.cancel();
+        setState(() => _countdown = null);
+        _submit();
+      } else {
+        setState(() => _countdown = next);
+      }
+    });
+  }
+
+  void _cancelCountdown() {
+    _countdownTimer?.cancel();
+    if (_countdown != null && mounted) setState(() => _countdown = null);
+  }
+
+  (String, String, String, Color) get _activePersona {
+    for (final p in _personas) {
+      if (p.$1 == _character) return p;
+    }
+    return _personas.first;
   }
 
   @override
   Widget build(BuildContext context) {
     final edgeReady = ref.watch(aiEdgeReadyProvider);
+    final isLight = ref.watch(isLightThemeProvider);
     final topPadding = MediaQuery.paddingOf(context).top;
-    
-    return Container(
-      height: MediaQuery.sizeOf(context).height,
-      padding: EdgeInsets.only(top: topPadding),
-      decoration: BoxDecoration(
-        color: const Color(0xF20A0A0C).withAlpha(180),
-      ),
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                child: Row(
-                  children: [
-                    _RoundIcon(
-                      icon: Icons.menu_rounded,
-                      onTap: () => setState(() => _showHistory = !_showHistory),
-                    ),
-                    const Spacer(),
-                    PopupMenuButton<String>(
-                      tooltip: 'Choose persona',
-                      initialValue: _character,
-                      color: const Color(0xFF14141A),
-                      onSelected: (value) =>
-                          setState(() => _character = value),
-                      itemBuilder: (context) => [
-                        for (final persona in _personas)
-                          PopupMenuItem(
-                            value: persona.$1,
-                            child: Text(
-                              persona.$2,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: persona.$1 == _character
-                                    ? FontWeight.w900
-                                    : FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                      ],
-                      child: Column(
-                        children: [
-                          Text(
-                            'INTEL CORE',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: AppTheme.brandPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          Text(
-                            '$_personaLabel · ${edgeReady ? 'ONLINE' : 'OFFLINE'}',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white38,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    _RoundIcon(
-                      icon: Icons.record_voice_over_rounded,
-                      color: const Color(0xFFA78BFA),
-                      onTap: () {
-                        final last = _messages.reversed
-                            .where((m) => m.role == 'assistant')
-                            .map((m) => m.content)
-                            .firstOrNull;
-                        if (last != null) _speak(last);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _RoundIcon(
-                      icon: Icons.psychology_rounded,
-                      color: const Color(0xFF22D3EE),
-                      onTap: () {
-                        showMemoryDrawer(context);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _RoundIcon(
-                      icon: Icons.auto_awesome_rounded,
-                      color: AppTheme.brandPrimary,
-                      onTap: _newChat,
-                    ),
-                    const SizedBox(width: 8),
-                    _RoundIcon(
-                      icon: Icons.close_rounded,
-                      onTap: _dismiss,
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: !_privacyAccepted
-                    ? _privacyPortal()
-                    : ListView(
-                  controller: _scroll,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  children: [
-                    if (_messages.isEmpty) ...[
-                      Text(
-                        capCopy(
-                          ref,
-                          'Type what you need — people, listings, a city on the map, workers, events. Or ask Intel Core anything.',
-                          'Escribe lo que necesitas — personas, listings, una ciudad en el mapa, workers, eventos. O pregunta a Intel Core.',
-                        ),
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final item in _starters)
-                            ActionChip(
-                              label: Text(
-                                item,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              onPressed: _loading ? null : () => _submit(item),
-                            ),
-                        ],
-                      ),
-                    ] else ...[
-                      for (final m in _messages) _Bubble(message: m),
-                      if (_loading &&
-                          (_messages.isEmpty ||
-                              _messages.last.content.trim().isEmpty))
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            t(ref, 'flutter.thinking', 'Thinking…'),
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white38,
-                              fontSize: 12,
-                            ),
-                          ),
-                        )
-                      else if (_followUps().isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final chip in _followUps())
-                              ActionChip(
-                                label: Text(
-                                  chip.label,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                onPressed: chip.onTap,
-                              ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  8,
-                  16,
-                  MediaQuery.paddingOf(context).bottom + 12,
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '✨ ${t(ref, 'flutter.aiDisclaimer', 'AI-powered · Answers are generated by AI. AI can make mistakes. Consider verifying important information.')}',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white38,
-                        fontSize: 10,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final canvas = isLight ? Colors.white : const Color(0xFF0A0A0C);
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: Container(
+        height: MediaQuery.sizeOf(context).height,
+        padding: EdgeInsets.only(top: topPadding),
+        color: canvas,
+        child: Stack(
+          children: [
+            if (!_privacyAccepted)
+              _privacyPortal(isLight: isLight, ink: ink)
+            else
+              Column(
+                children: [
+                  _header(isLight: isLight, ink: ink, online: edgeReady),
+                  Expanded(
+                    child: ListView(
+                      controller: _scroll,
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
                       children: [
-                        Expanded(
-                          child: Container(
-                            height: 52,
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF14141A),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.white, width: 1.5),
+                        if (_messages.isEmpty)
+                          IntelWelcomeGrid(
+                            isLight: isLight,
+                            onPick: (prompt) => _submit(prompt),
+                          )
+                        else ...[
+                          for (final m in _messages)
+                            IntelMessageBubble(
+                              message: m,
+                              isLight: isLight,
+                              speaking: _speakingId == m.id,
+                              onCopy: () => _copy(m),
+                              onDelete: () => _delete(m),
+                              onSpeak: () => _speak(m),
+                              onEdit: m.isUser ? () => _edit(m) : null,
+                              onResend: () => _resend(m),
+                              onTranslate:
+                                  m.isUser ? null : () => _translate(m),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.timer_outlined,
-                                    color: Colors.white.withAlpha(120), size: 20),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: (_loading || _transcribing) ? null : _toggleVoice,
-                                  child: Icon(
-                                    _recording
-                                        ? Icons.mic_rounded
-                                        : Icons.mic_none_rounded,
-                                    color: _recording
-                                        ? AppTheme.brandPrimary
-                                        : Colors.white.withAlpha(120),
-                                    size: 20,
-                                  ),
+                          if (_loading &&
+                              (_messages.isEmpty ||
+                                  _messages.last.content.trim().isEmpty))
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16, top: 4),
+                              child: Text(
+                                t(ref, 'flutter.thinking', 'Thinking…'),
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink.withAlpha(110),
+                                  fontSize: 12,
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _controller,
-                                    enabled: !_loading,
-                                    style: const TextStyle(color: Colors.white),
-                                    decoration: InputDecoration(
-                                      border: InputBorder.none,
-                                      hintText: _recording
-                                          ? t(ref, 'flutter.listening', 'Listening…')
-                                          : _transcribing
-                                              ? t(ref, 'flutter.transcribing', 'Transcribing…')
-                                              : t(ref, 'flutter.askAnything', 'Ask anything...'),
-                                      hintStyle: TextStyle(
-                                        color: Colors.white.withAlpha(100),
+                              ),
+                            )
+                          else if (_followUps().isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final chip in _followUps())
+                                  ActionChip(
+                                    label: Text(
+                                      chip.label,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: ink,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    onSubmitted: (_) => _submit(),
+                                    onPressed: chip.onTap,
                                   ),
-                                ),
                               ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: _loading ? null : () => _submit(),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.transparent,
-                              border: Border.all(color: Colors.white, width: 1.5),
-                            ),
-                            child: _loading
-                                ? const Padding(
-                                    padding: EdgeInsets.all(12),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white70,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.arrow_upward_rounded,
-                                    color: Colors.white,
-                                  ),
-                          ),
-                        ),
+                          ],
+                        ],
                       ],
                     ),
-                  ],
+                  ),
+                  _composer(isLight: isLight, ink: ink),
+                ],
+              ),
+            if (_showHistory) _historyDrawer(isLight: isLight, ink: ink, online: edgeReady),
+            if (_showPersona) _personaSheet(isLight: isLight, ink: ink),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _header({
+    required bool isLight,
+    required Color ink,
+    required bool online,
+  }) {
+    final persona = _activePersona;
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: ink.withAlpha(isLight ? 24 : 30)),
+        ),
+      ),
+      child: Row(
+        children: [
+          _ChromeIcon(
+            icon: Icons.menu_rounded,
+            ink: ink,
+            onTap: () => setState(() {
+              _showPersona = false;
+              _showHistory = !_showHistory;
+            }),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'INTEL CORE',
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFFFF3D00),
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 11,
+                  letterSpacing: 2.4,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                online ? 'ONLINE' : 'OFFLINE',
+                style: GoogleFonts.plusJakartaSans(
+                  color: ink.withAlpha(90),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 8,
+                  letterSpacing: 1.6,
+                  height: 1,
                 ),
               ),
             ],
           ),
-          if (_showHistory)
-            Positioned.fill(
-              child: Row(
-                children: [
-                  Container(
-                    width: MediaQuery.sizeOf(context).width * 0.78,
-                    color: const Color(0xF214141A),
-                    child: SafeArea(
-                      child: ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'HISTORY',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                edgeReady ? 'CORE ONLINE' : 'OFFLINE',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: AppTheme.brandPrimary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                onPressed: () =>
-                                    setState(() => _showHistory = false),
-                                icon: const Icon(Icons.close, color: Colors.white70),
-                              ),
-                            ],
-                          ),
-                          TextButton(
-                            onPressed: _newChat,
-                            child: Text(
-                              '+ NEW CHAT',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: AppTheme.brandPrimary,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          for (final item in _starters)
-                            GestureDetector(
-                              onTap: () {
-                                setState(() => _showHistory = false);
-                                _submit(item);
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.transparent,
-                                  ),
-                                ),
-                                child: Text(
-                                  item,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                        ],
+          const Spacer(),
+          GestureDetector(
+            onTap: () => setState(() {
+              _showHistory = false;
+              _showPersona = !_showPersona;
+            }),
+            child: Row(
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      persona.$2.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 9,
+                        letterSpacing: 0.8,
+                        height: 1,
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _showHistory = false),
-                      child: Container(color: Colors.black54),
+                    const SizedBox(height: 3),
+                    Text(
+                      persona.$3.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink.withAlpha(90),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 7,
+                        letterSpacing: 0.6,
+                        height: 1,
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: persona.$4.withAlpha(40),
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                  child: Icon(Icons.auto_awesome_rounded,
+                      color: persona.$4, size: 16),
+                ),
+              ],
             ),
+          ),
+          const SizedBox(width: 6),
+          _ChromeIcon(
+            icon: Icons.close_rounded,
+            ink: ink,
+            onTap: _dismiss,
+          ),
         ],
       ),
     );
   }
 
-  String get _personaLabel {
-    for (final persona in _personas) {
-      if (persona.$1 == _character) return persona.$2.toUpperCase();
-    }
-    return 'SWIPESS AI';
+  Widget _composer({required bool isLight, required Color ink}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        14,
+        8,
+        14,
+        MediaQuery.paddingOf(context).bottom + 12,
+      ),
+      child: Column(
+        children: [
+          if (_countdown != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.timer_outlined,
+                      size: 14, color: AppTheme.brandPrimary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'SEND IN',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 1.4,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: AppTheme.brandPrimary,
+                    child: Text(
+                      '$_countdown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _cancelCountdown,
+                    icon: Icon(Icons.close_rounded, size: 16, color: ink),
+                  ),
+                ],
+              ),
+            ),
+          AiDisclosure(isLight: isLight, showModelLine: true),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: isLight
+                        ? const Color(0xFFF4F4F7)
+                        : const Color(0xFF14141A),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: ink.withAlpha(isLight ? 40 : 200), width: 1.2),
+                  ),
+                  child: Row(
+                    children: [
+                      PopupMenuButton<String>(
+                        tooltip: 'Auto-send timer',
+                        color: isLight ? Colors.white : const Color(0xFF14141A),
+                        onSelected: (value) {
+                          setState(() => _autoSend = value == 'on');
+                          if (!_autoSend) _cancelCountdown();
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: _autoSend ? 'off' : 'on',
+                            child: Text(
+                              _autoSend ? 'Disable auto-send' : 'Enable auto-send',
+                              style: TextStyle(color: ink),
+                            ),
+                          ),
+                        ],
+                        child: Icon(Icons.timer_outlined,
+                            color: _autoSend
+                                ? AppTheme.brandPrimary
+                                : ink.withAlpha(120),
+                            size: 20),
+                      ),
+                      const SizedBox(width: 2),
+                      GestureDetector(
+                        onTap:
+                            (_loading || _transcribing) ? null : _toggleVoice,
+                        child: Icon(
+                          _recording
+                              ? Icons.mic_rounded
+                              : Icons.mic_none_rounded,
+                          color: _recording
+                              ? AppTheme.brandPrimary
+                              : ink.withAlpha(120),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _controller,
+                          enabled: !_loading,
+                          style: TextStyle(color: ink, fontSize: 15),
+                          minLines: 1,
+                          maxLines: 5,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: _recording
+                                ? t(ref, 'flutter.listening', 'Listening…')
+                                : _transcribing
+                                    ? t(ref, 'flutter.transcribing',
+                                        'Transcribing…')
+                                    : t(ref, 'flutter.askAnything',
+                                        'Ask anything...'),
+                            hintStyle: TextStyle(color: ink.withAlpha(100)),
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                            _onComposerChanged(value);
+                          },
+                          onSubmitted: (_) => _submit(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _loading ? null : () => _submit(),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _controller.text.trim().isEmpty || _loading
+                        ? (isLight
+                            ? const Color(0xFFE8E8EE)
+                            : Colors.white.withAlpha(18))
+                        : AppTheme.brandPrimary,
+                  ),
+                  child: _loading
+                      ? Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: ink.withAlpha(160),
+                          ),
+                        )
+                      : Icon(
+                          Icons.arrow_upward_rounded,
+                          color: _controller.text.trim().isEmpty
+                              ? ink.withAlpha(90)
+                              : Colors.white,
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _privacyPortal() {
+  Widget _privacyPortal({required bool isLight, required Color ink}) {
     return Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.shield_outlined, color: Colors.white, size: 48),
-          const SizedBox(height: 16),
-          Text(
-            'INTEL CORE PRIVACY',
-            style: AppTheme.displayItalic.copyWith(fontSize: 22),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppTheme.brandPrimary.withAlpha(24),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppTheme.brandPrimary.withAlpha(50)),
+            ),
+            child: const Icon(Icons.auto_awesome_rounded,
+                color: AppTheme.brandPrimary, size: 40),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Text(
-            'Chats run through Swipess AI edge functions. Do not share passwords or payment numbers. You can delete history anytime.',
-            textAlign: TextAlign.center,
+            'Swipess Intel',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
-              height: 1.4,
+              color: ink,
+              fontWeight: FontWeight.w800,
+              fontSize: 28,
             ),
           ),
+          const SizedBox(height: 10),
+          Text(
+            'Start a private conversation with your AI concierge. Your messages are confidential and powered by well-known AI models.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: ink.withAlpha(140),
+              height: 1.45,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 20),
+          AiDisclosure(isLight: isLight, variant: AiDisclosureVariant.roomy),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 54,
             child: ElevatedButton(
               onPressed: _acceptPrivacy,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.brandPrimary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
-              child: Text(
-                'I UNDERSTAND — CONTINUE',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Start Session',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.keyboard_return_rounded, size: 18),
+                ],
               ),
             ),
           ),
@@ -991,108 +1169,215 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       ),
     );
   }
-}
 
-class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message});
-  final _ChatBubble message;
-
-  @override
-  Widget build(BuildContext context) {
-    final isUser = message.role == 'user';
-    final parsed = isUser ? null : ConciergeParse.of(message.content);
-    final text = parsed?.cleanContent.isNotEmpty == true
-        ? parsed!.cleanContent
-        : message.content;
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? AppTheme.brandPrimary.withAlpha(40)
-                    : Colors.white.withAlpha(12),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-              child: Text(
-                text,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.35,
-                ),
-              ),
-            ),
-            if (!isUser) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome_rounded,
-                        size: 10, color: AppTheme.brandPrimary.withAlpha(180)),
-                    const SizedBox(width: 4),
-                    Text(
-                      'POWERED BY GROQ · LLAMA 3.3',
+  Widget _historyDrawer({
+    required bool isLight,
+    required Color ink,
+    required bool online,
+  }) {
+    final canvas = isLight ? Colors.white : const Color(0xF214141A);
+    return Positioned.fill(
+      child: Row(
+        children: [
+          Container(
+            width: MediaQuery.sizeOf(context).width * 0.78,
+            color: canvas,
+            child: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'HISTORY',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        online ? 'CORE ONLINE' : 'OFFLINE',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppTheme.brandPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => setState(() => _showHistory = false),
+                        icon: Icon(Icons.close, color: ink.withAlpha(180)),
+                      ),
+                    ],
+                  ),
+                  TextButton(
+                    onPressed: _newChat,
+                    child: Text(
+                      '+ NEW CHAT',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white38,
-                        fontSize: 9,
+                        color: AppTheme.brandPrimary,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
                       ),
                     ),
-                  ],
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.psychology_rounded, color: ink),
+                    title: Text(
+                      'AI Memory',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onTap: () {
+                      setState(() => _showHistory = false);
+                      showMemoryDrawer(context);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  if (_saved.isEmpty)
+                    Text(
+                      'No saved chats yet.',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink.withAlpha(120),
+                      ),
+                    ),
+                  for (final item in _saved)
+                    GestureDetector(
+                      onTap: () => _restoreSaved(item),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: ink.withAlpha(40)),
+                        ),
+                        child: Text(
+                          item['title']?.toString() ?? 'Chat',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: ink),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _showHistory = false),
+              child: Container(color: Colors.black54),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _personaSheet({required bool isLight, required Color ink}) {
+    return Positioned(
+      top: 60,
+      right: 12,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 260,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isLight ? Colors.white : const Color(0xFF14141A),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: ink.withAlpha(30)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 24,
+                offset: Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                child: Text(
+                  'PERSONA',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink.withAlpha(110),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 9,
+                    letterSpacing: 1.6,
+                  ),
                 ),
               ),
-              if (parsed != null) ...[
-                for (final listing in parsed.listings)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: IntelListingCard(data: listing),
+              for (final p in _personas)
+                ListTile(
+                  dense: true,
+                  onTap: () => setState(() {
+                    _character = p.$1;
+                    _showPersona = false;
+                  }),
+                  leading: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: p.$4.withAlpha(40),
+                    child: Icon(Icons.auto_awesome_rounded,
+                        size: 14, color: p.$4),
                   ),
-                for (final profile in parsed.profiles)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: IntelProfileCard(data: profile),
+                  title: Text(
+                    p.$2.toUpperCase(),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: p.$1 == _character
+                          ? AppTheme.brandPrimary
+                          : ink,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                    ),
                   ),
-              ],
+                  subtitle: Text(
+                    p.$3.toUpperCase(),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink.withAlpha(120),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  trailing: p.$1 == _character
+                      ? const Icon(Icons.circle,
+                          size: 8, color: AppTheme.brandPrimary)
+                      : null,
+                ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _RoundIcon extends StatelessWidget {
-  const _RoundIcon({required this.icon, required this.onTap, this.color});
+class _ChromeIcon extends StatelessWidget {
+  const _ChromeIcon({
+    required this.icon,
+    required this.onTap,
+    required this.ink,
+  });
+
   final IconData icon;
   final VoidCallback onTap;
-  final Color? color;
+  final Color ink;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.transparent,
-          border: Border.all(color: Colors.white, width: 1.5),
-        ),
-        child: Icon(icon, color: color ?? Colors.white, size: 18),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: Icon(icon, color: ink, size: 18),
       ),
     );
   }
