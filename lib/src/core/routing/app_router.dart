@@ -94,12 +94,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (!granted && loc != AppPaths.gate) return AppPaths.gate;
 
       if (granted && user == null) {
+        const authScreens = {
+          AppPaths.welcome,
+          AppPaths.onboarding,
+          AppPaths.auth,
+        };
         if (loc == AppPaths.gate) return AppPaths.welcome;
-        if (loc == AppPaths.onboarding) return null;
-        if (loc == AppPaths.legacyDashboard ||
-            loc == AppPaths.clientDashboard) {
-          return AppPaths.welcome;
-        }
+        if (authScreens.contains(loc)) return null;
+        return AppPaths.welcome;
       }
 
       if (user != null &&
@@ -144,11 +146,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.auth,
-        builder: (ctx, _) {
+        builder: (ctx, state) {
+          final q = state.uri.queryParameters['mode'];
           final intent = ref.read(authIntentProvider);
-          return AuthScreen(
-            mode: intent == AuthIntent.signup ? 'signup' : 'login',
-          );
+          final mode = q == 'signup' || q == 'login'
+              ? q!
+              : (intent == AuthIntent.signup ? 'signup' : 'login');
+          return AuthScreen(mode: mode);
         },
       ),
       GoRoute(

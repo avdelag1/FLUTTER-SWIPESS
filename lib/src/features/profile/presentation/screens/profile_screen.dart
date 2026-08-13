@@ -40,6 +40,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_p
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/holographic_id_card.dart';
@@ -391,7 +392,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () async {
                           HapticFeedback.mediumImpact();
                           await ref.read(authRepositoryProvider).signOut();
-                          if (context.mounted) context.go(AppPaths.auth);
+                          ref.read(currentUserProvider.notifier).clear();
+                          if (context.mounted) context.go(AppPaths.welcome);
                         },
                       ),
                     ],
