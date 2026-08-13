@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
@@ -378,6 +379,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () async {
                           HapticFeedback.mediumImpact();
                           await Supabase.instance.client.auth.signOut();
+                          ref.read(currentUserProvider.notifier).clear();
                           if (context.mounted) context.go(AppPaths.auth);
                         },
                       ),

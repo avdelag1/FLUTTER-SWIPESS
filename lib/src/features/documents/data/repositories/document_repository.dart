@@ -17,16 +17,21 @@ class DocumentRepository {
   Future<List<LegalDocument>> fetchMine() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return const [];
-    final data = await _client
-        .from('legal_documents')
-        .select(
-          'id, file_name, file_path, document_type, status, created_at, file_size, mime_type',
-        )
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-    return (data as List)
-        .map((row) => LegalDocument.fromJson(row as Map<String, dynamic>))
-        .toList();
+    try {
+      final data = await _client
+          .from('legal_documents')
+          .select(
+            'id, file_name, file_path, document_type, status, created_at, file_size, mime_type',
+          )
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+      return (data as List)
+          .map((row) => LegalDocument.fromJson(row as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      // Missing table / RLS still shows empty PEARL slots, not a hard error.
+      return const [];
+    }
   }
 
   Future<void> upload({

@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -45,6 +46,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     HapticFeedback.mediumImpact();
     try {
       await ref.read(authRepositoryProvider).signInWithOAuth(provider);
+      ref.read(currentUserProvider.notifier).apply(
+            Supabase.instance.client.auth.currentUser,
+          );
       if (!mounted) return;
       context.go(AppPaths.clientDashboard);
     } catch (e) {
@@ -64,17 +68,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     
     final repo = ref.read(authRepositoryProvider);
     try {
+      final AuthResponse res;
       if (_isLogin) {
-        await repo.signInWithEmailPassword(
+        res = await repo.signInWithEmailPassword(
           _emailController.text.trim(),
           _passwordController.text,
         );
       } else {
-        await repo.signUpWithEmailPassword(
+        res = await repo.signUpWithEmailPassword(
           _emailController.text.trim(),
           _passwordController.text,
         );
       }
+      ref.read(currentUserProvider.notifier).apply(res.user);
       if (!mounted) return;
       context.go(AppPaths.clientDashboard);
     } catch (e) {
