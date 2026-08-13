@@ -20,6 +20,7 @@ import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repos
     as swipe_repo;
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/chrome_reveal_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_insights_sheet.dart';
@@ -374,6 +375,11 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     ),
                   ),
                 ),
+              ),
+              ChromeSummonZones(
+                visible: chrome.chromeVisible,
+                onSummon: () =>
+                    ref.read(chromeRevealProvider.notifier).reveal(),
               ),
             ],
           );

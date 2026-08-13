@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/utils/notification_navigation.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/widgets/pulse_feed_states.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -19,8 +20,28 @@ class NotificationsScreen extends ConsumerWidget {
 
     return NeoNaiveScaffold(
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        loading: () => Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, top + 12, 16, 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Text(
+                      'PULSE FEED',
+                      style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Expanded(child: NotificationListSkeleton()),
+          ],
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -66,22 +87,7 @@ class NotificationsScreen extends ConsumerWidget {
               ),
               Expanded(
                 child: items.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.notifications_none_rounded, size: 48, color: Colors.transparent),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Silence is golden',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? const PulseFeedEmpty()
                     : RefreshIndicator(
                         color: AppTheme.brandPrimary,
                         onRefresh: () =>

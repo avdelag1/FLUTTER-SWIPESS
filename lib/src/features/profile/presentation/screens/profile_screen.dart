@@ -25,6 +25,7 @@ import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_int
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/profile_activity_feed.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/verification_request_sheet.dart';
@@ -639,49 +640,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
 
                   const SizedBox(height: 18),
-                  _Panel(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFEB4898),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Color(0x80EB4898),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Global Activity',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: ink,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Likes, matches, and messages from your network show up here.',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: muted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ProfileActivityFeed(ink: ink, muted: muted),
                   const SizedBox(height: 18),
                   // Language row
                   Row(

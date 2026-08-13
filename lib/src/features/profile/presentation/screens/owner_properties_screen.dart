@@ -246,7 +246,14 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
               ),
               stats.when(
                 loading: () => const SizedBox(height: 8),
-                error: (_, _) => const SizedBox.shrink(),
+                error: (_, _) => Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: TextButton(
+                    onPressed: () =>
+                        ref.invalidate(ownerListingsStatsProvider),
+                    child: const Text('Could not load stats — retry'),
+                  ),
+                ),
                 data: (s) => Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Column(
@@ -416,7 +423,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       );
                     },
                   ),
-                  orElse: () => const SizedBox.shrink(),
+                  orElse: () => const SizedBox(height: 48),
                 ),
               ),
               const SizedBox(height: 8),
@@ -441,17 +448,28 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                         onDeploy: _openChooser,
                       );
                     }
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                      itemCount: listings.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) => _AssetCard(
-                        listing: listings[index],
-                        onChanged: () {
-                          ref.invalidate(myListingsProvider('all'));
-                          ref.invalidate(ownerListingsStatsProvider);
-                        },
-                      ),
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cols = constraints.maxWidth >= 720 ? 2 : 1;
+                        return GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: cols == 1 ? 0.92 : 0.74,
+                          ),
+                          itemCount: listings.length,
+                          itemBuilder: (context, index) => _AssetCard(
+                            listing: listings[index],
+                            onChanged: () {
+                              ref.invalidate(myListingsProvider('all'));
+                              ref.invalidate(ownerListingsStatsProvider);
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -746,7 +764,8 @@ class _AssetCard extends ConsumerWidget {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          InkWell(
+          Expanded(
+            child: InkWell(
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -755,68 +774,99 @@ class _AssetCard extends ConsumerWidget {
                 ),
               );
             },
-            child: SizedBox(
-              height: 110,
-              child: Row(
+            child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  SizedBox(
-                    width: 110,
-                    child: listing.primaryImage != null
-                        ? Image.network(listing.primaryImage!,
-                            fit: BoxFit.cover)
-                        : const ColoredBox(color: Color(0xFF16161C)),
+                  listing.primaryImage != null
+                      ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
+                      : const ColoredBox(color: Color(0xFF16161C)),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Color(0xCC000000)],
+                      ),
+                    ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            listing.title ?? 'Untitled listing',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            listing.formattedLocation,
-                            style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54, fontSize: 12),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                listing.price == null
-                                    ? (listing.category ?? 'LISTING')
-                                        .toUpperCase()
-                                    : '\$${listing.price!.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  color: AppTheme.brandPrimary,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                (listing.status ?? 'active').toUpperCase(),
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                  Positioned(
+                    top: 14,
+                    left: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE4007C).withAlpha(200),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        (listing.category ?? 'property').toUpperCase(),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 9,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 14,
+                    left: 14,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(200),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Text(
+                        listing.price == null
+                            ? '---'
+                            : '\$${listing.price!.toStringAsFixed(0)}',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontStyle: FontStyle.italic,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  listing.title ?? 'Untitled listing',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  listing.formattedLocation,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white54,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
             ),
           ),
           const Divider(height: 1, color: Colors.white12),

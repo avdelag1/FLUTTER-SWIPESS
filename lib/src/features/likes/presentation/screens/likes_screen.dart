@@ -397,41 +397,57 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                 }
                 return SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                  sliver: SliverList.separated(
-                    itemCount: filtered.length + 1,
-                    separatorBuilder: (_, _) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return Text(
-                          '● ${filtered.length} Saved Essentials',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFFE4007C),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            letterSpacing: 0.4,
+                  sliver: SliverMainAxisGroup(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            '● ${filtered.length} Saved Essentials',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFE4007C),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                              letterSpacing: 0.4,
+                            ),
                           ),
-                        );
-                      }
-                      return _ListingCard(
-                        listing: filtered[index - 1],
-                        onMessage: (l) => _openChat(
-                          userId: l.ownerId ?? '',
-                          name: l.title ?? 'Owner',
-                          avatar: l.primaryImage,
-                          listingId: l.id,
                         ),
-                        onRemove: (l) async {
-                          final ok = await _confirmRemove(
-                            l.title ?? 'this listing',
-                            match: false,
-                          );
-                          if (!ok) return;
-                          await ref
-                              .read(likedListingsProvider.notifier)
-                              .remove(l.id);
-                        },
-                      );
-                    },
+                      ),
+                      SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 420,
+                          mainAxisSpacing: 14,
+                          crossAxisSpacing: 14,
+                          childAspectRatio: 0.72,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final listing = filtered[index];
+                            return _ListingCard(
+                              listing: listing,
+                              onMessage: (l) => _openChat(
+                                userId: l.ownerId ?? '',
+                                name: l.title ?? 'Owner',
+                                avatar: l.primaryImage,
+                                listingId: l.id,
+                              ),
+                              onRemove: (l) async {
+                                final ok = await _confirmRemove(
+                                  l.title ?? 'this listing',
+                                  match: false,
+                                );
+                                if (!ok) return;
+                                await ref
+                                    .read(likedListingsProvider.notifier)
+                                    .remove(l.id);
+                              },
+                            );
+                          },
+                          childCount: filtered.length,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
