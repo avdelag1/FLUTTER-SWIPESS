@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'src/app.dart';
@@ -8,6 +9,7 @@ import 'src/app.dart';
 Future<void> main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: binding);
+  await SystemChromeService.initialize();
 
   try {
     await SupabaseService.initialize();

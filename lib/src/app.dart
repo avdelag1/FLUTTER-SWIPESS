@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -33,9 +34,11 @@ class NativeSwipeApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) {
-        return BiometricGate(
-          child: OverlayModalsHost(
-            child: child ?? const SizedBox.shrink(),
+        return SystemChromeSync(
+          child: BiometricGate(
+            child: OverlayModalsHost(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },
