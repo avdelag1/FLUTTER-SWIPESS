@@ -5,6 +5,10 @@ class AppTheme {
   // Swipess Brand Colors
   static const Color brandPrimary = Color(0xFFFF4D00); // --btn-primary-bg
   static const Color brandAccent = Color(0xFFFC567E); // --accent-primary
+  /// Rosa Mexicano — Cap `--color-brand-accent-2` / mexican-pink. The
+  /// vivid red-magenta the landing CTA and hero wordmark use when we
+  /// need a punchier fill than orange `#FF4D00`.
+  static const Color mexicanRed = Color(0xFFE4007C);
 
   // Black Matte Backgrounds
   static const Color background = Color(0xFF0C0C0D); // --background
