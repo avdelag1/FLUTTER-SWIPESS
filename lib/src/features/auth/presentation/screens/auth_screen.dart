@@ -47,11 +47,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     HapticFeedback.mediumImpact();
     try {
       await ref.read(authRepositoryProvider).signInWithOAuth(provider);
-      ref.read(currentUserProvider.notifier).apply(
-            Supabase.instance.client.auth.currentUser,
-          );
+      final user = Supabase.instance.client.auth.currentUser;
+      ref.read(currentUserProvider.notifier).apply(user);
       if (!mounted) return;
-      context.go(AppPaths.clientDashboard);
+      if (user != null) {
+        context.go(AppPaths.clientDashboard);
+      }
     } catch (e) {
       if (!mounted) return;
       final message = e.toString();
@@ -61,7 +62,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
+        content: Text(_authMessage(e)),
       ));
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -69,36 +70,57 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your email and password')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
-    
+
     final repo = ref.read(authRepositoryProvider);
     try {
       final AuthResponse res;
       if (_isLogin) {
-        res = await repo.signInWithEmailPassword(
-          _emailController.text.trim(),
-          _passwordController.text,
-        );
+        res = await repo.signInWithEmailPassword(email, password);
       } else {
         res = await repo.signUpWithEmailPassword(
-          _emailController.text.trim(),
-          _passwordController.text,
+          email,
+          password,
+          name: _nameController.text.trim(),
         );
       }
-      ref.read(currentUserProvider.notifier).apply(res.user);
+      final user = res.session?.user ?? res.user;
+      if (user == null || res.session == null) {
+        throw Exception(
+          _isLogin
+              ? 'Could not sign in. Check your email and password.'
+              : 'Account created. Confirm your email, then sign in.',
+        );
+      }
+      ref.read(currentUserProvider.notifier).apply(user);
       if (!mounted) return;
       context.go(AppPaths.clientDashboard);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e.toString()),
+        content: Text(_authMessage(e)),
       ));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  String _authMessage(Object e) {
+    if (e is AuthException) return e.message;
+    final s = e.toString();
+    return s.startsWith('Exception: ') ? s.substring(11) : s;
   }
 
   @override

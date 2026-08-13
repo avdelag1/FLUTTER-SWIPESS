@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/legal_sheet.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
@@ -300,6 +301,7 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (ok == true && context.mounted) {
       await ref.read(authRepositoryProvider).signOut();
+      ref.read(currentUserProvider.notifier).clear();
     }
   }
 }
