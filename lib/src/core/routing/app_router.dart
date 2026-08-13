@@ -7,6 +7,8 @@ import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/auth_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_onboarding_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/not_found_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
@@ -20,6 +22,7 @@ import 'package:flutter_swipes/src/features/events/presentation/screens/event_fa
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/contracts_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
@@ -90,6 +93,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (granted && user == null) {
         if (loc == AppPaths.gate) return AppPaths.welcome;
+        if (loc == AppPaths.onboarding) return null;
         if (loc == AppPaths.legacyDashboard ||
             loc == AppPaths.clientDashboard) {
           return AppPaths.welcome;
@@ -99,6 +103,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (user != null &&
           (loc == AppPaths.gate ||
               loc == AppPaths.welcome ||
+              loc == AppPaths.onboarding ||
               loc == AppPaths.auth)) {
         return AppPaths.clientDashboard;
       }
@@ -128,6 +133,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.welcome,
         builder: (ctx, _) => const WelcomeScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.onboarding,
+        builder: (ctx, _) => LegendaryOnboardingScreen(
+          onFinish: () => ctx.go(AppPaths.welcome),
+        ),
       ),
       GoRoute(
         path: AppPaths.auth,
@@ -306,11 +317,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.clientContracts,
-        builder: (ctx, _) => const CapPlaceholderScreen(
-          title: 'Contracts',
-          path: AppPaths.clientContracts,
-          note: 'Use Legal Hub contracts list — full Cap contracts page pending.',
-        ),
+        builder: (ctx, _) => const ContractsScreen(),
       ),
       GoRoute(
         path: AppPaths.ownerContracts,
@@ -342,7 +349,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.clientFilters,
-        builder: (ctx, _) => const _FiltersRouteScreen(),
+        builder: (ctx, _) => const FilterBottomSheet(asPage: true),
       ),
       GoRoute(
         path: AppPaths.ownerFilters,
@@ -466,48 +473,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '*',
-        builder: (ctx, state) => CapPlaceholderScreen(
-          title: 'Not found',
+        builder: (ctx, state) => NotFoundScreen(
           path: state.uri.toString(),
-          note: 'No Flutter screen is mapped for this Capacitor path yet.',
         ),
       ),
     ],
   );
 });
-
-class _FiltersRouteScreen extends StatefulWidget {
-  const _FiltersRouteScreen();
-
-  @override
-  State<_FiltersRouteScreen> createState() => _FiltersRouteScreenState();
-}
-
-class _FiltersRouteScreenState extends State<_FiltersRouteScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      FilterBottomSheet.show(context).whenComplete(() {
-        if (!mounted) return;
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go(AppPaths.clientDashboard);
-        }
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.black,
-      body: SizedBox.shrink(),
-    );
-  }
-}
 
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {

@@ -1,16 +1,15 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/widgets/message_activation_packages.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `MessagingDashboard` — pink chrome, flat inbox rows, Chats/Documents.
 class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
@@ -19,395 +18,420 @@ class MessagesScreen extends ConsumerStatefulWidget {
 }
 
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
-  int _tab = 0; // 0 chats, 1 documents
-  final _search = TextEditingController();
-
-  static const _pink = Color(0xFFEB4898);
+  String _activeFilter = 'all'; // all, unread, archived
+  String _activeSection = 'chats'; // chats, documents
+  final _searchController = TextEditingController();
 
   @override
   void dispose() {
-    _search.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(conversationsProvider);
-    final top = MediaQuery.paddingOf(context).top;
-    final q = _search.text.trim().toLowerCase();
-
-    return ColoredBox(
-      color: AppTheme.dashBg,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, top + 56, 16, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Ambient Background
+          Positioned(
+            top: -50,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppTheme.brandPrimary.withAlpha(20),
+                backgroundBlendMode: BlendMode.screen,
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: _pink.withAlpha(40),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: _pink.withAlpha(80)),
-                  ),
-                  child: const Icon(Icons.chat_bubble_rounded,
-                      color: _pink, size: 24),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: Row(
                     children: [
-                      Text(
-                        'INBOX',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: _pink,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2.4,
-                        ),
-                      ),
-                      Text(
-                        'Messages',
-                        style: AppTheme.displayItalic.copyWith(fontSize: 28),
-                      ),
+                      const CapBackButton(),
+                      const Spacer(),
+                      _buildSectionToggle(),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(12),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withAlpha(28)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.search_rounded, color: _pink, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _search,
-                      onChanged: (value) {
-                        setState(() {});
-                        ref
-                            .read(messagesSearchQueryProvider.notifier)
-                            .update(value);
-                      },
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'Search conversations...',
-                        hintStyle: TextStyle(color: Colors.white38),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'INBOX',
+                    style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      showMessageActivationPackages(context);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.brandPrimary.withAlpha(40),
+                            const Color(0xFFFBBF24).withAlpha(24),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: AppTheme.brandPrimary.withAlpha(80),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.bolt_rounded,
+                              color: Color(0xFFFBBF24)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Activate messaging tokens',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'UPGRADE',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: AppTheme.brandPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  if (_search.text.isNotEmpty)
-                    GestureDetector(
-                      onTap: () {
-                        _search.clear();
-                        ref
-                            .read(messagesSearchQueryProvider.notifier)
-                            .update('');
-                        setState(() {});
-                      },
-                      child: const Icon(Icons.close_rounded,
-                          color: Colors.white38, size: 18),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _TabPill(
-                  label: 'Chats',
-                  icon: Icons.forum_outlined,
-                  selected: _tab == 0,
-                  onTap: () => setState(() => _tab = 0),
                 ),
-                const SizedBox(width: 8),
-                _TabPill(
-                  label: 'Documents',
-                  icon: Icons.folder_outlined,
-                  selected: _tab == 1,
-                  onTap: () => setState(() => _tab = 1),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: _tab == 1
-                  ? _DocumentsPane(
-                      onOpen: () => context.go(AppPaths.documents),
-                    )
-                  : async.when(
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
-                      ),
-                      error: (_, _) => Center(
-                        child: TextButton(
-                          onPressed: () => ref
-                              .read(conversationsProvider.notifier)
-                              .refresh(),
-                          child: const Text(
-                              'Could not load messages.\nTry again'),
+                const SizedBox(height: 20),
+                
+                if (_activeSection == 'chats') ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildFilters(),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      onChanged: (v) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Search conversations...',
+                        hintStyle: const TextStyle(color: Colors.white30),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                        filled: true,
+                        fillColor: Colors.white.withAlpha(15),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
                         ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  Expanded(
+                    child: async.when(
+                      loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
+                      error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white54))),
                       data: (items) {
-                        final filtered = q.isEmpty
-                            ? items
-                            : items.where((c) {
-                                return c.name.toLowerCase().contains(q) ||
-                                    c.lastMessage.toLowerCase().contains(q);
-                              }).toList();
+                        final q = _searchController.text.trim().toLowerCase();
+                        var filtered = items.where((c) {
+                          if (q.isNotEmpty && !c.name.toLowerCase().contains(q)) return false;
+                          if (_activeFilter == 'unread' && c.unreadCount == 0) return false;
+                          if (_activeFilter == 'archived') return false; // not implemented in mock yet
+                          return true;
+                        }).toList();
+                        
                         if (filtered.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 24),
-                            child: CapEmptyState(
-                              variant: CapEmptyVariant.messages,
-                              icon: Icons.chat_bubble_outline_rounded,
-                              title: q.isEmpty
-                                  ? 'Your inbox awaits.'
-                                  : 'No results',
-                              description: q.isEmpty
-                                  ? 'Swipe right on properties or clients to start a conversation. Your chats will appear here.'
-                                  : 'No chats matching "$q"',
-                              actionLabel:
-                                  q.isEmpty ? 'START SWIPING' : 'Clear search',
-                              onAction: q.isEmpty
-                                  ? () => context.go(AppPaths.clientDashboard)
-                                  : () {
-                                      _search.clear();
-                                      ref
-                                          .read(messagesSearchQueryProvider
-                                              .notifier)
-                                          .update('');
-                                      setState(() {});
-                                    },
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.message_rounded, size: 64, color: Colors.white.withAlpha(20)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'NO MESSAGES YET',
+                                  style: AppTheme.displayItalic.copyWith(fontSize: 24, color: Colors.white54),
+                                ),
+                              ],
                             ),
                           );
                         }
-                        return RefreshIndicator(
-                          color: _pink,
-                          onRefresh: () => ref
-                              .read(conversationsProvider.notifier)
-                              .refresh(),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(bottom: 120, top: 4),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              return _InboxRow(
-                                  conversation: filtered[index]);
-                            },
-                          ),
+
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) => _ChatTile(conversation: filtered[index]),
                         );
                       },
                     ),
+                  ),
+                ] else ...[
+                  // Documents Section Placeholder
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.folder_shared_rounded, size: 64, color: Colors.white.withAlpha(20)),
+                          const SizedBox(height: 16),
+                          Text(
+                            'DOCUMENTS',
+                            style: AppTheme.displayItalic.copyWith(fontSize: 24, color: Colors.white54),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text('Shared contracts and files will appear here.', style: TextStyle(color: Colors.white54)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildSectionToggle() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _TogglePill(
+            label: 'CHATS',
+            isActive: _activeSection == 'chats',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _activeSection = 'chats');
+            },
+          ),
+          _TogglePill(
+            label: 'DOCUMENTS',
+            isActive: _activeSection == 'documents',
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _activeSection = 'documents');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Row(
+      children: [
+        _FilterChip(
+          label: 'ALL',
+          isActive: _activeFilter == 'all',
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _activeFilter = 'all');
+          },
+        ),
+        const SizedBox(width: 8),
+        _FilterChip(
+          label: 'UNREAD',
+          isActive: _activeFilter == 'unread',
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _activeFilter = 'unread');
+          },
+        ),
+      ],
     );
   }
 }
 
-class _TabPill extends StatelessWidget {
-  const _TabPill({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
+class _TogglePill extends StatelessWidget {
+  const _TogglePill({required this.label, required this.isActive, required this.onTap});
   final String label;
-  final IconData icon;
-  final bool selected;
+  final bool isActive;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          gradient: selected
-              ? const LinearGradient(
-                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                )
-              : null,
-          color: selected ? null : Colors.white.withAlpha(12),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: Colors.white.withAlpha(selected ? 0 : 28),
-          ),
+          color: isActive ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.white),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
-          ],
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: isActive ? Colors.black : Colors.white54,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            letterSpacing: 1,
+          ),
         ),
       ),
     );
   }
 }
 
-class _InboxRow extends StatelessWidget {
-  const _InboxRow({required this.conversation});
-
-  final ChatConversation conversation;
-
-  static const _pink = Color(0xFFEB4898);
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, required this.isActive, required this.onTap});
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final unread = conversation.unreadCount > 0;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.white.withAlpha(15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.black : Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 11,
+            letterSpacing: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatTile extends StatelessWidget {
+  const _ChatTile({required this.conversation});
+  final ChatConversation conversation;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        HapticFeedback.mediumImpact();
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ChatScreen(conversation: conversation),
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: unread ? _pink.withAlpha(18) : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(color: Colors.white.withAlpha(18)),
-          ),
-        ),
-        child: Row(
-          children: [
-            if (unread)
-              Container(
-                width: 3,
-                height: 44,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  color: _pink,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              )
-            else
-              const SizedBox(width: 13),
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: const Color(0x33FFFFFF),
-              backgroundImage: conversation.avatarUrl != null
-                  ? NetworkImage(conversation.avatarUrl!)
-                  : null,
-              child: conversation.avatarUrl == null
-                  ? const Icon(Icons.person, color: Colors.white)
-                  : null,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(10),
+              border: Border.all(color: Colors.white.withAlpha(20)),
+              borderRadius: BorderRadius.circular(24),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    conversation.name.isEmpty
-                        ? 'Anonymous Entity'
-                        : conversation.name.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight:
-                          unread ? FontWeight.w900 : FontWeight.w700,
-                      fontStyle: FontStyle.italic,
-                      fontSize: 14,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    conversation.lastMessage.isEmpty
-                        ? 'New Message'
-                        : conversation.lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: unread ? _pink : Colors.white60,
-                      fontSize: 13,
-                      fontStyle: FontStyle.italic,
-                      fontWeight:
-                          unread ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
               children: [
-                Text(
-                  conversation.timestamp.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white.withAlpha(20),
+                  backgroundImage: conversation.avatarUrl != null 
+                    ? NetworkImage(conversation.avatarUrl!) 
+                    : null,
+                  child: conversation.avatarUrl == null
+                    ? Text(
+                        conversation.name[0].toUpperCase(),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                      )
+                    : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              conversation.name,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            conversation.timestamp,
+                            style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        conversation.lastMessage,
+                        style: TextStyle(
+                          color: conversation.unreadCount > 0 ? Colors.white : Colors.white54,
+                          fontWeight: conversation.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                if (unread) ...[
-                  const SizedBox(height: 6),
+                if (conversation.unreadCount > 0) ...[
+                  const SizedBox(width: 12),
                   Container(
-                    width: 8,
-                    height: 8,
+                    padding: const EdgeInsets.all(8),
                     decoration: const BoxDecoration(
-                      color: _pink,
+                      color: AppTheme.brandPrimary,
                       shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${conversation.unreadCount}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
                     ),
                   ),
                 ],
               ],
             ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _DocumentsPane extends StatelessWidget {
-  const _DocumentsPane({required this.onOpen});
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: CapEmptyState(
-        variant: CapEmptyVariant.generic,
-        icon: Icons.folder_outlined,
-        title: 'Business vault',
-        description:
-            'Your leases & documents. Completed leases, templates, and vault files live here.',
-        actionLabel: 'OPEN VAULT',
-        onAction: onOpen,
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/events/presentation/widgets/promote_cta_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -74,12 +75,19 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 controller: _pages,
                 scrollDirection: Axis.vertical,
                 allowImplicitScrolling: true,
-                itemCount: events.length,
+                // Cap: one extra virtual row — PromoteCTACard at end of feed.
+                itemCount: events.length + 1,
                 onPageChanged: (i) {
                   HapticFeedback.selectionClick();
                   setState(() => _index = i);
                 },
                 itemBuilder: (context, i) {
+                  if (i == events.length) {
+                    return PromoteCTACard(
+                      onPromote: () =>
+                          context.push(AppPaths.clientAdvertise),
+                    );
+                  }
                   final event = events[i];
                   final active = i == _index;
                   final near = (i - _index).abs() <= 1;

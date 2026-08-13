@@ -11,7 +11,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Cap live map — raster tiles + pins. Map stays mounted so taps/filters don't freeze.
+/// Cap PassportMap / live map — streets tiles + Cap HUD chrome.
 class LiveMapScreen extends ConsumerStatefulWidget {
   const LiveMapScreen({super.key});
 
@@ -35,8 +35,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     ('worker', 'Workers', Icons.people_alt_rounded),
   ];
 
-  /// Cap pin pressure — too many Marker widgets rebuild-locks the map.
-  static const _maxPins = 60;
+  static const _radiusOptions = [5, 10, 25, 50, 100, 200];
 
   @override
   void dispose() {
@@ -44,12 +43,45 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     super.dispose();
   }
 
-  List<Listing> _filtered(List<Listing> listings) {
-    final base = _category == 'all'
-        ? listings
-        : listings.where((l) => (l.category ?? '') == _category).toList();
-    if (base.length <= _maxPins) return base;
-    return base.take(_maxPins).toList();
+  double _zoomForRadius(int km) {
+    if (km <= 5) return 13.2;
+    if (km <= 10) return 12.4;
+    if (km <= 25) return 11.4;
+    if (km <= 50) return 10.6;
+    if (km <= 100) return 9.6;
+    return 8.6;
+  }
+
+  List<_MapCluster> _cluster(List<Listing> listings, double zoom) {
+    if (listings.isEmpty) return const [];
+    final cell = zoom >= 13
+        ? 0.01
+        : zoom >= 11
+            ? 0.04
+            : zoom >= 9
+                ? 0.12
+                : 0.28;
+    final buckets = <String, List<Listing>>{};
+    for (final l in listings) {
+      final lat = l.latitude;
+      final lng = l.longitude;
+      if (lat == null || lng == null) continue;
+      final key =
+          '${(lat / cell).floor()}_${(lng / cell).floor()}';
+      buckets.putIfAbsent(key, () => []).add(l);
+    }
+    return [
+      for (final group in buckets.values)
+        _MapCluster(
+          point: LatLng(
+            group.map((e) => e.latitude!).reduce((a, b) => a + b) /
+                group.length,
+            group.map((e) => e.longitude!).reduce((a, b) => a + b) /
+                group.length,
+          ),
+          listings: group,
+        ),
+    ];
   }
 
   double _zoomForRadius(int km) {
@@ -66,91 +98,104 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final location = ref.watch(discoveryLocationProvider);
     final async = ref.watch(mapListingsProvider);
     final center = LatLng(location.latitude, location.longitude);
-    final listings = async.asData?.value ?? const <Listing>[];
-    final filtered = _filtered(listings);
     final radiusKm = location.radiusKm;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A12),
       body: Stack(
         children: [
-          // Always mounted — never gate the map behind listing Future.
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: center,
-              initialZoom: 12,
-              minZoom: 3,
-              maxZoom: 18,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          async.when(
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF00C6FF),
+                strokeWidth: 2,
               ),
-              onTap: (_, _) {
-                if (_selected != null) setState(() => _selected = null);
-              },
             ),
-            children: [
-              TileLayer(
-                urlTemplate: AppConfig.hasMapboxToken
-                    ? 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}'
-                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                additionalOptions: AppConfig.hasMapboxToken
-                    ? {'accessToken': AppConfig.mapboxAccessToken}
-                    : const {},
-                userAgentPackageName: 'com.swipess.flutter',
-                maxZoom: 19,
-                keepBuffer: 2,
-                panBuffer: 1,
+            error: (e, _) => Center(
+              child: TextButton(
+                onPressed: () => ref.invalidate(mapListingsProvider),
+                child: const Text('Could not load map pins — retry'),
               ),
-              MarkerLayer(
-                markers: [
-                  for (final listing in filtered)
-                    if (listing.latitude != null && listing.longitude != null)
-                      Marker(
-                        point: LatLng(listing.latitude!, listing.longitude!),
-                        width: 48,
-                        height: 48,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => setState(() => _selected = listing),
-                          child: _Pin(
-                            listing: listing,
-                            selected: _selected?.id == listing.id,
+            ),
+            data: (listings) {
+              final filtered = _category == 'all'
+                  ? listings
+                  : listings
+                      .where((l) => (l.category ?? '') == _category)
+                      .toList();
+              final clusters = _cluster(filtered, _zoom);
+              return FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: _zoomForRadius(radiusKm),
+                  minZoom: 3,
+                  maxZoom: 18,
+                  onTap: (_, _) => setState(() {
+                    _selected = null;
+                    _menuOpen = false;
+                    _radiusOpen = false;
+                  }),
+                  onPositionChanged: (pos, _) {
+                    final z = pos.zoom;
+                    if ((z - _zoom).abs() > 0.15) {
+                      setState(() => _zoom = z);
+                    }
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: AppConfig.hasMapboxToken
+                        ? 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}'
+                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    additionalOptions: AppConfig.hasMapboxToken
+                        ? {'accessToken': AppConfig.mapboxAccessToken}
+                        : const {},
+                    userAgentPackageName: 'com.swipess.flutter',
+                    maxZoom: 19,
+                  ),
+                  CircleLayer(
+                    circles: [
+                      CircleMarker(
+                        point: center,
+                        radius: radiusKm * 1000,
+                        useRadiusInMeter: true,
+                        color: const Color(0x3300C6FF),
+                        borderColor: const Color(0x9900C6FF),
+                        borderStrokeWidth: 1.5,
+                      ),
+                    ],
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      for (final c in clusters)
+                        Marker(
+                          point: c.point,
+                          width: c.count >= 10 ? 56 : 48,
+                          height: c.count >= 10 ? 56 : 48,
+                          child: GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              if (c.count == 1) {
+                                setState(() => _selected = c.listings.first);
+                              } else {
+                                _mapController.move(
+                                  c.point,
+                                  math.min(_zoom + 1.6, 16),
+                                );
+                              }
+                            },
+                            child: _ClusterBubble(count: c.count),
                           ),
                         ),
-                      ),
-                ],
-              ),
-            ],
-          ),
-          if (async.isLoading)
-            const Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(
-                minHeight: 2,
-                backgroundColor: Colors.transparent,
-                color: AppTheme.brandPrimary,
-              ),
-            ),
-          if (async.hasError && listings.isEmpty)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 100,
-              child: Material(
-                color: const Color(0xE016161C),
-                borderRadius: BorderRadius.circular(16),
-                child: TextButton(
-                  onPressed: () => ref.invalidate(mapListingsProvider),
-                  child: const Text(
-                    'Pins failed to load — tap to retry',
-                    style: TextStyle(color: Colors.white),
+                    ],
                   ),
-                ),
-              ),
-            ),
+                ],
+              );
+            },
+          ),
+
+          // Cap HUD — X left, Menu right
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -334,33 +379,50 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 36,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    children: [
-                      for (final c in _categories)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(c.$2),
-                            selected: _category == c.$1,
-                            onSelected: (_) => setState(() {
-                              _category = c.$1;
-                              _selected = null;
-                            }),
-                            selectedColor: AppTheme.brandPrimary,
-                            backgroundColor: Colors.black.withAlpha(160),
-                            labelStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
+                        if (_radiusOpen)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xF212161F),
+                              borderRadius: BorderRadius.circular(16),
+                              border:
+                                  Border.all(color: Colors.white.withAlpha(30)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final km in _radiusOptions)
+                                  GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      ref
+                                          .read(
+                                              discoveryLocationProvider.notifier)
+                                          .setRadiusKm(km);
+                                      _mapController.move(
+                                        center,
+                                        _zoomForRadius(km),
+                                      );
+                                      setState(() => _radiusOpen = false);
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      child: Text(
+                                        '$km km',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: km == radiusKm
+                                              ? const Color(0xFF00C6FF)
+                                              : Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),
@@ -424,7 +486,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
         );
       },
     );
-    if (city != null && mounted) {
+    if (city != null) {
       ref.read(discoveryLocationProvider.notifier).setCity(city);
       final loc = ref.read(discoveryLocationProvider);
       _mapController.move(
@@ -444,30 +506,81 @@ class _Pin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price = listing.price;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: selected ? Colors.white : AppTheme.brandPrimary,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: selected ? AppTheme.brandPrimary : Colors.white,
-          width: 2,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x66000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+    final size = count >= 10 ? 46.0 : 38.0;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: size + 14,
+          height: size + 14,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0x5500C6FF),
           ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          price == null ? '•' : '\$${price.toStringAsFixed(0)}',
-          style: TextStyle(
-            color: selected ? AppTheme.brandPrimary : Colors.white,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
+        ),
+        Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
+            ),
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x660F172A),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$count',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: count >= 100 ? 11 : 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HudCircle extends StatelessWidget {
+  const _HudCircle({
+    required this.icon,
+    required this.onTap,
+    this.selected = false,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool selected;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: selected || accent
+              ? Colors.black.withAlpha(160)
+              : Colors.black.withAlpha(90),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF00C6FF)
+                : Colors.white.withAlpha(40),
           ),
         ),
       ),
@@ -528,7 +641,6 @@ class _PreviewCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
-        height: 96,
         decoration: BoxDecoration(
           color: const Color(0xF014141A),
           borderRadius: BorderRadius.circular(22),
@@ -541,12 +653,7 @@ class _PreviewCard extends StatelessWidget {
               width: 96,
               height: 96,
               child: listing.primaryImage != null
-                  ? Image.network(
-                      listing.primaryImage!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const ColoredBox(color: Color(0xFF22222A)),
-                    )
+                  ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
                   : const ColoredBox(color: Color(0xFF22222A)),
             ),
             Expanded(

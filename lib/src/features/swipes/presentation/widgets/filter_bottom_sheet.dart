@@ -4,11 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor ClientFilters — white/light sheet with category picker + detail filters.
 class FilterBottomSheet extends ConsumerStatefulWidget {
-  const FilterBottomSheet({super.key});
+  const FilterBottomSheet({super.key, this.asPage = false});
+
+  /// When true, render as a full Cap `/client/filters` page (not a modal).
+  final bool asPage;
 
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
@@ -99,12 +103,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   void _apply() {
     final cat = _activeCategory ?? 'property';
     final budget = _budgets.where((b) => b.$1 == _priceRange).firstOrNull;
+    final mappedCategory = switch (cat) {
+      'buyers' || 'renters' || 'leads' => 'property',
+      'worker' => 'worker',
+      _ => cat,
+    };
     ref.read(swipeFilterProvider.notifier).replace(
           SwipeFilter(
-            category: switch (cat) {
-              'buyers' || 'renters' || 'leads' => 'property',
-              _ => cat,
-            },
+            category: mappedCategory,
             interestType: cat == 'buyers'
                 ? 'sale'
                 : cat == 'renters'
@@ -122,7 +128,25 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             radiusKm: _radiusKm,
           ),
         );
+    // Force deck reload with new filters.
+    ref.invalidate(swipeListingsProvider);
     HapticFeedback.mediumImpact();
+    final title = _categories
+            .where((c) => c.$1 == cat)
+            .map((c) => c.$2)
+            .firstOrNull ??
+        'Scan';
+    if (widget.asPage) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ClientSwipeContainer(
+            categoryId: mappedCategory,
+            categoryTitle: title,
+          ),
+        ),
+      );
+      return;
+    }
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Filters applied. Your deck is updating.')),
@@ -149,27 +173,48 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    if (widget.asPage) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F7F8),
+        body: _filterBody(context, bottom, null),
+      );
+    }
     return DraggableScrollableSheet(
       initialChildSize: 0.94,
       minChildSize: 0.55,
       maxChildSize: 0.98,
       builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF7F7F8),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        return _filterBody(context, bottom, scrollController);
+      },
+    );
+  }
+
+  Widget _filterBody(
+    BuildContext context,
+    double bottom,
+    ScrollController? scrollController,
+  ) {
+    return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F7F8),
+            borderRadius: widget.asPage
+                ? BorderRadius.zero
+                : const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           child: Column(
             children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(40),
-                  borderRadius: BorderRadius.circular(2),
+              if (!widget.asPage) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(40),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
+              ] else
+                SizedBox(height: MediaQuery.paddingOf(context).top + 8),
               Expanded(
                 child: ListView(
                   controller: scrollController,
@@ -477,8 +522,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                 ),
             ],
           ),
-        );
-      },
     );
   }
 

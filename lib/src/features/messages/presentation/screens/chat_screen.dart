@@ -27,7 +27,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _showEmoji = false;
   bool _showSearch = false;
 
-  static const _pink = Color(0xFFEB4898);
+  static const _orange = AppTheme.brandPrimary;
   static const _emojis = [
     '👋', '😊', '😄', '😂', '🥰', '😍', '🤩', '😎',
     '🙏', '👍', '🔥', '❤️', '🎉', '✨', '💯', '🤝',
@@ -243,7 +243,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search in this chat…',
                   hintStyle: TextStyle(color: Colors.white.withAlpha(80)),
-                  prefixIcon: const Icon(Icons.search, color: _pink, size: 18),
+                  prefixIcon: const Icon(Icons.search, color: _orange, size: 18),
                   filled: true,
                   fillColor: Colors.white.withAlpha(12),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -332,7 +332,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                       ? const LinearGradient(
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
-                                          colors: [_pink, Color(0xFFC0392B)],
+                                          colors: [_orange, Color(0xFFC0392B)],
                                         )
                                       : null,
                                   color: mine
@@ -507,7 +507,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 ? const LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
-                                    colors: [_pink, Color(0xFFFF4D00)],
+                                    colors: [_orange, Color(0xFFFF4D00)],
                                   )
                                 : null,
                             color: _controller.text.trim().isEmpty
