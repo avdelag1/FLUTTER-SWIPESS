@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/screens/likes_screen.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/messages_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
-import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
+import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
+import 'package:go_router/go_router.dart';
 
 class DashboardShell extends ConsumerWidget {
-  const DashboardShell({super.key});
+  const DashboardShell({super.key, required this.child});
+
+  final Widget child;
 
   static const _washes = [
     Color(0xFFFF6B6B), // coral
@@ -28,33 +25,21 @@ class DashboardShell extends ConsumerWidget {
     Color(0xFF9775FA), // violet
   ];
 
-  Widget _buildBody(NavTab tab) {
-    switch (tab) {
-      case NavTab.dashboard:
-        return const BentoDashboardScreen();
-      case NavTab.events:
-        return const EventsScreen();
-      case NavTab.messages:
-        return const MessagesScreen();
-      case NavTab.idCard:
-        return const VapIdScreen();
-      case NavTab.likes:
-        return const LikesScreen();
-      case NavTab.add:
-      case NavTab.ai:
-        return const BentoDashboardScreen();
-      case NavTab.seekers:
-        return const SeekersScreen();
-      case NavTab.legal:
-        return const LegalHubScreen();
-      case NavTab.filter:
-        return const SizedBox.shrink();
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTab = ref.watch(navTabProvider);
+    final location = GoRouterState.of(context).matchedLocation;
+    final routeTab = AppPaths.tabForLocation(location);
+    final currentTab = routeTab ?? ref.watch(navTabProvider);
+
+    // Keep provider in sync for any legacy listeners.
+    if (routeTab != null && ref.read(navTabProvider) != routeTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (ref.read(navTabProvider) != routeTab) {
+          ref.read(navTabProvider.notifier).set(routeTab);
+        }
+      });
+    }
+
     final profile = ref.watch(currentProfileProvider).value;
 
     // Cap BottomNavigation order (scrollable dock).
@@ -87,25 +72,11 @@ class DashboardShell extends ConsumerWidget {
           : AppTopBar(
               firstName: profile?.name.split(' ').first,
               avatarUrl: profile?.avatarUrl,
-              onProfileTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
+              onProfileTap: () => context.push(AppPaths.clientProfile),
             ),
       body: Stack(
         children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: KeyedSubtree(
-              key: ValueKey(
-                currentTab == NavTab.add || currentTab == NavTab.ai
-                    ? NavTab.dashboard
-                    : currentTab,
-              ),
-              child: _buildBody(currentTab),
-            ),
-          ),
+          child,
           Positioned(
             bottom: 18,
             left: 0,
@@ -159,6 +130,7 @@ class DashboardShell extends ConsumerWidget {
                                   return;
                                 }
                                 ref.read(navTabProvider.notifier).set(id);
+                                context.go(AppPaths.pathForTab(id));
                               },
                             ),
                         ],

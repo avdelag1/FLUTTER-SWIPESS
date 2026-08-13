@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -20,10 +21,9 @@ class WelcomeScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Brand Wordmark
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 280,
-                      fit: BoxFit.contain,
+                    const SwipessLogo(
+                      height: 48,
+                      variant: SwipessLogoVariant.outline,
                     ),
                     const SizedBox(height: 64),
                     

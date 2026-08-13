@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
@@ -45,7 +46,7 @@ class EventCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: GestureDetector(
             onTap: () {
-              context.push('/event', extra: event);
+              context.push(AppPaths.exploreEvent(event.id));
             },
             child: Stack(
               fit: StackFit.expand,

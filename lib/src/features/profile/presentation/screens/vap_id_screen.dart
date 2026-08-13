@@ -1,23 +1,33 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
+import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Capacitor PEARL / VAP ID — soft white vault card on black.
-class VapIdScreen extends ConsumerWidget {
+/// Capacitor PEARL / VAP ID — themed vault card (Cap `CARD_THEMES`).
+class VapIdScreen extends ConsumerStatefulWidget {
   const VapIdScreen({super.key});
 
+  @override
+  ConsumerState<VapIdScreen> createState() => _VapIdScreenState();
+}
+
+class _VapIdScreenState extends ConsumerState<VapIdScreen> {
+  static const _themeKey = 'vap-card-theme-index';
   static const _vaultDocs = [
     ('passport', 'Passport'),
     ('government_id', 'Gov. ID'),
@@ -26,12 +36,41 @@ class VapIdScreen extends ConsumerWidget {
     ('recommendation', 'Recommendation'),
   ];
 
+  int _themeIndex = 0;
+
+  VapCardTheme get _theme => VapCardTheme.themes[_themeIndex];
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final i = prefs.getInt(_themeKey) ?? 0;
+    if (!mounted) return;
+    setState(() {
+      _themeIndex =
+          (i >= 0 && i < VapCardTheme.themes.length) ? i : 0;
+    });
+  }
+
+  Future<void> _cycleTheme() async {
+    HapticFeedback.selectionClick();
+    final next = (_themeIndex + 1) % VapCardTheme.themes.length;
+    setState(() => _themeIndex = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_themeKey, next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(vapIdProvider);
     final docs = ref.watch(documentsProvider);
     final userId = Supabase.instance.client.auth.currentUser?.id ?? 'resident';
     final top = MediaQuery.paddingOf(context).top;
+    final theme = _theme;
 
     return ColoredBox(
       color: const Color(0xFF0A0A0D),
@@ -57,22 +96,53 @@ class VapIdScreen extends ConsumerWidget {
                 padding: EdgeInsets.fromLTRB(16, top + 8, 16, 8),
                 child: Row(
                   children: [
+                    // Cap: Droplets cycle — top left
                     _PearlRoundBtn(
-                      icon: Icons.local_fire_department_rounded,
-                      onTap: () {
-                        ref.read(navTabProvider.notifier).set(NavTab.likes);
-                      },
+                      icon: Icons.water_drop_outlined,
+                      onTap: _cycleTheme,
                     ),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        'PEARL',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 3.2,
-                        ),
+                      child: Column(
+                        children: [
+                          Text(
+                            theme.name.toUpperCase(),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2.4,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0;
+                                  i < VapCardTheme.themes.length;
+                                  i++) ...[
+                                if (i > 0) const SizedBox(width: 5),
+                                Container(
+                                  width: i == _themeIndex ? 10 : 7,
+                                  height: i == _themeIndex ? 10 : 7,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: VapCardTheme.themes[i].swatch,
+                                    border: Border.all(
+                                      color: i == _themeIndex
+                                          ? Colors.white
+                                          : Colors.white38,
+                                      width: i == _themeIndex ? 1.5 : 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     _PearlRoundBtn(
@@ -83,12 +153,10 @@ class VapIdScreen extends ConsumerWidget {
                     _PearlRoundBtn(
                       icon: Icons.close_rounded,
                       onTap: () {
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
+                        if (context.canPop()) {
+                          context.pop();
                         } else {
-                          ref
-                              .read(navTabProvider.notifier)
-                              .set(NavTab.dashboard);
+                          context.go(AppPaths.clientDashboard);
                         }
                       },
                     ),
@@ -99,19 +167,24 @@ class VapIdScreen extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
                   children: [
-                    _PearlCard(
-                      data: data,
-                      idNumber: idNumber,
-                      validationUrl: validationUrl,
-                      docsAsync: docs,
-                      vaultDocs: _vaultDocs,
-                      onOpenVault: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const DocumentVaultScreen(),
-                          ),
-                        );
-                      },
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      child: _ThemedVapCard(
+                        key: ValueKey(_themeIndex),
+                        theme: theme,
+                        data: data,
+                        idNumber: idNumber,
+                        validationUrl: validationUrl,
+                        docsAsync: docs,
+                        vaultDocs: _vaultDocs,
+                        onOpenVault: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const DocumentVaultScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -123,7 +196,8 @@ class VapIdScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _edit(BuildContext context, WidgetRef ref, VapIdCard card) async {
+  Future<void> _edit(
+      BuildContext context, WidgetRef ref, VapIdCard card) async {
     final name = TextEditingController(text: card.name ?? '');
     final occupation = TextEditingController(text: card.occupation ?? '');
     final city = TextEditingController(text: card.city ?? '');
@@ -226,8 +300,8 @@ class _PearlRoundBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white.withAlpha(14),
@@ -239,8 +313,10 @@ class _PearlRoundBtn extends StatelessWidget {
   }
 }
 
-class _PearlCard extends StatelessWidget {
-  const _PearlCard({
+class _ThemedVapCard extends StatelessWidget {
+  const _ThemedVapCard({
+    super.key,
+    required this.theme,
     required this.data,
     required this.idNumber,
     required this.validationUrl,
@@ -249,6 +325,7 @@ class _PearlCard extends StatelessWidget {
     required this.onOpenVault,
   });
 
+  final VapCardTheme theme;
   final VapIdCard data;
   final String idNumber;
   final String validationUrl;
@@ -258,13 +335,14 @@ class _PearlCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = theme;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFAFAF9), Color(0xFFF5F5F4), Color(0xFFE7E5E4)],
+          colors: t.gradient,
         ),
         boxShadow: [
           BoxShadow(
@@ -289,8 +367,8 @@ class _PearlCard extends StatelessWidget {
                     height: 140,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
-                      color: const Color(0xFFE7E5E4),
-                      border: Border.all(color: Colors.black12),
+                      color: t.tagBg,
+                      border: Border.all(color: t.tagBorder),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: data.avatarUrl != null
@@ -305,7 +383,7 @@ class _PearlCard extends StatelessWidget {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 42,
                                   fontWeight: FontWeight.w900,
-                                  color: const Color(0xFF525252),
+                                  color: t.accent,
                                 ),
                               ),
                             ),
@@ -318,7 +396,7 @@ class _PearlCard extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 42,
                                 fontWeight: FontWeight.w900,
-                                color: const Color(0xFF525252),
+                                color: t.accent,
                               ),
                             ),
                           ),
@@ -330,14 +408,14 @@ class _PearlCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.verified_user_rounded,
-                                size: 18, color: Color(0xFF525252)),
+                            Icon(Icons.verified_user_rounded,
+                                size: 18, color: t.badge),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 'AUTHORIZED RESIDENT',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF525252),
+                                  color: t.badge,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
                                   fontStyle: FontStyle.italic,
@@ -353,7 +431,7 @@ class _PearlCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF1A1A1A),
+                            color: t.textPrimary,
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
                             fontStyle: FontStyle.italic,
@@ -366,7 +444,7 @@ class _PearlCard extends StatelessWidget {
                           Text(
                             data.occupation!.toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF525252),
+                              color: t.accent,
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.2,
@@ -376,14 +454,14 @@ class _PearlCard extends StatelessWidget {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(Icons.location_on_outlined,
-                                size: 14, color: Color(0x99000000)),
+                            Icon(Icons.location_on_outlined,
+                                size: 14, color: t.textSecondary),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 data.locationLabel.toUpperCase(),
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0x99000000),
+                                  color: t.textSecondary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.8,
@@ -396,7 +474,7 @@ class _PearlCard extends StatelessWidget {
                         Text(
                           'TXID: $idNumber',
                           style: GoogleFonts.robotoMono(
-                            color: const Color(0x59000000),
+                            color: t.textTertiary,
                             fontSize: 10,
                             letterSpacing: 1,
                           ),
@@ -412,13 +490,14 @@ class _PearlCard extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(12),
+                    color: t.tagBg,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: t.tagBorder),
                   ),
                   child: Text(
                     data.bio!,
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0x99000000),
+                      color: t.textSecondary,
                       fontSize: 13,
                       fontStyle: FontStyle.italic,
                       height: 1.4,
@@ -431,7 +510,7 @@ class _PearlCard extends StatelessWidget {
                 Text(
                   data.languages.join(' · ').toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0x99000000),
+                    color: t.textSecondary,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1,
@@ -443,8 +522,9 @@ class _PearlCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(14),
+                  color: t.tagBg,
                   borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: t.tagBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -458,7 +538,7 @@ class _PearlCard extends StatelessWidget {
                               Text(
                                 'AUTHORIZED VAULT',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF525252),
+                                  color: t.accent,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 2,
@@ -467,7 +547,7 @@ class _PearlCard extends StatelessWidget {
                               Text(
                                 'Verification documents',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0x99000000),
+                                  color: t.textSecondary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -484,13 +564,15 @@ class _PearlCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: t.isDark
+                                    ? Colors.white.withAlpha(28)
+                                    : Colors.white,
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
                                 '$verified✓',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF1A1A1A),
+                                  color: t.textPrimary,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 11,
                                 ),
@@ -503,14 +585,14 @@ class _PearlCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     docsAsync.when(
-                      loading: () => const LinearProgressIndicator(
-                        color: Color(0xFF525252),
+                      loading: () => LinearProgressIndicator(
+                        color: t.accent,
                         minHeight: 2,
                       ),
                       error: (_, _) => Text(
                         'Could not load vault docs',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0x99000000),
+                          color: t.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -519,6 +601,7 @@ class _PearlCard extends StatelessWidget {
                           children: [
                             for (final entry in vaultDocs) ...[
                               _VaultDocRow(
+                                theme: t,
                                 label: entry.$2,
                                 hasFile: items.any((d) =>
                                     d.documentType == entry.$1 ||
@@ -541,7 +624,7 @@ class _PearlCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(height: 1, color: Colors.black12),
+              Container(height: 1, color: t.tagBorder),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -551,7 +634,7 @@ class _PearlCard extends StatelessWidget {
                       Text(
                         'SWIPESS',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF1A1A1A),
+                          color: t.textPrimary,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2.4,
                           fontSize: 13,
@@ -560,7 +643,7 @@ class _PearlCard extends StatelessWidget {
                       Text(
                         'VIRTUAL ID CARD',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0x59000000),
+                          color: t.textTertiary,
                           fontWeight: FontWeight.w800,
                           fontSize: 9,
                           letterSpacing: 1.4,
@@ -572,7 +655,9 @@ class _PearlCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: t.isDark
+                          ? Colors.white.withAlpha(230)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -598,12 +683,14 @@ class _PearlCard extends StatelessWidget {
 
 class _VaultDocRow extends StatelessWidget {
   const _VaultDocRow({
+    required this.theme,
     required this.label,
     required this.hasFile,
     required this.onTap,
     this.status,
   });
 
+  final VapCardTheme theme;
   final String label;
   final bool hasFile;
   final String? status;
@@ -613,10 +700,11 @@ class _VaultDocRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final verified = status == 'verified';
     final pending = status == 'pending';
+    final t = theme;
     return Opacity(
       opacity: hasFile ? 1 : 0.45,
       child: Material(
-        color: Colors.white.withAlpha(180),
+        color: t.isDark ? Colors.white.withAlpha(28) : Colors.white.withAlpha(180),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: hasFile ? onTap : null,
@@ -630,7 +718,7 @@ class _VaultDocRow extends StatelessWidget {
                   height: 36,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.black12),
+                    border: Border.all(color: t.tagBorder),
                   ),
                   child: Icon(
                     verified
@@ -641,7 +729,7 @@ class _VaultDocRow extends StatelessWidget {
                     size: 18,
                     color: verified
                         ? const Color(0xFF16A34A)
-                        : const Color(0xFF525252),
+                        : t.accent,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -652,7 +740,7 @@ class _VaultDocRow extends StatelessWidget {
                       Text(
                         label.toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF1A1A1A),
+                          color: t.textPrimary,
                           fontWeight: FontWeight.w900,
                           fontSize: 11,
                           letterSpacing: 0.8,
@@ -663,7 +751,7 @@ class _VaultDocRow extends StatelessWidget {
                             ? 'Tap for authorized preview'
                             : 'Not uploaded',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0x59000000),
+                          color: t.textTertiary,
                           fontSize: 10,
                         ),
                       ),
