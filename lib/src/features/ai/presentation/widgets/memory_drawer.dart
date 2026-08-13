@@ -127,7 +127,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                         Text(
                           edgeReady
                               ? 'Brain online · Supabase Edge AI'
-                              : 'Sign in to unlock Bolt / Brain',
+                              : 'Brain paused',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white54,
                             fontSize: 11,

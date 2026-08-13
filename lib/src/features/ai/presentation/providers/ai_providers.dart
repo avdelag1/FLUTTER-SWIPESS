@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/memory_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/user_memory.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -62,8 +61,8 @@ class AiBrainConfig {
 
   final bool enabled;
 
-  /// Ready when the user is signed in (JWT auth for edge functions).
-  bool isReady(bool signedIn) => enabled && signedIn;
+  /// Cap `canUseAI = true` during this protocol phase — anon JWT is enough.
+  bool get isReady => enabled;
 }
 
 class AiBrainConfigNotifier extends Notifier<AiBrainConfig> {
@@ -80,10 +79,7 @@ final aiBrainConfigProvider =
   AiBrainConfigNotifier.new,
 );
 
-/// Convenience: edge AI available for the current session.
+/// Convenience: edge AI available for the current session (anon or signed-in).
 final aiEdgeReadyProvider = Provider<bool>((ref) {
-  final user = ref.watch(currentUserProvider);
-  final brain = ref.watch(aiBrainConfigProvider);
-  return brain.isReady(user != null) &&
-      ref.watch(aiEdgeRepositoryProvider).isSignedIn;
+  return ref.watch(aiBrainConfigProvider).isReady;
 });

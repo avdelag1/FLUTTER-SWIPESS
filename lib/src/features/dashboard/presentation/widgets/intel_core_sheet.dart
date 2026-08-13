@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -119,60 +120,50 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     HapticFeedback.selectionClick();
     _controller.clear();
 
-    final lower = q.toLowerCase();
-    if (_tryQuickNav(lower)) return;
-
-    final edgeReady = ref.read(aiEdgeReadyProvider);
     setState(() {
       _messages.add(_ChatBubble(role: 'user', content: q));
       _loading = true;
     });
     _scrollToEnd();
 
-    if (!edgeReady) {
-      setState(() {
-        _messages.add(
-          const _ChatBubble(
-            role: 'assistant',
-            content: 'Sign in to chat with Intel Core — AI runs on Supabase Edge Functions.',
-          ),
-        );
-        _loading = false;
-      });
-      _scrollToEnd();
-      return;
-    }
-
+    final loc = ref.read(discoveryLocationProvider);
     final history = [
       for (final m in _messages)
         AiChatMessage(role: m.role, content: m.content),
     ];
-    final reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
-          messages: history,
-        );
+    String reply;
+    try {
+      reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
+            messages: history,
+            locationContext: {
+              'passportMode': false,
+              'passportLabel': loc.label,
+              'userLatitude': loc.latitude,
+              'userLongitude': loc.longitude,
+              'radiusKm': loc.radiusKm,
+            },
+          );
+    } on AiUnavailableException catch (e) {
+      reply = e.message;
+    } catch (_) {
+      reply = 'AI is temporarily unavailable. Try again in a moment.';
+    }
     if (!mounted) return;
     setState(() {
-      _messages.add(
-        _ChatBubble(
-          role: 'assistant',
-          content: reply?.trim().isNotEmpty == true
-              ? reply!.trim()
-              : 'AI is temporarily unavailable. Try again in a moment.',
-        ),
-      );
+      _messages.add(_ChatBubble(role: 'assistant', content: reply));
       _loading = false;
     });
     _scrollToEnd();
   }
 
-  /// Cap-style curated routing from typed intent before falling back to chat.
-  bool _tryQuickNav(String q) {
+  /// Cap-style curated routing — follow-up chips after Intel Core replies.
+  void _openIntent(String q) {
     // Map / location / city
     if (RegExp(r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b')
         .hasMatch(q)) {
       Navigator.pop(context);
       context.push(AppPaths.map);
-      return true;
+      return;
     }
 
     // People / seekers / profiles / users
@@ -181,7 +172,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         ).hasMatch(q)) {
       Navigator.pop(context);
       context.go(AppPaths.exploreSeekers);
-      return true;
+      return;
     }
 
     // Workers / services / maintenance
@@ -189,14 +180,14 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         .hasMatch(q)) {
       Navigator.pop(context);
       context.push(AppPaths.clientServices);
-      return true;
+      return;
     }
 
     // Events
     if (RegExp(r'\b(event|events|party|nightlife|concert)\b').hasMatch(q)) {
       Navigator.pop(context);
       context.go(AppPaths.exploreEvents);
-      return true;
+      return;
     }
 
     // Listings / homes / rent / buy
@@ -227,16 +218,42 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
           ),
         ),
       );
-      return true;
+      return;
     }
 
     if (q.contains('filter') || q.contains('filters')) {
       Navigator.pop(context);
       context.go(AppPaths.clientFilters);
-      return true;
     }
+  }
 
-    return false;
+  List<({String label, String query})> _followUps() {
+    final lastUser = _messages.reversed
+        .where((m) => m.role == 'user')
+        .map((m) => m.content.toLowerCase())
+        .firstOrNull;
+    if (lastUser == null) return const [];
+    final out = <({String label, String query})>[];
+    if (RegExp(r'\b(people|person|seeker|roommate|who.?s looking)\b')
+        .hasMatch(lastUser)) {
+      out.add((label: 'Open Seekers', query: lastUser));
+    }
+    if (RegExp(r'\b(worker|hire|maintenance|plumber|cleaner)\b')
+        .hasMatch(lastUser)) {
+      out.add((label: 'Open Workers', query: lastUser));
+    }
+    if (RegExp(r'\b(event|party|nightlife|concert)\b').hasMatch(lastUser)) {
+      out.add((label: 'Open Events', query: lastUser));
+    }
+    if (RegExp(r'\b(map|near me|nearby|gps|location|city)\b').hasMatch(lastUser)) {
+      out.add((label: 'Open Map', query: lastUser));
+    }
+    if (RegExp(
+          r'\b(listing|property|home|house|apartment|rent|rental|buy|yacht|moto|bike)\b',
+        ).hasMatch(lastUser)) {
+      out.add((label: 'Open Listings', query: lastUser));
+    }
+    return out;
   }
 
   void _newChat() {
@@ -282,7 +299,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           ),
                         ),
                         Text(
-                          edgeReady ? 'ONLINE · EDGE AI' : 'SIGN IN FOR AI',
+                          edgeReady ? 'ONLINE · EDGE AI' : 'OFFLINE',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white38,
                             fontSize: 10,
@@ -360,7 +377,32 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                               fontSize: 12,
                             ),
                           ),
+                        )
+                      else if (_followUps().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final chip in _followUps())
+                              ActionChip(
+                                label: Text(
+                                  chip.label,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                backgroundColor: AppTheme.brandPrimary.withAlpha(40),
+                                side: BorderSide(
+                                  color: AppTheme.brandPrimary.withAlpha(90),
+                                ),
+                                onPressed: () => _openIntent(chip.query),
+                              ),
+                          ],
                         ),
+                      ],
                     ],
                   ],
                 ),
