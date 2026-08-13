@@ -21,67 +21,28 @@
       background: #000;
       overflow: hidden;
     }
-    #splash {
-      margin: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-    #splash img {
-      display: block;
-      max-width: 160px;
-    }
-    #boot-error {
-      display: none;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      text-align: center;
-      padding: 24px;
+    #boot {
       position: absolute;
       inset: 0;
+      display: flex;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
-      gap: 12px;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.28em;
+      font-weight: 700;
     }
   </style>
   <script>
-    // Kill stale PWA workers that leave Safari on a blank GPU session.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function (regs) {
-        regs.forEach(function (r) { r.unregister(); });
-      });
-      if (window.caches && caches.keys) {
-        caches.keys().then(function (keys) {
-          keys.forEach(function (k) { caches.delete(k); });
-        });
-      }
-    }
     function removeSplashFromWeb() {
-      document.getElementById('splash')?.remove();
+      document.getElementById('boot')?.remove();
       document.body.style.background = '#000';
     }
-    // If Flutter never boots (common Safari WebGL fail), show a hint.
-    setTimeout(function () {
-      if (!document.querySelector('flutter-view') && !document.querySelector('flt-glass-pane')) {
-        var el = document.getElementById('boot-error');
-        if (el) el.style.display = 'flex';
-        removeSplashFromWeb();
-      }
-    }, 12000);
   </script>
 </head>
 <body>
-  <picture id="splash">
-    <img src="splash/img/dark-1x.png" alt="" aria-hidden="true">
-  </picture>
-  <div id="boot-error">
-    <div style="font-weight:700;font-size:18px;">Swipess didn’t start</div>
-    <div style="opacity:.7;font-size:14px;max-width:320px;">
-      Safari may have lost the graphics context. Close other Flutter tabs, then hard-refresh.
-    </div>
-  </div>
+  <div id="boot">SWIPESS</div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

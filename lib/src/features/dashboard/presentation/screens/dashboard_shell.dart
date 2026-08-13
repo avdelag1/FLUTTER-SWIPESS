@@ -73,8 +73,14 @@ class DashboardShell extends ConsumerWidget {
     final syncChrome = currentTab == NavTab.dashboard;
     final showChrome = !syncChrome || chromeVisible;
     final canvas = AppTheme.canvasFor(isLight: isLight);
-    final dockFill = isLight ? Colors.white : Colors.black;
-    final dockBorder = isLight ? Colors.black : Colors.white;
+    // Cap `getBottomNavChrome` — neo-naïve glass + hard ink ring.
+    final dockFill = isLight
+        ? const Color(0xF5FFFFFF)
+        : const Color(0xF5101016);
+    final dockBorder =
+        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(230);
+    final dockHardShadow =
+        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(90);
 
     return Scaffold(
       backgroundColor: canvas,
@@ -123,12 +129,17 @@ class DashboardShell extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: dockBorder,
-                        width: 1.5,
+                        width: 2.25,
                       ),
                       boxShadow: [
                         BoxShadow(
+                          color: dockHardShadow,
+                          offset: const Offset(1.5, 1.5),
+                          blurRadius: 0,
+                        ),
+                        BoxShadow(
                           color: Colors.black.withAlpha(isLight ? 40 : 160),
-                          blurRadius: 20,
+                          blurRadius: 22,
                           offset: const Offset(0, 10),
                         ),
                       ],
@@ -215,8 +226,11 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ink = isLight ? Colors.black : Colors.white;
-    final color = selected ? ink : ink.withAlpha(120);
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    // Cap: active = full ink; inactive muted. No circular glass discs.
+    final color = item.accent
+        ? const Color(0xFFFF4D6A)
+        : (selected ? ink : ink.withAlpha(isLight ? 140 : 170));
 
     return GestureDetector(
       onTap: onTap,
@@ -225,26 +239,46 @@ class _DockButton extends StatelessWidget {
         width: 44,
         height: 44,
         child: Center(
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.transparent,
-              border: selected
-                  ? Border.all(color: ink, width: 1.5)
-                  : null,
-            ),
-            child: item.useAiIcon
-                ? CustomPaint(
-                    painter: _AiRobotPainter(color: color),
-                    size: const Size(18, 18),
-                  )
-                : Icon(
-                    item.icon,
-                    size: 18,
-                    color: color,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Cap neo-naive nav wash (coral/sky/lemon/mint/violet).
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      wash.withAlpha(selected || item.accent ? 90 : 45),
+                      wash.withAlpha(0),
+                    ],
                   ),
+                ),
+              ),
+              if (item.accent)
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFF4D6A),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              item.useAiIcon
+                  ? CustomPaint(
+                      painter: _AiRobotPainter(color: color),
+                      size: const Size(18, 18),
+                    )
+                  : Icon(
+                      item.icon,
+                      size: item.accent ? 22 : 18,
+                      color: color,
+                    ),
+            ],
           ),
         ),
       ),

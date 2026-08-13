@@ -1,25 +1,15 @@
 {{flutter_js}}
 {{flutter_build_config}}
 
-// Safari / WebKit: no service worker + full CanvasKit (not chromium variant).
-// Stale SW + WebGL context loss = white page on Safari while Chrome still works.
+// Safari/WebKit loses WebGL → white/black blank page. Force CPU CanvasKit there.
+// Chrome keeps GPU. Do not pass onEntrypointLoaded or `config` is ignored.
 (function () {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      regs.forEach(function (r) { r.unregister(); });
-    });
-  }
-
+  var isWebKit = navigator.vendor === 'Apple Computer, Inc.';
   _flutter.loader.load({
     config: {
       canvasKitVariant: 'full',
       canvasKitBaseUrl: 'canvaskit/',
-    },
-    onEntrypointLoaded: async function (engineInitializer) {
-      const appRunner = await engineInitializer.initializeEngine({
-        canvasKitVariant: 'full',
-      });
-      await appRunner.runApp();
+      canvasKitForceCpuOnly: isWebKit,
     },
   });
 })();
