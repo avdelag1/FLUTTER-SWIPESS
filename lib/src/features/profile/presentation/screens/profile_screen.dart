@@ -28,7 +28,7 @@ import 'package:flutter_swipes/src/features/notifications/presentation/screens/n
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
@@ -1164,6 +1164,33 @@ class _ShareEarn extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                showInviteFriendsDialog(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                'INVITE FRIENDS',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
@@ -1223,53 +1250,19 @@ class _ShareEarn extends StatelessWidget {
               _SocialBtn(
                 icon: Icons.chat_rounded,
                 label: 'WA',
-                onTap: () {
-                  final text = Uri.encodeComponent(
-                    "Check out $profileName's profile on Swipess! $url",
-                  );
-                  launchUrl(
-                    Uri.parse('https://wa.me/?text=$text'),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
+                onTap: () => showInviteFriendsDialog(context),
               ),
               const SizedBox(width: 8),
               _SocialBtn(
                 icon: Icons.camera_alt_outlined,
                 label: 'IG',
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: url));
-                  await launchUrl(
-                    Uri.parse('https://www.instagram.com/'),
-                    mode: LaunchMode.externalApplication,
-                  );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Link copied! Paste it in Instagram.'),
-                      ),
-                    );
-                  }
-                },
+                onTap: () => showInviteFriendsDialog(context),
               ),
               const SizedBox(width: 8),
               _SocialBtn(
                 icon: Icons.music_note_rounded,
                 label: 'TT',
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: url));
-                  await launchUrl(
-                    Uri.parse('https://www.tiktok.com/'),
-                    mode: LaunchMode.externalApplication,
-                  );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Link copied! Paste it in TikTok.'),
-                      ),
-                    );
-                  }
-                },
+                onTap: () => showInviteFriendsDialog(context),
               ),
             ],
           ),

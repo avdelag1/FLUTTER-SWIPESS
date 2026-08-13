@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_onboarding_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,6 +19,23 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   double _logoDx = 0;
   bool _triggered = false;
+  bool _checkingOnboarding = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeShowOnboarding();
+  }
+
+  Future<void> _maybeShowOnboarding() async {
+    final done = await LegendaryOnboardingScreen.hasCompleted();
+    if (!mounted) return;
+    if (!done) {
+      context.go(AppPaths.onboarding);
+      return;
+    }
+    setState(() => _checkingOnboarding = false);
+  }
 
   void _enterAuth(String mode) {
     if (_triggered) return;
@@ -33,6 +51,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingOnboarding) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: AppTheme.brandPrimary),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(

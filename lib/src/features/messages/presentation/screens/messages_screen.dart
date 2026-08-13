@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/widgets/message_activation_packages.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class MessagesScreen extends ConsumerStatefulWidget {
@@ -73,7 +74,58 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      showMessageActivationPackages(context);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.brandPrimary.withAlpha(40),
+                            const Color(0xFFFBBF24).withAlpha(24),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: AppTheme.brandPrimary.withAlpha(80),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.bolt_rounded,
+                              color: Color(0xFFFBBF24)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Activate messaging tokens',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'UPGRADE',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: AppTheme.brandPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 
                 if (_activeSection == 'chats') ...[
                   Padding(
