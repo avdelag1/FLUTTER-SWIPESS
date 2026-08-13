@@ -96,6 +96,32 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          HapticFeedback.mediumImpact();
+                          context.go('/dashboard');
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(color: Colors.white.withAlpha(120)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        child: const Text(
+                          'ENTER APP',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       'or swipe logo to enter →',

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
+import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 
 class AccessCodeGateScreen extends ConsumerStatefulWidget {
   const AccessCodeGateScreen({super.key});
@@ -23,7 +25,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final code = _codeController.text.trim();
     if (code.isEmpty) {
       setState(() => _error = 'Enter access code');
@@ -35,19 +37,23 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       _verifying = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 600), () {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+
+    if (code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '') == 'URDBEST') {
+      await AccessGrantService.persist();
+      ref.invalidate(accessGrantedProvider);
+      await ref.read(accessGrantedProvider.future);
       if (!mounted) return;
-      if (code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '') == 'URDBEST') {
-        HapticFeedback.lightImpact();
-        context.go('/welcome');
-      } else {
-        HapticFeedback.heavyImpact();
-        setState(() {
-          _error = 'Invalid access code';
-          _verifying = false;
-        });
-      }
-    });
+      HapticFeedback.lightImpact();
+      context.go('/welcome');
+    } else {
+      HapticFeedback.heavyImpact();
+      setState(() {
+        _error = 'Invalid access code';
+        _verifying = false;
+      });
+    }
   }
 
   void _handleRequest() {

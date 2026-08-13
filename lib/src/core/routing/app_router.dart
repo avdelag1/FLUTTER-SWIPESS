@@ -37,7 +37,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (granted && user == null) {
         if (loc == '/gate') return '/welcome';
-        if (loc == '/dashboard') return '/welcome';
+        // Allow browsing dashboard after gate without forcing auth first
+        // (Cap preview / demo path). Auth still required for writes.
       }
 
       if (user != null &&
