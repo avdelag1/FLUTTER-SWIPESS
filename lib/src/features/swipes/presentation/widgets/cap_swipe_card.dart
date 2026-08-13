@@ -99,6 +99,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (oldWidget.listing.id != widget.listing.id) {
       _photoIndex = 0;
       _endZoom();
+    }
+    // Back-stack cards must not decode video — only the top card plays.
+    if (!widget.isTop) {
+      _disposeVideo();
+      return;
+    }
+    if (oldWidget.listing.id != widget.listing.id || !oldWidget.isTop) {
       _syncVideo();
     }
   }
@@ -106,8 +113,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   @override
   void dispose() {
     _holdTimer?.cancel();
-    _video?.dispose();
+    _disposeVideo();
     super.dispose();
+  }
+
+  void _disposeVideo() {
+    _video?.dispose();
+    _video = null;
+    _boundVideo = null;
   }
 
   void _setPhoto(int index) {
@@ -119,13 +132,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   Future<void> _syncVideo() async {
+    // Non-top cards in the stack only show stills / placeholders.
+    if (!widget.isTop) {
+      _disposeVideo();
+      return;
+    }
     final media = _media;
     if (media.isEmpty) return;
     final url = media[_photoIndex % media.length];
     if (!_isVideo(url)) {
-      await _video?.dispose();
-      _video = null;
-      _boundVideo = null;
+      _disposeVideo();
       if (mounted) setState(() {});
       return;
     }
@@ -136,6 +152,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _video = next;
     try {
       await next.initialize();
+      if (!mounted || !widget.isTop || _boundVideo != url) {
+        await next.dispose();
+        if (identical(_video, next)) {
+          _video = null;
+          _boundVideo = null;
+        }
+        return;
+      }
       final soundOn = ref.read(deckSoundOnProvider);
       await next.setLooping(true);
       await next.setVolume(soundOn ? 1 : 0);
@@ -274,9 +298,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _video?.setVolume(on ? 1 : 0);
     });
-    if (hasMedia && _video == null && current != null && _isVideo(current)) {
+    if (widget.isTop &&
+        hasMedia &&
+        _video == null &&
+        current != null &&
+        _isVideo(current)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncVideo();
+        if (mounted && widget.isTop) _syncVideo();
       });
     }
 
@@ -318,6 +346,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
+                            // Decode near display size — full Unsplash
+                            // bitmaps crush Flutter web FPS.
+                            cacheWidth:
+                                (MediaQuery.sizeOf(context).width * 2)
+                                    .round()
+                                    .clamp(480, 1600),
+                            filterQuality: FilterQuality.medium,
+                            gaplessPlayback: true,
                             errorBuilder: (_, _, _) => _fallback(),
                           ),
               ),
