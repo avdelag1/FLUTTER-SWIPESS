@@ -55,9 +55,9 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            // Kept off to match the shipped Capacitor build; the plugin set here
-            // (RevenueCat, Supabase, Mapbox tiles) is reflection-heavy.
-            isMinifyEnabled = false
+            // Shrinking is left to the Flutter Gradle plugin, which pairs
+            // minify and resource shrinking. Setting either here desyncs them
+            // and fails configuration; use `--no-shrink` to opt out instead.
         }
     }
 }
