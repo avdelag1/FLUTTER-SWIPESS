@@ -19,6 +19,16 @@ class LikedListingsNotifier extends AsyncNotifier<List<Listing>> {
       () => ref.read(likesRepositoryProvider).fetchLikedListings(),
     );
   }
+
+  Future<void> remove(String listingId) async {
+    final previous = state.value ?? const <Listing>[];
+    state = AsyncData(previous.where((l) => l.id != listingId).toList());
+    try {
+      await ref.read(likesRepositoryProvider).removeLikedListing(listingId);
+    } catch (_) {
+      state = AsyncData(previous);
+    }
+  }
 }
 
 final likedListingsProvider =
