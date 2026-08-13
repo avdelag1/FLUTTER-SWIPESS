@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
-import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Cap `TopBar` — profile + sparkles left; Crown / Globe / Moon / Bell right.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -119,9 +118,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               _GlassPill(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LiveMapScreen()),
-                  );
+                  context.push(AppPaths.map);
                 },
                 child: const _WashIcon(
                   wash: Color(0xFF4DABF7),
@@ -142,11 +139,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               _GlassPill(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationsScreen(),
-                    ),
-                  );
+                  context.push(AppPaths.notifications);
                 },
                 child: Stack(
                   clipBehavior: Clip.none,

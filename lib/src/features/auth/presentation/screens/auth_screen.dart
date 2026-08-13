@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -49,7 +51,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         await repo.signUpWithEmailPassword(_emailController.text, _passwordController.text);
       }
       if (!mounted) return;
-      context.go('/dashboard');
+      context.go(AppPaths.clientDashboard);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -104,6 +106,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 64),
+                      const Center(
+                        child: SwipessLogo(
+                          height: 40,
+                          variant: SwipessLogoVariant.outline,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
                       Text(
                         _isLogin ? 'Welcome back' : 'Create an account',
                         style: const TextStyle(

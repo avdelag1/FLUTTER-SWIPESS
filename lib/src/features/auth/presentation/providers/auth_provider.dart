@@ -19,10 +19,27 @@ final currentUserProvider = Provider<User?>((ref) {
   );
 });
 
-/// Tracks whether the access code gate has been passed this session.
-final accessGrantedProvider = FutureProvider<bool>((ref) async {
-  return AccessGrantService.isGranted();
-});
+/// Access-code gate state. AsyncNotifier so grant flips true immediately
+/// (FutureProvider invalidate left `.value` null → router treated as denied).
+class AccessGrantedNotifier extends AsyncNotifier<bool> {
+  @override
+  Future<bool> build() => AccessGrantService.isGranted();
+
+  Future<void> grant() async {
+    await AccessGrantService.persist();
+    state = const AsyncData(true);
+  }
+
+  Future<void> clear() async {
+    await AccessGrantService.clear();
+    state = const AsyncData(false);
+  }
+}
+
+final accessGrantedProvider =
+    AsyncNotifierProvider<AccessGrantedNotifier, bool>(
+  AccessGrantedNotifier.new,
+);
 
 class AuthIntentNotifier extends Notifier<AuthIntent> {
   @override

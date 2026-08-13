@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -23,11 +27,13 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final code = _codeController.text.trim();
     if (code.isEmpty) {
       setState(() => _error = 'Enter access code');
-      HapticFeedback.heavyImpact();
+      try {
+        HapticFeedback.heavyImpact();
+      } catch (_) {}
       return;
     }
     setState(() {
@@ -35,18 +41,34 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       _verifying = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      if (code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '') == 'URDBEST') {
-        HapticFeedback.lightImpact();
-        context.go('/welcome');
-      } else {
-        HapticFeedback.heavyImpact();
+    final normalized =
+        code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    if (normalized == 'URDBEST') {
+      try {
+        await ref.read(accessGrantedProvider.notifier).grant();
+        try {
+          HapticFeedback.lightImpact();
+        } catch (_) {}
+        if (!mounted) return;
+        context.go(AppPaths.welcome);
+      } catch (e) {
+        if (!mounted) return;
         setState(() {
-          _error = 'Invalid access code';
+          _error = 'Could not save access. Try again.';
           _verifying = false;
         });
       }
+      return;
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    try {
+      HapticFeedback.heavyImpact();
+    } catch (_) {}
+    setState(() {
+      _error = 'Invalid access code';
+      _verifying = false;
     });
   }
 
@@ -109,10 +131,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Column(
       crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
-        Image.asset(
-          'assets/images/logo.png',
-          width: isDesktop ? 320 : 260,
-          fit: BoxFit.contain,
+        SwipessLogo(
+          height: isDesktop ? 56 : 48,
+          variant: SwipessLogoVariant.outline,
         ),
         const SizedBox(height: 24),
         Text(
@@ -169,11 +190,25 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
+        // BackdropFilter + WebGL loss freezes Chrome; skip blur on web.
+        child: kIsWeb
+            ? Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: _buildGateCardBody(),
+              )
+            : BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: _buildGateCardBody(),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildGateCardBody() {
+    return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
@@ -213,10 +248,6 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                   child: _showRequest ? _buildRequestForm() : const SizedBox.shrink(),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 

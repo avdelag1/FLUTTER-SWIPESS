@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,12 +13,13 @@ class PaymentService {
   bool get isConfigured => _configured;
 
   String get _apiKey {
+    // Avoid `dart:io` — it breaks Flutter web boot (splash hangs).
     if (!kIsWeb) {
-      if (Platform.isIOS &&
+      if (defaultTargetPlatform == TargetPlatform.iOS &&
           AppConfig.revenueCatAppleApiKey.trim().isNotEmpty) {
         return AppConfig.revenueCatAppleApiKey.trim();
       }
-      if (Platform.isAndroid &&
+      if (defaultTargetPlatform == TargetPlatform.android &&
           AppConfig.revenueCatGoogleApiKey.trim().isNotEmpty) {
         return AppConfig.revenueCatGoogleApiKey.trim();
       }
