@@ -11,7 +11,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Cap live map — OSM pins + category chips + preview card.
+/// Cap live map — raster tiles + pins. Map stays mounted so taps/filters don't freeze.
 class LiveMapScreen extends ConsumerStatefulWidget {
   const LiveMapScreen({super.key});
 
@@ -33,10 +33,21 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     ('worker', 'Workers'),
   ];
 
+  /// Cap pin pressure — too many Marker widgets rebuild-locks the map.
+  static const _maxPins = 60;
+
   @override
   void dispose() {
     _mapController.dispose();
     super.dispose();
+  }
+
+  List<Listing> _filtered(List<Listing> listings) {
+    final base = _category == 'all'
+        ? listings
+        : listings.where((l) => (l.category ?? '') == _category).toList();
+    if (base.length <= _maxPins) return base;
+    return base.take(_maxPins).toList();
   }
 
   @override
@@ -44,73 +55,90 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final location = ref.watch(discoveryLocationProvider);
     final async = ref.watch(mapListingsProvider);
     final center = LatLng(location.latitude, location.longitude);
+    final listings = async.asData?.value ?? const <Listing>[];
+    final filtered = _filtered(listings);
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          async.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                  color: Colors.white, strokeWidth: 2),
+          // Always mounted — never gate the map behind listing Future.
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: 12,
+              minZoom: 3,
+              maxZoom: 18,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
+              onTap: (_, _) {
+                if (_selected != null) setState(() => _selected = null);
+              },
             ),
-            error: (e, _) => Center(
-              child: TextButton(
-                onPressed: () => ref.invalidate(mapListingsProvider),
-                child: const Text('Could not load map pins — retry'),
+            children: [
+              TileLayer(
+                urlTemplate: AppConfig.hasMapboxToken
+                    ? 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}'
+                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                additionalOptions: AppConfig.hasMapboxToken
+                    ? {'accessToken': AppConfig.mapboxAccessToken}
+                    : const {},
+                userAgentPackageName: 'com.swipess.flutter',
+                maxZoom: 19,
+                keepBuffer: 2,
+                panBuffer: 1,
+              ),
+              MarkerLayer(
+                markers: [
+                  for (final listing in filtered)
+                    if (listing.latitude != null && listing.longitude != null)
+                      Marker(
+                        point: LatLng(listing.latitude!, listing.longitude!),
+                        width: 48,
+                        height: 48,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => setState(() => _selected = listing),
+                          child: _Pin(
+                            listing: listing,
+                            selected: _selected?.id == listing.id,
+                          ),
+                        ),
+                      ),
+                ],
+              ),
+            ],
+          ),
+          if (async.isLoading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                backgroundColor: Colors.transparent,
+                color: AppTheme.brandPrimary,
               ),
             ),
-            data: (listings) {
-              final filtered = _category == 'all'
-                  ? listings
-                  : listings
-                      .where((l) => (l.category ?? '') == _category)
-                      .toList();
-              return FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: center,
-                  initialZoom: 12,
-                  minZoom: 3,
-                  maxZoom: 18,
-                  onTap: (_, _) => setState(() => _selected = null),
+          if (async.hasError && listings.isEmpty)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 100,
+              child: Material(
+                color: const Color(0xE016161C),
+                borderRadius: BorderRadius.circular(16),
+                child: TextButton(
+                  onPressed: () => ref.invalidate(mapListingsProvider),
+                  child: const Text(
+                    'Pins failed to load — tap to retry',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate: AppConfig.hasMapboxToken
-                        ? 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token={accessToken}'
-                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    additionalOptions: AppConfig.hasMapboxToken
-                        ? {'accessToken': AppConfig.mapboxAccessToken}
-                        : const {},
-                    userAgentPackageName: 'com.swipess.flutter',
-                    maxZoom: 19,
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      for (final listing in filtered)
-                        if (listing.latitude != null &&
-                            listing.longitude != null)
-                          Marker(
-                            point: LatLng(
-                                listing.latitude!, listing.longitude!),
-                            width: 52,
-                            height: 52,
-                            child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selected = listing),
-                              child: _Pin(
-                                listing: listing,
-                                selected: _selected?.id == listing.id,
-                              ),
-                            ),
-                          ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
+              ),
+            ),
           SafeArea(
             child: Column(
               children: [
@@ -181,7 +209,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                             }),
                             selectedColor: AppTheme.brandPrimary,
                             backgroundColor: Colors.black.withAlpha(160),
-                            labelStyle: TextStyle(
+                            labelStyle: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
                               fontSize: 11,
@@ -242,7 +270,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
         );
       },
     );
-    if (city != null) {
+    if (city != null && mounted) {
       ref.read(discoveryLocationProvider.notifier).setCity(city);
       final loc = ref.read(discoveryLocationProvider);
       _mapController.move(LatLng(loc.latitude, loc.longitude), 12);
@@ -258,8 +286,8 @@ class _Pin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+    final price = listing.price;
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: selected ? Colors.white : AppTheme.brandPrimary,
         shape: BoxShape.circle,
@@ -267,18 +295,10 @@ class _Pin extends StatelessWidget {
           color: selected ? AppTheme.brandPrimary : Colors.white,
           width: 2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.brandPrimary.withAlpha(selected ? 180 : 120),
-            blurRadius: selected ? 16 : 12,
-          ),
-        ],
       ),
       child: Center(
         child: Text(
-          listing.price == null
-              ? '•'
-              : '\$${listing.price!.toStringAsFixed(0)}',
+          price == null ? '•' : '\$${price.toStringAsFixed(0)}',
           style: TextStyle(
             color: selected ? AppTheme.brandPrimary : Colors.white,
             fontSize: 9,
@@ -306,6 +326,7 @@ class _PreviewCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: Container(
+        height: 96,
         decoration: BoxDecoration(
           color: const Color(0xF014141A),
           borderRadius: BorderRadius.circular(22),
@@ -318,7 +339,12 @@ class _PreviewCard extends StatelessWidget {
               width: 96,
               height: 96,
               child: listing.primaryImage != null
-                  ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
+                  ? Image.network(
+                      listing.primaryImage!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          const ColoredBox(color: Color(0xFF22222A)),
+                    )
                   : const ColoredBox(color: Color(0xFF22222A)),
             ),
             Expanded(
