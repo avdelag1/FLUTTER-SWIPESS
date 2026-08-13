@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_category_photos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_eventos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_photos_screen.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/routing/app_redirect.dart';
+import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
@@ -62,72 +65,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefresh(ref);
   ref.onDispose(refresh.dispose);
 
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: AppPaths.gate,
     refreshListenable: refresh,
     redirect: (context, state) {
-      final loc = state.matchedLocation;
       final grantedAsync = ref.read(accessGrantedProvider);
-      // While grant status is still loading, don't bounce the user.
-      if (grantedAsync.isLoading) return null;
-      final granted = grantedAsync.value ?? false;
-      final user = ref.read(currentUserProvider);
-
-      final publicExact = {
-        AppPaths.resetPassword,
-        AppPaths.paymentSuccess,
-        AppPaths.paymentCancel,
-        AppPaths.about,
-        AppPaths.contact,
-        AppPaths.faqClient,
-        AppPaths.faqOwner,
-        AppPaths.legal,
-      };
-      final isPublic = publicExact.contains(loc) ||
-          loc.startsWith('/preview/listing/') ||
-          loc.startsWith('/preview/profile/') ||
-          loc.startsWith('/vap-validate/') ||
-          loc.startsWith('/s/');
-
-      if (isPublic) return null;
-
-      if (!granted && loc != AppPaths.gate) return AppPaths.gate;
-
-      if (granted && user == null) {
-        const authScreens = {
-          AppPaths.welcome,
-          AppPaths.onboarding,
-          AppPaths.auth,
-        };
-        if (loc == AppPaths.gate) return AppPaths.welcome;
-        if (authScreens.contains(loc)) return null;
-        return AppPaths.welcome;
-      }
-
-      if (user != null &&
-          (loc == AppPaths.gate ||
-              loc == AppPaths.welcome ||
-              loc == AppPaths.onboarding ||
-              loc == AppPaths.auth)) {
-        return AppPaths.clientDashboard;
-      }
-
-      // Capacitor aliases / redirects
-      if (loc == AppPaths.legacyDashboard) return AppPaths.clientDashboard;
-      if (loc == AppPaths.ownerDashboard) return AppPaths.clientDashboard;
-      if (loc == AppPaths.ownerProfile) return AppPaths.clientProfile;
-      if (loc == AppPaths.exploreServices) return AppPaths.clientServices;
-      if (loc == '/promote-event/request' ||
-          loc == '/promote-event/packages' ||
-          loc == '/promote') {
-        return AppPaths.clientAdvertise;
-      }
-      if (loc == '/privacy-policy') return '${AppPaths.legal}?doc=privacy';
-      if (loc == '/terms-of-service') return '${AppPaths.legal}?doc=terms';
-      if (loc == '/agl') return '${AppPaths.legal}?doc=agl';
-      if (loc == '/share-target') return AppPaths.clientDashboard;
-
-      return null;
+      return AppRedirect.resolve(
+        location: state.matchedLocation,
+        uri: state.uri.toString(),
+        grantLoading: grantedAsync.isLoading,
+        granted: grantedAsync.value ?? false,
+        signedIn: ref.read(currentUserProvider) != null,
+        pending: ref.read(pendingDeepLinkProvider),
+      );
     },
     routes: [
       GoRoute(
@@ -170,6 +120,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state) => PublicProfilePreviewScreen(
           userId: state.pathParameters['id']!,
         ),
+      ),
+      // Public member link the share sheets hand out as
+      // `https://www.swipess.com/u/<id>`.
+      GoRoute(
+        path: '/u/:id',
+        redirect: (ctx, state) =>
+            AppPaths.previewProfile(state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/s/listing/:id',
@@ -474,6 +431,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // Recovery mail points at https://www.swipess.com/reset-password. On device
+  // that arrives as a Universal Link / App Link: supabase_flutter consumes the
+  // token and emits `passwordRecovery`, and we send the user to the form.
+  ref.listen<AsyncValue<AuthState>>(authStateProvider, (_, next) {
+    if (next.value?.event == AuthChangeEvent.passwordRecovery) {
+      router.go(AppPaths.resetPassword);
+    }
+  });
+
+  return router;
 });
 
 class _RouterRefresh extends ChangeNotifier {
