@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 /// Capacitor LawyerServicesPage — package catalog (static Cap categories).
 class LawyerServicesScreen extends StatefulWidget {
@@ -58,7 +59,7 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: Row(
                 children: [
-                  _Back(onTap: () => Navigator.pop(context)),
+                  CapBackButton(onTap: () => Navigator.pop(context)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -118,7 +119,7 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.transparent),
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,25 +216,3 @@ class _Pkg {
   final int days;
 }
 
-class _Back extends StatelessWidget {
-  const _Back({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
-        ),
-        child: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: Colors.white, size: 18),
-      ),
-    );
-  }
-}

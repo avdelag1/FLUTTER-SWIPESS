@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.d
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 class LegalHubScreen extends ConsumerStatefulWidget {
   const LegalHubScreen({super.key});
@@ -220,10 +221,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
             children: [
               Row(
                 children: [
-                  GlassIconCircle(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onPressed: () => context.pop(),
-                  ),
+                  const CapBackButton(),
                   const Spacer(),
                   // Mode Toggle
                   Container(
@@ -267,7 +265,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: _ActionCard(
                       title: 'CONTRACTS',
                       icon: Icons.edit_document,
-                      color: Colors.white.withAlpha(12),
+                      color: Colors.transparent,
                       onTap: () => context.push(AppPaths.clientContracts),
                     ),
                   ),
@@ -276,7 +274,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: _ActionCard(
                       title: 'LAWYERS',
                       icon: Icons.gavel_rounded,
-                      color: Colors.white.withAlpha(12),
+                      color: Colors.transparent,
                       onTap: () => context.push(AppPaths.clientLegalServices),
                     ),
                   ),
