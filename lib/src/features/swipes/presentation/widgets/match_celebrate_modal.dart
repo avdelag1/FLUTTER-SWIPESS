@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/native/app_review.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -91,6 +92,9 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
     Future<void>.delayed(const Duration(milliseconds: 300), () {
       if (mounted) HapticFeedback.mediumImpact();
     });
+    // Cap asks for a store review here: a mutual match is a genuine happy
+    // moment. Gated to the 2nd+ match and 90-day spacing, so it cannot nag.
+    AppReview().maybeRequestAfterMatch();
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/native/app_badge.dart';
 import 'package:flutter_swipes/src/core/native/app_lifecycle_service.dart';
 import 'package:flutter_swipes/src/core/native/connectivity_service.dart';
 import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
@@ -45,9 +46,11 @@ class NativeSwipeApp extends ConsumerWidget {
         return SystemChromeSync(
           child: ConnectivityWatcher(
             child: AppLifecycleWatcher(
-              child: BiometricGate(
-                child: OverlayModalsHost(
-                  child: child ?? const SizedBox.shrink(),
+              child: AppBadgeSync(
+                child: BiometricGate(
+                  child: OverlayModalsHost(
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),
