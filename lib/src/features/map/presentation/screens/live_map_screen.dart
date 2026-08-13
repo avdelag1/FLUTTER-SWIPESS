@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -9,18 +8,26 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
+import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
+import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
+import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
-import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_bottom_dock.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_layer_rail.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_perspective_stage.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_preview_card.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_results_rail.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Cap PassportMap / live map — satellite fly-in, 10 km radius, listings + people.
+/// Cap PassportMap / live map — 3D satellite fly-in, listings + people.
 class LiveMapScreen extends ConsumerStatefulWidget {
   const LiveMapScreen({
     super.key,
@@ -82,10 +89,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   double _zoomForRadius(int km) => MapCameraMath.zoomForRadiusKm(km);
 
-  void _safeMove(LatLng dest, double zoom, {double rotation = 0}) {
+  void _safeMove(LatLng dest, double zoom) {
     if (!_mapReady) return;
     try {
-      _mapController.moveAndRotate(dest, zoom, rotation);
+      _mapController.move(dest, zoom);
     } catch (_) {}
   }
 
@@ -94,14 +101,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     _didFly = true;
     final startZ = MapCameraMath.openAltitudeZoom;
     final endZ = _zoomForRadius(radiusKm);
-    // Web: skip bank rotation — rotated raster tiles often fail to paint.
-    final startBank = kIsWeb ? 0.0 : MapCameraMath.openBankDegrees;
     _fly.addListener(() {
       if (!mounted || !_mapReady) return;
       final t = Curves.easeInOutCubic.transform(_fly.value);
-      final z = startZ + (endZ - startZ) * t;
-      final bank = startBank * (1 - t);
-      _safeMove(center, z, rotation: bank);
+      _safeMove(center, startZ + (endZ - startZ) * t);
     });
     _fly.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -111,35 +114,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     _fly.forward();
   }
 
-  List<_MapCluster> _cluster(List<MapPin> pins, double zoom) {
-    if (pins.isEmpty) return const [];
-    final cell = zoom >= 13
-        ? 0.01
-        : zoom >= 11
-            ? 0.04
-            : zoom >= 9
-                ? 0.12
-                : 0.28;
-    final buckets = <String, List<MapPin>>{};
-    for (final p in pins) {
-      final key =
-          '${(p.lat / cell).floor()}_${(p.lng / cell).floor()}';
-      buckets.putIfAbsent(key, () => []).add(p);
-    }
-    return [
-      for (final group in buckets.values)
-        _MapCluster(
-          point: LatLng(
-            group.map((e) => e.lat).reduce((a, b) => a + b) /
-                group.length,
-            group.map((e) => e.lng).reduce((a, b) => a + b) /
-                group.length,
-          ),
-          pins: group,
-        ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     final location = ref.watch(discoveryLocationProvider);
@@ -147,13 +121,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final asyncProfiles = ref.watch(mapProfilesProvider);
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
-    
+
     final listingsRaw = asyncListings.value ?? [];
     final profiles = asyncProfiles.value ?? [];
     final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
-    final listings = listingsRaw.isNotEmpty
-        ? listingsRaw
-        : _demoListings(center, location.city);
+    final listings = listingsForMap(listingsRaw, center, location.city);
+    final people = peopleForMap(profiles, center, location.city);
     const haversine = Distance();
     bool inRadius(double lat, double lng) {
       return haversine.as(
@@ -164,45 +137,53 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
           radiusKm;
     }
 
+    final listingPins = [
+      if (_layer != 'people')
+        ...listings
+            .where((l) =>
+                l.latitude != null &&
+                l.longitude != null &&
+                inRadius(l.latitude!, l.longitude!))
+            .map(MapPin.listing),
+    ];
+    final profilePins = [
+      if (_layer != 'listings')
+        ...people
+            .where((p) =>
+                p.latitude != null &&
+                p.longitude != null &&
+                inRadius(p.latitude!, p.longitude!))
+            .map(MapPin.profile),
+    ];
+    final allPins = [...listingPins, ...profilePins];
+    final filtered = _category == 'all' || _layer == 'people'
+        ? allPins
+        : allPins
+            .where((p) =>
+                !p.isListing || (p.listing?.category ?? '') == _category)
+            .toList();
+    final clusters = clusterMapPins(filtered, _zoom);
+    final pad = MediaQuery.paddingOf(context);
+
     return Material(
-      color: const Color(0xFF1A1A2E),
+      color: const Color(0xFF12324A),
       child: Stack(
         children: [
           Positioned.fill(
-            child: Builder(builder: (context) {
-              final List<MapPin> allPins = [
-                if (_layer != 'people')
-                  ...listings
-                      .where((l) =>
-                          l.latitude != null &&
-                          l.longitude != null &&
-                          inRadius(l.latitude!, l.longitude!))
-                      .map((l) => MapPin.listing(l)),
-                if (_layer != 'listings')
-                  ...profiles
-                      .where((p) =>
-                          p.latitude != null &&
-                          p.longitude != null &&
-                          inRadius(p.latitude!, p.longitude!))
-                      .map((p) => MapPin.profile(p)),
-              ];
-              final filtered = _category == 'all' || _layer == 'people'
-                  ? allPins
-                  : allPins
-                      .where((p) =>
-                          !p.isListing ||
-                          (p.listing?.category ?? '') == _category)
-                      .toList();
-              final clusters = _cluster(filtered, _zoom);
-              return FlutterMap(
+            child: AnimatedBuilder(
+              animation: _fly,
+              builder: (context, child) => MapPerspectiveStage(
+                progress: _fly.value,
+                child: child!,
+              ),
+              child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: MapCameraMath.openAltitudeZoom,
-                  initialRotation: kIsWeb ? 0 : MapCameraMath.openBankDegrees,
                   minZoom: 3,
                   maxZoom: 18,
-                  backgroundColor: const Color(0xFF1A1A2E),
+                  backgroundColor: const Color(0xFF12324A),
                   onMapReady: () {
                     _mapReady = true;
                     _startDroneFlyIn(center, radiusKm);
@@ -298,14 +279,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                                   math.min(_zoom + 1.6, 16),
                                 );
                               },
-                              child: _ClusterBubble(count: c.count),
+                              child: MapClusterMarker(count: c.count),
                             ),
                           ),
                     ],
                   ),
                 ],
-              );
-            }),
+              ),
+            ),
           ),
           if (isLoading)
             const Positioned(
@@ -319,14 +300,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               ),
             ),
 
-          // Cap HUD — X left, Menu right
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _HudCircle(
+                  MapHudCircle(
                     icon: Icons.close_rounded,
                     onTap: () {
                       if (widget.onClose != null) {
@@ -336,11 +316,20 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                       }
                     },
                   ),
+                  const SizedBox(width: 8),
+                  MapHudCircle(
+                    icon: Icons.search_rounded,
+                    onTap: () => setState(() {
+                      _citiesOpen = !_citiesOpen;
+                      _menuOpen = false;
+                      _radiusOpen = false;
+                    }),
+                  ),
                   const Spacer(),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      _HudCircle(
+                      MapHudCircle(
                         icon: _menuOpen
                             ? Icons.close_rounded
                             : Icons.menu_rounded,
@@ -351,16 +340,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                       ),
                       if (_menuOpen) ...[
                         const SizedBox(height: 8),
-                        _HudCircle(
-                          icon: Icons.search_rounded,
-                          onTap: () => setState(() {
-                            _citiesOpen = !_citiesOpen;
-                            _menuOpen = false;
-                            _radiusOpen = false;
-                          }),
-                        ),
-                        const SizedBox(height: 8),
-                        _HudCircle(
+                        MapHudCircle(
                           icon: Icons.navigation_rounded,
                           onTap: () => _locateGps(),
                           accent: true,
@@ -369,7 +349,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         for (final c in _categories.take(3))
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8),
-                            child: _HudCircle(
+                            child: MapHudCircle(
                               icon: c.$3,
                               selected: _category == c.$1,
                               onTap: () => setState(() {
@@ -386,20 +366,193 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             ),
           ),
 
-          // Bottom-left Cap controls
+          Positioned(
+            top: pad.top + 56,
+            left: 0,
+            right: 64,
+            child: MapCityChips(
+              activeCity: location.city,
+              onSelect: (city) {
+                ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                      city: city.name,
+                      country: city.country,
+                      latitude: city.lat,
+                      longitude: city.lng,
+                    );
+                _safeMove(
+                  LatLng(city.lat, city.lng),
+                  _zoomForRadius(radiusKm),
+                );
+                setState(() {
+                  _citiesOpen = false;
+                  _selected = null;
+                });
+              },
+            ),
+          ),
+
+          Positioned(
+            right: 12,
+            top: pad.top + 108,
+            child: MapLayerRail(
+              layer: _layer,
+              listingCount: listingPins.length,
+              peopleCount: profilePins.length,
+              onLayer: (layer) => setState(() {
+                _layer = layer;
+                _selected = null;
+              }),
+            ),
+          ),
+
           Positioned(
             left: 12,
-            bottom: MediaQuery.paddingOf(context).bottom + 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
+            right: 12,
+            bottom: pad.bottom + 12,
+            child: MapBottomDock(
+              preview: _selected == null
+                  ? null
+                  : MapPreviewCard(
+                      pin: _selected!,
+                      onOpen: _openSelected,
+                      onClose: () => setState(() => _selected = null),
+                    ),
+              rail: MapResultsRail(
+                pins: filtered,
+                selectedId: _selected?.id,
+                onSelect: (pin) {
+                  setState(() => _selected = pin);
+                  _safeMove(LatLng(pin.lat, pin.lng), math.max(_zoom, 11));
+                },
+              ),
+              hud: MapGpsHud(
+                locateButton: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    _safeMove(center, _zoomForRadius(radiusKm));
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x880072FF),
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.navigation_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+                radiusChip: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_radiusOpen)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xF212161F),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0x8800C6FF)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final km in _radiusOptions)
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  ref
+                                      .read(discoveryLocationProvider.notifier)
+                                      .setRadiusKm(km);
+                                  _safeMove(center, _zoomForRadius(km));
+                                  setState(() => _radiusOpen = false);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 8,
+                                  ),
+                                  child: Text(
+                                    '$km km',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: km == radiusKm
+                                          ? const Color(0xFF00C6FF)
+                                          : Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _radiusOpen = !_radiusOpen;
+                        if (_radiusOpen) _menuOpen = false;
+                      }),
+                      child: Container(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xF2161B27),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: const Color(0xFF00C6FF),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on_rounded,
+                              color: Color(0xFF00E5FF),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$radiusKm km',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF00C6FF),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _radiusOpen
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded,
+                              color: Colors.white70,
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                youAreHere: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xF2161B27),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: const Color(0xFF34D399), width: 1.5),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -431,189 +584,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.mediumImpact();
-                        _safeMove(
-                          center,
-                          _zoomForRadius(radiusKm),
-                        );
-                      },
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF0072FF),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0x660072FF),
-                              blurRadius: 12,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.navigation_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _radiusOpen = !_radiusOpen;
-                            if (_radiusOpen) _menuOpen = false;
-                          }),
-                          child: Container(
-                            height: 40,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xF2161B27),
-                              borderRadius: BorderRadius.circular(999),
-                              border:
-                                  Border.all(color: Colors.transparent),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.location_on_rounded,
-                                    color: Colors.white, size: 16),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '$radiusKm km',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF00C6FF),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  _radiusOpen
-                                      ? Icons.expand_less_rounded
-                                      : Icons.expand_more_rounded,
-                                  color: Colors.white70,
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (_radiusOpen)
-                          Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xF212161F),
-                              borderRadius: BorderRadius.circular(16),
-                              border:
-                                  Border.all(color: Colors.transparent),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (final km in _radiusOptions)
-                                  GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      ref
-                                          .read(
-                                              discoveryLocationProvider.notifier)
-                                          .setRadiusKm(km);
-                                      _safeMove(
-                                        center,
-                                        _zoomForRadius(km),
-                                      );
-                                      setState(() => _radiusOpen = false);
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 8,
-                                      ),
-                                      child: Text(
-                                        '$km km',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: km == radiusKm
-                                              ? const Color(0xFF00C6FF)
-                                              : Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          Positioned(
-            top: MediaQuery.paddingOf(context).top + 56,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xF2161B27),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final layer in const [
-                      ('all', 'All'),
-                      ('listings', 'Listings'),
-                      ('people', 'People'),
-                    ])
-                      GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() {
-                            _layer = layer.$1;
-                            _selected = null;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _layer == layer.$1
-                                ? Colors.white
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            layer.$2,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: _layer == layer.$1
-                                  ? Colors.black
-                                  : Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -622,13 +592,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             Positioned(
               left: 12,
               right: 12,
-              top: MediaQuery.paddingOf(context).top + 104,
-              bottom: MediaQuery.paddingOf(context).bottom + 120,
+              top: pad.top + 104,
+              bottom: pad.bottom + 120,
               child: Container(
                 decoration: BoxDecoration(
                   color: const Color(0xF212161F),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: const Color(0x8800C6FF)),
                 ),
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -641,6 +611,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     for (final city in PassportCities.all)
                       ListTile(
                         dense: true,
+                        leading: ClipOval(
+                          child: Image.network(
+                            city.photoUrl,
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                         title: Text(
                           city.name,
                           style: const TextStyle(color: Colors.white),
@@ -650,7 +628,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           style: const TextStyle(color: Colors.white54),
                         ),
                         onTap: () {
-                          ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                          ref
+                              .read(discoveryLocationProvider.notifier)
+                              .setCoordinates(
                                 city: city.name,
                                 country: city.country,
                                 latitude: city.lat,
@@ -670,37 +650,27 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ),
               ),
             ),
-
-          if (_selected != null)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: MediaQuery.paddingOf(context).bottom + 120,
-              child: _PreviewCard(
-                pin: _selected!,
-                onOpen: () {
-                  if (_selected!.isListing) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ListingDetailScreen(listingData: _selected!.listing!),
-                      ),
-                    );
-                  } else {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ProfileDetailScreen(userId: _selected!.profile!.id),
-                      ),
-                    );
-                  }
-                },
-                onClose: () => setState(() => _selected = null),
-              ),
-            ),
         ],
       ),
     );
+  }
+
+  void _openSelected() {
+    if (_selected == null) return;
+    if (_selected!.isListing) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              ListingDetailScreen(listingData: _selected!.listing!),
+        ),
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProfileDetailScreen(userId: _selected!.profile!.id),
+        ),
+      );
+    }
   }
 
   Future<void> _locateGps() async {
@@ -754,386 +724,37 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   Marker _pinMarker(MapPin pin, {required bool selected}) {
     if (pin.isListing) {
-      final title = pin.listing?.title ?? 'Listing';
-      final short = title.length > 18 ? '${title.substring(0, 15)}…' : title;
       return Marker(
         point: LatLng(pin.lat, pin.lng),
-        width: 148,
-        height: 28,
-        alignment: Alignment.center,
+        width: MapListingPinMarker.width,
+        height: MapListingPinMarker.height,
+        alignment: MapListingPinMarker.anchor,
         child: GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
             setState(() => _selected = pin);
           },
-          child: _ListingPill(label: short, selected: selected),
+          child: MapListingPinMarker(
+            title: pin.listing?.title ?? 'Listing',
+            imageUrl: pin.listing?.primaryImage,
+            selected: selected,
+          ),
         ),
       );
     }
-    final name = pin.profile?.displayName ?? 'User';
     return Marker(
       point: LatLng(pin.lat, pin.lng),
-      width: 36,
-      height: 36,
+      width: 40,
+      height: 40,
       alignment: Alignment.center,
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
           setState(() => _selected = pin);
         },
-        child: _ProfileDot(
+        child: MapProfilePinMarker(
           imageUrl: pin.profile?.avatarUrl,
-          initial: name.isNotEmpty ? name[0].toUpperCase() : '?',
           selected: selected,
-        ),
-      ),
-    );
-  }
-
-  static List<Listing> _demoListings(LatLng center, String city) {
-    const photo =
-        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80';
-    const offsets = <(double, double, String, double)>[
-      (0.018, -0.012, 'Tranquil Oasis', 2400),
-      (-0.014, 0.016, 'Jungle Villa', 3100),
-      (0.008, 0.022, 'Beach Studio', 1800),
-      (-0.02, -0.018, 'Casa Azul', 2650),
-    ];
-    return [
-      for (var i = 0; i < offsets.length; i++)
-        Listing(
-          id: 'map-demo-$i',
-          title: offsets[i].$3,
-          category: 'property',
-          city: city,
-          price: offsets[i].$4,
-          currency: 'USD',
-          latitude: center.latitude + offsets[i].$1,
-          longitude: center.longitude + offsets[i].$2,
-          images: const [photo],
-        ),
-    ];
-  }
-}
-
-
-class MapPin {
-  final bool isListing;
-  final Listing? listing;
-  final Profile? profile;
-  final double lat;
-  final double lng;
-
-  MapPin.listing(this.listing)
-      : isListing = true,
-        profile = null,
-        lat = listing!.latitude!,
-        lng = listing.longitude!;
-
-  MapPin.profile(this.profile)
-      : isListing = false,
-        listing = null,
-        lat = profile!.latitude!,
-        lng = profile.longitude!;
-}
-
-class _MapCluster {
-  const _MapCluster({required this.point, required this.pins});
-  final LatLng point;
-  final List<MapPin> pins;
-  int get count => pins.length;
-}
-
-class _ListingPill extends StatelessWidget {
-  const _ListingPill({required this.label, required this.selected});
-
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(5, 0, 8, 0),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xFF0F172A) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected ? const Color(0xFF00C6FF) : const Color(0xFF1D4ED8),
-          width: 2,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x380F172A),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: selected ? const Color(0xFF00E5FF) : const Color(0xFF3B82F6),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: selected ? Colors.white : const Color(0xFF0F172A),
-                fontSize: selected ? 11 : 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileDot extends StatelessWidget {
-  const _ProfileDot({
-    required this.imageUrl,
-    required this.initial,
-    required this.selected,
-  });
-
-  final String? imageUrl;
-  final String initial;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF312E81),
-        border: Border.all(
-          color: selected ? const Color(0xFFC7D2FE) : Colors.white,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: selected
-                ? const Color(0x88818CF8)
-                : const Color(0x590F172A),
-            blurRadius: 8,
-          ),
-        ],
-        image: imageUrl != null && imageUrl!.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(imageUrl!),
-                fit: BoxFit.cover,
-              )
-            : null,
-      ),
-      alignment: Alignment.center,
-      child: imageUrl == null || imageUrl!.isEmpty
-          ? Text(
-              initial,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
-            )
-          : null,
-    );
-  }
-}
-
-class _ClusterBubble extends StatelessWidget {
-  const _ClusterBubble({required this.count});
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = count >= 10 ? 46.0 : 38.0;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: size + 14,
-          height: size + 14,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0x5500C6FF),
-          ),
-        ),
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
-            ),
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x660F172A),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '$count',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: count >= 100 ? 11 : 13,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HudCircle extends StatelessWidget {
-  const _HudCircle({
-    required this.icon,
-    required this.onTap,
-    this.selected = false,
-    this.accent = false,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool selected;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: selected || accent
-              ? Colors.black.withAlpha(160)
-              : Colors.black.withAlpha(90),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF00C6FF)
-                : Colors.white.withAlpha(40),
-          ),
-        ),
-        child: Icon(icon, color: Colors.white, size: 16),
-      ),
-    );
-  }
-}
-
-class _PreviewCard extends StatelessWidget {
-  const _PreviewCard({
-    required this.pin,
-    required this.onOpen,
-    required this.onClose,
-  });
-
-  final MapPin pin;
-  final VoidCallback onOpen;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = pin.isListing ? (pin.listing?.title ?? 'Listing') : pin.profile?.displayName ?? 'User';
-    final subtitle = pin.isListing ? (pin.listing?.formattedLocation ?? '') : (pin.profile?.city ?? '');
-    final price = pin.isListing ? (pin.listing?.formattedPrice ?? '') : (pin.profile?.role ?? '');
-    final imageUrl = pin.isListing ? pin.listing?.primaryImage : pin.profile?.avatarUrl;
-    
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xF014141A),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white24),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 96,
-              height: 96,
-              child: imageUrl != null
-                  ? Image.network(imageUrl, fit: BoxFit.cover)
-                  : const ColoredBox(color: Color(0xFF22222A)),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    if (subtitle.isNotEmpty)
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
-                    if (price.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        price,
-                        style: const TextStyle(
-                          color: AppTheme.brandPrimary,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: onOpen,
-                      child: Text(
-                        pin.isListing ? 'OPEN DETAILS →' : 'VIEW PROFILE →',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 11,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            IconButton(
-              onPressed: onClose,
-              icon: const Icon(Icons.close_rounded, color: Colors.white54),
-            ),
-          ],
         ),
       ),
     );
