@@ -77,6 +77,7 @@ class DashboardShell extends ConsumerWidget {
     final dockBorder = isLight ? Colors.black : Colors.white;
 
     return Scaffold(
+      backgroundColor: canvas,
       extendBodyBehindAppBar: true,
       extendBody: true,
       appBar: hideChrome
@@ -133,11 +134,9 @@ class DashboardShell extends ConsumerWidget {
                       ],
                     ),
                     child: SingleChildScrollView(
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        shrinkWrap: true,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
                         children: [
                           for (var i = 0; i < bottomNavItems.length; i++)
                             _DockButton(
@@ -169,53 +168,7 @@ class DashboardShell extends ConsumerWidget {
                                 context.go(AppPaths.pathForTab(id));
                               },
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(isLight ? 40 : 160),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              children: [
-                                for (var i = 0; i < bottomNavItems.length; i++)
-                                  _DockButton(
-                                    item: bottomNavItems[i],
-                                    wash: _washes[i % _washes.length],
-                                    selected: currentTab == bottomNavItems[i].id,
-                                    isLight: isLight,
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      final id = bottomNavItems[i].id;
-                                      if (id == NavTab.filter) {
-                                        FilterBottomSheet.show(context);
-                                        return;
-                                      }
-                                      if (id == NavTab.add) {
-                                        showCreateListingChooser(context);
-                                        return;
-                                      }
-                                      if (id == NavTab.ai) {
-                                        showIntelCoreSheet(context);
-                                        return;
-                                      }
-                                      // Cap SEEKERS dock opens SeekerRequestDialog.
-                                      if (id == NavTab.seekers) {
-                                        showSeekerRequestSheet(context, ref);
-                                        return;
-                                      }
-                                      ref.read(navTabProvider.notifier).set(id);
-                                      context.go(AppPaths.pathForTab(id));
-                                    },
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
