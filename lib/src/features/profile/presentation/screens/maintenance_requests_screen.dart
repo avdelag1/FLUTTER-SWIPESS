@@ -403,7 +403,6 @@ class _Ticket extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final urgent = request.priority == 'urgent';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

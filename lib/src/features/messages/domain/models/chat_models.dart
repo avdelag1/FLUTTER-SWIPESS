@@ -30,6 +30,8 @@ class ChatMessage {
     required this.text,
     required this.createdAt,
     this.isRead = false,
+    this.messageType = 'text',
+    this.attachments = const [],
   });
 
   final String id;
@@ -38,4 +40,38 @@ class ChatMessage {
   final String text;
   final DateTime createdAt;
   final bool isRead;
+  final String messageType;
+  final List<DocumentAttachment> attachments;
+
+  bool get isDocument =>
+      messageType == 'document' ||
+      messageType == 'contract' ||
+      messageType == 'lease' ||
+      attachments.isNotEmpty;
+}
+
+class DocumentAttachment {
+  const DocumentAttachment({
+    required this.id,
+    required this.title,
+    this.type = 'vault_file',
+    this.status = 'uploaded',
+    this.fileName,
+  });
+
+  final String id;
+  final String title;
+  final String type;
+  final String status;
+  final String? fileName;
+
+  factory DocumentAttachment.fromJson(Map<String, dynamic> json) {
+    return DocumentAttachment(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? json['file_name']?.toString() ?? 'Document',
+      type: json['type']?.toString() ?? 'vault_file',
+      status: json['status']?.toString() ?? 'uploaded',
+      fileName: json['file_name']?.toString(),
+    );
+  }
 }

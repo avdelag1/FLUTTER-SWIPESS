@@ -398,6 +398,89 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                         const SizedBox(height: 22),
                       ],
+                      if (_activeCategory == 'motorcycle') ...[
+                        _sectionLabel('MOTO TYPE'),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final t in ListingTaxonomies.motoTypes)
+                              _Pill(
+                                label: t,
+                                active: _propertyTypes.contains(t),
+                                onTap: () => setState(() {
+                                  if (_propertyTypes.contains(t)) {
+                                    _propertyTypes.remove(t);
+                                  } else {
+                                    _propertyTypes.add(t);
+                                  }
+                                }),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                      if (_activeCategory == 'yacht') ...[
+                        _sectionLabel('YACHT TYPE'),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final t in const [
+                              'Motor yacht',
+                              'Sailboat',
+                              'Catamaran',
+                              'Super yacht',
+                              'Pontoon',
+                            ])
+                              _Pill(
+                                label: t,
+                                active: _propertyTypes.contains(t),
+                                onTap: () => setState(() {
+                                  if (_propertyTypes.contains(t)) {
+                                    _propertyTypes.remove(t);
+                                  } else {
+                                    _propertyTypes.add(t);
+                                  }
+                                }),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+                      ],
+                      if (_activeCategory == 'bicycle') ...[
+                        _sectionLabel('BIKE TYPE'),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final t in const [
+                              'Road',
+                              'Mountain',
+                              'Hybrid',
+                              'Electric',
+                              'Cruiser',
+                              'BMX',
+                              'Folding',
+                            ])
+                              _Pill(
+                                label: t,
+                                active: _propertyTypes.contains(t),
+                                onTap: () => setState(() {
+                                  if (_propertyTypes.contains(t)) {
+                                    _propertyTypes.remove(t);
+                                  } else {
+                                    _propertyTypes.add(t);
+                                  }
+                                }),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+                      ],
                       _sectionLabel('CITY'),
                       const SizedBox(height: 10),
                       Wrap(

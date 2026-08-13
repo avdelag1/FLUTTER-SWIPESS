@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/perks_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `PerksDashboard` — tabs, resident QR hero, partners, inbox, history.
@@ -29,6 +30,13 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final residentId = (user?.id ?? 'SWIPESS').substring(0, 8).toUpperCase();
+    final live = ref.watch(perksSnapshotProvider).value;
+    final offers = (live != null && live.offers.isNotEmpty)
+        ? [
+            for (final o in live.offers)
+              _Offer(o.name, o.detail, o.percent, Icons.local_offer_rounded),
+          ]
+        : _offers;
 
     return NeoNaiveScaffold(
       body: Stack(
@@ -268,7 +276,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        for (final o in _offers.take(3)) _OfferTile(offer: o),
+                        for (final o in offers.take(3)) _OfferTile(offer: o),
                       ],
                       if (_tab == 1)
                         _EmptyPane(
@@ -288,7 +296,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        for (final o in _offers) _OfferTile(offer: o),
+                        for (final o in offers) _OfferTile(offer: o),
                       ],
                       if (_tab == 3)
                         _EmptyPane(

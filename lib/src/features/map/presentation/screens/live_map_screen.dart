@@ -7,28 +7,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Cap PassportMap / live map — streets tiles + Cap HUD chrome.
 class LiveMapScreen extends ConsumerStatefulWidget {
-  const LiveMapScreen({super.key});
+  const LiveMapScreen({
+    super.key,
+    this.asOverlay = false,
+    this.onClose,
+    this.showCitiesOnOpen = false,
+  });
+
+  final bool asOverlay;
+  final VoidCallback? onClose;
+  final bool showCitiesOnOpen;
 
   @override
   ConsumerState<LiveMapScreen> createState() => _LiveMapScreenState();
 }
 
 class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
+  String _layer = 'all'; // all | listings | people
   String _category = 'all';
   MapPin? _selected;
   bool _menuOpen = false;
   bool _radiusOpen = false;
+  bool _citiesOpen = false;
   final _mapController = MapController();
   double _zoom = 11;
 
@@ -42,6 +55,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   ];
 
   static const _radiusOptions = [5, 10, 25, 50, 100, 200];
+
+  @override
+  void initState() {
+    super.initState();
+    _citiesOpen = widget.showCitiesOnOpen;
+  }
 
   @override
   void dispose() {
@@ -98,8 +117,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
     final hasError = asyncListings.hasError && asyncProfiles.hasError;
 
-    return Scaffold(
-      body: Stack(
+    return Material(
+      color: Colors.black,
+      child: Stack(
         children: [
           if (isLoading)
             const Center(
@@ -122,15 +142,19 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
             Builder(builder: (context) {
               final listings = asyncListings.value ?? [];
               final profiles = asyncProfiles.value ?? [];
-              
+
               final List<MapPin> allPins = [
-                ...listings.map((l) => MapPin.listing(l)),
-                ...profiles.map((p) => MapPin.profile(p)),
+                if (_layer != 'people')
+                  ...listings.map((l) => MapPin.listing(l)),
+                if (_layer != 'listings')
+                  ...profiles.map((p) => MapPin.profile(p)),
               ];
-              final filtered = _category == 'all'
+              final filtered = _category == 'all' || _layer == 'people'
                   ? allPins
                   : allPins
-                      .where((p) => p.isListing && (p.listing?.category ?? '') == _category)
+                      .where((p) =>
+                          !p.isListing ||
+                          (p.listing?.category ?? '') == _category)
                       .toList();
               final clusters = _cluster(filtered, _zoom);
               return FlutterMap(
@@ -212,7 +236,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                 children: [
                   _HudCircle(
                     icon: Icons.close_rounded,
-                    onTap: () => Navigator.of(context).pop(),
+                    onTap: () {
+                      if (widget.onClose != null) {
+                        widget.onClose!();
+                      } else {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
                   ),
                   const Spacer(),
                   Column(
@@ -231,18 +261,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                         const SizedBox(height: 8),
                         _HudCircle(
                           icon: Icons.search_rounded,
-                          onTap: () => _pickCity(context),
+                          onTap: () => setState(() {
+                            _citiesOpen = !_citiesOpen;
+                            _menuOpen = false;
+                            _radiusOpen = false;
+                          }),
                         ),
                         const SizedBox(height: 8),
                         _HudCircle(
                           icon: Icons.navigation_rounded,
-                          onTap: () {
-                            HapticFeedback.mediumImpact();
-                            _mapController.move(
-                              center,
-                              _zoomForRadius(radiusKm),
-                            );
-                          },
+                          onTap: () => _locateGps(),
                           accent: true,
                         ),
                         const SizedBox(height: 8),
@@ -441,6 +469,116 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
             ),
           ),
 
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 56,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xF2161B27),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final layer in const [
+                      ('all', 'All'),
+                      ('listings', 'Listings'),
+                      ('people', 'People'),
+                    ])
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _layer = layer.$1;
+                            _selected = null;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _layer == layer.$1
+                                ? Colors.white
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            layer.$2,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: _layer == layer.$1
+                                  ? Colors.black
+                                  : Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          if (_citiesOpen)
+            Positioned(
+              left: 12,
+              right: 12,
+              top: MediaQuery.paddingOf(context).top + 104,
+              bottom: MediaQuery.paddingOf(context).bottom + 120,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xF212161F),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  children: [
+                    Text(
+                      'PASSPORT CITIES',
+                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final city in PassportCities.all)
+                      ListTile(
+                        dense: true,
+                        title: Text(
+                          city.name,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          city.country,
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                        onTap: () {
+                          ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                                city: city.name,
+                                country: city.country,
+                                latitude: city.lat,
+                                longitude: city.lng,
+                              );
+                          _mapController.move(
+                            LatLng(city.lat, city.lng),
+                            _zoomForRadius(radiusKm),
+                          );
+                          setState(() {
+                            _citiesOpen = false;
+                            _selected = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
           if (_selected != null)
             Positioned(
               left: 16,
@@ -473,43 +611,45 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     );
   }
 
-  Future<void> _pickCity(BuildContext context) async {
-    final cities = [
-      'Tulum',
-      'Cancún',
-      'Playa del Carmen',
-      'Mérida',
-      'Mexico City',
-    ];
-    final city = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-          children: [
-            Text('CHOOSE CITY',
-                style: AppTheme.displayItalic.copyWith(fontSize: 18)),
-            const SizedBox(height: 12),
-            for (final city in cities)
-              ListTile(
-                title: Text(city, style: const TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context, city),
-              ),
-          ],
+  Future<void> _locateGps() async {
+    HapticFeedback.mediumImpact();
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        final loc = ref.read(discoveryLocationProvider);
+        _mapController.move(
+          LatLng(loc.latitude, loc.longitude),
+          _zoomForRadius(loc.radiusKm),
         );
-      },
-    );
-    if (city != null) {
-      ref.read(discoveryLocationProvider.notifier).setCity(city);
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      ref.read(discoveryLocationProvider.notifier).setCoordinates(
+            city: 'Near you',
+            country: '',
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+          );
+      _mapController.move(
+        LatLng(pos.latitude, pos.longitude),
+        _zoomForRadius(ref.read(discoveryLocationProvider).radiusKm),
+      );
+      ref.invalidate(mapListingsProvider);
+      ref.invalidate(mapProfilesProvider);
+    } catch (_) {
       final loc = ref.read(discoveryLocationProvider);
       _mapController.move(
         LatLng(loc.latitude, loc.longitude),
         _zoomForRadius(loc.radiusKm),
       );
-      setState(() => _selected = null);
     }
   }
 }

@@ -30,7 +30,7 @@ Future<T?> showGlassModal<T>({
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),

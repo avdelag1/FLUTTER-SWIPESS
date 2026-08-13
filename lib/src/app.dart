@@ -5,6 +5,8 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/overlay_modals_host.dart';
+import 'package:flutter_swipes/src/features/native/biometric_gate.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 
 class NativeSwipeApp extends ConsumerWidget {
@@ -30,6 +32,13 @@ class NativeSwipeApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        return BiometricGate(
+          child: OverlayModalsHost(
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,28 +1,48 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Mirrors the web app's access grant logic exactly.
-/// Grant is stored locally and valid for 30 days.
+/// Cap `isAccessGranted` — native skips the gate; web grant lasts 30 days.
 class AccessGrantService {
-  static const _key = 'swipess_access_grant';
-  static const _ttlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+  static const _key = 'swipess_access_grant_v1';
+  static const _legacyKey = 'swipess_access_grant';
+  static const _ttlMs = 30 * 24 * 60 * 60 * 1000;
 
-  /// Persist a successful access grant to local storage.
+  /// Capacitor native apps never show the access-code gate.
+  static bool get skipOnNative => !kIsWeb;
+
   static Future<void> persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, '${DateTime.now().millisecondsSinceEpoch}');
+    await prefs.setString(
+      _key,
+      jsonEncode({
+        'grantedAt': DateTime.now().millisecondsSinceEpoch,
+        'v': 1,
+      }),
+    );
   }
 
-  /// Returns true if the user has previously entered a valid code within 30 days.
   static Future<bool> isGranted() async {
+    if (skipOnNative) return true;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
+      final raw = prefs.getString(_key) ?? prefs.getString(_legacyKey);
       if (raw == null) return false;
-      final grantedAt = int.tryParse(raw);
+      int? grantedAt;
+      try {
+        final parsed = jsonDecode(raw);
+        if (parsed is Map) {
+          grantedAt = (parsed['grantedAt'] as num?)?.toInt();
+        }
+      } catch (_) {
+        grantedAt = int.tryParse(raw);
+      }
       if (grantedAt == null) return false;
       final elapsed = DateTime.now().millisecondsSinceEpoch - grantedAt;
       if (elapsed > _ttlMs) {
         await prefs.remove(_key);
+        await prefs.remove(_legacyKey);
         return false;
       }
       return true;
@@ -31,9 +51,9 @@ class AccessGrantService {
     }
   }
 
-  /// Clear the access grant (e.g. on logout or expiry).
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
+    await prefs.remove(_legacyKey);
   }
 }

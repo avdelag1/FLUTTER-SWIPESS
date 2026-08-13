@@ -367,11 +367,13 @@ class _VaultCard extends StatelessWidget {
                   onTap: () {
                     HapticFeedback.lightImpact();
                     final body = contract.content?.trim();
-                    Share.share(
-                      (body == null || body.isEmpty)
-                          ? contract.title
-                          : '${contract.title}\n\n$body',
-                      subject: contract.title,
+                    SharePlus.instance.share(
+                      ShareParams(
+                        text: (body == null || body.isEmpty)
+                            ? contract.title
+                            : '${contract.title}\n\n$body',
+                        subject: contract.title,
+                      ),
                     );
                   },
                 ),

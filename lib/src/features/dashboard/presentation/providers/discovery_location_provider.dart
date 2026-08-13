@@ -77,6 +77,20 @@ class DiscoveryLocationNotifier extends Notifier<DiscoveryLocation> {
   void setRadiusKm(int km) {
     state = state.copyWith(radiusKm: km.clamp(1, 500));
   }
+
+  void setCoordinates({
+    required String city,
+    required String country,
+    required double latitude,
+    required double longitude,
+  }) {
+    state = state.copyWith(
+      city: city,
+      country: country,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
 }
 
 final discoveryLocationProvider =

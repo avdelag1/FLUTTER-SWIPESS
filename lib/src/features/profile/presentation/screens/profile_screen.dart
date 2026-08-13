@@ -27,6 +27,7 @@ import 'package:flutter_swipes/src/features/messages/presentation/providers/mess
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/verification_request_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_dialog.dart';
@@ -361,6 +362,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           context: context,
                           builder: (_) => const TokensModal(),
                         ),
+                      ),
+                      _ActionTile(
+                        label: 'Verify Owner',
+                        icon: Icons.verified_rounded,
+                        colors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                        onTap: () => showVerificationRequestSheet(context),
                       ),
                       _ActionTile(
                         label: 'Settings',

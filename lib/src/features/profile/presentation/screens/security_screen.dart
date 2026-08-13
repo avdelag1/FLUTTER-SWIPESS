@@ -33,6 +33,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   bool _busy = false;
   bool _sounds = true;
   bool _haptics = true;
+  bool _biometric = false;
   String _lang = 'en';
 
   @override
@@ -48,6 +49,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     setState(() {
       _sounds = prefs.getBool('swipe_sounds') ?? true;
       _haptics = prefs.getBool('haptics') ?? true;
+      _biometric = prefs.getBool('swipess_biometric_enabled') ?? false;
       _lang = ref.read(appLocaleProvider).code;
     });
   }
@@ -298,6 +300,17 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 setState(() => _haptics = v);
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('haptics', v);
+                if (v) HapticFeedback.selectionClick();
+              },
+            ),
+            Divider(height: 1, color: Colors.transparent),
+            _PrefSwitch(
+              label: 'Face ID / biometrics',
+              value: _biometric,
+              onChanged: (v) async {
+                setState(() => _biometric = v);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('swipess_biometric_enabled', v);
                 if (v) HapticFeedback.selectionClick();
               },
             ),

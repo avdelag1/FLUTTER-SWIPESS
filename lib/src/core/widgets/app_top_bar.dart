@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
-import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 
 /// Cap `TopBar` — neo-naïve glass pills + colored icon washes.
@@ -147,7 +145,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 hardShadow: hardShadow,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.push(AppPaths.map);
+                  ref.read(overlayModalsProvider.notifier).openPassportMap();
                 },
                 child: _WashIcon(
                   wash: const Color(0xFF4DABF7),

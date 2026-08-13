@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
@@ -10,7 +11,6 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/create_list
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_request_sheet.dart';
@@ -67,10 +67,15 @@ class DashboardShell extends ConsumerWidget {
       _BottomNavItem(id: NavTab.events, icon: Icons.celebration_rounded),
     ];
 
-    final hideChrome = currentTab == NavTab.idCard;
     final isLight = ref.watch(isLightThemeProvider);
     final chromeVisible = ref.watch(chromeVisibilityProvider);
     final showChrome = chromeVisible;
+    final overlays = ref.watch(overlayModalsProvider);
+    final dockSelected = overlays.showVapId
+        ? NavTab.idCard
+        : overlays.showConcierge
+            ? NavTab.ai
+            : currentTab;
     final canvas = AppTheme.canvasFor(isLight: isLight);
     // Cap `getBottomNavChrome` — neo-naïve glass + hard ink ring.
     final dockFill = isLight
@@ -85,9 +90,7 @@ class DashboardShell extends ConsumerWidget {
       backgroundColor: canvas,
       extendBodyBehindAppBar: true,
       extendBody: true,
-      appBar: hideChrome
-          ? null
-          : PreferredSize(
+      appBar: PreferredSize(
               preferredSize: const AppTopBar().preferredSize,
               child: AnimatedOpacity(
                 opacity: showChrome ? 1 : 0,
@@ -171,7 +174,7 @@ class DashboardShell extends ConsumerWidget {
                             _DockButton(
                               item: bottomNavItems[i],
                               wash: _washes[i % _washes.length],
-                              selected: currentTab == bottomNavItems[i].id,
+                              selected: dockSelected == bottomNavItems[i].id,
                               isLight: isLight,
                               onTap: () {
                                 HapticFeedback.lightImpact();
@@ -185,7 +188,15 @@ class DashboardShell extends ConsumerWidget {
                                   return;
                                 }
                                 if (id == NavTab.ai) {
-                                  showIntelCoreSheet(context);
+                                  ref
+                                      .read(overlayModalsProvider.notifier)
+                                      .openConcierge();
+                                  return;
+                                }
+                                if (id == NavTab.idCard) {
+                                  ref
+                                      .read(overlayModalsProvider.notifier)
+                                      .openVapId();
                                   return;
                                 }
                                 // Cap SEEKERS dock opens SeekerRequestDialog.

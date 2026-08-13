@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/admin/data/admin_repository.dart';
 import 'package:flutter_swipes/src/features/admin/domain/admin_models.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/providers/admin_provider.dart';

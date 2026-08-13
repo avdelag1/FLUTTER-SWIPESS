@@ -74,6 +74,10 @@
 		<string>Swipess may save signed contracts and listing photos to your library.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Swipess uses the microphone when you record listing or event videos.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Swipess uses your location to show nearby listings and match you with local services.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>Swipess uses Face ID for secure authentication.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

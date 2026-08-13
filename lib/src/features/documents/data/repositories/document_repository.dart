@@ -62,8 +62,27 @@ class DocumentRepository {
       'mime_type': mimeType,
       'file_size': bytes.length,
       'document_type': documentType,
-      'status': 'uploaded',
+      'status': 'pending',
     });
+  }
+
+  /// Cap `VerificationRequestFlow` owner stamp.
+  Future<void> submitOwnerVerification({
+    required String documentType,
+    required String filePath,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not signed in');
+    await _client.from('owner_profiles').update({
+      'verification_submitted_at': DateTime.now().toUtc().toIso8601String(),
+      'verification_documents': [
+        {
+          'type': documentType,
+          'file_path': filePath,
+          'submitted_at': DateTime.now().toUtc().toIso8601String(),
+        }
+      ],
+    }).eq('user_id', userId);
   }
 
   Future<void> delete(LegalDocument doc) async {

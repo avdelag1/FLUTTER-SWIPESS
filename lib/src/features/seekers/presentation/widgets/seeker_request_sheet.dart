@@ -102,7 +102,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                  icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
                 ),
               ],
             ),
@@ -224,7 +224,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           Text(
             'SUBCATEGORY',
             style: GoogleFonts.plusJakartaSans(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
               fontWeight: FontWeight.w800,
               fontSize: 11,
               letterSpacing: 1.2,
@@ -290,7 +290,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'DAYS',
           style: GoogleFonts.plusJakartaSans(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -319,7 +319,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'PRICING',
           style: GoogleFonts.plusJakartaSans(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -342,7 +342,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'URGENCY',
           style: GoogleFonts.plusJakartaSans(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,

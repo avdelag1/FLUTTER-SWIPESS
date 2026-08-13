@@ -271,7 +271,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             'description': _description.text.trim(),
             'promo_type': _type,
             'status': 'pending',
-            if (imageUrl != null) 'image_url': imageUrl,
+            'image_url': ?imageUrl,
           });
         }
       }

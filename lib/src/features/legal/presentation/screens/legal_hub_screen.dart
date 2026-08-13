@@ -1,11 +1,9 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
@@ -23,7 +21,6 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
   String? _expandedCategory;
   Map<String, String>? _selectedIssue;
   final _descriptionController = TextEditingController();
-  bool _isSubmitting = false;
 
   static const _clientCategories = [
     {
