@@ -104,6 +104,9 @@ class BentoDashboardScreen extends ConsumerWidget {
                     height: item.height,
                     media: BentoMediaPools.forId(item.id),
                     stagger: Duration(milliseconds: 400 * index),
+                    // Only the first couple tiles decode video — web chokes
+                    // when every bento cell spins up an HTML5 player.
+                    enableVideo: index < 2,
                     onTap: () => _openBento(context, ref, item.id, item.title),
                   );
                 },
@@ -385,6 +388,7 @@ class _BentoCard extends StatelessWidget {
     required this.media,
     required this.stagger,
     required this.onTap,
+    this.enableVideo = true,
   });
 
   final String title;
@@ -393,6 +397,7 @@ class _BentoCard extends StatelessWidget {
   final List<String> media;
   final Duration stagger;
   final VoidCallback onTap;
+  final bool enableVideo;
 
   @override
   Widget build(BuildContext context) {
@@ -412,6 +417,7 @@ class _BentoCard extends StatelessWidget {
             QuickFilterMedia(
               sources: media,
               animationDelay: stagger,
+              enableVideo: enableVideo,
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
