@@ -42,6 +42,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/about_s
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/contact_support_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_filters_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
@@ -201,11 +202,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.faqClient,
-        builder: (ctx, _) => const FAQScreen(),
+        builder: (ctx, _) => const FAQScreen(audience: 'client'),
       ),
       GoRoute(
         path: AppPaths.faqOwner,
-        builder: (ctx, _) => const FAQScreen(),
+        builder: (ctx, _) => const FAQScreen(audience: 'owner'),
       ),
       GoRoute(
         path: AppPaths.legal,
@@ -357,7 +358,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.ownerFilters,
-        redirect: (ctx, state) => AppPaths.clientFilters,
+        builder: (ctx, _) => const OwnerFiltersScreen(),
       ),
       GoRoute(
         path: AppPaths.clientMaintenance,

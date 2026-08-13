@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
@@ -14,11 +17,37 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawe
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Cap ConciergeChat overlay — genie panel from the dock.
+class ConciergeOverlay extends StatelessWidget {
+  const ConciergeOverlay({
+    super.key,
+    this.initialQuery = '',
+    required this.onClose,
+  });
+
+  final String initialQuery;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return GeniePanel(
+      onDismissed: onClose,
+      builder: (context, dismiss) {
+        return _IntelCoreSheet(
+          initialQuery: initialQuery,
+          onClose: dismiss,
+        );
+      },
+    );
+  }
+}
 
 /// Capacitor Intel Core — chats via Supabase `ai-concierge` edge function.
-/// Pass [initialQuery] when the dashboard AI bar already has text (Cap openAIChat(q)).
 Future<void> showIntelCoreSheet(
   BuildContext context, {
   String initialQuery = '',
@@ -32,6 +61,7 @@ Future<void> showIntelCoreSheet(
     transitionDuration: const Duration(milliseconds: 350),
     pageBuilder: (context, animation, secondaryAnimation) {
       return Scaffold(
+        backgroundColor: Colors.transparent,
         body: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Align(
@@ -63,9 +93,10 @@ class _ChatBubble {
 }
 
 class _IntelCoreSheet extends ConsumerStatefulWidget {
-  const _IntelCoreSheet({this.initialQuery = ''});
+  const _IntelCoreSheet({this.initialQuery = '', this.onClose});
 
   final String initialQuery;
+  final VoidCallback? onClose;
 
   @override
   ConsumerState<_IntelCoreSheet> createState() => _IntelCoreSheetState();
@@ -80,6 +111,19 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   bool _bootstrapped = false;
   bool _recording = false;
   bool _transcribing = false;
+  bool _privacyAccepted = false;
+  String _character = 'default';
+  final _tts = FlutterTts();
+
+  static const _personas = <(String, String)>[
+    ('default', 'Swipess AI'),
+    ('kyle', 'Kyle'),
+    ('beaugosse', 'Beau Gosse'),
+    ('donajkiin', "Don Aj K'iin"),
+    ('botbetter', 'Bot Better'),
+    ('lunashanti', 'Luna Shanti'),
+    ('ezriyah', 'Ezriyah'),
+  ];
 
   static const _starters = [
     'Find people looking to buy houses',
@@ -91,7 +135,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   @override
   void initState() {
     super.initState();
+    _loadPrivacy();
     final seed = widget.initialQuery.trim();
+    if (seed.isNotEmpty) _privacyAccepted = true;
     if (seed.isNotEmpty) {
       _controller.text = seed;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -106,7 +152,61 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   void dispose() {
     _controller.dispose();
     _scroll.dispose();
+    _tts.stop();
     super.dispose();
+  }
+
+  Future<void> _loadPrivacy() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ok = prefs.getString('Swipess_ai_privacy') == 'true' ||
+        widget.initialQuery.trim().isNotEmpty;
+    if (mounted) setState(() => _privacyAccepted = ok);
+  }
+
+  Future<void> _acceptPrivacy() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('Swipess_ai_privacy', 'true');
+    setState(() => _privacyAccepted = true);
+  }
+
+  Future<void> _speak(String text) async {
+    try {
+      await _tts.setLanguage(
+        ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US',
+      );
+      await _tts.setSpeechRate(0.48);
+      await _tts.speak(text.replaceAll(RegExp(r'\[[^\]]+\]'), ''));
+    } catch (_) {}
+  }
+
+  Future<void> _persistHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('Swipess-ai-conversations');
+      final list = <Map<String, dynamic>>[];
+      if (raw != null) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          for (final row in decoded) {
+            if (row is Map) {
+              list.add(Map<String, dynamic>.from(row));
+            }
+          }
+        }
+      }
+      list.insert(0, {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'title': _messages.firstOrNull?.content ?? 'Chat',
+        'messages': [
+          for (final m in _messages.take(50))
+            {'role': m.role, 'content': m.content},
+        ],
+      });
+      await prefs.setString(
+        'Swipess-ai-conversations',
+        jsonEncode(list.take(20).toList()),
+      );
+    } catch (_) {}
   }
 
   void _scrollToEnd() {
@@ -184,6 +284,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       });
       await for (final delta in ref.read(aiEdgeRepositoryProvider).chatConciergeTokens(
             messages: history,
+            character: _character == 'default' ? null : _character,
             locationContext: {
               'passportMode': false,
               'passportLabel': loc.label,
@@ -203,6 +304,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       if (reply.trim().isEmpty) {
         reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
               messages: history,
+              character: _character == 'default' ? null : _character,
               locationContext: {
                 'passportMode': false,
                 'passportLabel': loc.label,
@@ -248,6 +350,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       _loading = false;
     });
     _scrollToEnd();
+    _persistHistory();
+  }
+
+  void _dismiss() {
+    if (widget.onClose != null) {
+      widget.onClose!();
+    } else if (Navigator.of(context).canPop()) {
+      _dismiss();
+    }
   }
 
   /// Cap-style curated routing — follow-up chips after Intel Core replies.
@@ -255,8 +366,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     // Map / location / city
     if (RegExp(r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b')
         .hasMatch(q)) {
-      Navigator.pop(context);
-      context.push(AppPaths.map);
+      _dismiss();
+      ref.read(overlayModalsProvider.notifier).openPassportMap();
       return;
     }
 
@@ -264,7 +375,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     if (RegExp(
           r'\b(people|person|user|users|profile|profiles|roommate|roommates|seeker|seekers|who.?s looking|looking for)\b',
         ).hasMatch(q)) {
-      Navigator.pop(context);
+      _dismiss();
       context.go(AppPaths.exploreSeekers);
       return;
     }
@@ -272,14 +383,14 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     // Workers / services / maintenance
     if (RegExp(r'\b(worker|workers|hire|service|services|maintenance|plumber|cleaner)\b')
         .hasMatch(q)) {
-      Navigator.pop(context);
+      _dismiss();
       context.push(AppPaths.clientServices);
       return;
     }
 
     // Events
     if (RegExp(r'\b(event|events|party|nightlife|concert)\b').hasMatch(q)) {
-      Navigator.pop(context);
+      _dismiss();
       context.go(AppPaths.exploreEvents);
       return;
     }
@@ -303,7 +414,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         category = 'worker';
         title = 'WORKERS';
       }
-      Navigator.pop(context);
+      _dismiss();
       openClientSwipeDeck(
         context,
         categoryId: category,
@@ -313,7 +424,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
 
     if (q.contains('filter') || q.contains('filters')) {
-      Navigator.pop(context);
+      _dismiss();
       context.go(AppPaths.clientFilters);
     }
   }
@@ -344,8 +455,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               ref
                   .read(discoveryLocationProvider.notifier)
                   .setCity(parsed.passportCity!.trim());
-              Navigator.pop(context);
-              context.push(AppPaths.map);
+              _dismiss();
+              ref.read(overlayModalsProvider.notifier).openPassportMap();
             },
           ),
       ];
@@ -380,7 +491,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   void _openPath(String path) {
-    Navigator.pop(context);
+    _dismiss();
     if (path.contains('liked')) {
       context.go(AppPaths.clientLikedProperties);
       return;
@@ -398,7 +509,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
     if (path.contains('map')) {
-      context.push(AppPaths.map);
+      ref.read(overlayModalsProvider.notifier).openPassportMap();
       return;
     }
     if (path.contains('subscription')) {
@@ -481,33 +592,66 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       onTap: () => setState(() => _showHistory = !_showHistory),
                     ),
                     const Spacer(),
-                    Column(
-                      children: [
-                        Text(
-                          'INTEL CORE',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: AppTheme.brandPrimary,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
-                            letterSpacing: 1,
+                    PopupMenuButton<String>(
+                      tooltip: 'Choose persona',
+                      initialValue: _character,
+                      color: const Color(0xFF14141A),
+                      onSelected: (value) =>
+                          setState(() => _character = value),
+                      itemBuilder: (context) => [
+                        for (final persona in _personas)
+                          PopupMenuItem(
+                            value: persona.$1,
+                            child: Text(
+                              persona.$2,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: persona.$1 == _character
+                                    ? FontWeight.w900
+                                    : FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ),
-                        Text(
-                          edgeReady ? 'ONLINE · EDGE AI' : 'OFFLINE',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white38,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
                       ],
+                      child: Column(
+                        children: [
+                          Text(
+                            'INTEL CORE',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: AppTheme.brandPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          Text(
+                            '$_personaLabel · ${edgeReady ? 'ONLINE' : 'OFFLINE'}',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white38,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const Spacer(),
+                    _RoundIcon(
+                      icon: Icons.record_voice_over_rounded,
+                      color: const Color(0xFFA78BFA),
+                      onTap: () {
+                        final last = _messages.reversed
+                            .where((m) => m.role == 'assistant')
+                            .map((m) => m.content)
+                            .firstOrNull;
+                        if (last != null) _speak(last);
+                      },
+                    ),
+                    const SizedBox(width: 8),
                     _RoundIcon(
                       icon: Icons.psychology_rounded,
                       color: const Color(0xFF22D3EE),
                       onTap: () {
-                        Navigator.pop(context);
                         showMemoryDrawer(context);
                       },
                     ),
@@ -520,13 +664,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     const SizedBox(width: 8),
                     _RoundIcon(
                       icon: Icons.close_rounded,
-                      onTap: () => Navigator.pop(context),
+                      onTap: _dismiss,
                     ),
                   ],
                 ),
               ),
               Expanded(
-                child: ListView(
+                child: !_privacyAccepted
+                    ? _privacyPortal()
+                    : ListView(
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   children: [
@@ -786,6 +932,61 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  String get _personaLabel {
+    for (final persona in _personas) {
+      if (persona.$1 == _character) return persona.$2.toUpperCase();
+    }
+    return 'SWIPESS AI';
+  }
+
+  Widget _privacyPortal() {
+    return Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.shield_outlined, color: Colors.white, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            'INTEL CORE PRIVACY',
+            style: AppTheme.displayItalic.copyWith(fontSize: 22),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Chats run through Swipess AI edge functions. Do not share passwords or payment numbers. You can delete history anytime.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white70,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _acceptPrivacy,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.brandPrimary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(
+                'I UNDERSTAND — CONTINUE',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FAQScreen extends StatelessWidget {
-  const FAQScreen({super.key});
+  const FAQScreen({super.key, this.audience = 'client'});
+
+  /// Cap `/faq/client` vs `/faq/owner`.
+  final String audience;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class FAQScreen extends StatelessWidget {
                   stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
                   titlePadding: const EdgeInsets.only(left: 24, bottom: 20),
                   title: Text(
-                    'FAQ & HELP',
+                    audience == 'owner' ? 'OWNER SUPPORT' : 'PROTOCOL SUPPORT',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontSize: 32,
@@ -53,59 +55,16 @@ class FAQScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    _buildSectionHeader('ACCOUNT & BILLING'),
-                    _buildFAQItem(
-                      'What is a Visionary Pro account?',
-                      'Visionary Pro is our premium subscription tailored for property owners. It grants you verified badges, advanced analytics, prioritized listings, and VIP support.',
-                    ),
-                    _buildFAQItem(
-                      'How do payments and escrow work?',
-                      'Swipess securely holds funds in escrow until the transaction or lease is fully verified. This ensures protection for both owners and renters against fraud.',
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    _buildSectionHeader('PROPERTIES & RENTING'),
-                    _buildFAQItem(
-                      'How do I list my property?',
-                      'Switch to Owner Mode in your Profile tab, then tap the "Add Listing" button. You can upload photos, set pricing, and publish your property instantly.',
-                    ),
-                    _buildFAQItem(
-                      'How do I report a fraudulent listing?',
-                      'Navigate to the listing in question, tap the options menu (three dots) in the top right, and select "Report". Our moderation team will investigate within 24 hours.',
-                    ),
-                    const SizedBox(height: 24),
-
-                    _buildSectionHeader('EVENTS & NETWORKING'),
-                    _buildFAQItem(
-                      'Can I advertise my business or event?',
-                      'Yes! Navigate to the Advertise section to purchase Starter, Growth, or Wave packages. These packages include push notifications and featured placements in the feed.',
-                    ),
+                    for (final item in audience == 'owner'
+                        ? _ownerFaqs
+                        : _clientFaqs) ...[
+                      _buildFAQItem(item.$1, item.$2),
+                    ],
                   ]),
                 ),
               ),
             ],
           ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16, top: 8),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              color: AppTheme.brandPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2.0,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(child: Divider(color: Colors.transparent)),
-        ],
-      ),
     );
   }
 
@@ -147,3 +106,85 @@ class FAQScreen extends StatelessWidget {
     );
   }
 }
+
+const _clientFaqs = <(String, String)>[
+  (
+    'How do I find properties to rent?',
+    'Simply browse through property listings by swiping. Swipe right to like a property you\'re interested in, or swipe left to pass. When you match with a property owner, you can start chatting to arrange viewings and discuss details.'
+  ),
+  (
+    'What happens when I like a property?',
+    'When you like a property by swiping right, the property owner is notified. If they\'re interested in you as a potential tenant, they can like your profile back, creating a match.'
+  ),
+  (
+    'How do I message property owners?',
+    'You can message property owners once you have a match. Messaging may require message credits depending on your subscription plan.'
+  ),
+  (
+    'What are message credits?',
+    'Message credits are required to initiate conversations. You receive credits based on your subscription plan.'
+  ),
+  (
+    'How do I upgrade my subscription?',
+    'Go to Settings > Premium Packages to view available subscription plans.'
+  ),
+  (
+    'What is a Super Like?',
+    'A Super Like shows extra interest. Property owners see Super Likes highlighted. Super Likes are available with premium subscriptions.'
+  ),
+  (
+    'How do I view properties I\'ve liked?',
+    'Go to your Liked Properties section from the dock.'
+  ),
+  (
+    'Can I filter property searches?',
+    'Yes. Use filters for location, price, property type, bedrooms, pet policy, and more.'
+  ),
+  (
+    'How do contracts work?',
+    'Once you agree on terms, you can create and sign contracts in the app under Contracts.'
+  ),
+  (
+    'How do I delete my account?',
+    'Go to Settings > Security and use the Danger Zone. This action is permanent.'
+  ),
+  (
+    'Is my information secure?',
+    'We use industry-standard encryption. Read our Privacy Policy for details.'
+  ),
+];
+
+const _ownerFaqs = <(String, String)>[
+  (
+    'How do I list a property?',
+    'Tap ADD on the dock, choose a category, then complete photos, pricing, and publish.'
+  ),
+  (
+    'How do I find tenants or buyers?',
+    'Use Owner Filters to target buyers, renters, or people hiring services. Likes and interested clients appear in your inbox.'
+  ),
+  (
+    'Why is my listing not visible?',
+    'Listings need photos, a city, and an active status. Verify identity for a Verified badge.'
+  ),
+  (
+    'How do listing limits work?',
+    'Free plans have listing caps. Premium packages raise limits and boost visibility.'
+  ),
+  (
+    'How do I verify my identity as an owner?',
+    'From Profile, submit Escritura, Fideicomiso, or a rental license. Status becomes pending until reviewed.'
+  ),
+  (
+    'Where do I see analytics?',
+    'Admin and owner dashboards show views, likes, and performance for published listings.'
+  ),
+  (
+    'How do contracts work for owners?',
+    'Send a lease or purchase draft from Messages documents or Legal Services. Both parties sign in-app.'
+  ),
+  (
+    'How do I delete my account?',
+    'Settings > Security > Danger Zone. Deleting an owner account also removes published listings.'
+  ),
+];

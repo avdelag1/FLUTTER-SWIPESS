@@ -1,13 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
 final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
+  final loc = ref.watch(discoveryLocationProvider);
   final client = Supabase.instance.client;
 
+  try {
+    final data = await client.rpc(
+      'get_passport_map_listings',
+      params: {
+        'p_user_lat': loc.latitude,
+        'p_user_lon': loc.longitude,
+        'p_radius_km': loc.radiusKm,
+        'p_limit': 120,
+      },
+    );
+    return (data as List)
+        .map((row) => Listing.fromJson(row as Map<String, dynamic>))
+        .where((l) => l.latitude != null && l.longitude != null)
+        .toList();
+  } catch (_) {
+    return _fallbackListings(client);
+  }
+});
+
+Future<List<Listing>> _fallbackListings(SupabaseClient client) async {
   Future<List<Listing>> fetch({required bool withStatus}) async {
     var query = client.from('listings').select(
-          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active',
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
         );
     query = query.eq('is_active', true);
     if (withStatus) {
@@ -32,4 +54,4 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
       return const [];
     }
   }
-});
+}

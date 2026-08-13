@@ -61,15 +61,32 @@ class MessageRepository {
   }
 
   Future<List<ChatMessage>> fetchMessages(String conversationId) async {
-    final rows = await _client
-        .from('conversation_messages')
-        .select(
-          'id, conversation_id, sender_id, content, message_text, created_at, is_read',
-        )
-        .eq('conversation_id', conversationId)
-        .order('created_at', ascending: true)
-        .limit(80);
+    try {
+      return _mapMessages(
+        await _client
+            .from('conversation_messages')
+            .select(
+              'id, conversation_id, sender_id, content, message_text, created_at, is_read, message_type, attachments',
+            )
+            .eq('conversation_id', conversationId)
+            .order('created_at', ascending: true)
+            .limit(80),
+      );
+    } catch (_) {
+      return _mapMessages(
+        await _client
+            .from('conversation_messages')
+            .select(
+              'id, conversation_id, sender_id, content, message_text, created_at, is_read, message_type',
+            )
+            .eq('conversation_id', conversationId)
+            .order('created_at', ascending: true)
+            .limit(80),
+      );
+    }
+  }
 
+  List<ChatMessage> _mapMessages(dynamic rows) {
     return (rows as List).map((row) {
       final map = row as Map<String, dynamic>;
       return ChatMessage(
@@ -82,8 +99,21 @@ class MessageRepository {
         createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
             DateTime.now(),
         isRead: map['is_read'] as bool? ?? false,
+        messageType: map['message_type'] as String? ?? 'text',
+        attachments: _attachments(map['attachments']),
       );
     }).toList();
+  }
+
+  List<DocumentAttachment> _attachments(dynamic raw) {
+    if (raw is List) {
+      return [
+        for (final row in raw)
+          if (row is Map)
+            DocumentAttachment.fromJson(Map<String, dynamic>.from(row)),
+      ];
+    }
+    return const [];
   }
 
   Future<void> sendMessage({

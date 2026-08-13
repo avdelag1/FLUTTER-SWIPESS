@@ -42,6 +42,36 @@ class VapIdCard {
     return '${yearsInCity}y';
   }
 
+  VapIdCard copyWith({
+    String? name,
+    int? age,
+    String? country,
+    String? bio,
+    String? occupation,
+    String? city,
+    String? nationality,
+    int? yearsInCity,
+    List<String>? languages,
+    List<String>? interests,
+    String? avatarUrl,
+  }) {
+    return VapIdCard(
+      userId: userId,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      country: country ?? this.country,
+      bio: bio ?? this.bio,
+      occupation: occupation ?? this.occupation,
+      city: city ?? this.city,
+      nationality: nationality ?? this.nationality,
+      yearsInCity: yearsInCity ?? this.yearsInCity,
+      languages: languages ?? this.languages,
+      interests: interests ?? this.interests,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      createdAt: createdAt,
+    );
+  }
+
   factory VapIdCard.fromJson(Map<String, dynamic> json, String userId) {
     return VapIdCard(
       userId: userId,

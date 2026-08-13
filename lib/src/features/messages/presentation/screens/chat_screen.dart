@@ -416,7 +416,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                         ]
                                       : null,
                                 ),
-                                child: Text(
+                                child: msg.isDocument
+                                    ? _DocumentBubble(msg: msg)
+                                    : Text(
                                   msg.text,
                                   style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white,
@@ -753,6 +755,58 @@ class _ThreadEmpty extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DocumentBubble extends StatelessWidget {
+  const _DocumentBubble({required this.msg});
+  final ChatMessage msg;
+
+  @override
+  Widget build(BuildContext context) {
+    final docs = msg.attachments.isEmpty
+        ? [
+            DocumentAttachment(
+              id: msg.id,
+              title: msg.text.isEmpty ? 'Document' : msg.text,
+            ),
+          ]
+        : msg.attachments;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final doc in docs)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.description_rounded,
+                    color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    doc.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Text(
+          docs.first.status.toUpperCase(),
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white70,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/auth/data/access_code_repository.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
@@ -26,6 +27,10 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
   
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _whatsappController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _requesting = false;
+  String? _requestError;
 
   Future<void> _handleSubmit() async {
     final code = _codeController.text.trim();
@@ -41,9 +46,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       _verifying = true;
     });
 
-    final normalized =
-        code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-    if (normalized == 'URDBEST') {
+    final ok = await ref.read(accessCodeRepositoryProvider).validate(code);
+    if (!mounted) return;
+    if (ok) {
       try {
         await ref.read(accessGrantedProvider.notifier).grant();
         try {
@@ -51,7 +56,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
         } catch (_) {}
         if (!mounted) return;
         context.go(AppPaths.welcome);
-      } catch (e) {
+      } catch (_) {
         if (!mounted) return;
         setState(() {
           _error = 'Could not save access. Try again.';
@@ -61,8 +66,6 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       return;
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
     try {
       HapticFeedback.heavyImpact();
     } catch (_) {}
@@ -72,10 +75,31 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     });
   }
 
-  void _handleRequest() {
-    if (_nameController.text.trim().isEmpty || _emailController.text.trim().isEmpty) return;
-    setState(() => _submitted = true);
-    HapticFeedback.lightImpact();
+  Future<void> _handleRequest() async {
+    if (_nameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty) {
+      return;
+    }
+    setState(() {
+      _requesting = true;
+      _requestError = null;
+    });
+    try {
+      await ref.read(accessCodeRepositoryProvider).requestAccess(
+            name: _nameController.text,
+            email: _emailController.text,
+            whatsapp: _whatsappController.text,
+            message: _messageController.text,
+          );
+      HapticFeedback.lightImpact();
+      if (mounted) setState(() => _submitted = true);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _requestError = 'Could not send request. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _requesting = false);
+    }
   }
 
   @override
@@ -83,6 +107,8 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     _codeController.dispose();
     _nameController.dispose();
     _emailController.dispose();
+    _whatsappController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -407,17 +433,29 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
             _buildInput(_nameController, 'Your full name *'),
             const SizedBox(height: 12),
             _buildInput(_emailController, 'Email address *', isEmail: true),
+            const SizedBox(height: 12),
+            _buildInput(_whatsappController, 'WhatsApp (optional)'),
+            const SizedBox(height: 12),
+            _buildInput(_messageController, 'Message (optional)'),
+            if (_requestError != null) ...[
+              const SizedBox(height: 10),
+              Text(_requestError!,
+                  style: const TextStyle(color: Color(0xFFF87171), fontSize: 12)),
+            ],
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: _handleRequest,
+                onPressed: _requesting ? null : _handleRequest,
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Submit Request', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                child: Text(
+                  _requesting ? 'Sending…' : 'Submit Request',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],

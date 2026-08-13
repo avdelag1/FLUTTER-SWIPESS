@@ -1,94 +1,237 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/widgets/legal_package_request_modal.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/widgets/legal_video_call_modal.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class LawyerServicesScreen extends StatefulWidget {
+/// Cap `LawyerServicesPage` — hero, live connect, packages, drafts.
+class LawyerServicesScreen extends ConsumerStatefulWidget {
   const LawyerServicesScreen({super.key});
 
   @override
-  State<LawyerServicesScreen> createState() => _LawyerServicesScreenState();
+  ConsumerState<LawyerServicesScreen> createState() =>
+      _LawyerServicesScreenState();
 }
 
-class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
+class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
   String _category = 'all';
 
-  static const _categories = [
-    ('all', 'All', Icons.balance_rounded),
-    ('rental', 'Rental', Icons.home_rounded),
-    ('house_sale', 'Sale', Icons.apartment_rounded),
-    ('eviction', 'Eviction', Icons.gavel_rounded),
-    ('nda', 'NDA', Icons.lock_rounded),
-    ('business', 'Business', Icons.work_rounded),
-    ('dispute', 'Disputes', Icons.scale_rounded),
-    ('estate', 'Estate', Icons.account_balance_rounded),
+  static const _order = [
+    'house_sale',
+    'rental',
+    'eviction',
+    'divorce',
+    'dispute',
+    'business',
+    'estate',
+    'nda',
   ];
 
-  static const _packages = [
-    _Pkg('Residential Lease Review', 'rental',
-        'Lease review with rent, deposit, term & house rules guidance.', 149, 5),
-    _Pkg('Property Purchase Counsel', 'house_sale',
-        'Buy/sell advisory — contingencies, earnest money, closing checklist.', 299, 10),
-    _Pkg('Pay-or-Quit Notice Draft', 'eviction',
-        'Formal notice template for overdue rent or vacate.', 99, 3),
-    _Pkg('Mutual NDA Pack', 'nda',
-        'Protect confidential information between two parties.', 79, 2),
-    _Pkg('Business Formation Starter', 'business',
-        'Entity structure overview & document checklist.', 249, 7),
-    _Pkg('Property Dispute Brief', 'dispute',
-        'Claims framing & evidence checklist for conflicts.', 199, 7),
-    _Pkg('Estate Basics Will Guide', 'estate',
-        'Wills, trusts & directives orientation.', 179, 5),
+  static const _meta = <String, (String, IconData)>{
+    'house_sale': ('Property Sale', Icons.apartment_rounded),
+    'rental': ('Rental Agreements', Icons.home_rounded),
+    'eviction': ('Eviction', Icons.gavel_rounded),
+    'divorce': ('Divorce & Family', Icons.heart_broken_rounded),
+    'nda': ('NDA & Confidentiality', Icons.lock_rounded),
+    'business': ('Business Formation', Icons.work_rounded),
+    'dispute': ('Property Disputes', Icons.balance_rounded),
+    'estate': ('Estate Planning', Icons.account_balance_rounded),
+  };
+
+  static const _contracts = [
+    (
+      'lease',
+      'Residential Lease Agreement',
+      'rental',
+      'Standard lease for renting a home, with rent, deposit, term and house rules.',
+    ),
+    (
+      'purchase',
+      'Property Purchase Agreement',
+      'house_sale',
+      'Buy or sell real estate — price, earnest money, contingencies and closing.',
+    ),
+    (
+      'eviction',
+      'Eviction Notice — Pay or Quit',
+      'eviction',
+      'Formal notice to a tenant to pay overdue rent or vacate the premises.',
+    ),
+    (
+      'nda',
+      'Non-Disclosure Agreement',
+      'nda',
+      'Protect confidential information shared between two parties.',
+    ),
+  ];
+
+  static const _fallback = [
+    LegalServicePackage(
+      id: 'seed-lease',
+      name: 'Residential Lease Review',
+      category: 'rental',
+      price: 149,
+      durationDays: 5,
+      description: 'Lease review with rent, deposit, term and house rules.',
+    ),
+    LegalServicePackage(
+      id: 'seed-sale',
+      name: 'Property Purchase Counsel',
+      category: 'house_sale',
+      price: 299,
+      durationDays: 10,
+      description: 'Buy/sell advisory — contingencies and closing checklist.',
+    ),
+    LegalServicePackage(
+      id: 'seed-nda',
+      name: 'Mutual NDA Pack',
+      category: 'nda',
+      price: 79,
+      durationDays: 2,
+      description: 'Protect confidential information between two parties.',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final async = ref.watch(legalServicePackagesProvider);
+    final packages = async.value ?? const <LegalServicePackage>[];
+    final live = packages.isEmpty ? _fallback : packages;
+    final present = live.map((p) => p.category).toSet();
+    final cats = [
+      ('all', 'All', Icons.balance_rounded),
+      for (final id in _order)
+        if (present.contains(id))
+          (id, _meta[id]?.$1 ?? id, _meta[id]?.$2 ?? Icons.scale_rounded),
+    ];
     final visible = _category == 'all'
-        ? _packages
-        : _packages.where((p) => p.category == _category).toList();
+        ? live
+        : live.where((p) => p.category == _category).toList();
     final top = MediaQuery.paddingOf(context).top;
+    final user = ref.watch(currentUserProvider);
 
     return NeoNaiveScaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(20, top + 12, 20, 48),
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 12, 20, 24),
-            child: Row(
-              children: [
-                CapBackButton(onTap: () => Navigator.pop(context)),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('SERVICE PACKAGES',
-                          style: AppTheme.displayItalic.copyWith(fontSize: 24, letterSpacing: -0.5)),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Lawyer packages & contract drafts',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+          Row(
+            children: [
+              const CapBackButton(),
+              const SizedBox(width: 12),
+              Text(
+                'BACK',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.4,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x4D6366F1),
+                      blurRadius: 18,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.balance_rounded, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0x1A6366F1),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0x336366F1)),
+                ),
+                child: Text(
+                  'LEGAL DESK',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFFA5B4FC),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 1.6,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 16),
+          Text(
+            'Request Legal Help.\nConfirm the Details.',
+            style: AppTheme.displayItalic.copyWith(fontSize: 34, height: 1.05),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _ConnectTile(
+                  icon: Icons.videocam_rounded,
+                  title: 'Video',
+                  subtitle: 'Live',
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    if (user == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Sign in to start a live video call with a lawyer.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    showLegalVideoCallModal(context);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ConnectTile(
+                  icon: Icons.chat_rounded,
+                  title: 'WhatsApp',
+                  subtitle: 'Soon',
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'WhatsApp lawyer chat is not available yet. Use Video call for a live consultation.',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           SizedBox(
             height: 38,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
-                for (final c in _categories)
+                for (final c in cats)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
@@ -98,29 +241,24 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: _category == c.$1 ? Colors.white : Colors.transparent,
+                          color: _category == c.$1
+                              ? Colors.white
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (c.$3 != null) ...[
-                              Icon(c.$3, size: 14, color: _category == c.$1 ? Colors.black : Colors.white),
-                              const SizedBox(width: 6),
-                            ],
-                            Text(
-                              c.$2,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: _category == c.$1 ? Colors.black : Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 11,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          c.$2,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _category == c.$1
+                                ? Colors.black
+                                : Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ),
@@ -128,136 +266,196 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-              itemCount: visible.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 16),
-              itemBuilder: (context, i) {
-                final pkg = visible[i];
-                return Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              pkg.name,
-                              style: AppTheme.displayItalic.copyWith(
-                                color: Colors.white,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'STARTING AT',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 8,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                              Text(
-                                '\$${pkg.price}',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 24,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white, width: 1),
-                        ),
-                        child: Text(
-                          'ESTIMATED: ~${pkg.days} DAYS',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        pkg.description,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Request logged for ${pkg.name}. A provider will confirm scope & quote.',
-                                ),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                          ),
-                          child: Text(
-                            'REQUEST SERVICE',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.5,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ),
+          const SizedBox(height: 20),
+          for (final pkg in visible) ...[
+            _PackageCard(
+              pkg: pkg,
+              onRequest: () => showLegalPackageRequestModal(context, pkg: pkg),
+            ),
+            const SizedBox(height: 16),
+          ],
+          const SizedBox(height: 12),
+          Text(
+            'REQUEST DRAFT',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final c in _contracts) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                c.$2,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              subtitle: Text(
+                c.$4,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white54),
+              onTap: () {
+                showLegalPackageRequestModal(
+                  context,
+                  pkg: LegalServicePackage(
+                    id: 'contract-${c.$1}',
+                    name: 'Contract: ${c.$2}',
+                    category: c.$3,
+                    price: 0,
+                    description: c.$4,
+                    features: const [
+                      'Guided information fields',
+                      'Provider availability confirmed separately',
                     ],
                   ),
                 );
               },
             ),
-          ),
+            const Divider(color: Colors.white12),
+          ],
         ],
       ),
     );
   }
 }
 
-class _Pkg {
-  const _Pkg(this.name, this.category, this.description, this.price, this.days);
-  final String name;
-  final String category;
-  final String description;
-  final int price;
-  final int days;
+class _ConnectTile extends StatelessWidget {
+  const _ConnectTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              subtitle,
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF34D399),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PackageCard extends StatelessWidget {
+  const _PackageCard({required this.pkg, required this.onRequest});
+  final LegalServicePackage pkg;
+  final VoidCallback onRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.white, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  pkg.name,
+                  style: AppTheme.displayItalic.copyWith(
+                    color: Colors.white,
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              Text(
+                '\$${pkg.price.toStringAsFixed(0)}',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                ),
+              ),
+            ],
+          ),
+          if (pkg.description != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              pkg.description!,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onRequest();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: Text(
+                'REQUEST SERVICE',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

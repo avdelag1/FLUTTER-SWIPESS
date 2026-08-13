@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Welcome screen shows Sign In and Create Account only',
+  testWidgets('Welcome screen shows Sign In, Create Account, and Enter App',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'swipess_legendary_onboarding_done': true,
@@ -21,6 +21,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('SIGN IN'), findsOneWidget);
     expect(find.text('CREATE ACCOUNT'), findsOneWidget);
-    expect(find.text('ENTER APP'), findsNothing);
+    expect(find.text('ENTER APP'), findsOneWidget);
   });
 }
