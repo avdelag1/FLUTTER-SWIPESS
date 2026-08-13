@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,11 +17,37 @@ Future<void> showIntelCoreSheet(
   BuildContext context, {
   String initialQuery = '',
 }) {
-  return showModalBottomSheet<void>(
+  return showGeneralDialog(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: const Color(0xF20A0A0C),
-    builder: (context) => _IntelCoreSheet(initialQuery: initialQuery),
+    barrierDismissible: true,
+    barrierLabel: 'Dismiss',
+    barrierColor: Colors.black.withAlpha(50),
+    useRootNavigator: true,
+    transitionDuration: const Duration(milliseconds: 350),
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: _IntelCoreSheet(initialQuery: initialQuery),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+      );
+    },
   );
 }
 
@@ -221,10 +248,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.sizeOf(context).height * 0.92;
     final edgeReady = ref.watch(aiEdgeReadyProvider);
-    return SizedBox(
-      height: height,
+    final topPadding = MediaQuery.paddingOf(context).top;
+    
+    return Container(
+      height: MediaQuery.sizeOf(context).height,
+      padding: EdgeInsets.only(top: topPadding),
+      decoration: BoxDecoration(
+        color: const Color(0xF20A0A0C).withAlpha(180),
+      ),
       child: Stack(
         children: [
           Column(

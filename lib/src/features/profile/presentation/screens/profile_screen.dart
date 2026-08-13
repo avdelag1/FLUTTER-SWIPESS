@@ -3,9 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
@@ -33,7 +34,6 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_p
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
@@ -105,7 +105,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               return ListView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20, top + 16, 20, 140),
+                padding: EdgeInsets.fromLTRB(20, top + 72, 20, 140),
                 children: [
                   // Identity core
                   Center(
@@ -236,8 +236,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           value: likes, // matches ≈ likes for now
                           label: 'MATCHES',
                           onTap: () {
-                            Navigator.of(context).pop();
-                            ref.read(navTabProvider.notifier).set(NavTab.likes);
+                            context.go(AppPaths.clientLikedProperties);
                           },
                         ),
                       ),
@@ -249,8 +248,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           value: chats,
                           label: 'MESSAGES',
                           onTap: () {
-                            Navigator.of(context).pop();
-                            ref.read(navTabProvider.notifier).set(NavTab.messages);
+                            context.go(AppPaths.messages);
                           },
                         ),
                       ),
@@ -344,8 +342,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         icon: Icons.people_rounded,
                         colors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
                         onTap: () {
-                          Navigator.of(context).pop();
-                          ref.read(navTabProvider.notifier).set(NavTab.seekers);
+                          context.go(AppPaths.exploreSeekers);
                         },
                       ),
                       _ActionTile(
@@ -374,7 +371,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () async {
                           HapticFeedback.mediumImpact();
                           await Supabase.instance.client.auth.signOut();
-                          if (context.mounted) Navigator.of(context).pop();
+                          if (context.mounted) context.go(AppPaths.auth);
                         },
                       ),
                     ],
@@ -472,9 +469,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const VapIdScreen()),
-                      );
+                      context.go(AppPaths.clientVapId);
                     },
                     child: _Panel(
                       padding: const EdgeInsets.all(16),
@@ -545,8 +540,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   // Seeker requests teaser
                   GestureDetector(
                     onTap: () {
-                      Navigator.of(context).pop();
-                      ref.read(navTabProvider.notifier).set(NavTab.seekers);
+                      context.go(AppPaths.exploreSeekers);
                     },
                     child: _Panel(
                       padding: const EdgeInsets.all(16),

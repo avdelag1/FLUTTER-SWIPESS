@@ -264,14 +264,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppPaths.clientVapId,
             builder: (ctx, _) => const VapIdScreen(),
           ),
+          GoRoute(
+            path: AppPaths.clientProfile,
+            builder: (ctx, _) => const ProfileScreen(),
+          ),
         ],
       ),
 
       // Full-screen authenticated Cap routes (no bottom dock)
-      GoRoute(
-        path: AppPaths.clientProfile,
-        builder: (ctx, _) => const ProfileScreen(),
-      ),
       GoRoute(
         path: AppPaths.clientSettings,
         builder: (ctx, _) => const SettingsScreen(),

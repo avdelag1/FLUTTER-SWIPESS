@@ -133,6 +133,7 @@ abstract final class AppPaths {
   static bool isShellLocation(String location) {
     const shellExact = {
       clientDashboard,
+      clientProfile,
       clientLikedProperties,
       messages,
       exploreEvents,
