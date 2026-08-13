@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_se
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/contact_support_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/support_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/security_screen.dart';
@@ -155,6 +156,13 @@ class SettingsScreen extends StatelessWidget {
               description: 'Email the Swipess team',
               colors: const [Color(0xFF64748B), Color(0xFF94A3B8)],
               onTap: () => _push(context, const ContactSupportScreen()),
+            ),
+            _GradTile(
+              icon: Icons.support_agent_rounded,
+              label: 'NEURAL SUPPORT',
+              description: 'Customer Sync tickets (Cap SupportDialog)',
+              colors: const [Color(0xFF7C3AED), Color(0xFFA855F7)],
+              onTap: () => showSupportDialog(context),
             ),
             _GradTile(
               icon: Icons.gavel_rounded,

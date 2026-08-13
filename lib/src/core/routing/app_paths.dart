@@ -94,7 +94,8 @@ abstract final class AppPaths {
       case NavTab.seekers:
         return exploreSeekers;
       case NavTab.legal:
-        return clientLegal;
+        // Cap BottomNavigation path: `/client/legal-services`
+        return clientLegalServices;
       case NavTab.events:
         return exploreEvents;
       case NavTab.ai:
@@ -117,7 +118,13 @@ abstract final class AppPaths {
     }
     if (location == clientVapId) return NavTab.idCard;
     if (location == exploreSeekers) return NavTab.seekers;
-    if (location == clientLegal || location == legal) return NavTab.legal;
+    if (location == clientLegal ||
+        location == legal ||
+        location == clientLegalServices ||
+        location == legalServices ||
+        location == ownerLegalServices) {
+      return NavTab.legal;
+    }
     if (location == exploreEvents ||
         location == exploreEventsLikes ||
         (location.startsWith('$exploreEvents/') &&
@@ -140,6 +147,7 @@ abstract final class AppPaths {
       exploreEvents,
       exploreSeekers,
       clientLegal,
+      clientLegalServices,
       clientVapId,
       legacyDashboard,
     };

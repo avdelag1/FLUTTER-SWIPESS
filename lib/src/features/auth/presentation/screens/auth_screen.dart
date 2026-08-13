@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -339,46 +340,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     VoidCallback? onTogglePassword,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(25),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withAlpha(76)),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          Icon(icon, color: Colors.white.withAlpha(180), size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              obscureText: obscureText,
-              keyboardType: keyboardType,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(color: Colors.white.withAlpha(153), fontSize: 16, fontWeight: FontWeight.w500),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          if (isPassword) ...[
-            IconButton(
-              icon: Icon(obscureText ? Icons.visibility_off_rounded : Icons.visibility_rounded),
-              color: Colors.white.withAlpha(180),
-              iconSize: 20,
-              onPressed: onTogglePassword,
-            ),
-            const SizedBox(width: 4),
-          ] else ...[
-            const SizedBox(width: 16),
-          ],
-        ],
-      ),
+    return GlassTextField(
+      controller: controller,
+      hint: hint,
+      icon: icon,
+      obscureText: obscureText,
+      onToggleObscure: isPassword ? onTogglePassword : null,
+      keyboardType: keyboardType,
     );
   }
 

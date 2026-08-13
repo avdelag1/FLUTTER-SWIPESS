@@ -272,6 +272,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const LegalHubScreen(),
           ),
           GoRoute(
+            // Cap dock legal → LawyerServicesPage (chrome stays).
+            path: AppPaths.clientLegalServices,
+            builder: (ctx, _) => const LawyerServicesScreen(),
+          ),
+          GoRoute(
             path: AppPaths.clientVapId,
             builder: (ctx, _) => const VapIdScreen(),
           ),
@@ -322,10 +327,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.ownerContracts,
         redirect: (ctx, state) => AppPaths.clientContracts,
-      ),
-      GoRoute(
-        path: AppPaths.clientLegalServices,
-        builder: (ctx, _) => const LawyerServicesScreen(),
       ),
       GoRoute(
         path: AppPaths.legalServices,

@@ -5,11 +5,14 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
-import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_request_sheet.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardShell extends ConsumerWidget {
@@ -30,6 +33,7 @@ class DashboardShell extends ConsumerWidget {
     final location = GoRouterState.of(context).matchedLocation;
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
+    final user = ref.watch(currentUserProvider);
 
     // Keep provider in sync for any legacy listeners.
     if (routeTab != null && ref.read(navTabProvider) != routeTab) {
@@ -129,6 +133,11 @@ class DashboardShell extends ConsumerWidget {
                                   showIntelCoreSheet(context);
                                   return;
                                 }
+                                // Cap SEEKERS dock opens SeekerRequestDialog.
+                                if (id == NavTab.seekers) {
+                                  showSeekerRequestSheet(context, ref);
+                                  return;
+                                }
                                 ref.read(navTabProvider.notifier).set(id);
                                 context.go(AppPaths.pathForTab(id));
                               },
@@ -141,6 +150,8 @@ class DashboardShell extends ConsumerWidget {
               ),
             ),
           ),
+          PushNotificationPrompt(enabled: user != null),
+          GuidedTourOverlay(enabled: user != null),
         ],
       ),
     );
