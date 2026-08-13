@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_pro
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AccessCodeGateScreen extends ConsumerStatefulWidget {
@@ -93,6 +94,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
+          const StarfieldBackground(),
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
@@ -137,8 +139,8 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
         SwipessLogo(
-          height: isDesktop ? 56 : 48,
-          variant: SwipessLogoVariant.outline,
+          width: isDesktop ? 280 : 240,
+          variant: SwipessLogoVariant.transparent,
         ),
         const SizedBox(height: 24),
         Text(
@@ -216,11 +218,16 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const SwipessLogo(
+                  width: 200,
+                  variant: SwipessLogoVariant.transparent,
+                ),
+                const SizedBox(height: 20),
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.transparent,
+                    color: Colors.white.withAlpha(24),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(Icons.lock_rounded, color: Colors.white, size: 24),

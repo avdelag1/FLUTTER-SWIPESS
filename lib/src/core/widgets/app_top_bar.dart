@@ -4,7 +4,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,11 +97,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 border: pillBorder,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  ref.read(navTabProvider.notifier).set(NavTab.add);
+                  showCreateListingChooser(context);
                 },
                 child: _WashIcon(
-                  wash: Colors.transparent,
-                  child: Icon(Icons.auto_awesome_rounded, size: 16, color: ink),
+                  wash: const Color(0xFF82D2AF),
+                  child: Icon(Icons.auto_awesome_rounded, size: 18, color: ink),
                 ),
               ),
             ],
@@ -119,9 +119,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   );
                 },
                 child: _WashIcon(
-                  wash: Colors.transparent,
+                  wash: const Color(0xFFF5D25A),
                   badge: true,
-                  child: Icon(Icons.workspace_premium_rounded, size: 16, color: ink),
+                  child: Icon(Icons.workspace_premium_rounded, size: 18, color: ink),
                 ),
               ),
               const SizedBox(width: 8),
@@ -133,8 +133,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   context.push(AppPaths.map);
                 },
                 child: _WashIcon(
-                  wash: Colors.transparent,
-                  child: Icon(Icons.public_rounded, size: 16, color: ink),
+                  wash: const Color(0xFF78AFEB),
+                  child: Icon(Icons.public_rounded, size: 18, color: ink),
                 ),
               ),
               const SizedBox(width: 8),
@@ -146,10 +146,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ref.read(visualThemeProvider.notifier).toggle();
                 },
                 child: _WashIcon(
-                  wash: Colors.transparent,
+                  wash: const Color(0xFF9775FA),
                   child: Icon(
                     isLight ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    size: 16,
+                    size: 18,
                     color: ink,
                   ),
                 ),
@@ -166,8 +166,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   clipBehavior: Clip.none,
                   children: [
                     _WashIcon(
-                      wash: Colors.transparent,
-                      child: Icon(Icons.notifications_rounded, size: 16, color: ink),
+                      wash: const Color(0xFFFF8C78),
+                      child: Icon(Icons.notifications_rounded, size: 18, color: ink),
                     ),
                     ref.watch(unreadNotificationsProvider).when(
                           data: (count) {
@@ -269,9 +269,16 @@ class _WashIcon extends StatelessWidget {
         Container(
           width: 22,
           height: 22,
-          decoration: const BoxDecoration(
-            color: Colors.transparent,
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
+            gradient: wash.a == 0
+                ? null
+                : RadialGradient(
+                    colors: [
+                      wash.withAlpha(140),
+                      wash.withAlpha(0),
+                    ],
+                  ),
           ),
           alignment: Alignment.center,
           child: child,

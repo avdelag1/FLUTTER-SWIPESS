@@ -8,6 +8,7 @@ class LegalServicePackage {
     this.duration,
     this.features = const [],
     this.isActive = true,
+    this.description,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class LegalServicePackage {
   final String? duration;
   final List<String> features;
   final bool isActive;
+  final String? description;
 
   factory LegalServicePackage.fromJson(Map<String, dynamic> json) {
     return LegalServicePackage(
@@ -27,8 +29,12 @@ class LegalServicePackage {
       price: (json['price'] as num).toDouble(),
       durationDays: json['duration_days'] as int?,
       duration: json['duration'] as String?,
-      features: (json['features'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      features: (json['features'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       isActive: json['is_active'] as bool? ?? true,
+      description: json['description'] as String?,
     );
   }
 }

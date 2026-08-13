@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -102,6 +103,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
+          const StarfieldBackground(),
           SafeArea(
             child: Stack(
               children: [
@@ -141,8 +143,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       const SizedBox(height: 64),
                       const Center(
                         child: SwipessLogo(
-                          height: 40,
-                          variant: SwipessLogoVariant.outline,
+                          width: 220,
+                          variant: SwipessLogoVariant.transparent,
                         ),
                       ),
                       const SizedBox(height: 32),

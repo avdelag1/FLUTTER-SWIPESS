@@ -228,8 +228,13 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ink = isLight ? Colors.black : Colors.white;
-    final color = selected ? ink : ink.withAlpha(120);
+    final ink = isLight ? const Color(0xFF141414) : Colors.white;
+    final discFill = isLight
+        ? const Color(0xFFF5F5F7)
+        : const Color(0xF0101016);
+    final glyph = item.accent
+        ? const Color(0xFFFF4D6A)
+        : (selected ? ink : ink.withAlpha(isLight ? 200 : 150));
 
     return GestureDetector(
       onTap: onTap,
@@ -239,25 +244,56 @@ class _DockButton extends StatelessWidget {
         height: 44,
         child: Center(
           child: Container(
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.transparent,
-              border: selected
-                  ? Border.all(color: ink, width: 1.5)
-                  : null,
+              color: discFill,
+              border: Border.all(
+                color: isLight
+                    ? const Color(0xFF141414)
+                    : Colors.white.withAlpha(242),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isLight
+                      ? Colors.black.withAlpha(30)
+                      : Colors.white.withAlpha(55),
+                  blurRadius: isLight ? 8 : 14,
+                  offset: const Offset(1, 1),
+                ),
+              ],
             ),
-            child: item.useAiIcon
-                ? CustomPaint(
-                    painter: _AiRobotPainter(color: color),
-                    size: const Size(18, 18),
-                  )
-                : Icon(
-                    item.icon,
-                    size: 18,
-                    color: color,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.2, -0.2),
+                      colors: [
+                        wash.withAlpha(isLight ? 150 : 90),
+                        wash.withAlpha(0),
+                      ],
+                    ),
                   ),
+                ),
+                item.useAiIcon
+                    ? CustomPaint(
+                        painter: _AiRobotPainter(color: glyph),
+                        size: const Size(18, 18),
+                      )
+                    : Icon(
+                        item.icon,
+                        size: item.accent ? 22 : 18,
+                        color: glyph,
+                      ),
+              ],
+            ),
           ),
         ),
       ),

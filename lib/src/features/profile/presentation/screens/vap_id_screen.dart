@@ -86,17 +86,25 @@ class VapIdScreen extends ConsumerWidget {
                                   i < VapCardTheme.themes.length;
                                   i++) ...[
                                 if (i > 0) const SizedBox(width: 5),
-                                Container(
-                                  width: i == themeIndex ? 10 : 7,
-                                  height: i == themeIndex ? 10 : 7,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: VapCardTheme.themes[i].swatch,
-                                    border: Border.all(
-                                      color: i == themeIndex
-                                          ? Colors.white
-                                          : Colors.white38,
-                                      width: i == themeIndex ? 1.5 : 1,
+                                GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    ref
+                                        .read(vapCardThemeIndexProvider.notifier)
+                                        .setIndex(i);
+                                  },
+                                  child: Container(
+                                    width: i == themeIndex ? 10 : 7,
+                                    height: i == themeIndex ? 10 : 7,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: VapCardTheme.themes[i].swatch,
+                                      border: Border.all(
+                                        color: i == themeIndex
+                                            ? Colors.white
+                                            : Colors.white38,
+                                        width: i == themeIndex ? 1.5 : 1,
+                                      ),
                                     ),
                                   ),
                                 ),
