@@ -85,123 +85,137 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
   Widget build(BuildContext context) {
     if (!_open) return const SizedBox.shrink();
 
-    return Material(
-      color: Colors.black.withAlpha(160),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF0A0A0D),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 12),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: const Icon(
-                            Icons.notifications_active_rounded,
-                            color: AppTheme.brandPrimary,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Get alerts on your phone',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Allow notifications so matches, messages, and promos pop up even when the app is closed.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white60,
-                            fontSize: 13,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+    return Positioned(
+      top: 50,
+      left: 16,
+      right: 16,
+      child: Dismissible(
+        key: const ValueKey('push_prompt'),
+        direction: DismissDirection.up,
+        onDismissed: (_) => _dismiss(),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0A0A0D),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.white.withAlpha(100), width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(180),
+                      blurRadius: 30,
+                      offset: const Offset(0, 15),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: const [
-                        _BenefitRow(
-                          icon: Icons.chat_bubble_rounded,
-                          color: Color(0xFF3B82F6),
-                          label: 'New messages',
-                        ),
-                        SizedBox(height: 8),
-                        _BenefitRow(
-                          icon: Icons.local_fire_department_rounded,
-                          color: Color(0xFFF97316),
-                          label: 'Likes & matches',
-                        ),
-                        SizedBox(height: 8),
-                        _BenefitRow(
-                          icon: Icons.workspace_premium_rounded,
-                          color: Color(0xFFFBBF24),
-                          label: 'Partner promos & updates',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: _enable,
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 12),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(18),
                             ),
-                            child: Text(
-                              'Enable phone notifications',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w800,
-                              ),
+                            child: const Icon(
+                              Icons.notifications_active_rounded,
+                              color: AppTheme.brandPrimary,
+                              size: 28,
                             ),
                           ),
-                        ),
-                        TextButton(
-                          onPressed: _dismiss,
-                          child: Text(
-                            'Not now',
+                          const SizedBox(height: 16),
+                          Text(
+                            'Get alerts on your phone',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white54,
-                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Allow notifications so matches, messages, and promos pop up even when the app is closed.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white60,
+                              fontSize: 13,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: const [
+                          _BenefitRow(
+                            icon: Icons.chat_bubble_rounded,
+                            color: Color(0xFF3B82F6),
+                            label: 'New messages',
+                          ),
+                          SizedBox(height: 8),
+                          _BenefitRow(
+                            icon: Icons.local_fire_department_rounded,
+                            color: Color(0xFFF97316),
+                            label: 'Likes & matches',
+                          ),
+                          SizedBox(height: 8),
+                          _BenefitRow(
+                            icon: Icons.workspace_premium_rounded,
+                            color: Color(0xFFFBBF24),
+                            label: 'Partner promos & updates',
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _enable,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              child: Text(
+                                'Enable phone notifications',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _dismiss,
+                            child: Text(
+                              'Not now',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

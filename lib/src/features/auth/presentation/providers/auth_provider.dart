@@ -7,7 +7,12 @@ enum AuthIntent { login, signup }
 
 /// Tracks whether the current session is fully authenticated.
 final authStateProvider = StreamProvider<AuthState>((ref) {
-  return Supabase.instance.client.auth.onAuthStateChange;
+  try {
+    return Supabase.instance.client.auth.onAuthStateChange;
+  } catch (_) {
+    // Supabase not ready — empty stream so the app still mounts.
+    return const Stream<AuthState>.empty();
+  }
 });
 
 /// Live session user. A [Notifier] so email login can stamp the user

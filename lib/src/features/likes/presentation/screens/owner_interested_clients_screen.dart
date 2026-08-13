@@ -5,8 +5,9 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/likes/data/repositories/likes_repository.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/widgets/owner_client_swipe_dialog.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -48,6 +49,11 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    tooltip: 'Discover clients',
+                    onPressed: () => showOwnerClientSwipeDialog(context),
+                    icon: const Icon(Icons.swipe_rounded, color: Colors.white70),
                   ),
                   IconButton(
                     onPressed: () =>
@@ -102,19 +108,17 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                           final convoId = await SwipeRepository()
                               .startConversation(ownerId: client.userId);
                           if (!context.mounted || convoId == null) return;
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ChatScreen(
-                                conversation: ChatConversation(
-                                  id: convoId,
-                                  otherUserId: client.userId,
-                                  name: client.name,
-                                  lastMessage: '',
-                                  timestamp: 'now',
-                                  avatarUrl: client.primaryImage,
-                                  listingTag: client.likedListingTitle,
-                                ),
-                              ),
+                          await showChatPopup(
+                            context,
+                            isNewConversation: true,
+                            conversation: ChatConversation(
+                              id: convoId,
+                              otherUserId: client.userId,
+                              name: client.name,
+                              lastMessage: '',
+                              timestamp: 'now',
+                              avatarUrl: client.primaryImage,
+                              listingTag: client.likedListingTitle,
                             ),
                           );
                         },

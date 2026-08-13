@@ -205,7 +205,15 @@ class _NotificationTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _color.withAlpha(30),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _color.withAlpha(50)),
+                ),
+                alignment: Alignment.center,
                 child: Icon(_icon, color: _color, size: 18),
               ),
               const SizedBox(width: 12),

@@ -7,19 +7,24 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Swipess">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Swipess">
+  <meta name="theme-color" content="#0A0A0D" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="msapplication-navbutton-color" content="#0A0A0D">
+  <meta name="color-scheme" content="dark light">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Swipess</title>
   <link rel="manifest" href="manifest.json">
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
   <style>
     html, body {
       height: 100%;
       margin: 0;
-      background: #000;
+      background: #0A0A0D;
       overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
     #boot {
       position: absolute;
@@ -32,12 +37,39 @@
       font-size: 13px;
       letter-spacing: 0.28em;
       font-weight: 700;
+      z-index: 9999;
+      background: #0A0A0D;
     }
   </style>
   <script>
     function removeSplashFromWeb() {
       document.getElementById('boot')?.remove();
-      document.body.style.background = '#000';
+      // Keep canvas color — never flash pure black before Flutter paints.
+      document.body.style.background = '#0A0A0D';
+    }
+    // Keep splash until Flutter paints — never leave a blank load forever.
+    window.addEventListener('flutter-first-frame', function () {
+      removeSplashFromWeb();
+    });
+    // If compile/load is slow, show a hint instead of infinite silent wait.
+    setTimeout(function () {
+      var el = document.getElementById('boot');
+      if (el) el.textContent = 'LOADING…';
+    }, 5000);
+    // Failsafe: never trap the user on SWIPESS forever if the engine stalls.
+    setTimeout(removeSplashFromWeb, 20000);
+    // Local/dev: kill stale Flutter service workers that cache a broken build.
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        });
+      }
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (k) { caches.delete(k); });
+        });
+      }
     }
   </script>
 </head>

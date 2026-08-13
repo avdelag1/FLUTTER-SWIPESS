@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
@@ -125,18 +125,16 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
         listingId: listing.id,
       );
       if (!mounted || convoId == null) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(
-            conversation: ChatConversation(
-              id: convoId,
-              otherUserId: ownerId,
-              name: listing.title ?? 'Owner',
-              lastMessage: '',
-              timestamp: 'now',
-              listingTag: listing.title,
-            ),
-          ),
+      await showChatPopup(
+        context,
+        isNewConversation: true,
+        conversation: ChatConversation(
+          id: convoId,
+          otherUserId: ownerId,
+          name: listing.title ?? 'Owner',
+          lastMessage: '',
+          timestamp: 'now',
+          listingTag: listing.title,
         ),
       );
     } finally {

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/roommates/domain/roommate_profile.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/providers/roommates_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
@@ -219,19 +219,17 @@ class _RoommateMatchingScreenState
       );
       if (!mounted) return;
       if (convoId != null) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              conversation: ChatConversation(
-                id: convoId,
-                otherUserId: profile.userId,
-                name: profile.name,
-                lastMessage: '',
-                timestamp: 'now',
-                avatarUrl: profile.avatarUrl,
-                listingTag: 'Roommate',
-              ),
-            ),
+        await showChatPopup(
+          context,
+          isNewConversation: true,
+          conversation: ChatConversation(
+            id: convoId,
+            otherUserId: profile.userId,
+            name: profile.name,
+            lastMessage: '',
+            timestamp: 'now',
+            avatarUrl: profile.avatarUrl,
+            listingTag: 'Roommate',
           ),
         );
       }

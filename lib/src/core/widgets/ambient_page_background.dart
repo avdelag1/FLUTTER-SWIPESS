@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `AmbientPageBackground` — monochrome tonal wells, no colorful orbs.
@@ -10,21 +12,32 @@ class AmbientPageBackground extends StatelessWidget {
     required this.child,
     this.fill = false,
     this.padding,
+    this.subtle = false,
   });
 
   final Widget child;
   final bool fill;
   final EdgeInsetsGeometry? padding;
+  final bool subtle;
 
   @override
   Widget build(BuildContext context) {
-    final body = padding == null ? child : Padding(padding: padding!, child: child);
+    final isLight = MatteSurface.isLight(context);
+    final body =
+        padding == null ? child : Padding(padding: padding!, child: child);
     return ColoredBox(
-      color: AppTheme.dashBg,
+      color: AppTheme.canvasFor(isLight: isLight),
       child: Stack(
         fit: fill ? StackFit.expand : StackFit.passthrough,
         children: [
-          const Positioned.fill(child: IgnorePointer(child: _AmbientWells())),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: subtle ? 0.9 : 1,
+                child: _AmbientWells(isLight: isLight),
+              ),
+            ),
+          ),
           fill ? Positioned.fill(child: body) : body,
         ],
       ),
@@ -33,13 +46,21 @@ class AmbientPageBackground extends StatelessWidget {
 }
 
 class _AmbientWells extends StatelessWidget {
-  const _AmbientWells();
+  const _AmbientWells({required this.isLight});
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
+    final topWash = isLight
+        ? const Color(0x8CFFFFFF) // ~0.55 white
+        : const Color(0x09FFFFFF); // Cap ~0.035
+    final bottomWell = isLight
+        ? const Color(0x0A000000) // ~0.04 black
+        : const Color(0x08FFFFFF); // ~0.03 white
+
     return Stack(
       children: [
-        const Positioned(
+        Positioned(
           left: 0,
           right: 0,
           top: 0,
@@ -49,7 +70,7 @@ class _AmbientWells extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0x09FFFFFF), Color(0x00000000)],
+                colors: [topWash, const Color(0x00000000)],
               ),
             ),
           ),
@@ -61,10 +82,10 @@ class _AmbientWells extends StatelessWidget {
             child: Container(
               width: 520,
               height: 280,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [Color(0x08FFFFFF), Color(0x00000000)],
+                  colors: [bottomWell, const Color(0x00000000)],
                 ),
               ),
             ),
@@ -122,16 +143,19 @@ class NeoNaiveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = MatteSurface.isLight(context);
     return Container(
       width: double.infinity,
       padding: padding,
-      decoration: inkStamp ? AppTheme.neoNaiveCard : AppTheme.glassCard,
+      decoration: inkStamp
+          ? AppTheme.neoNaiveCard
+          : AppTheme.softSurfaceCard(isLight: isLight),
       child: child,
     );
   }
 }
 
-/// Cap `neo-naive-group` — stacked rows with hairline dividers.
+/// Cap `neo-naive-group` — stacked rows with soft hairline dividers.
 class NeoNaiveGroup extends StatelessWidget {
   const NeoNaiveGroup({super.key, required this.children});
 
@@ -139,15 +163,17 @@ class NeoNaiveGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hairline = MatteSurface.hairline(context);
     return Container(
       width: double.infinity,
-      decoration: AppTheme.neoNaiveCard,
+      decoration: AppTheme.softSurfaceCard(
+        isLight: MatteSurface.isLight(context),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[
-            if (i > 0)
-              Divider(height: 1, thickness: 1, color: Colors.transparent),
+            if (i > 0) Divider(height: 1, thickness: 1, color: hairline),
             children[i],
           ],
         ],
@@ -169,9 +195,14 @@ class NeoNaiveScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: floatingActionButton,
-      body: AmbientPageBackground(fill: true, child: body),
+    final isLight = MatteSurface.isLight(context);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: AppTheme.systemFor(isLight: isLight),
+      child: Scaffold(
+        backgroundColor: AppTheme.canvasFor(isLight: isLight),
+        floatingActionButton: floatingActionButton,
+        body: AmbientPageBackground(fill: true, child: body),
+      ),
     );
   }
 }
@@ -195,6 +226,8 @@ class NeoNaiveChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final hairline = MatteSurface.hairline(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -207,22 +240,21 @@ class NeoNaiveChip extends StatelessWidget {
           color: selected ? selectedColor : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? selectedColor : Colors.white,
+            color: selected ? selectedColor : hairline,
             width: 1.5,
           ),
-          boxShadow: const [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurface),
+              Icon(icon, size: 14, color: selected ? Colors.white : ink),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Theme.of(context).colorScheme.onSurface,
+                color: selected ? Colors.white : ink,
                 fontWeight: FontWeight.w800,
                 fontSize: 11,
                 letterSpacing: 0.6,
@@ -234,3 +266,55 @@ class NeoNaiveChip extends StatelessWidget {
     );
   }
 }
+
+/// Cap AtmosphericLayer shim — same ambient wells as page background.
+class AtmosphericLayer extends StatelessWidget {
+  const AtmosphericLayer({
+    super.key,
+    this.opacity = 1,
+    this.variant = AtmosphericVariant.defaultTone,
+  });
+
+  final double opacity;
+  final AtmosphericVariant variant;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = MatteSurface.isLight(context);
+    Color? tint;
+    switch (variant) {
+      case AtmosphericVariant.indigo:
+        tint = NexusTheme.indigo.withAlpha(28);
+      case AtmosphericVariant.rose:
+        tint = NexusTheme.rose.withAlpha(28);
+      case AtmosphericVariant.primary:
+        tint = AppTheme.brandPrimary.withAlpha(22);
+      case AtmosphericVariant.defaultTone:
+      case AtmosphericVariant.swipes:
+        tint = null;
+    }
+    return IgnorePointer(
+      child: Opacity(
+        opacity: opacity < 0.15 ? 0.85 : opacity.clamp(0.0, 1.0),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _AmbientWells(isLight: isLight),
+            if (tint != null)
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.7, -0.6),
+                    radius: 1.1,
+                    colors: [tint, const Color(0x00000000)],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum AtmosphericVariant { defaultTone, primary, indigo, rose, swipes }

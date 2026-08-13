@@ -90,10 +90,7 @@ class _FrameShinePainter extends CustomPainter {
     if (envelope <= 0.02) return;
 
     final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(
-      rect.deflate(1.2),
-      Radius.circular(size.height / 2),
-    );
+    const ring = 2.5;
     final shader = SweepGradient(
       transform: GradientRotation(local * math.pi * 2),
       colors: [
@@ -107,12 +104,24 @@ class _FrameShinePainter extends CustomPainter {
       stops: const [0.0, 0.78, 0.88, 0.93, 0.97, 1.0],
     ).createShader(rect);
 
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..shader = shader;
-    canvas.drawRRect(rrect, paint);
+    final outer = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(size.height / 2),
+    );
+    final ringPath = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRRect(outer)
+      ..addRRect(outer.deflate(ring));
+
+    canvas.save();
+    canvas.clipPath(ringPath);
+    canvas.drawRect(
+      rect.inflate(8),
+      Paint()
+        ..shader = shader
+        ..isAntiAlias = true,
+    );
+    canvas.restore();
   }
 
   @override

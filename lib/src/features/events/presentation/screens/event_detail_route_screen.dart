@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -17,43 +19,125 @@ class EventDetailRouteScreen extends ConsumerWidget {
     final async = ref.watch(eventByIdProvider(eventId));
     return async.when(
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(
-          foregroundColor: Colors.white,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => context.go(AppPaths.exploreEvents),
+        backgroundColor: AppTheme.dashBg,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.brandPrimary,
+            strokeWidth: 2,
           ),
         ),
-        body: Center(
-          child: Text(
-            'Could not load event',
-            style: GoogleFonts.spaceGrotesk(color: Colors.white70),
-          ),
+      ),
+      error: (e, _) => _EventDetailShell(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Could not load event.',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => ref.invalidate(eventByIdProvider(eventId)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.brandPrimary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'TRY AGAIN',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 1.8,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       data: (event) {
         if (event == null) {
-          return Scaffold(
-            appBar: AppBar(
-              foregroundColor: Colors.white,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
-                onPressed: () => context.go(AppPaths.exploreEvents),
-              ),
-            ),
-            body: Center(
-              child: Text(
-                'Event not found',
-                style: GoogleFonts.spaceGrotesk(color: Colors.white70),
-              ),
+          return _EventDetailShell(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Colors.white24,
+                  size: 48,
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'No results found',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white38,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 1.8,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                GestureDetector(
+                  onTap: () => context.go(AppPaths.exploreEvents),
+                  child: Text(
+                    'GO BACK',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppTheme.brandPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
         return EventDetailScreen(event: event);
       },
+    );
+  }
+}
+
+class _EventDetailShell extends StatelessWidget {
+  const _EventDetailShell({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.dashBg,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: CapBackButton(
+                onTap: () => context.go(AppPaths.exploreEvents),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: child,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

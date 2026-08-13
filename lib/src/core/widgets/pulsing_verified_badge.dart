@@ -24,8 +24,15 @@ class _PulsingVerifiedBadgeState extends State<PulsingVerifiedBadge>
     super.initState();
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 700),
+    );
+    // Cap VAP success is mostly static — one heartbeat pulse, then hold.
+    _pulse.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _pulse.reverse();
+      }
+    });
+    _pulse.forward();
   }
 
   @override

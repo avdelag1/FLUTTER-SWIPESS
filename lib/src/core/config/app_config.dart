@@ -22,10 +22,14 @@ class AppConfig {
   );
 
   /// Mapbox **public** token (`pk.…`).
+  /// Prefer `--dart-define=MAPBOX_ACCESS_TOKEN=…` / `dart_defines.json`.
+  /// Cap ships a public fallback so the map never stays blank when env is missing.
   static const mapboxAccessToken = String.fromEnvironment(
     'MAPBOX_ACCESS_TOKEN',
     defaultValue: '',
   );
+
+  static bool get hasMapboxToken => mapboxAccessToken.trim().isNotEmpty;
 
   /// Google Sign-In web/server client ID (`….apps.googleusercontent.com`).
   static const googleServerClientId = String.fromEnvironment(
@@ -39,7 +43,6 @@ class AppConfig {
     defaultValue: '',
   );
 
-  static bool get hasMapboxToken => mapboxAccessToken.trim().isNotEmpty;
   static bool get hasRevenueCatKey => revenueCatApiKey.trim().isNotEmpty ||
       revenueCatAppleApiKey.trim().isNotEmpty ||
       revenueCatGoogleApiKey.trim().isNotEmpty;

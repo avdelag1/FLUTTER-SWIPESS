@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -48,6 +49,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   double _zoom = MapCameraMath.openAltitudeZoom;
   late final AnimationController _fly;
   bool _didFly = false;
+  bool _mapReady = false;
 
   static const _categories = [
     ('all', 'All', Icons.public_rounded),
@@ -80,18 +82,31 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   double _zoomForRadius(int km) => MapCameraMath.zoomForRadiusKm(km);
 
+  void _safeMove(LatLng dest, double zoom, {double rotation = 0}) {
+    if (!_mapReady) return;
+    try {
+      _mapController.moveAndRotate(dest, zoom, rotation);
+    } catch (_) {}
+  }
+
   void _startDroneFlyIn(LatLng center, int radiusKm) {
     if (_didFly) return;
     _didFly = true;
     final startZ = MapCameraMath.openAltitudeZoom;
     final endZ = _zoomForRadius(radiusKm);
-    final startBank = MapCameraMath.openBankDegrees;
+    // Web: skip bank rotation — rotated raster tiles often fail to paint.
+    final startBank = kIsWeb ? 0.0 : MapCameraMath.openBankDegrees;
     _fly.addListener(() {
-      if (!mounted) return;
+      if (!mounted || !_mapReady) return;
       final t = Curves.easeInOutCubic.transform(_fly.value);
       final z = startZ + (endZ - startZ) * t;
       final bank = startBank * (1 - t);
-      _mapController.moveAndRotate(center, z, bank);
+      _safeMove(center, z, rotation: bank);
+    });
+    _fly.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _safeMove(center, endZ);
+      }
     });
     _fly.forward();
   }
@@ -133,9 +148,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
     
-    final listings = asyncListings.value ?? [];
+    final listingsRaw = asyncListings.value ?? [];
     final profiles = asyncProfiles.value ?? [];
     final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
+    final listings = listingsRaw.isNotEmpty
+        ? listingsRaw
+        : _demoListings(center, location.city);
     const haversine = Distance();
     bool inRadius(double lat, double lng) {
       return haversine.as(
@@ -150,7 +168,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       color: const Color(0xFF0A0A12),
       child: Stack(
         children: [
-          Builder(builder: (context) {
+          Positioned.fill(
+            child: Builder(builder: (context) {
               final List<MapPin> allPins = [
                 if (_layer != 'people')
                   ...listings
@@ -180,11 +199,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: MapCameraMath.openAltitudeZoom,
-                  initialRotation: MapCameraMath.openBankDegrees,
+                  initialRotation: kIsWeb ? 0 : MapCameraMath.openBankDegrees,
                   minZoom: 3,
                   maxZoom: 18,
                   backgroundColor: const Color(0xFF0A0A12),
-                  onMapReady: () => _startDroneFlyIn(center, radiusKm),
+                  onMapReady: () {
+                    _mapReady = true;
+                    _startDroneFlyIn(center, radiusKm);
+                  },
                   onTap: (_, _) => setState(() {
                     _selected = null;
                     _menuOpen = false;
@@ -207,8 +229,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     fallbackUrl: MapBasemap.fallbackUrl,
                     additionalOptions: MapBasemap.additionalOptions,
                     userAgentPackageName: MapBasemap.userAgentPackageName,
+                    tileDimension: 256,
                     maxZoom: 19,
                   ),
+                  if (MapBasemap.labelsUrl != null)
+                    TileLayer(
+                      urlTemplate: MapBasemap.labelsUrl!,
+                      userAgentPackageName: MapBasemap.userAgentPackageName,
+                      tileDimension: 256,
+                      maxZoom: 19,
+                    ),
                   CircleLayer(
                     circles: [
                       CircleMarker(
@@ -252,7 +282,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                               if (c.count == 1) {
                                 setState(() => _selected = c.pins.first);
                               } else {
-                                _mapController.move(
+                                _safeMove(
                                   c.point,
                                   math.min(_zoom + 1.6, 16),
                                 );
@@ -266,6 +296,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ],
               );
             }),
+          ),
           if (isLoading)
             const Positioned(
               top: 0,
@@ -396,7 +427,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     GestureDetector(
                       onTap: () {
                         HapticFeedback.mediumImpact();
-                        _mapController.move(
+                        _safeMove(
                           center,
                           _zoomForRadius(radiusKm),
                         );
@@ -487,7 +518,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                                           .read(
                                               discoveryLocationProvider.notifier)
                                           .setRadiusKm(km);
-                                      _mapController.move(
+                                      _safeMove(
                                         center,
                                         _zoomForRadius(km),
                                       );
@@ -615,7 +646,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                                 latitude: city.lat,
                                 longitude: city.lng,
                               );
-                          _mapController.move(
+                          _safeMove(
                             LatLng(city.lat, city.lng),
                             _zoomForRadius(radiusKm),
                           );
@@ -672,16 +703,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         final loc = ref.read(discoveryLocationProvider);
-        _mapController.moveAndRotate(
+        _safeMove(
           LatLng(loc.latitude, loc.longitude),
           _zoomForRadius(loc.radiusKm),
-          0,
         );
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
         ),
       );
       ref.read(discoveryLocationProvider.notifier).setCoordinates(
@@ -690,21 +721,44 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             latitude: pos.latitude,
             longitude: pos.longitude,
           );
-      _mapController.moveAndRotate(
+      _safeMove(
         LatLng(pos.latitude, pos.longitude),
         _zoomForRadius(ref.read(discoveryLocationProvider).radiusKm),
-        0,
       );
       ref.invalidate(mapListingsProvider);
       ref.invalidate(mapProfilesProvider);
     } catch (_) {
       final loc = ref.read(discoveryLocationProvider);
-      _mapController.moveAndRotate(
+      _safeMove(
         LatLng(loc.latitude, loc.longitude),
         _zoomForRadius(loc.radiusKm),
-        0,
       );
     }
+  }
+
+  static List<Listing> _demoListings(LatLng center, String city) {
+    const photo =
+        'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=80';
+    const offsets = <(double, double, String, double)>[
+      (0.018, -0.012, 'Tranquil Oasis', 2400),
+      (-0.014, 0.016, 'Jungle Villa', 3100),
+      (0.008, 0.022, 'Beach Studio', 1800),
+      (-0.02, -0.018, 'Casa Azul', 2650),
+    ];
+    return [
+      for (var i = 0; i < offsets.length; i++)
+        Listing(
+          id: 'map-demo-$i',
+          title: offsets[i].$3,
+          category: 'property',
+          city: city,
+          price: offsets[i].$4,
+          currency: 'USD',
+          latitude: center.latitude + offsets[i].$1,
+          longitude: center.longitude + offsets[i].$2,
+          images: const [photo],
+        ),
+    ];
   }
 }
 

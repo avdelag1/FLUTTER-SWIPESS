@@ -13,8 +13,13 @@ class LegendaryOnboardingScreen extends StatefulWidget {
   static const prefsKey = 'swipess_legendary_onboarding_done';
 
   static Future<bool> hasCompleted() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(prefsKey) ?? false;
+    try {
+      final prefs = await SharedPreferences.getInstance()
+          .timeout(const Duration(seconds: 2));
+      return prefs.getBool(prefsKey) ?? false;
+    } catch (_) {
+      return true; // Don't trap users on a spinner if prefs hang.
+    }
   }
 
   static Future<void> markCompleted() async {

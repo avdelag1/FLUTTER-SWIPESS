@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/qf_well_glow.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/neo_naive_card_shine.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -72,7 +73,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         onNotification: _onScroll,
         child: ListView(
           controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(12, 110, 12, 120),
+          padding: const EdgeInsets.fromLTRB(12, 48, 12, 120),
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
@@ -615,6 +616,12 @@ class _BentoCardState extends State<_BentoCard> {
                   ),
                 ),
               ),
+              // Neo-naive card shine rim light
+              Positioned.fill(
+                child: NeoNaiveCardShine(
+                  borderRadius: AppTheme.qfNeoFrameRadius,
+                ),
+              ),
               Positioned(
                 left: 8,
                 right: 8,
@@ -679,7 +686,7 @@ const _bentoItems = [
     id: 'property',
     title: 'PROPERTIES',
     subtitle: 'Find properties to buy or rent',
-    height: 260,
+    height: 300,
     delaySeconds: '0',
   ),
   _BentoItemData(
@@ -687,7 +694,7 @@ const _bentoItems = [
     id: 'events',
     title: 'EVENTS LIVE',
     subtitle: 'Swipe event videos · tap to open',
-    height: 340,
+    height: 380,
     delaySeconds: '4',
   ),
   _BentoItemData(
@@ -695,7 +702,7 @@ const _bentoItems = [
     id: 'recommended',
     title: 'RECOMMENDED FOR YOU',
     subtitle: 'Curated listings',
-    height: 260,
+    height: 300,
     delaySeconds: '8',
   ),
   _BentoItemData(
@@ -703,7 +710,7 @@ const _bentoItems = [
     id: 'services',
     title: 'WORKERS',
     subtitle: 'Find people offering services',
-    height: 340,
+    height: 380,
     delaySeconds: '12',
   ),
   _BentoItemData(
@@ -711,7 +718,7 @@ const _bentoItems = [
     id: 'popular',
     title: 'POPULAR',
     subtitle: 'Trending now',
-    height: 260,
+    height: 300,
     delaySeconds: '16',
   ),
   _BentoItemData(
@@ -719,7 +726,7 @@ const _bentoItems = [
     id: 'yacht',
     title: 'YACHTS',
     subtitle: 'Yachts & boats to charter or buy',
-    height: 340,
+    height: 380,
     delaySeconds: '20',
   ),
   _BentoItemData(
@@ -727,7 +734,7 @@ const _bentoItems = [
     id: 'motorcycle',
     title: 'MOTORCYCLES',
     subtitle: 'Motorcycles for sale or rent',
-    height: 340,
+    height: 380,
     delaySeconds: '24',
   ),
   _BentoItemData(
@@ -735,7 +742,7 @@ const _bentoItems = [
     id: 'bicycle',
     title: 'BICYCLES',
     subtitle: 'Bicycles for sale or rent',
-    height: 260,
+    height: 300,
     delaySeconds: '28',
   ),
   _BentoItemData(
@@ -743,7 +750,7 @@ const _bentoItems = [
     id: 'seekers',
     title: 'SEEKERS',
     subtitle: 'People looking for workers',
-    height: 260,
+    height: 300,
     delaySeconds: '32',
   ),
   _BentoItemData(
@@ -751,7 +758,7 @@ const _bentoItems = [
     id: 'legal',
     title: 'LEGAL SERVICES',
     subtitle: 'Hire a top tier lawyer',
-    height: 340,
+    height: 380,
     delaySeconds: '36',
   ),
   _BentoItemData(
@@ -759,7 +766,7 @@ const _bentoItems = [
     id: 'premium',
     title: 'PREMIUM',
     subtitle: 'Buy a package & get benefits',
-    height: 260,
+    height: 300,
     delaySeconds: '40',
   ),
 ];

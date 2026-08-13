@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -40,17 +40,14 @@ Future<void> openNotificationTarget(
       }
       final messagesMatch = RegExp(r'/messages/([^/]+)').firstMatch(path);
       if (messagesMatch != null && related != null) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              conversation: ChatConversation(
-                id: messagesMatch.group(1)!,
-                otherUserId: related,
-                name: notification.title,
-                lastMessage: notification.message,
-                timestamp: 'now',
-              ),
-            ),
+        await showChatPopup(
+          context,
+          conversation: ChatConversation(
+            id: messagesMatch.group(1)!,
+            otherUserId: related,
+            name: notification.title,
+            lastMessage: notification.message,
+            timestamp: 'now',
           ),
         );
         return;
@@ -67,17 +64,14 @@ Future<void> openNotificationTarget(
   switch (notification.visualType) {
     case 'message':
       if (related != null) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(
-              conversation: ChatConversation(
-                id: 'pending-$related',
-                otherUserId: related,
-                name: notification.title,
-                lastMessage: notification.message,
-                timestamp: 'now',
-              ),
-            ),
+        await showChatPopup(
+          context,
+          conversation: ChatConversation(
+            id: 'pending-$related',
+            otherUserId: related,
+            name: notification.title,
+            lastMessage: notification.message,
+            timestamp: 'now',
           ),
         );
       }
