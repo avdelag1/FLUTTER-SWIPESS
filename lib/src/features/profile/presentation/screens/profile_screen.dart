@@ -29,6 +29,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens
 import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_dialog.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
