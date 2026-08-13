@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Dashboard bento teaser — loops event videos like Capacitor `EventsVideoQuickFilter`.
+/// Cap `EventsVideoQuickFilter` — segments + shared mute + advance on end.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -22,6 +23,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   VideoPlayerController? _player;
   int _index = 0;
   String? _boundUrl;
+  double _dragDx = 0;
 
   @override
   void dispose() {
@@ -55,7 +57,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     try {
       await next.initialize();
       await next.setLooping(videos.length == 1);
-      await next.setVolume(0);
+      final soundOn = ref.read(deckSoundOnProvider);
+      await next.setVolume(soundOn ? 1 : 0);
       await next.play();
       next.addListener(_onTick);
       if (mounted) setState(() {});
@@ -66,9 +69,21 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     }
   }
 
+  void _advance(List<Event> videos, int delta) {
+    if (videos.isEmpty) return;
+    _index = (_index + delta) % videos.length;
+    if (_index < 0) _index += videos.length;
+    _boundUrl = null;
+    _bind(videos);
+  }
+
   @override
   Widget build(BuildContext context) {
     final videos = ref.watch(videoEventsProvider);
+    final soundOn = ref.watch(deckSoundOnProvider);
+    ref.listen<bool>(deckSoundOnProvider, (_, on) {
+      _player?.setVolume(on ? 1 : 0);
+    });
     ref.listen<List<Event>>(videoEventsProvider, (_, next) {
       _bind(next);
     });
@@ -79,11 +94,20 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     }
     final current = videos.isEmpty ? null : videos[_index % videos.length];
     final ready = _player != null && _player!.value.isInitialized;
+    final segmentCount = videos.isEmpty ? 1 : videos.length.clamp(1, 8);
 
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
         widget.onTap?.call();
+      },
+      onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
+      onHorizontalDragEnd: (_) {
+        if (_dragDx.abs() > 20 && videos.length > 1) {
+          HapticFeedback.selectionClick();
+          _advance(videos, _dragDx < 0 ? 1 : -1);
+        }
+        _dragDx = 0;
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
@@ -114,8 +138,58 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
             ),
             if (!ready)
               const Center(
-                child: Icon(Icons.celebration_outlined, color: Color(0xB3FFFFFF), size: 40),
+                child: Icon(Icons.celebration_outlined,
+                    color: Color(0xB3FFFFFF), size: 40),
               ),
+            Positioned(
+              top: 10,
+              left: 10,
+              right: 44,
+              child: Row(
+                children: [
+                  for (var i = 0; i < segmentCount; i++) ...[
+                    if (i > 0) const SizedBox(width: 3),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      width: i == (_index % segmentCount) ? 14 : 6,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: i == (_index % segmentCount)
+                            ? Colors.white
+                            : Colors.white.withAlpha(110),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Positioned(
+              top: 6,
+              right: 6,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(deckSoundOnProvider.notifier).toggle();
+                },
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(120),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withAlpha(40)),
+                  ),
+                  child: Icon(
+                    soundOn
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               left: 14,
               right: 14,
@@ -132,7 +206,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    current?.title ?? 'Discover Local',
+                    current?.title ?? 'Local Event',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
