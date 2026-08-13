@@ -10,12 +10,33 @@ class OwnerListingsStats {
     required this.active,
     required this.views,
     required this.avgPrice,
+    this.categories = 0,
   });
 
   final int total;
   final int active;
   final int views;
   final double avgPrice;
+  final int categories;
+}
+
+int _activeCategoryCount(List<Listing> listings) {
+  final properties =
+      listings.where((l) => l.category == null || l.category == 'property').isNotEmpty;
+  final motorcycles =
+      listings.any((l) => l.category == 'motorcycle');
+  final bicycles = listings.any((l) => l.category == 'bicycle');
+  final services = listings.any(
+    (l) => l.category == 'worker' || l.category == 'services',
+  );
+  final vehicles = listings.any((l) => l.category == 'vehicle');
+  return [
+    properties,
+    motorcycles,
+    bicycles,
+    services,
+    vehicles,
+  ].where((v) => v).length;
 }
 
 final myListingsProvider =
@@ -29,7 +50,7 @@ final myListingsProvider =
     var filter = client
         .from('listings')
         .select(
-          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, created_at',
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, likes, created_at',
         )
         .eq('owner_id', userId);
 
@@ -53,7 +74,7 @@ final myListingsProvider =
     final rows = await client
         .from('listings')
         .select(
-          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, is_active, status',
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, is_active, status, views, likes',
         )
         .eq('owner_id', userId)
         .limit(100);
@@ -80,6 +101,7 @@ final ownerListingsStatsProvider =
       active: 0,
       views: 0,
       avgPrice: 0,
+      categories: 0,
     );
   }
   final prices = all.map((l) => l.price ?? 0).where((p) => p > 0).toList();
@@ -93,6 +115,7 @@ final ownerListingsStatsProvider =
         .length,
     views: all.fold<int>(0, (sum, l) => sum + (l.views ?? 0)),
     avgPrice: avg,
+    categories: _activeCategoryCount(all),
   );
 });
 

@@ -7,7 +7,6 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
-import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
@@ -217,7 +216,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                   return;
                                 }
                                 if (id == NavTab.add) {
-                                  showCreateListingChooser(context);
+                                  context.push(AppPaths.ownerProperties);
                                   return;
                                 }
                                 if (id == NavTab.ai) {
