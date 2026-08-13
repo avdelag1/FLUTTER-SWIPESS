@@ -10,10 +10,24 @@ class AppTheme {
   static const Color background = Color(0xFF0C0C0D); // --background
   static const Color surfaceColor = Color(0xFF0C0C0D); 
   
-  // Dashboard Depth Layers
+  // Dashboard Depth Layers (black-matte)
   static const Color dashBg = Color(0xFF0A0A0D); // --dash-bg
   static const Color dashWell = Color(0xFF101014); // --dash-well
   static const Color dashElevated = Color(0xFF16161C); // --dash-elevated
+
+  // Cap `.light` / `.white-matte` dash layers
+  static const Color lightDashBg = Color(0xFFF2F2F7);
+  static const Color lightDashWell = Color(0xFFE8E8EE);
+  static const Color lightDashElevated = Color(0xFFFFFFFF);
+
+  static Color canvasFor({required bool isLight}) =>
+      isLight ? lightDashBg : dashBg;
+
+  static Color wellFor({required bool isLight}) =>
+      isLight ? lightDashWell : dashWell;
+
+  static Color elevatedFor({required bool isLight}) =>
+      isLight ? lightDashElevated : dashElevated;
   
   // Glass & Borders
   static const Color dashGlass = Color(0x84121218); // rgba(18, 18, 24, 0.52)
@@ -101,6 +115,33 @@ class AppTheme {
         elevation: 0,
         centerTitle: true,
       ),
+    );
+  }
+
+  /// Cap `white-matte` / light theme.
+  static ThemeData get lightTheme {
+    const bg = lightDashBg;
+    const surface = lightDashElevated;
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: brandPrimary,
+        brightness: Brightness.light,
+        surface: surface,
+        primary: brandPrimary,
+      ),
+      useMaterial3: true,
+      scaffoldBackgroundColor: bg,
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(
+        ThemeData.light().textTheme,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: Color(0xFF0A0A0D),
+      ),
+      cardColor: surface,
+      dividerColor: Color(0x1A000000),
     );
   }
 

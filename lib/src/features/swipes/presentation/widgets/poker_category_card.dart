@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 
 class PokerCardData {
   final String id;
@@ -81,13 +81,10 @@ class PokerCategoryCard extends StatelessWidget {
       },
       child: GestureDetector(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ClientSwipeContainer(
-                categoryId: card.id,
-                categoryTitle: card.title,
-              ),
-            ),
+          openClientSwipeDeck(
+            context,
+            categoryId: card.id,
+            categoryTitle: card.title,
           );
         },
         child: _buildCardContent(),

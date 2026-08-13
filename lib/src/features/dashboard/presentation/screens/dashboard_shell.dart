@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
@@ -66,9 +67,14 @@ class DashboardShell extends ConsumerWidget {
     ];
 
     final hideChrome = currentTab == NavTab.idCard;
+    final isLight = ref.watch(isLightThemeProvider);
+    final canvas = AppTheme.canvasFor(isLight: isLight);
+    final dockFill = AppTheme.wellFor(isLight: isLight).withAlpha(isLight ? 250 : 245);
+    final dockBorder =
+        isLight ? Colors.black.withAlpha(28) : Colors.white.withAlpha(200);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: canvas,
       extendBodyBehindAppBar: true,
       extendBody: true,
       appBar: hideChrome
@@ -94,15 +100,15 @@ class DashboardShell extends ConsumerWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     decoration: BoxDecoration(
-                      color: AppTheme.dashWell.withAlpha(245),
+                      color: dockFill,
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: Colors.white.withAlpha(200),
+                        color: dockBorder,
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(160),
+                          color: Colors.black.withAlpha(isLight ? 40 : 160),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -118,6 +124,7 @@ class DashboardShell extends ConsumerWidget {
                               item: bottomNavItems[i],
                               wash: _washes[i % _washes.length],
                               selected: currentTab == bottomNavItems[i].id,
+                              isLight: isLight,
                               onTap: () {
                                 HapticFeedback.lightImpact();
                                 final id = bottomNavItems[i].id;
@@ -178,18 +185,21 @@ class _DockButton extends StatelessWidget {
     required this.wash,
     required this.selected,
     required this.onTap,
+    this.isLight = false,
   });
 
   final _BottomNavItem item;
   final Color wash;
   final bool selected;
   final VoidCallback onTap;
+  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
+    final idle = isLight ? const Color(0xFF111111) : Colors.white;
     final color = item.accent
         ? const Color(0xFFFF4D6A)
-        : (selected ? Colors.white : Colors.white.withAlpha(170));
+        : (selected ? idle : idle.withAlpha(isLight ? 140 : 170));
 
     return GestureDetector(
       onTap: onTap,
@@ -209,7 +219,10 @@ class _DockButton extends StatelessWidget {
               border: item.accent
                   ? Border.all(color: const Color(0xFFFF4D6A), width: 1.5)
                   : (selected
-                      ? Border.all(color: Colors.white.withAlpha(50))
+                      ? Border.all(
+                          color: (isLight ? Colors.black : Colors.white)
+                              .withAlpha(50),
+                        )
                       : null),
             ),
             child: item.useAiIcon

@@ -13,7 +13,7 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -305,13 +305,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         title = 'WORKERS';
       }
       Navigator.pop(context);
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ClientSwipeContainer(
-            categoryId: category,
-            categoryTitle: title,
-          ),
-        ),
+      openClientSwipeDeck(
+        context,
+        categoryId: category,
+        categoryTitle: title,
       );
       return;
     }

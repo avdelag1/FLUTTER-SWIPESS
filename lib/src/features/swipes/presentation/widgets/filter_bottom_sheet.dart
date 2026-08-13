@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor ClientFilters — white/light sheet with category picker + detail filters.
@@ -137,13 +137,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             .firstOrNull ??
         'Scan';
     if (widget.asPage) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => ClientSwipeContainer(
-            categoryId: mappedCategory,
-            categoryTitle: title,
-          ),
-        ),
+      openClientSwipeDeck(
+        context,
+        categoryId: mappedCategory,
+        categoryTitle: title,
+        replace: true,
       );
       return;
     }

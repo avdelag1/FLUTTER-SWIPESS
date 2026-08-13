@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
@@ -29,6 +30,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isLight = ref.watch(isLightThemeProvider);
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final pillFill =
+        isLight ? Colors.black.withAlpha(8) : Colors.white.withAlpha(14);
+    final pillBorder =
+        isLight ? Colors.black.withAlpha(28) : Colors.white.withAlpha(55);
+
     return Container(
       height: preferredSize.height + MediaQuery.of(context).padding.top,
       padding: EdgeInsets.only(
@@ -44,6 +52,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             children: [
               _GlassPill(
                 wide: true,
+                fill: pillFill,
+                border: pillBorder,
                 onTap: onProfileTap ?? () {},
                 child: Row(
                   children: [
@@ -52,7 +62,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withAlpha(40),
+                        color: ink.withAlpha(40),
                         image: avatarUrl != null
                             ? DecorationImage(
                                 image: NetworkImage(avatarUrl!),
@@ -61,8 +71,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                             : null,
                       ),
                       child: avatarUrl == null
-                          ? const Icon(Icons.person_rounded,
-                              size: 14, color: Colors.white)
+                          ? Icon(Icons.person_rounded, size: 14, color: ink)
                           : null,
                     ),
                     if (firstName != null && firstName!.trim().isNotEmpty) ...[
@@ -71,8 +80,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         constraints: const BoxConstraints(maxWidth: 72),
                         child: Text(
                           firstName!,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: ink,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
@@ -86,6 +95,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
               const SizedBox(width: 8),
               _GlassPill(
+                fill: pillFill,
+                border: pillBorder,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   ref.read(navTabProvider.notifier).set(NavTab.add);
@@ -101,6 +112,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           Row(
             children: [
               _GlassPill(
+                fill: pillFill,
+                border: pillBorder,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   showGlassModal(
@@ -117,6 +130,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
               const SizedBox(width: 8),
               _GlassPill(
+                fill: pillFill,
+                border: pillBorder,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   context.push(AppPaths.map);
@@ -129,15 +144,31 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
               const SizedBox(width: 8),
               _GlassPill(
-                onTap: () => HapticFeedback.lightImpact(),
-                child: const _WashIcon(
-                  wash: Color(0xFF9775FA),
-                  child: Icon(Icons.dark_mode_rounded,
-                      size: 16, color: Color(0xFF9775FA)),
+                fill: pillFill,
+                border: pillBorder,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  ref.read(visualThemeProvider.notifier).toggle();
+                },
+                child: _WashIcon(
+                  wash: isLight
+                      ? const Color(0xFFFBBF24)
+                      : const Color(0xFF9775FA),
+                  child: Icon(
+                    isLight
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    size: 16,
+                    color: isLight
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFF9775FA),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               _GlassPill(
+                fill: pillFill,
+                border: pillBorder,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   context.push(AppPaths.notifications);
@@ -198,11 +229,15 @@ class _GlassPill extends StatelessWidget {
     required this.child,
     required this.onTap,
     this.wide = false,
+    this.fill,
+    this.border,
   });
 
   final Widget child;
   final VoidCallback onTap;
   final bool wide;
+  final Color? fill;
+  final Color? border;
 
   @override
   Widget build(BuildContext context) {
@@ -214,9 +249,12 @@ class _GlassPill extends StatelessWidget {
         padding: wide ? const EdgeInsets.symmetric(horizontal: 10) : null,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(14),
+          color: fill ?? Colors.white.withAlpha(14),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withAlpha(55), width: 1.2),
+          border: Border.all(
+            color: border ?? Colors.white.withAlpha(55),
+            width: 1.2,
+          ),
         ),
         child: child,
       ),

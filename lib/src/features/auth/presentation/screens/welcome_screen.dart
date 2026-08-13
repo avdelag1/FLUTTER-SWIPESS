@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_onboarding_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -64,7 +63,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          const StarfieldBackground(),
           SafeArea(
             child: Stack(
               children: [

@@ -8,7 +8,6 @@ import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_pro
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AccessCodeGateScreen extends ConsumerStatefulWidget {
@@ -94,7 +93,6 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          const StarfieldBackground(),
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),

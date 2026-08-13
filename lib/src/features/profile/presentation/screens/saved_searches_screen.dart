@@ -5,7 +5,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/profile/domain/saved_search.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/saved_searches_provider.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SavedSearchesScreen extends ConsumerWidget {
@@ -93,13 +93,10 @@ class SavedSearchesScreen extends ConsumerWidget {
                         final category = (items[index].filters['category'] as String?) ??
                             (items[index].filters['property_type'] as String?) ??
                             'property';
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ClientSwipeContainer(
-                              categoryId: category,
-                              categoryTitle: items[index].name,
-                            ),
-                          ),
+                        openClientSwipeDeck(
+                          context,
+                          categoryId: category,
+                          categoryTitle: items[index].name,
                         );
                       },
                       onToggle: () => ref

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `AISearchBar` — type first, submit opens Intel Core with the query.
-class AiSearchBar extends StatefulWidget {
+class AiSearchBar extends ConsumerStatefulWidget {
   const AiSearchBar({super.key});
 
   @override
-  State<AiSearchBar> createState() => _AiSearchBarState();
+  ConsumerState<AiSearchBar> createState() => _AiSearchBarState();
 }
 
-class _AiSearchBarState extends State<AiSearchBar> {
+class _AiSearchBarState extends ConsumerState<AiSearchBar> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
 
@@ -32,20 +35,23 @@ class _AiSearchBarState extends State<AiSearchBar> {
   @override
   Widget build(BuildContext context) {
     const glow = Color(0xFF4DABF7);
+    final isLight = ref.watch(isLightThemeProvider);
+    final fill = AppTheme.wellFor(isLight: isLight);
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     return Container(
       height: 58,
       decoration: BoxDecoration(
-        color: const Color(0xFF101014),
+        color: fill,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: glow, width: 1.6),
         boxShadow: [
           BoxShadow(
-            color: glow.withAlpha(90),
+            color: glow.withAlpha(isLight ? 55 : 90),
             blurRadius: 18,
             spreadRadius: 0.5,
           ),
           BoxShadow(
-            color: Colors.black.withAlpha(150),
+            color: Colors.black.withAlpha(isLight ? 30 : 150),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -62,7 +68,7 @@ class _AiSearchBarState extends State<AiSearchBar> {
               focusNode: _focus,
               textInputAction: TextInputAction.search,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: ink,
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
               ),
@@ -72,7 +78,7 @@ class _AiSearchBarState extends State<AiSearchBar> {
                 isDense: true,
                 hintText: 'Ask AI to find anything...',
                 hintStyle: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withAlpha(150),
+                  color: ink.withAlpha(150),
                   fontWeight: FontWeight.w500,
                   fontSize: 15,
                 ),
