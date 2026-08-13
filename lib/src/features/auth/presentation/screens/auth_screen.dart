@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -69,9 +70,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
+      body: Stack(
+        children: [
+          const StarfieldBackground(),
+          SafeArea(
+            child: Stack(
+              children: [
             // Back button
             Positioned(
               top: 16,
@@ -297,7 +301,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               ),
             ),
           ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }

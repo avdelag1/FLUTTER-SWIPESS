@@ -5,6 +5,9 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
@@ -17,9 +20,13 @@ import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repos
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/chrome_reveal_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_insights_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_report_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_share_sheet.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/match_celebrate_modal.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_error_state.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_exhausted_state.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -42,13 +49,47 @@ class ClientSwipeContainer extends ConsumerStatefulWidget {
 class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   List<Listing>? _deck;
   final List<Listing> _passed = [];
+  late String _categoryId;
+  bool _demoMatchShown = false;
+  bool _retrying = false;
+  bool _detecting = false;
+  bool _detected = false;
 
   @override
   void initState() {
     super.initState();
+    _categoryId = widget.categoryId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(chromeRevealProvider.notifier).reveal();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ClientSwipeContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryId != widget.categoryId) {
+      _categoryId = widget.categoryId;
+      _deck = null;
+      _passed.clear();
+    }
+  }
+
+  String get _categoryLabel {
+    switch (_categoryId) {
+      case 'property':
+        return 'properties';
+      case 'motorcycle':
+        return 'motorcycles';
+      case 'bicycle':
+        return 'bicycles';
+      case 'yacht':
+        return 'yachts';
+      case 'services':
+      case 'worker':
+        return 'workers';
+      default:
+        return _categoryId;
+    }
   }
 
   void _ensureDeck(List<Listing> source) {
@@ -102,9 +143,91 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     ref.read(chromeRevealProvider.notifier).reveal();
   }
 
+  Widget _exhausted() {
+    return SwipeExhaustedState(
+      categoryName: _categoryLabel,
+      activeCategory: _categoryId,
+      detecting: _detecting,
+      detected: _detected,
+      onBack: () => Navigator.of(context).pop(),
+      onRadiusChange: (km) {
+        ref.read(discoveryLocationProvider.notifier).setRadiusKm(km);
+        _deck = null;
+        ref.invalidate(swipeListingsProvider(_categoryId));
+      },
+      onDetectLocation: () async {
+        setState(() => _detecting = true);
+        await Future<void>.delayed(const Duration(milliseconds: 700));
+        if (!mounted) return;
+        setState(() {
+          _detecting = false;
+          _detected = true;
+        });
+      },
+      onOpenFilters: () => FilterBottomSheet.show(context),
+      onOpenMap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LiveMapScreen()),
+        );
+      },
+      onOpenAi: () => showMagicAiProfileSheet(context),
+      onCategoryChange: (cat) {
+        if (cat == 'events') {
+          Navigator.of(context).pop();
+          ref.read(navTabProvider.notifier).set(NavTab.events);
+          return;
+        }
+        setState(() {
+          _categoryId = cat;
+          _deck = null;
+          _passed.clear();
+        });
+        ref.read(chromeRevealProvider.notifier).reveal();
+      },
+    );
+  }
+
+  Future<void> _afterSwipe(Listing listing, SwipeDirection direction) async {
+    final authUser = Supabase.instance.client.auth.currentUser?.id;
+    if (authUser != null) {
+      if (direction == SwipeDirection.right) {
+        await ref
+            .read(swipeRepositoryProvider)
+            .registerSwipeRight(authUser, listing.id);
+      } else {
+        await ref
+            .read(swipeRepositoryProvider)
+            .registerSwipeLeft(authUser, listing.id);
+      }
+    }
+    if (direction == SwipeDirection.right && mounted) {
+      var matched = false;
+      if (authUser != null) {
+        matched = await swipe_repo.SwipeRepository().checkForMatch(listing.id);
+      } else if (!_demoMatchShown) {
+        matched = true;
+        _demoMatchShown = true;
+      }
+      if (matched && mounted) {
+        final profile = ref.read(currentProfileProvider).value;
+        await showMatchCelebrateModal(
+          context,
+          clientName: listing.title ?? 'this listing',
+          clientImageUrl: profile?.avatarUrl,
+          ownerImageUrl:
+              listing.images.isNotEmpty ? listing.images.first : null,
+          onMessage: () => _message(listing),
+        );
+      }
+    }
+    if (mounted) {
+      ref.read(chromeRevealProvider.notifier).reveal();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final listingsAsync = ref.watch(swipeListingsProvider(widget.categoryId));
+    final listingsAsync = ref.watch(swipeListingsProvider(_categoryId));
     final chrome = ref.watch(chromeRevealProvider);
     final profile = ref.watch(currentProfileProvider).value;
 
@@ -112,14 +235,15 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       backgroundColor: Colors.black,
       extendBody: true,
       body: listingsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        ),
-        error: (err, _) => Center(
-          child: Text(
-            'Error loading swipes: $err',
-            style: const TextStyle(color: Colors.redAccent),
-          ),
+        loading: () => const SwipeLoadingSkeleton(),
+        error: (err, _) => SwipeErrorState(
+          isRetrying: _retrying,
+          onRetry: () async {
+            setState(() => _retrying = true);
+            ref.invalidate(swipeListingsProvider(_categoryId));
+            await Future<void>.delayed(const Duration(milliseconds: 400));
+            if (mounted) setState(() => _retrying = false);
+          },
         ),
         data: (listings) {
           _ensureDeck(listings);
@@ -140,12 +264,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                       chrome.chromeVisible ? 78 : 16,
                     ),
                     child: deck.isEmpty
-                        ? const Center(
-                            child: Text(
-                              "You've seen all listings in this category!",
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          )
+                        ? _exhausted()
                         : SwipeableCardStack(
                             listings: deck,
                             railVisible: chrome.railVisible,
@@ -196,24 +315,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                                 _deck = List<Listing>.from(deck)
                                   ..removeWhere((l) => l.id == listing.id);
                               });
-                              final authUser = Supabase
-                                  .instance.client.auth.currentUser?.id;
-                              if (authUser != null) {
-                                if (direction == SwipeDirection.right) {
-                                  ref
-                                      .read(swipeRepositoryProvider)
-                                      .registerSwipeRight(
-                                          authUser, listing.id);
-                                } else {
-                                  ref
-                                      .read(swipeRepositoryProvider)
-                                      .registerSwipeLeft(
-                                          authUser, listing.id);
-                                }
-                              }
-                              ref
-                                  .read(chromeRevealProvider.notifier)
-                                  .reveal();
+                              _afterSwipe(listing, direction);
                             },
                           ),
                   ),
