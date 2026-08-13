@@ -12,7 +12,6 @@ Future<void> showSeekerRequestSheet(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppTheme.dashElevated,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
@@ -137,7 +136,6 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 FilledButton(
                   onPressed: _submitting ? null : _primaryAction,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.brandPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 22, vertical: 14),
@@ -241,15 +239,8 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 NeoNaiveChip(
                   label: s,
                   selected: _subcategory == s,
-                  onSelected: (_) => setState(() => _subcategory = s),
+                  onSelected: () => setState(() => _subcategory = s),
                   selectedColor: AppTheme.brandPrimary,
-                  backgroundColor: Colors.transparent,
-                  labelStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                  side: BorderSide(color: Colors.transparent),
                 ),
             ],
           ),
@@ -321,13 +312,6 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                   }
                 }),
                 selectedColor: AppTheme.brandPrimary.withAlpha(80),
-                backgroundColor: Colors.transparent,
-                labelStyle: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-                side: BorderSide(color: Colors.transparent),
               ),
           ],
         ),
@@ -349,12 +333,8 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
               NeoNaiveChip(
                 label: '/$u',
                 selected: _pricingUnit == u,
-                onSelected: (_) => setState(() => _pricingUnit = u),
+                onSelected: () => setState(() => _pricingUnit = u),
                 selectedColor: AppTheme.brandPrimary,
-                backgroundColor: Colors.transparent,
-                labelStyle: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700),
-                side: BorderSide(color: Colors.transparent),
               ),
           ],
         ),
@@ -376,12 +356,8 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
               NeoNaiveChip(
                 label: u.replaceAll('_', ' '),
                 selected: _urgency == u,
-                onSelected: (_) => setState(() => _urgency = u),
+                onSelected: () => setState(() => _urgency = u),
                 selectedColor: AppTheme.brandPrimary,
-                backgroundColor: Colors.transparent,
-                labelStyle: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700),
-                side: BorderSide(color: Colors.transparent),
               ),
           ],
         ),

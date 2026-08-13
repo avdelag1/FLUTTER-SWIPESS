@@ -63,9 +63,9 @@ class AppTheme {
       );
 
   static BoxDecoration get glassCard => BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.white, width: 1.5),
       );
 
   /// Cap `.qf-neo-frame` — organic ink-stamp border on quick-filter cards.
@@ -167,9 +167,9 @@ class AppTheme {
 
   static BoxDecoration glassPill({bool glowing = false}) {
     return BoxDecoration(
-      color: dashWell.withAlpha(240),
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: Colors.white.withAlpha(28), width: 1.5),
+      border: Border.all(color: Colors.white, width: 1.5),
       boxShadow: [
         if (glowing)
           BoxShadow(
@@ -198,7 +198,7 @@ class AppTheme {
   static BoxDecoration get bottomDockDecoration => BoxDecoration(
         color: dashWell.withAlpha(240),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withAlpha(20), width: 1.5),
+        border: Border.all(color: Colors.transparent, width: 1.5),
         boxShadow: const [
           BoxShadow(color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 12)),
         ],
@@ -218,7 +218,6 @@ class AppTheme {
         ThemeData.dark().textTheme,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
@@ -242,7 +241,6 @@ class AppTheme {
         ThemeData.light().textTheme,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         foregroundColor: Color(0xFF0A0A0D),

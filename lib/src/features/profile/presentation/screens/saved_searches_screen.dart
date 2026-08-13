@@ -17,10 +17,8 @@ class SavedSearchesScreen extends ConsumerWidget {
     final async = ref.watch(savedSearchesProvider);
 
     return Scaffold(
-      backgroundColor: MatteSurface.canvas(context),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _create(context, ref),
-        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Save search'),
@@ -145,7 +143,6 @@ class SavedSearchesScreen extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -230,7 +227,6 @@ class SavedSearchesScreen extends ConsumerWidget {
                           if (context.mounted) Navigator.pop(context);
                         },
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.brandPrimary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

@@ -22,7 +22,6 @@ class CapPlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(

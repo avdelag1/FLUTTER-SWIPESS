@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 /// Capacitor EventosLikes — saved / favorited events.
 class EventFavoritesScreen extends ConsumerStatefulWidget {
@@ -41,7 +42,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
-                  _Back(onTap: () => Navigator.pop(context)),
+                  CapBackButton(onTap: () => Navigator.pop(context)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -122,17 +123,8 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                       child: NeoNaiveChip(
                         label: c.$2,
                         selected: _category == c.$1,
-                        onSelected: (_) => setState(() => _category = c.$1),
+                        onSelected: () => setState(() => _category = c.$1),
                         selectedColor: AppTheme.brandPrimary,
-                        labelStyle: TextStyle(
-                          color: _category == c.$1
-                              ? Colors.white
-                              : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                        backgroundColor: Colors.transparent,
-                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -255,7 +247,7 @@ class _FavCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.transparent),
+            border: Border.all(color: Colors.white, width: 1.5),
           ),
           clipBehavior: Clip.antiAlias,
           child: Row(
@@ -318,27 +310,3 @@ class _FavCard extends StatelessWidget {
   }
 }
 
-class _Back extends StatelessWidget {
-  const _Back({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
-        ),
-        child: const Center(
-          child: Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white, size: 18),
-        ),
-      ),
-    );
-  }
-}

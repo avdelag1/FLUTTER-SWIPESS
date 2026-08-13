@@ -79,7 +79,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final muted = MatteSurface.muted(context);
 
     return Scaffold(
-      backgroundColor: MatteSurface.canvas(context),
       body: Stack(
         children: [
           Positioned(
@@ -615,7 +614,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: LinearProgressIndicator(
                               value: completion / 100,
                               minHeight: 10,
-                              backgroundColor: Colors.transparent,
                               valueColor: const AlwaysStoppedAnimation(
                                 Color(0xFFFF4D00),
                               ),
@@ -956,7 +954,7 @@ class _DailyQuests extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.transparent),
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
                 child: Text(
                   async.isLoading
@@ -985,7 +983,6 @@ class _DailyQuests extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: board.progressPercent,
               minHeight: 8,
-              backgroundColor: const Color(0x22FFFFFF),
               valueColor: const AlwaysStoppedAnimation(AppTheme.brandPrimary),
             ),
           ),
@@ -1179,7 +1176,6 @@ class _ShareEarn extends StatelessWidget {
                 showInviteFriendsDialog(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -1432,11 +1428,11 @@ class _FeedbackForm extends StatelessWidget {
             fillColor: Colors.black.withAlpha(70),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.transparent),
+              borderSide: BorderSide(color: Colors.white, width: 1),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.transparent),
+              borderSide: BorderSide(color: Colors.white, width: 1),
             ),
           ),
         ),
@@ -1446,7 +1442,6 @@ class _FeedbackForm extends StatelessWidget {
           child: ElevatedButton(
             onPressed: sending ? null : onSubmit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(

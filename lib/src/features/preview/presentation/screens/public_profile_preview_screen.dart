@@ -17,7 +17,6 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
     final async = ref.watch(publicProfileProvider(userId));
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -136,7 +135,6 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                             child: FilledButton(
                               onPressed: () => context.go('/welcome'),
                               style: FilledButton.styleFrom(
-                                backgroundColor: AppTheme.brandPrimary,
                               ),
                               child: Text(
                                 'JOIN TO CONNECT',

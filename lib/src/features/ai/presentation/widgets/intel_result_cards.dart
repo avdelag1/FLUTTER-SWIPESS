@@ -45,7 +45,7 @@ class IntelListingCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -138,7 +138,7 @@ class IntelProfileCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(

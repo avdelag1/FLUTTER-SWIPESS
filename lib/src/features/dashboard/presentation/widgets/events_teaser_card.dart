@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +46,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   Future<void> _bind(List<Event> videos) async {
+    // Stills only on web — HTML5 video + CanvasKit WebGL collide.
+    if (kIsWeb) return;
     if (videos.isEmpty) return;
     if (_index >= videos.length) _index = 0;
     final url = videos[_index].videoUrl;
@@ -178,7 +181,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(120),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Icon(
                     soundOn

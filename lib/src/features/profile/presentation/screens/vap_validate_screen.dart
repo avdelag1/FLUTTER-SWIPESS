@@ -73,7 +73,6 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   Widget build(BuildContext context) {
     final valid = _data != null;
     return Scaffold(
-      backgroundColor: Colors.black,
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
@@ -88,9 +87,9 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(14),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(20)),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Icon(Icons.chevron_left_rounded,
                           color: Colors.white),
@@ -113,8 +112,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                   const SizedBox(width: 40),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
             TextField(
               controller: _id,
               style: const TextStyle(color: Colors.white),
@@ -125,14 +123,15 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                 fillColor: Colors.transparent,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.transparent),
+                  borderSide: BorderSide(color: Colors.white, width: 1),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.transparent),
+                  borderSide: BorderSide(color: Colors.white, width: 1),
                 ),
-                const SizedBox(height: 28),
-              ],
+              ),
+            ),
+            const SizedBox(height: 28),
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.only(top: 80),
@@ -213,7 +212,7 @@ class _ValidCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.black.withAlpha(102),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withAlpha(14)),
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -248,8 +248,8 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.green.withAlpha(25),
-                              border: Border.all(color: Colors.green.withAlpha(50)),
+                              color: Colors.transparent,
+                              border: Border.all(color: Colors.transparent),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Text('ACTIVE', style: TextStyle(color: Colors.green, fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 1)),

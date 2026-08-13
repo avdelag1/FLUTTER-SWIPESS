@@ -12,7 +12,6 @@ Future<void> showMagicAiProfileSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => const _MagicAiProfileSheet(),
   );
 }
@@ -141,7 +140,6 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
             FilledButton(
               onPressed: _busy ? null : _run,
               style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.brandPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

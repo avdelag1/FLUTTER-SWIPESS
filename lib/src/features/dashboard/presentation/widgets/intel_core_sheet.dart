@@ -32,7 +32,6 @@ Future<void> showIntelCoreSheet(
     transitionDuration: const Duration(milliseconds: 350),
     pageBuilder: (context, animation, secondaryAnimation) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
         body: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: Align(
@@ -558,8 +557,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              backgroundColor: Colors.transparent,
-                              side: BorderSide(color: Colors.transparent),
                               onPressed: _loading ? null : () => _submit(item),
                             ),
                         ],
@@ -594,10 +591,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                   ),
-                                ),
-                                backgroundColor: Colors.transparent,
-                                side: BorderSide(
-                                  color: Colors.transparent,
                                 ),
                                 onPressed: chip.onTap,
                               ),
@@ -635,7 +628,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF14141A),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.transparent),
+                              border: Border.all(color: Colors.white, width: 1.5),
                             ),
                             child: Row(
                               children: [
@@ -687,7 +680,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.transparent,
-                              border: Border.all(color: Colors.transparent),
+                              border: Border.all(color: Colors.white, width: 1.5),
                             ),
                             child: _loading
                                 ? const Padding(
@@ -828,7 +821,7 @@ class _Bubble extends StatelessWidget {
                     ? AppTheme.brandPrimary.withAlpha(40)
                     : Colors.white.withAlpha(12),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: Text(
                 text,
@@ -896,7 +889,7 @@ class _RoundIcon extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.transparent,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Icon(icon, color: color ?? Colors.white, size: 18),
       ),

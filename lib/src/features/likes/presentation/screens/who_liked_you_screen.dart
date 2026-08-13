@@ -33,7 +33,6 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF16161C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           'Dismiss Interest?',
@@ -73,7 +72,6 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
     final async = ref.watch(whoLikedYouProvider);
 
     return Scaffold(
-      backgroundColor: MatteSurface.canvas(context),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,7 +92,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF14141A),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.transparent),
+                  border: Border.all(color: Colors.white, width: 1.5),
                 ),
                 child: Row(
                   children: [

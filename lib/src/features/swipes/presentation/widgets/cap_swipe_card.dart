@@ -795,7 +795,7 @@ class _GlassCircle extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(110),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Icon(icon, color: Colors.white, size: 18),
       ),
@@ -814,7 +814,7 @@ class _GlassPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(120),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: child,
     );

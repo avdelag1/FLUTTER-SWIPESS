@@ -21,7 +21,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
@@ -186,44 +185,19 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => showLegalSheet(context, doc: LegalDoc.terms),
             ),
             const SizedBox(height: 28),
-            OutlinedButton(
-              onPressed: () => _resetPassword(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white70,
-                side: BorderSide(color: Colors.transparent),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                _SettingsRow(
-                  icon: Icons.info_rounded,
-                  label: 'ABOUT SWIPESS',
-                  description: 'Mission & how the protocol works',
-                  colors: const [Color(0xFF4C1D95), Color(0xFFA855F7)],
-                  onTap: () => _push(context, const AboutScreen()),
-                ),
-                _SettingsRow(
-                  icon: Icons.mail_outline_rounded,
-                  label: 'CONTACT',
-                  description: 'Email the Swipess team',
-                  colors: const [Color(0xFF64748B), Color(0xFF94A3B8)],
-                  onTap: () => _push(context, const ContactSupportScreen()),
-                ),
-                _SettingsRow(
-                  icon: Icons.support_agent_rounded,
-                  label: 'NEURAL SUPPORT',
-                  description: 'Customer Sync tickets (Cap SupportDialog)',
-                  colors: const [Color(0xFF7C3AED), Color(0xFFA855F7)],
-                  onTap: () => showSupportDialog(context),
-                ),
-                _SettingsRow(
-                  icon: Icons.gavel_rounded,
-                  label: 'TERMS & PRIVACY',
-                  description: 'Legal documents',
-                  colors: const [Color(0xFF6366F1), Color(0xFF818CF8)],
-                  onTap: () => showLegalSheet(context, doc: LegalDoc.terms),
-                ),
-              ],
+            _GradTile(
+              icon: Icons.info_rounded,
+              label: 'ABOUT SWIPESS',
+              description: 'Mission & how the protocol works',
+              colors: const [Color(0xFF4C1D95), Color(0xFFA855F7)],
+              onTap: () => _push(context, const AboutScreen()),
+            ),
+            _GradTile(
+              icon: Icons.mail_outline_rounded,
+              label: 'CONTACT',
+              description: 'Email the Swipess team',
+              colors: const [Color(0xFF64748B), Color(0xFF94A3B8)],
+              onTap: () => _push(context, const ContactSupportScreen()),
             ),
             const SizedBox(height: 28),
             NeoNaiveCard(
@@ -243,7 +217,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Divider(height: 1, color: Colors.white.withAlpha(20)),
+                  Divider(height: 1, color: Colors.transparent),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
@@ -301,7 +275,6 @@ class SettingsScreen extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF16161C),
         title: const Text('Delete account?', style: TextStyle(color: Colors.white)),
         content: const Text(
           'This signs you out. Full deletion needs the account-delete Edge Function — wire that when the endpoint is ready.',
@@ -421,6 +394,84 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
+class _GradTile extends StatelessWidget {
+  const _GradTile({
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String description;
+  final List<Color> colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(colors: colors),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(40),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: Colors.white),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: 1.2,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          description,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withAlpha(210),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RoundBack extends StatelessWidget {
   const _RoundBack({required this.onTap});
   final VoidCallback onTap;
@@ -435,7 +486,7 @@ class _RoundBack extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: const Icon(Icons.arrow_back_ios_new_rounded,
             color: Colors.white, size: 18),

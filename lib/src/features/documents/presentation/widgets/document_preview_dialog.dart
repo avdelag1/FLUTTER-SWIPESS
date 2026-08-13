@@ -56,7 +56,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xF20C0C12),
                       borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.transparent),
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -161,7 +161,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: Colors.transparent),
+                                  border: Border.all(color: Colors.white, width: 1.5),
                                 ),
                                 child: Row(
                                   children: [

@@ -18,9 +18,11 @@ bool isQuickFilterVideoUrl(String url) {
 }
 
 /// Global cap so the bento grid cannot spawn N simultaneous HTML5 videos
-/// (the main FPS killer on Flutter web).
+/// (the main FPS killer on Flutter web — also burns WebGL contexts).
 class _VideoBudget {
-  static const maxActive = 2;
+  /// Web + CanvasKit: zero dashboard videos. HTML5 video + Skia WebGL
+  /// together trip Safari/Chrome "WebGL: context lost".
+  static int get maxActive => kIsWeb ? 0 : 2;
   static int _active = 0;
 
   static bool tryAcquire() {
@@ -299,7 +301,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(120),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Icon(
                     soundOn

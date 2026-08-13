@@ -96,7 +96,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
               decoration: BoxDecoration(
                 color: const Color(0xFF0A0A0D),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -174,7 +174,6 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                           child: ElevatedButton(
                             onPressed: _enable,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.brandPrimary,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(

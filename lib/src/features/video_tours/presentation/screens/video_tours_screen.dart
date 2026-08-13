@@ -18,7 +18,6 @@ class VideoToursScreen extends ConsumerWidget {
     final async = ref.watch(videoToursProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -244,7 +243,6 @@ class _TourPageState extends State<_TourPage> {
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
                                 foregroundColor: Colors.black,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),

@@ -95,7 +95,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final radiusKm = location.radiusKm;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A12),
       body: Stack(
         children: [
           async.when(
@@ -265,7 +264,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xF2161B27),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -460,7 +459,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     ];
     final city = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: const Color(0xFF12161F),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),

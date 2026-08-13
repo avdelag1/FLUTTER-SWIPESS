@@ -21,7 +21,6 @@ class ContractsScreen extends ConsumerWidget {
     final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
       body: AmbientPageBackground(
         fill: true,
         child: async.when(
@@ -87,7 +86,6 @@ class ContractsScreen extends ConsumerWidget {
   Future<void> _pickTemplate(BuildContext context, WidgetRef ref) async {
     final template = await showModalBottomSheet<ContractTemplate>(
       context: context,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -151,7 +149,7 @@ class _ContractTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Row(
           children: [

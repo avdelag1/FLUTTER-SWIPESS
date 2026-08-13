@@ -116,7 +116,6 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
@@ -213,7 +212,6 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                     child: FilledButton(
                       onPressed: (_ready && !_processing) ? _confirm : null,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.brandPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
                         ),

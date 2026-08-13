@@ -387,7 +387,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                           Colors.purple.withAlpha(50),
                         ],
                       ),
-                      border: Border.all(color: Colors.orange.withAlpha(80)),
+                      border: Border.all(color: Colors.transparent),
                     ),
                     child: const Icon(Icons.campaign_rounded,
                         color: Color(0xFFFB923C), size: 18),
@@ -401,7 +401,6 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 2,
-                  backgroundColor: Colors.white12,
                   color: const Color(0xFFF97316),
                 ),
               ),
@@ -414,9 +413,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha(28),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.orange.withAlpha(60)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: Text(
                         _statusMessage!,
@@ -449,9 +448,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.orange.withAlpha(35),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.orange.withAlpha(90)),
+            border: Border.all(color: Colors.transparent),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -816,7 +815,6 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         label: Text(_cover == null ? 'Add cover photo' : _cover!.name),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white38),
           minimumSize: const Size.fromHeight(48),
         ),
       ),
@@ -833,7 +831,6 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white38),
           minimumSize: const Size.fromHeight(48),
         ),
       ),
@@ -913,9 +910,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       Container(
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: Colors.orange.withAlpha(20),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.orange.withAlpha(50)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Column(
           children: [

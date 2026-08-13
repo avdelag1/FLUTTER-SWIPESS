@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';
@@ -149,7 +148,6 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -189,7 +187,6 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                 height: 56,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.brandPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
                   ),
@@ -333,6 +330,8 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               
               const SizedBox(height: 48),
             ],
+          ),
+        ],
       ),
     );
   }

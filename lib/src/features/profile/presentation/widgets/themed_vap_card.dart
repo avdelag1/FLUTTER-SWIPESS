@@ -653,7 +653,6 @@ class _QrFooter extends StatelessWidget {
               size: 104,
               gapless: true,
               padding: EdgeInsets.zero,
-              backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
                 color: Colors.black,

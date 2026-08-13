@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -165,7 +166,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   Future<void> _pickCity(BuildContext context, WidgetRef ref) async {
     final city = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -215,7 +215,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     ];
     final picked = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -247,7 +246,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     var guests = ref.read(discoveryLocationProvider).guests;
     final confirmed = await showModalBottomSheet<int>(
       context: context,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -299,7 +297,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                       child: FilledButton(
                         onPressed: () => Navigator.pop(context, guests),
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.brandPrimary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(

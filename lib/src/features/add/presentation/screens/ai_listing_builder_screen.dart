@@ -199,7 +199,6 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0714),
       body: SafeArea(
         child: Column(
           children: [
@@ -211,7 +210,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF9B5DE5).withAlpha(50),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.auto_awesome_rounded,
@@ -283,7 +282,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: Center(
                         child: Column(
@@ -369,7 +368,6 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                       icon: const Icon(Icons.bolt_rounded),
                       label: Text(_busy ? 'PREPARING…' : 'CREATE AI LISTING'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF2A2438),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(

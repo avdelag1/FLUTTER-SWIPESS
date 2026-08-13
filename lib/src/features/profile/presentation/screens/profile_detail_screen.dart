@@ -109,13 +109,11 @@ class ProfileDetailScreen extends ConsumerWidget {
     final async = ref.watch(publicProfileProvider(userId));
     return async.when(
       loading: () => const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: TextButton(
             onPressed: () => ref.invalidate(publicProfileProvider(userId)),
@@ -126,7 +124,6 @@ class ProfileDetailScreen extends ConsumerWidget {
       data: (profile) {
         if (profile == null) {
           return Scaffold(
-            backgroundColor: Colors.black,
             body: Center(
               child: Text(
                 'Profile not found',
@@ -187,7 +184,6 @@ class _BodyState extends State<_Body> {
     final h = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
       body: Stack(
         children: [
           Positioned(
@@ -259,7 +255,7 @@ class _BodyState extends State<_Body> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         border: Border(
-                          top: BorderSide(color: Colors.transparent),
+                          top: BorderSide(color: Colors.white, width: 1),
                         ),
                       ),
                       child: Column(

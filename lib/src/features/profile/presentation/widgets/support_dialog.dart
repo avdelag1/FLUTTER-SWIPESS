@@ -9,7 +9,6 @@ Future<void> showSupportDialog(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => const _SupportDialogSheet(),
   );
 }
@@ -77,7 +76,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0D).withAlpha(240),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: ListView(
         padding: EdgeInsets.fromLTRB(24, 18, 24, bottom + 28),
@@ -177,8 +176,6 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
-                  backgroundColor: Colors.transparent,
-                  side: BorderSide(color: Colors.transparent),
                   avatar: Icon(c.$3, size: 14, color: Colors.white70),
                 ),
             ],
@@ -200,8 +197,6 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                         fontWeight: FontWeight.w800,
                         fontSize: 10,
                       ),
-                      backgroundColor: Colors.transparent,
-                      side: BorderSide(color: Colors.transparent),
                     ),
                   ),
                 ),
@@ -242,7 +237,6 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 elevation: 0,
                 shape: RoundedRectangleBorder(

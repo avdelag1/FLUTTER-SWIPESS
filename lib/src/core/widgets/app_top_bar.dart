@@ -60,7 +60,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: ink.withAlpha(40),
+                        color: Colors.transparent,
                         image: avatarUrl != null
                             ? DecorationImage(
                                 image: NetworkImage(avatarUrl!),
@@ -241,7 +241,7 @@ class _GlassPill extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: border ?? Colors.white,
-            width: 1.2,
+            width: 1.5,
           ),
         ),
         child: child,

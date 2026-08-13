@@ -23,13 +23,11 @@ class AdminShell extends ConsumerWidget {
     final async = ref.watch(isAdminProvider);
     return async.when(
       loading: () => const Scaffold(
-        backgroundColor: Color(0xFF0A0A0D),
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
       ),
       error: (_, _) => Scaffold(
-        backgroundColor: const Color(0xFF0A0A0D),
         body: Center(
           child: TextButton(
             onPressed: () => ref.invalidate(isAdminProvider),
@@ -43,7 +41,6 @@ class AdminShell extends ConsumerWidget {
             if (context.mounted) context.go(AppPaths.clientDashboard);
           });
           return Scaffold(
-            backgroundColor: const Color(0xFF0A0A0D),
             body: Center(
               child: Text(
                 t(ref, 'flutter.notAdmin', 'Admin only'),
@@ -53,9 +50,7 @@ class AdminShell extends ConsumerWidget {
           );
         }
         return Scaffold(
-          backgroundColor: const Color(0xFF0A0A0D),
           appBar: AppBar(
-            backgroundColor: Colors.black,
             title: Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 20)),
             actions: [
               _NavChip(label: t(ref, 'flutter.adminEvents', 'Events'), path: AppPaths.adminEventos),
@@ -91,7 +86,6 @@ class _NavChip extends StatelessWidget {
             color: here ? Colors.black : Colors.white,
           ),
         ),
-        backgroundColor: here ? Colors.white : Colors.white.withAlpha(18),
         onPressed: () => context.go(path),
       ),
     );

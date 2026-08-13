@@ -234,7 +234,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final profile = ref.watch(currentProfileProvider).value;
 
     return Scaffold(
-      backgroundColor: Colors.black,
       extendBody: true,
       body: listingsAsync.when(
         loading: () => const SwipeLoadingSkeleton(),

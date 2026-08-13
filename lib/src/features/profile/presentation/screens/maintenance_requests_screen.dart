@@ -47,7 +47,6 @@ class _MaintenanceRequestsScreenState
     return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context),
-        backgroundColor: AppTheme.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: const Text('New'),
@@ -68,7 +67,7 @@ class _MaintenanceRequestsScreenState
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -112,15 +111,8 @@ class _MaintenanceRequestsScreenState
                       child: NeoNaiveChip(
                         label: _label(f),
                         selected: _filter == f,
-                        onSelected: (_) => setState(() => _filter = f),
+                        onSelected: () => setState(() => _filter = f),
                         selectedColor: AppTheme.brandPrimary,
-                        backgroundColor: Colors.transparent,
-                        labelStyle: TextStyle(
-                          color: _filter == f ? Colors.white : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                        ),
-                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -192,7 +184,6 @@ class _MaintenanceRequestsScreenState
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -238,16 +229,9 @@ class _MaintenanceRequestsScreenState
                           NeoNaiveChip(
                             label: c.$2,
                             selected: category == c.$1,
-                            onSelected: (_) =>
+                            onSelected: () =>
                                 setModal(() => category = c.$1),
                             selectedColor: AppTheme.brandPrimary,
-                            backgroundColor: Colors.transparent,
-                            labelStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                            side: BorderSide(color: Colors.transparent),
                           ),
                       ],
                     ),
@@ -274,17 +258,6 @@ class _MaintenanceRequestsScreenState
                                 onSelected: () =>
                                     setModal(() => priority = p.$1),
                                 selectedColor: p.$3.withAlpha(80),
-                                backgroundColor: Colors.transparent,
-                                labelStyle: TextStyle(
-                                  color: priority == p.$1 ? p.$3 : Colors.white70,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 11,
-                                ),
-                                side: BorderSide(
-                                  color: priority == p.$1
-                                      ? p.$3
-                                      : Colors.white.withAlpha(30),
-                                ),
                               ),
                             ),
                           ),
@@ -436,7 +409,7 @@ class _Ticket extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         children: [

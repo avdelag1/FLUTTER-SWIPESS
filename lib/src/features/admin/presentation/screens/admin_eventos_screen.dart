@@ -46,7 +46,6 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
                 icon: const Icon(Icons.add, size: 16),
                 label: Text(t(ref, 'actions.create', 'Create')),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                 ),
               ),
             ],
@@ -172,7 +171,7 @@ class _EventTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         children: [
@@ -357,7 +356,6 @@ class _EventForm extends StatelessWidget {
               FilledButton(
                 onPressed: draft.title.trim().isEmpty ? null : onSave,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                 ),
                 child: const Text('Save'),
               ),

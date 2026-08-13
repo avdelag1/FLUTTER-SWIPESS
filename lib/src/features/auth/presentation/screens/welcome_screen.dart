@@ -52,7 +52,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Widget build(BuildContext context) {
     if (_checkingOnboarding) {
       return const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(
           child: CircularProgressIndicator(color: AppTheme.brandPrimary),
         ),
@@ -60,7 +59,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
           SafeArea(
@@ -113,10 +111,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                     foregroundColor: Colors.black,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(999),
-                                      side: BorderSide(
-                                        color: Colors.white.withAlpha(230),
-                                        width: 2,
-                                      ),
+                                      side: const BorderSide(color: Colors.white, width: 2),
                                     ),
                                     elevation: 0,
                                   ),
@@ -144,7 +139,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 child: ElevatedButton(
                                   onPressed: () => _enterAuth('signup'),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.brandPrimary,
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(999),
@@ -177,9 +171,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                   onPressed: _enterApp,
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    side: BorderSide(
-                                      color: Colors.white.withAlpha(120),
-                                    ),
+                                    side: const BorderSide(color: Colors.white, width: 1.5),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(999),
                                     ),

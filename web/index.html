@@ -95,6 +95,14 @@
     }
   </script>
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  <script>
+    // Drop stale Flutter service workers that can keep a broken GPU session.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
+  </script>
 </head>
 <body>
   <picture id="splash">

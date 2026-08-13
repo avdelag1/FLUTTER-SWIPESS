@@ -12,7 +12,6 @@ Future<void> showListingReportSheet(
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (_) => _ReportSheet(listing: listing),
   );
 }
@@ -152,11 +151,11 @@ class _ReportSheetState extends State<_ReportSheet> {
                   fillColor: Colors.transparent,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: BorderSide(color: Colors.white, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: BorderSide(color: Colors.white, width: 1),
                   ),
                 ),
               ),
@@ -170,7 +169,6 @@ class _ReportSheetState extends State<_ReportSheet> {
                       ? null
                       : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: Colors.white12,
                     padding: const EdgeInsets.symmetric(vertical: 14),

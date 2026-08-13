@@ -105,7 +105,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 : const Color(0xFF10B981);
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
           const StarfieldBackground(),
@@ -165,7 +164,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               child: LinearProgressIndicator(
                 value: s.score / 4,
                 minHeight: 6,
-                backgroundColor: Colors.white12,
                 valueColor: AlwaysStoppedAnimation(color),
               ),
             ),

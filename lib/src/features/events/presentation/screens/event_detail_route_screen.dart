@@ -17,13 +17,10 @@ class EventDetailRouteScreen extends ConsumerWidget {
     final async = ref.watch(eventByIdProvider(eventId));
     return async.when(
       loading: () => const Scaffold(
-        backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: Colors.black,
         appBar: AppBar(
-          backgroundColor: Colors.black,
           foregroundColor: Colors.white,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
@@ -40,9 +37,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
       data: (event) {
         if (event == null) {
           return Scaffold(
-            backgroundColor: Colors.black,
             appBar: AppBar(
-              backgroundColor: Colors.black,
               foregroundColor: Colors.white,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),

@@ -72,7 +72,7 @@ class InviteFriendsDialog extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF09090B),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(180),
@@ -140,7 +140,6 @@ class InviteFriendsDialog extends ConsumerWidget {
                     child: ElevatedButton(
                       onPressed: () => _shareInvite(context, link),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -165,7 +164,6 @@ class InviteFriendsDialog extends ConsumerWidget {
                       onPressed: () => _copyLink(context, link),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.transparent),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),

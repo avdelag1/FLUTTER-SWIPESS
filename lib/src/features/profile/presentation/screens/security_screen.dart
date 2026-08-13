@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 /// Capacitor ClientSecurity / settings nested sections.
 class SecurityScreen extends ConsumerStatefulWidget {
@@ -75,7 +76,6 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     };
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
@@ -84,7 +84,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           children: [
             Row(
               children: [
-                _Back(onTap: () => Navigator.pop(context)),
+                CapBackButton(onTap: () => Navigator.pop(context)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -290,7 +290,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 await prefs.setBool('swipe_sounds', v);
               },
             ),
-            Divider(height: 1, color: Colors.white.withAlpha(20)),
+            Divider(height: 1, color: Colors.transparent),
             _PrefSwitch(
               label: 'Haptics',
               value: _haptics,
@@ -394,35 +394,13 @@ class _Panel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: child,
     );
   }
 }
 
-class _Back extends StatelessWidget {
-  const _Back({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
-        ),
-        child: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: Colors.white, size: 18),
-      ),
-    );
-  }
-}
 
 class _PrefSwitch extends StatelessWidget {
   const _PrefSwitch({

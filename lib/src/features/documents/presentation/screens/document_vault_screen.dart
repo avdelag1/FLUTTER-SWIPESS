@@ -146,7 +146,6 @@ class DocumentVaultScreen extends ConsumerWidget {
     if (!context.mounted) return;
     final chosen = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppTheme.dashElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -207,7 +206,6 @@ class DocumentVaultScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.dashElevated,
         title: const Text('Delete document?', style: TextStyle(color: Colors.white)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
@@ -272,7 +270,7 @@ class _DocCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Row(
         children: [
@@ -284,7 +282,7 @@ class _DocCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               clipBehavior: Clip.antiAlias,
               child: DocTypeSpecimen(documentType: doc.documentType),

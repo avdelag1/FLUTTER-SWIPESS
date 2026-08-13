@@ -24,9 +24,9 @@ abstract final class MatteSurface {
       : AppTheme.textSecondary;
 
   static Color hairline(BuildContext context) =>
-      isLight(context) ? Colors.black.withAlpha(28) : Colors.white.withAlpha(40);
+      isLight(context) ? Colors.black.withAlpha(28) : Colors.white;
 
   static Color cardFill(BuildContext context) => isLight(context)
       ? Colors.white
-      : Colors.white.withAlpha(12);
+      : Colors.transparent;
 }

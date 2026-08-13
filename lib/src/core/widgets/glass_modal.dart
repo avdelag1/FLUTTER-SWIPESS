@@ -11,7 +11,6 @@ Future<T?> showGlassModal<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,
-    backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withAlpha(150),
     builder: (context) {
       return BackdropFilter(
@@ -21,7 +20,7 @@ Future<T?> showGlassModal<T>({
           decoration: BoxDecoration(
             color: const Color.fromRGBO(16, 16, 20, 0.85),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(color: Colors.transparent, width: 1.5),
+            border: Border.all(color: Colors.white, width: 1.5),
           ),
           child: Column(
             children: [
@@ -31,7 +30,7 @@ Future<T?> showGlassModal<T>({
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.transparent,
+                  color: Colors.white54,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),

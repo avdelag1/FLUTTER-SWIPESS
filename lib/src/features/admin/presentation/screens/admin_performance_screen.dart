@@ -66,7 +66,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.transparent),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Column(
                     children: [

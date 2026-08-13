@@ -17,7 +17,6 @@ class PublicListingPreviewScreen extends ConsumerWidget {
     final async = ref.watch(listingByIdProvider(listingId));
 
     return Scaffold(
-      backgroundColor: Colors.black,
       body: async.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
@@ -40,7 +39,6 @@ class PublicListingPreviewScreen extends ConsumerWidget {
               SliverAppBar(
                 expandedHeight: 360,
                 pinned: true,
-                backgroundColor: Colors.black,
                 leading: IconButton(
                   onPressed: () {
                     if (context.canPop()) {
@@ -120,7 +118,6 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                         child: FilledButton(
                           onPressed: () => context.go('/welcome'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppTheme.brandPrimary,
                           ),
                           child: Text(
                             'JOIN SWIPESS TO MESSAGE',

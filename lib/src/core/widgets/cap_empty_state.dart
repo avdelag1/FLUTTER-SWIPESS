@@ -64,7 +64,7 @@ class CapEmptyState extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(19),
-              border: Border.all(color: Colors.transparent),
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Icon(icon, color: accent, size: 28),
           ),
@@ -158,7 +158,7 @@ class CapPageHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.transparent),
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,

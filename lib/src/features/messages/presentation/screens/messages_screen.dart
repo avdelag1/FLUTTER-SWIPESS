@@ -38,7 +38,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final well = MatteSurface.well(context);
 
     return Scaffold(
-      backgroundColor: MatteSurface.canvas(context),
       body: Stack(
         children: [
           // Ambient Background
@@ -392,7 +391,6 @@ class _ChatTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: MatteSurface.well(context),
                   backgroundImage: conversation.avatarUrl != null 
                     ? NetworkImage(conversation.avatarUrl!) 
                     : null,

@@ -77,7 +77,6 @@ class DashboardShell extends ConsumerWidget {
     final dockBorder = isLight ? Colors.black : Colors.white;
 
     return Scaffold(
-      backgroundColor: canvas,
       extendBodyBehindAppBar: true,
       extendBody: true,
       appBar: hideChrome

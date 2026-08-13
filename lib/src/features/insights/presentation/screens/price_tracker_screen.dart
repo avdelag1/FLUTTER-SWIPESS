@@ -39,7 +39,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.transparent),
+                        border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
@@ -118,7 +118,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.transparent),
+                            border: Border.all(color: Colors.white, width: 1.5),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,15 +289,8 @@ class _ZoneChip extends StatelessWidget {
       child: NeoNaiveChip(
         label: label,
         selected: selected,
-        onSelected: (_) => onTap(),
+        onSelected: () => onTap(),
         selectedColor: AppTheme.brandPrimary,
-        backgroundColor: Colors.transparent,
-        labelStyle: TextStyle(
-          color: selected ? Colors.white : Colors.white70,
-          fontWeight: FontWeight.w800,
-          fontSize: 11,
-        ),
-        side: BorderSide(color: Colors.transparent),
       ),
     );
   }

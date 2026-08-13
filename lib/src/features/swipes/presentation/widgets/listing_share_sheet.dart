@@ -11,7 +11,6 @@ Future<void> showListingShareSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: Colors.transparent,
     builder: (_) => _ShareSheet(listing: listing),
   );
 }

@@ -75,7 +75,6 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                 icon: const Icon(Icons.upload_rounded, size: 16),
                 label: Text(t(ref, 'flutter.upload', 'Upload')),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                 ),
               ),
             ),
@@ -127,7 +126,6 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                             },
                             child: const CircleAvatar(
                               radius: 12,
-                              backgroundColor: Colors.black54,
                               child: Icon(Icons.close, size: 14, color: Colors.white),
                             ),
                           ),

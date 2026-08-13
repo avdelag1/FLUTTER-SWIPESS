@@ -171,7 +171,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                   child: LinearProgressIndicator(
                     value: (draft.step + 1) / _steps.length,
                     minHeight: 3,
-                    backgroundColor: Colors.transparent,
                     valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)),
                   ),
                 ),
@@ -570,7 +569,6 @@ class _PhotosStep extends ConsumerWidget {
                 label: const Text('Gallery'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white38),
                 ),
               ),
             ),
@@ -600,7 +598,6 @@ class _PhotosStep extends ConsumerWidget {
                 icon: const Icon(Icons.photo_camera_rounded, size: 18),
                 label: const Text('Camera'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.brandPrimary,
                 ),
               ),
             ),
@@ -659,7 +656,6 @@ class _PhotosStep extends ConsumerWidget {
                         ref.read(addListingProvider.notifier).removePhoto(index),
                     child: const CircleAvatar(
                       radius: 12,
-                      backgroundColor: Colors.black54,
                       child: Icon(Icons.close, size: 14, color: Colors.white),
                     ),
                   ),
@@ -707,7 +703,7 @@ class _PhotosStep extends ConsumerWidget {
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFEB4898).withAlpha(120)),
+              border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Row(
               children: [

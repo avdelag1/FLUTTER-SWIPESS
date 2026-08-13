@@ -77,7 +77,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0C),
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Stack(
         children: [
@@ -217,7 +217,7 @@ class _RadiusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(color: Colors.white, width: 1.5),
       ),
       child: Column(
         children: [
@@ -488,7 +488,7 @@ class _CategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Text(
           label.toUpperCase(),
@@ -533,7 +533,7 @@ class _GlassRoundButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(77),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.transparent),
+          border: Border.all(color: Colors.white, width: 1.5),
           boxShadow: const [
             BoxShadow(color: Color(0x80000000), blurRadius: 24),
           ],

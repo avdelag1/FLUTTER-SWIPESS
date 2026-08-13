@@ -94,7 +94,6 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF16161C),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           match ? 'Remove Match?' : 'Remove from likes?',

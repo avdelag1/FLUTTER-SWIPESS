@@ -46,7 +46,8 @@ class GlassTextField extends StatelessWidget {
               color: AppTheme.inputFill,
               borderRadius: BorderRadius.circular(multi ? 16 : 999),
               border: Border.all(
-                color: hasError ? const Color(0xFFF87171) : const Color(0x4DFFFFFF),
+                color: hasError ? const Color(0xFFF87171) : Colors.white,
+                width: 1.5,
               ),
             ),
             child: Row(
