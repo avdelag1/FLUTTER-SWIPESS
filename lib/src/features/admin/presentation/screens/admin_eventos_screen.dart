@@ -170,9 +170,9 @@ class _EventTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(20)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [
@@ -243,7 +243,7 @@ class _SubCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -288,7 +288,7 @@ class _EventForm extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(

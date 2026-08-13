@@ -46,9 +46,9 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(18),
+                            color: Colors.transparent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withAlpha(35)),
+                            border: Border.all(color: Colors.transparent),
                           ),
                           child: const Icon(Icons.arrow_back_ios_new_rounded,
                               color: Colors.white, size: 18),
@@ -202,7 +202,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                           borderRadius:
                                               BorderRadius.circular(999),
                                           border: Border.all(
-                                            color: Colors.white.withAlpha(30),
+                                            color: Colors.transparent,
                                           ),
                                         ),
                                         child: Text(
@@ -222,10 +222,10 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                   width: 56,
                                   height: 56,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withAlpha(40),
+                                    color: Colors.transparent,
                                     borderRadius: BorderRadius.circular(18),
                                     border: Border.all(
-                                      color: Colors.white.withAlpha(40),
+                                      color: Colors.transparent,
                                     ),
                                   ),
                                   child: const Icon(Icons.qr_code_2_rounded,
@@ -332,9 +332,9 @@ class _OfferTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(28)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [
@@ -414,9 +414,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(28)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,10 +468,10 @@ class _EmptyPane extends StatelessWidget {
       margin: const EdgeInsets.only(top: 24),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withAlpha(20),
+          color: Colors.transparent,
           style: BorderStyle.solid,
         ),
       ),
@@ -524,7 +524,7 @@ class _ResidentQrModal extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF101014),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white.withAlpha(35)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

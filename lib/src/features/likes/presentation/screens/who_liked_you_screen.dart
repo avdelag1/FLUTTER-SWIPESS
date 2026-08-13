@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
@@ -72,7 +72,8 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(whoLikedYouProvider);
 
-    return NeoNaiveScaffold(
+    return Scaffold(
+      backgroundColor: MatteSurface.canvas(context),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +94,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF14141A),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withAlpha(40)),
+                  border: Border.all(color: Colors.transparent),
                 ),
                 child: Row(
                   children: [

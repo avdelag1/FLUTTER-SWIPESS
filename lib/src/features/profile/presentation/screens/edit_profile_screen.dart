@@ -104,14 +104,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
     final top = MediaQuery.paddingOf(context).top;
 
-    return NeoNaiveScaffold(
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(20, top + 12, 20, 40),
-        children: [
-          Row(
-            children: [
-              GlassIconCircle(
-                icon: Icons.arrow_back_ios_new_rounded,
+    return Scaffold(
+      backgroundColor: AppTheme.surfaceColor,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
                 onPressed: () => context.pop(),
               ),
               const SizedBox(width: 14),
@@ -230,11 +234,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          GlassTextField(
-            controller: _bioController,
-            hint: 'Write a short bio',
-            icon: Icons.notes_rounded,
-            maxLines: 4,
+        ],
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.transparent),
           ),
           const SizedBox(height: 28),
           BrandPrimaryButton(

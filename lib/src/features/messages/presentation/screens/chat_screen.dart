@@ -301,18 +301,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Search in this chat…',
-                  hintStyle: TextStyle(color: Colors.white.withAlpha(80)),
+                  hintStyle: TextStyle(color: Colors.transparent),
                   prefixIcon: const Icon(Icons.search, color: _orange, size: 18),
                   filled: true,
-                  fillColor: Colors.white.withAlpha(12),
+                  fillColor: Colors.transparent,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(24)),
+                    borderSide: BorderSide(color: Colors.transparent),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(24)),
+                    borderSide: BorderSide(color: Colors.transparent),
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(999)),
@@ -406,7 +406,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   border: mine
                                       ? null
                                       : Border.all(
-                                          color: Colors.white.withAlpha(20),
+                                          color: Colors.transparent,
                                         ),
                                   boxShadow: mine
                                       ? const [
@@ -465,7 +465,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xE6121214),
                         borderRadius: BorderRadius.circular(32),
-                        border: Border.all(color: Colors.white.withAlpha(20)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: Wrap(
                         spacing: 4,
@@ -531,10 +531,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               'Escribe un mensaje...',
                             ),
                             hintStyle: TextStyle(
-                              color: Colors.white.withAlpha(80),
+                              color: Colors.transparent,
                             ),
                             filled: true,
-                            fillColor: Colors.white.withAlpha(12),
+                            fillColor: Colors.transparent,
                             contentPadding: const EdgeInsets.fromLTRB(
                               20,
                               14,
@@ -544,13 +544,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide(
-                                color: Colors.white.withAlpha(24),
+                                color: Colors.transparent,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide(
-                                color: Colors.white.withAlpha(24),
+                                color: Colors.transparent,
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
@@ -697,7 +697,7 @@ class _ThreadEmpty extends StatelessWidget {
                     const Color(0x337C3AED),
                   ],
                 ),
-                border: Border.all(color: Colors.white.withAlpha(14)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Icon(icon, color: Colors.white, size: 36),
             ),

@@ -70,7 +70,7 @@ class NotificationsScreen extends ConsumerWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.notifications_none_rounded, size: 48, color: Colors.white.withAlpha(60)),
+                            Icon(Icons.notifications_none_rounded, size: 48, color: Colors.transparent),
                             const SizedBox(height: 12),
                             Text(
                               'Silence is golden',

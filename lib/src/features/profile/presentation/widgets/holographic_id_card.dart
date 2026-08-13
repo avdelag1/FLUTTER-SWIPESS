@@ -83,7 +83,7 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
           decoration: BoxDecoration(
             color: const Color(0xFF0A0F1A),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: Colors.white.withAlpha(25), width: 1),
+            border: Border.all(color: Colors.transparent, width: 1),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFFFF4D00).withAlpha(25),

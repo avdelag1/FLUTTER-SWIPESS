@@ -145,7 +145,7 @@ class PromoteCTACard extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(14),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: Colors.white24),
                     ),
@@ -210,7 +210,7 @@ class PromoteCTACard extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.brandPrimary.withAlpha(90),
+                          color: Colors.transparent,
                           blurRadius: 28,
                           offset: const Offset(0, 10),
                         ),

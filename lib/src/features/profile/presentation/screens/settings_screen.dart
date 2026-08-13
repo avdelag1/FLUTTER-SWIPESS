@@ -150,14 +150,50 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 22),
             _GroupLabel('HELP'),
             const SizedBox(height: 10),
-            NeoNaiveGroup(
-              children: [
-                _SettingsRow(
-                  icon: Icons.help_outline_rounded,
-                  label: 'FAQ',
-                  description: 'Common questions & guidance',
-                  colors: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
-                  onTap: () => _push(context, const FAQScreen()),
+            _GradTile(
+              icon: Icons.help_outline_rounded,
+              label: 'FAQ',
+              description: 'Common questions & guidance',
+              colors: const [Color(0xFF0EA5E9), Color(0xFF38BDF8)],
+              onTap: () => _push(context, const FAQScreen()),
+            ),
+            _GradTile(
+              icon: Icons.info_rounded,
+              label: 'ABOUT SWIPESS',
+              description: 'Mission & how the protocol works',
+              colors: const [Color(0xFF4C1D95), Color(0xFFA855F7)],
+              onTap: () => _push(context, const AboutScreen()),
+            ),
+            _GradTile(
+              icon: Icons.mail_outline_rounded,
+              label: 'CONTACT',
+              description: 'Email the Swipess team',
+              colors: const [Color(0xFF64748B), Color(0xFF94A3B8)],
+              onTap: () => _push(context, const ContactSupportScreen()),
+            ),
+            _GradTile(
+              icon: Icons.support_agent_rounded,
+              label: 'NEURAL SUPPORT',
+              description: 'Customer Sync tickets (Cap SupportDialog)',
+              colors: const [Color(0xFF7C3AED), Color(0xFFA855F7)],
+              onTap: () => showSupportDialog(context),
+            ),
+            _GradTile(
+              icon: Icons.gavel_rounded,
+              label: 'TERMS & PRIVACY',
+              description: 'Legal documents',
+              colors: const [Color(0xFF6366F1), Color(0xFF818CF8)],
+              onTap: () => showLegalSheet(context, doc: LegalDoc.terms),
+            ),
+            const SizedBox(height: 28),
+            OutlinedButton(
+              onPressed: () => _resetPassword(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white70,
+                side: BorderSide(color: Colors.transparent),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 _SettingsRow(
                   icon: Icons.info_rounded,
@@ -345,12 +381,12 @@ class _SettingsRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   Text(
@@ -397,9 +433,9 @@ class _RoundBack extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(18),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(35)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Icon(Icons.arrow_back_ios_new_rounded,
             color: Colors.white, size: 18),

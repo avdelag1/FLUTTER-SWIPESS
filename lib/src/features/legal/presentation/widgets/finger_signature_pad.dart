@@ -25,7 +25,7 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
         Container(
           height: 220,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(10),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(32),
             border: Border.all(color: const Color(0x33FC567E)),
             boxShadow: [

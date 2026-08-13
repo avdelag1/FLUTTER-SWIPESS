@@ -57,9 +57,9 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(12),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withAlpha(25)),
+              border: Border.all(color: Colors.transparent),
             ),
             child: Text(
               contract.content?.trim().isNotEmpty == true

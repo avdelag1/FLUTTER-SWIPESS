@@ -558,8 +558,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              backgroundColor: Colors.white.withAlpha(14),
-                              side: BorderSide(color: Colors.white.withAlpha(30)),
+                              backgroundColor: Colors.transparent,
+                              side: BorderSide(color: Colors.transparent),
                               onPressed: _loading ? null : () => _submit(item),
                             ),
                         ],
@@ -595,9 +595,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                backgroundColor: AppTheme.brandPrimary.withAlpha(40),
+                                backgroundColor: Colors.transparent,
                                 side: BorderSide(
-                                  color: AppTheme.brandPrimary.withAlpha(90),
+                                  color: Colors.transparent,
                                 ),
                                 onPressed: chip.onTap,
                               ),
@@ -635,7 +635,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF14141A),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.white.withAlpha(50)),
+                              border: Border.all(color: Colors.transparent),
                             ),
                             child: Row(
                               children: [
@@ -686,8 +686,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             height: 48,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withAlpha(20),
-                              border: Border.all(color: Colors.white.withAlpha(40)),
+                              color: Colors.transparent,
+                              border: Border.all(color: Colors.transparent),
                             ),
                             child: _loading
                                 ? const Padding(
@@ -768,10 +768,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 margin: const EdgeInsets.only(bottom: 8),
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(10),
+                                  color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withAlpha(20),
+                                    color: Colors.transparent,
                                   ),
                                 ),
                                 child: Text(
@@ -828,7 +828,7 @@ class _Bubble extends StatelessWidget {
                     ? AppTheme.brandPrimary.withAlpha(40)
                     : Colors.white.withAlpha(12),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withAlpha(24)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Text(
                 text,
@@ -895,8 +895,8 @@ class _RoundIcon extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withAlpha(14),
-          border: Border.all(color: Colors.white.withAlpha(35)),
+          color: Colors.transparent,
+          border: Border.all(color: Colors.transparent),
         ),
         child: Icon(icon, color: color ?? Colors.white, size: 18),
       ),

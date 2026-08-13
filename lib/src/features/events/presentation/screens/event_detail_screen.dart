@@ -463,7 +463,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               width: 56,
                               height: 56,
                               decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(18),
+                                color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: const Icon(Icons.verified_user_rounded,
@@ -527,7 +527,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(12),
+                                  color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(color: Colors.white12),
                                 ),
@@ -785,7 +785,7 @@ class _InfoRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white12),
       ),

@@ -178,7 +178,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(120),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withAlpha(40)),
+                    border: Border.all(color: Colors.transparent),
                   ),
                   child: Icon(
                     soundOn

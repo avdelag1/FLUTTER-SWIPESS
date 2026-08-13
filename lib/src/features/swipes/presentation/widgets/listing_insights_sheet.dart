@@ -183,7 +183,7 @@ class _InsightsSheet extends StatelessWidget {
                       width: (MediaQuery.sizeOf(context).width - 50) / 2,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(12),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(color: Colors.white24),
                       ),
@@ -264,7 +264,7 @@ class _InsightsSheet extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(12),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(color: Colors.white24),
                         ),
@@ -347,7 +347,7 @@ class _Rail extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(14),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white24),
         ),

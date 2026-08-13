@@ -182,9 +182,9 @@ class _ClientCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(25)),
+            border: Border.all(color: Colors.transparent),
           ),
           child: Row(
             children: [
@@ -261,9 +261,9 @@ class _Back extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(40)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Center(
           child: Icon(Icons.arrow_back_ios_new_rounded,

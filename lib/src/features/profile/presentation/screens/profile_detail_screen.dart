@@ -257,9 +257,9 @@ class _BodyState extends State<_Body> {
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(14),
+                        color: Colors.transparent,
                         border: Border(
-                          top: BorderSide(color: Colors.white.withAlpha(30)),
+                          top: BorderSide(color: Colors.transparent),
                         ),
                       ),
                       child: Column(
@@ -327,7 +327,7 @@ class _BodyState extends State<_Body> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 7),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.brandPrimary.withAlpha(35),
+                                      color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(999),
                                       border: Border.all(
                                           color: AppTheme.brandPrimary

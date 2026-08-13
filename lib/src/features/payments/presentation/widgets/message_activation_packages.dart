@@ -69,9 +69,9 @@ class MessageActivationPackages extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(14),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withAlpha(28)),
+              border: Border.all(color: Colors.transparent),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -217,7 +217,7 @@ Future<void> showMessageActivationPackages(
             decoration: BoxDecoration(
               color: const Color(0xFF050505),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border.all(color: Colors.white.withAlpha(28)),
+              border: Border.all(color: Colors.transparent),
             ),
             child: Column(
               children: [
@@ -226,7 +226,7 @@ Future<void> showMessageActivationPackages(
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(50),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -292,7 +292,7 @@ class _PackCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: border),
         gradient: LinearGradient(
@@ -336,7 +336,7 @@ class _PackCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(14),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(22),
             ),
             child: Icon(icon, color: iconColor, size: 28),

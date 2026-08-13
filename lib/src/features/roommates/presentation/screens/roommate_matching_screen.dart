@@ -128,7 +128,7 @@ class _RoommateMatchingScreenState
                             : () => _swipe(current, like: false),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          side: BorderSide(color: Colors.white.withAlpha(50)),
+                          side: BorderSide(color: Colors.transparent),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
@@ -141,9 +141,9 @@ class _RoommateMatchingScreenState
                     IconButton.filled(
                       onPressed: _busy ? null : () => _message(current),
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withAlpha(18),
+                        backgroundColor: Colors.transparent,
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withAlpha(40)),
+                        side: BorderSide(color: Colors.transparent),
                         padding: const EdgeInsets.all(14),
                       ),
                       icon: const Icon(Icons.chat_bubble_outline_rounded),
@@ -338,10 +338,10 @@ class _RoommateMatchingScreenState
                           () => draft = draft.copyWith(clearCity: true),
                         ),
                         selectedColor: AppTheme.brandPrimary,
-                        backgroundColor: Colors.white.withAlpha(12),
+                        backgroundColor: Colors.transparent,
                         labelStyle: const TextStyle(
                             color: Colors.white, fontWeight: FontWeight.w700),
-                        side: BorderSide(color: Colors.white.withAlpha(30)),
+                        side: BorderSide(color: Colors.transparent),
                       ),
                       for (final city in ListingTaxonomies.popularCities.take(8))
                         ChoiceChip(
@@ -351,10 +351,10 @@ class _RoommateMatchingScreenState
                             () => draft = draft.copyWith(city: city),
                           ),
                           selectedColor: AppTheme.brandPrimary,
-                          backgroundColor: Colors.white.withAlpha(12),
+                          backgroundColor: Colors.transparent,
                           labelStyle: const TextStyle(
                               color: Colors.white, fontWeight: FontWeight.w700),
-                          side: BorderSide(color: Colors.white.withAlpha(30)),
+                          side: BorderSide(color: Colors.transparent),
                         ),
                     ],
                   ),
@@ -502,7 +502,7 @@ class _DetailsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(16),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white24),
       ),

@@ -137,9 +137,9 @@ class _DocRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(20)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [

@@ -107,9 +107,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(38),
+                    color: Colors.transparent,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withAlpha(64)),
+                    border: Border.all(color: Colors.transparent),
                   ),
                   child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
                 ),
@@ -290,12 +290,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       const SizedBox(height: 32),
                       Row(
                         children: [
-                          Expanded(child: Divider(color: Colors.white.withAlpha(50))),
+                          Expanded(child: Divider(color: Colors.transparent)),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Text('or', style: TextStyle(color: Colors.white.withAlpha(128))),
                           ),
-                          Expanded(child: Divider(color: Colors.white.withAlpha(50))),
+                          Expanded(child: Divider(color: Colors.transparent)),
                         ],
                       ),
                       const SizedBox(height: 32),

@@ -21,7 +21,7 @@ Future<T?> showGlassModal<T>({
           decoration: BoxDecoration(
             color: const Color.fromRGBO(16, 16, 20, 0.85),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            border: Border.all(color: Colors.white.withAlpha(20), width: 1.5),
+            border: Border.all(color: Colors.transparent, width: 1.5),
           ),
           child: Column(
             children: [
@@ -31,7 +31,7 @@ Future<T?> showGlassModal<T>({
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),

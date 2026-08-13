@@ -147,16 +147,16 @@ class _ReportSheetState extends State<_ReportSheet> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Describe the issue…',
-                  hintStyle: TextStyle(color: Colors.white.withAlpha(90)),
+                  hintStyle: TextStyle(color: Colors.transparent),
                   filled: true,
-                  fillColor: Colors.white.withAlpha(12),
+                  fillColor: Colors.transparent,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+                    borderSide: BorderSide(color: Colors.transparent),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+                    borderSide: BorderSide(color: Colors.transparent),
                   ),
                 ),
               ),

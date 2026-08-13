@@ -265,7 +265,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xF2161B27),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white.withAlpha(30)),
+                    border: Border.all(color: Colors.transparent),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -345,7 +345,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                               color: const Color(0xF2161B27),
                               borderRadius: BorderRadius.circular(999),
                               border:
-                                  Border.all(color: Colors.white.withAlpha(30)),
+                                  Border.all(color: Colors.transparent),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -381,7 +381,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                               color: const Color(0xF212161F),
                               borderRadius: BorderRadius.circular(16),
                               border:
-                                  Border.all(color: Colors.white.withAlpha(30)),
+                                  Border.all(color: Colors.transparent),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

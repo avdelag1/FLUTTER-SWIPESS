@@ -23,9 +23,9 @@ class FAQScreen extends StatelessWidget {
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(20),
+                      color: Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withAlpha(40)),
+                      border: Border.all(color: Colors.transparent),
                     ),
                     child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
                   ),
@@ -104,7 +104,7 @@ class FAQScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(child: Divider(color: Colors.white.withAlpha(20))),
+          Expanded(child: Divider(color: Colors.transparent)),
         ],
       ),
     );
@@ -114,9 +114,9 @@ class FAQScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(20)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Theme(
         data: ThemeData(dividerColor: Colors.transparent),

@@ -141,7 +141,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
                                 side: BorderSide(
-                                  color: Colors.white.withAlpha(70),
+                                  color: Colors.transparent,
                                 ),
                               ),
                             ),
@@ -272,9 +272,9 @@ class _VapPreviewCard extends StatelessWidget {
       width: 280,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(28),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withAlpha(90)),
+        border: Border.all(color: Colors.transparent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(120),

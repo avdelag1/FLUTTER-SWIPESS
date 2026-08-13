@@ -39,9 +39,9 @@ class PremiumLikedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withAlpha(16)),
+        border: Border.all(color: Colors.transparent),
         boxShadow: const [
           BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 12)),
         ],
@@ -85,9 +85,9 @@ class PremiumLikedCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(26),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white.withAlpha(51)),
+                      border: Border.all(color: Colors.transparent),
                     ),
                     child: Text(
                       category.toUpperCase(),
@@ -114,7 +114,7 @@ class PremiumLikedCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.black.withAlpha(102),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(26)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Icon(
                         Icons.delete_outline_rounded,
@@ -293,10 +293,10 @@ class PremiumLikedCard extends StatelessWidget {
                         child: Container(
                           height: 48,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(15),
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                             border:
-                                Border.all(color: Colors.white.withAlpha(22)),
+                                Border.all(color: Colors.transparent),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -329,7 +329,7 @@ class PremiumLikedCard extends StatelessWidget {
 
   Widget _fallback() {
     return ColoredBox(
-      color: Colors.white.withAlpha(8),
+      color: Colors.transparent,
       child: Icon(
         isProfile ? Icons.person_rounded : Icons.home_outlined,
         size: 48,
@@ -349,9 +349,9 @@ class _SpecChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(20)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

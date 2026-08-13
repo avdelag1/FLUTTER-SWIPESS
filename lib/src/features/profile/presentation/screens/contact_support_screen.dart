@@ -48,9 +48,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(20),
+                      color: Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withAlpha(40)),
+                      border: Border.all(color: Colors.transparent),
                     ),
                     child: const Center(
                       child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -68,9 +68,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(12),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withAlpha(25)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Column(
                 children: [
@@ -115,7 +115,15 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                         NeoNaiveChip(
                           label: t.$2,
                           selected: _topic == t.$1,
-                          onSelected: () => setState(() => _topic = t.$1),
+                          onSelected: (_) => setState(() => _topic = t.$1),
+                          selectedColor: AppTheme.brandPrimary,
+                          backgroundColor: Colors.transparent,
+                          labelStyle: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                          side: BorderSide(color: Colors.transparent),
                         ),
                     ],
                   ),

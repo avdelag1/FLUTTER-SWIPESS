@@ -109,9 +109,9 @@ class _SubscriptionPackagesScreenState
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -236,7 +236,7 @@ class _PackageCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
         border: Border.all(
           color: isPopular ? color.withAlpha(150) : Colors.white.withAlpha(25),

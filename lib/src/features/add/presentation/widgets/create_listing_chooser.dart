@@ -104,7 +104,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.white.withAlpha(40))),
+                  Expanded(child: Divider(color: Colors.transparent)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
@@ -117,7 +117,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: Colors.white.withAlpha(40))),
+                  Expanded(child: Divider(color: Colors.transparent)),
                 ],
               ),
               const SizedBox(height: 14),
@@ -239,7 +239,7 @@ class _ModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF16161C),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withAlpha(28)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           children: [
@@ -247,7 +247,7 @@ class _ModeCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppTheme.brandPrimary.withAlpha(40),
+                color: Colors.transparent,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: AppTheme.brandPrimary),
@@ -401,7 +401,7 @@ class _ManualTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF16161C),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white.withAlpha(28)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Row(
                 children: [
@@ -480,9 +480,9 @@ class _Close extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(18),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(35)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
       ),

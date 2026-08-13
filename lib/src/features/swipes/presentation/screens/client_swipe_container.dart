@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -397,6 +397,12 @@ class _SwipeDeckDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = MatteSurface.isLight(context);
+    final dockFill = MatteSurface.well(context).withAlpha(isLight ? 250 : 245);
+    final dockBorder =
+        isLight ? Colors.black.withAlpha(28) : Colors.white.withAlpha(200);
+    final iconIdle = isLight ? const Color(0xFF111111) : Colors.white;
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 300),
@@ -405,27 +411,38 @@ class _SwipeDeckDock extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: AppTheme.dashWell.withAlpha(245),
+            color: dockFill,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withAlpha(200), width: 1.5),
+            border: Border.all(color: dockBorder, width: 1.5),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _DockIcon(icon: Icons.bolt_rounded, onTap: onDashboard),
+              _DockIcon(
+                icon: Icons.bolt_rounded,
+                onTap: onDashboard,
+                idleColor: iconIdle,
+              ),
               _DockIcon(
                 icon: Icons.local_fire_department_rounded,
                 onTap: onTokens,
+                idleColor: iconIdle,
               ),
-              _DockIcon(icon: Icons.smart_toy_outlined, onTap: onAi),
+              _DockIcon(
+                icon: Icons.smart_toy_outlined,
+                onTap: onAi,
+                idleColor: iconIdle,
+              ),
               _DockIcon(
                 icon: Icons.add_circle_rounded,
                 onTap: onAdd,
                 accent: true,
+                idleColor: iconIdle,
               ),
               _DockIcon(
                 icon: Icons.chat_bubble_outline_rounded,
                 onTap: onAi,
+                idleColor: iconIdle,
               ),
             ],
           ),
@@ -439,11 +456,13 @@ class _DockIcon extends StatelessWidget {
   const _DockIcon({
     required this.icon,
     required this.onTap,
+    required this.idleColor,
     this.accent = false,
   });
 
   final IconData icon;
   final VoidCallback onTap;
+  final Color idleColor;
   final bool accent;
 
   @override
@@ -466,7 +485,7 @@ class _DockIcon extends StatelessWidget {
         child: Icon(
           icon,
           size: accent ? 22 : 18,
-          color: accent ? const Color(0xFFFF4D6A) : Colors.white,
+          color: accent ? const Color(0xFFFF4D6A) : idleColor,
         ),
       ),
     );

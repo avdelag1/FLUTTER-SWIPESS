@@ -39,9 +39,9 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(18),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(35)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new_rounded,
                           color: Colors.white, size: 18),
@@ -92,7 +92,15 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       child: NeoNaiveChip(
                         label: p.$2,
                         selected: _pricing == p.$1,
-                        onSelected: () => setState(() => _pricing = p.$1),
+                        onSelected: (_) => setState(() => _pricing = p.$1),
+                        selectedColor: AppTheme.brandPrimary,
+                        labelStyle: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -110,7 +118,15 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                     child: NeoNaiveChip(
                       label: 'All services',
                       selected: _service == null,
-                      onSelected: () => setState(() => _service = null),
+                      onSelected: (_) => setState(() => _service = null),
+                      selectedColor: AppTheme.brandPrimary,
+                      labelStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                      ),
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide(color: Colors.transparent),
                     ),
                   ),
                   for (final s in serviceCategories.take(24))
@@ -119,7 +135,16 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       child: NeoNaiveChip(
                         label: s.label,
                         selected: _service == s.value,
-                        onSelected: () => setState(() => _service = s.value),
+                        onSelected: (_) =>
+                            setState(() => _service = s.value),
+                        selectedColor: AppTheme.brandPrimary,
+                        labelStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -206,9 +231,9 @@ class _WorkerCard extends StatelessWidget {
         child: Container(
           height: 112,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(25)),
+            border: Border.all(color: Colors.transparent),
           ),
           clipBehavior: Clip.antiAlias,
           child: Row(

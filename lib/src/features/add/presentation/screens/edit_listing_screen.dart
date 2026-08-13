@@ -91,9 +91,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -422,7 +422,7 @@ class _PhotoGrid extends ConsumerWidget {
         height: 100,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(10),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white24),
         ),

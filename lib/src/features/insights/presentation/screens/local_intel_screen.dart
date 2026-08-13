@@ -74,7 +74,15 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                       child: NeoNaiveChip(
                         label: entry.value,
                         selected: _category == entry.key,
-                        onSelected: () => setState(() => _category = entry.key),
+                        onSelected: (_) => setState(() => _category = entry.key),
+                        selectedColor: AppTheme.brandPrimary,
+                        backgroundColor: Colors.transparent,
+                        labelStyle: TextStyle(
+                          color: _category == entry.key ? Colors.white : Colors.white70,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                        ),
+                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -132,9 +140,9 @@ class _IntelCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.transparent),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -225,9 +233,9 @@ class _BackButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(40)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Center(
           child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),

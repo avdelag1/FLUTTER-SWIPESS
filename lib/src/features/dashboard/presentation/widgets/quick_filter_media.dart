@@ -299,7 +299,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(120),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withAlpha(40)),
+                    border: Border.all(color: Colors.transparent),
                   ),
                   child: Icon(
                     soundOn

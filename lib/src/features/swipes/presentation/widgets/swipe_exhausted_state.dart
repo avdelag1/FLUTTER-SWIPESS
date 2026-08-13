@@ -77,7 +77,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0C),
         borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: Colors.white.withAlpha(20)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Stack(
         children: [
@@ -215,9 +215,9 @@ class _RadiusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: Colors.white.withAlpha(38)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Column(
         children: [
@@ -355,7 +355,7 @@ class _MapCta extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.brandPrimary.withAlpha(90),
+              color: Colors.transparent,
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -453,7 +453,7 @@ class _AiCta extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(38),
+                  color: Colors.transparent,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -486,9 +486,9 @@ class _CategoryChip extends StatelessWidget {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(26),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withAlpha(46)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Text(
           label.toUpperCase(),
@@ -533,7 +533,7 @@ class _GlassRoundButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(77),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(76)),
+          border: Border.all(color: Colors.transparent),
           boxShadow: const [
             BoxShadow(color: Color(0x80000000), blurRadius: 24),
           ],

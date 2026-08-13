@@ -122,7 +122,17 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                       child: NeoNaiveChip(
                         label: c.$2,
                         selected: _category == c.$1,
-                        onSelected: () => setState(() => _category = c.$1),
+                        onSelected: (_) => setState(() => _category = c.$1),
+                        selectedColor: AppTheme.brandPrimary,
+                        labelStyle: TextStyle(
+                          color: _category == c.$1
+                              ? Colors.white
+                              : Colors.white70,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                        backgroundColor: Colors.transparent,
+                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -243,9 +253,9 @@ class _FavCard extends StatelessWidget {
         child: Container(
           height: 118,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(25)),
+            border: Border.all(color: Colors.transparent),
           ),
           clipBehavior: Clip.antiAlias,
           child: Row(
@@ -320,9 +330,9 @@ class _Back extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(20),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(40)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Center(
           child: Icon(Icons.arrow_back_ios_new_rounded,

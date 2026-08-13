@@ -32,10 +32,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    final pillFill =
-        isLight ? Colors.black.withAlpha(8) : Colors.white.withAlpha(14);
-    final pillBorder =
-        isLight ? Colors.black.withAlpha(28) : Colors.white.withAlpha(55);
+    final pillFill = Colors.transparent;
+    final pillBorder = isLight ? Colors.black : Colors.white;
 
     return Container(
       height: preferredSize.height + MediaQuery.of(context).padding.top,
@@ -101,10 +99,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   HapticFeedback.lightImpact();
                   ref.read(navTabProvider.notifier).set(NavTab.add);
                 },
-                child: const _WashIcon(
-                  wash: Color(0xFF69DB7C),
-                  child: Icon(Icons.auto_awesome_rounded,
-                      size: 16, color: Color(0xFF69DB7C)),
+                child: _WashIcon(
+                  wash: Colors.transparent,
+                  child: Icon(Icons.auto_awesome_rounded, size: 16, color: ink),
                 ),
               ),
             ],
@@ -121,11 +118,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     builder: (_) => const TokensModal(),
                   );
                 },
-                child: const _WashIcon(
-                  wash: Color(0xFFFFD43B),
+                child: _WashIcon(
+                  wash: Colors.transparent,
                   badge: true,
-                  child: Icon(Icons.workspace_premium_rounded,
-                      size: 16, color: Color(0xFFFFD43B)),
+                  child: Icon(Icons.workspace_premium_rounded, size: 16, color: ink),
                 ),
               ),
               const SizedBox(width: 8),
@@ -136,10 +132,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   HapticFeedback.lightImpact();
                   context.push(AppPaths.map);
                 },
-                child: const _WashIcon(
-                  wash: Color(0xFF4DABF7),
-                  child: Icon(Icons.public_rounded,
-                      size: 16, color: Color(0xFF4DABF7)),
+                child: _WashIcon(
+                  wash: Colors.transparent,
+                  child: Icon(Icons.public_rounded, size: 16, color: ink),
                 ),
               ),
               const SizedBox(width: 8),
@@ -151,17 +146,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ref.read(visualThemeProvider.notifier).toggle();
                 },
                 child: _WashIcon(
-                  wash: isLight
-                      ? const Color(0xFFFBBF24)
-                      : const Color(0xFF9775FA),
+                  wash: Colors.transparent,
                   child: Icon(
-                    isLight
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
+                    isLight ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                     size: 16,
-                    color: isLight
-                        ? const Color(0xFFFBBF24)
-                        : const Color(0xFF9775FA),
+                    color: ink,
                   ),
                 ),
               ),
@@ -176,10 +165,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    const _WashIcon(
-                      wash: Color(0xFFFF6B6B),
-                      child: Icon(Icons.notifications_rounded,
-                          size: 16, color: Color(0xFFFF6B6B)),
+                    _WashIcon(
+                      wash: Colors.transparent,
+                      child: Icon(Icons.notifications_rounded, size: 16, color: ink),
                     ),
                     ref.watch(unreadNotificationsProvider).when(
                           data: (count) {
@@ -249,10 +237,10 @@ class _GlassPill extends StatelessWidget {
         padding: wide ? const EdgeInsets.symmetric(horizontal: 10) : null,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: fill ?? Colors.white.withAlpha(14),
+          color: fill ?? Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: border ?? Colors.white.withAlpha(55),
+            color: border ?? Colors.white,
             width: 1.2,
           ),
         ),
@@ -281,8 +269,8 @@ class _WashIcon extends StatelessWidget {
         Container(
           width: 22,
           height: 22,
-          decoration: BoxDecoration(
-            color: wash.withAlpha(45),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,

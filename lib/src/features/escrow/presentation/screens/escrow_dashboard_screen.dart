@@ -69,7 +69,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                   child: Column(
                     children: [
                       Icon(Icons.shield_outlined,
-                          size: 56, color: Colors.white.withAlpha(60)),
+                          size: 56, color: Colors.transparent),
                       const SizedBox(height: 12),
                       Text(
                         'No deposits yet',
@@ -206,6 +206,12 @@ class EscrowDashboardScreen extends ConsumerWidget {
                             selected: selectedContract == null,
                             onSelected: () =>
                                 setModal(() => selectedContract = null),
+                            selectedColor: AppTheme.brandPrimary,
+                            backgroundColor: Colors.transparent,
+                            labelStyle: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700),
+                            side: BorderSide(color: Colors.transparent),
                           ),
                           for (final c in contracts.take(6))
                             NeoNaiveChip(
@@ -225,6 +231,14 @@ class EscrowDashboardScreen extends ConsumerWidget {
                                   }
                                 }
                               }),
+                              selectedColor: AppTheme.brandPrimary,
+                              backgroundColor: Colors.transparent,
+                              labelStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11),
+                              side: BorderSide(
+                                  color: Colors.transparent),
                             ),
                         ],
                       ),
@@ -420,9 +434,9 @@ class _DepositCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(22)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,7 +522,7 @@ class _DepositCard extends StatelessWidget {
                       onPressed: onRelease,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withAlpha(50)),
+                        side: BorderSide(color: Colors.transparent),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999)),
                       ),

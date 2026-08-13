@@ -193,7 +193,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                         hintText: 'Title',
                         hintStyle: const TextStyle(color: Colors.white38),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(12),
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -209,7 +209,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                         hintText: 'What should the brain remember?',
                         hintStyle: const TextStyle(color: Colors.white38),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(12),
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide.none,
@@ -267,7 +267,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       return Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(12),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: Colors.white24),
                         ),
