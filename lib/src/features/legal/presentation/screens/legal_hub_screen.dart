@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';

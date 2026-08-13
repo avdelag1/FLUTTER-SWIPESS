@@ -11,7 +11,6 @@ import 'package:flutter_swipes/src/features/legal/presentation/providers/contrac
 import 'package:flutter_swipes/src/features/legal/presentation/widgets/finger_signature_pad.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:signature/signature.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 class ContractSignScreen extends ConsumerStatefulWidget {
   const ContractSignScreen({super.key, required this.contract});

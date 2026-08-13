@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 class FAQScreen extends StatelessWidget {
   const FAQScreen({super.key});

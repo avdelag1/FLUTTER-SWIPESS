@@ -110,65 +110,30 @@ class DashboardShell extends ConsumerWidget {
             bottom: 18,
             left: 0,
             right: 0,
-            child: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 340),
-                  child: Container(
-                    height: 52,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: dockFill,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: dockBorder,
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isLight ? 40 : 160),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        shrinkWrap: true,
-                        children: [
-                          for (var i = 0; i < bottomNavItems.length; i++)
-                            _DockButton(
-                              item: bottomNavItems[i],
-                              wash: _washes[i % _washes.length],
-                              selected: currentTab == bottomNavItems[i].id,
-                              isLight: isLight,
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                final id = bottomNavItems[i].id;
-                                if (id == NavTab.filter) {
-                                  FilterBottomSheet.show(context);
-                                  return;
-                                }
-                                if (id == NavTab.add) {
-                                  showCreateListingChooser(context);
-                                  return;
-                                }
-                                if (id == NavTab.ai) {
-                                  showIntelCoreSheet(context);
-                                  return;
-                                }
-                                // Cap SEEKERS dock opens SeekerRequestDialog.
-                                if (id == NavTab.seekers) {
-                                  showSeekerRequestSheet(context, ref);
-                                  return;
-                                }
-                                ref.read(navTabProvider.notifier).set(id);
-                                context.go(AppPaths.pathForTab(id));
-                              },
+            child: AnimatedOpacity(
+              opacity: showChrome ? 1 : 0,
+              duration: Duration(milliseconds: showChrome ? 360 : 340),
+              curve: const Cubic(0.25, 0.1, 0.25, 1),
+              child: AnimatedSlide(
+                offset: showChrome ? Offset.zero : const Offset(0, 0.15),
+                duration: Duration(milliseconds: showChrome ? 360 : 340),
+                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                child: IgnorePointer(
+                  ignoring: !showChrome,
+                  child: SafeArea(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 340),
+                        child: Container(
+                          height: 52,
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: dockFill,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: dockBorder,
+                              width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
