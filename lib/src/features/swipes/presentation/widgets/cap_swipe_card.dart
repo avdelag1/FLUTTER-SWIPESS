@@ -7,7 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/listing_match_score.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_match_meter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
@@ -410,56 +413,79 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
 
-              // Cap Verified pill (violet glass)
-              if (!_zoomed && widget.listing.hasVerifiedDocuments)
+              // Cap Verified pill + SwipeMatchMeter
+              if (!_zoomed)
                 Positioned(
                   top: 66,
                   left: 18,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(90),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.listing.hasVerifiedDocuments)
+                        ClipRRect(
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white.withAlpha(70)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF8B5CF6).withAlpha(100),
-                              blurRadius: 16,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFA78BFA),
-                                shape: BoxShape.circle,
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha(90),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                    color: Colors.white.withAlpha(70)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color:
+                                        const Color(0xFF8B5CF6).withAlpha(100),
+                                    blurRadius: 16,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFA78BFA),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'VERIFIED',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'VERIFIED',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
+                      Builder(
+                        builder: (context) {
+                          final match = listingMatchPercentage(
+                            widget.listing,
+                            ref.watch(swipeFilterProvider),
+                          );
+                          if (match <= 0) return const SizedBox.shrink();
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              top: widget.listing.hasVerifiedDocuments ? 8 : 0,
+                            ),
+                            child: SwipeMatchMeter(percentage: match),
+                          );
+                        },
                       ),
-                    ),
+                    ],
                   ),
                 ),
 
