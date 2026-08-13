@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mute_button.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/promote_cta_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -383,6 +385,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
     } else {
       p.pause();
     }
+    final soundOn = ref.read(deckSoundOnProvider);
+    p.setVolume(soundOn ? 1 : 0);
   }
 
   Future<void> _bindVideo() async {
@@ -393,7 +397,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
     try {
       await next.initialize();
       await next.setLooping(true);
-      await next.setVolume(0);
+      final soundOn = ref.read(deckSoundOnProvider);
+      await next.setVolume(soundOn ? 1 : 0);
       if (widget.active) await next.play();
       if (mounted) setState(() {});
     } catch (_) {
@@ -453,6 +458,10 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   Widget build(BuildContext context) {
     final favorited = _favoritedOverride ??
         (ref.watch(eventFavoriteProvider(event.id)).value ?? false);
+    ref.listen<bool>(deckSoundOnProvider, (_, on) {
+      _player?.setVolume(on ? 1 : 0);
+      if (on && widget.active) _player?.play();
+    });
     final bottom = MediaQuery.paddingOf(context).bottom;
     final player = _player;
     final ready = player != null && player.value.isInitialized;
@@ -515,6 +524,16 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                         : Icons.favorite_border_rounded,
                     color: favorited ? const Color(0xFFF43F5E) : Colors.white,
                     onTap: _toggleFavorite,
+                  ),
+                  const SizedBox(height: 10),
+                  EventMuteButton(
+                    soundOn: ref.watch(deckSoundOnProvider),
+                    onToggle: () {
+                      final next = !ref.read(deckSoundOnProvider);
+                      ref.read(deckSoundOnProvider.notifier).setSoundOn(next);
+                      _player?.setVolume(next ? 1 : 0);
+                      if (next) _player?.play();
+                    },
                   ),
                   const SizedBox(height: 10),
                   Container(
