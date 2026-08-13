@@ -5,16 +5,12 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
-import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
-import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
-import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
-import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
-import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class BentoDashboardScreen extends ConsumerWidget {
@@ -136,8 +132,7 @@ class BentoDashboardScreen extends ConsumerWidget {
                     return SizedBox(
                       height: item.height,
                       child: EventsTeaserCard(
-                        onTap: () =>
-                            ref.read(navTabProvider.notifier).set(NavTab.events),
+                        onTap: () => context.go(AppPaths.exploreEvents),
                       ),
                     );
                   }
@@ -162,41 +157,34 @@ class BentoDashboardScreen extends ConsumerWidget {
     HapticFeedback.lightImpact();
     switch (id) {
       case 'legal':
-        ref.read(navTabProvider.notifier).set(NavTab.legal);
+        context.go(AppPaths.clientLegal);
         return;
       case 'seekers':
-        ref.read(navTabProvider.notifier).set(NavTab.seekers);
+        context.go(AppPaths.exploreSeekers);
         return;
       case 'premium':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SubscriptionPackagesScreen()),
-        );
+        context.push(AppPaths.subscriptionPackages);
         return;
       case 'video_tours':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const VideoToursScreen()),
-        );
+        context.push(AppPaths.exploreTours);
         return;
       case 'roommates':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
-        );
+        context.push(AppPaths.exploreRoommates);
         return;
       case 'intel':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
-        );
+        context.push(AppPaths.exploreIntel);
         return;
       case 'prices':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
-        );
+        context.push(AppPaths.explorePrices);
+        return;
+      case 'services':
+        context.push(AppPaths.clientServices);
         return;
       default:
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ClientSwipeContainer(
-              categoryId: id == 'services' ? 'worker' : id,
+              categoryId: id,
               categoryTitle: title,
             ),
           ),

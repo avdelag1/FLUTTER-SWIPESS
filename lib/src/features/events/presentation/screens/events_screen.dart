@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -89,14 +89,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     shouldLoadVideo: near,
                     siblings: events,
                     onOpen: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => EventDetailScreen(
-                            event: event,
-                            siblings: events,
-                          ),
-                        ),
-                      );
+                      context.push(AppPaths.exploreEvent(event.id));
                     },
                   );
                 },
@@ -165,11 +158,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       icon: Icons.favorite_rounded,
                       color: const Color(0xFFF43F5E),
                       onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const EventFavoritesScreen(),
-                          ),
-                        );
+                        context.push(AppPaths.exploreEventsLikes);
                       },
                     ),
                   ],
