@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
