@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/memory_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/user_memory.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -53,31 +54,24 @@ final memoriesProvider =
   MemoriesNotifier.new,
 );
 
-/// Stub for OpenAI / Bolt / Intel Core — keys arrive later.
+/// Bolt / Brain status — AI runs via Supabase Edge Functions (no client keys).
 class AiBrainConfig {
   const AiBrainConfig({
-    this.openAiKey,
-    this.enabled = false,
+    this.enabled = true,
   });
 
-  final String? openAiKey;
   final bool enabled;
 
-  bool get isReady =>
-      enabled && openAiKey != null && openAiKey!.trim().isNotEmpty;
+  /// Ready when the user is signed in (JWT auth for edge functions).
+  bool isReady(bool signedIn) => enabled && signedIn;
 }
 
 class AiBrainConfigNotifier extends Notifier<AiBrainConfig> {
   @override
   AiBrainConfig build() => const AiBrainConfig();
 
-  /// Call when the owner pastes secret keys — does not log or persist yet.
-  void setOpenAiKey(String key) {
-    final trimmed = key.trim();
-    state = AiBrainConfig(
-      openAiKey: trimmed.isEmpty ? null : trimmed,
-      enabled: trimmed.isNotEmpty,
-    );
+  void setEnabled(bool enabled) {
+    state = AiBrainConfig(enabled: enabled);
   }
 }
 
@@ -85,3 +79,11 @@ final aiBrainConfigProvider =
     NotifierProvider<AiBrainConfigNotifier, AiBrainConfig>(
   AiBrainConfigNotifier.new,
 );
+
+/// Convenience: edge AI available for the current session.
+final aiEdgeReadyProvider = Provider<bool>((ref) {
+  final user = ref.watch(currentUserProvider);
+  final brain = ref.watch(aiBrainConfigProvider);
+  return brain.isReady(user != null) &&
+      ref.watch(aiEdgeRepositoryProvider).isSignedIn;
+});

@@ -6,12 +6,12 @@ import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-/// Capacitor “AI LISTING BUILDER” — one-step setup shell.
-/// Full OpenAI generation waits on API key; this captures media/city/desc and
-/// hands off into the manual wizard prefilled.
+/// Capacitor “AI LISTING BUILDER” — enhance + extract via edge functions.
 class AiListingBuilderScreen extends ConsumerStatefulWidget {
   const AiListingBuilderScreen({super.key});
 
@@ -26,6 +26,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
   final _description = TextEditingController();
   final _photos = <XFile>[];
   bool _busy = false;
+  bool _enhancing = false;
 
   @override
   void dispose() {
@@ -44,32 +45,38 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     });
   }
 
-  /// Local Cap-style polish until OpenAI keys arrive.
-  void _localEnhance() {
+  Future<void> _enhance() async {
+    if (_enhancing) return;
     HapticFeedback.lightImpact();
     final raw = _description.text.trim();
-    if (raw.isEmpty) {
+    if (raw.length < 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Add a short description first')),
       );
       return;
     }
-    final city = _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim();
-    final cat = switch (_category) {
-      'motorcycle' => 'motorcycle',
-      'bicycle' => 'bicycle',
-      'yacht' => 'yacht charter',
-      'worker' => 'professional service',
-      _ => 'property stay',
-    };
-    final polished =
-        'Discover this standout $cat in $city. $raw '
-        'Book through Swipess for verified hosts, secure messaging, and local-ready details.';
+    if (!ref.read(aiEdgeReadyProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to use AI Enhance')),
+      );
+      return;
+    }
+    setState(() => _enhancing = true);
+    final polished = await ref.read(aiEdgeRepositoryProvider).enhanceText(
+          text: raw,
+          type: 'listing',
+        );
+    if (!mounted) return;
+    setState(() => _enhancing = false);
+    if (polished == null || polished.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not enhance — try again')),
+      );
+      return;
+    }
     setState(() => _description.text = polished);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Local enhance applied — OpenAI polish unlocks with your key'),
-      ),
+      const SnackBar(content: Text('AI enhance applied')),
     );
   }
 
@@ -78,7 +85,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
     final notifier = ref.read(addListingProvider.notifier);
-    final cat = switch (_category) {
+    var cat = switch (_category) {
       'motorcycle' => ListingCategory.motorcycle,
       'bicycle' => ListingCategory.bicycle,
       'yacht' => ListingCategory.yacht,
@@ -88,33 +95,103 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     notifier.reset();
     notifier.setCategory(cat);
     final desc = _description.text.trim();
-    final adjectives = <String>[
-      if (desc.toLowerCase().contains('ocean') ||
-          desc.toLowerCase().contains('beach'))
-        'Oceanfront',
-      if (desc.toLowerCase().contains('pool')) 'Pool',
-      if (desc.toLowerCase().contains('luxury') ||
-          desc.toLowerCase().contains('premium'))
-        'Luxury',
-      if (desc.toLowerCase().contains('modern')) 'Modern',
+    final city = _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim();
+
+    Map<String, dynamic> parsed = const {};
+    if (desc.isNotEmpty && ref.read(aiEdgeReadyProvider)) {
+      parsed = await ref.read(aiEdgeRepositoryProvider).extractListing(
+            category: _category,
+            prompt: desc,
+            city: city,
+          );
+    }
+
+    final detected = parsed['category']?.toString();
+    if (detected != null &&
+        const {
+          'property',
+          'motorcycle',
+          'bicycle',
+          'yacht',
+          'worker',
+        }.contains(detected)) {
+      _category = detected;
+      cat = switch (detected) {
+        'motorcycle' => ListingCategory.motorcycle,
+        'bicycle' => ListingCategory.bicycle,
+        'yacht' => ListingCategory.yacht,
+        'worker' => ListingCategory.worker,
+        _ => ListingCategory.property,
+      };
+      notifier.setCategory(cat);
+    }
+
+    final titleRaw = parsed['title']?.toString().trim();
+    final descOut = parsed['description']?.toString().trim().isNotEmpty == true
+        ? parsed['description'].toString().trim()
+        : desc;
+    final cityOut = parsed['city']?.toString().trim().isNotEmpty == true
+        ? parsed['city'].toString().trim()
+        : city;
+    final priceOut = parsed['price']?.toString() ?? '';
+    final amenities = <String>[
+      if (parsed['amenities'] is List)
+        ...((parsed['amenities'] as List).map((e) => e.toString())),
+      if (desc.toLowerCase().contains('wifi')) 'WiFi',
+      if (desc.toLowerCase().contains('pool')) 'Private Pool',
+      if (desc.toLowerCase().contains('ac') || desc.toLowerCase().contains('air'))
+        'AC',
     ];
+    final adjectives = <String>[
+      if (descOut.toLowerCase().contains('ocean') ||
+          descOut.toLowerCase().contains('beach'))
+        'Oceanfront',
+      if (descOut.toLowerCase().contains('pool')) 'Pool',
+      if (descOut.toLowerCase().contains('luxury') ||
+          descOut.toLowerCase().contains('premium'))
+        'Luxury',
+      if (descOut.toLowerCase().contains('modern')) 'Modern',
+    ];
+
     notifier.update(
       (d) => d.copyWith(
-        city: _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim(),
-        description: desc,
-        title: desc.isEmpty
-            ? d.title
-            : (desc.length > 48 ? '${desc.substring(0, 48)}…' : desc),
+        city: cityOut,
+        country: parsed['country']?.toString() ?? d.country,
+        description: descOut,
+        title: (titleRaw != null && titleRaw.isNotEmpty)
+            ? titleRaw
+            : (descOut.isEmpty
+                ? d.title
+                : (descOut.length > 48
+                    ? '${descOut.substring(0, 48)}…'
+                    : descOut)),
+        price: priceOut.isNotEmpty ? priceOut : d.price,
         photos: [..._photos],
         adjectives: adjectives.isEmpty ? d.adjectives : adjectives,
-        amenities: [
-          if (desc.toLowerCase().contains('wifi')) 'WiFi',
-          if (desc.toLowerCase().contains('pool')) 'Private Pool',
-          if (desc.toLowerCase().contains('ac') ||
-              desc.toLowerCase().contains('air'))
-            'AC',
-          ...d.amenities,
-        ],
+        amenities: amenities.isEmpty ? d.amenities : amenities.toSet().toList(),
+        beds: parsed['beds']?.toString() ?? d.beds,
+        baths: parsed['baths']?.toString() ?? d.baths,
+        propertyType: parsed['property_type']?.toString() ?? d.propertyType,
+        furnished: parsed['furnished'] == true ? true : d.furnished,
+        petFriendly: parsed['pet_friendly'] == true ? true : d.petFriendly,
+        brand: parsed['make']?.toString() ??
+            parsed['brand']?.toString() ??
+            d.brand,
+        model: parsed['model']?.toString() ?? d.model,
+        year: parsed['year']?.toString() ?? d.year,
+        mileage: parsed['mileage']?.toString() ?? d.mileage,
+        engineCc: parsed['engine_cc']?.toString() ?? d.engineCc,
+        vehicleType: parsed['vehicle_type']?.toString() ?? d.vehicleType,
+        condition: parsed['condition']?.toString() ?? d.condition,
+        lengthM: parsed['length_m']?.toString() ?? d.lengthM,
+        berths: parsed['berths']?.toString() ?? d.berths,
+        maxPassengers: parsed['max_passengers']?.toString() ?? d.maxPassengers,
+        serviceCategory:
+            parsed['service_category']?.toString() ?? d.serviceCategory,
+        pricingUnit: parsed['pricing_unit']?.toString() ?? d.pricingUnit,
+        skills: parsed['skills'] is List
+            ? (parsed['skills'] as List).map((e) => e.toString()).toList()
+            : d.skills,
       ),
     );
     if (!mounted) return;
@@ -144,7 +221,8 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                       color: const Color(0xFF9B5DE5).withAlpha(50),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFFC9B6FF)),
+                    child: const Icon(Icons.auto_awesome_rounded,
+                        color: Color(0xFFC9B6FF)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -160,7 +238,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                           ),
                         ),
                         Text(
-                          'ONE-STEP AI SETUP •',
+                          'ONE-STEP AI SETUP • EDGE',
                           style: GoogleFonts.plusJakartaSans(
                             color: const Color(0x99C9B6FF),
                             fontSize: 11,
@@ -218,9 +296,11 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.photo_camera_rounded, color: Colors.white.withAlpha(140), size: 32),
+                            Icon(Icons.photo_camera_rounded,
+                                color: Colors.white.withAlpha(140), size: 32),
                             const SizedBox(height: 8),
-                            Text('TAP TO ADD PHOTOS', style: _label.copyWith(color: Colors.white54)),
+                            Text('TAP TO ADD PHOTOS',
+                                style: _label.copyWith(color: Colors.white54)),
                           ],
                         ),
                       ),
@@ -237,7 +317,11 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                   const SizedBox(height: 6),
                   Text(
                     'GENERAL AREA ONLY — NO EXACT ADDRESS',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 22),
                   Row(
@@ -245,8 +329,18 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                       Text('4. DESCRIPTION', style: _label),
                       const Spacer(),
                       TextButton.icon(
-                        onPressed: _localEnhance,
-                        icon: const Icon(Icons.auto_awesome, size: 16, color: Color(0xFFC9B6FF)),
+                        onPressed: _enhancing ? null : _enhance,
+                        icon: _enhancing
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFC9B6FF),
+                                ),
+                              )
+                            : const Icon(Icons.auto_awesome,
+                                size: 16, color: Color(0xFFC9B6FF)),
                         label: Text(
                           'AI ENHANCE',
                           style: GoogleFonts.plusJakartaSans(
@@ -260,14 +354,19 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                   ),
                   GlassTextField(
                     controller: _description,
-                    hint: "Describe your listing or just tap publish. E.g. 'Stunning ocean view property with private pool'...",
+                    hint:
+                        "Describe your listing or just tap publish. E.g. 'Stunning ocean view property with private pool'...",
                     icon: Icons.mic_none_rounded,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'YOUR DATA IS SECURELY PROCESSED BY OPENAI TO GENERATE YOUR PREMIUM LISTING.',
+                    'SECURELY PROCESSED BY SWIPESS AI (SUPABASE EDGE · GROQ).',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white38,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
@@ -280,7 +379,9 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                         backgroundColor: const Color(0xFF2A2438),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                     ),
                   ),
@@ -288,7 +389,10 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                   Text(
                     'Cities: ${ListingTaxonomies.popularCities.take(3).join(', ')}…',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white24, fontSize: 10),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white24,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
@@ -331,7 +435,8 @@ class _CatChip extends StatelessWidget {
           color: selected ? const Color(0xFF7B5CFF) : Colors.white.withAlpha(12),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: selected ? const Color(0xFF9B5DE5) : Colors.white.withAlpha(25),
+            color:
+                selected ? const Color(0xFF9B5DE5) : Colors.white.withAlpha(25),
           ),
         ),
         child: Column(

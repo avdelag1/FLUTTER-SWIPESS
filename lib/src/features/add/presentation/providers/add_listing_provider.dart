@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 
 class AddListingNotifier extends Notifier<ListingDraft> {
@@ -110,9 +111,11 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(publishing: true, clearError: true);
     try {
       final repo = ref.read(listingRepositoryProvider);
+      final ai = ref.read(aiEdgeRepositoryProvider);
       final urls = await repo.uploadListingPhotos(
         userId: user.id,
         files: state.photos,
+        moderateImage: ai.assertImageSafe,
       );
       String? videoUrl;
       final video = state.video;

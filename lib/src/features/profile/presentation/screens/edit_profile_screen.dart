@@ -1,10 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_providers.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -18,6 +22,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late TextEditingController _bioController;
   late TextEditingController _cityController;
   bool _isSaving = false;
+  bool _enhancing = false;
 
   @override
   void initState() {
@@ -34,6 +39,38 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _bioController.dispose();
     _cityController.dispose();
     super.dispose();
+  }
+
+  Future<void> _enhanceBio() async {
+    if (_enhancing) return;
+    final raw = _bioController.text.trim();
+    if (raw.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Write a short bio first')),
+      );
+      return;
+    }
+    if (!ref.read(aiEdgeReadyProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to use AI Enhance')),
+      );
+      return;
+    }
+    setState(() => _enhancing = true);
+    HapticFeedback.lightImpact();
+    final polished = await ref.read(aiEdgeRepositoryProvider).enhanceText(
+          text: raw,
+          type: 'profile',
+        );
+    if (!mounted) return;
+    setState(() => _enhancing = false);
+    if (polished == null || polished.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not enhance — try again')),
+      );
+      return;
+    }
+    setState(() => _bioController.text = polished);
   }
 
   Future<void> _saveProfile() async {
@@ -159,22 +196,60 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             const SizedBox(height: 20),
             _buildTextField('City', _cityController),
             const SizedBox(height: 20),
-            _buildTextField('Bio', _bioController, maxLines: 4),
+            Row(
+              children: [
+                Text(
+                  'Bio',
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(150),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _enhancing ? null : _enhanceBio,
+                  icon: _enhancing
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(
+                    'AI ENHANCE',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildTextField('', _bioController, maxLines: 4, hideLabel: true),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {int maxLines = 1}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+    bool hideLabel = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
+        if (!hideLabel) ...[
+          Text(
+            label,
+            style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+        ],
         Container(
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(15),

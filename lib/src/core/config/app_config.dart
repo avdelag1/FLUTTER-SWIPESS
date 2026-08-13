@@ -27,13 +27,6 @@ class AppConfig {
     defaultValue: '',
   );
 
-  /// OpenAI — Intel Core / listing enhance / Brain.
-  static const openAiApiKey = String.fromEnvironment(
-    'OPENAI_API_KEY',
-    defaultValue: '',
-  );
-
-  static bool get hasOpenAiKey => openAiApiKey.trim().isNotEmpty;
   static bool get hasMapboxToken => mapboxAccessToken.trim().isNotEmpty;
   static bool get hasRevenueCatKey => revenueCatApiKey.trim().isNotEmpty ||
       revenueCatAppleApiKey.trim().isNotEmpty ||
