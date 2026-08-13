@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
@@ -25,7 +26,9 @@ import 'package:flutter_swipes/src/features/messages/presentation/providers/mess
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
@@ -42,6 +45,7 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/s
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Capacitor ClientProfile — identity, quests, action grid, share, feedback, PEARL.
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -667,13 +671,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _LangChip(label: 'EN', active: true, onTap: () {}),
+                      _LangChip(
+                        label: 'EN',
+                        active: !ref.watch(appLocaleProvider).isEs,
+                        onTap: () => ref
+                            .read(appLocaleProvider.notifier)
+                            .setCode('en'),
+                      ),
                       const SizedBox(width: 8),
-                      _LangChip(label: 'ES', active: false, onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Spanish locale coming soon')),
-                        );
-                      }),
+                      _LangChip(
+                        label: 'ES',
+                        active: ref.watch(appLocaleProvider).isEs,
+                        onTap: () => ref
+                            .read(appLocaleProvider.notifier)
+                            .setCode('es'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -893,19 +905,26 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-class _DailyQuests extends StatelessWidget {
+class _DailyQuests extends ConsumerWidget {
   const _DailyQuests({required this.expanded, required this.onToggle});
   final bool expanded;
   final VoidCallback onToggle;
 
-  static const _quests = [
-    ('Swipe 10 listings', 4, 10),
-    ('Send a message', 0, 1),
-    ('Complete profile', 1, 1),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(dailyQuestsProvider);
+    final board = async.maybeWhen(
+      data: (value) => value,
+      orElse: () => const DailyQuestBoard(),
+    );
+    final points = board.points;
+    final quests = List<DailyQuest>.from(board.quests)
+      ..sort((a, b) {
+        if (a.claimed != b.claimed) return a.claimed ? 1 : -1;
+        if (a.completed != b.completed) return a.completed ? -1 : 1;
+        return 0;
+      });
+
     return Column(
       children: [
         GestureDetector(
@@ -917,7 +936,7 @@ class _DailyQuests extends StatelessWidget {
                   color: AppTheme.brandPrimary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Daily Quests',
+                capCopy(ref, 'Daily Quests', 'Misiones diarias'),
                 style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -934,7 +953,9 @@ class _DailyQuests extends StatelessWidget {
                   border: Border.all(color: AppTheme.brandPrimary.withAlpha(80)),
                 ),
                 child: Text(
-                  '4 / 10',
+                  async.isLoading
+                      ? '…'
+                      : '$points / ${DailyQuestBoard.pointsNeeded}',
                   style: GoogleFonts.plusJakartaSans(
                     color: AppTheme.brandPrimary,
                     fontWeight: FontWeight.w800,
@@ -955,65 +976,132 @@ class _DailyQuests extends StatelessWidget {
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
-            child: const LinearProgressIndicator(
-              value: 0.4,
+            child: LinearProgressIndicator(
+              value: board.progressPercent,
               minHeight: 8,
-              backgroundColor: Color(0x22FFFFFF),
-              valueColor: AlwaysStoppedAnimation(AppTheme.brandPrimary),
+              backgroundColor: const Color(0x22FFFFFF),
+              valueColor: const AlwaysStoppedAnimation(AppTheme.brandPrimary),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Earn 10 points to unlock a free token!',
+            capCopy(
+              ref,
+              'Earn ${DailyQuestBoard.pointsNeeded} points to unlock a free token!',
+              '¡Gana ${DailyQuestBoard.pointsNeeded} puntos para un token gratis!',
+            ),
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white54,
               fontSize: 12,
             ),
           ),
           const SizedBox(height: 12),
-          for (final q in _quests)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(10),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      q.$2 >= q.$3
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked,
-                      color: q.$2 >= q.$3
-                          ? const Color(0xFF10B981)
-                          : Colors.white38,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        q.$1,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+          if (async.hasError)
+            TextButton(
+              onPressed: () => ref.invalidate(dailyQuestsProvider),
+              child: const Text('Could not load quests — retry'),
+            )
+          else if (quests.isEmpty)
+            Text(
+              capCopy(
+                ref,
+                'Sign in to unlock daily quests.',
+                'Inicia sesión para desbloquear misiones.',
+              ),
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white54,
+                fontSize: 12,
+              ),
+            )
+          else
+            for (final q in quests)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        q.claimed
+                            ? Icons.check_circle_rounded
+                            : q.id == 'login'
+                                ? Icons.bolt_rounded
+                                : q.id == 'swipe'
+                                    ? Icons.gps_fixed_rounded
+                                    : Icons.auto_awesome_rounded,
+                        color: q.claimed
+                            ? const Color(0xFF10B981)
+                            : q.completed
+                                ? AppTheme.brandPrimary
+                                : Colors.white38,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              q.title,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                decoration: q.claimed
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            if (!q.claimed)
+                              Text(
+                                '${q.progress}/${q.goal}  ·  +${q.points} pts',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                    Text(
-                      '${q.$2}/${q.$3}',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                      if (q.completed && !q.claimed)
+                        TextButton(
+                          onPressed: () async {
+                            final before = points;
+                            final ok = await ref
+                                .read(dailyQuestsProvider.notifier)
+                                .claim(q.id);
+                            if (!context.mounted || !ok) return;
+                            final unlocked = before + q.points >=
+                                DailyQuestBoard.pointsNeeded;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  unlocked
+                                      ? 'Token Unlocked! You earned a FREE Token.'
+                                      : 'Reward Claimed! +${q.points} points.',
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'CLAIM',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: AppTheme.brandPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 11,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
         ],
       ],
     );
@@ -1132,11 +1220,57 @@ class _ShareEarn extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _SocialBtn(icon: Icons.chat_rounded, label: 'WA', onTap: () {}),
+              _SocialBtn(
+                icon: Icons.chat_rounded,
+                label: 'WA',
+                onTap: () {
+                  final text = Uri.encodeComponent(
+                    "Check out $profileName's profile on Swipess! $url",
+                  );
+                  launchUrl(
+                    Uri.parse('https://wa.me/?text=$text'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+              ),
               const SizedBox(width: 8),
-              _SocialBtn(icon: Icons.camera_alt_outlined, label: 'IG', onTap: () {}),
+              _SocialBtn(
+                icon: Icons.camera_alt_outlined,
+                label: 'IG',
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: url));
+                  await launchUrl(
+                    Uri.parse('https://www.instagram.com/'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Link copied! Paste it in Instagram.'),
+                      ),
+                    );
+                  }
+                },
+              ),
               const SizedBox(width: 8),
-              _SocialBtn(icon: Icons.music_note_rounded, label: 'TT', onTap: () {}),
+              _SocialBtn(
+                icon: Icons.music_note_rounded,
+                label: 'TT',
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: url));
+                  await launchUrl(
+                    Uri.parse('https://www.tiktok.com/'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Link copied! Paste it in TikTok.'),
+                      ),
+                    );
+                  }
+                },
+              ),
             ],
           ),
         ],

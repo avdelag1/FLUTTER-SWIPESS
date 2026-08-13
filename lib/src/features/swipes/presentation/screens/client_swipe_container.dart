@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.d
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart'
     as swipe_repo;
@@ -199,6 +200,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
             .read(swipeRepositoryProvider)
             .registerSwipeLeft(authUser, listing.id);
       }
+      ref.read(dailyQuestsProvider.notifier).increment('swipe');
     }
     if (direction == SwipeDirection.right && mounted) {
       var matched = false;

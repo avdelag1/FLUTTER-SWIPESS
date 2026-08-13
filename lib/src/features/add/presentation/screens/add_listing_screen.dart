@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -733,7 +734,19 @@ class _PhotosStep extends ConsumerWidget {
           )
         else
           GestureDetector(
-            onTap: () => ref.read(addListingProvider.notifier).pickVideo(),
+            onTap: () async {
+              final picker = ImagePicker();
+              final file = await picker.pickVideo(source: ImageSource.gallery);
+              if (file == null || !context.mounted) return;
+              final cropped = await Navigator.of(context).push<XFile>(
+                MaterialPageRoute(
+                  builder: (_) => VideoCropperScreen(file: file),
+                ),
+              );
+              if (cropped != null && context.mounted) {
+                ref.read(addListingProvider.notifier).setVideo(cropped);
+              }
+            },
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 28),

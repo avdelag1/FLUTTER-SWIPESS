@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/widgets/camera_filters_strip.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -24,6 +25,7 @@ class ListingCameraScreen extends StatefulWidget {
 class _ListingCameraScreenState extends State<ListingCameraScreen> {
   final _shots = <XFile>[];
   bool _busy = false;
+  CapCameraFilter _filter = CapCameraFilter.none;
 
   int get _remaining =>
       (widget.maxPhotos - widget.existingCount - _shots.length).clamp(0, 99);
@@ -140,8 +142,17 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                                     return const ColoredBox(
                                         color: Color(0xFF16161C));
                                   }
-                                  return Image.memory(snap.data!,
-                                      fit: BoxFit.cover);
+                                  final image = Image.memory(
+                                    snap.data!,
+                                    fit: BoxFit.cover,
+                                  );
+                                  if (_filter == CapCameraFilter.none) {
+                                    return image;
+                                  }
+                                  return ColorFiltered(
+                                    colorFilter: _filter.colorFilter,
+                                    child: image,
+                                  );
                                 },
                               ),
                             ),
@@ -163,6 +174,10 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                         );
                       },
                     ),
+            ),
+            CameraFiltersStrip(
+              selected: _filter,
+              onSelected: (f) => setState(() => _filter = f),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),

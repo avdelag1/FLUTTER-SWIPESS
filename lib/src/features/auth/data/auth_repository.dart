@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,5 +28,16 @@ class AuthRepository {
 
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  /// Cap `signInWithOAuth` — Google / Apple web redirect.
+  Future<bool> signInWithOAuth(OAuthProvider provider) {
+    return _auth.signInWithOAuth(
+      provider,
+      redirectTo: kIsWeb ? Uri.base.origin : null,
+      queryParams: provider == OAuthProvider.google
+          ? const {'prompt': 'select_account'}
+          : null,
+    );
   }
 }

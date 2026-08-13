@@ -2,12 +2,16 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -149,6 +153,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       reply = 'AI is temporarily unavailable. Try again in a moment.';
     }
     if (!mounted) return;
+    final parsed = ConciergeParse.of(reply);
+    if (parsed.passportCity != null && parsed.passportCity!.trim().isNotEmpty) {
+      ref.read(discoveryLocationProvider.notifier).setCity(parsed.passportCity!.trim());
+    }
+    if (parsed.filterAction != null) {
+      _applyConciergeFilter(parsed.filterAction!);
+    }
     setState(() {
       _messages.add(_ChatBubble(role: 'assistant', content: reply));
       _loading = false;
@@ -227,33 +238,136 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
   }
 
-  List<({String label, String query})> _followUps() {
+  List<({String label, VoidCallback onTap})> _followUps() {
+    final lastAssistant = _messages.reversed
+        .where((m) => m.role == 'assistant')
+        .map((m) => m.content)
+        .firstOrNull;
+    if (lastAssistant != null) {
+      final parsed = ConciergeParse.of(lastAssistant);
+      final chips = <({String label, VoidCallback onTap})>[
+        for (final path in parsed.navPaths)
+          if (path != '/radio')
+            (
+              label: ConciergeParse.navLabels[path] ?? 'Open',
+              onTap: () => _openPath(path),
+            ),
+        if (parsed.filterAction != null)
+          (
+            label: 'Applying Search Filters',
+            onTap: () => _applyConciergeFilter(parsed.filterAction!),
+          ),
+        if (parsed.passportCity != null && parsed.passportCity!.trim().isNotEmpty)
+          (
+            label: 'Explore ${parsed.passportCity}',
+            onTap: () {
+              ref
+                  .read(discoveryLocationProvider.notifier)
+                  .setCity(parsed.passportCity!.trim());
+              Navigator.pop(context);
+              context.push(AppPaths.map);
+            },
+          ),
+      ];
+      if (chips.isNotEmpty) return chips;
+    }
     final lastUser = _messages.reversed
         .where((m) => m.role == 'user')
         .map((m) => m.content.toLowerCase())
         .firstOrNull;
     if (lastUser == null) return const [];
-    final out = <({String label, String query})>[];
+    final out = <({String label, VoidCallback onTap})>[];
     if (RegExp(r'\b(people|person|seeker|roommate|who.?s looking)\b')
         .hasMatch(lastUser)) {
-      out.add((label: 'Open Seekers', query: lastUser));
+      out.add((label: 'Open Seekers', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(r'\b(worker|hire|maintenance|plumber|cleaner)\b')
         .hasMatch(lastUser)) {
-      out.add((label: 'Open Workers', query: lastUser));
+      out.add((label: 'Open Workers', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(r'\b(event|party|nightlife|concert)\b').hasMatch(lastUser)) {
-      out.add((label: 'Open Events', query: lastUser));
+      out.add((label: 'Open Events', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(r'\b(map|near me|nearby|gps|location|city)\b').hasMatch(lastUser)) {
-      out.add((label: 'Open Map', query: lastUser));
+      out.add((label: 'Open Map', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(
           r'\b(listing|property|home|house|apartment|rent|rental|buy|yacht|moto|bike)\b',
         ).hasMatch(lastUser)) {
-      out.add((label: 'Open Listings', query: lastUser));
+      out.add((label: 'Open Listings', onTap: () => _openIntent(lastUser)));
     }
     return out;
+  }
+
+  void _openPath(String path) {
+    Navigator.pop(context);
+    if (path.contains('liked')) {
+      context.go(AppPaths.clientLikedProperties);
+      return;
+    }
+    if (path.contains('filter')) {
+      context.go(AppPaths.clientFilters);
+      return;
+    }
+    if (path.contains('events')) {
+      context.go(AppPaths.exploreEvents);
+      return;
+    }
+    if (path.contains('seeker')) {
+      context.go(AppPaths.exploreSeekers);
+      return;
+    }
+    if (path.contains('map')) {
+      context.push(AppPaths.map);
+      return;
+    }
+    if (path.contains('subscription')) {
+      context.go(AppPaths.subscriptionPackages);
+      return;
+    }
+    if (path.contains('legal')) {
+      context.go(AppPaths.legal);
+      return;
+    }
+    if (path.contains('profile')) {
+      context.go(AppPaths.clientProfile);
+      return;
+    }
+    if (path.contains('settings')) {
+      context.go(AppPaths.clientSettings);
+      return;
+    }
+    if (path.contains('listings') || path.contains('properties')) {
+      context.go(AppPaths.ownerProperties);
+      return;
+    }
+    context.go(AppPaths.clientDashboard);
+  }
+
+  /// Cap `applyConciergeFilters` — [FILTER:] tags update the swipe deck.
+  void _applyConciergeFilter(Map<String, dynamic> filters) {
+    final n = ref.read(swipeFilterProvider.notifier);
+    final cat = filters['activeCategory']?.toString();
+    if (cat != null && cat.isNotEmpty) n.setCategory(cat);
+    final type = filters['listingType']?.toString();
+    if (type != null && type.isNotEmpty) n.setInterestType(type);
+    final range = filters['priceRange'];
+    if (range is List && range.length >= 2) {
+      n.setPriceRange(
+        (range[0] as num?)?.toDouble(),
+        (range[1] as num?)?.toDouble(),
+      );
+    }
+    final radius = filters['radiusKm'];
+    if (radius is num) {
+      n.setRadiusKm(radius.toDouble());
+      ref.read(discoveryLocationProvider.notifier).setRadiusKm(radius.toInt());
+    }
+    final city = (filters['passportCity'] ?? filters['city'])?.toString();
+    if (city != null && city.trim().isNotEmpty) {
+      n.setCity(city.trim());
+      ref.read(discoveryLocationProvider.notifier).setCity(city.trim());
+    }
   }
 
   void _newChat() {
@@ -338,7 +452,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   children: [
                     if (_messages.isEmpty) ...[
                       Text(
-                        'Type what you need — people, listings, a city on the map, workers, events. Or ask Intel Core anything.',
+                        capCopy(
+                          ref,
+                          'Type what you need — people, listings, a city on the map, workers, events. Or ask Intel Core anything.',
+                          'Escribe lo que necesitas — personas, listings, una ciudad en el mapa, workers, eventos. O pregunta a Intel Core.',
+                        ),
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white54,
                           fontSize: 13,
@@ -398,7 +516,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 side: BorderSide(
                                   color: AppTheme.brandPrimary.withAlpha(90),
                                 ),
-                                onPressed: () => _openIntent(chip.query),
+                                onPressed: chip.onTap,
                               ),
                           ],
                         ),
@@ -591,28 +709,74 @@ class _Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
+    final parsed = isUser ? null : ConciergeParse.of(message.content);
+    final text = parsed?.cleanContent.isNotEmpty == true
+        ? parsed!.cleanContent
+        : message.content;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
         ),
-        decoration: BoxDecoration(
-          color: isUser
-              ? AppTheme.brandPrimary.withAlpha(40)
-              : Colors.white.withAlpha(12),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withAlpha(24)),
-        ),
-        child: Text(
-          message.content,
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 14,
-            height: 1.35,
-          ),
+        child: Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUser
+                    ? AppTheme.brandPrimary.withAlpha(40)
+                    : Colors.white.withAlpha(12),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.white.withAlpha(24)),
+              ),
+              child: Text(
+                text,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            if (!isUser) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded,
+                        size: 10, color: AppTheme.brandPrimary.withAlpha(180)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'POWERED BY GROQ · LLAMA 3.3',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white38,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (parsed != null) ...[
+                for (final listing in parsed.listings)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: IntelListingCard(data: listing),
+                  ),
+                for (final profile in parsed.profiles)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: IntelProfileCard(data: profile),
+                  ),
+              ],
+            ],
+          ],
         ),
       ),
     );

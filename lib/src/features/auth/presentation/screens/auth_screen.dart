@@ -40,6 +40,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     super.dispose();
   }
 
+  Future<void> _handleOAuth(OAuthProvider provider) async {
+    setState(() => _isLoading = true);
+    HapticFeedback.mediumImpact();
+    try {
+      await ref.read(authRepositoryProvider).signInWithOAuth(provider);
+      if (!mounted) return;
+      context.go(AppPaths.clientDashboard);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString()),
+        backgroundColor: Colors.red,
+      ));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleSubmit() async {
     setState(() => _isLoading = true);
     HapticFeedback.mediumImpact();
@@ -287,13 +305,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       _buildSocialButton(
                         icon: Icons.apple_rounded,
                         label: 'CONTINUE WITH APPLE',
-                        onTap: () {},
+                        onTap: _isLoading
+                            ? () {}
+                            : () => _handleOAuth(OAuthProvider.apple),
                       ),
                       const SizedBox(height: 16),
                       _buildSocialButton(
-                        icon: Icons.g_mobiledata_rounded, // Placeholder for Google icon
+                        icon: Icons.g_mobiledata_rounded,
                         label: 'CONTINUE WITH GOOGLE',
-                        onTap: () {},
+                        onTap: _isLoading
+                            ? () {}
+                            : () => _handleOAuth(OAuthProvider.google),
                       ),
                     ],
                   ),

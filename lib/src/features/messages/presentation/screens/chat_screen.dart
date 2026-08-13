@@ -5,6 +5,9 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_documents_sheet.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
+import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -74,6 +77,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             text: text,
           );
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
+      ref.read(dailyQuestsProvider.notifier).increment('message');
       _scrollToEnd();
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -442,6 +446,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       _RoundIcon(
+                        icon: Icons.description_outlined,
+                        onTap: () => showChatDocumentsSheet(
+                          context,
+                          conversationId: widget.conversation.id,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _RoundIcon(
                         icon: Icons.sentiment_satisfied_alt_rounded,
                         active: _showEmoji,
                         onTap: () => setState(() => _showEmoji = !_showEmoji),
@@ -458,7 +470,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                           decoration: InputDecoration(
-                            hintText: 'Type a message...',
+                            hintText: capCopy(
+                              ref,
+                              'Type a message...',
+                              'Escribe un mensaje...',
+                            ),
                             hintStyle: TextStyle(
                               color: Colors.white.withAlpha(80),
                             ),
