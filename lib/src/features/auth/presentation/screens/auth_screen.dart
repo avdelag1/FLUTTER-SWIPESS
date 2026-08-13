@@ -65,9 +65,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final repo = ref.read(authRepositoryProvider);
     try {
       if (_isLogin) {
-        await repo.signInWithEmailPassword(_emailController.text, _passwordController.text);
+        await repo.signInWithEmailPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
       } else {
-        await repo.signUpWithEmailPassword(_emailController.text, _passwordController.text);
+        await repo.signUpWithEmailPassword(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
       }
       if (!mounted) return;
       context.go(AppPaths.clientDashboard);

@@ -10,13 +10,14 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 });
 
 /// Convenient shortcut to the current user.
+///
+/// Falls back to [GoTrueClient.currentUser] so a just-completed
+/// `signInWithPassword` is visible to the router before the auth
+/// stream emits (otherwise we bounce back to Welcome).
 final currentUserProvider = Provider<User?>((ref) {
   final authState = ref.watch(authStateProvider);
-  return authState.when(
-    data: (state) => state.session?.user,
-    loading: () => null,
-    error: (e, st) => null,
-  );
+  return authState.value?.session?.user ??
+      Supabase.instance.client.auth.currentUser;
 });
 
 /// Access-code gate state. AsyncNotifier so grant flips true immediately

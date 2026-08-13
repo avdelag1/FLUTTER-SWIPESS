@@ -6,14 +6,6 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(Supabase.instance.client.auth);
 });
 
-final authStateProvider = StreamProvider<AuthState>((ref) {
-  return Supabase.instance.client.auth.onAuthStateChange;
-});
-
-final currentUserProvider = Provider<User?>((ref) {
-  return ref.watch(authStateProvider).value?.session?.user ?? Supabase.instance.client.auth.currentUser;
-});
-
 class AuthRepository {
   final GoTrueClient _auth;
   AuthRepository(this._auth);
