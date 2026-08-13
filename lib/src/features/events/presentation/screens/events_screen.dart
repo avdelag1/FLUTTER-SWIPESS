@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/event_connect.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/promote_cta_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 /// Cap EventosFeed — Instagram-stories vertical snap deck with preload.
@@ -437,20 +437,16 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _whatsApp() async {
-    final raw = event.organizerWhatsapp;
-    if (raw == null || raw.trim().isEmpty) {
+    if (!event.hasWhatsApp) {
       widget.onOpen();
       return;
     }
-    HapticFeedback.heavyImpact();
-    final phone = raw.replaceAll(RegExp(r'\D'), '');
-    final msg = Uri.encodeComponent(
-      'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+    await EventConnect.open(
+      EventConnect.whatsAppUri(
+        event.organizerWhatsapp,
+        message: 'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+      ),
     );
-    final uri = Uri.parse('https://wa.me/$phone?text=$msg');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   @override

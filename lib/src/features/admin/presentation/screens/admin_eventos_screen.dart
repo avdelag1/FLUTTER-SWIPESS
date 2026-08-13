@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/utils/event_connect.dart';
 import 'package:flutter_swipes/src/features/admin/data/admin_repository.dart';
 import 'package:flutter_swipes/src/features/admin/domain/admin_models.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/providers/admin_provider.dart';
@@ -19,6 +20,7 @@ class AdminEventosScreen extends ConsumerStatefulWidget {
 class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
   bool _subs = false;
   bool _formOpen = false;
+  String? _editingId;
   var _draft = const AdminEventDraft();
 
   @override
@@ -41,23 +43,32 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
               ),
               const Spacer(),
               FilledButton.icon(
-                onPressed: () => setState(() => _formOpen = !_formOpen),
+                onPressed: () => setState(() {
+                  _formOpen = !_formOpen;
+                  if (_formOpen) {
+                    _editingId = null;
+                    _draft = const AdminEventDraft();
+                  }
+                }),
                 icon: const Icon(Icons.add, size: 16),
                 label: Text(t(ref, 'actions.create', 'Create')),
-                style: FilledButton.styleFrom(
-                ),
               ),
             ],
           ),
           if (_formOpen) ...[
             const SizedBox(height: 12),
             _EventForm(
+              key: ValueKey(_editingId ?? 'create'),
               draft: _draft,
-              onChanged: (d) => setState(() => _draft = d),
-              onSave: () async {
-                await ref.read(adminRepositoryProvider).upsertEvent(_draft);
+              editing: _editingId != null,
+              onSave: (d) async {
+                await ref.read(adminRepositoryProvider).upsertEvent(
+                      d,
+                      editingId: _editingId,
+                    );
                 setState(() {
                   _formOpen = false;
+                  _editingId = null;
                   _draft = const AdminEventDraft();
                 });
                 ref.invalidate(adminEventsProvider);
@@ -111,6 +122,12 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
                   for (final e in rows)
                     _EventTile(
                       event: e,
+                      onEdit: () => setState(() {
+                        _editingId = e.id;
+                        _draft = AdminEventDraft.fromRow(e);
+                        _formOpen = true;
+                        _subs = false;
+                      }),
                       onToggle: () async {
                         await ref
                             .read(adminRepositoryProvider)
@@ -155,15 +172,18 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
 class _EventTile extends StatelessWidget {
   const _EventTile({
     required this.event,
+    required this.onEdit,
     required this.onToggle,
     required this.onDelete,
   });
   final AdminEventRow event;
+  final VoidCallback onEdit;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final wa = EventConnect.hasWhatsApp(event.organizerWhatsapp);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -205,8 +225,22 @@ class _EventTile extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
+                Text(
+                  wa
+                      ? 'WhatsApp ${event.organizerWhatsapp}'
+                      : 'No WhatsApp number yet',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: wa ? const Color(0xFF25D366) : Colors.white38,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_outlined, color: Colors.white70),
           ),
           IconButton(
             onPressed: onToggle,
@@ -271,58 +305,136 @@ class _SubCard extends StatelessWidget {
   }
 }
 
-class _EventForm extends StatelessWidget {
+class _EventForm extends StatefulWidget {
   const _EventForm({
+    super.key,
     required this.draft,
-    required this.onChanged,
     required this.onSave,
+    this.editing = false,
   });
   final AdminEventDraft draft;
-  final ValueChanged<AdminEventDraft> onChanged;
-  final VoidCallback onSave;
+  final ValueChanged<AdminEventDraft> onSave;
+  final bool editing;
+
+  @override
+  State<_EventForm> createState() => _EventFormState();
+}
+
+class _EventFormState extends State<_EventForm> {
+  late final TextEditingController _title;
+  late final TextEditingController _location;
+  late final TextEditingController _organizerName;
+  late final TextEditingController _whatsapp;
+  late final TextEditingController _instagram;
+  late final TextEditingController _website;
+  late final TextEditingController _facebook;
+  late String _imageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final d = widget.draft;
+    _title = TextEditingController(text: d.title);
+    _location = TextEditingController(text: d.location);
+    _organizerName = TextEditingController(text: d.organizerName);
+    _whatsapp = TextEditingController(text: d.organizerWhatsapp);
+    _instagram = TextEditingController(text: d.organizerInstagram);
+    _website = TextEditingController(text: d.organizerWebsite);
+    _facebook = TextEditingController(text: d.organizerFacebook);
+    _imageUrl = d.imageUrl;
+    _title.addListener(_refresh);
+    _whatsapp.addListener(_refresh);
+  }
+
+  void _refresh() => setState(() {});
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _location.dispose();
+    _organizerName.dispose();
+    _whatsapp.dispose();
+    _instagram.dispose();
+    _website.dispose();
+    _facebook.dispose();
+    super.dispose();
+  }
+
+  AdminEventDraft _current() {
+    return AdminEventDraft(
+      title: _title.text,
+      description: widget.draft.description,
+      category: widget.draft.category,
+      imageUrl: _imageUrl,
+      location: _location.text,
+      organizerName: _organizerName.text,
+      organizerWhatsapp: _whatsapp.text,
+      organizerInstagram: _instagram.text,
+      organizerWebsite: _website.text,
+      organizerFacebook: _facebook.text,
+      isPublished: widget.draft.isPublished,
+      isApproved: widget.draft.isApproved,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final wa = EventConnect.whatsAppUri(_whatsapp.text);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white24),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(hintText: 'Title'),
-            onChanged: (v) => onChanged(
-              AdminEventDraft(
-                title: v,
-                description: draft.description,
-                category: draft.category,
-                imageUrl: draft.imageUrl,
-                location: draft.location,
-                organizerWhatsapp: draft.organizerWhatsapp,
-                isPublished: draft.isPublished,
-                isApproved: draft.isApproved,
-              ),
+          Text(
+            widget.editing ? 'EDIT EVENT HOST' : 'NEW EVENT HOST',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
+              fontWeight: FontWeight.w900,
+              fontSize: 11,
+              letterSpacing: 1.4,
             ),
           ),
-          TextField(
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(hintText: 'Location'),
-            onChanged: (v) => onChanged(
-              AdminEventDraft(
-                title: draft.title,
-                description: draft.description,
-                category: draft.category,
-                imageUrl: draft.imageUrl,
-                location: v,
-                organizerWhatsapp: draft.organizerWhatsapp,
-                isPublished: draft.isPublished,
-                isApproved: draft.isApproved,
+          const SizedBox(height: 10),
+          _field('Title', _title),
+          _field('Location', _location),
+          _field('Promoter / organizer name', _organizerName),
+          _field(
+            'WhatsApp phone (with country code)',
+            _whatsapp,
+            keyboard: TextInputType.phone,
+          ),
+          if (wa != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Opens as ${wa.toString()}',
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF25D366),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Add a full number with country code. The app builds the WhatsApp link.',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white38,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
+          _field('Instagram @handle or URL', _instagram),
+          _field('Website', _website, keyboard: TextInputType.url),
+          _field('Facebook page or URL', _facebook),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -335,32 +447,37 @@ class _EventForm extends StatelessWidget {
                   final url = await ProviderScope.containerOf(context)
                       .read(adminRepositoryProvider)
                       .uploadEventImage(file);
-                  onChanged(
-                    AdminEventDraft(
-                      title: draft.title,
-                      description: draft.description,
-                      category: draft.category,
-                      imageUrl: url,
-                      location: draft.location,
-                      organizerWhatsapp: draft.organizerWhatsapp,
-                      isPublished: draft.isPublished,
-                      isApproved: draft.isApproved,
-                    ),
-                  );
+                  setState(() => _imageUrl = url);
                 },
                 icon: const Icon(Icons.image_outlined),
-                label: const Text('Image'),
+                label: Text(_imageUrl.isEmpty ? 'Image' : 'Image set'),
               ),
               const Spacer(),
               FilledButton(
-                onPressed: draft.title.trim().isEmpty ? null : onSave,
-                style: FilledButton.styleFrom(
-                ),
-                child: const Text('Save'),
+                onPressed: _title.text.trim().isEmpty
+                    ? null
+                    : () => widget.onSave(_current()),
+                child: Text(widget.editing ? 'Update' : 'Save'),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _field(
+    String hint,
+    TextEditingController controller, {
+    TextInputType? keyboard,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextFormField(
+        controller: controller,
+        style: const TextStyle(color: Colors.white),
+        keyboardType: keyboard,
+        decoration: InputDecoration(hintText: hint),
       ),
     );
   }

@@ -8,7 +8,11 @@ class AdminEventRow {
     this.location,
     this.isPublished = true,
     this.isApproved = true,
+    this.organizerName,
     this.organizerWhatsapp,
+    this.organizerInstagram,
+    this.organizerWebsite,
+    this.organizerFacebook,
   });
 
   final String id;
@@ -19,7 +23,11 @@ class AdminEventRow {
   final String? location;
   final bool isPublished;
   final bool isApproved;
+  final String? organizerName;
   final String? organizerWhatsapp;
+  final String? organizerInstagram;
+  final String? organizerWebsite;
+  final String? organizerFacebook;
 
   factory AdminEventRow.fromJson(Map<String, dynamic> json) {
     return AdminEventRow(
@@ -31,7 +39,11 @@ class AdminEventRow {
       location: json['location']?.toString(),
       isPublished: json['is_published'] != false,
       isApproved: json['is_approved'] != false,
+      organizerName: json['organizer_name']?.toString(),
       organizerWhatsapp: json['organizer_whatsapp']?.toString(),
+      organizerInstagram: json['organizer_instagram']?.toString(),
+      organizerWebsite: json['organizer_website']?.toString(),
+      organizerFacebook: json['organizer_facebook']?.toString(),
     );
   }
 }
@@ -47,6 +59,7 @@ class PromoSubmission {
     this.location,
     this.contactName,
     this.contactPhone,
+    this.website,
     this.imageUrl,
     this.createdAt,
   });
@@ -60,6 +73,7 @@ class PromoSubmission {
   final String? location;
   final String? contactName;
   final String? contactPhone;
+  final String? website;
   final String? imageUrl;
   final DateTime? createdAt;
 
@@ -74,6 +88,7 @@ class PromoSubmission {
       location: json['location']?.toString(),
       contactName: json['contact_name']?.toString(),
       contactPhone: json['contact_phone']?.toString(),
+      website: json['website']?.toString(),
       imageUrl: json['image_url']?.toString(),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
     );
@@ -122,7 +137,11 @@ class AdminEventDraft {
     this.category = 'event',
     this.imageUrl = '',
     this.location = '',
+    this.organizerName = '',
     this.organizerWhatsapp = '',
+    this.organizerInstagram = '',
+    this.organizerWebsite = '',
+    this.organizerFacebook = '',
     this.isPublished = true,
     this.isApproved = true,
   });
@@ -132,7 +151,11 @@ class AdminEventDraft {
   final String category;
   final String imageUrl;
   final String location;
+  final String organizerName;
   final String organizerWhatsapp;
+  final String organizerInstagram;
+  final String organizerWebsite;
+  final String organizerFacebook;
   final bool isPublished;
   final bool isApproved;
 
@@ -142,7 +165,11 @@ class AdminEventDraft {
     String? category,
     String? imageUrl,
     String? location,
+    String? organizerName,
     String? organizerWhatsapp,
+    String? organizerInstagram,
+    String? organizerWebsite,
+    String? organizerFacebook,
     bool? isPublished,
     bool? isApproved,
   }) {
@@ -152,22 +179,54 @@ class AdminEventDraft {
       category: category ?? this.category,
       imageUrl: imageUrl ?? this.imageUrl,
       location: location ?? this.location,
+      organizerName: organizerName ?? this.organizerName,
       organizerWhatsapp: organizerWhatsapp ?? this.organizerWhatsapp,
+      organizerInstagram: organizerInstagram ?? this.organizerInstagram,
+      organizerWebsite: organizerWebsite ?? this.organizerWebsite,
+      organizerFacebook: organizerFacebook ?? this.organizerFacebook,
       isPublished: isPublished ?? this.isPublished,
       isApproved: isApproved ?? this.isApproved,
     );
   }
 
-  Map<String, dynamic> toPayload({String? createdBy}) => {
-        'title': title,
-        'description': description.isEmpty ? null : description,
-        'category': category,
-        'image_url': imageUrl.isEmpty ? null : imageUrl,
-        'location': location.isEmpty ? null : location,
-        'organizer_whatsapp':
-            organizerWhatsapp.isEmpty ? null : organizerWhatsapp,
-        'is_published': isPublished,
-        'is_approved': isApproved,
-        'created_by': ?createdBy,
-      };
+  factory AdminEventDraft.fromRow(AdminEventRow row) {
+    return AdminEventDraft(
+      title: row.title,
+      category: row.category,
+      imageUrl: row.imageUrl ?? '',
+      location: row.location ?? '',
+      organizerName: row.organizerName ?? '',
+      organizerWhatsapp: row.organizerWhatsapp ?? '',
+      organizerInstagram: row.organizerInstagram ?? '',
+      organizerWebsite: row.organizerWebsite ?? '',
+      organizerFacebook: row.organizerFacebook ?? '',
+      isPublished: row.isPublished,
+      isApproved: row.isApproved,
+    );
+  }
+
+  Map<String, dynamic> toPayload({String? createdBy, bool includeSocials = true}) {
+    final map = <String, dynamic>{
+      'title': title,
+      'description': description.isEmpty ? null : description,
+      'category': category,
+      'image_url': imageUrl.isEmpty ? null : imageUrl,
+      'location': location.isEmpty ? null : location,
+      'organizer_name': organizerName.isEmpty ? null : organizerName,
+      'organizer_whatsapp':
+          organizerWhatsapp.isEmpty ? null : organizerWhatsapp,
+      'is_published': isPublished,
+      'is_approved': isApproved,
+      'created_by': ?createdBy,
+    };
+    if (includeSocials) {
+      map['organizer_instagram'] =
+          organizerInstagram.isEmpty ? null : organizerInstagram;
+      map['organizer_website'] =
+          organizerWebsite.isEmpty ? null : organizerWebsite;
+      map['organizer_facebook'] =
+          organizerFacebook.isEmpty ? null : organizerFacebook;
+    }
+    return map;
+  }
 }
