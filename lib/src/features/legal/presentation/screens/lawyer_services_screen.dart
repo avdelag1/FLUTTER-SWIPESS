@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor LawyerServicesPage — package catalog (static Cap categories).
@@ -48,8 +49,7 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
         ? _packages
         : _packages.where((p) => p.category == _category).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,18 +88,10 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
                   for (final c in _categories)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(c.$2),
+                      child: NeoNaiveChip(
+                        label: c.$2,
                         selected: _category == c.$1,
-                        onSelected: (_) => setState(() => _category = c.$1),
-                        selectedColor: AppTheme.brandPrimary,
-                        labelStyle: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                        ),
-                        backgroundColor: Colors.white.withAlpha(14),
-                        side: BorderSide(color: Colors.white.withAlpha(30)),
+                        onSelected: () => setState(() => _category = c.$1),
                       ),
                     ),
                 ],
@@ -118,7 +110,14 @@ class _LawyerServicesScreenState extends State<LawyerServicesScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withAlpha(12),
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.white.withAlpha(28)),
+                      border: Border.all(
+                          color: AppTheme.brandPrimary.withAlpha(80)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.brandPrimary.withAlpha(28),
+                          blurRadius: 18,
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

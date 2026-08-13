@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
@@ -31,8 +32,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(favoritedEventsProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,20 +119,10 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   ])
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(c.$2),
+                      child: NeoNaiveChip(
+                        label: c.$2,
                         selected: _category == c.$1,
-                        onSelected: (_) => setState(() => _category = c.$1),
-                        selectedColor: AppTheme.brandPrimary,
-                        labelStyle: TextStyle(
-                          color: _category == c.$1
-                              ? Colors.white
-                              : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                        backgroundColor: Colors.white.withAlpha(12),
-                        side: BorderSide(color: Colors.white.withAlpha(30)),
+                        onSelected: () => setState(() => _category = c.$1),
                       ),
                     ),
                 ],

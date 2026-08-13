@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_worker_categories.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/providers/seekers_provider.dart';
@@ -237,18 +238,10 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             runSpacing: 8,
             children: [
               for (final s in subs)
-                ChoiceChip(
-                  label: Text(s),
+                NeoNaiveChip(
+                  label: s,
                   selected: _subcategory == s,
-                  onSelected: (_) => setState(() => _subcategory = s),
-                  selectedColor: AppTheme.brandPrimary,
-                  backgroundColor: Colors.white.withAlpha(12),
-                  labelStyle: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                  side: BorderSide(color: Colors.white.withAlpha(30)),
+                  onSelected: () => setState(() => _subcategory = s),
                 ),
             ],
           ),
@@ -345,15 +338,10 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           spacing: 8,
           children: [
             for (final u in const ['hour', 'day', 'job'])
-              ChoiceChip(
-                label: Text('/$u'),
+              NeoNaiveChip(
+                label: '/$u',
                 selected: _pricingUnit == u,
-                onSelected: (_) => setState(() => _pricingUnit = u),
-                selectedColor: AppTheme.brandPrimary,
-                backgroundColor: Colors.white.withAlpha(12),
-                labelStyle: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700),
-                side: BorderSide(color: Colors.white.withAlpha(30)),
+                onSelected: () => setState(() => _pricingUnit = u),
               ),
           ],
         ),
@@ -372,15 +360,10 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           spacing: 8,
           children: [
             for (final u in const ['urgent', 'this_week', 'flexible'])
-              ChoiceChip(
-                label: Text(u.replaceAll('_', ' ')),
+              NeoNaiveChip(
+                label: u.replaceAll('_', ' '),
                 selected: _urgency == u,
-                onSelected: (_) => setState(() => _urgency = u),
-                selectedColor: AppTheme.brandPrimary,
-                backgroundColor: Colors.white.withAlpha(12),
-                labelStyle: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w700),
-                side: BorderSide(color: Colors.white.withAlpha(30)),
+                onSelected: () => setState(() => _urgency = u),
               ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/profile/domain/saved_search.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/saved_searches_provider.dart';
@@ -15,8 +16,7 @@ class SavedSearchesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(savedSearchesProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _create(context, ref),
         backgroundColor: AppTheme.brandPrimary,

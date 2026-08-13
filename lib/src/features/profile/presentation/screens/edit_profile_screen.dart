@@ -1,9 +1,11 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_providers.dart';
@@ -98,61 +100,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(currentProfileProvider).value;
-    final avatarUrl = profile?.avatarUrl ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
+    final avatarUrl = profile?.avatarUrl ??
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
+    final top = MediaQuery.paddingOf(context).top;
 
-    return Scaffold(
-      backgroundColor: AppTheme.surfaceColor,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: ClipRRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: AppBar(
-              backgroundColor: Colors.white.withAlpha(10),
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+    return NeoNaiveScaffold(
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(20, top + 12, 20, 40),
+        children: [
+          Row(
+            children: [
+              GlassIconCircle(
+                icon: Icons.arrow_back_ios_new_rounded,
                 onPressed: () => context.pop(),
               ),
-              title: const Text(
-                'Edit Profile',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  'EDIT IDENTITY',
+                  style: AppTheme.displayItalic.copyWith(fontSize: 22),
                 ),
               ),
-              actions: [
-                if (_isSaving)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(color: AppTheme.brandPrimary, strokeWidth: 2),
-                    ),
-                  )
-                else
-                  TextButton(
-                    onPressed: _saveProfile,
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(color: AppTheme.brandPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            Stack(
+          const SizedBox(height: 28),
+          Center(
+            child: Stack(
               alignment: Alignment.center,
               children: [
                 CircleAvatar(
-                  radius: 50,
+                  radius: 52,
                   backgroundImage: NetworkImage(avatarUrl),
                 ),
                 Positioned(
@@ -184,82 +161,89 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
-            _buildTextField('Display Name', _nameController),
-            const SizedBox(height: 20),
-            _buildTextField('City', _cityController),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Text(
-                  'Bio',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(150),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _enhancing ? null : _enhanceBio,
-                  icon: _enhancing
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_awesome, size: 16),
-                  label: Text(
-                    'AI ENHANCE',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildTextField('', _bioController, maxLines: 4, hideLabel: true),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller, {
-    int maxLines = 1,
-    bool hideLabel = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!hideLabel) ...[
+          ),
+          const SizedBox(height: 28),
           Text(
-            label,
-            style: TextStyle(color: Colors.white.withAlpha(150), fontSize: 14, fontWeight: FontWeight.w600),
+            'DISPLAY NAME',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
           ),
           const SizedBox(height: 8),
-        ],
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(15),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withAlpha(30)),
+          GlassTextField(
+            controller: _nameController,
+            hint: 'Display name',
+            icon: Icons.person_outline_rounded,
           ),
-          child: TextField(
-            controller: controller,
-            maxLines: maxLines,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          const SizedBox(height: 18),
+          Text(
+            'CITY',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          GlassTextField(
+            controller: _cityController,
+            hint: 'City',
+            icon: Icons.location_on_outlined,
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Text(
+                'BIO',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _enhancing ? null : _enhanceBio,
+                icon: _enhancing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.brandPrimary,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome, size: 16),
+                label: Text(
+                  'AI ENHANCE',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GlassTextField(
+            controller: _bioController,
+            hint: 'Write a short bio',
+            icon: Icons.notes_rounded,
+            maxLines: 4,
+          ),
+          const SizedBox(height: 28),
+          BrandPrimaryButton(
+            label: _isSaving ? 'Saving…' : 'Save profile',
+            loading: _isSaving,
+            onPressed: _isSaving ? null : _saveProfile,
+          ),
+        ],
+      ),
     );
   }
 }

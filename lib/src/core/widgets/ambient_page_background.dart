@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `AmbientPageBackground` — monochrome tonal wells, no colorful orbs.
 class AmbientPageBackground extends StatelessWidget {
@@ -150,6 +152,87 @@ class NeoNaiveGroup extends StatelessWidget {
             children[i],
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Black canvas + ambient wells. Drop-in for inner Cap pages (not gate/swipe).
+class NeoNaiveScaffold extends StatelessWidget {
+  const NeoNaiveScaffold({
+    super.key,
+    required this.body,
+    this.floatingActionButton,
+  });
+
+  final Widget body;
+  final Widget? floatingActionButton;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.dashBg,
+      floatingActionButton: floatingActionButton,
+      body: AmbientPageBackground(fill: true, child: body),
+    );
+  }
+}
+
+/// Stadium filter pill — Cap `neo-naive-pill`, never Material [ChoiceChip].
+class NeoNaiveChip extends StatelessWidget {
+  const NeoNaiveChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+    this.selectedColor = AppTheme.brandPrimary,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+  final Color selectedColor;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onSelected();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? selectedColor.withAlpha(selectedColor == AppTheme.brandPrimary ? 255 : 80) : Colors.white.withAlpha(12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? selectedColor : Colors.white.withAlpha(30),
+          ),
+          boxShadow: selected
+              ? [BoxShadow(color: selectedColor.withAlpha(40), blurRadius: 12)]
+              : const [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: Colors.white),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

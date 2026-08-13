@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';
@@ -210,30 +212,14 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
     final top = MediaQuery.paddingOf(context).top;
     final categories = _isOwner ? _ownerCategories : _clientCategories;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Ambient Background Mock
-          Positioned(
-            top: -100, right: -100,
-            child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.brandPrimary.withAlpha(20),
-                backgroundBlendMode: BlendMode.screen,
-              ),
-            ),
-          ),
-          
-          ListView(
+    return NeoNaiveScaffold(
+      body: ListView(
             padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
             children: [
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  GlassIconCircle(
+                    icon: Icons.arrow_back_ios_new_rounded,
                     onPressed: () => context.pop(),
                   ),
                   const Spacer(),
@@ -279,7 +265,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: _ActionCard(
                       title: 'CONTRACTS',
                       icon: Icons.edit_document,
-                      color: Colors.blue.withAlpha(30),
+                      color: Colors.white.withAlpha(12),
                       onTap: () => context.push(AppPaths.clientContracts),
                     ),
                   ),
@@ -288,7 +274,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: _ActionCard(
                       title: 'LAWYERS',
                       icon: Icons.gavel_rounded,
-                      color: Colors.purple.withAlpha(30),
+                      color: Colors.white.withAlpha(12),
                       onTap: () => context.push(AppPaths.clientLegalServices),
                     ),
                   ),
@@ -347,8 +333,6 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               
               const SizedBox(height: 48),
             ],
-          ),
-        ],
       ),
     );
   }
@@ -437,7 +421,19 @@ class _CategoryTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(12),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isExpanded ? AppTheme.brandPrimary.withAlpha(50) : Colors.white.withAlpha(10)),
+        border: Border.all(
+          color: isExpanded
+              ? AppTheme.brandPrimary
+              : Colors.white.withAlpha(25),
+        ),
+        boxShadow: isExpanded
+            ? [
+                BoxShadow(
+                  color: AppTheme.brandPrimary.withAlpha(40),
+                  blurRadius: 18,
+                ),
+              ]
+            : const [],
       ),
       child: Column(
         children: [
@@ -463,7 +459,19 @@ class _CategoryTile extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isSelected ? AppTheme.brandPrimary.withAlpha(20) : Colors.white.withAlpha(5),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isSelected ? AppTheme.brandPrimary : Colors.transparent),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppTheme.brandPrimary
+                              : Colors.transparent,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.brandPrimary.withAlpha(50),
+                                  blurRadius: 16,
+                                ),
+                              ]
+                            : const [],
                       ),
                       child: Row(
                         children: [

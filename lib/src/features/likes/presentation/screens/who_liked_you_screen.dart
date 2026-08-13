@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
@@ -71,8 +72,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(whoLikedYouProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return NeoNaiveScaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -23,8 +23,9 @@ Inputs: GlassTextField only. Never Material TextField chrome.
 If it looks like a standard Material app, it failed.
 ```
 
-Shared widgets: `AmbientPageBackground`, `NeoNaiveCard`, `NeoNaiveGroup`,
-`GlassTextField`, `BrandPrimaryButton`, `PulsingVerifiedBadge`.
+Shared widgets: `AmbientPageBackground`, `NeoNaiveScaffold`, `NeoNaiveCard`,
+`NeoNaiveGroup`, `NeoNaiveChip`, `GlassTextField`, `BrandPrimaryButton`,
+`PulsingVerifiedBadge`.
 
 ---
 
