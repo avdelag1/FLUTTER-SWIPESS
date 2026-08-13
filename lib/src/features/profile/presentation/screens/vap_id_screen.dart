@@ -156,7 +156,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               ),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(5, 2, 5, bottom + 8),
+                  padding: EdgeInsets.fromLTRB(0, 8, 0, bottom),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 280),
                     child: ThemedVapCard(

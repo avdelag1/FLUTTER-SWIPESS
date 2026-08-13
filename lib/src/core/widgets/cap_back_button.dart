@@ -36,8 +36,8 @@ class CapBackButton extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withAlpha(160),
-          border: Border.all(color: Colors.transparent),
+          color: Colors.transparent,
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Icon(Icons.arrow_back_ios_new_rounded, color: color, size: 18),
       ),

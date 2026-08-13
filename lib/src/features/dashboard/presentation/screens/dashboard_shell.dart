@@ -114,9 +114,11 @@ class DashboardShell extends ConsumerWidget {
                       ],
                     ),
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        shrinkWrap: true,
                         children: [
                           for (var i = 0; i < bottomNavItems.length; i++)
                             _DockButton(
