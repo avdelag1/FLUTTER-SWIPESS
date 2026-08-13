@@ -44,7 +44,7 @@ class VideoToursScreen extends ConsumerWidget {
                   ),
                   const Spacer(),
                   Icon(Icons.videocam_off_outlined,
-                      size: 56, color: Colors.white.withAlpha(70)),
+                      size: 56, color: Colors.transparent),
                   const SizedBox(height: 12),
                   Text(
                     'NO TOURS AVAILABLE',

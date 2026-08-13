@@ -63,9 +63,9 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -119,8 +119,8 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                         fontWeight: FontWeight.w900,
                         fontSize: 11,
                       ),
-                      backgroundColor: Colors.white.withAlpha(12),
-                      side: BorderSide(color: Colors.white.withAlpha(30)),
+                      backgroundColor: Colors.transparent,
+                      side: BorderSide(color: Colors.transparent),
                     ),
                   );
                 },
@@ -184,7 +184,7 @@ class _Stat extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white24),
         ),
@@ -306,9 +306,9 @@ class _AssetCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.transparent),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

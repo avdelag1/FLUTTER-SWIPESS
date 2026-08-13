@@ -131,7 +131,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.photo_camera_rounded,
-                              size: 64, color: Colors.white.withAlpha(60)),
+                              size: 64, color: Colors.transparent),
                           const SizedBox(height: 16),
                           Text(
                             'Shoot listing photos like Cap camera',

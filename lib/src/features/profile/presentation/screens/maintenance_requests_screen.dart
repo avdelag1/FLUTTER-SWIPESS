@@ -65,9 +65,9 @@ class _MaintenanceRequestsScreenState
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -113,13 +113,13 @@ class _MaintenanceRequestsScreenState
                         selected: _filter == f,
                         onSelected: (_) => setState(() => _filter = f),
                         selectedColor: AppTheme.brandPrimary,
-                        backgroundColor: Colors.white.withAlpha(14),
+                        backgroundColor: Colors.transparent,
                         labelStyle: TextStyle(
                           color: _filter == f ? Colors.white : Colors.white70,
                           fontWeight: FontWeight.w800,
                           fontSize: 11,
                         ),
-                        side: BorderSide(color: Colors.white.withAlpha(30)),
+                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -241,13 +241,13 @@ class _MaintenanceRequestsScreenState
                             onSelected: (_) =>
                                 setModal(() => category = c.$1),
                             selectedColor: AppTheme.brandPrimary,
-                            backgroundColor: Colors.white.withAlpha(12),
+                            backgroundColor: Colors.transparent,
                             labelStyle: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 11,
                             ),
-                            side: BorderSide(color: Colors.white.withAlpha(30)),
+                            side: BorderSide(color: Colors.transparent),
                           ),
                       ],
                     ),
@@ -274,7 +274,7 @@ class _MaintenanceRequestsScreenState
                                 onSelected: (_) =>
                                     setModal(() => priority = p.$1),
                                 selectedColor: p.$3.withAlpha(80),
-                                backgroundColor: Colors.white.withAlpha(12),
+                                backgroundColor: Colors.transparent,
                                 labelStyle: TextStyle(
                                   color: priority == p.$1 ? p.$3 : Colors.white70,
                                   fontWeight: FontWeight.w800,
@@ -367,7 +367,7 @@ class _MaintenanceRequestsScreenState
                                     color: Colors.white24,
                                     style: BorderStyle.solid,
                                   ),
-                                  color: Colors.white.withAlpha(10),
+                                  color: Colors.transparent,
                                 ),
                                 child: const Icon(Icons.camera_alt_rounded,
                                     color: Colors.white54),
@@ -442,9 +442,9 @@ class _Ticket extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [

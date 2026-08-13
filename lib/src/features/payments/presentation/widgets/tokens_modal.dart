@@ -69,9 +69,9 @@ class _TokensModalState extends ConsumerState<TokensModal> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(10),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withAlpha(30)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Column(
                 children: [
@@ -112,7 +112,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF16161C),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withAlpha(20)),
+                      border: Border.all(color: Colors.transparent),
                     ),
                     child: ListTile(
                       title: Text(package.storeProduct.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -160,7 +160,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
             height: 52,
             child: TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: Colors.white.withAlpha(20),
+                backgroundColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
               ),
               onPressed: () => Navigator.of(context).pop(),

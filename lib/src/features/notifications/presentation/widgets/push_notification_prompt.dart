@@ -96,7 +96,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
               decoration: BoxDecoration(
                 color: const Color(0xFF0A0A0D),
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withAlpha(28)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -108,7 +108,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppTheme.brandPrimary.withAlpha(28),
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: const Icon(

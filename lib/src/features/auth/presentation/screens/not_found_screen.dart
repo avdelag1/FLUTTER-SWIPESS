@@ -137,7 +137,7 @@ class NotFoundScreen extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Material(
-                            color: Colors.white.withAlpha(12),
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
@@ -203,7 +203,7 @@ class _GhostCard extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withAlpha(18)),
+        border: Border.all(color: Colors.transparent),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/profile/domain/saved_search.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/saved_searches_provider.dart';
@@ -16,7 +17,7 @@ class SavedSearchesScreen extends ConsumerWidget {
     final async = ref.watch(savedSearchesProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: MatteSurface.canvas(context),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _create(context, ref),
         backgroundColor: AppTheme.brandPrimary,
@@ -38,12 +39,16 @@ class SavedSearchesScreen extends ConsumerWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
+                        color: MatteSurface.cardFill(context),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
+                        border: Border.all(color: MatteSurface.hairline(context)),
                       ),
-                      child: const Center(
-                        child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                      child: Center(
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: MatteSurface.ink(context),
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -52,10 +57,19 @@ class SavedSearchesScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('SAVED SEARCHES', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                        Text(
+                          'SAVED SEARCHES',
+                          style: AppTheme.displayItalic.copyWith(
+                            fontSize: 22,
+                            color: MatteSurface.ink(context),
+                          ),
+                        ),
                         Text(
                           'Reuse discovery filters & alerts',
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.muted(context),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -65,8 +79,11 @@ class SavedSearchesScreen extends ConsumerWidget {
             ),
             Expanded(
               child: async.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                loading: () => Center(
+                  child: CircularProgressIndicator(
+                    color: MatteSurface.ink(context),
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -79,7 +96,9 @@ class SavedSearchesScreen extends ConsumerWidget {
                     return Center(
                       child: Text(
                         'No saved searches yet.',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     );
                   }
@@ -144,7 +163,13 @@ class SavedSearchesScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('NEW SEARCH', style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                    Text(
+                      'NEW SEARCH',
+                      style: AppTheme.displayItalic.copyWith(
+                        fontSize: 18,
+                        color: MatteSurface.ink(context),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     GlassTextField(controller: name, hint: 'Name', icon: Icons.bookmark_rounded),
                     const SizedBox(height: 10),
@@ -155,7 +180,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                       dropdownColor: AppTheme.dashElevated,
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: Colors.white.withAlpha(12),
+                        fillColor: Colors.transparent,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       items: const [
@@ -239,15 +264,17 @@ class _SearchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return InkWell(
       onTap: onOpen,
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withAlpha(25)),
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
         child: Row(
           children: [
@@ -257,9 +284,15 @@ class _SearchTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(search.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  Text(
+                    search.name,
+                    style: TextStyle(color: ink, fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 4),
-                  Text(search.summary, style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12)),
+                  Text(
+                    search.summary,
+                    style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -267,12 +300,12 @@ class _SearchTile extends StatelessWidget {
               onPressed: onToggle,
               icon: Icon(
                 search.alertsEnabled ? Icons.notifications_active_rounded : Icons.notifications_off_outlined,
-                color: search.alertsEnabled ? AppTheme.brandPrimary : Colors.white38,
+                color: search.alertsEnabled ? AppTheme.brandPrimary : muted,
               ),
             ),
             IconButton(
               onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.white38),
+              icon: Icon(Icons.delete_outline_rounded, color: muted),
             ),
           ],
         ),

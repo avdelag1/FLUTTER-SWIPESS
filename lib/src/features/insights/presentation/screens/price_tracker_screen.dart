@@ -37,9 +37,9 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(20),
+                        color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: const Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
@@ -116,9 +116,9 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(12),
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.white.withAlpha(25)),
+                            border: Border.all(color: Colors.transparent),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,13 +291,13 @@ class _ZoneChip extends StatelessWidget {
         selected: selected,
         onSelected: (_) => onTap(),
         selectedColor: AppTheme.brandPrimary,
-        backgroundColor: Colors.white.withAlpha(14),
+        backgroundColor: Colors.transparent,
         labelStyle: TextStyle(
           color: selected ? Colors.white : Colors.white70,
           fontWeight: FontWeight.w800,
           fontSize: 11,
         ),
-        side: BorderSide(color: Colors.white.withAlpha(30)),
+        side: BorderSide(color: Colors.transparent),
       ),
     );
   }

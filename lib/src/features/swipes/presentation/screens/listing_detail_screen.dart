@@ -382,7 +382,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(22),
+                                  color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(999),
                                   border: Border.all(color: Colors.white24),
                                 ),
@@ -489,7 +489,7 @@ class _CircleBtn extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(150),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(50)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Icon(icon, color: Colors.white, size: size > 50 ? 22 : 18),
       ),

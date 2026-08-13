@@ -350,7 +350,7 @@ class _FilterPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color.fromRGBO(14, 14, 20, 0.96),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withAlpha(240), width: 2.5),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -410,7 +410,7 @@ class _BentoCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
           color: const Color.fromRGBO(22, 22, 28, 1),
-          border: Border.all(color: Colors.white.withAlpha(15), width: 1.5),
+          border: Border.all(color: Colors.transparent, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(

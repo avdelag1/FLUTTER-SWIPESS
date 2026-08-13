@@ -60,7 +60,7 @@ class _ShareSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(12),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Colors.white24),
             ),
@@ -167,7 +167,7 @@ class _ShareBtn extends StatelessWidget {
       child: Container(
         height: 72,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white24),
         ),

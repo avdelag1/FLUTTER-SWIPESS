@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
@@ -32,8 +33,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(conversationsProvider);
     
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final well = MatteSurface.well(context);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: MatteSurface.canvas(context),
       body: Stack(
         children: [
           // Ambient Background
@@ -45,7 +50,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.brandPrimary.withAlpha(20),
+                color: Colors.transparent,
                 backgroundBlendMode: BlendMode.screen,
               ),
             ),
@@ -71,7 +76,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     'INBOX',
-                    style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9),
+                    style: AppTheme.displayItalic.copyWith(
+                      fontSize: 48,
+                      height: 0.9,
+                      color: ink,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -93,7 +102,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           ],
                         ),
                         border: Border.all(
-                          color: AppTheme.brandPrimary.withAlpha(80),
+                          color: Colors.transparent,
                         ),
                       ),
                       child: Row(
@@ -105,7 +114,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             child: Text(
                               'Activate messaging tokens',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
+                                color: ink,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                               ),
@@ -137,14 +146,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: ink, fontWeight: FontWeight.bold),
                       onChanged: (v) => setState(() {}),
                       decoration: InputDecoration(
                         hintText: 'Search conversations...',
-                        hintStyle: const TextStyle(color: Colors.white30),
-                        prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                        hintStyle: TextStyle(color: muted.withAlpha(160)),
+                        prefixIcon: Icon(Icons.search, color: muted),
                         filled: true,
-                        fillColor: Colors.white.withAlpha(15),
+                        fillColor: well,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide.none,
@@ -158,7 +167,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   Expanded(
                     child: async.when(
                       loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
-                      error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white54))),
+                      error: (e, _) => Center(child: Text('Error: $e', style: TextStyle(color: muted))),
                       data: (items) {
                         final q = _searchController.text.trim().toLowerCase();
                         var filtered = items.where((c) {
@@ -173,11 +182,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.message_rounded, size: 64, color: Colors.white.withAlpha(20)),
+                                Icon(Icons.message_rounded, size: 64, color: ink.withAlpha(40)),
                                 const SizedBox(height: 16),
                                 Text(
                                   'NO MESSAGES YET',
-                                  style: AppTheme.displayItalic.copyWith(fontSize: 24, color: Colors.white54),
+                                  style: AppTheme.displayItalic.copyWith(fontSize: 24, color: muted),
                                 ),
                               ],
                             ),
@@ -200,14 +209,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.folder_shared_rounded, size: 64, color: Colors.white.withAlpha(20)),
+                          Icon(Icons.folder_shared_rounded, size: 64, color: ink.withAlpha(40)),
                           const SizedBox(height: 16),
                           Text(
                             'DOCUMENTS',
-                            style: AppTheme.displayItalic.copyWith(fontSize: 24, color: Colors.white54),
+                            style: AppTheme.displayItalic.copyWith(fontSize: 24, color: muted),
                           ),
                           const SizedBox(height: 8),
-                          const Text('Shared contracts and files will appear here.', style: TextStyle(color: Colors.white54)),
+                          Text('Shared contracts and files will appear here.', style: TextStyle(color: muted)),
                         ],
                       ),
                     ),
@@ -224,7 +233,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   Widget _buildSectionToggle() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
+        color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.all(4),
@@ -285,18 +294,25 @@ class _TogglePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final isLight = MatteSurface.isLight(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive
+              ? (isLight ? ink : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: isActive ? Colors.black : Colors.white54,
+            color: isActive
+                ? (isLight ? Colors.white : Colors.black)
+                : muted,
             fontWeight: FontWeight.w900,
             fontSize: 12,
             letterSpacing: 1,
@@ -315,18 +331,24 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final isLight = MatteSurface.isLight(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withAlpha(15),
+          color: isActive
+              ? (isLight ? ink : Colors.white)
+              : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isActive ? Colors.black : Colors.white,
+            color: isActive
+                ? (isLight ? Colors.white : Colors.black)
+                : ink,
             fontWeight: FontWeight.w900,
             fontSize: 11,
             letterSpacing: 1,
@@ -343,6 +365,9 @@ class _ChatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final hairline = MatteSurface.hairline(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.mediumImpact();
@@ -359,22 +384,22 @@ class _ChatTile extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(10),
-              border: Border.all(color: Colors.white.withAlpha(20)),
+              color: MatteSurface.cardFill(context),
+              border: Border.all(color: hairline),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: Colors.white.withAlpha(20),
+                  backgroundColor: MatteSurface.well(context),
                   backgroundImage: conversation.avatarUrl != null 
                     ? NetworkImage(conversation.avatarUrl!) 
                     : null,
                   child: conversation.avatarUrl == null
                     ? Text(
                         conversation.name[0].toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+                        style: TextStyle(color: ink, fontWeight: FontWeight.bold, fontSize: 20),
                       )
                     : null,
                 ),
@@ -389,14 +414,14 @@ class _ChatTile extends StatelessWidget {
                           Expanded(
                             child: Text(
                               conversation.name,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                              style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: 16),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
                             conversation.timestamp,
-                            style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: muted, fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -404,7 +429,7 @@ class _ChatTile extends StatelessWidget {
                       Text(
                         conversation.lastMessage,
                         style: TextStyle(
-                          color: conversation.unreadCount > 0 ? Colors.white : Colors.white54,
+                          color: conversation.unreadCount > 0 ? ink : muted,
                           fontWeight: conversation.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
                           fontSize: 14,
                         ),

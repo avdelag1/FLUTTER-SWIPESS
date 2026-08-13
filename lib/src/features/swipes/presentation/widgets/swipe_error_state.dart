@@ -84,9 +84,9 @@ class SwipeErrorState extends StatelessWidget {
                     constraints: const BoxConstraints(minWidth: 160),
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(26),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white.withAlpha(76)),
+                      border: Border.all(color: Colors.transparent),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x66000000),

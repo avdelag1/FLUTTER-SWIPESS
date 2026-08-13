@@ -108,16 +108,16 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'User id…',
-                hintStyle: TextStyle(color: Colors.white.withAlpha(90)),
+                hintStyle: TextStyle(color: Colors.transparent),
                 filled: true,
-                fillColor: Colors.white.withAlpha(12),
+                fillColor: Colors.transparent,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+                  borderSide: BorderSide(color: Colors.transparent),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+                  borderSide: BorderSide(color: Colors.transparent),
                 ),
               ),
             ),

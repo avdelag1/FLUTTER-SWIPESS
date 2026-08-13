@@ -169,9 +169,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withAlpha(40)),
+                border: Border.all(color: Colors.transparent),
               ),
               alignment: Alignment.center,
               child: const Text('Download on the App Store', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -186,9 +186,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Container(
       width: 400,
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withAlpha(25), width: 1),
+        border: Border.all(color: Colors.transparent, width: 1),
         boxShadow: [
           BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 40, offset: const Offset(0, 20)),
         ],
@@ -220,7 +220,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(25),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(Icons.lock_rounded, color: Colors.white, size: 24),
@@ -244,7 +244,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                 const SizedBox(height: 16),
                 _buildSubmitButton(),
                 const SizedBox(height: 24),
-                Divider(color: Colors.white.withAlpha(25), height: 1),
+                Divider(color: Colors.transparent, height: 1),
                 const SizedBox(height: 16),
                 _buildRequestAccessToggle(),
                 AnimatedSize(
@@ -260,9 +260,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(38),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withAlpha(76)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [
@@ -334,15 +334,15 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withAlpha(25)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           children: [
             Container(
               width: 32, height: 32,
-              decoration: BoxDecoration(color: Colors.white.withAlpha(25), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
               child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 12),
@@ -373,7 +373,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(50),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withAlpha(12)),
+            border: Border.all(color: Colors.transparent),
           ),
           child: Column(
             children: [
@@ -399,7 +399,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(50),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withAlpha(12)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Column(
           children: [
@@ -434,9 +434,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(25),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(76)),
+        border: Border.all(color: Colors.transparent),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(

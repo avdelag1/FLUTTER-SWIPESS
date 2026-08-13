@@ -281,9 +281,9 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                     child: Container(
                       height: 140,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(10),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: Colors.white.withAlpha(30)),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: Center(
                         child: Column(

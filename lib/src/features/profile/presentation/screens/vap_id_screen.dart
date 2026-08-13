@@ -286,8 +286,8 @@ class _PearlRoundBtn extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withAlpha(14),
-          border: Border.all(color: Colors.white.withAlpha(35)),
+          color: Colors.transparent,
+          border: Border.all(color: Colors.transparent),
         ),
         child: Icon(icon, color: Colors.white, size: 18),
       ),

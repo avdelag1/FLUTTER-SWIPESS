@@ -64,9 +64,9 @@ class AdminPerformanceScreen extends ConsumerWidget {
                   width: 150,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(12),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withAlpha(24)),
+                    border: Border.all(color: Colors.transparent),
                   ),
                   child: Column(
                     children: [
@@ -118,7 +118,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(10),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(

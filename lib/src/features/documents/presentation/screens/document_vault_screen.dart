@@ -266,9 +266,9 @@ class _DocCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [
@@ -278,9 +278,9 @@ class _DocCard extends StatelessWidget {
               width: 56,
               height: 72,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withAlpha(28)),
+                border: Border.all(color: Colors.transparent),
               ),
               clipBehavior: Clip.antiAlias,
               child: DocTypeSpecimen(documentType: doc.documentType),

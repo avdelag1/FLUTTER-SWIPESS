@@ -76,7 +76,7 @@ class SwipeCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(150),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withAlpha(50), width: 1),
+                  border: Border.all(color: Colors.transparent, width: 1),
                 ),
                 child: Text(
                   price!,

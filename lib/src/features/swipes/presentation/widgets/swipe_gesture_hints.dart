@@ -104,7 +104,7 @@ class _HintChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(64),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withAlpha(51)),
+            border: Border.all(color: Colors.transparent),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x4D000000),

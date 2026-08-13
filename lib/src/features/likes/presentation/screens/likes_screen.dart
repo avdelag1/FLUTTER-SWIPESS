@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
@@ -135,8 +136,12 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
     final listingsAsync = ref.watch(likedListingsProvider);
     final peopleAsync = ref.watch(likedPeopleProvider);
 
+    final ink = MatteSurface.ink(context);
+    final well = MatteSurface.well(context);
+    final hairline = MatteSurface.hairline(context);
+
     return ColoredBox(
-      color: Colors.black,
+      color: MatteSurface.canvas(context),
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -148,9 +153,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                   Container(
                     padding: const EdgeInsets.all(5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F0F14),
+                      color: well,
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.white.withAlpha(28)),
+                      border: Border.all(color: hairline),
                     ),
                     child: Row(
                       children: [
@@ -178,7 +183,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                         Text(
                           'Your Talents',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
                           ),
@@ -484,6 +489,7 @@ class _Seg extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = MatteSurface.muted(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -497,7 +503,7 @@ class _Seg extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
-            color: selected ? Colors.white : Colors.white54,
+            color: selected ? Colors.white : muted,
             fontWeight: FontWeight.w900,
             fontSize: 13,
           ),
@@ -619,27 +625,29 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141A),
+        color: MatteSurface.well(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(40)),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: Colors.white54, size: 20),
+          Icon(Icons.search_rounded, color: muted, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: controller,
               onChanged: onChanged,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: ink, fontSize: 14),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: hint,
-                hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+                hintStyle: TextStyle(color: muted.withAlpha(160), fontSize: 14),
               ),
             ),
           ),

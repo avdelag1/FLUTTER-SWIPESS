@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';
@@ -174,7 +175,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   hintText: 'Provide details about your situation...',
                   hintStyle: const TextStyle(color: Colors.white30),
                   filled: true,
-                  fillColor: Colors.white.withAlpha(10),
+                  fillColor: Colors.transparent,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
@@ -214,19 +215,6 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Ambient Background Mock
-          Positioned(
-            top: -100, right: -100,
-            child: Container(
-              width: 300, height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.brandPrimary.withAlpha(20),
-                backgroundBlendMode: BlendMode.screen,
-              ),
-            ),
-          ),
-          
           ListView(
             padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
             children: [
@@ -240,7 +228,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   // Mode Toggle
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(12),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.all(4),
@@ -264,10 +252,10 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               ),
               const SizedBox(height: 32),
               
-              Text('LEGAL CENTER', style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9)),
+              Text('REQUEST LEGAL\nHELP. CONFIRM\nTHE DETAILS.', style: AppTheme.displayItalic.copyWith(fontSize: 48, height: 0.9, letterSpacing: -1.5)),
               const SizedBox(height: 16),
               Text(
-                'Secure legal terminal for Swipess protocols, terms of use, and professional legal dispatch.',
+                'Describe what you need. If a suitable independent provider is available, they may contact you to confirm credentials, jurisdiction, scope, timing, and price.',
                 style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 32),
@@ -398,9 +386,9 @@ class _ActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: color,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withAlpha(20)),
+          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,9 +423,9 @@ class _CategoryTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isExpanded ? AppTheme.brandPrimary.withAlpha(50) : Colors.white.withAlpha(10)),
+        border: Border.all(color: isExpanded ? AppTheme.brandPrimary : Colors.white, width: 1.5),
       ),
       child: Column(
         children: [
@@ -461,9 +449,9 @@ class _CategoryTile extends StatelessWidget {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.brandPrimary.withAlpha(20) : Colors.white.withAlpha(5),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isSelected ? AppTheme.brandPrimary : Colors.transparent),
+                        border: Border.all(color: isSelected ? AppTheme.brandPrimary : Colors.white.withAlpha(100), width: 1.5),
                       ),
                       child: Row(
                         children: [
@@ -503,9 +491,9 @@ class _PackageCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(10),
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withAlpha(15)),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white, width: 2),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,8 +517,9 @@ class _PackageCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(10),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white),
               ),
               child: Text(
                 'ESTIMATED: ${pkg.duration ?? '${pkg.durationDays} DAYS'}',

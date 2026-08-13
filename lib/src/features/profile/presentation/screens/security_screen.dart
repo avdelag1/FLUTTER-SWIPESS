@@ -401,9 +401,9 @@ class _Panel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(12),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(28)),
+        border: Border.all(color: Colors.transparent),
       ),
       child: child,
     );
@@ -422,9 +422,9 @@ class _Back extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(18),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(35)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Icon(Icons.arrow_back_ios_new_rounded,
             color: Colors.white, size: 18),

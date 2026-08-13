@@ -245,7 +245,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.white.withAlpha(76),
+                              color: Colors.transparent,
                             ),
                             boxShadow: const [
                               BoxShadow(
@@ -282,10 +282,10 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                         child: Container(
                           height: 64,
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(13),
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.white.withAlpha(51),
+                              color: Colors.transparent,
                             ),
                           ),
                           alignment: Alignment.center,
@@ -323,7 +323,7 @@ class _AvatarCard extends StatelessWidget {
       height: 192,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white.withAlpha(26), width: 6),
+        border: Border.all(color: Colors.transparent, width: 6),
         boxShadow: const [
           BoxShadow(
             color: Color(0x80000000),

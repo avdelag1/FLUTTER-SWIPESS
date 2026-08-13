@@ -176,7 +176,7 @@ class SettingsScreen extends StatelessWidget {
               onPressed: () => _resetPassword(context),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white70,
-                side: BorderSide(color: Colors.white.withAlpha(40)),
+                side: BorderSide(color: Colors.transparent),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -320,7 +320,7 @@ class _GradTile extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(40),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(icon, color: Colors.white),
@@ -373,9 +373,9 @@ class _RoundBack extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(18),
+          color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(35)),
+          border: Border.all(color: Colors.transparent),
         ),
         child: const Icon(Icons.arrow_back_ios_new_rounded,
             color: Colors.white, size: 18),

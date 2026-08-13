@@ -32,10 +32,10 @@ class CapEmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(8),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(48),
         border: Border.all(
-          color: Colors.white.withAlpha(20),
+          color: Colors.transparent,
           style: BorderStyle.solid,
         ),
       ),
@@ -62,9 +62,9 @@ class CapEmptyState extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(12),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(19),
-              border: Border.all(color: Colors.white.withAlpha(22)),
+              border: Border.all(color: Colors.transparent),
             ),
             child: Icon(icon, color: accent, size: 28),
           ),
@@ -156,9 +156,9 @@ class CapPageHeader extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
+                color: Colors.transparent,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withAlpha(40)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,

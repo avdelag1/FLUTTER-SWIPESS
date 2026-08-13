@@ -171,7 +171,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                   child: LinearProgressIndicator(
                     value: (draft.step + 1) / _steps.length,
                     minHeight: 3,
-                    backgroundColor: Colors.white.withAlpha(20),
+                    backgroundColor: Colors.transparent,
                     valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)),
                   ),
                 ),
@@ -312,7 +312,7 @@ class _WizardStepPills extends StatelessWidget {
                   boxShadow: step.$1 == current
                       ? [
                           BoxShadow(
-                            color: AppTheme.brandPrimary.withAlpha(90),
+                            color: Colors.transparent,
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -623,10 +623,10 @@ class _PhotosStep extends ConsumerWidget {
                     ref.read(addListingProvider.notifier).pickPhotos(),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(12),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.white.withAlpha(30),
+                      color: Colors.transparent,
                       style: BorderStyle.solid,
                     ),
                   ),
@@ -705,7 +705,7 @@ class _PhotosStep extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(12),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: const Color(0xFFEB4898).withAlpha(120)),
             ),
@@ -751,7 +751,7 @@ class _PhotosStep extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 28),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(10),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: Colors.white24,
@@ -1244,7 +1244,7 @@ class _SelectCard extends StatelessWidget {
               height: 52,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.brandPrimary.withAlpha(50),
+                color: Colors.transparent,
               ),
               child: Icon(icon, color: AppTheme.brandPrimary),
             ),

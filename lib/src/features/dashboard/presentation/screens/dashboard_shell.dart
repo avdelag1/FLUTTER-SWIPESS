@@ -69,9 +69,8 @@ class DashboardShell extends ConsumerWidget {
     final hideChrome = currentTab == NavTab.idCard;
     final isLight = ref.watch(isLightThemeProvider);
     final canvas = AppTheme.canvasFor(isLight: isLight);
-    final dockFill = AppTheme.wellFor(isLight: isLight).withAlpha(isLight ? 250 : 245);
-    final dockBorder =
-        isLight ? Colors.black.withAlpha(28) : Colors.white.withAlpha(200);
+    final dockFill = isLight ? Colors.white : Colors.black;
+    final dockBorder = isLight ? Colors.black : Colors.white;
 
     return Scaffold(
       backgroundColor: canvas,
@@ -196,10 +195,8 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final idle = isLight ? const Color(0xFF111111) : Colors.white;
-    final color = item.accent
-        ? const Color(0xFFFF4D6A)
-        : (selected ? idle : idle.withAlpha(isLight ? 140 : 170));
+    final ink = isLight ? Colors.black : Colors.white;
+    final color = selected ? ink : ink.withAlpha(120);
 
     return GestureDetector(
       onTap: onTap,
@@ -209,21 +206,14 @@ class _DockButton extends StatelessWidget {
         height: 44,
         child: Center(
           child: Container(
-            width: item.accent ? 34 : 32,
-            height: item.accent ? 34 : 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: selected || item.accent
-                  ? wash.withAlpha(item.accent ? 55 : 40)
-                  : Colors.transparent,
-              border: item.accent
-                  ? Border.all(color: const Color(0xFFFF4D6A), width: 1.5)
-                  : (selected
-                      ? Border.all(
-                          color: (isLight ? Colors.black : Colors.white)
-                              .withAlpha(50),
-                        )
-                      : null),
+              color: Colors.transparent,
+              border: selected
+                  ? Border.all(color: ink, width: 1.5)
+                  : null,
             ),
             child: item.useAiIcon
                 ? CustomPaint(
@@ -232,7 +222,7 @@ class _DockButton extends StatelessWidget {
                   )
                 : Icon(
                     item.icon,
-                    size: item.accent ? 22 : 18,
+                    size: 18,
                     color: color,
                   ),
           ),

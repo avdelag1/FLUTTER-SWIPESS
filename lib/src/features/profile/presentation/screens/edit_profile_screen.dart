@@ -108,7 +108,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: AppBar(
-              backgroundColor: Colors.white.withAlpha(10),
+              backgroundColor: Colors.transparent,
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
@@ -245,9 +245,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ],
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(15),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withAlpha(30)),
+            border: Border.all(color: Colors.transparent),
           ),
           child: TextField(
             controller: controller,

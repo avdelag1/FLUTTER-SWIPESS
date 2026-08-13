@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
@@ -74,8 +75,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final async = ref.watch(currentProfileProvider);
     final top = MediaQuery.paddingOf(context).top;
 
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+      backgroundColor: MatteSurface.canvas(context),
       body: Stack(
         children: [
           Positioned(
@@ -89,8 +93,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             child: _orb(const Color(0xFF06B6D4).withAlpha(28), 220),
           ),
           async.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            loading: () => Center(
+              child: CircularProgressIndicator(color: ink, strokeWidth: 2),
             ),
             error: (_, _) => Center(
               child: TextButton(
@@ -192,7 +196,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           name.toUpperCase(),
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: 36,
                             fontWeight: FontWeight.w900,
                             fontStyle: FontStyle.italic,
@@ -205,7 +209,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           Text(
                             email.toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white38,
+                              color: muted,
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 2.4,
@@ -444,7 +448,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               Text(
                                 'Thank you!',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
+                                  color: ink,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 18,
                                 ),
@@ -454,7 +458,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 'Your feedback helps us build a better Swipess.',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
+                                  color: muted,
                                   fontSize: 13,
                                 ),
                               ),
@@ -494,7 +498,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(14),
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(999),
                               border: Border.all(color: Colors.white24),
                             ),
@@ -550,7 +554,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 Text(
                                   'Seeker Requests',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
+                                    color: ink,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 13,
                                     letterSpacing: 0.8,
@@ -559,7 +563,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 Text(
                                   'Post what professional you need',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white54,
+                                    color: muted,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -587,7 +591,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               Text(
                                 'Profile Completeness',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white38,
+                                  color: muted,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 2,
@@ -597,7 +601,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               Text(
                                 '$completion%',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
+                                  color: ink,
                                   fontWeight: FontWeight.w900,
                                   fontStyle: FontStyle.italic,
                                   fontSize: 22,
@@ -611,7 +615,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             child: LinearProgressIndicator(
                               value: completion / 100,
                               minHeight: 10,
-                              backgroundColor: Colors.white.withAlpha(18),
+                              backgroundColor: Colors.transparent,
                               valueColor: const AlwaysStoppedAnimation(
                                 Color(0xFFFF4D00),
                               ),
@@ -648,7 +652,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Text(
                               'Global Activity',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
+                                color: ink,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 14,
                               ),
@@ -659,7 +663,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           'Likes, matches, and messages from your network show up here.',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: muted,
                             fontSize: 12,
                           ),
                         ),
@@ -698,7 +702,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Text(
                           'MORE TOOLS',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white38,
+                            color: muted,
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
@@ -709,7 +713,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           _moreOpen
                               ? Icons.keyboard_arrow_up_rounded
                               : Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white38,
+                          color: muted,
                         ),
                       ],
                     ),
@@ -723,7 +727,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Text(
                       'Swipess v1.0.0',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white24,
+                        color: muted.withAlpha(120),
                         fontSize: 12,
                       ),
                     ),
@@ -788,9 +792,9 @@ class _Panel extends StatelessWidget {
           width: double.infinity,
           padding: padding ?? const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
+            color: MatteSurface.cardFill(context),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(28)),
+            border: Border.all(color: MatteSurface.hairline(context)),
           ),
           child: child,
         ),
@@ -816,6 +820,8 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -824,9 +830,9 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(12),
+          color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withAlpha(28)),
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
         child: Column(
           children: [
@@ -835,7 +841,7 @@ class _StatTile extends StatelessWidget {
             Text(
               '$value',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: ink,
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.8,
@@ -845,7 +851,7 @@ class _StatTile extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: muted,
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.6,
@@ -938,7 +944,7 @@ class _DailyQuests extends ConsumerWidget {
               Text(
                 capCopy(ref, 'Daily Quests', 'Misiones diarias'),
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
                 ),
@@ -948,9 +954,9 @@ class _DailyQuests extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppTheme.brandPrimary.withAlpha(35),
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppTheme.brandPrimary.withAlpha(80)),
+                  border: Border.all(color: Colors.transparent),
                 ),
                 child: Text(
                   async.isLoading
@@ -1020,7 +1026,7 @@ class _DailyQuests extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(10),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -1145,7 +1151,7 @@ class _ShareEarn extends StatelessWidget {
                     Text(
                       'SHARE & EARN',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: MatteSurface.ink(context),
                         fontWeight: FontWeight.w900,
                         fontStyle: FontStyle.italic,
                         fontSize: 16,
@@ -1154,7 +1160,7 @@ class _ShareEarn extends StatelessWidget {
                     Text(
                       'Get free messages for referrals',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: MatteSurface.muted(context),
                         fontSize: 12,
                       ),
                     ),
@@ -1290,7 +1296,7 @@ class _SocialBtn extends StatelessWidget {
         child: Container(
           height: 42,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.white24),
           ),
@@ -1365,7 +1371,7 @@ class _FeedbackForm extends StatelessWidget {
                   Text(
                     'Send Feedback',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                     ),
@@ -1373,7 +1379,7 @@ class _FeedbackForm extends StatelessWidget {
                   Text(
                     'Help us improve Swipess',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: MatteSurface.muted(context),
                       fontSize: 12,
                     ),
                   ),
@@ -1421,16 +1427,16 @@ class _FeedbackForm extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: 'Tell us what\'s on your mind…',
-            hintStyle: TextStyle(color: Colors.white.withAlpha(90)),
+            hintStyle: TextStyle(color: Colors.transparent),
             filled: true,
             fillColor: Colors.black.withAlpha(70),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+              borderSide: BorderSide(color: Colors.transparent),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.white.withAlpha(30)),
+              borderSide: BorderSide(color: Colors.transparent),
             ),
           ),
         ),
@@ -1658,12 +1664,12 @@ class _MoreToolsGrid extends StatelessWidget {
             title: Text(
               item.$2,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w700,
               ),
             ),
-            trailing: const Icon(Icons.chevron_right_rounded,
-                color: Colors.white38),
+            trailing: Icon(Icons.chevron_right_rounded,
+                color: MatteSurface.muted(context)),
             onTap: item.$3,
           ),
       ],

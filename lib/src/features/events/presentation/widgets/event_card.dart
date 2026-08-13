@@ -36,7 +36,7 @@ class EventCard extends StatelessWidget {
             offset: const Offset(0, 14),
           ),
           BoxShadow(
-            color: AppTheme.brandPrimary.withAlpha(20),
+            color: Colors.transparent,
             blurRadius: 40,
             offset: const Offset(0, 8),
           ),
@@ -267,8 +267,7 @@ class EventCard extends StatelessWidget {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          AppTheme.brandPrimary.withAlpha(90),
+                                      color: Colors.transparent,
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),

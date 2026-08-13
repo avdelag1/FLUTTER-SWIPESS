@@ -172,7 +172,7 @@ class _SeekerCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.transparent),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -271,7 +271,7 @@ class _SeekerCard extends StatelessWidget {
                     onPressed: onPass,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withAlpha(60)),
+                      side: BorderSide(color: Colors.transparent),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                     ),
