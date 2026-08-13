@@ -74,15 +74,8 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                       child: NeoNaiveChip(
                         label: entry.value,
                         selected: _category == entry.key,
-                        onSelected: (_) => setState(() => _category = entry.key),
+                        onSelected: () => setState(() => _category = entry.key),
                         selectedColor: AppTheme.brandPrimary,
-                        backgroundColor: Colors.transparent,
-                        labelStyle: TextStyle(
-                          color: _category == entry.key ? Colors.white : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                        ),
-                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],

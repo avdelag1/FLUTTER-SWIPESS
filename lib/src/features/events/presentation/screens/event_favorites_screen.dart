@@ -122,17 +122,8 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                       child: NeoNaiveChip(
                         label: c.$2,
                         selected: _category == c.$1,
-                        onSelected: (_) => setState(() => _category = c.$1),
+                        onSelected: () => setState(() => _category = c.$1),
                         selectedColor: AppTheme.brandPrimary,
-                        labelStyle: TextStyle(
-                          color: _category == c.$1
-                              ? Colors.white
-                              : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                        backgroundColor: Colors.transparent,
-                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],

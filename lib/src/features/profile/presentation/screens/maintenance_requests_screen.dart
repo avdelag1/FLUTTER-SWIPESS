@@ -112,15 +112,8 @@ class _MaintenanceRequestsScreenState
                       child: NeoNaiveChip(
                         label: _label(f),
                         selected: _filter == f,
-                        onSelected: (_) => setState(() => _filter = f),
+                        onSelected: () => setState(() => _filter = f),
                         selectedColor: AppTheme.brandPrimary,
-                        backgroundColor: Colors.transparent,
-                        labelStyle: TextStyle(
-                          color: _filter == f ? Colors.white : Colors.white70,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                        ),
-                        side: BorderSide(color: Colors.transparent),
                       ),
                     ),
                 ],
@@ -238,16 +231,9 @@ class _MaintenanceRequestsScreenState
                           NeoNaiveChip(
                             label: c.$2,
                             selected: category == c.$1,
-                            onSelected: (_) =>
+                            onSelected: () =>
                                 setModal(() => category = c.$1),
                             selectedColor: AppTheme.brandPrimary,
-                            backgroundColor: Colors.transparent,
-                            labelStyle: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                            side: BorderSide(color: Colors.transparent),
                           ),
                       ],
                     ),
@@ -273,18 +259,7 @@ class _MaintenanceRequestsScreenState
                                 selected: priority == p.$1,
                                 onSelected: () =>
                                     setModal(() => priority = p.$1),
-                                selectedColor: p.$3.withAlpha(80),
-                                backgroundColor: Colors.transparent,
-                                labelStyle: TextStyle(
-                                  color: priority == p.$1 ? p.$3 : Colors.white70,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 11,
-                                ),
-                                side: BorderSide(
-                                  color: priority == p.$1
-                                      ? p.$3
-                                      : Colors.white.withAlpha(30),
-                                ),
+                                selectedColor: p.$3,
                               ),
                             ),
                           ),
@@ -434,9 +409,21 @@ class _Ticket extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: urgent ? const Color(0xFFEF4444).withAlpha(14) : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.transparent),
+        border: Border.all(
+          color: urgent
+              ? const Color(0xFFEF4444).withAlpha(90)
+              : Colors.transparent,
+        ),
+        boxShadow: urgent
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withAlpha(30),
+                  blurRadius: 16,
+                ),
+              ]
+            : null,
       ),
       child: Row(
         children: [

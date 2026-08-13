@@ -289,15 +289,8 @@ class _ZoneChip extends StatelessWidget {
       child: NeoNaiveChip(
         label: label,
         selected: selected,
-        onSelected: (_) => onTap(),
+        onSelected: onTap,
         selectedColor: AppTheme.brandPrimary,
-        backgroundColor: Colors.transparent,
-        labelStyle: TextStyle(
-          color: selected ? Colors.white : Colors.white70,
-          fontWeight: FontWeight.w800,
-          fontSize: 11,
-        ),
-        side: BorderSide(color: Colors.transparent),
       ),
     );
   }

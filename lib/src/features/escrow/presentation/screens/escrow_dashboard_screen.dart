@@ -207,11 +207,6 @@ class EscrowDashboardScreen extends ConsumerWidget {
                             onSelected: () =>
                                 setModal(() => selectedContract = null),
                             selectedColor: AppTheme.brandPrimary,
-                            backgroundColor: Colors.transparent,
-                            labelStyle: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700),
-                            side: BorderSide(color: Colors.transparent),
                           ),
                           for (final c in contracts.take(6))
                             NeoNaiveChip(
@@ -232,13 +227,6 @@ class EscrowDashboardScreen extends ConsumerWidget {
                                 }
                               }),
                               selectedColor: AppTheme.brandPrimary,
-                              backgroundColor: Colors.transparent,
-                              labelStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11),
-                              side: BorderSide(
-                                  color: Colors.transparent),
                             ),
                         ],
                       ),

@@ -11,58 +11,25 @@ import 'package:flutter_swipes/src/features/documents/presentation/providers/doc
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_card_theme_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Capacitor PEARL / VAP ID — full-frame themed vault card.
-class VapIdScreen extends ConsumerStatefulWidget {
+class VapIdScreen extends ConsumerWidget {
   const VapIdScreen({super.key});
 
   @override
-  ConsumerState<VapIdScreen> createState() => _VapIdScreenState();
-}
-
-class _VapIdScreenState extends ConsumerState<VapIdScreen> {
-  static const _themeKey = 'vap-card-theme-index';
-
-  int _themeIndex = 0;
-
-  VapCardTheme get _theme => VapCardTheme.themes[_themeIndex];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTheme();
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final i = prefs.getInt(_themeKey) ?? 0;
-    if (!mounted) return;
-    setState(() {
-      _themeIndex = (i >= 0 && i < VapCardTheme.themes.length) ? i : 0;
-    });
-  }
-
-  Future<void> _cycleTheme() async {
-    HapticFeedback.selectionClick();
-    final next = (_themeIndex + 1) % VapCardTheme.themes.length;
-    setState(() => _themeIndex = next);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_themeKey, next);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(vapIdProvider);
     final docs = ref.watch(documentsProvider);
     final userId = ref.watch(currentUserProvider)?.id ?? 'resident';
+    final themeIndex = ref.watch(vapCardThemeIndexProvider).value ?? 0;
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final theme = _theme;
+    final theme = VapCardTheme.themes[themeIndex];
 
     return ColoredBox(
       color: const Color(0xFF0A0A0D),
@@ -90,7 +57,10 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                   children: [
                     _PearlRoundBtn(
                       icon: Icons.water_drop_outlined,
-                      onTap: _cycleTheme,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(vapCardThemeIndexProvider.notifier).cycle();
+                      },
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -117,16 +87,16 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                                   i++) ...[
                                 if (i > 0) const SizedBox(width: 5),
                                 Container(
-                                  width: i == _themeIndex ? 10 : 7,
-                                  height: i == _themeIndex ? 10 : 7,
+                                  width: i == themeIndex ? 10 : 7,
+                                  height: i == themeIndex ? 10 : 7,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: VapCardTheme.themes[i].swatch,
                                     border: Border.all(
-                                      color: i == _themeIndex
+                                      color: i == themeIndex
                                           ? Colors.white
                                           : Colors.white38,
-                                      width: i == _themeIndex ? 1.5 : 1,
+                                      width: i == themeIndex ? 1.5 : 1,
                                     ),
                                   ),
                                 ),
@@ -160,7 +130,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 280),
                     child: ThemedVapCard(
-                      key: ValueKey(_themeIndex),
+                      key: ValueKey(themeIndex),
                       theme: theme,
                       data: data,
                       idNumber: idNumber,

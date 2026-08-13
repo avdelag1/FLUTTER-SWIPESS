@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/domain/roommate_profile.dart';
@@ -331,30 +332,20 @@ class _RoommateMatchingScreenState
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      ChoiceChip(
-                        label: const Text('Any'),
+                      NeoNaiveChip(
+                        label: 'Any',
                         selected: draft.city == null,
-                        onSelected: (_) => setModal(
+                        onSelected: () => setModal(
                           () => draft = draft.copyWith(clearCity: true),
                         ),
-                        selectedColor: AppTheme.brandPrimary,
-                        backgroundColor: Colors.transparent,
-                        labelStyle: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w700),
-                        side: BorderSide(color: Colors.transparent),
                       ),
                       for (final city in ListingTaxonomies.popularCities.take(8))
-                        ChoiceChip(
-                          label: Text(city),
+                        NeoNaiveChip(
+                          label: city,
                           selected: draft.city == city,
-                          onSelected: (_) => setModal(
+                          onSelected: () => setModal(
                             () => draft = draft.copyWith(city: city),
                           ),
-                          selectedColor: AppTheme.brandPrimary,
-                          backgroundColor: Colors.transparent,
-                          labelStyle: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w700),
-                          side: BorderSide(color: Colors.transparent),
                         ),
                     ],
                   ),

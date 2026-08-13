@@ -113,23 +113,18 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                   const SizedBox(width: 40),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _id,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'User id…',
-                hintStyle: TextStyle(color: Colors.transparent),
-                filled: true,
-                fillColor: Colors.transparent,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.transparent),
+              const SizedBox(height: 28),
+              if (widget.userId == null || widget.userId!.isEmpty) ...[
+                GlassTextField(
+                  controller: _id,
+                  hint: 'Resident user id / TXID',
+                  icon: Icons.badge_outlined,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.transparent),
+                const SizedBox(height: 12),
+                BrandPrimaryButton(
+                  label: _loading ? 'Validating…' : 'Validate resident',
+                  loading: _loading,
+                  onPressed: _loading ? null : _lookup,
                 ),
                 const SizedBox(height: 28),
               ],

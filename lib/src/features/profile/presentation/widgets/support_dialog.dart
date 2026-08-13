@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -167,19 +168,12 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
             runSpacing: 8,
             children: [
               for (final c in _categories)
-                ChoiceChip(
-                  label: Text(c.$2),
+                NeoNaiveChip(
+                  label: c.$2,
                   selected: _category == c.$1,
-                  onSelected: (_) => setState(() => _category = c.$1),
+                  onSelected: () => setState(() => _category = c.$1),
                   selectedColor: AppTheme.brandPrimary,
-                  labelStyle: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                  backgroundColor: Colors.transparent,
-                  side: BorderSide(color: Colors.transparent),
-                  avatar: Icon(c.$3, size: 14, color: Colors.white70),
+                  icon: c.$3,
                 ),
             ],
           ),
@@ -190,18 +184,11 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: ChoiceChip(
-                      label: Center(child: Text(p.$2)),
+                    child: NeoNaiveChip(
+                      label: p.$2,
                       selected: _priority == p.$1,
-                      onSelected: (_) => setState(() => _priority = p.$1),
+                      onSelected: () => setState(() => _priority = p.$1),
                       selectedColor: const Color(0xFFF59E0B),
-                      labelStyle: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                      ),
-                      backgroundColor: Colors.transparent,
-                      side: BorderSide(color: Colors.transparent),
                     ),
                   ),
                 ),

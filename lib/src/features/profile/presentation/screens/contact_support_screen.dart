@@ -115,15 +115,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                         NeoNaiveChip(
                           label: t.$2,
                           selected: _topic == t.$1,
-                          onSelected: (_) => setState(() => _topic = t.$1),
+                          onSelected: () => setState(() => _topic = t.$1),
                           selectedColor: AppTheme.brandPrimary,
-                          backgroundColor: Colors.transparent,
-                          labelStyle: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                          ),
-                          side: BorderSide(color: Colors.transparent),
                         ),
                     ],
                   ),

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
 import 'package:go_router/go_router.dart';
@@ -214,11 +214,11 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          ListView(
-            padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
-            children: [
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
+          children: [
               Row(
                 children: [
                   const CapBackButton(),
@@ -333,10 +333,12 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               
               const SizedBox(height: 48),
             ],
-      ),
-    );
+          ),
+        ),
+      );
   }
 }
+
 
 class _ToggleBtn extends StatelessWidget {
   const _ToggleBtn({required this.label, required this.isActive, required this.onTap});

@@ -112,15 +112,8 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                     child: NeoNaiveChip(
                       label: _tabs[i].$2,
                       selected: selected,
-                      onSelected: (_) => setState(() => _selectedTab = i),
+                      onSelected: () => setState(() => _selectedTab = i),
                       selectedColor: AppTheme.brandPrimary,
-                      labelStyle: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                      ),
-                      backgroundColor: Colors.transparent,
-                      side: BorderSide(color: Colors.transparent),
                     ),
                   );
                 },
