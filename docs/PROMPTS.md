@@ -24,8 +24,25 @@ If it looks like a standard Material app, it failed.
 ```
 
 Shared widgets: `AmbientPageBackground`, `NeoNaiveScaffold`, `NeoNaiveCard`,
-`NeoNaiveGroup`, `NeoNaiveChip`, `GlassTextField`, `BrandPrimaryButton`,
-`PulsingVerifiedBadge`.
+`NeoNaiveGroup`, `NeoNaiveChip`, `QfWellGlow`, `GlassTextField`,
+`BrandPrimaryButton`, `PulsingVerifiedBadge`.
+
+---
+
+## Model + workflow (owner preference)
+
+Point every agent at `.cursor/skills/close-capacitor-design`, `BRAIN.md`, and
+`/tmp/swipess`. Ask for **Cap match**, not “make it prettier.” Avoid generic
+“redesign this” prompts — they push models toward Material/glass demos, which
+this project bans.
+
+| Task | Model |
+|------|--------|
+| Hard screens (swipe card, dashboard HUD, gate) | Opus |
+| Follow-up fixes, inner pages, commit + push | Sonnet / Composer |
+
+Dashboard source file: Cap `BentoCategoryDashboard.tsx` (not the older poker-only
+layout). Flutter: `bento_dashboard_screen.dart` inside `DashboardShell`.
 
 ---
 

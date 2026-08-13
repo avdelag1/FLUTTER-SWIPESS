@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -68,6 +69,9 @@ class DashboardShell extends ConsumerWidget {
 
     final hideChrome = currentTab == NavTab.idCard;
     final isLight = ref.watch(isLightThemeProvider);
+    final chromeVisible = ref.watch(chromeVisibilityProvider);
+    final syncChrome = currentTab == NavTab.dashboard;
+    final showChrome = !syncChrome || chromeVisible;
     final canvas = AppTheme.canvasFor(isLight: isLight);
     final dockFill = isLight ? Colors.white : Colors.black;
     final dockBorder = isLight ? Colors.black : Colors.white;
@@ -78,10 +82,26 @@ class DashboardShell extends ConsumerWidget {
       extendBody: true,
       appBar: hideChrome
           ? null
-          : AppTopBar(
-              firstName: profile?.name.split(' ').first,
-              avatarUrl: profile?.avatarUrl,
-              onProfileTap: () => context.push(AppPaths.clientProfile),
+          : PreferredSize(
+              preferredSize: const AppTopBar().preferredSize,
+              child: AnimatedOpacity(
+                opacity: showChrome ? 1 : 0,
+                duration: Duration(milliseconds: showChrome ? 360 : 340),
+                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                child: AnimatedSlide(
+                  offset: showChrome ? Offset.zero : const Offset(0, -0.12),
+                  duration: Duration(milliseconds: showChrome ? 360 : 340),
+                  curve: const Cubic(0.25, 0.1, 0.25, 1),
+                  child: IgnorePointer(
+                    ignoring: !showChrome,
+                    child: AppTopBar(
+                      firstName: profile?.name.split(' ').first,
+                      avatarUrl: profile?.avatarUrl,
+                      onProfileTap: () => context.push(AppPaths.clientProfile),
+                    ),
+                  ),
+                ),
+              ),
             ),
       body: Stack(
         children: [
@@ -90,65 +110,78 @@ class DashboardShell extends ConsumerWidget {
             bottom: 18,
             left: 0,
             right: 0,
-            child: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 340),
-                  child: Container(
-                    height: 52,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: dockFill,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: dockBorder,
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isLight ? 40 : 160),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          for (var i = 0; i < bottomNavItems.length; i++)
-                            _DockButton(
-                              item: bottomNavItems[i],
-                              wash: _washes[i % _washes.length],
-                              selected: currentTab == bottomNavItems[i].id,
-                              isLight: isLight,
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                final id = bottomNavItems[i].id;
-                                if (id == NavTab.filter) {
-                                  FilterBottomSheet.show(context);
-                                  return;
-                                }
-                                if (id == NavTab.add) {
-                                  showCreateListingChooser(context);
-                                  return;
-                                }
-                                if (id == NavTab.ai) {
-                                  showIntelCoreSheet(context);
-                                  return;
-                                }
-                                // Cap SEEKERS dock opens SeekerRequestDialog.
-                                if (id == NavTab.seekers) {
-                                  showSeekerRequestSheet(context, ref);
-                                  return;
-                                }
-                                ref.read(navTabProvider.notifier).set(id);
-                                context.go(AppPaths.pathForTab(id));
-                              },
+            child: AnimatedOpacity(
+              opacity: showChrome ? 1 : 0,
+              duration: Duration(milliseconds: showChrome ? 360 : 340),
+              curve: const Cubic(0.25, 0.1, 0.25, 1),
+              child: AnimatedSlide(
+                offset: showChrome ? Offset.zero : const Offset(0, 0.15),
+                duration: Duration(milliseconds: showChrome ? 360 : 340),
+                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                child: IgnorePointer(
+                  ignoring: !showChrome,
+                  child: SafeArea(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 340),
+                        child: Container(
+                          height: 52,
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: dockFill,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: dockBorder,
+                              width: 1.5,
                             ),
-                        ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(isLight ? 40 : 160),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: [
+                                for (var i = 0; i < bottomNavItems.length; i++)
+                                  _DockButton(
+                                    item: bottomNavItems[i],
+                                    wash: _washes[i % _washes.length],
+                                    selected: currentTab == bottomNavItems[i].id,
+                                    isLight: isLight,
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      final id = bottomNavItems[i].id;
+                                      if (id == NavTab.filter) {
+                                        FilterBottomSheet.show(context);
+                                        return;
+                                      }
+                                      if (id == NavTab.add) {
+                                        showCreateListingChooser(context);
+                                        return;
+                                      }
+                                      if (id == NavTab.ai) {
+                                        showIntelCoreSheet(context);
+                                        return;
+                                      }
+                                      // Cap SEEKERS dock opens SeekerRequestDialog.
+                                      if (id == NavTab.seekers) {
+                                        showSeekerRequestSheet(context, ref);
+                                        return;
+                                      }
+                                      ref.read(navTabProvider.notifier).set(id);
+                                      context.go(AppPaths.pathForTab(id));
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

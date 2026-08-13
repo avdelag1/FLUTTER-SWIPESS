@@ -110,7 +110,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         _dragDx = 0;
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: AppTheme.qfNeoFrameRadius,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -198,10 +198,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'EVENTS',
+                    'EVENTS LIVE',
                     style: AppTheme.displayItalic.copyWith(
-                      fontSize: 18,
-                      letterSpacing: 1.4,
+                      fontSize: 14,
+                      letterSpacing: 1.6,
                     ),
                   ),
                   const SizedBox(height: 2),
