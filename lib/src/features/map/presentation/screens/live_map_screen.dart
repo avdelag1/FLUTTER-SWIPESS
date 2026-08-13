@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
+import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
@@ -18,7 +19,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Cap PassportMap / live map — streets tiles + Cap HUD chrome.
+/// Cap PassportMap / live map — satellite fly-in, 10 km radius, listings + people.
 class LiveMapScreen extends ConsumerStatefulWidget {
   const LiveMapScreen({
     super.key,
@@ -35,7 +36,8 @@ class LiveMapScreen extends ConsumerStatefulWidget {
   ConsumerState<LiveMapScreen> createState() => _LiveMapScreenState();
 }
 
-class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
+class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
+    with SingleTickerProviderStateMixin {
   String _layer = 'all'; // all | listings | people
   String _category = 'all';
   MapPin? _selected;
@@ -43,7 +45,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   bool _radiusOpen = false;
   bool _citiesOpen = false;
   final _mapController = MapController();
-  double _zoom = 11;
+  double _zoom = MapCameraMath.openAltitudeZoom;
+  late final AnimationController _fly;
+  bool _didFly = false;
 
   static const _categories = [
     ('all', 'All', Icons.public_rounded),
@@ -60,21 +64,36 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
   void initState() {
     super.initState();
     _citiesOpen = widget.showCitiesOnOpen;
+    _fly = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: MapCameraMath.openGlideMs),
+    );
   }
 
   @override
   void dispose() {
+    _fly.stop();
+    _fly.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
-  double _zoomForRadius(int km) {
-    if (km <= 5) return 13.2;
-    if (km <= 10) return 12.4;
-    if (km <= 25) return 11.4;
-    if (km <= 50) return 10.6;
-    if (km <= 100) return 9.6;
-    return 8.6;
+  double _zoomForRadius(int km) => MapCameraMath.zoomForRadiusKm(km);
+
+  void _startDroneFlyIn(LatLng center, int radiusKm) {
+    if (_didFly) return;
+    _didFly = true;
+    final startZ = MapCameraMath.openAltitudeZoom;
+    final endZ = _zoomForRadius(radiusKm);
+    final startBank = MapCameraMath.openBankDegrees;
+    _fly.addListener(() {
+      if (!mounted) return;
+      final t = Curves.easeInOutCubic.transform(_fly.value);
+      final z = startZ + (endZ - startZ) * t;
+      final bank = startBank * (1 - t);
+      _mapController.moveAndRotate(center, z, bank);
+    });
+    _fly.forward();
   }
 
   List<_MapCluster> _cluster(List<MapPin> pins, double zoom) {
@@ -114,40 +133,39 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
     
+    final listings = asyncListings.value ?? [];
+    final profiles = asyncProfiles.value ?? [];
     final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
-    final hasError = asyncListings.hasError && asyncProfiles.hasError;
+    const haversine = Distance();
+    bool inRadius(double lat, double lng) {
+      return haversine.as(
+            LengthUnit.Kilometer,
+            center,
+            LatLng(lat, lng),
+          ) <=
+          radiusKm;
+    }
 
     return Material(
-      color: Colors.black,
+      color: const Color(0xFF0A0A12),
       child: Stack(
         children: [
-          if (isLoading)
-            const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF00C6FF),
-                strokeWidth: 2,
-              ),
-            )
-          else if (hasError)
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  ref.invalidate(mapListingsProvider);
-                  ref.invalidate(mapProfilesProvider);
-                },
-                child: const Text('Could not load map pins — retry', style: TextStyle(color: Colors.white)),
-              ),
-            )
-          else
-            Builder(builder: (context) {
-              final listings = asyncListings.value ?? [];
-              final profiles = asyncProfiles.value ?? [];
-
+          Builder(builder: (context) {
               final List<MapPin> allPins = [
                 if (_layer != 'people')
-                  ...listings.map((l) => MapPin.listing(l)),
+                  ...listings
+                      .where((l) =>
+                          l.latitude != null &&
+                          l.longitude != null &&
+                          inRadius(l.latitude!, l.longitude!))
+                      .map((l) => MapPin.listing(l)),
                 if (_layer != 'listings')
-                  ...profiles.map((p) => MapPin.profile(p)),
+                  ...profiles
+                      .where((p) =>
+                          p.latitude != null &&
+                          p.longitude != null &&
+                          inRadius(p.latitude!, p.longitude!))
+                      .map((p) => MapPin.profile(p)),
               ];
               final filtered = _category == 'all' || _layer == 'people'
                   ? allPins
@@ -161,9 +179,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: _zoomForRadius(radiusKm),
+                  initialZoom: MapCameraMath.openAltitudeZoom,
+                  initialRotation: MapCameraMath.openBankDegrees,
                   minZoom: 3,
                   maxZoom: 18,
+                  backgroundColor: const Color(0xFF0A0A12),
+                  onMapReady: () => _startDroneFlyIn(center, radiusKm),
                   onTap: (_, _) => setState(() {
                     _selected = null;
                     _menuOpen = false;
@@ -171,6 +192,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                   }),
                   onPositionChanged: (pos, _) {
                     final z = pos.zoom;
+                    if (_fly.isAnimating) {
+                      _zoom = z;
+                      return;
+                    }
                     if ((z - _zoom).abs() > 0.15) {
                       setState(() => _zoom = z);
                     }
@@ -178,13 +203,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: AppConfig.hasMapboxToken
-                        ? 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token={accessToken}'
-                        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    additionalOptions: AppConfig.hasMapboxToken
-                        ? {'accessToken': AppConfig.mapboxAccessToken}
-                        : const {},
-                    userAgentPackageName: 'com.swipess.flutter',
+                    urlTemplate: MapBasemap.urlTemplate,
+                    fallbackUrl: MapBasemap.fallbackUrl,
+                    additionalOptions: MapBasemap.additionalOptions,
+                    userAgentPackageName: MapBasemap.userAgentPackageName,
                     maxZoom: 19,
                   ),
                   CircleLayer(
@@ -193,14 +215,32 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                         point: center,
                         radius: radiusKm * 1000,
                         useRadiusInMeter: true,
-                        color: const Color(0x3300C6FF),
-                        borderColor: const Color(0x9900C6FF),
-                        borderStrokeWidth: 1.5,
+                        color: const Color(0x1400C6FF),
+                        borderColor: const Color(0xCC00C6FF),
+                        borderStrokeWidth: 2,
                       ),
                     ],
                   ),
                   MarkerLayer(
                     markers: [
+                      Marker(
+                        point: center,
+                        width: 22,
+                        height: 22,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00C6FF),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x8800C6FF),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       for (final c in clusters)
                         Marker(
                           point: c.point,
@@ -226,6 +266,17 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
                 ],
               );
             }),
+          if (isLoading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFF00C6FF),
+                backgroundColor: Colors.transparent,
+              ),
+            ),
 
           // Cap HUD — X left, Menu right
           SafeArea(
@@ -621,9 +672,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         final loc = ref.read(discoveryLocationProvider);
-        _mapController.move(
+        _mapController.moveAndRotate(
           LatLng(loc.latitude, loc.longitude),
           _zoomForRadius(loc.radiusKm),
+          0,
         );
         return;
       }
@@ -638,17 +690,19 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
             latitude: pos.latitude,
             longitude: pos.longitude,
           );
-      _mapController.move(
+      _mapController.moveAndRotate(
         LatLng(pos.latitude, pos.longitude),
         _zoomForRadius(ref.read(discoveryLocationProvider).radiusKm),
+        0,
       );
       ref.invalidate(mapListingsProvider);
       ref.invalidate(mapProfilesProvider);
     } catch (_) {
       final loc = ref.read(discoveryLocationProvider);
-      _mapController.move(
+      _mapController.moveAndRotate(
         LatLng(loc.latitude, loc.longitude),
         _zoomForRadius(loc.radiusKm),
+        0,
       );
     }
   }
