@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- R8 resource shrinking only sees resources referenced from code or the
+     manifest. The notification icon is named as a string at runtime by
+     flutter_local_notifications, so without this the reminder silently fails to
+     post in a release build when the launcher icon gets stripped. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@mipmap/ic_launcher,@drawable/*" />
