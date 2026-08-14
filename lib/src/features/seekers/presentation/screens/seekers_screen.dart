@@ -1,128 +1,249 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_request.dart';
+import 'package:flutter_swipes/src/features/seekers/domain/seeker_worker_categories.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/providers/seekers_provider.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_request_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class SeekersScreen extends ConsumerWidget {
+/// Browse open seeker requests — theme-aware feed, not a dark leftover deck.
+class SeekersScreen extends ConsumerStatefulWidget {
   const SeekersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SeekersScreen> createState() => _SeekersScreenState();
+}
+
+class _SeekersScreenState extends ConsumerState<SeekersScreen> {
+  String? _category;
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(seekersProvider);
     final top = MediaQuery.paddingOf(context).top;
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
 
     return NeoNaiveScaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showSeekerRequestSheet(context, ref),
-        foregroundColor: Colors.white,
-        icon: Icon(Icons.add_rounded),
-        label: Text('Post request'),
-      ),
       body: async.when(
-            loading: () => Center(
-              child: CircularProgressIndicator(
-                  color: MatteSurface.ink(context), strokeWidth: 2),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: ink, strokeWidth: 2),
+        ),
+        error: (_, _) => Center(
+          child: TextButton(
+            onPressed: () => ref.read(seekersProvider.notifier).refresh(),
+            child: Text(
+              'Could not load seekers — retry',
+              style: GoogleFonts.plusJakartaSans(color: ink),
             ),
-            error: (e, _) => Center(
-              child: TextButton(
-                onPressed: () => ref.read(seekersProvider.notifier).refresh(),
-                child: const Text('Could not load seekers — retry'),
+          ),
+        ),
+        data: (requests) {
+          final cats = <String>{
+            for (final r in requests) r.category,
+          }..removeWhere((id) => id.isEmpty);
+          final filtered = _category == null
+              ? requests
+              : requests.where((r) => r.category == _category).toList();
+
+          return ListView(
+            padding: EdgeInsets.fromLTRB(20, top + 16, 20, 140),
+            children: [
+              Text(
+                'SEEKERS',
+                style: AppTheme.displayItalic.copyWith(
+                  fontSize: 32,
+                  height: 1.05,
+                  color: ink,
+                ),
               ),
-            ),
-            data: (requests) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(24, top + 16, 24, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SEEKER\nREQUESTS',
-                          style: AppTheme.displayItalic
-                              .copyWith(fontSize: 28, height: 1.05),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'People looking for workers & help nearby',
-                          style: GoogleFonts.plusJakartaSans(
-                              color: MatteSurface.muted(context), fontSize: 13),
-                        ),
-                      ],
+              const SizedBox(height: 6),
+              Text(
+                'People looking for workers & help nearby',
+                style: GoogleFonts.plusJakartaSans(
+                  color: muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () {
+                  AppHaptics.medium();
+                  showSeekerRequestSheet(context, ref);
+                },
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF4D00).withAlpha(70),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: requests.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No open seeker requests right now.',
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: MatteSurface.muted(context)),
-                            ),
-                          )
-                        : PageView.builder(
-                            controller: PageController(viewportFraction: 0.92),
-                            itemCount: requests.length,
-                            itemBuilder: (context, index) {
-                              final req = requests[index];
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(4, 8, 4, 120),
-                                child: _SeekerCard(
-                                  request: req,
-                                  onPass: () {
-                                    AppHaptics.light();
-                                    ref
-                                        .read(seekersProvider.notifier)
-                                        .dismiss(req.id);
-                                  },
-                                  onInterested: () async {
-                                    AppHaptics.medium();
-                                    final ownerId = req.ownerId;
-                                    if (ownerId != null) {
-                                      final convoId = await SwipeRepository()
-                                          .startConversation(
-                                              ownerId: ownerId,
-                                              listingId: req.id);
-                                      if (context.mounted && convoId != null) {
-                                        await showChatPopup(
-                                          context,
-                                          isNewConversation: true,
-                                          conversation: ChatConversation(
-                                            id: convoId,
-                                            otherUserId: ownerId,
-                                            name: req.seekerName,
-                                            lastMessage: '',
-                                            timestamp: 'now',
-                                            avatarUrl: req.seekerAvatar,
-                                            listingTag: req.title,
-                                          ),
-                                        );
-                                      }
-                                    }
-                                    ref
-                                        .read(seekersProvider.notifier)
-                                        .dismiss(req.id);
-                                  },
-                                ),
-                              );
-                            },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Post a request',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _CatChip(
+                      label: 'All',
+                      color: const Color(0xFFE4007C),
+                      selected: _category == null,
+                      onTap: () => setState(() => _category = null),
+                    ),
+                    for (final id in cats)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: _CatChip(
+                          label: _labelFor(id),
+                          color: seekerCategoryColor(id),
+                          selected: _category == id,
+                          onTap: () => setState(
+                            () => _category = _category == id ? null : id,
                           ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (filtered.isEmpty)
+                CapEmptyState(
+                  title: 'No open requests',
+                  description: _category == null
+                      ? 'Nobody is asking for help nearby yet. Post a request so workers can find you.'
+                      : 'No ${_labelFor(_category!).toLowerCase()} requests right now.',
+                  icon: Icons.groups_rounded,
+                  actionLabel: 'Post a request',
+                  onAction: () => showSeekerRequestSheet(context, ref),
+                )
+              else
+                for (final req in filtered) ...[
+                  _SeekerCard(
+                    request: req,
+                    onPass: () {
+                      AppHaptics.light();
+                      ref.read(seekersProvider.notifier).dismiss(req.id);
+                    },
+                    onInterested: () => _interested(req),
                   ),
+                  const SizedBox(height: 12),
                 ],
-              );
-            },
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _labelFor(String id) {
+    for (final c in seekerWorkerCategories) {
+      if (c.id == id) return c.label;
+    }
+    return id[0].toUpperCase() + id.substring(1);
+  }
+
+  Future<void> _interested(SeekerRequest req) async {
+    AppHaptics.medium();
+    final ownerId = req.ownerId;
+    if (ownerId != null) {
+      final convoId = await SwipeRepository().startConversation(
+        ownerId: ownerId,
+        listingId: req.id,
+      );
+      if (mounted && convoId != null) {
+        await showChatPopup(
+          context,
+          isNewConversation: true,
+          conversation: ChatConversation(
+            id: convoId,
+            otherUserId: ownerId,
+            name: req.seekerName,
+            lastMessage: '',
+            timestamp: 'now',
+            avatarUrl: req.seekerAvatar,
+            listingTag: req.title,
+          ),
+        );
+      }
+    }
+    ref.read(seekersProvider.notifier).dismiss(req.id);
+  }
+}
+
+class _CatChip extends StatelessWidget {
+  const _CatChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.selection();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? color : MatteSurface.hairline(context),
+            width: 1.4,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: selected ? Colors.white : ink,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+        ),
       ),
     );
   }
@@ -139,143 +260,168 @@ class _SeekerCard extends StatelessWidget {
   final VoidCallback onPass;
   final VoidCallback onInterested;
 
-  Color get _accent {
-    switch (request.category) {
-      case 'cleaning':
-        return const Color(0xFF3B82F6);
-      case 'plumbing':
-        return const Color(0xFF06B6D4);
-      case 'electrical':
-        return const Color(0xFFF59E0B);
-      case 'driving':
-        return const Color(0xFF10B981);
-      case 'chef':
-        return const Color(0xFFF97316);
-      case 'fitness':
-        return const Color(0xFFEF4444);
-      default:
-        return AppTheme.brandPrimary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final accent = seekerCategoryColor(request.category);
+    final label = () {
+      for (final c in seekerWorkerCategories) {
+        if (c.id == request.category) return c.label;
+      }
+      return request.category;
+    }();
+
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(0xFF0A0A0D),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: MatteSurface.ink(context), width: 1.0),
-        image: request.seekerAvatar != null
-            ? DecorationImage(
-                image: NetworkImage(request.seekerAvatar!),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withAlpha(180),
-                  BlendMode.darken,
-                ),
-              )
-            : null,
+        color: MatteSurface.cardFill(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: _accent.withAlpha(50),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: _accent.withAlpha(120)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: accent.withAlpha(40),
+                backgroundImage: request.seekerAvatar != null
+                    ? NetworkImage(request.seekerAvatar!)
+                    : null,
+                child: request.seekerAvatar == null
+                    ? Text(
+                        request.initials,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: accent,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      )
+                    : null,
               ),
-              child: Text(
-                request.category.toUpperCase(),
-                style: TextStyle(
-                  color: _accent,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
-                  letterSpacing: 1.2,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      request.seekerName,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      request.location,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            Spacer(),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundImage: request.seekerAvatar != null
-                      ? NetworkImage(request.seekerAvatar!)
-                      : null,
-                  child: request.seekerAvatar == null
-                      ? Text(request.initials, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900))
-                      : null,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: accent.withAlpha(32),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(request.seekerName, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900)),
-                      Text(request.location, style: TextStyle(color: Colors.white.withAlpha(160), fontSize: 12)),
-                    ],
+                child: Text(
+                  label.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: accent,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.8,
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: 14),
-            Text(
-              request.title,
-              style: TextStyle(
-                color: MatteSurface.ink(context),
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                height: 1.1,
-              ),
-            ),
-            if (request.description != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                request.description!,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white.withAlpha(180), height: 1.4),
               ),
             ],
-            const SizedBox(height: 12),
-            Text(
-              request.priceLabel,
-              style: TextStyle(color: _accent, fontWeight: FontWeight.w900, fontSize: 16),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            request.title,
+            style: GoogleFonts.plusJakartaSans(
+              color: ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              height: 1.2,
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onPass,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+          ),
+          if (request.description != null &&
+              request.description!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              request.description!,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: muted,
+                height: 1.4,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(
+            request.priceLabel,
+            style: GoogleFonts.plusJakartaSans(
+              color: accent,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onPass,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ink,
+                    side: BorderSide(color: MatteSurface.hairline(context)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Text('SKIP'),
                   ),
+                  child: const Text('SKIP'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: LinearGradient(
+                      colors: [accent, Color.lerp(accent, const Color(0xFFEB4898), 0.55) ?? accent],
+                    ),
+                  ),
                   child: ElevatedButton(
                     onPressed: onInterested,
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: const Text('INTERESTED'),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

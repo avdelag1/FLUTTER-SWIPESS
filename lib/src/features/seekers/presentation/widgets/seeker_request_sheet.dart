@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_worker_categories.dart';
@@ -63,7 +64,10 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Material(
+      color: MatteSurface.canvas(context),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: Padding(
       padding: EdgeInsets.fromLTRB(
         20,
         20,
@@ -154,6 +158,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -169,6 +174,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
       itemBuilder: (context, index) {
         final cat = seekerWorkerCategories[index];
         final selected = _categoryId == cat.id;
+        final ink = MatteSurface.ink(context);
         return GestureDetector(
           onTap: () => setState(() {
             _categoryId = cat.id;
@@ -179,21 +185,19 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: selected
-                  ? AppTheme.brandPrimary.withAlpha(40)
-                  : Theme.of(context).colorScheme.onSurface.withAlpha(10),
+                  ? cat.color.withAlpha(40)
+                  : MatteSurface.cardFill(context),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: selected
-                    ? AppTheme.brandPrimary
-                    : Theme.of(context).colorScheme.onSurface.withAlpha(25),
+                color: selected ? cat.color : MatteSurface.hairline(context),
               ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.handyman_rounded,
-                  color: selected ? AppTheme.brandPrimary : Colors.white70,
+                  cat.icon,
+                  color: cat.color,
                   size: 22,
                 ),
                 const SizedBox(height: 8),
@@ -203,7 +207,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: ink,
                     fontWeight: FontWeight.w800,
                     fontSize: 11,
                   ),
@@ -240,7 +244,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                   label: s,
                   selected: _subcategory == s,
                   onSelected: () => setState(() => _subcategory = s),
-                  selectedColor: AppTheme.brandPrimary,
+                  selectedColor: _active?.color ?? AppTheme.brandPrimary,
                 ),
             ],
           ),

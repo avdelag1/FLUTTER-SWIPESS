@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/client_filter_preferences_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -21,6 +22,7 @@ class FilterBottomSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => const FilterBottomSheet(),
     );
   }
@@ -43,15 +45,22 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late double _radiusKm;
 
   static const _categories = [
-    ('property', 'Properties', 'Settle Anywhere', Icons.home_rounded),
-    ('motorcycle', 'Motos', 'High Velocity', Icons.two_wheeler_rounded),
-    ('bicycle', 'Bikes', 'Urban Agility', Icons.pedal_bike_rounded),
-    ('yacht', 'Yachts', 'Open Waters', Icons.sailing_rounded),
-    ('worker', 'Workers', 'Elite Skillset', Icons.work_rounded),
-    ('buyers', 'Buyers', 'Purchase Ready', Icons.sell_rounded),
-    ('renters', 'Renters', 'Looking to Move', Icons.key_rounded),
-    ('leads', 'Leads', 'Seeking Workers', Icons.people_rounded),
+    ('property', 'Properties', 'Settle anywhere', Icons.home_rounded, Color(0xFFFF4D00)),
+    ('motorcycle', 'Motos', 'High velocity', Icons.two_wheeler_rounded, Color(0xFFFF4D6A)),
+    ('bicycle', 'Bikes', 'Urban agility', Icons.pedal_bike_rounded, Color(0xFF22C55E)),
+    ('yacht', 'Yachts', 'Open waters', Icons.sailing_rounded, Color(0xFF3B82F6)),
+    ('worker', 'Workers', 'Elite skillset', Icons.work_rounded, Color(0xFF8B5CF6)),
+    ('buyers', 'Buyers', 'Purchase ready', Icons.sell_rounded, Color(0xFF60A5FA)),
+    ('renters', 'Renters', 'Looking to move', Icons.key_rounded, Color(0xFFE4007C)),
+    ('leads', 'Leads', 'Seeking workers', Icons.groups_rounded, Color(0xFFEB4898)),
   ];
+
+  Color get _accent {
+    for (final c in _categories) {
+      if (c.$1 == _activeCategory) return c.$5;
+    }
+    return AppTheme.brandPrimary;
+  }
 
   static const _rentBudgets = [
     ('250-500', '\$250 - \$500/mo', 250.0, 500.0),
@@ -198,6 +207,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final bottom = MediaQuery.paddingOf(context).bottom;
     if (widget.asPage) {
       return Scaffold(
+        backgroundColor: MatteSurface.canvas(context),
         body: _filterBody(context, bottom, null),
       );
     }
@@ -216,9 +226,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     double bottom,
     ScrollController? scrollController,
   ) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final hairline = MatteSurface.hairline(context);
+    final canvas = MatteSurface.canvas(context);
+    final accent = _accent;
     return Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: canvas,
             borderRadius: widget.asPage
                 ? BorderRadius.zero
                 : const BorderRadius.vertical(top: Radius.circular(32)),
@@ -231,7 +246,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(40),
+                    color: muted.withAlpha(80),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -243,31 +258,32 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 120),
                   children: [
                     if (_activeCategory == null) ...[
-                      _titleBlock(),
+                      _titleBlock(context),
                       const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.chevron_left_rounded,
-                              color: Colors.white),
-                          label: Text(
-                            'Back',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                              letterSpacing: 1.6,
+                      if (!widget.asPage)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.chevron_left_rounded, color: ink),
+                            label: Text(
+                              'Back',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: ink,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 11,
+                                letterSpacing: 1.6,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 8),
                       for (final cat in _categories) ...[
                         _CategoryCard(
                           icon: cat.$4,
                           title: cat.$2,
                           subtitle: cat.$3,
+                          color: cat.$5,
                           onTap: () {
                             AppHaptics.selection();
                             setState(() => _activeCategory = cat.$1);
@@ -281,12 +297,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         child: TextButton.icon(
                           onPressed: () =>
                               setState(() => _activeCategory = null),
-                          icon: const Icon(Icons.chevron_left_rounded,
-                              color: Colors.white),
+                          icon: Icon(Icons.chevron_left_rounded, color: ink),
                           label: Text(
                             'Back',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
+                              color: ink,
                               fontWeight: FontWeight.w900,
                               fontSize: 11,
                               letterSpacing: 1.6,
@@ -305,6 +320,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                                 child: _Pill(
                                   label: cat.$2,
                                   active: _activeCategory == cat.$1,
+                                  accent: cat.$5,
                                   onTap: () => setState(
                                       () => _activeCategory = cat.$1),
                                 ),
@@ -316,7 +332,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       Text(
                         _detailTitle,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: ink,
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
                           fontStyle: FontStyle.italic,
@@ -327,7 +343,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       Text(
                         'FILTERS',
                         style: GoogleFonts.plusJakartaSans(
-                          color: AppTheme.brandPrimary,
+                          color: accent,
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 3.2,
@@ -335,7 +351,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ),
                       const SizedBox(height: 22),
                       if (_showsInterest) ...[
-                        _sectionLabel('INTEREST'),
+                        _sectionLabel(context, 'INTEREST'),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -349,6 +365,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               _Pill(
                                 label: opt.$2,
                                 active: _interestType == opt.$1,
+                                accent: accent,
                                 onTap: () =>
                                     setState(() => _interestType = opt.$1),
                               ),
@@ -356,7 +373,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                         const SizedBox(height: 22),
                       ],
-                      _sectionLabel('BUDGET'),
+                      _sectionLabel(context, 'BUDGET'),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -366,13 +383,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             _Pill(
                               label: b.$2,
                               active: _priceRange == b.$1,
+                              accent: accent,
                               onTap: () => setState(() => _priceRange = b.$1),
                             ),
                         ],
                       ),
                       const SizedBox(height: 22),
                       if (_activeCategory == 'property') ...[
-                        _sectionLabel('PROPERTY TYPE'),
+                        _sectionLabel(context, 'PROPERTY TYPE'),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -382,6 +400,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               _Pill(
                                 label: t,
                                 active: _propertyTypes.contains(t),
+                                accent: accent,
                                 onTap: () => setState(() {
                                   if (_propertyTypes.contains(t)) {
                                     _propertyTypes.remove(t);
@@ -393,39 +412,43 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ],
                         ),
                         const SizedBox(height: 22),
-                        _sectionLabel('MIN BEDROOMS'),
+                        _sectionLabel(context, 'MIN BEDROOMS'),
                         const SizedBox(height: 10),
                         _NumberRow(
                           value: _minBeds,
                           max: 6,
                           anyLabel: 'Any',
+                          accent: accent,
                           onChanged: (v) => setState(() => _minBeds = v),
                         ),
                         const SizedBox(height: 18),
-                        _sectionLabel('MIN BATHROOMS'),
+                        _sectionLabel(context, 'MIN BATHROOMS'),
                         const SizedBox(height: 10),
                         _NumberRow(
                           value: _minBaths,
                           max: 5,
                           anyLabel: 'Any',
+                          accent: accent,
                           onChanged: (v) => setState(() => _minBaths = v),
                         ),
                         const SizedBox(height: 18),
-                        _WhiteToggle(
+                        _FilterToggle(
                           label: 'Furnished',
                           value: _furnished,
+                          accent: accent,
                           onChanged: (v) => setState(() => _furnished = v),
                         ),
                         const SizedBox(height: 10),
-                        _WhiteToggle(
+                        _FilterToggle(
                           label: 'Pet friendly',
                           value: _petFriendly,
+                          accent: accent,
                           onChanged: (v) => setState(() => _petFriendly = v),
                         ),
                         const SizedBox(height: 22),
                       ],
                       if (_activeCategory == 'motorcycle') ...[
-                        _sectionLabel('MOTO TYPE'),
+                        _sectionLabel(context, 'MOTO TYPE'),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -435,6 +458,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               _Pill(
                                 label: t,
                                 active: _propertyTypes.contains(t),
+                                accent: accent,
                                 onTap: () => setState(() {
                                   if (_propertyTypes.contains(t)) {
                                     _propertyTypes.remove(t);
@@ -448,7 +472,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         const SizedBox(height: 22),
                       ],
                       if (_activeCategory == 'yacht') ...[
-                        _sectionLabel('YACHT TYPE'),
+                        _sectionLabel(context, 'YACHT TYPE'),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -464,6 +488,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               _Pill(
                                 label: t,
                                 active: _propertyTypes.contains(t),
+                                accent: accent,
                                 onTap: () => setState(() {
                                   if (_propertyTypes.contains(t)) {
                                     _propertyTypes.remove(t);
@@ -477,7 +502,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         const SizedBox(height: 22),
                       ],
                       if (_activeCategory == 'bicycle') ...[
-                        _sectionLabel('BIKE TYPE'),
+                        _sectionLabel(context, 'BIKE TYPE'),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -495,6 +520,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               _Pill(
                                 label: t,
                                 active: _propertyTypes.contains(t),
+                                accent: accent,
                                 onTap: () => setState(() {
                                   if (_propertyTypes.contains(t)) {
                                     _propertyTypes.remove(t);
@@ -507,7 +533,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                         const SizedBox(height: 22),
                       ],
-                      _sectionLabel('CITY'),
+                      _sectionLabel(context, 'CITY'),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -517,19 +543,20 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             _Pill(
                               label: c,
                               active: _city == c,
+                              accent: accent,
                               onTap: () => setState(
                                   () => _city = _city == c ? null : c),
                             ),
                         ],
                       ),
                       const SizedBox(height: 22),
-                      _sectionLabel('RADIUS  ${_radiusKm.round()} KM'),
+                      _sectionLabel(context, 'RADIUS  ${_radiusKm.round()} KM'),
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: AppTheme.brandPrimary,
-                          inactiveTrackColor: Colors.white12,
-                          thumbColor: AppTheme.brandPrimary,
-                          overlayColor: AppTheme.brandPrimary.withAlpha(40),
+                          activeTrackColor: accent,
+                          inactiveTrackColor: hairline,
+                          thumbColor: accent,
+                          overlayColor: accent.withAlpha(40),
                         ),
                         child: Slider(
                           value: _radiusKm,
@@ -542,7 +569,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       Text(
                         'Radius filtering uses your current GPS or selected location.',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white60,
+                          color: muted,
                           fontSize: 11,
                         ),
                       ),
@@ -561,7 +588,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           child: OutlinedButton(
                             onPressed: _reset,
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF0A0A0D),
+                              foregroundColor: ink,
+                              side: BorderSide(color: hairline),
                               padding:
                                   const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -569,7 +597,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               ),
                             ),
                             child: Text(
-                              'Reset Parameters',
+                              'Reset',
                               style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.4,
@@ -583,15 +611,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 colors: [
-                                  Color(0xFFFF4D00),
-                                  Color(0xFFEB4898),
+                                  accent,
+                                  Color.lerp(accent, const Color(0xFFEB4898), 0.55) ??
+                                      accent,
                                 ],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFFF4D00).withAlpha(90),
+                                  color: accent.withAlpha(90),
                                   blurRadius: 18,
                                   offset: const Offset(0, 8),
                                 ),
@@ -655,7 +684,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       _activeCategory == 'bicycle' ||
       _activeCategory == 'yacht';
 
-  Widget _titleBlock() {
+  Widget _titleBlock(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -665,7 +696,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               TextSpan(
                 text: 'SWIPESS ',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: ink,
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
@@ -686,23 +717,22 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           ),
         ),
         Text(
-          'Filter Your Best Deal',
+          'Pick a category — each one has its own filters',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white60,
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 3.2,
+            color: muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
     );
   }
 
-  Widget _sectionLabel(String text) {
+  Widget _sectionLabel(BuildContext context, String text) {
     return Text(
       text,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white60,
+        color: MatteSurface.muted(context),
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
@@ -716,69 +746,72 @@ class _CategoryCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.color,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return Material(
       color: Colors.transparent,
       elevation: 0,
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          height: 96,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          height: 88,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white, width: 1.0),
+            color: MatteSurface.cardFill(context),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: color.withAlpha(90)),
           ),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: color.withAlpha(36),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: Colors.white, size: 26),
+                child: Icon(icon, color: color, size: 24),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title.toUpperCase(),
+                      title,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: ink,
                         fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 18,
+                        fontSize: 17,
                       ),
                     ),
                     Text(
-                      subtitle.toUpperCase(),
+                      subtitle,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white60,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                        letterSpacing: 1.4,
+                        color: muted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+              Icon(Icons.chevron_right_rounded, color: muted),
             ],
           ),
         ),
@@ -792,14 +825,17 @@ class _Pill extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    required this.accent,
   });
 
   final String label;
   final bool active;
   final VoidCallback onTap;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
     return GestureDetector(
       onTap: () {
         AppHaptics.selection();
@@ -810,32 +846,18 @@ class _Pill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          gradient: active
-              ? const LinearGradient(
-                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                )
-              : null,
-          color: active ? null : Colors.white,
+          color: active ? accent : Colors.transparent,
           border: Border.all(
-            color: active ? Colors.transparent : Colors.white12,
+            color: active ? accent : MatteSurface.hairline(context),
+            width: 1.4,
           ),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFFF4D00).withAlpha(70),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: active ? Colors.white : const Color(0xFF0A0A0D),
-            fontWeight: FontWeight.w900,
-            fontSize: 11,
-            letterSpacing: 0.6,
+            color: active ? Colors.white : ink,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
           ),
         ),
       ),
@@ -849,12 +871,14 @@ class _NumberRow extends StatelessWidget {
     required this.max,
     required this.anyLabel,
     required this.onChanged,
+    required this.accent,
   });
 
   final int value;
   final int max;
   final String anyLabel;
   final ValueChanged<int> onChanged;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -866,6 +890,7 @@ class _NumberRow extends StatelessWidget {
             child: _Pill(
               label: i == 0 ? anyLabel : '$i+',
               active: value == i,
+              accent: accent,
               onTap: () => onChanged(i),
             ),
           ),
@@ -875,32 +900,35 @@ class _NumberRow extends StatelessWidget {
   }
 }
 
-class _WhiteToggle extends StatelessWidget {
-  const _WhiteToggle({
+class _FilterToggle extends StatelessWidget {
+  const _FilterToggle({
     required this.label,
     required this.value,
     required this.onChanged,
+    required this.accent,
   });
 
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Row(
         children: [
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: ink,
               fontWeight: FontWeight.w800,
               fontSize: 14,
             ),
@@ -909,7 +937,7 @@ class _WhiteToggle extends StatelessWidget {
           Switch.adaptive(
             value: value,
             activeThumbColor: Colors.white,
-            activeTrackColor: AppTheme.brandPrimary,
+            activeTrackColor: accent,
             onChanged: onChanged,
           ),
         ],

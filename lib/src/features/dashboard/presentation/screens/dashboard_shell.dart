@@ -18,7 +18,6 @@ import 'package:flutter_swipes/src/features/events/presentation/screens/events_s
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
-import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_request_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:go_router/go_router.dart';
 
@@ -272,10 +271,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 ref
                                     .read(overlayModalsProvider.notifier)
                                     .openVapId();
-                                return;
-                              }
-                              if (id == NavTab.seekers) {
-                                showSeekerRequestSheet(context, ref);
                                 return;
                               }
                               ref.read(navTabProvider.notifier).set(id);
