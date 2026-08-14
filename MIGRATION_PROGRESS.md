@@ -69,9 +69,10 @@ Two of these were not just missing features but active bugs on device:
 | Check | Result |
 |-------|--------|
 | `flutter analyze` | clean |
-| `flutter test` | 84 passing (53 before this pass + 31 new) |
-| `flutter build apk --debug` | builds; merged manifest confirms the boot receiver, `RECEIVE_BOOT_COMPLETED`, `ACCESS_NETWORK_STATE` and the badge permissions |
-| Android device run | back navigation, system bars and the offline banner exercised on an API 35 emulator |
+| `flutter test` | 77 passing (53 before this pass + 24 new) |
+| `flutter build apk --debug` | builds; merged manifest confirms the two `flutter_local_notifications` receivers, `RECEIVE_BOOT_COMPLETED`, `ACCESS_NETWORK_STATE` and the launcher badge permissions |
+| `flutter build web` + Chrome | the offline and back-online banners were driven end to end by toggling DevTools offline mode |
+| Android device run | **not done** — the API 35 emulator never got past kernel boot on this CI host, so `FLAG_SECURE`, the Back key and the system bars are covered by widget tests and the merged manifest rather than by a device |
 | iOS build | still **not verified** — no macOS host. `PrivacyScreen.swift` is in the Xcode target and the `UNUserNotificationCenter` delegate is set, but nobody has run `xcodebuild` against them |
 
 ---
