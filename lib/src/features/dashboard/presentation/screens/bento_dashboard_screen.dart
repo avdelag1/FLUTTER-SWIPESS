@@ -363,7 +363,7 @@ class _SearchChromeWell extends StatelessWidget {
                       child: _DashboardFilterPill(
                         isLight: isLight,
                         icon: Icons.location_on_rounded,
-                        wash: const Color(0xFFFF6B6B),
+                        wash: const Color(0xFFFF4D00),
                         text: location.label,
                         onTap: onPickCity,
                       ),
@@ -373,7 +373,7 @@ class _SearchChromeWell extends StatelessWidget {
                       child: _DashboardFilterPill(
                         isLight: isLight,
                         icon: Icons.calendar_today_rounded,
-                        wash: const Color(0xFF4DABF7),
+                        wash: const Color(0xFF3B82F6),
                         text: location.dateLabel,
                         onTap: onPickDates,
                       ),
@@ -383,7 +383,7 @@ class _SearchChromeWell extends StatelessWidget {
                       child: _DashboardFilterPill(
                         isLight: isLight,
                         icon: Icons.people_alt_rounded,
-                        wash: const Color(0xFFFFD43B),
+                        wash: const Color(0xFF8B5CF6),
                         text:
                             '${location.guests} guest${location.guests == 1 ? '' : 's'}',
                         onTap: onPickGuests,

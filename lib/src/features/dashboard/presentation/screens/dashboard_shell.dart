@@ -34,14 +34,6 @@ class DashboardShell extends ConsumerStatefulWidget {
 class _DashboardShellState extends ConsumerState<DashboardShell> {
   bool _eventsMounted = false;
 
-  static const _washes = [
-    Color(0xFFFF6B6B), // coral
-    Color(0xFF4DABF7), // sky
-    Color(0xFFFFD43B), // lemon
-    Color(0xFF69DB7C), // mint
-    Color(0xFF9775FA), // violet
-  ];
-
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
@@ -66,21 +58,57 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
     // Cap BottomNavigation order (scrollable dock).
     final bottomNavItems = [
-      _BottomNavItem(id: NavTab.dashboard, icon: Icons.bolt_rounded),
       _BottomNavItem(
-          id: NavTab.likes, icon: Icons.local_fire_department_rounded),
-      _BottomNavItem(id: NavTab.ai, useAiIcon: true),
+        id: NavTab.dashboard,
+        icon: Icons.bolt_rounded,
+        wash: const Color(0xFFFF4D00),
+      ),
+      _BottomNavItem(
+        id: NavTab.likes,
+        icon: Icons.local_fire_department_rounded,
+        wash: const Color(0xFFE4007C),
+      ),
+      _BottomNavItem(
+        id: NavTab.ai,
+        useAiIcon: true,
+        wash: const Color(0xFF8B5CF6),
+      ),
       _BottomNavItem(
         id: NavTab.add,
         icon: Icons.add_circle_rounded,
         accent: true,
+        wash: const Color(0xFFFF4D00),
       ),
-      _BottomNavItem(id: NavTab.messages, icon: Icons.chat_bubble_outline_rounded),
-      _BottomNavItem(id: NavTab.idCard, icon: Icons.verified_user_outlined),
-      _BottomNavItem(id: NavTab.seekers, icon: Icons.people_outline_rounded),
-      _BottomNavItem(id: NavTab.filter, icon: Icons.tune_rounded),
-      _BottomNavItem(id: NavTab.legal, icon: Icons.balance_rounded),
-      _BottomNavItem(id: NavTab.events, icon: Icons.celebration_rounded),
+      _BottomNavItem(
+        id: NavTab.messages,
+        icon: Icons.chat_bubble_outline_rounded,
+        wash: const Color(0xFF3B82F6),
+      ),
+      _BottomNavItem(
+        id: NavTab.idCard,
+        icon: Icons.verified_user_outlined,
+        wash: const Color(0xFF7C3AED),
+      ),
+      _BottomNavItem(
+        id: NavTab.seekers,
+        icon: Icons.people_outline_rounded,
+        wash: const Color(0xFFEB4898),
+      ),
+      _BottomNavItem(
+        id: NavTab.filter,
+        icon: Icons.tune_rounded,
+        wash: const Color(0xFFFF8C42),
+      ),
+      _BottomNavItem(
+        id: NavTab.legal,
+        icon: Icons.balance_rounded,
+        wash: const Color(0xFF6366F1),
+      ),
+      _BottomNavItem(
+        id: NavTab.events,
+        icon: Icons.celebration_rounded,
+        wash: const Color(0xFFE4007C),
+      ),
     ];
 
     final isLight = ref.watch(isLightThemeProvider);
@@ -211,7 +239,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           final item = bottomNavItems[i];
                           return _DockButton(
                             item: item,
-                            wash: _washes[i % _washes.length],
+                            wash: item.wash,
                             selected: dockSelected == item.id,
                             isLight: isLight,
                             onTap: () {
@@ -281,12 +309,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 class _BottomNavItem {
   _BottomNavItem({
     required this.id,
+    required this.wash,
     this.icon,
     this.accent = false,
     this.useAiIcon = false,
   });
 
   final NavTab id;
+  final Color wash;
   final IconData? icon;
   final bool accent;
   final bool useAiIcon;
@@ -309,10 +339,7 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cap: active = full ink; inactive muted. No circular glass discs.
-    final color = item.accent
-        ? const Color(0xFFFF4D00)
-        : (selected ? Colors.white : Colors.white.withAlpha(120));
+    final color = selected || item.accent ? Colors.white : wash;
 
     return GestureDetector(
       onTap: onTap,
@@ -324,40 +351,45 @@ class _DockButton extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Cap neo-naive nav wash (coral/sky/lemon/mint/violet).
               Container(
-                width: 28,
-                height: 28,
+                width: selected || item.accent ? 30 : 26,
+                height: selected || item.accent ? 30 : 26,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      wash.withAlpha(selected || item.accent ? 90 : 45),
-                      wash.withAlpha(0),
-                    ],
-                  ),
+                  gradient: selected || item.accent
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            wash,
+                            Color.lerp(wash, const Color(0xFFEB4898), 0.55) ??
+                                wash,
+                          ],
+                        )
+                      : RadialGradient(
+                          colors: [
+                            wash.withAlpha(70),
+                            wash.withAlpha(0),
+                          ],
+                        ),
+                  boxShadow: selected || item.accent
+                      ? [
+                          BoxShadow(
+                            color: wash.withAlpha(120),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
-              if (item.accent)
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFF4D6A),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
               item.useAiIcon
                   ? CustomPaint(
                       painter: _AiRobotPainter(color: color),
-                      size: const Size(18, 18),
+                      size: const Size(16, 16),
                     )
                   : Icon(
                       item.icon,
-                      size: item.accent ? 24 : 22,
+                      size: item.accent ? 20 : 18,
                       color: color,
                     ),
             ],
