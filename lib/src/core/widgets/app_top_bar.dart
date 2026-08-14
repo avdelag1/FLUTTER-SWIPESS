@@ -34,10 +34,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(72);
 
-  static const coralWash = Color(0xFFFF8A7A);
-  static const skyWash = Color(0xFF6BB8FF);
-  static const lemonWash = Color(0xFFFFE066);
-  static const mintWash = Color(0xFF7DFFAA);
+  // Same palette as the bottom dock / profile CTAs.
+  static const addWash = Color(0xFFFF4D00);
+  static const tokenWash = Color(0xFFFF8C42);
+  static const mapWash = Color(0xFF3B82F6);
+  static const themeWash = Color(0xFF8B5CF6);
+  static const bellWash = Color(0xFFE4007C);
 
   static const _hudSize = 42.0;
 
@@ -67,8 +69,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
     final pillFill = isLight ? Colors.white.withAlpha(50) : Colors.black.withAlpha(150);
-    final pillBorder = ink.withAlpha(200);
-    final moonWash = isLight ? lemonWash : skyWash;
+    final pillBorder = ink.withAlpha(90);
 
     return Material(
       type: MaterialType.transparency,
@@ -102,11 +103,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     showCreateListingChooser(context);
                   },
                   child: _WashIcon(
-                    wash: mintWash,
-                    child: Icon(
+                    wash: addWash,
+                    child: const Icon(
                       Icons.add_rounded,
                       size: 22,
-                      color: ink,
+                      color: addWash,
                     ),
                   ),
                 ),
@@ -126,22 +127,22 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     );
                   },
                   child: _WashIcon(
-                    wash: lemonWash,
+                    wash: tokenWash,
                     badge: tokens > 0,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.diamond_rounded,
                           size: 20,
-                          color: ink,
+                          color: tokenWash,
                         ),
                         if (tokens > 0) ...[
                           const SizedBox(width: 5),
                           Text(
                             '$tokens',
                             style: GoogleFonts.plusJakartaSans(
-                              color: ink,
+                              color: tokenWash,
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
@@ -160,11 +161,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
                   child: _WashIcon(
-                    wash: skyWash,
-                    child: Icon(
+                    wash: mapWash,
+                    child: const Icon(
                       Icons.public_rounded,
                       size: 20,
-                      color: ink,
+                      color: mapWash,
                     ),
                   ),
                 ),
@@ -177,13 +178,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ref.read(visualThemeProvider.notifier).toggle();
                   },
                   child: _WashIcon(
-                    wash: moonWash,
+                    wash: themeWash,
                     child: Icon(
                       isLight
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
                       size: 20,
-                      color: ink,
+                      color: themeWash,
                     ),
                   ),
                 ),
@@ -202,11 +203,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     clipBehavior: Clip.none,
                     children: [
                       _WashIcon(
-                        wash: coralWash,
-                        child: Icon(
+                        wash: bellWash,
+                        child: const Icon(
                           Icons.notifications_rounded,
                           size: 20,
-                          color: ink,
+                          color: bellWash,
                         ),
                       ),
                       ref.watch(unreadNotificationsProvider).when(

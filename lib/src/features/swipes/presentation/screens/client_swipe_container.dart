@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
@@ -251,7 +250,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       body: PullDownToDismiss(
         onDismiss: _goDashboard,
         child: listingsAsync.when(
-        loading: () => const SwipeLoadingSkeleton(),
+        loading: () => const SizedBox.expand(child: SwipeLoadingSkeleton()),
         error: (err, _) => SwipeErrorState(
           isRetrying: _retrying,
           onRetry: () async {
@@ -265,13 +264,17 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
           _ensureDeck(listings);
           final deck = _deck ?? listings;
 
+          // Must expand. ChromeSummonZones is a zero-size child when the
+          // header is up — a loose Stack then collapses to 0×0 and the
+          // cards never paint (black page until chrome used to hide).
           return Stack(
+            fit: StackFit.expand,
             children: [
               Positioned.fill(
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                    padding: const EdgeInsets.fromLTRB(8, 76, 8, 72),
                     child: deck.isEmpty
                         ? _exhausted()
                         : SwipeableCardStack(
@@ -364,10 +367,12 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                   ),
                 ),
               ),
-              ChromeSummonZones(
-                visible: chrome.chromeVisible,
-                onSummon: () =>
-                    ref.read(chromeRevealProvider.notifier).reveal(),
+              Positioned.fill(
+                child: ChromeSummonZones(
+                  visible: chrome.chromeVisible,
+                  onSummon: () =>
+                      ref.read(chromeRevealProvider.notifier).reveal(),
+                ),
               ),
             ],
           );
