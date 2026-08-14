@@ -11,7 +11,6 @@ import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Cap `AdvertisePage` — promote event: landing → type → details (+video) → confirm → pending/approved.
@@ -296,32 +295,21 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   Future<void> _launchPayment() async {
     HapticFeedback.mediumImpact();
-    final payments = ref.read(paymentServiceProvider);
-    final result = await payments.presentPaywall();
+    final offer = IapCatalog.promoById(_selectedPackage);
+    if (offer == null) return;
+    final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!mounted) return;
-    final ok = result == PaywallResult.purchased ||
-        result == PaywallResult.restored;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? 'Purchase complete — your promo will go live shortly.'
-              : 'Open RevenueCat offerings for promo products, or restore purchases.',
-        ),
-      ),
+      SnackBar(content: Text(result.userMessage)),
     );
   }
 
   Future<void> _restore() async {
     HapticFeedback.lightImpact();
-    final ok = await ref.read(paymentServiceProvider).restorePurchases();
+    final result = await ref.read(paymentServiceProvider).restorePurchases();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok ? 'Purchases restored' : 'No previous purchases found',
-        ),
-      ),
+      SnackBar(content: Text(result.userMessage)),
     );
   }
 

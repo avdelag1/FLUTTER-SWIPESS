@@ -20,7 +20,7 @@ class NativeSwipeApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(revenueCatAuthSyncProvider);
+    ref.watch(paymentAuthSyncProvider);
     final router = ref.watch(appRouterProvider);
     final locale = ref.watch(appLocaleProvider);
     final isLight = ref.watch(isLightThemeProvider);
