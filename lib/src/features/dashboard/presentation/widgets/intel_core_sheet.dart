@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/concierge_sheet_host.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
@@ -26,7 +26,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Cap ConciergeChat overlay — genie panel from the dock.
+/// Cap ConciergeChat overlay — bottom card covering the page.
 class ConciergeOverlay extends StatelessWidget {
   const ConciergeOverlay({
     super.key,
@@ -39,55 +39,24 @@ class ConciergeOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GeniePanel(
-      onDismissed: onClose,
-      builder: (context, dismiss) {
-        return _IntelCoreSheet(
-          initialQuery: initialQuery,
-          onClose: dismiss,
-        );
-      },
+    return ConciergeSheetHost(
+      onClose: onClose,
+      child: _IntelCoreSheet(
+        initialQuery: initialQuery,
+        onClose: onClose,
+      ),
     );
   }
 }
 
-/// Capacitor Intel Core — chats via Supabase `ai-concierge` edge function.
+/// Opens Intel Core on the root overlay so header/dock can peek underneath.
 Future<void> showIntelCoreSheet(
   BuildContext context, {
   String initialQuery = '',
-}) {
-  return showGeneralDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: 'Dismiss',
-    barrierColor: Colors.black.withAlpha(50),
-    useRootNavigator: true,
-    transitionDuration: const Duration(milliseconds: 350),
-    pageBuilder: (context, animation, secondaryAnimation) {
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: _IntelCoreSheet(initialQuery: initialQuery),
-          ),
-        ),
-      );
-    },
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 1),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-        child: FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
-      );
-    },
-  );
+}) async {
+  ProviderScope.containerOf(context)
+      .read(overlayModalsProvider.notifier)
+      .openConcierge(initialQuery);
 }
 
 class _IntelCoreSheet extends ConsumerStatefulWidget {
@@ -404,11 +373,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
   }
 
+  /// Keep the chat open and reveal header / dock so the user can navigate.
+  void _peekChrome() {
+    ref.read(chromeVisibilityProvider.notifier).show();
+  }
+
   /// Cap-style curated routing — follow-up chips after Intel Core replies.
   void _openIntent(String q) {
+    _peekChrome();
     if (RegExp(r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b')
         .hasMatch(q)) {
-      _dismiss();
       ref.read(overlayModalsProvider.notifier).openPassportMap();
       return;
     }
@@ -416,20 +390,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     if (RegExp(
           r'\b(people|person|user|users|profile|profiles|roommate|roommates|seeker|seekers|who.?s looking|looking for)\b',
         ).hasMatch(q)) {
-      _dismiss();
       context.go(AppPaths.exploreSeekers);
       return;
     }
 
     if (RegExp(r'\b(worker|workers|hire|service|services|maintenance|plumber|cleaner)\b')
         .hasMatch(q)) {
-      _dismiss();
       context.push(AppPaths.clientServices);
       return;
     }
 
     if (RegExp(r'\b(event|events|party|nightlife|concert)\b').hasMatch(q)) {
-      _dismiss();
       context.go(AppPaths.exploreEvents);
       return;
     }
@@ -452,7 +423,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         category = 'worker';
         title = 'WORKERS';
       }
-      _dismiss();
       openClientSwipeDeck(
         context,
         categoryId: category,
@@ -462,7 +432,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
 
     if (q.contains('filter') || q.contains('filters')) {
-      _dismiss();
       context.go(AppPaths.clientFilters);
     }
   }
@@ -493,7 +462,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               ref
                   .read(discoveryLocationProvider.notifier)
                   .setCity(parsed.passportCity!.trim());
-              _dismiss();
+              _peekChrome();
               ref.read(overlayModalsProvider.notifier).openPassportMap();
             },
           ),
@@ -529,7 +498,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   void _openPath(String path) {
-    _dismiss();
+    _peekChrome();
     if (path.contains('liked')) {
       context.go(AppPaths.clientLikedProperties);
       return;
@@ -725,24 +694,24 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   Widget build(BuildContext context) {
     final edgeReady = ref.watch(aiEdgeReadyProvider);
     final isLight = ref.watch(isLightThemeProvider);
-    final topPadding = MediaQuery.paddingOf(context).top;
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final canvas = isLight ? Colors.white : const Color(0xFF0A0A0C);
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: Container(
-        height: MediaQuery.sizeOf(context).height,
-        padding: EdgeInsets.only(top: topPadding),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: ColoredBox(
         color: canvas,
         child: Stack(
           children: [
             if (!_privacyAccepted)
-              _privacyPortal(isLight: isLight, ink: ink)
+              Positioned.fill(
+                child: _privacyPortal(isLight: isLight, ink: ink),
+              )
             else
-              Column(
-                children: [
-                  _header(isLight: isLight, ink: ink, online: edgeReady),
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    _header(isLight: isLight, ink: ink, online: edgeReady),
                   Expanded(
                     child: ListView(
                       controller: _scroll,
@@ -808,6 +777,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   _composer(isLight: isLight, ink: ink),
                 ],
               ),
+            ),
             if (_showHistory) _historyDrawer(isLight: isLight, ink: ink, online: edgeReady),
             if (_showPersona) _personaSheet(isLight: isLight, ink: ink),
           ],
@@ -995,22 +965,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   ),
                   child: Row(
                     children: [
-                      PopupMenuButton<String>(
-                        tooltip: 'Auto-send timer',
-                        color: isLight ? Colors.white : const Color(0xFF14141A),
-                        onSelected: (value) {
-                          setState(() => _autoSend = value == 'on');
+                      GestureDetector(
+                        onTap: () {
+                          setState(() => _autoSend = !_autoSend);
                           if (!_autoSend) _cancelCountdown();
                         },
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: _autoSend ? 'off' : 'on',
-                            child: Text(
-                              _autoSend ? 'Disable auto-send' : 'Enable auto-send',
-                              style: TextStyle(color: ink),
-                            ),
-                          ),
-                        ],
                         child: Icon(Icons.timer_outlined,
                             color: _autoSend
                                 ? AppTheme.brandPrimary
