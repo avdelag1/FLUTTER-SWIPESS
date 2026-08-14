@@ -56,24 +56,7 @@ class _SearchFrameShineState extends State<SearchFrameShine>
       clipBehavior: Clip.none,
       children: [
         widget.child,
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: AnimatedBuilder(
-                animation: _cycle,
-                builder: (context, _) {
-                  return CustomPaint(
-                    painter: _InnerSheenPainter(
-                      progress: _cycle.value,
-                      color: widget.color,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+        
         Positioned(
           left: -2,
           right: -2,
@@ -196,9 +179,9 @@ class _FrameShinePainter extends CustomPainter {
       colors: [
         Colors.transparent,
         color.withValues(alpha: 0.12 * envelope),
-        color.withValues(alpha: 0.95 * envelope),
-        Colors.white.withValues(alpha: envelope),
-        color.withValues(alpha: 0.95 * envelope),
+        color.withValues(alpha: 0.80 * envelope),
+        color.withValues(alpha: envelope),
+        color.withValues(alpha: 0.80 * envelope),
         Colors.transparent,
       ],
       stops: const [0.0, 0.78, 0.88, 0.93, 0.97, 1.0],

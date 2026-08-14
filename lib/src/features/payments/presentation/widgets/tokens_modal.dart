@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
@@ -19,7 +21,7 @@ class TokensModal extends ConsumerWidget {
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -35,7 +37,7 @@ class TokensModal extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // Hero Header
               const Icon(
@@ -56,7 +58,7 @@ class TokensModal extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Boost your profile, send more messages, and access exclusive tools with Swipess Tokens.',
+                'Tokens only activate message conversations between people. Premium packages unlock tokens PLUS uploading more listings, AI Concierge, Events, and priority placement.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withAlpha(160),
@@ -64,7 +66,7 @@ class TokensModal extends ConsumerWidget {
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // Token Packages
               for (final offer in IapCatalog.tokens)
@@ -92,7 +94,7 @@ class TokensModal extends ConsumerWidget {
                           width: 1.0,
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: Row(
                         children: [
                           Container(
@@ -155,9 +157,9 @@ class TokensModal extends ConsumerWidget {
                   ),
                 ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               const Divider(color: Colors.white12),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Premium Package Button
               Container(
@@ -180,19 +182,13 @@ class TokensModal extends ConsumerWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(24),
-                    onTap: () async {
-                      AppHaptics.selection();
-                      final result = await ref
-                          .read(paymentServiceProvider)
-                          .presentPaywall();
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(result.userMessage)),
-                      );
-                      if (result.isSuccess) { await AppHaptics.success(); Navigator.of(context).pop(); }
+                    onTap: () {
+                      AppHaptics.medium();
+                      Navigator.of(context).pop();
+                      context.push(AppPaths.subscriptionPackages);
                     },
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                       child: Column(
                         children: [
                           Icon(
@@ -211,7 +207,7 @@ class TokensModal extends ConsumerWidget {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            'Unlimited messages, advanced filters, and more.',
+                            'View 3 Premium Package options and unlock all benefits.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white70,

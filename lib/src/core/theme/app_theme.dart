@@ -111,12 +111,7 @@ class AppTheme {
       );
 
   /// Cap `.qf-neo-frame` — organic ink-stamp border on quick-filter cards.
-  static const BorderRadius qfNeoFrameRadius = BorderRadius.only(
-    topLeft: Radius.circular(29.6),
-    topRight: Radius.circular(32.8),
-    bottomRight: Radius.circular(28),
-    bottomLeft: Radius.circular(32),
-  );
+  static final BorderRadius qfNeoFrameRadius = BorderRadius.circular(24.0);
 
   static BoxDecoration qfNeoFrame({required bool isLight}) => BoxDecoration(
         color: elevatedFor(isLight: isLight),
@@ -135,16 +130,8 @@ class AppTheme {
                   offset: Offset(0, 14),
                 ),
               ]
-            : [
+            : const [
                 BoxShadow(
-                  color: Colors.white.withAlpha(56),
-                  blurRadius: 18,
-                ),
-                BoxShadow(
-                  color: Colors.white.withAlpha(26),
-                  blurRadius: 40,
-                ),
-                const BoxShadow(
                   color: Color(0x8C000000),
                   blurRadius: 36,
                   offset: Offset(0, 14),

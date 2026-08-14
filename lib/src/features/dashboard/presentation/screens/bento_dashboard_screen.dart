@@ -428,7 +428,7 @@ class _DashboardFilterPill extends StatelessWidget {
       child: ChunkyInkPill(
         isLight: isLight,
         height: 40,
-        depth: 4,
+        depth: 1.5,
         closedFrame: false,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
