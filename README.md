@@ -1,6 +1,10 @@
 # Flutter Swipess
 
-Native Flutter rewrite of [Swipess](https://www.swipess.com) (`avdelag1/swipess`).
+Native Flutter rewrite of Swipess (`avdelag1/swipess`).
+
+**Live web (this repo):** [www.swipess.com](https://www.swipess.com) · [flutter-swipess.vercel.app](https://flutter-swipess.vercel.app)
+
+Push `main` to GitHub and Vercel rebuilds both URLs automatically.
 
 **Design source of truth is the live Capacitor app, not a new Flutter look.** Agents: read `BRAIN.md` and `docs/DESIGN_CONTRACT.md` first. To start a design pass, paste a prompt from `docs/PROMPTS.md`.
 

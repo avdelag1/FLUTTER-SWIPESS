@@ -8,7 +8,7 @@ Welcome, fellow AI Agent. This is **Flutter Swipess** — a native rewrite of th
 
 We are **closing the Capacitor design onto Flutter**, not inventing a new look.
 
-- Visual / UX source of truth: GitHub `avdelag1/swipess` (live: https://www.swipess.com and https://swipess.app)
+- Visual / UX source of truth: GitHub `avdelag1/swipess` (Capacitor). Live web is this Flutter repo on Vercel: https://www.swipess.com and https://flutter-swipess.vercel.app
 - Clone it (`git clone --depth 1 https://github.com/avdelag1/swipess.git /tmp/swipess`) and match the Capacitor file for the screen you are building.
 - This repo must look like that app: italic **SWIPESS** wordmark, black canvas, pill chrome, orange-red `#FF4D00` CTAs, glass HUD, photo category cards, floating glowing dock, full-bleed swipe reel.
 - If it looks like a generic Flutter demo (Material AppBar, gradient orbs, Tinder circles, missing wordmark), it is **wrong**.

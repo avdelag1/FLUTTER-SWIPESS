@@ -8,9 +8,9 @@ Close the **design of the live Capacitor app** onto this Flutter rewrite.
 
 | Repo | Role |
 |------|------|
-| `avdelag1/swipess` | **Visual / UX source of truth.** Capacitor + React + Tailwind + Framer Motion. Live: https://www.swipess.com and https://swipess.app |
-| `avdelag1/FLUTTER-SWIPESS` | Native Flutter shell. Must **look like** the Capacitor app. |
-| `avdelag1/admin-swipess` | Admin. Not this app. |
+| `avdelag1/swipess` | **Visual / UX source of truth.** Capacitor + React + Tailwind + Framer Motion. Use the repo (and store builds) as the look to clone. |
+| `avdelag1/FLUTTER-SWIPESS` | Native Flutter shell + **live web**. Push `main` → Vercel auto-deploys https://www.swipess.com and https://flutter-swipess.vercel.app |
+| `avdelag1/admin-swipess` | Admin / ops. Live: https://admin.swipess.com and https://admin-swipess.vercel.app |
 
 The owner already has a finished look they like. Flutter is a **native port**, not a new brand and not a “cleaner Material redesign.”
 
