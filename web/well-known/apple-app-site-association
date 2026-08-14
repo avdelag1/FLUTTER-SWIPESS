@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["6WYW52MXDF.com.swipess.mobile"],
+        "components": [
+          { "/": "/listing/*" },
+          { "/": "/u/*" },
+          { "/": "/profile/*" },
+          { "/": "/explore/events/*" },
+          { "/": "/vap-validate/*" },
+          { "/": "/preview/*" },
+          { "/": "/payment/*" },
+          { "/": "/s/*" },
+          { "/": "/reset-password" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["6WYW52MXDF.com.swipess.mobile"]
+  }
+}

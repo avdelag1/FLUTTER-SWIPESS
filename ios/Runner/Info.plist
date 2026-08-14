@@ -26,6 +26,10 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<key>UIRequiredDeviceCapabilities</key>
+		<array>
+			<string>arm64</string>
+		</array>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>
@@ -74,16 +78,8 @@
 		<string>Swipess may save signed contracts and listing photos to your library.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Swipess uses the microphone so you can dictate messages to the AI concierge and record voice notes on listings.</string>
-		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>Swipess uses speech recognition to turn your voice into text when you search listings or dictate messages.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Swipess uses your location to show nearby listings and match you with local services.</string>
-		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>Swipess uses your location to show nearby listings and match you with local services.</string>
-		<key>NSContactsUsageDescription</key>
-		<string>Swipess can share listings with your contacts if you choose to.</string>
-		<key>NSCalendarsUsageDescription</key>
-		<string>Swipess adds events to your calendar so you never miss experiences, workshops, or ceremonies.</string>
 		<key>NSFaceIDUsageDescription</key>
 		<string>Swipess uses Face ID for secure authentication.</string>
 		<key>ITSAppUsesNonExemptEncryption</key>

@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,15 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
+  /// Native iOS has no Google client id in this binary — hide the button
+  /// rather than let reviewers tap a dead Google login (2.1).
+  bool get _showGoogleSignIn {
+    if (kIsWeb) return true;
+    if (defaultTargetPlatform != TargetPlatform.iOS) return true;
+    return AppConfig.googleIosClientId.trim().isNotEmpty ||
+        AppConfig.googleServerClientId.trim().isNotEmpty;
+  }
+
   late bool _isLogin;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -322,14 +333,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             ? () {}
                             : () => _handleOAuth(OAuthProvider.apple),
                       ),
-                      const SizedBox(height: 16),
-                      _buildSocialButton(
-                        icon: Icons.g_mobiledata_rounded,
-                        label: 'CONTINUE WITH GOOGLE',
-                        onTap: _isLoading
-                            ? () {}
-                            : () => _handleOAuth(OAuthProvider.google),
-                      ),
+                      if (_showGoogleSignIn) ...[
+                        const SizedBox(height: 16),
+                        _buildSocialButton(
+                          icon: Icons.g_mobiledata_rounded,
+                          label: 'CONTINUE WITH GOOGLE',
+                          onTap: _isLoading
+                              ? () {}
+                              : () => _handleOAuth(OAuthProvider.google),
+                        ),
+                      ],
                     ],
                   ),
                 ),

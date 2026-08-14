@@ -22,10 +22,10 @@ void main() {
 
   test('blue light lives in a 10s cycle, not a constant chase', () {
     expect(SearchFrameShine.cycle, const Duration(seconds: 10));
-    expect(SearchFrameShine.shineFraction, 0.10);
+    expect(SearchFrameShine.shineFraction, 0.04);
     expect(SearchFrameShine.isShineWindow(0.0), isTrue);
-    expect(SearchFrameShine.isShineWindow(0.09), isTrue);
-    expect(SearchFrameShine.isShineWindow(0.11), isFalse);
+    expect(SearchFrameShine.isShineWindow(0.03), isTrue);
+    expect(SearchFrameShine.isShineWindow(0.05), isFalse);
     expect(SearchFrameShine.isShineWindow(0.50), isFalse);
   });
 }

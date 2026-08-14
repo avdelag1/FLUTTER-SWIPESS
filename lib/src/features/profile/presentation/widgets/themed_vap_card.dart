@@ -6,7 +6,6 @@ import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/doc_type_specimen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 

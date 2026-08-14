@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # Continues the shipped Capacitor line (1.2.33+490). Now that this build uses the
 # same com.swipess.mobile identifier, both stores reject a lower build number.
-version: 1.2.34+491
+version: 1.2.35+492
 
 environment:
   sdk: ^3.12.2

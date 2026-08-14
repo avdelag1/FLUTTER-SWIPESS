@@ -10,7 +10,8 @@
 	<array>
 		<string>applinks:www.swipess.com</string>
 		<string>applinks:swipess.com</string>
-		<string>applinks:swipess.app</string>
+		<string>webcredentials:www.swipess.com</string>
+		<string>webcredentials:swipess.com</string>
 	</array>
 </dict>
 </plist>

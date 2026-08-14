@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/legal_sheet.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
@@ -224,13 +225,28 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  Divider(height: 1, color: Colors.transparent),
+                  const Divider(height: 1, color: Colors.transparent),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => _confirmSignOut(context, ref),
+                      child: Text(
+                        'SIGN OUT',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1, color: Colors.transparent),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
                       onPressed: () => _confirmDelete(context, ref),
                       child: Text(
-                        'SIGN OUT / DELETE ACCOUNT',
+                        'DELETE ACCOUNT',
                         style: GoogleFonts.plusJakartaSans(
                           color: const Color(0xFFEF4444),
                           fontWeight: FontWeight.w900,
@@ -279,13 +295,15 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    AppHaptics.light();
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete account?', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF16161C),
+        title: const Text('Sign out?', style: TextStyle(color: Colors.white)),
         content: const Text(
-          'This signs you out. Full deletion needs the account-delete Edge Function — wire that when the endpoint is ready.',
+          'You can sign back in anytime. Your listings and messages stay on your account.',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -295,7 +313,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign out', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Sign out'),
           ),
         ],
       ),
@@ -303,6 +321,58 @@ class SettingsScreen extends ConsumerWidget {
     if (ok == true && context.mounted) {
       await ref.read(authRepositoryProvider).signOut();
       ref.read(currentUserProvider.notifier).clear();
+      if (context.mounted) context.go(AppPaths.welcome);
+    }
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    AppHaptics.medium();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF16161C),
+        title: const Text(
+          'Delete account permanently?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'This permanently deletes your Swipess account, profile, listings, messages, and stored files. This cannot be undone.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete account',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      await ref.read(authRepositoryProvider).deleteAccount();
+      ref.read(currentUserProvider.notifier).clear();
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) context.go(AppPaths.welcome);
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not delete account: $e')),
+      );
     }
   }
 }

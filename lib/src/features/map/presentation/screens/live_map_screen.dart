@@ -408,7 +408,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   child: Container(
                     width: 44,
                     height: 44,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
                       border: Border.all(color: Colors.white, width: 1.5),

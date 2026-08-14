@@ -45,6 +45,30 @@ class AuthRepository {
 
   Future<void> signOut() => _auth.signOut();
 
+  /// Permanently deletes the signed-in user via the `delete-user` Edge Function
+  /// (Guideline 5.1.1(v)). Signs out locally after a successful delete.
+  Future<void> deleteAccount() async {
+    final session = _auth.currentSession;
+    if (session == null) {
+      throw Exception('No active session');
+    }
+    final res = await Supabase.instance.client.functions.invoke(
+      'delete-user',
+      headers: {'Authorization': 'Bearer ${session.accessToken}'},
+    );
+    final data = res.data;
+    final ok = res.status == 200 && data is Map && data['success'] == true;
+    if (!ok) {
+      final msg = data is Map
+          ? (data['error'] ?? data['details'] ?? 'Failed to delete account')
+          : 'Failed to delete account';
+      throw Exception(msg.toString());
+    }
+    try {
+      await _auth.signOut();
+    } catch (_) {}
+  }
+
   String? get currentEmail => _auth.currentUser?.email;
 
   Future<void> resetPassword(String email) {

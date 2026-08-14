@@ -98,11 +98,10 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Starter · 20 tokens'), findsOneWidget);
-    expect(find.text('Plus · 50 tokens'), findsOneWidget);
+    expect(find.text('20 Tokens'), findsOneWidget);
+    expect(find.text('50 Tokens'), findsOneWidget);
     expect(find.text('\$9.99'), findsOneWidget);
     expect(find.text('\$19.99'), findsOneWidget);
-    expect(find.textContaining('PayPal'), findsOneWidget);
     expect(find.text('Restore Purchases'), findsOneWidget);
   });
 }

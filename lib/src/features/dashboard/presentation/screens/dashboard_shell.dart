@@ -251,7 +251,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             onSummon: () =>
                 ref.read(chromeVisibilityProvider.notifier).show(),
           ),
-          PushNotificationPrompt(enabled: user != null),
+          // Hidden until remote push is wired. Showing a prompt that
+          // then says "not wired" is an App Store 2.1 reject.
+          const PushNotificationPrompt(enabled: false),
           GuidedTourOverlay(enabled: user != null),
         ],
       ),
