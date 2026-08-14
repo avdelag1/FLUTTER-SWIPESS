@@ -25,7 +25,7 @@ class MapLayerRail extends StatelessWidget {
       children: [
         _LayerOrb(
           icon: Icons.public_rounded,
-          colors: const [Color(0xFF9D4EDD), Color(0xFF00E5FF)],
+          colors: const [Color(0xFFFF4D00), Color(0xFFE4007C)],
           badge: total,
           selected: layer == 'all',
           onTap: () => onLayer('all'),
@@ -33,7 +33,7 @@ class MapLayerRail extends StatelessWidget {
         const SizedBox(height: 10),
         _LayerOrb(
           icon: Icons.apartment_rounded,
-          colors: const [Color(0xFF00C6FF), Color(0xFF0072FF)],
+          colors: const [Color(0xFFFF6B35), Color(0xFFFF4D00)],
           badge: listingCount,
           selected: layer == 'listings',
           onTap: () => onLayer('listings'),
@@ -41,7 +41,7 @@ class MapLayerRail extends StatelessWidget {
         const SizedBox(height: 10),
         _LayerOrb(
           icon: Icons.people_alt_rounded,
-          colors: const [Color(0xFF3B82F6), Color(0xFF9D4EDD)],
+          colors: const [Color(0xFFEC4899), Color(0xFFE4007C)],
           badge: peopleCount,
           selected: layer == 'people',
           onTap: () => onLayer('people'),

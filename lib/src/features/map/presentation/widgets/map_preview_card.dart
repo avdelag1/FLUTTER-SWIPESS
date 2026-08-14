@@ -40,10 +40,10 @@ class MapPreviewCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xF2141824),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0x8800C6FF)),
+          border: Border.all(color: const Color(0x88FF4D00)),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x6600C6FF),
+              color: Color(0x66FF4D00),
               blurRadius: 16,
             ),
           ],
@@ -105,7 +105,7 @@ class MapPreviewCard extends StatelessWidget {
                           child: Text(
                             pin.isListing ? 'DETAILS →' : 'PROFILE →',
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF00E5FF),
+                              color: const Color(0xFFFF6B35),
                               fontWeight: FontWeight.w900,
                               fontSize: 11,
                               letterSpacing: 0.6,

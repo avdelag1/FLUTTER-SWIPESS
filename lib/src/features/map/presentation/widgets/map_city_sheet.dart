@@ -59,7 +59,7 @@ class _MapCitySheetState extends State<MapCitySheet> {
             child: TextField(
               onChanged: (v) => setState(() => _query = v),
               style: const TextStyle(color: Colors.white),
-              cursorColor: const Color(0xFF00C6FF),
+              cursorColor: const Color(0xFFFF4D00),
               decoration: InputDecoration(
                 hintText: 'Search Miami, Tulum, Paris…',
                 hintStyle: GoogleFonts.plusJakartaSans(

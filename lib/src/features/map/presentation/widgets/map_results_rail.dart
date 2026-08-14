@@ -34,17 +34,17 @@ class MapResultsRail extends StatelessWidget {
             children: [
               _CountChip(
                 label: '${pins.length} IN YOUR RADIUS',
-                colors: const [Color(0xFF9D4EDD), Color(0xFF00C6FF)],
+                colors: const [Color(0xFF9D4EDD), Color(0xFFFF4D00)],
               ),
               if (listings > 0)
                 _CountChip(
                   label: '$listings LISTINGS',
-                  colors: const [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                  colors: const [Color(0xFFFF4D00), Color(0xFF0072FF)],
                 ),
               if (people > 0)
                 _CountChip(
                   label: '$people ACTIVE',
-                  colors: const [Color(0xFF10B981), Color(0xFF00E5FF)],
+                  colors: const [Color(0xFF10B981), Color(0xFFFF6B35)],
                   icon: Icons.bolt_rounded,
                 ),
             ],
@@ -79,12 +79,12 @@ class MapResultsRail extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: selected ? Colors.white : const Color(0x5500C6FF),
+                      color: selected ? Colors.white : const Color(0x55FF4D00),
                       width: selected ? 2 : 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00C6FF)
+                        color: const Color(0xFFFF4D00)
                             .withAlpha(selected ? 80 : 30),
                         blurRadius: 10,
                       ),
@@ -128,7 +128,7 @@ class MapResultsRail extends StatelessWidget {
                                 meta,
                                 maxLines: 1,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF00E5FF),
+                                  color: const Color(0xFFFF6B35),
                                   fontWeight: FontWeight.w800,
                                   fontSize: 10,
                                 ),

@@ -27,9 +27,10 @@ void main() {
     expect(MapCameraMath.perspective, greaterThan(0));
   });
 
-  test('basemap is colorful voyager, not the black street filter', () {
-    expect(MapBasemap.streetsUrl.contains('voyager'), isTrue);
-    expect(MapBasemap.streetsUrl.contains('dark_all'), isFalse);
+  test('basemap is a single dark Swipess canvas, not stacked satellite', () {
+    expect(MapBasemap.streetsUrl.contains('dark_all'), isTrue);
+    expect(MapBasemap.labelsUrl, isNull);
+    expect(MapBasemap.canvas, const Color(0xFF0A0A0D));
   });
 
   test('a single live listing is not padded with fake Tulum homes', () {

@@ -23,7 +23,7 @@ class MapListingPinMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = title.length > 16 ? '${title.substring(0, 14)}…' : title;
-    final ring = selected ? const Color(0xFF00E5FF) : const Color(0xFF00C6FF);
+    final ring = selected ? const Color(0xFFFF6B35) : const Color(0xFFFF4D00);
     return SizedBox(
       width: width,
       height: height,
@@ -91,7 +91,7 @@ class _PhotoDot extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
+              colors: [Color(0xFFFF4D00), Color(0xFFE4007C)],
             ),
             border: Border.all(color: Colors.white, width: 2.5),
             boxShadow: [
@@ -155,13 +155,13 @@ class MapProfilePinMarker extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFF312E81),
+        color: const Color(0xFF1A0A12),
         border: Border.all(
-          color: selected ? const Color(0xFFC7D2FE) : Colors.white,
+          color: selected ? const Color(0xFFFF4D6A) : const Color(0xFFEC4899),
           width: 2.5,
         ),
         boxShadow: const [
-          BoxShadow(color: Color(0x590F172A), blurRadius: 8),
+          BoxShadow(color: Color(0x66E4007C), blurRadius: 10),
         ],
         image: imageUrl == null || imageUrl!.isEmpty
             ? null
@@ -194,7 +194,7 @@ class MapClusterMarker extends StatelessWidget {
           height: size + 14,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0x5500C6FF),
+            color: Color(0x55FF4D00),
           ),
         ),
         Container(
@@ -206,7 +206,7 @@ class MapClusterMarker extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
+              colors: [Color(0xFFFF4D00), Color(0xFFE4007C)],
             ),
             border: Border.all(color: Colors.white, width: 3),
           ),

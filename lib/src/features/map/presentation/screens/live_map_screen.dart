@@ -96,14 +96,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     } catch (_) {}
   }
 
-  void _startDroneFlyIn(LatLng center, int radiusKm) {
-    if (_didFly) return;
-    _didFly = true;
-    final startZ = MapCameraMath.openAltitudeZoom;
-    final endZ = _zoomForRadius(radiusKm);
-    _safeMove(center, endZ);
-  }
-
   @override
   Widget build(BuildContext context) {
     final location = ref.watch(discoveryLocationProvider);
@@ -115,10 +107,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
         return;
       }
       _selected = null;
-      _safeMove(
-        LatLng(next.latitude, next.longitude),
-        _zoomForRadius(next.radiusKm),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _safeMove(
+          LatLng(next.latitude, next.longitude),
+          _zoomForRadius(next.radiusKm),
+        );
+      });
     });
     final asyncListings = ref.watch(mapListingsProvider);
     final asyncProfiles = ref.watch(mapProfilesProvider);
@@ -169,7 +163,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final pad = MediaQuery.paddingOf(context);
 
     return Material(
-      color: const Color(0xFF12324A),
+      color: MapBasemap.canvas,
       child: Stack(
         children: [
           Positioned.fill(
@@ -177,13 +171,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: MapCameraMath.openAltitudeZoom,
+                  initialZoom: _zoomForRadius(radiusKm),
                   minZoom: 3,
                   maxZoom: 18,
-                  backgroundColor: const Color(0xFF12324A),
+                  backgroundColor: MapBasemap.canvas,
                   onMapReady: () {
                     _mapReady = true;
-                    _startDroneFlyIn(center, radiusKm);
+                    _safeMove(center, _zoomForRadius(radiusKm));
                   },
                   onTap: (_, _) => setState(() {
                     _selected = null;
@@ -203,36 +197,22 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: MapBasemap.streetsUrl,
-                    subdomains: MapBasemap.subdomains,
-                    userAgentPackageName: MapBasemap.userAgentPackageName,
-                    tileDimension: 256,
-                    maxNativeZoom: 19,
-                  ),
-                  TileLayer(
                     urlTemplate: MapBasemap.urlTemplate,
+                    subdomains: MapBasemap.subdomains,
                     additionalOptions: MapBasemap.additionalOptions,
                     userAgentPackageName: MapBasemap.userAgentPackageName,
                     tileDimension: 256,
                     maxNativeZoom: 19,
                   ),
-                  if (MapBasemap.labelsUrl != null)
-                    TileLayer(
-                      urlTemplate: MapBasemap.labelsUrl!,
-                      subdomains: MapBasemap.subdomains,
-                      userAgentPackageName: MapBasemap.userAgentPackageName,
-                      tileDimension: 256,
-                      maxNativeZoom: 19,
-                    ),
                   CircleLayer(
                     circles: [
                       CircleMarker(
                         point: center,
                         radius: radiusKm * 1000,
                         useRadiusInMeter: true,
-                        color: const Color(0x1400C6FF),
-                        borderColor: const Color(0xCC00C6FF),
-                        borderStrokeWidth: 2,
+                        color: MapBasemap.radiusFill,
+                        borderColor: MapBasemap.radiusStroke,
+                        borderStrokeWidth: 1.5,
                       ),
                     ],
                   ),
@@ -280,7 +260,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               right: 0,
               child: LinearProgressIndicator(
                 minHeight: 2,
-                color: Color(0xFF00C6FF),
+                color: Color(0xFFFF4D00),
                 backgroundColor: Colors.transparent,
               ),
             ),
@@ -474,7 +454,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                                     '$km km',
                                     style: GoogleFonts.plusJakartaSans(
                                       color: km == radiusKm
-                                          ? const Color(0xFF00C6FF)
+                                          ? const Color(0xFFFF4D00)
                                           : Colors.white,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -496,7 +476,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           color: const Color(0xF2161B27),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: const Color(0xFF00C6FF),
+                            color: const Color(0xFFFF4D00),
                             width: 1.5,
                           ),
                         ),
@@ -505,14 +485,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           children: [
                             const Icon(
                               Icons.location_on_rounded,
-                              color: Color(0xFF00E5FF),
+                              color: Color(0xFFFF6B35),
                               size: 16,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '$radiusKm km',
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF00C6FF),
+                                color: const Color(0xFFFF4D00),
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
                               ),
