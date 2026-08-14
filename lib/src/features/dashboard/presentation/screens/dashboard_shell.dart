@@ -200,6 +200,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                     return;
                                   }
                                   if (id == NavTab.ai) {
+                                    if (overlays.showConcierge) {
+                                      ref
+                                          .read(chromeVisibilityProvider
+                                              .notifier)
+                                          .hide();
+                                      return;
+                                    }
                                     ref
                                         .read(overlayModalsProvider.notifier)
                                         .openConcierge();
