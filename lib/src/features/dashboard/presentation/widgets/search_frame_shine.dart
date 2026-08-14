@@ -19,9 +19,9 @@ class SearchFrameShine extends StatefulWidget {
   @visibleForTesting
   static const Duration cycle = Duration(seconds: 10);
 
-  /// First 10% of the cycle (~1s) is the snap. The rest is dark.
+  /// First 4% of the cycle (400ms) is the snap. The rest is dark.
   @visibleForTesting
-  static const double shineFraction = 0.10;
+  static const double shineFraction = 0.04;
 
   @visibleForTesting
   static bool isShineWindow(double progress) =>
