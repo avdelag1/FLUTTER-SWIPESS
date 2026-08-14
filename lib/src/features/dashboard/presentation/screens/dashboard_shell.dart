@@ -136,15 +136,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             left: 0,
             right: 0,
             child: AnimatedOpacity(
-              opacity: showChrome ? 1 : 0,
+              opacity: (showChrome && isDashboard) ? 1 : 0,
               duration: Duration(milliseconds: showChrome ? 360 : 340),
               curve: const Cubic(0.25, 0.1, 0.25, 1),
               child: AnimatedSlide(
-                offset: showChrome ? Offset.zero : const Offset(0, -0.12),
+                offset: (showChrome && isDashboard) ? Offset.zero : const Offset(0, -0.12),
                 duration: Duration(milliseconds: showChrome ? 360 : 340),
                 curve: const Cubic(0.25, 0.1, 0.25, 1),
                 child: IgnorePointer(
-                  ignoring: !showChrome,
+                  ignoring: !showChrome || !isDashboard,
                   child: AppTopBar(
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,

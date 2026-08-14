@@ -87,9 +87,8 @@ class AppTheme {
   static BoxDecoration get neoNaiveCard => BoxDecoration(
         color: const Color(0xF50E0E14),
         borderRadius: neoNaiveRadius,
-        border: Border.all(color: const Color(0xEBFFFFFF), width: 2.25),
+        border: Border.all(color: const Color(0xEBFFFFFF), width: 1.0),
         boxShadow: const [
-          BoxShadow(color: Color(0x66FFFFFF), offset: Offset(1.5, 1.5)),
           BoxShadow(
               color: Color(0x59000000), blurRadius: 22, offset: Offset(0, 8)),
         ],
@@ -126,14 +125,10 @@ class AppTheme {
           color: isLight
               ? const Color(0xFF141414)
               : const Color(0xEBFFFFFF),
-          width: 2.35,
+          width: 1.0,
         ),
         boxShadow: isLight
             ? const [
-                BoxShadow(
-                  color: Color(0xFF141414),
-                  offset: Offset(1.5, 1.5),
-                ),
                 BoxShadow(
                   color: Color(0x59000000),
                   blurRadius: 36,
@@ -141,10 +136,6 @@ class AppTheme {
                 ),
               ]
             : [
-                BoxShadow(
-                  color: Colors.white.withAlpha(102),
-                  offset: const Offset(1.5, 1.5),
-                ),
                 BoxShadow(
                   color: Colors.white.withAlpha(56),
                   blurRadius: 18,

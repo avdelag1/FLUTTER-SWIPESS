@@ -101,17 +101,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     _didFly = true;
     final startZ = MapCameraMath.openAltitudeZoom;
     final endZ = _zoomForRadius(radiusKm);
-    _fly.addListener(() {
-      if (!mounted || !_mapReady) return;
-      final t = Curves.easeInOutCubic.transform(_fly.value);
-      _safeMove(center, startZ + (endZ - startZ) * t);
-    });
-    _fly.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _safeMove(center, endZ);
-      }
-    });
-    _fly.forward();
+    _safeMove(center, endZ);
   }
 
   @override
@@ -170,13 +160,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       child: Stack(
         children: [
           Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _fly,
-              builder: (context, child) => MapPerspectiveStage(
-                progress: _fly.value,
-                child: child!,
-              ),
-              child: FlutterMap(
+            child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
@@ -276,7 +260,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ],
               ),
             ),
-          ),
           if (isLoading)
             const Positioned(
               top: 0,
