@@ -6,7 +6,6 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
@@ -49,7 +48,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     GoRouter.maybeOf(context)?.go(AppPaths.clientProfile);
   }
 
-  Color _glyph(Color wash, Color ink) => Color.lerp(wash, Colors.white, 0.18)!;
+
 
   String get _label {
     final raw = firstName?.trim() ?? '';
@@ -286,7 +285,6 @@ class _HudButton extends StatelessWidget {
     required this.fill,
     required this.border,
     this.wide = false,
-    this.gradientBorder,
     this.semanticLabel,
   });
 
@@ -295,7 +293,6 @@ class _HudButton extends StatelessWidget {
   final Color fill;
   final Color border;
   final bool wide;
-  final Gradient? gradientBorder;
   final String? semanticLabel;
 
   @override

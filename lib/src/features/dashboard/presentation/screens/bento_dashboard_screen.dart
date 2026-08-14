@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -15,7 +14,6 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/event
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/qf_well_glow.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/neo_naive_card_shine.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
