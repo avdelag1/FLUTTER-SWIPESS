@@ -67,6 +67,9 @@ class DocumentAttachment {
   final String status;
   final String? fileName;
 
+  bool get isContract =>
+      type == 'digital_contract' || type == 'contract' || type == 'lease';
+
   factory DocumentAttachment.fromJson(Map<String, dynamic> json) {
     return DocumentAttachment(
       id: json['id']?.toString() ?? '',

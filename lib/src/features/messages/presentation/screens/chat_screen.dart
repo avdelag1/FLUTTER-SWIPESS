@@ -15,9 +15,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Cap `MessagingInterface` — thread chrome, pink bubbles, empty Swipes Stream.
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.conversation});
+  const ChatScreen({
+    super.key,
+    required this.conversation,
+    this.onBack,
+  });
 
   final ChatConversation conversation;
+  final VoidCallback? onBack;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -167,7 +172,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             padding: EdgeInsets.fromLTRB(12, top + 8, 8, 8),
             child: Row(
               children: [
-                const CapBackButton(),
+                CapBackButton(onTap: widget.onBack),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Row(
@@ -505,6 +510,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         onTap: () => showChatDocumentsSheet(
                           context,
                           conversationId: widget.conversation.id,
+                          otherUserName: widget.conversation.name,
+                          otherUserId: widget.conversation.otherUserId,
                         ),
                       ),
                       const SizedBox(width: 8),
