@@ -39,9 +39,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   static const lemonWash = Color(0xFFFFE066);
   static const mintWash = Color(0xFF7DFFAA);
 
-  static const _hudSize = 48.0;
+  static const _hudSize = 40.0;
 
-  void _openProfile(BuildContext context) {
+  void _openProfile(BuildContext context) { AppHaptics.medium();
     AppHaptics.medium();
     if (onProfileTap != null) {
       onProfileTap!();
@@ -95,8 +95,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: Row(
                     children: [
                       Container(
-                        width: 32,
-                        height: 32,
+                        width: 26,
+                        height: 26,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isLight ? Colors.black12 : Colors.white12,
@@ -110,7 +110,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         child: avatarUrl == null
                             ? Icon(
                                 Icons.person_rounded,
-                                size: 18,
+                                size: 16,
                                 color: ink,
                               )
                             : null,
@@ -137,14 +137,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    AppHaptics.light();
+                    AppHaptics.medium();
                     showCreateListingChooser(context);
                   },
                   child: _WashIcon(
                     wash: mintWash,
                     child: Icon(
                       Icons.auto_awesome_rounded,
-                      size: 22,
+                      size: 20,
                       color: ink,
                     ),
                   ),
@@ -158,7 +158,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   border: pillBorder,
                   wide: tokens > 0,
                   onTap: () {
-                    AppHaptics.light();
+                    AppHaptics.medium();
                     showGlassModal(
                       context: context,
                       builder: (_) => const TokensModal(),
@@ -172,7 +172,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       children: [
                         Icon(
                           Icons.workspace_premium_rounded,
-                          size: 22,
+                          size: 20,
                           color: ink,
                         ),
                         if (tokens > 0) ...[
@@ -195,14 +195,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    AppHaptics.light();
+                    AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
                   child: _WashIcon(
                     wash: skyWash,
                     child: Icon(
                       Icons.public_rounded,
-                      size: 22,
+                      size: 20,
                       color: ink,
                     ),
                   ),
@@ -212,7 +212,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    AppHaptics.light();
+                    AppHaptics.medium();
                     ref.read(visualThemeProvider.notifier).toggle();
                   },
                   child: _WashIcon(
@@ -221,7 +221,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       isLight
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
-                      size: 22,
+                      size: 20,
                       color: ink,
                     ),
                   ),
@@ -231,7 +231,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    AppHaptics.light();
+                    AppHaptics.medium();
                     showGlassModal(
                       context: context,
                       builder: (_) => const NotificationsScreen(),
@@ -244,7 +244,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         wash: coralWash,
                         child: Icon(
                           Icons.notifications_rounded,
-                          size: 22,
+                          size: 20,
                           color: ink,
                         ),
                       ),

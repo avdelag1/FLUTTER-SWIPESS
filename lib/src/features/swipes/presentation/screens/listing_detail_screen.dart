@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -523,6 +524,13 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
             ),
           ),
 
+          // Persistent Back Button
+          Positioned(
+            top: top + 8,
+            left: 16,
+            child: CapBackButton(onTap: _back),
+          ),
+
           // Header HUD
           Positioned(
             top: top + 8,
@@ -535,10 +543,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                 fromTop: true,
                 child: Row(
                   children: [
-                    _CircleBtn(
-                      icon: Icons.arrow_back_ios_new_rounded,
-                      onTap: _back,
-                    ),
                     const Spacer(),
                     if (_images.length > 1)
                       Container(

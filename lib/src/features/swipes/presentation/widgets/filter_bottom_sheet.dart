@@ -218,7 +218,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   ) {
     return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F7F8),
+            color: Colors.white,
             borderRadius: widget.asPage
                 ? BorderRadius.zero
                 : const BorderRadius.vertical(top: Radius.circular(32)),
@@ -231,7 +231,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(40),
+                    color: Colors.white.withAlpha(40),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -250,11 +250,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         child: TextButton.icon(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.chevron_left_rounded,
-                              color: Color(0xFF0A0A0D)),
+                              color: Colors.white),
                           label: Text(
                             'Back',
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF0A0A0D),
+                              color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 11,
                               letterSpacing: 1.6,
@@ -282,11 +282,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           onPressed: () =>
                               setState(() => _activeCategory = null),
                           icon: const Icon(Icons.chevron_left_rounded,
-                              color: Color(0xFF0A0A0D)),
+                              color: Colors.white),
                           label: Text(
                             'Back',
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF0A0A0D),
+                              color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 11,
                               letterSpacing: 1.6,
@@ -316,7 +316,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       Text(
                         _detailTitle,
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF0A0A0D),
+                          color: Colors.white,
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
                           fontStyle: FontStyle.italic,
@@ -527,7 +527,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           activeTrackColor: AppTheme.brandPrimary,
-                          inactiveTrackColor: Colors.black12,
+                          inactiveTrackColor: Colors.white12,
                           thumbColor: AppTheme.brandPrimary,
                           overlayColor: AppTheme.brandPrimary.withAlpha(40),
                         ),
@@ -542,7 +542,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       Text(
                         'Radius filtering uses your current GPS or selected location.',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.black45,
+                          color: Colors.white60,
                           fontSize: 11,
                         ),
                       ),
@@ -665,7 +665,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               TextSpan(
                 text: 'SWIPESS ',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF0A0A0D),
+                  color: Colors.white,
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
@@ -688,7 +688,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         Text(
           'Filter Your Best Deal',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.black45,
+            color: Colors.white60,
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 3.2,
@@ -702,7 +702,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     return Text(
       text,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.black45,
+        color: Colors.white60,
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
@@ -727,7 +727,7 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: Colors.transparent,
       elevation: 0,
       borderRadius: BorderRadius.circular(28),
       child: InkWell(
@@ -738,14 +738,7 @@ class _CategoryCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.black.withAlpha(18)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(18),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            border: Border.all(color: Colors.white, width: 1.0),
           ),
           child: Row(
             children: [
@@ -753,7 +746,7 @@ class _CategoryCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0A0A0D),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: Colors.white, size: 26),
@@ -767,7 +760,7 @@ class _CategoryCard extends StatelessWidget {
                     Text(
                       title.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF0A0A0D),
+                        color: Colors.white,
                         fontWeight: FontWeight.w900,
                         fontStyle: FontStyle.italic,
                         fontSize: 18,
@@ -776,7 +769,7 @@ class _CategoryCard extends StatelessWidget {
                     Text(
                       subtitle.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.black45,
+                        color: Colors.white60,
                         fontWeight: FontWeight.w800,
                         fontSize: 10,
                         letterSpacing: 1.4,
@@ -785,7 +778,7 @@ class _CategoryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.black38),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white38),
             ],
           ),
         ),
@@ -824,7 +817,7 @@ class _Pill extends StatelessWidget {
               : null,
           color: active ? null : Colors.white,
           border: Border.all(
-            color: active ? Colors.transparent : Colors.black12,
+            color: active ? Colors.transparent : Colors.white12,
           ),
           boxShadow: active
               ? [
@@ -900,14 +893,14 @@ class _WhiteToggle extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        border: Border.all(color: Colors.white12),
       ),
       child: Row(
         children: [
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFF0A0A0D),
+              color: Colors.white,
               fontWeight: FontWeight.w800,
               fontSize: 14,
             ),

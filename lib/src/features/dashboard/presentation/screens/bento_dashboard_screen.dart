@@ -179,7 +179,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   }
 
   void _pickCity(BuildContext context, WidgetRef ref) {
-    AppHaptics.selection();
+    AppHaptics.medium();
     context.push(AppPaths.map);
   }
 
@@ -422,7 +422,7 @@ class _DashboardFilterPill extends StatelessWidget {
     final ink = isLight ? const Color(0xFF111111) : Colors.white;
     return GestureDetector(
       onTap: () {
-        AppHaptics.selection();
+        AppHaptics.medium();
         onTap();
       },
       child: ChunkyInkPill(

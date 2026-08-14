@@ -532,44 +532,33 @@ class _VaultThumb extends ConsumerWidget {
         : null;
 
     return Container(
-      width: 56,
-      height: 72,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: t.tagBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(28),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        shape: BoxShape.circle,
+        border: Border.all(color: t.tagBorder, width: 1.0),
+        color: t.isDark ? Colors.black.withAlpha(50) : Colors.white.withAlpha(100),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          DocTypeSpecimen(documentType: typeKey),
-          if (urlAsync != null)
-            urlAsync.maybeWhen(
+      child: urlAsync != null
+          ? urlAsync.maybeWhen(
               data: (url) {
-                if (url == null) return const SizedBox.shrink();
+                if (url == null) return Icon(Icons.description_outlined, color: t.textSecondary, size: 20);
                 return ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                   child: Transform.scale(
-                    scale: 1.08,
+                    scale: 1.15,
                     child: Image.network(
                       url,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      errorBuilder: (_, _, _) => Icon(Icons.description_outlined, color: t.textSecondary, size: 20),
                     ),
                   ),
                 );
               },
-              orElse: () => const SizedBox.shrink(),
-            ),
-        ],
-      ),
+              orElse: () => Icon(Icons.description_outlined, color: t.textSecondary, size: 20),
+            )
+          : Icon(Icons.insert_drive_file_outlined, color: t.textTertiary, size: 20),
     );
   }
 }

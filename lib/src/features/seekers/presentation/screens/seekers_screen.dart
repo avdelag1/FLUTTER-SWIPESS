@@ -161,22 +161,15 @@ class _SeekerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
+        color: const Color(0xFF0A0A0D),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white, width: 1.5),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            _accent.withAlpha(90),
-            const Color(0xFF0A0A0D),
-          ],
-        ),
+        border: Border.all(color: Colors.white, width: 1.0),
         image: request.seekerAvatar != null
             ? DecorationImage(
                 image: NetworkImage(request.seekerAvatar!),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(
-                  Colors.black.withAlpha(140),
+                  Colors.black.withAlpha(180),
                   BlendMode.darken,
                 ),
               )
