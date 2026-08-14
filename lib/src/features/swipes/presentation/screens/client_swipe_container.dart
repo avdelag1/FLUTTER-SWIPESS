@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
@@ -136,6 +138,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     );
   }
 
+  void _goDashboard() {
+    ref.read(navTabProvider.notifier).set(NavTab.dashboard);
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) nav.pop();
+    context.go(AppPaths.clientDashboard);
+  }
+
   void _undo() {
     final last = _undoable;
     if (last == null || _deck == null) return;
@@ -153,7 +162,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       activeCategory: _categoryId,
       detecting: _detecting,
       detected: _detected,
-      onBack: () => Navigator.of(context).pop(),
+      onBack: _goDashboard,
       onRadiusChange: (km) {
         ref.read(discoveryLocationProvider.notifier).setRadiusKm(km);
         _deck = null;
@@ -240,11 +249,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       backgroundColor: const Color(0xFF0A0A0D),
       extendBody: true,
       body: PullDownToDismiss(
-        onDismiss: () {
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-        },
+        onDismiss: _goDashboard,
         child: listingsAsync.when(
         loading: () => const SwipeLoadingSkeleton(),
         error: (err, _) => SwipeErrorState(
@@ -274,7 +279,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                             railVisible: true,
                             canUndo: _undoable != null,
                             onUndo: _undo,
-                            onBack: () => Navigator.of(context).pop(),
+                            onBack: _goDashboard,
                             onSummonChrome: () {
                               ref.read(chromeRevealProvider.notifier).toggle();
                             },
@@ -349,7 +354,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                 right: 0,
                 child: SafeArea(
                   child: _SwipeDeckDock(
-                    onDashboard: () => Navigator.of(context).pop(),
+                    onDashboard: _goDashboard,
                     onAi: () => showIntelCoreSheet(context),
                     onAdd: () => showCreateListingChooser(context),
                     onTokens: () => showGlassModal(
