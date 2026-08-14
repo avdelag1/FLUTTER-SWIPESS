@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -941,17 +942,19 @@ class _MuteIconButton extends StatelessWidget {
         width: 40,
         height: 40,
         child: Center(
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(110),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-              color: Colors.white,
-              size: 15,
+          child: BreathingWidget(
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(110),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                color: Colors.white,
+                size: 15,
+              ),
             ),
           ),
         ),
