@@ -94,29 +94,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
     return Scaffold(
       backgroundColor: canvas,
-      extendBodyBehindAppBar: true,
       extendBody: true,
-      appBar: PreferredSize(
-              preferredSize: const AppTopBar().preferredSize,
-              child: AnimatedOpacity(
-                opacity: showChrome ? 1 : 0,
-                duration: Duration(milliseconds: showChrome ? 360 : 340),
-                curve: const Cubic(0.25, 0.1, 0.25, 1),
-                child: AnimatedSlide(
-                  offset: showChrome ? Offset.zero : const Offset(0, -0.12),
-                  duration: Duration(milliseconds: showChrome ? 360 : 340),
-                  curve: const Cubic(0.25, 0.1, 0.25, 1),
-                  child: IgnorePointer(
-                    ignoring: !showChrome,
-                    child: AppTopBar(
-                      firstName: profile?.name.split(' ').first,
-                      avatarUrl: profile?.avatarUrl,
-                      onProfileTap: () => context.push(AppPaths.clientProfile),
-                    ),
-                  ),
-                ),
-              ),
-            ),
       body: Stack(
         children: [
           NotificationListener<ScrollNotification>(
@@ -149,6 +127,35 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 if (!isDashboard && !isEvents) widget.child,
               ],
+            ),
+          ),
+          // Overlay (not Scaffold.appBar) so nested page Scaffolds cannot
+          // steal taps from the HUD — Cap `TopBar` is `fixed` + z-index 100.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedOpacity(
+              opacity: showChrome ? 1 : 0,
+              duration: Duration(milliseconds: showChrome ? 360 : 340),
+              curve: const Cubic(0.25, 0.1, 0.25, 1),
+              child: AnimatedSlide(
+                offset: showChrome ? Offset.zero : const Offset(0, -0.12),
+                duration: Duration(milliseconds: showChrome ? 360 : 340),
+                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                child: IgnorePointer(
+                  ignoring: !showChrome,
+                  child: AppTopBar(
+                    firstName: profile?.name.split(' ').first,
+                    avatarUrl: profile?.avatarUrl,
+                    onProfileTap: () {
+                      HapticFeedback.lightImpact();
+                      ref.read(chromeVisibilityProvider.notifier).show();
+                      context.go(AppPaths.clientProfile);
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
           Positioned(
