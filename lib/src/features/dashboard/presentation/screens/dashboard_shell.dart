@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -8,7 +10,6 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
-import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
@@ -176,20 +177,36 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 child: SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: LiquidGlassPanel(
-                    borderRadius: 999,
-                    blur: LiquidGlass.blurLg,
-                    weight: LiquidGlassWeight.frostPill,
-                    floating: true,
-                    child: SizedBox(
-                      height: 58,
+                  constraints: const BoxConstraints(maxWidth: 390),
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xCC000000),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withAlpha(36),
+                        width: 1,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        scrollbars: false,
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                          PointerDeviceKind.trackpad,
+                          PointerDeviceKind.stylus,
+                        },
+                      ),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         itemCount: bottomNavItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 4),
+                        separatorBuilder: (_, __) => const SizedBox(width: 2),
                         itemBuilder: (context, i) {
                           final item = bottomNavItems[i];
                           return _DockButton(
@@ -213,7 +230,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                   ref
                                       .read(chromeVisibilityProvider
                                           .notifier)
-                                      .hide();
+                                          .hide();
                                   return;
                                 }
                                 ref
@@ -299,10 +316,10 @@ class _DockButton extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      behavior: HitTestBehavior.deferToChild,
       child: SizedBox(
-        width: 44,
-        height: 44,
+        width: 38,
+        height: 38,
         child: Center(
           child: Stack(
             alignment: Alignment.center,

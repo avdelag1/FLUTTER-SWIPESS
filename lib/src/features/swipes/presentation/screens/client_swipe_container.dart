@@ -393,23 +393,19 @@ class _SwipeDeckDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLight = MatteSurface.isLight(context);
-    final dockFill = MatteSurface.well(context).withAlpha(isLight ? 250 : 245);
-    final dockBorder =
-        isLight ? Colors.black.withAlpha(28) : Colors.white.withAlpha(200);
-    final iconIdle = isLight ? const Color(0xFF111111) : Colors.white;
+    const iconIdle = Colors.white;
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 300),
+        constraints: const BoxConstraints(maxWidth: 390),
         child: Container(
-          height: 52,
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          height: 48,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
-            color: dockFill,
+            color: const Color(0xCC000000),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: dockBorder, width: 1.5),
+            border: Border.all(color: Colors.white.withAlpha(36), width: 1),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
