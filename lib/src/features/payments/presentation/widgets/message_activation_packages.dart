@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `MessageActivationPackages` — messaging token packs (design + IAP hook).
@@ -183,6 +184,7 @@ class MessageActivationPackages extends ConsumerWidget {
     if (offer == null) return;
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!context.mounted) return;
+    ref.invalidate(messagingEntitlementsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.userMessage)),
     );

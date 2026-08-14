@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +27,7 @@ class AiListingBuilderScreen extends ConsumerStatefulWidget {
 
 class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen> {
   String _category = 'property';
-  final _city = TextEditingController(text: 'Tulum');
+  final _city = TextEditingController();
   final _description = TextEditingController();
   final _photos = <XFile>[];
   bool _busy = false;
@@ -48,12 +49,20 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
       final prefs = await SharedPreferences.getInstance();
       final seen = prefs.getBool(_welcomeKey) ?? false;
       if (!mounted) return;
+      if (_city.text.trim().isEmpty) {
+        _city.text = ref.read(discoveryLocationProvider).city;
+      }
       setState(() {
         _step = seen ? 'compose' : 'welcome';
         _hydrated = true;
       });
     } catch (_) {
-      if (mounted) setState(() => _hydrated = true);
+      if (mounted) {
+        if (_city.text.trim().isEmpty) {
+          _city.text = ref.read(discoveryLocationProvider).city;
+        }
+        setState(() => _hydrated = true);
+      }
     }
   }
 
@@ -130,7 +139,9 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
     notifier.reset();
     notifier.setCategory(cat);
     final desc = _description.text.trim();
-    final city = _city.text.trim().isEmpty ? 'Tulum' : _city.text.trim();
+    final city = _city.text.trim().isEmpty
+        ? ref.read(discoveryLocationProvider).city
+        : _city.text.trim();
 
     Map<String, dynamic> parsed = const {};
     if (desc.isNotEmpty) {

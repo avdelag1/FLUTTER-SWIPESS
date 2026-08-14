@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -300,6 +301,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     if (offer == null) return;
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!mounted) return;
+    ref.invalidate(messagingEntitlementsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.userMessage)),
     );

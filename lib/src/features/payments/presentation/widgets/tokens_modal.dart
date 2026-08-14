@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
@@ -83,6 +84,7 @@ class TokensModal extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(result.userMessage)),
                       );
+                      ref.invalidate(messagingEntitlementsProvider);
                       if (result.isSuccess) { await AppHaptics.success(); Navigator.of(context).pop(); }
                     },
                     borderRadius: BorderRadius.circular(20),
@@ -230,6 +232,7 @@ class TokensModal extends ConsumerWidget {
                       .read(paymentServiceProvider)
                       .restorePurchases();
                   if (!context.mounted) return;
+                  ref.invalidate(messagingEntitlementsProvider);
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text(result.userMessage)));

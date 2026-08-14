@@ -57,6 +57,60 @@ class TokenRepository {
       return 0;
     }
   }
+
+  /// Best-effort premium flag. Missing columns/tables must not throw.
+  Future<bool> fetchHasPremium() async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return false;
+    try {
+      final row = await _client
+          .from('client_profiles')
+          .select()
+          .eq('id', uid)
+          .maybeSingle();
+      if (row != null) {
+        if (row['is_premium'] == true || row['has_premium'] == true) {
+          return true;
+        }
+        final status =
+            '${row['subscription_status'] ?? row['plan_status'] ?? ''}'
+                .toLowerCase();
+        if (status == 'active' ||
+            status == 'plus' ||
+            status == 'premium' ||
+            status == 'trialing') {
+          return true;
+        }
+        final tier =
+            '${row['subscription_tier'] ?? row['plan'] ?? row['membership'] ?? ''}'
+                .toLowerCase();
+        if (tier.contains('plus') ||
+            tier.contains('premium') ||
+            tier.contains('unlimited') ||
+            tier.contains('annual') ||
+            tier.contains('semestral')) {
+          return true;
+        }
+      }
+    } catch (_) {}
+    try {
+      final rows = await _client
+          .from('subscriptions')
+          .select('status, expires_at, current_period_end')
+          .eq('user_id', uid)
+          .limit(8);
+      for (final raw in rows as List) {
+        final r = raw as Map;
+        final status = '${r['status'] ?? ''}'.toLowerCase();
+        if (status == 'active' || status == 'trialing') return true;
+        final end = DateTime.tryParse(
+          '${r['expires_at'] ?? r['current_period_end'] ?? ''}',
+        );
+        if (end != null && end.isAfter(DateTime.now())) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
 }
 
 final tokenRepositoryProvider = Provider<TokenRepository>((ref) {

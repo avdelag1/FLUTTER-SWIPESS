@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/screens/payment_result_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -26,6 +28,7 @@ class _SubscriptionPackagesScreenState
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!mounted) return;
     setState(() => _busy = false);
+    ref.invalidate(messagingEntitlementsProvider);
     if (result.isSuccess) {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -44,6 +47,7 @@ class _SubscriptionPackagesScreenState
     final result = await ref.read(paymentServiceProvider).restorePurchases();
     if (!mounted) return;
     setState(() => _busy = false);
+    ref.invalidate(messagingEntitlementsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.userMessage)),
     );
@@ -67,11 +71,14 @@ class _SubscriptionPackagesScreenState
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(
+                          color: MatteSurface.ink(context),
+                          width: 1.5,
+                        ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white, size: 20),
+                            color: MatteSurface.ink(context), size: 20),
                       ),
                     ),
                   ),
@@ -79,7 +86,7 @@ class _SubscriptionPackagesScreenState
                   Text(
                     'UPGRADE',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                       fontStyle: FontStyle.italic,

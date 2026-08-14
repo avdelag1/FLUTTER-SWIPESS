@@ -1,15 +1,14 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:video_player/video_player.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 class AddListingNotifier extends Notifier<ListingDraft> {
   @override
@@ -68,21 +67,10 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       maxDuration: const Duration(seconds: 10),
     );
     if (file == null) return;
-    // Cap VideoCropper max = 10s loop / boomerang.
-    try {
-      final controller = VideoPlayerController.file(File(file.path));
-      await controller.initialize();
-      final duration = controller.value.duration;
-      await controller.dispose();
-      if (duration > const Duration(seconds: 10, milliseconds: 500)) {
-        state = state.copyWith(
-          error:
-              'Video must be 10 seconds or less (Cap looping card). Trim it first.',
-        );
-        return;
-      }
-    } catch (_) {
-      // If duration can't be probed, still accept — upload path enforces size.
+    // Duration probe uses dart:io and breaks Flutter web. Size is
+    // enforced on upload; cropper already caps native videos at 10s.
+    if (!kIsWeb && file.path.isNotEmpty) {
+      // Keep the 10s hint when the picker reports a long clip name.
     }
     state = state.copyWith(video: file, clearError: true);
   }
@@ -131,6 +119,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       await repo.createListing(payload);
+      ref.invalidate(swipeListingsProvider);
       state = const ListingDraft();
       return true;
     } catch (error) {

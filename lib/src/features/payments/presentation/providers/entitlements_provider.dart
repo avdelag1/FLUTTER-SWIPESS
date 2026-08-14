@@ -60,10 +60,13 @@ final messagingEntitlementsProvider =
   final trial = FreeTrialInfo.fromCreatedAt(
     DateTime.tryParse(user.createdAt),
   );
-  final balance = await ref.read(tokenRepositoryProvider).fetchBalance();
+  final tokens = ref.read(tokenRepositoryProvider);
+  final balance = await tokens.fetchBalance();
+  final premium = await tokens.fetchHasPremium();
   return MessagingEntitlements(
     tokenBalance: balance,
     trial: trial,
+    hasPremium: premium,
   );
 });
 
