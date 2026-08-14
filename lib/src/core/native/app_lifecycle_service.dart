@@ -34,8 +34,18 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
     notifications.initialize().then((_) => notifications.cancelReengagement());
   }
 
+  /// `main` deliberately keeps going when the Supabase bootstrap fails, so
+  /// asking for the session can throw. A resume must not blow up over it.
+  String? _currentUserId() {
+    try {
+      return ref.read(currentUserProvider)?.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _refreshGps({required bool force}) {
-    final userId = ref.read(currentUserProvider)?.id;
+    final userId = _currentUserId();
     if (userId == null) return;
     ref.read(profileGpsServiceProvider).refresh(userId: userId, force: force);
   }
@@ -73,14 +83,18 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
   Widget build(BuildContext context) {
     // Signing in is Cap's forced refresh; signing out drops the throttle so the
     // next account does not inherit it.
-    ref.listen(currentUserProvider, (previous, next) {
-      if (next?.id == previous?.id) return;
-      if (next == null) {
-        ref.read(profileGpsServiceProvider).reset();
-      } else {
-        _refreshGps(force: true);
-      }
-    });
+    ref.listen(
+      currentUserProvider,
+      (previous, next) {
+        if (next?.id == previous?.id) return;
+        if (next == null) {
+          ref.read(profileGpsServiceProvider).reset();
+        } else {
+          _refreshGps(force: true);
+        }
+      },
+      onError: (_, _) {},
+    );
     return widget.child;
   }
 }

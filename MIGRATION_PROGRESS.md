@@ -6,9 +6,9 @@ Tracking the final stretch of the **Swipess** rewrite from the Capacitor/React a
 Design source of truth stays `BRAIN.md` + `docs/DESIGN_CONTRACT.md`. This file tracks
 **migration completeness**, not visual parity.
 
-**Status: in progress. The Dart surfaces and the native shell are done; the
-behaviours Capacitor got from its plugin list are being ported now — see
-[Audit — plugin parity](#audit--plugin-parity-2026-08-13-second-pass).**
+**Status: feature-complete against the Capacitor app. Every plugin behaviour has
+a Flutter counterpart or a recorded reason not to. What is left is hosting and
+an iOS build check — see [Handover](#handover-not-code).**
 
 ---
 
@@ -33,6 +33,46 @@ disappeared in the rewrite, and none of them show up as an analyzer warning.
 | biometric, apple-sign-in, camera, geolocation, haptics, keyboard, preferences, share, splash-screen, browser, purchase | — | already ported (`local_auth`, `sign_in_with_apple`, `image_picker`, `geolocator`, `HapticFeedback`, framework insets, `shared_preferences`, `share_plus`, `flutter_native_splash`, `url_launcher`, `purchases_flutter`) |
 | `@capacitor-community/contacts` | contact picker in the invite sheet | share sheet only — see [Still open](#still-open-out-of-scope-for-the-migration) |
 | `@capacitor/push-notifications` | remote push | deliberate stub — see [Still open](#still-open-out-of-scope-for-the-migration) |
+| `capacitor-android-shortcuts` | — | in `package.json`, never imported anywhere in Cap `src/`. Nothing to port. |
+
+The same pass found one gap that is not a plugin at all: the Passport map reads
+`client_profiles.latitude/longitude` for its people pins, and Cap wrote them
+from `useProfileGpsPersist` at sign-in and on every resume. Nothing in Flutter
+wrote them, so **every member was invisible on the map**. `ProfileGpsService`
+now does, with Cap's two throttles (one full GPS read per two minutes, no write
+under ~100 m) and Cap's `location_source = 'device'` stamp.
+
+Cap routes all app feedback through one premium top banner rather than toasts,
+so porting the offline notice meant porting `NotificationBar` itself. It is in
+`AppNotificationBar` now — glass card under the status bar, icon chip per type,
+five second auto-dismiss, swipe to throw away, newest-first queue with the same
+ten second de-duplication. **The ~30 call sites still using a Material
+`SnackBar` are a visual-parity task, not a migration gap; they should move onto
+this banner.**
+
+Two of these were not just missing features but active bugs on device:
+
+- **Back closed the app.** Almost every Swipess destination is reached with
+  `context.go`, which replaces the stack rather than pushing, so the root
+  navigator had nothing to pop. One Back press from Settings, Documents or any
+  section page quit the app. It now closes an open overlay, pops a genuinely
+  pushed route, then walks sub-page → section home → dashboard, and only falls
+  through to the platform on a dashboard root or a pre-auth screen.
+- **An invisible status bar.** The Android window theme is
+  `Theme.Light.NoTitleBar` and nothing ever called `SystemChrome`, so the
+  platform drew a dark clock and battery on the black Swipess canvas.
+  `NormalTheme` also left the window white behind the Flutter UI, which flashed
+  on cold start and in the task switcher.
+
+### Verification — plugin-parity pass
+
+| Check | Result |
+|-------|--------|
+| `flutter analyze` | clean |
+| `flutter test` | 84 passing (53 before this pass + 31 new) |
+| `flutter build apk --debug` | builds; merged manifest confirms the boot receiver, `RECEIVE_BOOT_COMPLETED`, `ACCESS_NETWORK_STATE` and the badge permissions |
+| Android device run | back navigation, system bars and the offline banner exercised on an API 35 emulator |
+| iOS build | still **not verified** — no macOS host. `PrivacyScreen.swift` is in the Xcode target and the `UNUserNotificationCenter` delegate is set, but nobody has run `xcodebuild` against them |
 
 ---
 
@@ -160,6 +200,12 @@ These live wherever `swipess.com` is served from, not in this repo.
 
 ## Still open (out of scope for the migration)
 
+- **Contact-picker invites.** Cap's `InviteFriendsDialog` opens the native
+  contact picker only to personalise the message with a first name before
+  handing the same referral link to the share sheet. Flutter's invite sheet
+  already shares and copies that link; adding a contacts dependency plus a
+  `READ_CONTACTS` prompt to interpolate a name is a poor trade, so this is a
+  deliberate difference rather than a gap.
 - **Push notifications.** `PushNotificationPrompt` is a design-lane stub —
   `_enable()` says as much and no push plugin is in `pubspec.yaml`. The Capacitor app
   declares `aps-environment` and a `remote-notification` background mode; those were
@@ -187,3 +233,11 @@ _(newest last)_
   brightness follows the matte theme, black window behind the Flutter UI.
 - **2026-08-13** — Android Back walks up the hierarchy again instead of closing
   the app from any `context.go` destination.
+- **2026-08-13** — Screenshot protection restored on the VAP ID card and the
+  document vault (`FLAG_SECURE` on Android, window cover on iOS).
+- **2026-08-13** — Offline / back-online notices, on Cap's `NotificationBar`
+  ported to Flutter.
+- **2026-08-13** — Re-engagement reminders, store-review prompt and the unread
+  app-icon badge brought over from their Capacitor plugins.
+- **2026-08-13** — Device GPS persisted again, so members reappear on the
+  Passport map.
