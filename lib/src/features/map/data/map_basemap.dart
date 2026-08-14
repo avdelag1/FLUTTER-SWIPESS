@@ -5,10 +5,10 @@ import 'package:flutter_swipes/src/core/config/app_config.dart';
 abstract final class MapBasemap {
   static bool get _mapbox => AppConfig.mapboxAccessToken.trim().isNotEmpty;
 
-  /// Dark streets always sit under aerial tiles so a failed satellite
-  /// request never leaves a blank (blue) canvas.
+  /// Colorful Carto Voyager under satellite so a failed aerial request
+  /// never falls back to a black street filter.
   static const streetsUrl =
-      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
 
   static const subdomains = ['a', 'b', 'c', 'd'];
 

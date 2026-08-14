@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `PassportMapResultsRail` — nearby pins as a snap strip.
+/// Compact listing/people strip. Sits above the GPS HUD, never on top of it.
 class MapResultsRail extends StatelessWidget {
   const MapResultsRail({
     super.key,
@@ -19,29 +19,42 @@ class MapResultsRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (pins.isEmpty) return const SizedBox.shrink();
+    final listings = pins.where((p) => p.isListing).length;
+    final people = pins.length - listings;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Text(
-            '${pins.length} IN YOUR RADIUS',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-            ),
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _CountChip(
+                label: '${pins.length} IN YOUR RADIUS',
+                colors: const [Color(0xFF9D4EDD), Color(0xFF00C6FF)],
+              ),
+              if (listings > 0)
+                _CountChip(
+                  label: '$listings LISTINGS',
+                  colors: const [Color(0xFF00C6FF), Color(0xFF0072FF)],
+                ),
+              if (people > 0)
+                _CountChip(
+                  label: '$people ACTIVE',
+                  colors: const [Color(0xFF10B981), Color(0xFF00E5FF)],
+                  icon: Icons.bolt_rounded,
+                ),
+            ],
           ),
         ),
         SizedBox(
-          height: 118,
+          height: 86,
           child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
-            itemCount: pins.length.clamp(0, 24),
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemCount: pins.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, i) {
               final pin = pins[i];
               final selected = pin.id == selectedId;
@@ -55,69 +68,50 @@ class MapResultsRail extends StatelessWidget {
                   ? (pin.listing?.formattedPrice ?? '')
                   : (pin.profile?.city ?? '');
               return GestureDetector(
-                onTap: () => onSelect(pin),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onSelect(pin);
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
                   width: 148,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: selected ? Colors.white : Colors.white24,
+                      color: selected ? Colors.white : const Color(0x5500C6FF),
                       width: selected ? 2 : 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00C6FF)
+                            .withAlpha(selected ? 80 : 30),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (image != null)
+                      if (image != null && image.isNotEmpty)
                         Image.network(image, fit: BoxFit.cover)
                       else
-                        ColoredBox(
-                          color: pin.isListing
-                              ? const Color(0xFF1D4ED8)
-                              : const Color(0xFF4F46E5),
-                        ),
+                        const ColoredBox(color: Color(0xFF1E3A5F)),
                       const DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Color(0x00000000), Color(0xCC000000)],
+                            colors: [Colors.transparent, Color(0xE60B1220)],
                           ),
                         ),
                       ),
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: pin.isListing
-                                ? const Color(0xFF2563EB)
-                                : const Color(0xFF6366F1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            pin.isListing ? 'LISTING' : 'PERSON',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        left: 8,
-                        right: 8,
-                        bottom: 8,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const Spacer(),
                             Text(
                               title,
                               maxLines: 1,
@@ -125,7 +119,7 @@ class MapResultsRail extends StatelessWidget {
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
-                                fontSize: 12,
+                                fontSize: 11,
                               ),
                             ),
                             if (meta.isNotEmpty)
@@ -133,9 +127,9 @@ class MapResultsRail extends StatelessWidget {
                                 meta,
                                 maxLines: 1,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: AppTheme.brandPrimary,
+                                  color: const Color(0xFF00E5FF),
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 11,
+                                  fontSize: 10,
                                 ),
                               ),
                           ],
@@ -149,6 +143,47 @@ class MapResultsRail extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CountChip extends StatelessWidget {
+  const _CountChip({
+    required this.label,
+    required this.colors,
+    this.icon,
+  });
+
+  final String label;
+  final List<Color> colors;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: LinearGradient(colors: colors),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, color: Colors.white, size: 12),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 9,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
