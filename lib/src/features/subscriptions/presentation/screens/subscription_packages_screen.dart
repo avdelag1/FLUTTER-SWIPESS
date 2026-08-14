@@ -5,10 +5,8 @@ import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/screens/payment_result_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
-/// Cap SubscriptionPackages — RevenueCat offerings + native paywall + restore.
+/// Cap SubscriptionPackages — same Apple IDs + PayPal NCP as live Capacitor.
 class SubscriptionPackagesScreen extends ConsumerStatefulWidget {
   const SubscriptionPackagesScreen({super.key});
 
@@ -19,77 +17,34 @@ class SubscriptionPackagesScreen extends ConsumerStatefulWidget {
 
 class _SubscriptionPackagesScreenState
     extends ConsumerState<SubscriptionPackagesScreen> {
-  bool _loading = true;
   bool _busy = false;
-  List<Package> _packages = const [];
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final packages =
-        await ref.read(paymentServiceProvider).getOfferings();
-    if (!mounted) return;
-    setState(() {
-      _packages = packages;
-      _loading = false;
-    });
-  }
-
-  Future<void> _openPaywall() async {
+  Future<void> _buy(IapOffer offer) async {
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
-    final result = await ref.read(paymentServiceProvider).presentPaywall();
+    final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!mounted) return;
     setState(() => _busy = false);
-    if (result == PaywallResult.purchased ||
-        result == PaywallResult.restored) {
+    if (result.isSuccess) {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const PaymentResultScreen(success: true),
         ),
       );
-    } else if (result == PaywallResult.error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Paywall unavailable — configure offerings in RevenueCat',
-          ),
-        ),
-      );
+      return;
     }
-  }
-
-  Future<void> _buy(Package package) async {
-    setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
-    final ok =
-        await ref.read(paymentServiceProvider).purchasePackage(package);
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (ok) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => const PaymentResultScreen(success: true),
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result.userMessage)),
+    );
   }
 
   Future<void> _restore() async {
     setState(() => _busy = true);
-    final ok = await ref.read(paymentServiceProvider).restorePurchases();
+    final result = await ref.read(paymentServiceProvider).restorePurchases();
     if (!mounted) return;
     setState(() => _busy = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok ? 'Purchases restored' : 'No previous purchases found',
-        ),
-      ),
+      SnackBar(content: Text(result.userMessage)),
     );
   }
 
@@ -139,12 +94,7 @@ class _SubscriptionPackagesScreenState
               ),
             ),
             Expanded(
-              child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
-                    )
-                  : ListView(
+              child: ListView(
                       padding: const EdgeInsets.all(24),
                       children: [
                         _PackageCard(
@@ -164,46 +114,19 @@ class _SubscriptionPackagesScreenState
                           },
                         ),
                         const SizedBox(height: 24),
-                        if (_packages.isEmpty)
-                          _PackageCard(
-                            title: 'VISIONARY PRO',
-                            price: 'Open paywall',
-                            features: const [
-                              'Unlimited Active Listings',
-                              'Advanced Analytics',
-                              'Priority Messaging',
-                              'Verified Badge',
-                            ],
-                            color: const Color(0xFFFF4D00),
-                            isPopular: true,
-                            onSelect: _busy ? () {} : _openPaywall,
-                          )
-                        else
-                          for (final package in _packages) ...[
+                        for (final offer in IapCatalog.subscriptions) ...[
                             _PackageCard(
-                              title: package.storeProduct.title
-                                  .toUpperCase(),
-                              price: package.storeProduct.priceString,
-                              features: [
-                                if (package.storeProduct.description
-                                    .trim()
-                                    .isNotEmpty)
-                                  package.storeProduct.description,
-                                package.identifier,
-                              ],
+                              title: (offer.label ?? offer.name).toUpperCase(),
+                              price:
+                                  '${offer.priceLabel}${offer.durationLabel ?? ''}',
+                              features: offer.benefits,
                               color: const Color(0xFFFBBF24),
-                              isPopular: package.packageType ==
-                                  PackageType.monthly,
+                              isPopular: offer.popular,
                               onSelect:
-                                  _busy ? () {} : () => _buy(package),
+                                  _busy ? () {} : () => _buy(offer),
                             ),
                             const SizedBox(height: 16),
                           ],
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _busy ? null : _openPaywall,
-                          child: const Text('Open RevenueCat paywall'),
-                        ),
                       ],
                     ),
             ),

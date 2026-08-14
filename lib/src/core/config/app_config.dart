@@ -6,21 +6,6 @@
 class AppConfig {
   AppConfig._();
 
-  /// RevenueCat public SDK key (`test_…` for Test Store, or `appl_` / `goog_`).
-  static const revenueCatApiKey = String.fromEnvironment(
-    'REVENUECAT_API_KEY',
-    defaultValue: '',
-  );
-
-  static const revenueCatAppleApiKey = String.fromEnvironment(
-    'REVENUECAT_APPLE_API_KEY',
-    defaultValue: '',
-  );
-  static const revenueCatGoogleApiKey = String.fromEnvironment(
-    'REVENUECAT_GOOGLE_API_KEY',
-    defaultValue: '',
-  );
-
   /// Mapbox **public** token (`pk.…`).
   /// Prefer `--dart-define=MAPBOX_ACCESS_TOKEN=…` / `dart_defines.json`.
   /// Empty → Esri satellite + Carto labels (the old Cap `pk.` is revoked).
@@ -42,8 +27,4 @@ class AppConfig {
     'GOOGLE_IOS_CLIENT_ID',
     defaultValue: '',
   );
-
-  static bool get hasRevenueCatKey => revenueCatApiKey.trim().isNotEmpty ||
-      revenueCatAppleApiKey.trim().isNotEmpty ||
-      revenueCatGoogleApiKey.trim().isNotEmpty;
 }

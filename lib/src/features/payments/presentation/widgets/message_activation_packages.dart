@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 /// Cap `MessageActivationPackages` — messaging token packs (design + IAP hook).
 class MessageActivationPackages extends ConsumerWidget {
@@ -154,10 +153,11 @@ class MessageActivationPackages extends ConsumerWidget {
         TextButton(
           onPressed: () async {
             HapticFeedback.selectionClick();
-            await ref.read(paymentServiceProvider).restorePurchases();
+            final result =
+                await ref.read(paymentServiceProvider).restorePurchases();
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Restoring App Store purchases…')),
+              SnackBar(content: Text(result.userMessage)),
             );
           },
           child: Text(
@@ -178,23 +178,16 @@ class MessageActivationPackages extends ConsumerWidget {
     _TokenPack pack,
   ) async {
     HapticFeedback.mediumImpact();
-    // Bases: map Cap product IDs → RevenueCat. Until then open paywall.
-    final result = await ref.read(paymentServiceProvider).presentPaywall();
+    final offer = IapCatalog.tokenById(pack.id);
+    if (offer == null) return;
+    final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!context.mounted) return;
-    if (result == PaywallResult.purchased || result == PaywallResult.restored) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result.userMessage)),
+    );
+    if (result.isSuccess) {
       onClose?.call();
       Navigator.of(context).maybePop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${pack.name} activated — ${pack.tokens} tokens')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${pack.name}: ${pack.tokens} tokens · \$${pack.priceUsd.toStringAsFixed(2)} — complete in App Store when IAP is live.',
-          ),
-        ),
-      );
     }
   }
 }
