@@ -74,7 +74,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         onNotification: _onScroll,
         child: ListView(
           controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(12, 48, 12, 120),
+          padding: const EdgeInsets.fromLTRB(12, 68, 12, 120),
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
