@@ -633,6 +633,7 @@ class _BentoCardState extends State<_BentoCard> {
                 ),
               ),
             ],
+          ),
         ),
       ),
     );
