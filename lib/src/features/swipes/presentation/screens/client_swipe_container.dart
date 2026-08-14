@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -402,18 +404,31 @@ class _SwipeDeckDock extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 390),
+        constraints: const BoxConstraints(maxWidth: 300),
         child: Container(
-          height: 48,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: 58,
           decoration: BoxDecoration(
             color: const Color(0xCC000000),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: Colors.white.withAlpha(36), width: 1),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          clipBehavior: Clip.antiAlias,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              scrollbars: false,
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.trackpad,
+                PointerDeviceKind.stylus,
+              },
+            ),
+            child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             children: [
               _DockIcon(
                 icon: Icons.dashboard_rounded,
@@ -443,6 +458,7 @@ class _SwipeDeckDock extends StatelessWidget {
               ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -470,8 +486,8 @@ class _DockIcon extends StatelessWidget {
         onTap();
       },
       child: Container(
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: accent ? const Color(0x33FF4D6A) : Colors.transparent,

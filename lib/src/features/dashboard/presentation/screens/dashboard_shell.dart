@@ -191,9 +191,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             ),
           ),
           Positioned(
-            bottom: 18,
-            left: 12,
-            right: 12,
+            bottom: 16,
+            left: 0,
+            right: 0,
             child: IgnorePointer(
               ignoring: !showChrome,
               child: AnimatedOpacity(
@@ -207,9 +207,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 child: SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 390),
+                  constraints: const BoxConstraints(maxWidth: 300),
                   child: Container(
-                    height: 48,
+                    height: 58,
                     decoration: BoxDecoration(
                       color: const Color(0xCC000000),
                       borderRadius: BorderRadius.circular(999),
@@ -234,9 +234,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                         physics: const BouncingScrollPhysics(
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         itemCount: bottomNavItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 2),
+                        separatorBuilder: (_, __) => const SizedBox(width: 4),
                         itemBuilder: (context, i) {
                           final item = bottomNavItems[i];
                           return _DockButton(
@@ -347,15 +347,15 @@ class _DockButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.deferToChild,
       child: SizedBox(
-        width: 38,
-        height: 38,
+        width: 44,
+        height: 44,
         child: Center(
           child: Stack(
             alignment: Alignment.center,
             children: [
               Container(
-                width: selected || item.accent ? 30 : 26,
-                height: selected || item.accent ? 30 : 26,
+                width: selected || item.accent ? 34 : 30,
+                height: selected || item.accent ? 34 : 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: selected || item.accent
@@ -387,11 +387,11 @@ class _DockButton extends StatelessWidget {
               item.useAiIcon
                   ? CustomPaint(
                       painter: _AiRobotPainter(color: color),
-                      size: const Size(16, 16),
+                      size: const Size(18, 18),
                     )
                   : Icon(
                       item.icon,
-                      size: item.accent ? 20 : 18,
+                      size: item.accent ? 22 : 20,
                       color: color,
                     ),
             ],
