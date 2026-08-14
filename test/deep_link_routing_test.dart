@@ -158,6 +158,17 @@ void main() {
       }
     });
 
+    test('a signed-in user who skipped the gate stays on the gate', () {
+      expect(
+        redirect(AppPaths.clientDashboard, granted: false, signedIn: true),
+        AppPaths.gate,
+      );
+      expect(
+        redirect(AppPaths.gate, granted: false, signedIn: true),
+        isNull,
+      );
+    });
+
     test('nothing bounces while the grant is still loading', () {
       expect(
         redirect('/listing/42',
