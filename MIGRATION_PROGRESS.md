@@ -6,9 +6,14 @@ Tracking the final stretch of the **Swipess** rewrite from the Capacitor/React a
 Design source of truth stays `BRAIN.md` + `docs/DESIGN_CONTRACT.md`. This file tracks
 **migration completeness**, not visual parity.
 
-**Status: feature-complete against the Capacitor app. Every plugin behaviour has
-a Flutter counterpart or a recorded reason not to. What is left is hosting and
-an iOS build check — see [Handover](#handover-not-code).**
+**Status: COMPLETE in this repo.** No Capacitor plugin, WebView or bridge is left,
+every Capacitor route has a real Flutter screen, both native projects are the
+Swipess app rather than the Flutter template, and every behaviour the Capacitor
+plugins provided now has a Flutter counterpart or a recorded reason not to.
+
+What remains is not code: two association files have to be served from
+`swipess.com`, and someone with a Mac has to run `xcodebuild` once — see
+[Handover](#handover-not-code).
 
 ---
 
@@ -243,3 +248,5 @@ _(newest last)_
   app-icon badge brought over from their Capacitor plugins.
 - **2026-08-13** — Device GPS persisted again, so members reappear on the
   Passport map.
+- **2026-08-13** — Migration marked complete for this repo: release APK verified
+  end to end, only the two hosting steps and the iOS build check remain.
