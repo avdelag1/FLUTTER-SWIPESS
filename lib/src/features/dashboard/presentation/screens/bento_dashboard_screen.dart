@@ -457,7 +457,6 @@ class _DashboardFilterPill extends StatelessWidget {
               ),
             ),
           ],
-          ),
         ),
       ),
     );
@@ -634,7 +633,6 @@ class _BentoCardState extends State<_BentoCard> {
                 ),
               ),
             ],
-          ),
         ),
       ),
     );

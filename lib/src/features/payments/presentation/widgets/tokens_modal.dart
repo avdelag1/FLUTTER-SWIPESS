@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
