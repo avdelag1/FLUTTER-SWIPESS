@@ -275,13 +275,22 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
               Positioned.fill(
                 child: SafeArea(
                   bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 76, 8, 72),
+                  child: AnimatedPadding(
+                    duration: Duration(
+                      milliseconds: chrome.chromeVisible ? 360 : 340,
+                    ),
+                    curve: const Cubic(0.25, 0.1, 0.25, 1),
+                    padding: EdgeInsets.fromLTRB(
+                      8,
+                      chrome.chromeVisible ? 76 : 8,
+                      8,
+                      chrome.chromeVisible ? 72 : 12,
+                    ),
                     child: deck.isEmpty
                         ? _exhausted()
                         : SwipeableCardStack(
                             listings: deck,
-                            railVisible: true,
+                            railVisible: chrome.railVisible,
                             canUndo: _undoable != null,
                             onUndo: _undo,
                             onBack: _goDashboard,
@@ -340,16 +349,35 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: AppTopBar(
-                  firstName: profile?.name.split(' ').first,
-                  avatarUrl: profile?.avatarUrl,
-                  onProfileTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProfileScreen(),
+                child: IgnorePointer(
+                  ignoring: !chrome.chromeVisible,
+                  child: AnimatedOpacity(
+                    opacity: chrome.chromeVisible ? 1 : 0,
+                    duration: Duration(
+                      milliseconds: chrome.chromeVisible ? 360 : 340,
+                    ),
+                    curve: const Cubic(0.25, 0.1, 0.25, 1),
+                    child: AnimatedSlide(
+                      offset: chrome.chromeVisible
+                          ? Offset.zero
+                          : const Offset(0, -0.12),
+                      duration: Duration(
+                        milliseconds: chrome.chromeVisible ? 360 : 340,
                       ),
-                    );
-                  },
+                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      child: AppTopBar(
+                        firstName: profile?.name.split(' ').first,
+                        avatarUrl: profile?.avatarUrl,
+                        onProfileTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ProfileScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                 ),
               ),
 
@@ -357,7 +385,23 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                 bottom: 18,
                 left: 0,
                 right: 0,
-                child: SafeArea(
+                child: IgnorePointer(
+                  ignoring: !chrome.chromeVisible,
+                  child: AnimatedOpacity(
+                    opacity: chrome.chromeVisible ? 1 : 0,
+                    duration: Duration(
+                      milliseconds: chrome.chromeVisible ? 360 : 340,
+                    ),
+                    curve: const Cubic(0.25, 0.1, 0.25, 1),
+                    child: AnimatedSlide(
+                      offset: chrome.chromeVisible
+                          ? Offset.zero
+                          : const Offset(0, 0.5),
+                      duration: Duration(
+                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                      ),
+                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      child: SafeArea(
                   child: _SwipeDeckDock(
                     onDashboard: _goDashboard,
                     onAi: () => showIntelCoreSheet(context),
@@ -365,6 +409,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     onTokens: () => showGlassModal(
                       context: context,
                       builder: (_) => const TokensModal(),
+                    ),
+                  ),
+                      ),
                     ),
                   ),
                 ),

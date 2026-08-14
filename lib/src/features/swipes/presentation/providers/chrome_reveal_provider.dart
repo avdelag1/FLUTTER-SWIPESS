@@ -24,9 +24,8 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
   Timer? _chromeTimer;
   Timer? _railTimer;
 
-  /// User asked ~5s; Cap uses 4s / 4.5s — use 5s / 5.5s for chrome / rail.
-  static const chromeHideMs = 5000;
-  static const railHideMs = 5500;
+  static const chromeHideMs = 7000;
+  static const railHideMs = 7000;
 
   @override
   ChromeRevealState build() {
@@ -43,9 +42,8 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
 
   void reveal() {
     _clear();
-    // Card + header + rail + dock stay up. Auto-hide made the deck a
-    // black page until the fade finished.
     state = const ChromeRevealState(chromeVisible: true, railVisible: true);
+    _chromeTimer = Timer(const Duration(milliseconds: chromeHideMs), hide);
   }
 
   void hide() {

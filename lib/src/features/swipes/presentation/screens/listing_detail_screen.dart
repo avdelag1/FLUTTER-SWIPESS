@@ -42,9 +42,24 @@ class ListingDetailScreen extends ConsumerWidget {
     }
     final id = listingId;
     if (id == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Listing not found', style: TextStyle(color: Colors.white)),
+      return Scaffold(
+        backgroundColor: AppTheme.dashBg,
+        body: SafeArea(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: CapBackButton(
+                onTap: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.pop(context);
+                  } else {
+                    context.go(AppPaths.clientDashboard);
+                  }
+                },
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -524,14 +539,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
             ),
           ),
 
-          // Persistent Back Button
-          Positioned(
-            top: top + 8,
-            left: 16,
-            child: CapBackButton(onTap: _back),
-          ),
-
-          // Header HUD
+          // Header HUD — left inset so it cannot eat back taps.
           Positioned(
             top: top + 8,
             left: 16,
@@ -543,6 +551,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                 fromTop: true,
                 child: Row(
                   children: [
+                    const SizedBox(width: 52),
                     const Spacer(),
                     if (_images.length > 1)
                       Container(
@@ -575,6 +584,15 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                   ],
                 ),
               ),
+            ),
+          ),
+
+          Positioned(
+            top: top + 8,
+            left: 16,
+            child: CapBackButton(
+              key: const ValueKey('listing-back'),
+              onTap: _back,
             ),
           ),
 
