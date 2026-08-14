@@ -25,7 +25,7 @@ class ChromeSummonZones extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          height: top + 36,
+          height: top + 56,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {

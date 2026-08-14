@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
@@ -14,7 +15,7 @@ import 'package:flutter_swipes/src/features/notifications/presentation/screens/n
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `TopBar` — neo-naïve glass pills + colored icon washes.
+/// Dashboard HUD — thick nexus glass, not tiny ink-stamp chips.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
   final String? avatarUrl;
@@ -30,16 +31,17 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(60);
+  Size get preferredSize => const Size.fromHeight(72);
 
-  /// Bright neo-naïve washes — coral / sky / lemon / mint.
   static const coralWash = Color(0xFFFF8A7A);
   static const skyWash = Color(0xFF6BB8FF);
   static const lemonWash = Color(0xFFFFE066);
   static const mintWash = Color(0xFF7DFFAA);
 
+  static const _hudSize = 48.0;
+
   void _openProfile(BuildContext context) {
-    HapticFeedback.lightImpact();
+    HapticFeedback.mediumImpact();
     if (onProfileTap != null) {
       onProfileTap!();
       return;
@@ -47,22 +49,27 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     GoRouter.maybeOf(context)?.go(AppPaths.clientProfile);
   }
 
-  Color _glyph(Color wash, Color ink) => Color.lerp(wash, ink, 0.28)!;
+  Color _glyph(Color wash, Color ink) => Color.lerp(wash, Colors.white, 0.18)!;
+
+  String get _label {
+    final raw = firstName?.trim() ?? '';
+    if (raw.isEmpty) return 'You';
+    var s = raw.contains('@') ? raw.split('@').first : raw.split(' ').first;
+    if (s.contains('.')) s = s.split('.').first;
+    if (s.length > 10) s = '${s.substring(0, 9)}…';
+    return s;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
-    // Cap `getTopBarChrome` / glassSurface (web solid neo-naïve).
     final pillFill = isLight
-        ? const Color(0xF5FFFFFF) // rgba(255,255,255,0.96)
-        : const Color(0xF5101016); // rgba(16,16,22,0.96)
+        ? const Color(0xF2FFFFFF)
+        : const Color(0xE616161C);
     final pillBorder =
-        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(230);
-    final hardShadow = isLight
-        ? const Color(0xFF141414)
-        : Colors.white.withAlpha(90);
+        isLight ? const Color(0x33141414) : Colors.white.withAlpha(38);
     final moonWash = isLight ? lemonWash : skyWash;
 
     return Material(
@@ -70,7 +77,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
       child: Container(
         height: preferredSize.height + MediaQuery.of(context).padding.top,
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 8,
+          top: MediaQuery.of(context).padding.top + 10,
           left: 12,
           right: 12,
         ),
@@ -80,23 +87,22 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           children: [
             Row(
               children: [
-                _NeoPill(
+                _HudButton(
                   key: const ValueKey('header-profile'),
                   wide: true,
                   fill: pillFill,
                   border: pillBorder,
-                  hardShadow: hardShadow,
+                  gradientBorder: NexusTheme.warm,
+                  semanticLabel: 'Open profile',
                   onTap: () => _openProfile(context),
                   child: Row(
                     children: [
                       Container(
-                        width: 24,
-                        height: 24,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF6B4A), Color(0xFFFF4D00)],
-                          ),
+                          gradient: NexusTheme.warm,
                           image: avatarUrl != null
                               ? DecorationImage(
                                   image: NetworkImage(avatarUrl!),
@@ -105,37 +111,34 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                               : null,
                         ),
                         child: avatarUrl == null
-                            ? Icon(
+                            ? const Icon(
                                 Icons.person_rounded,
-                                size: 14,
-                                color: _glyph(coralWash, ink),
+                                size: 18,
+                                color: Colors.white,
                               )
                             : null,
                       ),
-                      if (firstName != null && firstName!.trim().isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 72),
-                          child: Text(
-                            firstName!,
-                            style: TextStyle(
-                              color: ink,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 86),
+                        child: Text(
+                          _label,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                _NeoPill(
+                _HudButton(
                   fill: pillFill,
                   border: pillBorder,
-                  hardShadow: hardShadow,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     showCreateListingChooser(context);
@@ -144,7 +147,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     wash: mintWash,
                     child: Icon(
                       Icons.auto_awesome_rounded,
-                      size: 16,
+                      size: 22,
                       color: _glyph(mintWash, ink),
                     ),
                   ),
@@ -153,10 +156,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             ),
             Row(
               children: [
-                _NeoPill(
+                _HudButton(
                   fill: pillFill,
                   border: pillBorder,
-                  hardShadow: hardShadow,
                   wide: tokens > 0,
                   onTap: () {
                     HapticFeedback.lightImpact();
@@ -173,16 +175,16 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       children: [
                         Icon(
                           Icons.workspace_premium_rounded,
-                          size: 16,
+                          size: 22,
                           color: _glyph(lemonWash, ink),
                         ),
                         if (tokens > 0) ...[
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 5),
                           Text(
                             '$tokens',
                             style: GoogleFonts.plusJakartaSans(
                               color: _glyph(lemonWash, ink),
-                              fontSize: 11,
+                              fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
@@ -192,10 +194,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _NeoPill(
+                _HudButton(
                   fill: pillFill,
                   border: pillBorder,
-                  hardShadow: hardShadow,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
@@ -204,16 +205,15 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     wash: skyWash,
                     child: Icon(
                       Icons.public_rounded,
-                      size: 16,
+                      size: 22,
                       color: _glyph(skyWash, ink),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                _NeoPill(
+                _HudButton(
                   fill: pillFill,
                   border: pillBorder,
-                  hardShadow: hardShadow,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     ref.read(visualThemeProvider.notifier).toggle();
@@ -224,16 +224,15 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       isLight
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
-                      size: 16,
+                      size: 22,
                       color: _glyph(moonWash, ink),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                _NeoPill(
+                _HudButton(
                   fill: pillFill,
                   border: pillBorder,
-                  hardShadow: hardShadow,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     showGlassModal(
@@ -248,7 +247,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         wash: coralWash,
                         child: Icon(
                           Icons.notifications_rounded,
-                          size: 16,
+                          size: 22,
                           color: _glyph(coralWash, ink),
                         ),
                       ),
@@ -259,8 +258,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                                 right: -2,
                                 top: -2,
                                 child: Container(
-                                  width: 8,
-                                  height: 8,
+                                  width: 9,
+                                  height: 9,
                                   decoration: const BoxDecoration(
                                     color: AppTheme.brandPrimary,
                                     shape: BoxShape.circle,
@@ -283,55 +282,77 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-/// Cap neo-naïve header pill — 2px ink ring + hard offset shadow.
-class _NeoPill extends StatelessWidget {
-  const _NeoPill({
+/// Thick nexus HUD control — 48px glass, hairline, soft glow.
+class _HudButton extends StatelessWidget {
+  const _HudButton({
     super.key,
     required this.child,
     required this.onTap,
     required this.fill,
     required this.border,
-    required this.hardShadow,
     this.wide = false,
+    this.gradientBorder,
+    this.semanticLabel,
   });
 
   final Widget child;
   final VoidCallback onTap;
   final Color fill;
   final Color border;
-  final Color hardShadow;
   final bool wide;
+  final Gradient? gradientBorder;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          height: 36,
-          width: wide ? null : 36,
-          padding: wide ? const EdgeInsets.symmetric(horizontal: 10) : null,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: border, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: hardShadow,
-                offset: const Offset(1.25, 1.25),
-                blurRadius: 0,
-              ),
-              BoxShadow(
-                color: Colors.black.withAlpha(90),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
+    final inner = Container(
+      height: AppTopBar._hudSize,
+      width: wide ? null : AppTopBar._hudSize,
+      padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(999),
+        border: gradientBorder == null
+            ? Border.all(color: border, width: 1.25)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: (gradientBorder != null
+                    ? AppTheme.brandPrimary
+                    : Colors.black)
+                .withAlpha(gradientBorder != null ? 70 : 70),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
-          child: child,
+        ],
+      ),
+      child: child,
+    );
+
+    final framed = gradientBorder == null
+        ? inner
+        : Container(
+            padding: const EdgeInsets.all(1.6),
+            decoration: BoxDecoration(
+              gradient: gradientBorder,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: inner,
+          );
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const StadiumBorder(),
+            child: framed,
+          ),
         ),
       ),
     );
@@ -349,7 +370,6 @@ class _WashIcon extends StatelessWidget {
   final Color wash;
   final bool badge;
 
-  /// Center glow alpha — bright enough to read on black glass pills.
   static const glowAlpha = 220;
 
   @override
@@ -360,8 +380,8 @@ class _WashIcon extends StatelessWidget {
       children: [
         IgnorePointer(
           child: Container(
-            width: 26,
-            height: 26,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
@@ -381,8 +401,8 @@ class _WashIcon extends StatelessWidget {
             right: -2,
             top: -2,
             child: Container(
-              width: 7,
-              height: 7,
+              width: 8,
+              height: 8,
               decoration: const BoxDecoration(
                 color: AppTheme.brandPrimary,
                 shape: BoxShape.circle,

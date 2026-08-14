@@ -7,6 +7,8 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
@@ -82,20 +84,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned(
-            top: -80,
-            right: -60,
-            child: _orb(AppTheme.brandPrimary.withAlpha(40), 260),
-          ),
-          Positioned(
-            top: 280,
-            left: -100,
-            child: _orb(const Color(0xFF06B6D4).withAlpha(28), 220),
-          ),
-          async.when(
+    return NeoNaiveScaffold(
+      body: async.when(
             loading: () => Center(
               child: CircularProgressIndicator(color: ink, strokeWidth: 2),
             ),
@@ -114,10 +104,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               final completion = profile?.completionPercent ?? 0;
               final likes = ref.watch(whoLikedYouProvider).value?.length ?? 0;
               final chats = ref.watch(conversationsProvider).value?.length ?? 0;
+              final headline = _displayName(name, email);
 
               return ListView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20, top + 72, 20, 140),
+                padding: EdgeInsets.fromLTRB(20, top + 80, 20, 140),
                 children: [
                   // Identity core
                   Center(
@@ -196,26 +187,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          name.toUpperCase(),
+                          'PROFILE',
+                          style: NexusTheme.sectionLabel,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          headline,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: AppTheme.displayItalic.copyWith(
+                            fontSize: 34,
+                            height: 1.05,
                             color: ink,
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            fontStyle: FontStyle.italic,
-                            letterSpacing: -1.2,
-                            height: 1,
                           ),
                         ),
                         if (email.isNotEmpty) ...[
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           Text(
-                            email.toUpperCase(),
+                            email,
                             style: GoogleFonts.plusJakartaSans(
                               color: muted,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2.4,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -277,24 +269,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // Magic AI Profile
+                  // Magic AI + primary actions (nexus, not a rainbow grid)
                   GestureDetector(
                     onTap: () {
                       HapticFeedback.mediumImpact();
                       showMagicAiProfileSheet(context);
                     },
                     child: Container(
-                      height: 58,
+                      height: 62,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
-                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        gradient: NexusTheme.ai,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF06B6D4).withAlpha(70),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
+                            color: NexusTheme.cyan.withAlpha(70),
+                            blurRadius: 22,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
@@ -302,7 +292,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.auto_awesome_rounded,
-                              color: Colors.white, size: 20),
+                              color: Colors.white, size: 22),
                           const SizedBox(width: 10),
                           Text(
                             'Magic AI Profile',
@@ -310,8 +300,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontStyle: FontStyle.italic,
-                              letterSpacing: 2.2,
-                              fontSize: 14,
+                              letterSpacing: 1.6,
+                              fontSize: 16,
                             ),
                           ),
                         ],
@@ -319,122 +309,94 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Action grid
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 1.45,
+                  Row(
                     children: [
-                      _ActionTile(
-                        label: 'Edit Profile',
-                        icon: Icons.person_rounded,
-                        colors: const [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const EditProfileScreen(),
-                          ),
-                        ),
-                      ),
-                      _ActionTile(
-                        label: 'Promote Event',
-                        icon: Icons.campaign_rounded,
-                        colors: const [Color(0xFFFF4D00), Color(0xFFFF8C00)],
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const AdvertiseScreen(),
-                          ),
-                        ),
-                      ),
-                      _ActionTile(
-                        label: 'Seekers',
-                        icon: Icons.people_rounded,
-                        colors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
-                        onTap: () {
-                          context.go(AppPaths.exploreSeekers);
-                        },
-                      ),
-                      _ActionTile(
-                        label: 'Tokens',
-                        icon: Icons.toll_rounded,
-                        colors: const [Color(0xFF10B981), Color(0xFF06B6D4)],
-                        onTap: () => showGlassModal(
-                          context: context,
-                          builder: (_) => const TokensModal(),
-                        ),
-                      ),
-                      _ActionTile(
-                        label: 'Verify Owner',
-                        icon: Icons.verified_rounded,
-                        colors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                        onTap: () => showVerificationRequestSheet(context),
-                      ),
-                      _ActionTile(
-                        label: 'Settings',
-                        icon: Icons.settings_rounded,
-                        colors: const [Color(0xFF64748B), Color(0xFF334155)],
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => SettingsScreen(
-                              audience: profile?.role == 'owner'
-                                  ? 'owner'
-                                  : 'client',
+                      Expanded(
+                        child: _HeroAction(
+                          label: 'Edit Profile',
+                          icon: Icons.person_rounded,
+                          gradient: NexusTheme.warm,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const EditProfileScreen(),
                             ),
                           ),
                         ),
                       ),
-                      _ActionTile(
-                        label: 'Sign Out',
-                        icon: Icons.logout_rounded,
-                        colors: const [Color(0xFFEF4444), Color(0xFF991B1B)],
-                        onTap: () async {
-                          HapticFeedback.mediumImpact();
-                          await ref.read(authRepositoryProvider).signOut();
-                          ref.read(currentUserProvider.notifier).clear();
-                          if (context.mounted) context.go(AppPaths.welcome);
-                        },
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _HeroAction(
+                          label: 'Promote Event',
+                          icon: Icons.campaign_rounded,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
+                          ),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const AdvertiseScreen(),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const SubscriptionPackagesScreen(),
+                  const SizedBox(height: 12),
+                  _Panel(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      children: [
+                        _NexusRow(
+                          label: 'Seekers',
+                          hint: 'Post what you need nearby',
+                          icon: Icons.people_rounded,
+                          tint: NexusTheme.indigo,
+                          onTap: () => context.go(AppPaths.exploreSeekers),
                         ),
-                      );
-                    },
-                    child: Container(
-                      height: 88,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        _NexusRow(
+                          label: 'Tokens',
+                          hint: 'Balance & packages',
+                          icon: Icons.toll_rounded,
+                          tint: NexusTheme.cyan,
+                          onTap: () => showGlassModal(
+                            context: context,
+                            builder: (_) => const TokensModal(),
+                          ),
                         ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.workspace_premium_rounded,
-                              color: Colors.white, size: 28),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Premium',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontStyle: FontStyle.italic,
-                              letterSpacing: 2.4,
-                              fontSize: 13,
+                        _NexusRow(
+                          label: 'Verify Owner',
+                          hint: 'Trust badge',
+                          icon: Icons.verified_rounded,
+                          tint: NexusTheme.violet,
+                          onTap: () => showVerificationRequestSheet(context),
+                        ),
+                        _NexusRow(
+                          label: 'Premium',
+                          hint: 'Unlock the full deck',
+                          icon: Icons.workspace_premium_rounded,
+                          tint: const Color(0xFFF59E0B),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const SubscriptionPackagesScreen(),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        _NexusRow(
+                          label: 'Settings',
+                          hint: 'Account & privacy',
+                          icon: Icons.settings_rounded,
+                          tint: ink.withAlpha(160),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SettingsScreen(
+                                audience: profile?.role == 'owner'
+                                    ? 'owner'
+                                    : 'client',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -695,6 +657,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                   const SizedBox(height: 24),
                   Center(
+                    child: TextButton(
+                      onPressed: () async {
+                        HapticFeedback.mediumImpact();
+                        await ref.read(authRepositoryProvider).signOut();
+                        ref.read(currentUserProvider.notifier).clear();
+                        if (context.mounted) context.go(AppPaths.welcome);
+                      },
+                      child: Text(
+                        'Sign out',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: muted,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Center(
                     child: Text(
                       'Swipess v1.0.0',
                       style: GoogleFonts.plusJakartaSans(
@@ -707,8 +686,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               );
             },
           ),
-        ],
-      ),
     );
   }
 
@@ -735,14 +712,130 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-  Widget _orb(Color color, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
-        child: const SizedBox(),
+  static String _displayName(String name, String email) {
+    var n = name.trim();
+    final looksLikeEmail = n.contains('@') || n.toLowerCase() == 'identity';
+    if (n.isEmpty || looksLikeEmail) {
+      final local = email.split('@').first;
+      n = local.contains('.') ? local.split('.').first : local;
+    } else {
+      n = n.split(' ').first;
+    }
+    if (n.isEmpty) return 'You';
+    return n[0].toUpperCase() + n.substring(1);
+  }
+}
+
+class _HeroAction extends StatelessWidget {
+  const _HeroAction({
+    required this.label,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Gradient gradient;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
+      child: Container(
+        height: 108,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: gradient,
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.white, size: 26),
+            const Spacer(),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NexusRow extends StatelessWidget {
+  const _NexusRow({
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.tint,
+    required this.onTap,
+  });
+
+  final String label;
+  final String hint;
+  final IconData icon;
+  final Color tint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tint.withAlpha(40),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: tint, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    hint,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: muted),
+          ],
+        ),
       ),
     );
   }
@@ -826,53 +919,6 @@ class _StatTile extends StatelessWidget {
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.label,
-    required this.icon,
-    required this.colors,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final List<Color> colors;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(colors: colors),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontStyle: FontStyle.italic,
-                fontSize: 11,
-                letterSpacing: 1.4,
               ),
             ),
           ],

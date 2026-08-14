@@ -43,6 +43,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('header-profile')));
     await tester.pump();
     expect(opened, isTrue);
+    expect(find.text('Maya'), findsOneWidget);
   });
 
   testWidgets('nested page Scaffold cannot steal the profile tap',
@@ -132,5 +133,21 @@ void main() {
       return gradient.colors.first.a >= 200 / 255;
     });
     expect(brightWashes.length, greaterThanOrEqualTo(4));
+  });
+
+  testWidgets('header HUD buttons are thick nexus 48px controls', (tester) async {
+    await tester.pumpWidget(
+      host(
+        child: const MaterialApp(
+          home: Scaffold(
+            body: AppTopBar(firstName: 'Maya'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(const AppTopBar().preferredSize.height, 72);
+    final profile = tester.getSize(find.byKey(const ValueKey('header-profile')));
+    expect(profile.height, greaterThanOrEqualTo(48));
   });
 }
