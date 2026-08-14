@@ -302,6 +302,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   if (ref.read(deckSoundOnProvider)) {
                     _video?.play();
                   }
+                },
                 child: BreathingWidget(
                   child: Container(
                     width: 28,
