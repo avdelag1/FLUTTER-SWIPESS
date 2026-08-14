@@ -8,6 +8,7 @@ class AppTheme {
   static const Color brandPrimary = Color(0xFFFF4D00); // --color-brand-primary
   static const Color brandAccent = NexusTheme.rose; // Cap rose / pink accent
   static const Color brandAccent2 = NexusTheme.mexicanPink;
+  static const Color mexicanRed = NexusTheme.mexicanPink; // Rosa Mexicano #E4007C
 
   // Black Matte Backgrounds
   static const Color background = Color(0xFF0C0C0D); // --background

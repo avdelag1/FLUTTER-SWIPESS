@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_cta_button.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -165,11 +166,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 64),
+                      const SizedBox(height: 48),
                       const Center(
                         child: SwipessLogo(
-                          width: 220,
-                          variant: SwipessLogoVariant.transparent,
+                          width: 380,
+                          variant: SwipessLogoVariant.hero,
+                          color: AppTheme.mexicanRed,
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -278,47 +280,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       
                       const SizedBox(height: 32),
                       
-                      // Primary action button
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleSubmit,
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : Text(
-                                  _isLogin ? 'LOG IN' : 'CREATE AN ACCOUNT',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 2),
-                                ),
-                        ),
+                      SwipessCtaButton(
+                        label: _isLogin ? 'LOG IN' : 'CREATE AN ACCOUNT',
+                        icon: Icons.auto_awesome_rounded,
+                        tone: SwipessCtaTone.mexican,
+                        loading: _isLoading,
+                        onPressed: _isLoading ? null : _handleSubmit,
                       ),
                       const SizedBox(height: 16),
-                      
-                      // Toggle mode button
-                      SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            setState(() {
-                              _isLogin = !_isLogin;
-                              _passwordController.clear();
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                            elevation: 0,
-                          ),
-                          child: Text(
-                            _isLogin ? 'CREATE AN ACCOUNT' : 'LOG IN',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 2),
-                          ),
-                        ),
+                      SwipessCtaButton(
+                        label: _isLogin ? 'CREATE AN ACCOUNT' : 'LOG IN',
+                        tone: SwipessCtaTone.ghost,
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          setState(() {
+                            _isLogin = !_isLogin;
+                            _passwordController.clear();
+                          });
+                        },
                       ),
                       
                       const SizedBox(height: 32),
@@ -387,26 +366,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
-    return SizedBox(
-      height: 56,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1)),
-          ],
-        ),
-      ),
+    return SwipessCtaButton(
+      label: label,
+      icon: icon,
+      tone: SwipessCtaTone.white,
+      onPressed: onTap,
     );
   }
 }

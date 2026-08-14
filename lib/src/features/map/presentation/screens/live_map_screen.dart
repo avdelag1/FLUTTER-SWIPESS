@@ -4,18 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
 import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
-import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_bottom_dock.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_sheet.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_gps_dot.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_layer_rail.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_perspective_stage.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
@@ -243,21 +243,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     markers: [
                       Marker(
                         point: center,
-                        width: 22,
-                        height: 22,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00C6FF),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x8800C6FF),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                        ),
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        child: const MapGpsDot(),
                       ),
                       for (final c in clusters)
                         if (c.count == 1)
@@ -379,6 +368,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                       latitude: city.lat,
                       longitude: city.lng,
                     );
+                _didFly = false;
                 _safeMove(
                   LatLng(city.lat, city.lng),
                   _zoomForRadius(radiusKm),
@@ -593,61 +583,26 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               left: 12,
               right: 12,
               top: pad.top + 104,
-              bottom: pad.bottom + 120,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xF212161F),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: const Color(0x8800C6FF)),
-                ),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  children: [
-                    Text(
-                      'PASSPORT CITIES',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final city in PassportCities.all)
-                      ListTile(
-                        dense: true,
-                        leading: ClipOval(
-                          child: Image.network(
-                            city.photoUrl,
-                            width: 36,
-                            height: 36,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        title: Text(
-                          city.name,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          city.country,
-                          style: const TextStyle(color: Colors.white54),
-                        ),
-                        onTap: () {
-                          ref
-                              .read(discoveryLocationProvider.notifier)
-                              .setCoordinates(
-                                city: city.name,
-                                country: city.country,
-                                latitude: city.lat,
-                                longitude: city.lng,
-                              );
-                          _safeMove(
-                            LatLng(city.lat, city.lng),
-                            _zoomForRadius(radiusKm),
-                          );
-                          setState(() {
-                            _citiesOpen = false;
-                            _selected = null;
-                          });
-                        },
-                      ),
-                  ],
-                ),
+              bottom: pad.bottom + 24,
+              child: MapCitySheet(
+                onClose: () => setState(() => _citiesOpen = false),
+                onPick: (city) {
+                  ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                        city: city.name,
+                        country: city.country,
+                        latitude: city.lat,
+                        longitude: city.lng,
+                      );
+                  _didFly = false;
+                  _safeMove(
+                    LatLng(city.lat, city.lng),
+                    _zoomForRadius(radiusKm),
+                  );
+                  setState(() {
+                    _citiesOpen = false;
+                    _selected = null;
+                  });
+                },
               ),
             ),
         ],

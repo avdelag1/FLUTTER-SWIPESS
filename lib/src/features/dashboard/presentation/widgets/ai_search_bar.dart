@@ -47,7 +47,17 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
         decoration: BoxDecoration(
           color: fill,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: frame.withValues(alpha: 0.55), width: 1.6),
+          border: Border.all(color: frame, width: 2.5),
+          boxShadow: [
+            BoxShadow(
+              color: frame.withValues(alpha: 0.85),
+              offset: const Offset(1.5, 1.5),
+            ),
+            BoxShadow(
+              color: glow.withValues(alpha: 0.22),
+              blurRadius: 18,
+            ),
+          ],
         ),
         child: Row(
           children: [
