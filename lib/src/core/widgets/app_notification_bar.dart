@@ -28,6 +28,12 @@ class _AppNotificationBarState extends ConsumerState<AppNotificationBar>
     duration: AppNotificationBar.enterDuration,
   );
 
+  late final CurvedAnimation _curve = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutBack,
+    reverseCurve: Curves.easeIn,
+  );
+
   AppToast? _current;
   Timer? _timer;
 
@@ -42,6 +48,7 @@ class _AppNotificationBarState extends ConsumerState<AppNotificationBar>
   @override
   void dispose() {
     _timer?.cancel();
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -87,11 +94,6 @@ class _AppNotificationBarState extends ConsumerState<AppNotificationBar>
 
     final isLight = ref.watch(isLightThemeProvider);
     final top = MediaQuery.paddingOf(context).top;
-    final curve = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-      reverseCurve: Curves.easeIn,
-    );
 
     return Positioned(
       top: top + 12,
@@ -106,9 +108,9 @@ class _AppNotificationBarState extends ConsumerState<AppNotificationBar>
               position: Tween<Offset>(
                 begin: const Offset(0, -0.6),
                 end: Offset.zero,
-              ).animate(curve),
+              ).animate(_curve),
               child: ScaleTransition(
-                scale: Tween<double>(begin: 0.9, end: 1).animate(curve),
+                scale: Tween<double>(begin: 0.9, end: 1).animate(_curve),
                 child: Dismissible(
                   key: ValueKey(toast.id),
                   direction: DismissDirection.horizontal,
