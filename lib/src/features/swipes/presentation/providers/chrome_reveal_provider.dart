@@ -43,13 +43,9 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
 
   void reveal() {
     _clear();
+    // Card + header + rail + dock stay up. Auto-hide made the deck a
+    // black page until the fade finished.
     state = const ChromeRevealState(chromeVisible: true, railVisible: true);
-    _chromeTimer = Timer(const Duration(milliseconds: chromeHideMs), () {
-      state = state.copyWith(chromeVisible: false);
-    });
-    _railTimer = Timer(const Duration(milliseconds: railHideMs), () {
-      state = state.copyWith(railVisible: false);
-    });
   }
 
   void hide() {

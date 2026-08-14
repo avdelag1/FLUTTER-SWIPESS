@@ -65,9 +65,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     super.initState();
     _categoryId = widget.categoryId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Show the card immediately. Overlay chrome on tap — don't wait
-      // for the dock/header hide animation to "reveal" the photo.
-      ref.read(chromeRevealProvider.notifier).hide();
+      ref.read(chromeRevealProvider.notifier).reveal();
     });
   }
 
@@ -239,6 +237,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final profile = ref.watch(currentProfileProvider).value;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0D),
       extendBody: true,
       body: PullDownToDismiss(
         onDismiss: () {
@@ -272,7 +271,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                         ? _exhausted()
                         : SwipeableCardStack(
                             listings: deck,
-                            railVisible: chrome.railVisible,
+                            railVisible: true,
                             canUndo: _undoable != null,
                             onUndo: _undo,
                             onBack: () => Navigator.of(context).pop(),
@@ -327,29 +326,20 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                 ),
               ),
 
-              // Cap header — fades after ~5s
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                child: AnimatedOpacity(
-                  opacity: chrome.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 360),
-                  curve: Curves.easeOutCubic,
-                  child: IgnorePointer(
-                    ignoring: !chrome.chromeVisible,
-                    child: AppTopBar(
-                      firstName: profile?.name.split(' ').first,
-                      avatarUrl: profile?.avatarUrl,
-                      onProfileTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                child: AppTopBar(
+                  firstName: profile?.name.split(' ').first,
+                  avatarUrl: profile?.avatarUrl,
+                  onProfileTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProfileScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
 
@@ -358,21 +348,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                 left: 0,
                 right: 0,
                 child: SafeArea(
-                  child: AnimatedOpacity(
-                    opacity: chrome.chromeVisible ? 1 : 0,
-                    duration: const Duration(milliseconds: 360),
-                    curve: Curves.easeOutCubic,
-                    child: IgnorePointer(
-                      ignoring: !chrome.chromeVisible,
-                      child: _SwipeDeckDock(
-                        onDashboard: () => Navigator.of(context).pop(),
-                        onAi: () => showIntelCoreSheet(context),
-                        onAdd: () => showCreateListingChooser(context),
-                        onTokens: () => showGlassModal(
-                          context: context,
-                          builder: (_) => const TokensModal(),
-                        ),
-                      ),
+                  child: _SwipeDeckDock(
+                    onDashboard: () => Navigator.of(context).pop(),
+                    onAi: () => showIntelCoreSheet(context),
+                    onAdd: () => showCreateListingChooser(context),
+                    onTokens: () => showGlassModal(
+                      context: context,
+                      builder: (_) => const TokensModal(),
                     ),
                   ),
                 ),

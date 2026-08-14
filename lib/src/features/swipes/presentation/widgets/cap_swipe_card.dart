@@ -348,12 +348,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ? _fallback()
                     : _isVideo(current)
                         ? _buildVideo()
-                        : Hero(
-                            tag: 'swipe_hero_${widget.listing.id}_$_photoIndex',
-                            child: Image.network(
+                        : Image.network(
                               current,
-                              fit: BoxFit.contain,
-                              alignment: Alignment.center,
+                              fit: BoxFit.cover,
+                              alignment: const Alignment(0, -0.12),
                               width: double.infinity,
                               height: double.infinity,
                             // Decode near display size — full Unsplash
@@ -366,7 +364,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             gaplessPlayback: true,
                             errorBuilder: (_, _, _) => _fallback(),
                             ),
-                          ),
               ),
 
               if (!_zoomed)
@@ -736,7 +733,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return _fallback();
     }
     return FittedBox(
-      fit: BoxFit.contain,
+      fit: BoxFit.cover,
       child: SizedBox(
         width: player.value.size.width,
         height: player.value.size.height,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -15,7 +14,6 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_se
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/listing_spotlight_rail.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/qf_well_glow.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/neo_naive_card_shine.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
@@ -508,7 +506,10 @@ class _BentoTile extends StatelessWidget {
       return SizedBox(
         height: item.height,
         child: DecoratedBox(
-          decoration: AppTheme.qfNeoFrame(isLight: isLight),
+          decoration: AppTheme.qfNeoFrame(
+            isLight: isLight,
+            glow: AppTheme.qfGlowFor(item.id),
+          ),
           child: ClipRRect(
             borderRadius: AppTheme.qfNeoFrameRadius,
             child: EventsTeaserCard(
@@ -526,6 +527,7 @@ class _BentoTile extends StatelessWidget {
       media: BentoMediaPools.forId(item.id),
       stagger: Duration(seconds: int.parse(item.delaySeconds)),
       isLight: isLight,
+      glow: AppTheme.qfGlowFor(item.id),
       enableVideo: item.index < 2,
       onTap: () => onOpen(item.id, item.title),
     );
@@ -541,6 +543,7 @@ class _BentoCard extends StatefulWidget {
     required this.stagger,
     required this.isLight,
     required this.onTap,
+    required this.glow,
     this.enableVideo = true,
   });
 
@@ -551,6 +554,7 @@ class _BentoCard extends StatefulWidget {
   final Duration stagger;
   final bool isLight;
   final VoidCallback onTap;
+  final Color glow;
   final bool enableVideo;
 
   @override
@@ -572,9 +576,13 @@ class _BentoCardState extends State<_BentoCard> {
         duration: const Duration(milliseconds: 80),
         child: Container(
           height: widget.height,
-          decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
+          decoration: AppTheme.qfNeoFrame(
+            isLight: widget.isLight,
+            glow: widget.glow,
+          ),
+          child: ClipRRect(
+            borderRadius: AppTheme.qfNeoFrameRadius,
+            child: Stack(
             fit: StackFit.expand,
             children: [
               QuickFilterMedia(
@@ -593,12 +601,6 @@ class _BentoCardState extends State<_BentoCard> {
                     ],
                     stops: [0, 0.45, 1],
                   ),
-                ),
-              ),
-              // Neo-naive card shine rim light
-              Positioned.fill(
-                child: NeoNaiveCardShine(
-                  borderRadius: AppTheme.qfNeoFrameRadius,
                 ),
               ),
               Positioned(
@@ -633,6 +635,7 @@ class _BentoCardState extends State<_BentoCard> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

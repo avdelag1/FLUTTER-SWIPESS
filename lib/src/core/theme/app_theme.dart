@@ -110,34 +110,55 @@ class AppTheme {
         ),
       );
 
-  /// Cap `.qf-neo-frame` — organic ink-stamp border on quick-filter cards.
-  static final BorderRadius qfNeoFrameRadius = BorderRadius.circular(24.0);
+  /// Smooth floating quick-filter card — no white ink frame.
+  static final BorderRadius qfNeoFrameRadius = BorderRadius.circular(22);
 
-  static BoxDecoration qfNeoFrame({required bool isLight}) => BoxDecoration(
-        color: elevatedFor(isLight: isLight),
-        borderRadius: qfNeoFrameRadius,
-        border: Border.all(
-          color: isLight
-              ? const Color(0xFF141414)
-              : const Color(0xEBFFFFFF),
-          width: 1.0,
+  static Color qfGlowFor(String id) {
+    switch (id) {
+      case 'property':
+        return const Color(0xFFFF8C42);
+      case 'pros':
+        return const Color(0xFFA78BFA);
+      case 'motorcycle':
+        return const Color(0xFFFF4D6A);
+      case 'bicycle':
+        return const Color(0xFF4ADE80);
+      case 'buyers':
+        return const Color(0xFF60A5FA);
+      case 'renters':
+        return const Color(0xFFFBBF24);
+      case 'leads':
+        return const Color(0xFF22D3EE);
+      case 'events':
+        return const Color(0xFFE4007C);
+      default:
+        return brandPrimary;
+    }
+  }
+
+  static BoxDecoration qfNeoFrame({
+    required bool isLight,
+    Color? glow,
+  }) {
+    final tint = glow ?? brandPrimary;
+    return BoxDecoration(
+      color: elevatedFor(isLight: isLight),
+      borderRadius: qfNeoFrameRadius,
+      boxShadow: [
+        BoxShadow(
+          color: tint.withAlpha(isLight ? 70 : 110),
+          blurRadius: 28,
+          spreadRadius: -2,
+          offset: const Offset(0, 14),
         ),
-        boxShadow: isLight
-            ? const [
-                BoxShadow(
-                  color: Color(0x59000000),
-                  blurRadius: 36,
-                  offset: Offset(0, 14),
-                ),
-              ]
-            : const [
-                BoxShadow(
-                  color: Color(0x8C000000),
-                  blurRadius: 36,
-                  offset: Offset(0, 14),
-                ),
-              ],
-      );
+        BoxShadow(
+          color: Colors.black.withAlpha(isLight ? 28 : 120),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
 
   /// Cap `.neo-naive-pill` filter chip on dashboard.
   static BoxDecoration dashboardFilterPill({required bool isLight}) =>
