@@ -17,11 +17,11 @@ class SearchFrameShine extends StatefulWidget {
 
   /// Full loop. Shine occupies the first [shineFraction] of this.
   @visibleForTesting
-  static const Duration cycle = Duration(seconds: 10);
+  static const Duration cycle = Duration(seconds: 8);
 
   /// First 4% of the cycle (400ms) is the snap. The rest is dark.
   @visibleForTesting
-  static const double shineFraction = 0.04;
+  static const double shineFraction = 0.25;
 
   @visibleForTesting
   static bool isShineWindow(double progress) =>
@@ -136,9 +136,9 @@ class _InnerSheenPainter extends CustomPainter {
         bladeRect.topRight,
         [
           Colors.transparent,
-          color.withValues(alpha: 0.22 * envelope),
-          Colors.white.withValues(alpha: 0.50 * envelope),
-          color.withValues(alpha: 0.22 * envelope),
+          color.withValues(alpha: 0.40 * envelope),
+          Colors.white.withValues(alpha: 0.90 * envelope),
+          color.withValues(alpha: 0.40 * envelope),
           Colors.transparent,
         ],
         const [0.0, 0.32, 0.5, 0.68, 1.0],
@@ -178,10 +178,10 @@ class _FrameShinePainter extends CustomPainter {
       transform: GradientRotation(local * math.pi * 2),
       colors: [
         Colors.transparent,
-        color.withValues(alpha: 0.12 * envelope),
-        color.withValues(alpha: 0.80 * envelope),
-        color.withValues(alpha: envelope),
-        color.withValues(alpha: 0.80 * envelope),
+        color.withValues(alpha: 0.25 * envelope),
+        Colors.white.withValues(alpha: 0.85 * envelope),
+        Colors.white.withValues(alpha: envelope),
+        Colors.white.withValues(alpha: 0.85 * envelope),
         Colors.transparent,
       ],
       stops: const [0.0, 0.78, 0.88, 0.93, 0.97, 1.0],
