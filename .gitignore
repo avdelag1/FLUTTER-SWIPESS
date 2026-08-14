@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+# Vercel clones the Flutter SDK into the project during install.
+/flutter/
 
 # Symbolication related
 app.*.symbols

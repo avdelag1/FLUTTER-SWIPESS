@@ -1,0 +1,15 @@
+# Ship only what the web build needs. The SDK is cloned during install.
+android
+ios
+macos
+linux
+windows
+test
+docs
+scratch
+.dart_tool
+build
+coverage
+*.jks
+*.keystore
+android/key.properties
