@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
 import 'src/app.dart';
@@ -21,7 +21,7 @@ Future<void> main() async {
     FlutterNativeSplash.preserve(widgetsBinding: binding);
   }
 
-  SystemChrome.setSystemUIOverlayStyle(AppTheme.systemDark);
+  await SystemChromeService.initialize();
   unawaited(SystemChrome.setPreferredOrientations(const [
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

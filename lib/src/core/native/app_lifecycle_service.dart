@@ -1,0 +1,100 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/native/local_notifications_service.dart';
+import 'package:flutter_swipes/src/core/routing/app_router.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/profile/data/profile_gps_service.dart';
+
+final localNotificationsProvider = Provider<LocalNotificationsService>((ref) {
+  return LocalNotificationsService();
+});
+
+/// Cap `useReengagementNotifications` — the nudges hang off the native app
+/// lifecycle (`App.appStateChange`): schedule them when the app backgrounds,
+/// clear them the moment the user is back, since they obviously did return.
+class AppLifecycleWatcher extends ConsumerStatefulWidget {
+  const AppLifecycleWatcher({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<AppLifecycleWatcher> createState() =>
+      _AppLifecycleWatcherState();
+}
+
+class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final notifications = ref.read(localNotificationsProvider);
+    notifications.onNotificationRoute = _openRoute;
+    // The user is here right now, so clear anything still pending.
+    notifications.initialize().then((_) => notifications.cancelReengagement());
+  }
+
+  /// `main` deliberately keeps going when the Supabase bootstrap fails, so
+  /// asking for the session can throw. A resume must not blow up over it.
+  String? _currentUserId() {
+    try {
+      return ref.read(currentUserProvider)?.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _refreshGps({required bool force}) {
+    final userId = _currentUserId();
+    if (userId == null) return;
+    ref.read(profileGpsServiceProvider).refresh(userId: userId, force: force);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _openRoute(String route) {
+    if (!mounted) return;
+    ref.read(appRouterProvider).go(route);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final notifications = ref.read(localNotificationsProvider);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        notifications.cancelReengagement();
+        // Cap refreshed the phone position on every resume, throttled to one
+        // full read every two minutes.
+        _refreshGps(force: false);
+      case AppLifecycleState.paused:
+        notifications.scheduleReengagement();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Signing in is Cap's forced refresh; signing out drops the throttle so the
+    // next account does not inherit it.
+    ref.listen(
+      currentUserProvider,
+      (previous, next) {
+        if (next?.id == previous?.id) return;
+        if (next == null) {
+          ref.read(profileGpsServiceProvider).reset();
+        } else {
+          _refreshGps(force: true);
+        }
+      },
+      onError: (_, _) {},
+    );
+    return widget.child;
+  }
+}

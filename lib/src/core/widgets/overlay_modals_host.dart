@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/widgets/app_notification_bar.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
@@ -38,6 +39,8 @@ class OverlayModalsHost extends ConsumerWidget {
             onClose: () =>
                 ref.read(overlayModalsProvider.notifier).closeConcierge(),
           ),
+        // Cap keeps the banner above every sheet and map (z-index 2147483000).
+        const AppNotificationBar(),
       ],
     );
   }
