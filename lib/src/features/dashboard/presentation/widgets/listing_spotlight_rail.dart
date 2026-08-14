@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/features/dashboard/data/spotlight_listings.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Extra listing cards under the bento so dashboard chrome can hide on scroll.
-class ListingSpotlightRail extends StatelessWidget {
+/// Live listings in the selected city / radius — not demo Unsplash cards.
+class ListingSpotlightRail extends ConsumerWidget {
   const ListingSpotlightRail({super.key, required this.isLight});
 
   final bool isLight;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final listings =
+        (ref.watch(mapListingsProvider).value ?? const <Listing>[]).take(8).toList();
+    if (listings.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -33,7 +36,7 @@ class ListingSpotlightRail extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '${spotlightListings.length} LISTINGS',
+                '${listings.length} LISTINGS',
                 style: GoogleFonts.plusJakartaSans(
                   color: ink.withAlpha(140),
                   fontWeight: FontWeight.w800,
@@ -44,7 +47,7 @@ class ListingSpotlightRail extends StatelessWidget {
             ],
           ),
         ),
-        for (final listing in spotlightListings) ...[
+        for (final listing in listings) ...[
           _SpotlightCard(listing: listing, isLight: isLight),
           const SizedBox(height: 10),
         ],

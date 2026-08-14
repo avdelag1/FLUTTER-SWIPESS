@@ -61,6 +61,7 @@ class PromoSubmission {
     this.contactPhone,
     this.website,
     this.imageUrl,
+    this.videoUrl,
     this.createdAt,
   });
 
@@ -75,6 +76,7 @@ class PromoSubmission {
   final String? contactPhone;
   final String? website;
   final String? imageUrl;
+  final String? videoUrl;
   final DateTime? createdAt;
 
   factory PromoSubmission.fromJson(Map<String, dynamic> json) {
@@ -90,6 +92,7 @@ class PromoSubmission {
       contactPhone: json['contact_phone']?.toString(),
       website: json['website']?.toString(),
       imageUrl: json['image_url']?.toString(),
+      videoUrl: json['video_url']?.toString(),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? ''),
     );
   }

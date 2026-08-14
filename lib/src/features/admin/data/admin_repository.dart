@@ -59,7 +59,7 @@ class AdminRepository {
       final rows = await _client
           .from('business_promo_submissions')
           .select(
-            'id, user_id, title, description, event_type, location, contact_name, contact_phone, status, created_at, website, image_url',
+            'id, user_id, title, description, event_type, location, contact_name, contact_phone, status, created_at, website, image_url, video_url',
           )
           .order('created_at', ascending: false)
           .limit(200);
@@ -116,6 +116,7 @@ class AdminRepository {
       'description': sub.description,
       'category': sub.eventType ?? 'promo',
       'image_url': sub.imageUrl,
+      'video_url': sub.videoUrl,
       'location': sub.location,
       'organizer_name': sub.contactName,
       'organizer_whatsapp': sub.contactPhone,
@@ -128,7 +129,12 @@ class AdminRepository {
       await _client.from('events').insert(payload);
     } catch (_) {
       payload.remove('organizer_website');
-      await _client.from('events').insert(payload);
+      try {
+        await _client.from('events').insert(payload);
+      } catch (_) {
+        payload.remove('video_url');
+        await _client.from('events').insert(payload);
+      }
     }
     await _client
         .from('business_promo_submissions')

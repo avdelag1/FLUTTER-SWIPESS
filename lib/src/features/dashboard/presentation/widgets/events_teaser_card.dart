@@ -37,27 +37,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   bool _binding = false;
   bool _advancing = false;
 
-  static const _demo = <Event>[
-    Event(
-      id: 'demo-event-butterfly',
-      title: 'Sunset Sessions',
-      category: 'Music',
-      imageUrl:
-          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80',
-      videoUrl:
-          'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
-    ),
-    Event(
-      id: 'demo-event-bee',
-      title: 'Beach Party',
-      category: 'Nightlife',
-      imageUrl:
-          'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80',
-      videoUrl:
-          'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
-    ),
-  ];
-
   @override
   void dispose() {
     _player?.removeListener(_onTick);
@@ -66,10 +45,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     super.dispose();
   }
 
-  List<Event> _videos(List<Event> fromApi) {
-    if (fromApi.isNotEmpty) return fromApi;
-    return _demo;
-  }
+  List<Event> _videos(List<Event> fromApi) => fromApi;
 
   Event? _currentOf(List<Event> videos) {
     if (videos.isEmpty) return null;

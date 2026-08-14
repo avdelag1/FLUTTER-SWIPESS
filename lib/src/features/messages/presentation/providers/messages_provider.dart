@@ -51,8 +51,8 @@ final conversationsProvider =
 );
 
 final conversationMessagesProvider =
-    FutureProvider.family<List<ChatMessage>, String>((ref, conversationId) {
-  return ref.read(messageRepositoryProvider).fetchMessages(conversationId);
+    StreamProvider.family<List<ChatMessage>, String>((ref, conversationId) {
+  return ref.read(messageRepositoryProvider).watchMessages(conversationId);
 });
 
 class MessagesSearchQueryNotifier extends Notifier<String> {

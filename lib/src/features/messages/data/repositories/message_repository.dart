@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/document_attachment.dart'
@@ -61,6 +63,38 @@ class MessageRepository {
         archived: row['status'] == 'archived',
       );
     }).toList();
+  }
+
+  Stream<List<ChatMessage>> watchMessages(String conversationId) {
+    final controller = StreamController<List<ChatMessage>>();
+    Future<void> push() async {
+      try {
+        final rows = await fetchMessages(conversationId);
+        if (!controller.isClosed) controller.add(rows);
+      } catch (_) {}
+    }
+
+    push();
+    final channel = _client
+        .channel('conv-$conversationId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'conversation_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: conversationId,
+          ),
+          callback: (_) {
+            push();
+          },
+        )
+        .subscribe();
+    controller.onCancel = () {
+      _client.removeChannel(channel);
+    };
+    return controller.stream;
   }
 
   Future<List<ChatMessage>> fetchMessages(String conversationId) async {

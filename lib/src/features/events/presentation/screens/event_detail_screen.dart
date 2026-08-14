@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/events/presentation/widgets/event_co
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 /// Capacitor EventoDetail — gallery, favorite, share, WhatsApp, calendar.
 class EventDetailScreen extends ConsumerStatefulWidget {
@@ -46,9 +47,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     super.dispose();
   }
 
-  List<String> get _gallery {
-    final g = event.gallery;
-    return g.isEmpty ? const [''] : g;
+  List<String> get _media {
+    final out = <String>[];
+    final video = event.videoUrl?.trim();
+    if (video != null && video.isNotEmpty) out.add(video);
+    for (final url in event.gallery) {
+      if (url.trim().isEmpty || out.contains(url)) continue;
+      out.add(url);
+    }
+    return out.isEmpty ? const [''] : out;
+  }
+
+  bool _isVideo(String url) {
+    final l = url.toLowerCase();
+    return l.contains('.mp4') ||
+        l.contains('.webm') ||
+        l.contains('.mov') ||
+        l.contains('/videos/');
   }
 
   Future<void> _toggleFavorite() async {
@@ -139,7 +154,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         _favoritedOverride ?? favAsync.value ?? false;
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final gallery = _gallery;
+    final gallery = _media;
 
     final idx = widget.siblings.indexWhere((e) => e.id == event.id);
     final prevId = idx > 0 ? widget.siblings[idx - 1].id : null;
@@ -185,6 +200,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     color: Colors.white24, size: 64),
                               ),
                             );
+                          }
+                          if (_isVideo(url)) {
+                            return _EventVideo(url: url);
                           }
                           return Image.network(
                             url,
@@ -845,6 +863,55 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EventVideo extends StatefulWidget {
+  const _EventVideo({required this.url});
+  final String url;
+
+  @override
+  State<_EventVideo> createState() => _EventVideoState();
+}
+
+class _EventVideoState extends State<_EventVideo> {
+  VideoPlayerController? _player;
+
+  @override
+  void initState() {
+    super.initState();
+    final next = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _player = next;
+    next.initialize().then((_) {
+      if (!mounted || !identical(_player, next)) return;
+      next
+        ..setLooping(true)
+        ..setVolume(0)
+        ..play();
+      setState(() {});
+    }).catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    _player?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final player = _player;
+    if (player == null || !player.value.isInitialized) {
+      return const ColoredBox(color: Color(0xFF16161C));
+    }
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: player.value.size.width,
+        height: player.value.size.height,
+        child: VideoPlayer(player),
       ),
     );
   }

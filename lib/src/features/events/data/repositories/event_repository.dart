@@ -33,6 +33,7 @@ class EventRepository {
         final data = await _client
             .from('events')
             .select(select)
+            .eq('is_published', true)
             .order('created_at', ascending: false)
             .limit(100);
         return (data as List)
