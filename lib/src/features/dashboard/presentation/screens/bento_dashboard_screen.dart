@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/core/widgets/chunky_ink_pill.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_search_bar.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/listing_spotlight_rail.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/qf_well_glow.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/neo_naive_card_shine.dart';
@@ -124,6 +125,8 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 18),
+            ListingSpotlightRail(isLight: isLight),
           ],
         ),
       ),
