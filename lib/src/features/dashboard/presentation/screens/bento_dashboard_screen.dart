@@ -169,7 +169,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
 
   void _pickCity(BuildContext context, WidgetRef ref) {
     HapticFeedback.selectionClick();
-    context.push(AppPaths.liveMap);
+    context.push(AppPaths.map);
   }
 
   Future<void> _pickDates(BuildContext context, WidgetRef ref) async {

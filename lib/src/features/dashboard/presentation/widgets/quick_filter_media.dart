@@ -301,22 +301,23 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   if (ref.read(deckSoundOnProvider)) {
                     _video?.play();
                   }
-                },
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  alignment: Alignment.center,
-                  // No white ring — icon + soft dark chip only.
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(110),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    soundOn
-                        ? Icons.volume_up_rounded
-                        : Icons.volume_off_rounded,
-                    color: Colors.white,
-                    size: 15,
+                child: BreathingWidget(
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    // No white ring — icon + soft dark chip only.
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(110),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      soundOn
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      color: Colors.white,
+                      size: 15,
+                    ),
                   ),
                 ),
               ),

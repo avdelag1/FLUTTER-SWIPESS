@@ -65,11 +65,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
-    final pillFill = isLight
-        ? const Color(0xF2FFFFFF)
-        : const Color(0xE616161C);
-    final pillBorder =
-        isLight ? const Color(0x33141414) : Colors.white.withAlpha(38);
+    final pillFill = isLight ? Colors.white.withAlpha(50) : Colors.black.withAlpha(150);
+    final pillBorder = ink.withAlpha(200);
     final moonWash = isLight ? lemonWash : skyWash;
 
     return Material(
@@ -92,7 +89,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   wide: true,
                   fill: pillFill,
                   border: pillBorder,
-                  gradientBorder: NexusTheme.warm,
                   semanticLabel: 'Open profile',
                   onTap: () => _openProfile(context),
                   child: Row(
@@ -102,7 +98,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: NexusTheme.warm,
+                          color: isLight ? Colors.black12 : Colors.white12,
                           image: avatarUrl != null
                               ? DecorationImage(
                                   image: NetworkImage(avatarUrl!),
@@ -111,10 +107,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                               : null,
                         ),
                         child: avatarUrl == null
-                            ? const Icon(
+                            ? Icon(
                                 Icons.person_rounded,
                                 size: 18,
-                                color: Colors.white,
+                                color: ink,
                               )
                             : null,
                       ),
@@ -148,7 +144,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     child: Icon(
                       Icons.auto_awesome_rounded,
                       size: 22,
-                      color: _glyph(mintWash, ink),
+                      color: ink,
                     ),
                   ),
                 ),
@@ -176,14 +172,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         Icon(
                           Icons.workspace_premium_rounded,
                           size: 22,
-                          color: _glyph(lemonWash, ink),
+                          color: ink,
                         ),
                         if (tokens > 0) ...[
                           const SizedBox(width: 5),
                           Text(
                             '$tokens',
                             style: GoogleFonts.plusJakartaSans(
-                              color: _glyph(lemonWash, ink),
+                              color: ink,
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
                             ),
@@ -206,7 +202,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     child: Icon(
                       Icons.public_rounded,
                       size: 22,
-                      color: _glyph(skyWash, ink),
+                      color: ink,
                     ),
                   ),
                 ),
@@ -225,7 +221,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
                       size: 22,
-                      color: _glyph(moonWash, ink),
+                      color: ink,
                     ),
                   ),
                 ),
@@ -248,7 +244,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         child: Icon(
                           Icons.notifications_rounded,
                           size: 22,
-                          color: _glyph(coralWash, ink),
+                          color: ink,
                         ),
                       ),
                       ref.watch(unreadNotificationsProvider).when(
@@ -282,7 +278,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-/// Thick nexus HUD control — 48px glass, hairline, soft glow.
 class _HudButton extends StatelessWidget {
   const _HudButton({
     super.key,
@@ -305,42 +300,6 @@ class _HudButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inner = Container(
-      height: AppTopBar._hudSize,
-      width: wide ? null : AppTopBar._hudSize,
-      padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(999),
-        border: gradientBorder == null
-            ? Border.all(color: border, width: 1.25)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: (gradientBorder != null
-                    ? AppTheme.brandPrimary
-                    : Colors.black)
-                .withAlpha(gradientBorder != null ? 70 : 70),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: child,
-    );
-
-    final framed = gradientBorder == null
-        ? inner
-        : Container(
-            padding: const EdgeInsets.all(1.6),
-            decoration: BoxDecoration(
-              gradient: gradientBorder,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: inner,
-          );
-
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -351,7 +310,18 @@ class _HudButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             customBorder: const StadiumBorder(),
-            child: framed,
+            child: Container(
+              height: AppTopBar._hudSize,
+              width: wide ? null : AppTopBar._hudSize,
+              padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: border, width: 1.5),
+              ),
+              child: child,
+            ),
           ),
         ),
       ),
@@ -370,31 +340,12 @@ class _WashIcon extends StatelessWidget {
   final Color wash;
   final bool badge;
 
-  static const glowAlpha = 220;
-
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        IgnorePointer(
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  wash.withAlpha(glowAlpha),
-                  wash.withAlpha(110),
-                  wash.withAlpha(0),
-                ],
-                stops: const [0.0, 0.42, 1.0],
-              ),
-            ),
-          ),
-        ),
         child,
         if (badge)
           Positioned(
