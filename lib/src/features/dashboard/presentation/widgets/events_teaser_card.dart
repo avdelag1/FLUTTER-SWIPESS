@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mute_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
@@ -159,9 +160,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   Future<void> _playWithDeckSound(
     VideoPlayerController next,
-    Event event,
+    Event _,
   ) async {
-    final videoSound = _wantSound && event.videoAudioEnabled;
+    final videoSound = _wantSound;
     try {
       await next.setVolume(videoSound ? 1 : 0);
       await next.play();
@@ -179,8 +180,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   Future<void> _applySound(VideoPlayerController? player) async {
     if (player == null) return;
-    final event = _currentOf(_videos(ref.read(videoEventsProvider)));
-    final videoSound = _wantSound && (event?.videoAudioEnabled ?? true);
+    final videoSound = _wantSound;
     await player.setVolume(videoSound ? 1 : 0);
     if (videoSound) await player.play();
   }
@@ -233,21 +233,18 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _bind(videos);
   }
 
-  Future<void> _toggleSound() async {
+  void _toggleSound() {
     HapticFeedback.selectionClick();
+    unlockDeckMedia();
     final nextOn = !ref.read(deckSoundOnProvider);
-    if (nextOn) {
-      unlockDeckMedia();
-      ref.read(deckSoundOnProvider.notifier).mediaUnlocked = true;
-    }
     ref.read(deckSoundOnProvider.notifier).setSoundOn(nextOn);
     final event = _currentOf(_videos(ref.read(videoEventsProvider)));
-    final videoSound = nextOn && (event?.videoAudioEnabled ?? true);
-    _player?.setVolume(videoSound ? 1 : 0);
+    // Cap: unmute the clip itself whenever sound is on.
+    _player?.setVolume(nextOn ? 1 : 0);
     if (nextOn) {
       unlockDeckMedia();
-      await _player?.play();
-      if (event != null) await _syncMusic(event);
+      _player?.play();
+      if (event != null) _syncMusic(event);
     } else {
       _music?.setVolume(0);
       _music?.pause();
@@ -364,29 +361,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
             Positioned(
               top: 0,
               right: 0,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  _toggleSound();
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(110),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      soundOn
-                          ? Icons.volume_up_rounded
-                          : Icons.volume_off_rounded,
-                      color: Colors.white,
-                      size: 15,
-                    ),
-                  ),
-                ),
+              child: EventMuteButton(
+                soundOn: soundOn,
+                onToggle: _toggleSound,
               ),
             ),
             Positioned(

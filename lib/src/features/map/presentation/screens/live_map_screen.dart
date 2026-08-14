@@ -9,10 +9,13 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
-import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
+import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_sheet.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_gps_dot.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_results_rail.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -164,36 +167,36 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
           radiusKm;
     }
 
+    final allPins = <MapPin>[
+      if (_layer != 'people')
+        ...listings
+            .where((l) =>
+                l.latitude != null &&
+                l.longitude != null &&
+                inRadius(l.latitude!, l.longitude!))
+            .map((l) => MapPin.listing(l)),
+      if (_layer != 'listings')
+        ...profiles
+            .where((p) =>
+                p.latitude != null &&
+                p.longitude != null &&
+                inRadius(p.latitude!, p.longitude!))
+            .map((p) => MapPin.profile(p)),
+    ];
+    final filtered = _category == 'all' || _layer == 'people'
+        ? allPins
+        : allPins
+            .where((p) =>
+                !p.isListing || (p.listing?.category ?? '') == _category)
+            .toList();
+    final clusters = _cluster(filtered, _zoom);
+
     return Material(
       color: const Color(0xFF1A1A2E),
       child: Stack(
         children: [
           Positioned.fill(
             child: Builder(builder: (context) {
-              final List<MapPin> allPins = [
-                if (_layer != 'people')
-                  ...listings
-                      .where((l) =>
-                          l.latitude != null &&
-                          l.longitude != null &&
-                          inRadius(l.latitude!, l.longitude!))
-                      .map((l) => MapPin.listing(l)),
-                if (_layer != 'listings')
-                  ...profiles
-                      .where((p) =>
-                          p.latitude != null &&
-                          p.longitude != null &&
-                          inRadius(p.latitude!, p.longitude!))
-                      .map((p) => MapPin.profile(p)),
-              ];
-              final filtered = _category == 'all' || _layer == 'people'
-                  ? allPins
-                  : allPins
-                      .where((p) =>
-                          !p.isListing ||
-                          (p.listing?.category ?? '') == _category)
-                      .toList();
-              final clusters = _cluster(filtered, _zoom);
               return FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
@@ -262,21 +265,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     markers: [
                       Marker(
                         point: center,
-                        width: 22,
-                        height: 22,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00C6FF),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x8800C6FF),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                        ),
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        child: const MapGpsDot(),
                       ),
                       for (final c in clusters)
                         if (c.count == 1)
@@ -364,6 +356,18 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           icon: Icons.navigation_rounded,
                           onTap: () => _locateGps(),
                           accent: true,
+                        ),
+                        const SizedBox(height: 8),
+                        _HudCircle(
+                          icon: Icons.explore_rounded,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _safeMove(
+                              center,
+                              _zoom,
+                              rotation: 0,
+                            );
+                          },
                         ),
                         const SizedBox(height: 8),
                         for (final c in _categories.take(3))
@@ -623,51 +627,42 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               left: 12,
               right: 12,
               top: MediaQuery.paddingOf(context).top + 104,
-              bottom: MediaQuery.paddingOf(context).bottom + 120,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xF212161F),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                  children: [
-                    Text(
-                      'PASSPORT CITIES',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final city in PassportCities.all)
-                      ListTile(
-                        dense: true,
-                        title: Text(
-                          city.name,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          city.country,
-                          style: const TextStyle(color: Colors.white54),
-                        ),
-                        onTap: () {
-                          ref.read(discoveryLocationProvider.notifier).setCoordinates(
-                                city: city.name,
-                                country: city.country,
-                                latitude: city.lat,
-                                longitude: city.lng,
-                              );
-                          _safeMove(
-                            LatLng(city.lat, city.lng),
-                            _zoomForRadius(radiusKm),
-                          );
-                          setState(() {
-                            _citiesOpen = false;
-                            _selected = null;
-                          });
-                        },
-                      ),
-                  ],
-                ),
+              bottom: MediaQuery.paddingOf(context).bottom + 24,
+              child: MapCitySheet(
+                onClose: () => setState(() => _citiesOpen = false),
+                onPick: (city) {
+                  ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                        city: city.name,
+                        country: city.country,
+                        latitude: city.lat,
+                        longitude: city.lng,
+                      );
+                  _didFly = false;
+                  _safeMove(
+                    LatLng(city.lat, city.lng),
+                    _zoomForRadius(radiusKm),
+                  );
+                  setState(() {
+                    _citiesOpen = false;
+                    _selected = null;
+                  });
+                },
+              ),
+            ),
+
+          if (!_citiesOpen && _selected == null && filtered.isNotEmpty)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.paddingOf(context).bottom + 88,
+              child: MapResultsRail(
+                pins: filtered,
+                selectedId: _selected?.id,
+                onSelect: (pin) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selected = pin);
+                  _safeMove(LatLng(pin.lat, pin.lng), math.max(_zoom, 12));
+                },
               ),
             ),
 
@@ -814,27 +809,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
         ),
     ];
   }
-}
-
-
-class MapPin {
-  final bool isListing;
-  final Listing? listing;
-  final Profile? profile;
-  final double lat;
-  final double lng;
-
-  MapPin.listing(this.listing)
-      : isListing = true,
-        profile = null,
-        lat = listing!.latitude!,
-        lng = listing.longitude!;
-
-  MapPin.profile(this.profile)
-      : isListing = false,
-        listing = null,
-        lat = profile!.latitude!,
-        lng = profile.longitude!;
 }
 
 class _MapCluster {
