@@ -167,47 +167,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     }
   }
 
-  Future<void> _pickCity(BuildContext context, WidgetRef ref) async {
-    final city = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppTheme.dashElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-            children: [
-              Text('CHOOSE CITY',
-                  style: AppTheme.displayItalic.copyWith(fontSize: 18)),
-              const SizedBox(height: 8),
-              ListTile(
-                leading:
-                    const Icon(Icons.map_rounded, color: AppTheme.brandPrimary),
-                title: const Text('Open live map',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LiveMapScreen()),
-                  );
-                },
-              ),
-              const Divider(color: Colors.white24),
-              for (final city in ListingTaxonomies.popularCities)
-                ListTile(
-                  title: Text(city, style: const TextStyle(color: Colors.white)),
-                  onTap: () => Navigator.pop(context, city),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-    if (city != null) {
-      ref.read(discoveryLocationProvider.notifier).setCity(city);
-    }
+  void _pickCity(BuildContext context, WidgetRef ref) {
+    HapticFeedback.selectionClick();
+    context.push(AppPaths.liveMap);
   }
 
   Future<void> _pickDates(BuildContext context, WidgetRef ref) async {
