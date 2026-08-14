@@ -285,9 +285,9 @@ class _ReportDialogState extends State<ReportDialog> {
                       selected: _type == t.$1,
                       onTap: () => setState(() => _type = t.$1),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                   ],
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextField(
                     controller: _details,
                     maxLines: 3,
@@ -361,7 +361,7 @@ class _ReportDialogState extends State<ReportDialog> {
 }
 
 class _TypeRow extends StatelessWidget {
-  const _TypeRow({
+  _TypeRow({
     required this.label,
     required this.selected,
     required this.onTap,

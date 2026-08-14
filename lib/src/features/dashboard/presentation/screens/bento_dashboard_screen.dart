@@ -7,7 +7,6 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/chunky_ink_pill.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_search_bar.dart';
@@ -61,7 +60,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     final isLight = ref.watch(isLightThemeProvider);
     final searchVisible = ref.watch(chromeVisibilityProvider);
     final canvas = AppTheme.canvasFor(isLight: isLight);
-    final well = AppTheme.wellFor(isLight: isLight);
 
     final leftColumn =
         _bentoItems.where((item) => item.index.isEven).toList();
@@ -91,7 +89,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             _SearchChromeWell(
               visible: searchVisible,
               isLight: isLight,
-              well: well,
               location: location,
               onPickCity: () => _pickCity(context, ref),
               onPickDates: () => _pickDates(context, ref),
@@ -102,7 +99,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
               width: double.infinity,
               constraints: const BoxConstraints(maxWidth: 768),
               decoration: BoxDecoration(
-                color: well,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: QfWellGlow(
@@ -303,7 +299,6 @@ class _SearchChromeWell extends StatelessWidget {
   const _SearchChromeWell({
     required this.visible,
     required this.isLight,
-    required this.well,
     required this.location,
     required this.onPickCity,
     required this.onPickDates,
@@ -312,7 +307,6 @@ class _SearchChromeWell extends StatelessWidget {
 
   final bool visible;
   final bool isLight;
-  final Color well;
   final DiscoveryLocation location;
   final VoidCallback onPickCity;
   final VoidCallback onPickDates;
@@ -333,12 +327,8 @@ class _SearchChromeWell extends StatelessWidget {
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(maxWidth: 768),
-            padding: const EdgeInsets.fromLTRB(6, 6, 10, 10),
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
             margin: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              color: well,
-              borderRadius: BorderRadius.circular(19.2),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -356,7 +346,7 @@ class _SearchChromeWell extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Expanded(
@@ -418,43 +408,41 @@ class _DashboardFilterPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = isLight ? const Color(0xFF111111) : Colors.white;
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.medium();
-        onTap();
-      },
-      child: ChunkyInkPill(
-        isLight: isLight,
-        height: 40,
-        depth: 1.5,
-        closedFrame: false,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: wash.withAlpha(isLight ? 45 : 50),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 14, color: wash),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                text,
-                style: GoogleFonts.plusJakartaSans(
-                  color: ink,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
+    final fill = isLight ? const Color(0xFFF4F4F6) : const Color(0xFF1A1A20);
+    return Material(
+      color: fill,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () {
+          AppHaptics.medium();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 40,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 15, color: wash),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    text,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

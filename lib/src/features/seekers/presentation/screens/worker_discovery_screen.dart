@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -30,7 +31,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: Row(
                 children: [
                   GestureDetector(
@@ -41,13 +42,13 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white, size: 18),
+                      child: Icon(Icons.arrow_back_ios_new_rounded,
+                          color: MatteSurface.ink(context), size: 18),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +59,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                         Text(
                           'Cleaners · chauffeurs · massage · guides · holistic',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: MatteSurface.muted(context),
                             fontSize: 12,
                           ),
                         ),
@@ -68,8 +69,8 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                   IconButton(
                     onPressed: () =>
                         ref.invalidate(swipeListingsProvider('worker')),
-                    icon: const Icon(Icons.refresh_rounded,
-                        color: Colors.white70),
+                    icon: Icon(Icons.refresh_rounded,
+                        color: MatteSurface.muted(context)),
                   ),
                 ],
               ),
@@ -129,12 +130,12 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Expanded(
               child: async.when(
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                      color: MatteSurface.ink(context), strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -160,7 +161,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       child: Text(
                         'No workers match this filter yet.',
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54),
+                            color: MatteSurface.muted(context)),
                       ),
                     );
                   }
@@ -212,7 +213,7 @@ class _WorkerCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white, width: 1.5),
+            border: Border.all(color: MatteSurface.ink(context), width: 1.5),
           ),
           clipBehavior: Clip.antiAlias,
           child: Row(
@@ -225,7 +226,7 @@ class _WorkerCard extends StatelessWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  padding: EdgeInsets.fromLTRB(14, 12, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -234,7 +235,7 @@ class _WorkerCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -249,11 +250,11 @@ class _WorkerCard extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      const Spacer(),
+                      Spacer(),
                       Text(
                         listing.formattedPrice,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: MatteSurface.muted(context),
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),

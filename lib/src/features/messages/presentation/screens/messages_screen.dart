@@ -83,18 +83,18 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEB4898),
+                          color: Color(0xFFEB4898),
                           borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFEB4898).withAlpha(70),
+                              color: Color(0xFFEB4898).withAlpha(70),
                               blurRadius: 24,
-                              offset: const Offset(0, 10),
+                              offset: Offset(0, 10),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.chat_bubble_rounded,
-                            color: Colors.white, size: 28),
+                        child: Icon(Icons.chat_bubble_rounded,
+                            color: MatteSurface.ink(context), size: 28),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -359,10 +359,10 @@ class _TogglePill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: isActive
-              ? const LinearGradient(
+              ? LinearGradient(
                   colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
                 )
               : null,
@@ -428,15 +428,15 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = MatteSurface.muted(context);
     final isLight = MatteSurface.isLight(context);
-    final rose = const Color(0xFFF43F5E);
+    final rose = Color(0xFFF43F5E);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
               ? (isLight
-                  ? const Color(0xFFFFF1F2)
+                  ? Color(0xFFFFF1F2)
                   : rose.withAlpha(40))
               : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
@@ -482,7 +482,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _ChatTile extends StatelessWidget {
-  const _ChatTile({required this.conversation});
+  _ChatTile({required this.conversation});
   final ChatConversation conversation;
 
   @override
@@ -504,7 +504,7 @@ class _ChatTile extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: MatteSurface.cardFill(context),
               border: Border.all(color: hairline),
@@ -561,16 +561,16 @@ class _ChatTile extends StatelessWidget {
                   ),
                 ),
                 if (conversation.unreadCount > 0) ...[
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
                       color: AppTheme.brandPrimary,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       '${conversation.unreadCount}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12),
+                      style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900, fontSize: 12),
                     ),
                   ),
                 ],

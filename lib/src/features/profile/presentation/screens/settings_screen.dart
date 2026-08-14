@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/legal_sheet.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
@@ -70,7 +71,7 @@ class SettingsScreen extends ConsumerWidget {
                       Text(
                         'SYSTEM SETTINGS',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
                           fontStyle: FontStyle.italic,
@@ -207,7 +208,7 @@ class SettingsScreen extends ConsumerWidget {
               colors: const [Color(0xFF6366F1), Color(0xFF818CF8)],
               onTap: () => showLegalSheet(context, doc: LegalDoc.terms),
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: 28),
             NeoNaiveCard(
               child: Column(
                 children: [
@@ -218,14 +219,14 @@ class SettingsScreen extends ConsumerWidget {
                       child: Text(
                         'RESET PASSWORD',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: MatteSurface.muted(context),
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.4,
                         ),
                       ),
                     ),
                   ),
-                  const Divider(height: 1, color: Colors.transparent),
+                  Divider(height: 1, color: Colors.transparent),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton(
@@ -233,7 +234,7 @@ class SettingsScreen extends ConsumerWidget {
                       child: Text(
                         'SIGN OUT',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: MatteSurface.muted(context),
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.4,
                         ),
@@ -378,7 +379,7 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _GroupLabel extends StatelessWidget {
-  const _GroupLabel(this.text);
+  _GroupLabel(this.text);
   final String text;
 
   @override
@@ -386,7 +387,7 @@ class _GroupLabel extends StatelessWidget {
     return Text(
       text,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white38,
+        color: MatteSurface.faint(context),
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 2.4,
@@ -428,7 +429,7 @@ class _SettingsRow extends StatelessWidget {
               ),
               child: Icon(icon, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,7 +437,7 @@ class _SettingsRow extends StatelessWidget {
                   Text(
                     label,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontWeight: FontWeight.w900,
                       fontStyle: FontStyle.italic,
                       letterSpacing: 1.1,
@@ -448,7 +449,7 @@ class _SettingsRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: MatteSurface.muted(context),
                       fontSize: 12,
                     ),
                   ),
@@ -458,7 +459,7 @@ class _SettingsRow extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Color(0xFFEB4898),
                 shape: BoxShape.circle,
                 boxShadow: [
@@ -466,8 +467,8 @@ class _SettingsRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 18),
+            SizedBox(width: 10),
+            Icon(Icons.chevron_right_rounded, color: MatteSurface.faint(context), size: 18),
           ],
         ),
       ),
@@ -567,10 +568,10 @@ class _RoundBack extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
+          border: Border.all(color: MatteSurface.ink(context), width: 1.5),
         ),
-        child: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: Colors.white, size: 18),
+        child: Icon(Icons.arrow_back_ios_new_rounded,
+            color: MatteSurface.ink(context), size: 18),
       ),
     );
   }

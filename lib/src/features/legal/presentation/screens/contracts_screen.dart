@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -25,8 +26,8 @@ class ContractsScreen extends ConsumerWidget {
       body: AmbientPageBackground(
         fill: true,
         child: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -38,28 +39,28 @@ class ContractsScreen extends ConsumerWidget {
           return ListView(
             padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
             children: [
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: CapBackButton(),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Text('CONTRACTS', style: AppTheme.displayItalic.copyWith(fontSize: 32)),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'Create contracts and sign with your finger.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               BrandPrimaryButton(
                 label: 'New contract',
                 icon: Icons.edit_document,
                 onPressed: () => _pickTemplate(context, ref),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               if (contracts.isEmpty)
                 Text(
                   'No contracts yet. Start from a template, then sign it here.',
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                  style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
                 )
               else
                 for (final contract in contracts) ...[
@@ -92,17 +93,17 @@ class ContractsScreen extends ConsumerWidget {
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('TEMPLATES', style: AppTheme.displayItalic.copyWith(fontSize: 20)),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               for (final item in contractTemplates)
                 ListTile(
-                  title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                  subtitle: Text(item.description, style: const TextStyle(color: Colors.white54)),
+                  title: Text(item.name, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w800)),
+                  subtitle: Text(item.description, style: TextStyle(color: MatteSurface.muted(context))),
                   onTap: () => Navigator.pop(context, item),
                 ),
             ],
@@ -146,24 +147,24 @@ class _ContractTile extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white, width: 1.5),
+          border: Border.all(color: MatteSurface.ink(context), width: 1.5),
         ),
         child: Row(
           children: [
-            const Icon(Icons.description_rounded, color: Colors.white),
-            const SizedBox(width: 14),
+            Icon(Icons.description_rounded, color: MatteSurface.ink(context)),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     contract.title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: MatteSurface.ink(context),
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
                     ),
@@ -181,7 +182,7 @@ class _ContractTile extends StatelessWidget {
             ),
             Icon(
               needsSign ? Icons.draw_rounded : Icons.chevron_right_rounded,
-              color: Colors.white70,
+              color: MatteSurface.muted(context),
             ),
           ],
         ),

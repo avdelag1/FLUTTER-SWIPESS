@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -29,8 +30,8 @@ class NotificationsScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: MatteSurface.ink(context)),
                   ),
                   Expanded(
                     child: Text(
@@ -59,7 +60,7 @@ class NotificationsScreen extends ConsumerWidget {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: MatteSurface.ink(context)),
                     ),
                     Expanded(
                       child: Text(
@@ -217,35 +218,35 @@ class _NotificationTile extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Icon(_icon, color: _color, size: 18),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       notification.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: MatteSurface.ink(context),
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                       ),
                     ),
                     if (notification.message.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         notification.message,
                         style: TextStyle(
-                          color: Colors.white.withAlpha(170),
+                          color: MatteSurface.muted(context),
                           fontSize: 12,
                           height: 1.35,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       time,
                       style: TextStyle(
-                        color: Colors.white.withAlpha(100),
+                        color: MatteSurface.faint(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),

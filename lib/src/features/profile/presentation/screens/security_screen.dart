@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -90,7 +91,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             Row(
               children: [
                 CapBackButton(onTap: () => Navigator.pop(context)),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +100,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       Text(
                         subtitle,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
+                          color: MatteSurface.muted(context),
                           fontSize: 12,
                         ),
                       ),
@@ -130,25 +131,25 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             Text(
               'ACCOUNT EMAIL',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: MatteSurface.faint(context),
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 2,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               email,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
               'UPDATE PASSWORD',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: MatteSurface.faint(context),
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 2,
@@ -181,22 +182,22 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               loading: _busy,
               onPressed: _busy ? null : _savePassword,
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.phonelink_lock_rounded,
+              leading: Icon(Icons.phonelink_lock_rounded,
                   color: AppTheme.brandPrimary),
               title: Text(
                 '2FA Protocol',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontWeight: FontWeight.w800,
                 ),
               ),
               subtitle: Text(
                 '2FA & device verification — coming with security keys',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: MatteSurface.muted(context),
                   fontSize: 12,
                 ),
               ),
@@ -320,10 +321,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           ],
         ),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       Text(
         'Full Spanish strings ship with the i18n pack — preference is saved now.',
-        style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 12),
       ),
     ];
   }
@@ -380,11 +381,11 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: child,
     );
@@ -406,14 +407,14 @@ class _PrefSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -461,7 +462,7 @@ class _Lang extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
+            color: MatteSurface.ink(context),
             fontWeight: FontWeight.w900,
             fontSize: 20,
           ),

@@ -43,7 +43,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('header-profile')));
     await tester.pump();
     expect(opened, isTrue);
-    expect(find.text('Maya'), findsOneWidget);
+    expect(find.text('Maya'), findsNothing);
+    expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
   });
 
   testWidgets('nested page Scaffold cannot steal the profile tap',
@@ -148,6 +149,7 @@ void main() {
     await tester.pump();
     expect(const AppTopBar().preferredSize.height, 72);
     final profile = tester.getSize(find.byKey(const ValueKey('header-profile')));
-    expect(profile.height, greaterThanOrEqualTo(48));
+    expect(profile.height, 42);
+    expect(profile.width, 42);
   });
 }

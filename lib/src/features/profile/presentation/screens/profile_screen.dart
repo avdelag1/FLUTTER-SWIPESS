@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
@@ -72,6 +73,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _feedbackSending = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(chromeVisibilityProvider.notifier).reset();
+    });
+  }
+
+  @override
   void dispose() {
     _feedbackCtrl.dispose();
     super.dispose();
@@ -107,7 +117,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               final chats = ref.watch(conversationsProvider).value?.length ?? 0;
               final headline = _displayName(name, email);
 
-              return ListView(
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollUpdateNotification) {
+                    ref.read(chromeVisibilityProvider.notifier).onScroll(
+                          pixels: notification.metrics.pixels,
+                          delta: notification.scrollDelta ?? 0,
+                        );
+                  }
+                  return false;
+                },
+                child: ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: EdgeInsets.fromLTRB(20, top + 80, 20, 140),
                 children: [
@@ -684,6 +704,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ),
                 ],
+                ),
               );
             },
           ),
@@ -855,7 +876,7 @@ class _Panel extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           width: double.infinity,
-          padding: padding ?? const EdgeInsets.all(14),
+          padding: padding ?? EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: MatteSurface.cardFill(context),
             borderRadius: BorderRadius.circular(22),
@@ -893,7 +914,7 @@ class _StatTile extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(18),
@@ -956,9 +977,9 @@ class _DailyQuests extends ConsumerWidget {
           behavior: HitTestBehavior.opaque,
           child: Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded,
+              Icon(Icons.auto_awesome_rounded,
                   color: AppTheme.brandPrimary, size: 20),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 capCopy(ref, 'Daily Quests', 'Misiones diarias'),
                 style: GoogleFonts.plusJakartaSans(
@@ -1158,9 +1179,9 @@ class _ShareEarn extends StatelessWidget {
                     colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
                   ),
                 ),
-                child: const Icon(Icons.share_rounded, color: Colors.white, size: 20),
+                child: Icon(Icons.share_rounded, color: Colors.white, size: 20),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1376,10 +1397,10 @@ class _FeedbackForm extends StatelessWidget {
                   colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
                 ),
               ),
-              child: const Icon(Icons.chat_bubble_outline_rounded,
+              child: Icon(Icons.chat_bubble_outline_rounded,
                   color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

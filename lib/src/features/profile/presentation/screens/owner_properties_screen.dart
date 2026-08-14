@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -191,11 +192,11 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                               letterSpacing: -0.8,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Text(
                             'REAL-TIME ASSET MANAGEMENT PROTOCOL',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
+                              color: MatteSurface.muted(context),
                               fontWeight: FontWeight.w800,
                               fontStyle: FontStyle.italic,
                               fontSize: 9,
@@ -215,7 +216,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                             colors: [_pinkDeep, _pink],
                           ),
                           borderRadius: BorderRadius.circular(22),
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
                               color: Color(0x59E11D48),
                               blurRadius: 24,
@@ -225,13 +226,13 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.add_rounded,
-                                color: Colors.white, size: 18),
-                            const SizedBox(width: 6),
+                            Icon(Icons.add_rounded,
+                                color: MatteSurface.ink(context), size: 18),
+                            SizedBox(width: 6),
                             Text(
                               'ADD LISTING',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
+                                color: MatteSurface.ink(context),
                                 fontWeight: FontWeight.w900,
                                 fontStyle: FontStyle.italic,
                                 fontSize: 11,
@@ -313,24 +314,24 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Container(
                   height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(14),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search_rounded,
-                          color: Colors.white70, size: 20),
-                      const SizedBox(width: 10),
+                      Icon(Icons.search_rounded,
+                          color: MatteSurface.muted(context), size: 20),
+                      SizedBox(width: 10),
                       Expanded(
                         child: TextField(
                           controller: _search,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: MatteSurface.ink(context),
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.2,
                           ),
@@ -339,7 +340,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                             border: InputBorder.none,
                             hintText: 'SEARCH ASSETS...',
                             hintStyle: GoogleFonts.plusJakartaSans(
-                              color: Colors.white24,
+                              color: MatteSurface.hairline(context),
                               fontWeight: FontWeight.w800,
                               fontSize: 12,
                               letterSpacing: 1.6,
@@ -408,11 +409,11 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                                 ),
                               ),
                               if (count > 0) ...[
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                                 Text(
                                   '[$count]',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white38,
+                                    color: MatteSurface.faint(context),
                                     fontWeight: FontWeight.w800,
                                     fontSize: 10,
                                   ),
@@ -424,15 +425,15 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       );
                     },
                   ),
-                  orElse: () => const SizedBox(height: 48),
+                  orElse: () => SizedBox(height: 48),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Expanded(
                 child: async.when(
-                  loading: () => const Center(
+                  loading: () => Center(
                     child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2),
+                        color: MatteSurface.ink(context), strokeWidth: 2),
                   ),
                   error: (_, _) => Center(
                     child: TextButton(
@@ -503,11 +504,11 @@ class _HudStat extends StatelessWidget {
     return SizedBox(
       height: 108,
       child: Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+      padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(102),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,7 +519,7 @@ class _HudStat extends StatelessWidget {
                 child: Text(
                   title.toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white60,
+                    color: MatteSurface.muted(context),
                     fontWeight: FontWeight.w900,
                     fontStyle: FontStyle.italic,
                     fontSize: 9,
@@ -538,11 +539,11 @@ class _HudStat extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
+          Spacer(),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: MatteSurface.ink(context),
               fontWeight: FontWeight.w900,
               fontStyle: FontStyle.italic,
               fontSize: 26,
@@ -550,11 +551,11 @@ class _HudStat extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             detail,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: MatteSurface.muted(context),
               fontWeight: FontWeight.w800,
               fontStyle: FontStyle.italic,
               fontSize: 9,
@@ -582,7 +583,7 @@ class _EmptyGallery extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -592,7 +593,7 @@ class _EmptyGallery extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.white12),
+                      border: Border.all(color: MatteSurface.hairline(context)),
                     ),
                     child: Icon(
                       searching
@@ -609,14 +610,14 @@ class _EmptyGallery extends StatelessWidget {
                     searching ? 'SCAN NEGATIVE' : 'GALLERY EMPTY',
                     style: AppTheme.displayItalic.copyWith(fontSize: 26),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     searching
                         ? 'No assets found matching current scan parameters. Adjust filters.'
                         : 'Your asset inventory is currently offline. Deploy your first listing to begin broadcast.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white70,
+                      color: MatteSurface.muted(context),
                       fontWeight: FontWeight.w600,
                       fontStyle: FontStyle.italic,
                       height: 1.4,
@@ -630,7 +631,7 @@ class _EmptyGallery extends StatelessWidget {
                         height: 52,
                         padding: const EdgeInsets.symmetric(horizontal: 18),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             colors: [Color(0xFFE11D48), Color(0xFFEB4898)],
                           ),
                           borderRadius: BorderRadius.circular(20),
@@ -640,12 +641,12 @@ class _EmptyGallery extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.add_rounded, color: Colors.white),
-                              const SizedBox(width: 8),
+                              Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
+                              SizedBox(width: 8),
                               Text(
                                 'DEPLOY FIRST LISTING',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
+                                  color: MatteSurface.ink(context),
                                   fontWeight: FontWeight.w900,
                                   fontStyle: FontStyle.italic,
                                   letterSpacing: 1.2,
@@ -687,11 +688,11 @@ class _AssetCard extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete listing?',
-            style: TextStyle(color: Colors.white)),
+        title: Text('Delete listing?',
+            style: TextStyle(color: MatteSurface.ink(context))),
         content: Text(
           'Permanently remove "${listing.title ?? 'this listing'}"?',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: MatteSurface.muted(context)),
         ),
         actions: [
           TextButton(
@@ -749,7 +750,7 @@ class _AssetCard extends ConsumerWidget {
     await Clipboard.setData(ClipboardData(text: url));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Listing link copied')),
+        SnackBar(content: Text('Listing link copied')),
       );
     }
   }
@@ -760,7 +761,7 @@ class _AssetCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -794,16 +795,16 @@ class _AssetCard extends ConsumerWidget {
                     top: 14,
                     left: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE4007C).withAlpha(200),
+                        color: Color(0xFFE4007C).withAlpha(200),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         (listing.category ?? 'property').toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontWeight: FontWeight.w900,
                           fontSize: 9,
                           letterSpacing: 1.2,
@@ -815,19 +816,19 @@ class _AssetCard extends ConsumerWidget {
                     bottom: 14,
                     left: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.black.withAlpha(200),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white24),
+                        border: Border.all(color: MatteSurface.hairline(context)),
                       ),
                       child: Text(
                         listing.price == null
                             ? '---'
                             : '\$${listing.price!.toStringAsFixed(0)}',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontWeight: FontWeight.w900,
                           fontStyle: FontStyle.italic,
                           fontSize: 16,
@@ -840,7 +841,7 @@ class _AssetCard extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -849,19 +850,19 @@ class _AssetCard extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontWeight: FontWeight.w900,
                     fontStyle: FontStyle.italic,
                     fontSize: 16,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   listing.formattedLocation,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white54,
+                    color: MatteSurface.muted(context),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
@@ -870,24 +871,24 @@ class _AssetCard extends ConsumerWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.white12),
+          Divider(height: 1, color: MatteSurface.hairline(context)),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             child: Row(
               children: [
                 PopupMenuButton<String>(
                   onSelected: (v) => _setStatus(context, ref, v),
-                  color: const Color(0xFF14141A),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'active', child: Text('Active', style: TextStyle(color: Colors.white))),
-                    PopupMenuItem(value: 'pending', child: Text('Pending', style: TextStyle(color: Colors.white))),
-                    PopupMenuItem(value: 'rented', child: Text('Rented', style: TextStyle(color: Colors.white))),
-                    PopupMenuItem(value: 'sold', child: Text('Sold', style: TextStyle(color: Colors.white))),
-                    PopupMenuItem(value: 'maintenance', child: Text('Maintenance', style: TextStyle(color: Colors.white))),
+                  color: Color(0xFF14141A),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'active', child: Text('Active', style: TextStyle(color: MatteSurface.ink(context)))),
+                    PopupMenuItem(value: 'pending', child: Text('Pending', style: TextStyle(color: MatteSurface.ink(context)))),
+                    PopupMenuItem(value: 'rented', child: Text('Rented', style: TextStyle(color: MatteSurface.ink(context)))),
+                    PopupMenuItem(value: 'sold', child: Text('Sold', style: TextStyle(color: MatteSurface.ink(context)))),
+                    PopupMenuItem(value: 'maintenance', child: Text('Maintenance', style: TextStyle(color: MatteSurface.ink(context)))),
                   ],
-                  child: const Padding(
+                  child: Padding(
                     padding: EdgeInsets.all(8),
-                    child: Icon(Icons.tune_rounded, color: Colors.white70, size: 20),
+                    child: Icon(Icons.tune_rounded, color: MatteSurface.muted(context), size: 20),
                   ),
                 ),
                 IconButton(
@@ -900,20 +901,20 @@ class _AssetCard extends ConsumerWidget {
                     );
                     if (updated == true) onChanged();
                   },
-                  icon: const Icon(Icons.edit_rounded,
-                      color: Colors.white70, size: 20),
+                  icon: Icon(Icons.edit_rounded,
+                      color: MatteSurface.muted(context), size: 20),
                 ),
                 IconButton(
                   tooltip: 'Add photos',
                   onPressed: () => _addPhotos(context, ref),
-                  icon: const Icon(Icons.photo_camera_rounded,
-                      color: Colors.white70, size: 20),
+                  icon: Icon(Icons.photo_camera_rounded,
+                      color: MatteSurface.muted(context), size: 20),
                 ),
                 IconButton(
                   tooltip: 'Share',
                   onPressed: () => _share(context),
-                  icon: const Icon(Icons.share_rounded,
-                      color: Colors.white70, size: 20),
+                  icon: Icon(Icons.share_rounded,
+                      color: MatteSurface.muted(context), size: 20),
                 ),
                 const Spacer(),
                 IconButton(

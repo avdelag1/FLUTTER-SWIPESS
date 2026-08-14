@@ -28,12 +28,12 @@ abstract final class LiquidGlass {
             : const Color.fromRGBO(255, 255, 255, 0.14);
       case LiquidGlassWeight.modal:
         return light
-            ? const Color.fromRGBO(255, 255, 255, 0.95)
-            : const Color.fromRGBO(18, 18, 22, 0.92);
+            ? Color.fromRGBO(255, 255, 255, 0.95)
+            : Color.fromRGBO(18, 18, 22, 0.92);
       case LiquidGlassWeight.frostPill:
         return light
-            ? const Color.fromRGBO(255, 255, 255, 0.88)
-            : const Color.fromRGBO(248, 248, 250, 0.14);
+            ? Color.fromRGBO(255, 255, 255, 0.88)
+            : Color.fromRGBO(248, 248, 250, 0.14);
     }
   }
 
@@ -44,12 +44,12 @@ abstract final class LiquidGlass {
       case LiquidGlassWeight.thin:
         return NexusTheme.border;
       case LiquidGlassWeight.thick:
-        return const Color.fromRGBO(255, 255, 255, 0.28);
+        return Color.fromRGBO(255, 255, 255, 0.28);
       case LiquidGlassWeight.modal:
       case LiquidGlassWeight.frostPill:
-        return const Color.fromRGBO(255, 255, 255, 0.22);
+        return Color.fromRGBO(255, 255, 255, 0.22);
       case LiquidGlassWeight.regular:
-        return const Color.fromRGBO(255, 255, 255, 0.18);
+        return Color.fromRGBO(255, 255, 255, 0.18);
     }
   }
 
@@ -252,13 +252,13 @@ class LiquidGlassSheet extends StatelessWidget {
               BoxShadow(
                 color: Colors.white.withAlpha(light ? 200 : 28),
                 blurRadius: 0,
-                offset: const Offset(0, 1),
+                offset: Offset(0, 1),
               ),
             ],
           ),
           child: Column(
             children: [
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 width: 40,
                 height: 4,

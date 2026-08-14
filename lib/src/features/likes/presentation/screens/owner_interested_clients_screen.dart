@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -44,7 +45,7 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                         Text(
                           'People who liked your listings',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: MatteSurface.muted(context),
                             fontSize: 12,
                           ),
                         ),
@@ -54,28 +55,28 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                   IconButton(
                     tooltip: 'Discover clients',
                     onPressed: () => showOwnerClientSwipeDialog(context),
-                    icon: const Icon(Icons.swipe_rounded, color: Colors.white70),
+                    icon: Icon(Icons.swipe_rounded, color: MatteSurface.muted(context)),
                   ),
                   IconButton(
                     onPressed: () =>
                         ref.read(interestedClientsProvider.notifier).refresh(),
-                    icon: const Icon(Icons.sync_rounded, color: Colors.white70),
+                    icon: Icon(Icons.sync_rounded, color: MatteSurface.muted(context)),
                   ),
                 ],
               ),
             ),
             Expanded(
               child: async.when(
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                      color: MatteSurface.ink(context), strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
                     onPressed: () => ref
                         .read(interestedClientsProvider.notifier)
                         .refresh(),
-                    child: const Text('Could not load — retry'),
+                    child: Text('Could not load — retry'),
                   ),
                 ),
                 data: (clients) {
@@ -84,7 +85,7 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                       child: Text(
                         'No interested clients yet.',
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54),
+                            color: MatteSurface.muted(context)),
                       ),
                     );
                   }
@@ -127,11 +128,11 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                           final ok = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Dismiss client?',
-                                  style: TextStyle(color: Colors.white)),
+                              title: Text('Dismiss client?',
+                                  style: TextStyle(color: MatteSurface.ink(context))),
                               content: Text(
                                 'Remove ${client.name} from interested clients?',
-                                style: const TextStyle(color: Colors.white70),
+                                style: TextStyle(color: MatteSurface.muted(context)),
                               ),
                               actions: [
                                 TextButton(
@@ -185,11 +186,11 @@ class _ClientCard extends StatelessWidget {
         onTap: onOpen,
         borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white, width: 1.5),
+            border: Border.all(color: MatteSurface.ink(context), width: 1.5),
           ),
           child: Row(
             children: [
@@ -199,18 +200,18 @@ class _ClientCard extends StatelessWidget {
                     ? NetworkImage(client.primaryImage!)
                     : null,
                 child: client.primaryImage == null
-                    ? const Icon(Icons.person_rounded, color: Colors.white54)
+                    ? Icon(Icons.person_rounded, color: MatteSurface.muted(context))
                     : null,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       client.name,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                          color: MatteSurface.ink(context), fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
                     if (client.likedListingTitle != null)
@@ -231,19 +232,19 @@ class _ClientCard extends StatelessWidget {
                           if (client.age != null) '${client.age}',
                         ].join(' · '),
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54, fontSize: 12),
+                            color: MatteSurface.muted(context), fontSize: 12),
                       ),
                   ],
                 ),
               ),
               IconButton(
                 onPressed: onMessage,
-                icon: const Icon(Icons.chat_bubble_outline_rounded,
+                icon: Icon(Icons.chat_bubble_outline_rounded,
                     color: AppTheme.brandPrimary),
               ),
               IconButton(
                 onPressed: onDismiss,
-                icon: const Icon(Icons.close_rounded, color: Colors.white38),
+                icon: Icon(Icons.close_rounded, color: MatteSurface.faint(context)),
               ),
             ],
           ),

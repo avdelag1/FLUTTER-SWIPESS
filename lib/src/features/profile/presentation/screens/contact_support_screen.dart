@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
@@ -50,11 +51,11 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white, size: 18),
+                          color: MatteSurface.ink(context), size: 18),
                     ),
                   ),
                 ),
@@ -63,43 +64,43 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     style: AppTheme.displayItalic.copyWith(fontSize: 22)),
               ],
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: 28),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.forum_rounded,
+                  Icon(Icons.forum_rounded,
                       color: AppTheme.brandPrimary, size: 48),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'NEED ASSISTANCE?',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontWeight: FontWeight.w900,
                       fontSize: 20,
                       letterSpacing: -0.4,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Text(
                     'Questions, bugs, or account help — reach the Swipess team.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white70, height: 1.4),
+                        color: MatteSurface.muted(context), height: 1.4),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'TOPIC',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: MatteSurface.muted(context),
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 1.2,

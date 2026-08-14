@@ -191,7 +191,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
     if (!mounted) return;
     setState(() => _submitting = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text('Documents submitted. Verification is pending review.'),
       ),
     );
@@ -277,9 +277,9 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
             ],
           ),
         ),
-        const SizedBox(height: 28),
+        SizedBox(height: 28),
         Container(
-          padding: const EdgeInsets.fromLTRB(22, 28, 22, 28),
+          padding: EdgeInsets.fromLTRB(22, 28, 22, 28),
           decoration: BoxDecoration(
             color: isLight
                 ? Colors.black.withAlpha(8)
@@ -376,12 +376,12 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: isLight
-                        ? const Color(0xFFF8FAFC)
+                        ? Color(0xFFF8FAFC)
                         : Colors.white.withAlpha(10),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: MatteSurface.hairline(context)),

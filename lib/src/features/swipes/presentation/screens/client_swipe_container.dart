@@ -411,28 +411,28 @@ class _SwipeDeckDock extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _DockIcon(
-                icon: Icons.bolt_rounded,
+                icon: Icons.dashboard_rounded,
                 onTap: onDashboard,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                icon: Icons.local_fire_department_rounded,
+                icon: Icons.diamond_rounded,
                 onTap: onTokens,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                icon: Icons.smart_toy_outlined,
+                icon: Icons.smart_toy_rounded,
                 onTap: onAi,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                icon: Icons.add_circle_rounded,
+                icon: Icons.add_rounded,
                 onTap: onAdd,
                 accent: true,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                icon: Icons.chat_bubble_outline_rounded,
+                icon: Icons.chat_bubble_rounded,
                 onTap: onAi,
                 idleColor: iconIdle,
               ),

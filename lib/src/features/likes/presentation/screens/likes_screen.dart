@@ -97,7 +97,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
         title: Text(
           match ? 'Remove Match?' : 'Remove from likes?',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
+            color: MatteSurface.ink(context),
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -105,7 +105,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
           match
               ? 'Are you sure you want to remove $title?'
               : 'Are you sure you want to remove "$title" from your likes?',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+          style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
         ),
         actions: [
           TextButton(
@@ -235,7 +235,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       hint: 'Search title, description, location...',
                       onChanged: (_) => setState(() {}),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     SizedBox(
                       height: 34,
                       child: ListView(
@@ -496,7 +496,7 @@ class _ListingCard extends StatelessWidget {
 }
 
 class _Seg extends StatelessWidget {
-  const _Seg({required this.label, required this.selected, required this.onTap});
+  _Seg({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -606,7 +606,7 @@ class _HChips extends StatelessWidget {
 }
 
 class _SortChip extends StatelessWidget {
-  const _SortChip({
+  _SortChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -620,11 +620,11 @@ class _SortChip extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final well = MatteSurface.well(context);
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: 8),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             gradient: selected ? _LikesScreenState._gradient : null,
             color: selected ? null : well,
@@ -648,7 +648,7 @@ class _SortChip extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({
+  _SearchField({
     required this.controller,
     required this.hint,
     required this.onChanged,
@@ -663,7 +663,7 @@ class _SearchField extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return Container(
       height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: MatteSurface.well(context),
         borderRadius: BorderRadius.circular(16),

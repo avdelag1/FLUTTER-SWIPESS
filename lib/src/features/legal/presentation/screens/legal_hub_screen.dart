@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -122,8 +123,8 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
           ),
           decoration: BoxDecoration(
             color: Colors.black,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: Colors.white, width: 1.5),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(color: MatteSurface.ink(context), width: 1.5),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -133,23 +134,23 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                 pkg != null ? 'REQUEST SERVICE' : 'DESCRIBE ISSUE', 
                 style: AppTheme.displayItalic.copyWith(fontSize: 24),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextField(
                 controller: _descriptionController,
                 maxLines: 4,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: MatteSurface.ink(context)),
                 decoration: InputDecoration(
                   hintText: 'Provide details about your situation...',
-                  hintStyle: const TextStyle(color: Colors.white30),
+                  hintStyle: TextStyle(color: MatteSurface.faint(context)),
                   filled: true,
                   fillColor: Colors.transparent,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.white, width: 1.5),
+                    borderSide: BorderSide(color: MatteSurface.ink(context), width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.white, width: 2),
+                    borderSide: BorderSide(color: MatteSurface.ink(context), width: 2),
                   ),
                 ),
               ),
@@ -186,13 +187,13 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
           Row(
             children: [
               CapBackButton(onTap: () => Navigator.pop(context)),
-              const Spacer(),
+              Spacer(),
               // Mode Toggle
               Container(
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                 ),
                 padding: const EdgeInsets.all(4),
                 child: Row(
@@ -214,15 +215,15 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               )
             ],
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           
           // PRIMARY FEATURE CARD
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(color: MatteSurface.ink(context), width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -233,33 +234,33 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                   ),
-                  child: const Icon(Icons.gavel_rounded, color: Colors.white, size: 40),
+                  child: Icon(Icons.gavel_rounded, color: MatteSurface.ink(context), size: 40),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Text(
                   'REQUEST\nINDEPENDENT\nLEGAL HELP',
                   textAlign: TextAlign.center,
                   style: AppTheme.displayItalic.copyWith(fontSize: 40, height: 0.9, letterSpacing: -1),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   'Describe the legal topic you want help with. Provider availability, identity, license, jurisdiction, confidentiality, scope, timing, price, and engagement terms must be confirmed directly.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
           
-          const SizedBox(height: 40),
+          SizedBox(height: 40),
           
           Row(
             children: [
-              Text('ISSUE CATEGORIES', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white30, letterSpacing: 2)),
-              const SizedBox(width: 16),
-              Expanded(child: Divider(color: Colors.white30, height: 1)),
+              Text('ISSUE CATEGORIES', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w900, color: MatteSurface.faint(context), letterSpacing: 2)),
+              SizedBox(width: 16),
+              Expanded(child: Divider(color: MatteSurface.faint(context), height: 1)),
             ],
           ),
           const SizedBox(height: 24),
@@ -285,17 +286,17 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               },
             ),
             
-          const SizedBox(height: 48),
+          SizedBox(height: 48),
           
           // SERVICE PACKAGES BUTTON
           GestureDetector(
             onTap: () => context.push(AppPaths.clientLegalServices),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
               ),
               child: Row(
                 children: [
@@ -304,12 +305,12 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('SERVICE PACKAGES', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
-                        const SizedBox(height: 4),
-                        Text('Browse currently listed service options', style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12)),
+                        SizedBox(height: 4),
+                        Text('Browse currently listed service options', style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 12)),
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
+                  Icon(Icons.arrow_forward_ios_rounded, color: MatteSurface.ink(context), size: 16),
                 ],
               ),
             ),
@@ -369,28 +370,28 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Column(
         children: [
           ListTile(
             onTap: onToggle,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             leading: Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 1),
+                border: Border.all(color: MatteSurface.ink(context), width: 1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(category['icon'] as IconData, color: Colors.white, size: 20),
+              child: Icon(category['icon'] as IconData, color: MatteSurface.ink(context), size: 20),
             ),
-            title: Text(category['title'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14)),
-            subtitle: Text(category['description'] as String, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-            trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.white),
+            title: Text(category['title'] as String, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900, fontSize: 14)),
+            subtitle: Text(category['description'] as String, style: TextStyle(color: MatteSurface.muted(context), fontSize: 11)),
+            trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: MatteSurface.ink(context)),
           ),
           if (isExpanded)
             Padding(
@@ -401,12 +402,12 @@ class _CategoryTile extends StatelessWidget {
                   return GestureDetector(
                     onTap: () => onSubSelect(sub['id'] as String),
                     child: Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.all(16),
+                      margin: EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isSelected ? Colors.white : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                       ),
                       child: Row(
                         children: [

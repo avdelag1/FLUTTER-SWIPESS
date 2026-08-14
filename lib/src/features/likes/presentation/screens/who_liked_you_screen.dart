@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
@@ -41,13 +42,13 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
         title: Text(
           'Dismiss Interest?',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
+            color: MatteSurface.ink(context),
             fontWeight: FontWeight.w900,
           ),
         ),
         content: Text(
           'This will remove their profile from your interest list.',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+          style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
         ),
         actions: [
           TextButton(
@@ -89,26 +90,26 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: LiquidGlassPanel(
                 borderRadius: 24,
                 blur: LiquidGlass.blurSm,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 child: SizedBox(
                   height: 64,
                   child: Row(
                     children: [
-                      const Icon(Icons.search_rounded, color: Colors.white54),
-                      const SizedBox(width: 10),
+                      Icon(Icons.search_rounded, color: MatteSurface.muted(context)),
+                      SizedBox(width: 10),
                       Expanded(
                         child: TextField(
                           controller: _search,
                           onChanged: (_) => setState(() {}),
-                          style: const TextStyle(color: Colors.white),
-                          decoration: const InputDecoration(
+                          style: TextStyle(color: MatteSurface.ink(context)),
+                          decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: 'Search connections...',
-                            hintStyle: TextStyle(color: Colors.white38),
+                            hintStyle: TextStyle(color: MatteSurface.faint(context)),
                           ),
                         ),
                       ),
@@ -119,9 +120,9 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
             ),
             Expanded(
               child: async.when(
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                      color: MatteSurface.ink(context), strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -152,9 +153,9 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                     );
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 32),
                     itemCount: filtered.length + 1,
-                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    separatorBuilder: (_, _) => SizedBox(height: 14),
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         return Column(
@@ -163,7 +164,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                             Text(
                               '${filtered.length} Connections',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
+                                color: MatteSurface.muted(context),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                               ),

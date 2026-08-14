@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -43,7 +44,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
               child: Row(
                 children: [
                   CapBackButton(onTap: () => Navigator.of(context).pop()),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,7 +53,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                         Text(
                           'Verified neighborhood updates',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: MatteSurface.muted(context),
                             fontSize: 11,
                             letterSpacing: 0.6,
                           ),
@@ -82,16 +83,16 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Expanded(
               child: async.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                loading: () => Center(
+                  child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
                     onPressed: () => ref.invalidate(localIntelProvider),
-                    child: const Text('Could not load intel — retry'),
+                    child: Text('Could not load intel — retry'),
                   ),
                 ),
                 data: (posts) {
@@ -102,7 +103,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                     return Center(
                       child: Text(
                         'No intel posts yet.',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
                       ),
                     );
                   }
@@ -136,7 +137,7 @@ class _IntelCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -161,47 +162,47 @@ class _IntelCard extends StatelessWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   post.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: MatteSurface.ink(context),
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 if (post.content.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     post.content,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 13, height: 1.4),
+                    style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 13, height: 1.4),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Row(
                   children: [
                     if (post.neighborhood != null)
                       Text(
                         post.neighborhood!,
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 11),
+                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 11),
                       ),
-                    const Spacer(),
+                    Spacer(),
                     if (when != null)
                       Text(
                         when,
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 11),
+                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.faint(context), fontSize: 11),
                       ),
                     if (post.sourceUrl != null) ...[
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         onPressed: () async {
                           final uri = Uri.tryParse(post.sourceUrl!);
                           if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
                         },
-                        icon: const Icon(Icons.open_in_new_rounded, color: Colors.white54, size: 18),
+                        icon: Icon(Icons.open_in_new_rounded, color: MatteSurface.muted(context), size: 18),
                       ),
                     ],
                   ],

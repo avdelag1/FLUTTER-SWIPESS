@@ -85,52 +85,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           children: [
             Row(
               children: [
-                _HudButton(
+                _ProfileAvatarButton(
                   key: const ValueKey('header-profile'),
-                  wide: true,
-                  fill: pillFill,
-                  border: pillBorder,
-                  semanticLabel: 'Open profile',
+                  avatarUrl: avatarUrl,
+                  ink: ink,
+                  isLight: isLight,
+                  semanticLabel: 'Open profile, $_label',
                   onTap: () => _openProfile(context),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isLight ? Colors.black12 : Colors.white12,
-                          image: avatarUrl != null
-                              ? DecorationImage(
-                                  image: NetworkImage(avatarUrl!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: avatarUrl == null
-                            ? Icon(
-                                Icons.person_rounded,
-                                size: 16,
-                                color: ink,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 86),
-                        child: Text(
-                          _label,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: ink,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(width: 8),
                 _HudButton(
@@ -143,7 +104,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: _WashIcon(
                     wash: mintWash,
                     child: Icon(
-                      Icons.auto_awesome_rounded,
+                      Icons.add_rounded,
                       size: 22,
                       color: ink,
                     ),
@@ -171,8 +132,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.workspace_premium_rounded,
-                          size: 22,
+                          Icons.diamond_rounded,
+                          size: 20,
                           color: ink,
                         ),
                         if (tokens > 0) ...[
@@ -202,7 +163,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     wash: skyWash,
                     child: Icon(
                       Icons.public_rounded,
-                      size: 22,
+                      size: 20,
                       color: ink,
                     ),
                   ),
@@ -221,7 +182,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       isLight
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
-                      size: 22,
+                      size: 20,
                       color: ink,
                     ),
                   ),
@@ -244,7 +205,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         wash: coralWash,
                         child: Icon(
                           Icons.notifications_rounded,
-                          size: 22,
+                          size: 20,
                           color: ink,
                         ),
                       ),
@@ -279,22 +240,21 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-class _HudButton extends StatelessWidget {
-  const _HudButton({
+/// Circular photo only — no name, no stadium frame.
+class _ProfileAvatarButton extends StatelessWidget {
+  const _ProfileAvatarButton({
     super.key,
-    required this.child,
+    required this.ink,
+    required this.isLight,
     required this.onTap,
-    required this.fill,
-    required this.border,
-    this.wide = false,
+    this.avatarUrl,
     this.semanticLabel,
   });
 
-  final Widget child;
+  final String? avatarUrl;
+  final Color ink;
+  final bool isLight;
   final VoidCallback onTap;
-  final Color fill;
-  final Color border;
-  final bool wide;
   final String? semanticLabel;
 
   @override
@@ -302,6 +262,54 @@ class _HudButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: semanticLabel,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: SizedBox(
+            width: AppTopBar._hudSize,
+            height: AppTopBar._hudSize,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isLight ? const Color(0x14000000) : const Color(0x22FFFFFF),
+                image: avatarUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(avatarUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: avatarUrl == null
+                  ? Icon(Icons.person_rounded, size: 20, color: ink)
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudButton extends StatelessWidget {
+  const _HudButton({
+    required this.child,
+    required this.onTap,
+    required this.fill,
+    required this.border,
+    this.wide = false,
+  });
+
+  final Widget child;
+  final VoidCallback onTap;
+  final Color fill;
+  final Color border;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Material(
@@ -321,7 +329,7 @@ class _HudButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: fill.withAlpha(fill.alpha ~/ 2), // Make it more translucent to see blur
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: border, width: 2.0),
+                    border: Border.all(color: border.withAlpha(90), width: 1.25),
                   ),
                   child: child,
                 ),
@@ -351,6 +359,18 @@ class _WashIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                wash.withAlpha(220),
+                wash.withAlpha(0),
+              ],
+            ),
+          ),
+          child: const SizedBox(width: 28, height: 28),
+        ),
         child,
         if (badge)
           Positioned(

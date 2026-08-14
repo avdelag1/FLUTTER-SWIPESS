@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -34,8 +35,8 @@ class _RoommateMatchingScreenState
 
     return Scaffold(
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -54,13 +55,13 @@ class _RoommateMatchingScreenState
                     onFilters: _openFilters,
                     onUndo: _undo,
                   ),
-                  const Spacer(),
+                  Spacer(),
                   Text('NO MORE PROFILES',
                       style: AppTheme.displayItalic.copyWith(fontSize: 22)),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Adjust filters or check back later.',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                    style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
                   ),
                   const SizedBox(height: 20),
                   TextButton(
@@ -264,11 +265,11 @@ class _RoommateMatchingScreenState
                 children: [
                   Text('ROOMMATE FILTERS',
                       style: AppTheme.displayItalic.copyWith(fontSize: 18)),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Text(
                     'Budget \$${draft.minBudget.toStringAsFixed(0)} – \$${draft.maxBudget.toStringAsFixed(0)}',
                     style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white70, fontSize: 12),
+                        color: MatteSurface.muted(context), fontSize: 12),
                   ),
                   RangeSlider(
                     values: RangeValues(draft.minBudget, draft.maxBudget),
@@ -287,11 +288,11 @@ class _RoommateMatchingScreenState
                       );
                     }),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Age ${draft.minAge} – ${draft.maxAge}',
                     style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white70, fontSize: 12),
+                        color: MatteSurface.muted(context), fontSize: 12),
                   ),
                   RangeSlider(
                     values: RangeValues(
@@ -309,11 +310,11 @@ class _RoommateMatchingScreenState
                       );
                     }),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'CITY',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: MatteSurface.muted(context),
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
                       letterSpacing: 1.2,
@@ -392,24 +393,24 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: Colors.white),
+            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                color: MatteSurface.ink(context)),
           ),
           Text('ROOMMATES',
               style: AppTheme.displayItalic.copyWith(fontSize: 20)),
-          const Spacer(),
+          Spacer(),
           if (onToggleDetails != null)
             IconButton(
               tooltip: 'Details',
               onPressed: onToggleDetails,
               icon: Icon(
                 detailsOpen ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                color: Colors.white70,
+                color: MatteSurface.muted(context),
               ),
             ),
           IconButton(
@@ -423,7 +424,7 @@ class _Header extends StatelessWidget {
           IconButton(
             tooltip: 'Filters',
             onPressed: onFilters,
-            icon: const Icon(Icons.tune_rounded, color: Colors.white70),
+            icon: Icon(Icons.tune_rounded, color: MatteSurface.muted(context)),
           ),
         ],
       ),
@@ -432,27 +433,27 @@ class _Header extends StatelessWidget {
 }
 
 class _DetailsPanel extends StatelessWidget {
-  const _DetailsPanel({required this.profile});
+  _DetailsPanel({required this.profile});
   final RoommateProfile profile;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(200),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             profile.name,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+            style: TextStyle(
+                color: MatteSurface.ink(context), fontWeight: FontWeight.w800, fontSize: 16),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             profile.bio?.trim().isNotEmpty == true
                 ? profile.bio!
@@ -460,21 +461,21 @@ class _DetailsPanel extends StatelessWidget {
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70, fontSize: 13, height: 1.35),
+                color: MatteSurface.muted(context), fontSize: 13, height: 1.35),
           ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (profile.city != null) _pill(Icons.place_outlined, profile.city!),
+              if (profile.city != null) _pill(context, Icons.place_outlined, profile.city!),
               if (profile.occupation != null)
-                _pill(Icons.work_outline_rounded, profile.occupation!),
+                _pill(context, Icons.work_outline_rounded, profile.occupation!),
               if (profile.budget != null)
-                _pill(Icons.attach_money_rounded,
+                _pill(context, Icons.attach_money_rounded,
                     '\$${profile.budget!.toStringAsFixed(0)}/mo'),
               if (profile.age != null)
-                _pill(Icons.cake_outlined, '${profile.age} yrs'),
+                _pill(context, Icons.cake_outlined, '${profile.age} yrs'),
             ],
           ),
         ],
@@ -482,22 +483,22 @@ class _DetailsPanel extends StatelessWidget {
     );
   }
 
-  Widget _pill(IconData icon, String label) {
+  Widget _pill(BuildContext context, IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.white70),
-          const SizedBox(width: 6),
+          Icon(icon, size: 14, color: MatteSurface.muted(context)),
+          SizedBox(width: 6),
           Text(label,
               style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                  color: MatteSurface.ink(context), fontSize: 11, fontWeight: FontWeight.w700)),
         ],
       ),
     );

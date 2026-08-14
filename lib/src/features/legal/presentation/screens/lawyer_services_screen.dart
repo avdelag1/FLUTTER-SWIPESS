@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -124,12 +125,12 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
         children: [
           Row(
             children: [
-              const CapBackButton(),
-              const SizedBox(width: 12),
+              CapBackButton(),
+              SizedBox(width: 12),
               Text(
                 'BACK',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: MatteSurface.muted(context),
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2.4,
                   fontSize: 11,
@@ -144,9 +145,9 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1),
+                  color: Color(0xFF6366F1),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
                       color: Color(0x4D6366F1),
                       blurRadius: 18,
@@ -154,7 +155,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.balance_rounded, color: Colors.white),
+                child: Icon(Icons.balance_rounded, color: MatteSurface.ink(context)),
               ),
               const SizedBox(width: 12),
               Container(
@@ -241,15 +242,15 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                         setState(() => _category = c.$1);
                       },
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: const EdgeInsets.symmetric(
+                        duration: Duration(milliseconds: 150),
+                        padding: EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: _category == c.$1
                               ? Colors.white
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                         ),
                         child: Text(
                           c.$2,
@@ -273,38 +274,38 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               pkg: pkg,
               onRequest: () => showLegalPackageRequestModal(context, pkg: pkg),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             'REQUEST DRAFT',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: MatteSurface.muted(context),
               fontWeight: FontWeight.w900,
               letterSpacing: 2,
               fontSize: 11,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           for (final c in _contracts) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
                 c.$2,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontWeight: FontWeight.w800,
                 ),
               ),
               subtitle: Text(
                 c.$4,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: MatteSurface.muted(context),
                   fontSize: 12,
                 ),
               ),
-              trailing: const Icon(Icons.chevron_right_rounded,
-                  color: Colors.white54),
+              trailing: Icon(Icons.chevron_right_rounded,
+                  color: MatteSurface.muted(context)),
               onTap: () {
                 showLegalPackageRequestModal(
                   context,
@@ -314,7 +315,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                     category: c.$3,
                     price: 0,
                     description: c.$4,
-                    features: const [
+                    features: [
                       'Guided information fields',
                       'Provider availability confirmed separately',
                     ],
@@ -322,7 +323,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                 );
               },
             ),
-            const Divider(color: Colors.white12),
+            Divider(color: MatteSurface.hairline(context)),
           ],
         ],
       ),
@@ -348,20 +349,20 @@ class _ConnectTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(height: 12),
+            Icon(icon, color: MatteSurface.ink(context)),
+            SizedBox(height: 12),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -381,17 +382,17 @@ class _ConnectTile extends StatelessWidget {
 }
 
 class _PackageCard extends StatelessWidget {
-  const _PackageCard({required this.pkg, required this.onRequest});
+  _PackageCard({required this.pkg, required this.onRequest});
   final LegalServicePackage pkg;
   final VoidCallback onRequest;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,7 +404,7 @@ class _PackageCard extends StatelessWidget {
                 child: Text(
                   pkg.name,
                   style: AppTheme.displayItalic.copyWith(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontSize: 20,
                   ),
                 ),
@@ -411,7 +412,7 @@ class _PackageCard extends StatelessWidget {
               Text(
                 '\$${pkg.price.toStringAsFixed(0)}',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontWeight: FontWeight.w900,
                   fontSize: 24,
                 ),
@@ -419,11 +420,11 @@ class _PackageCard extends StatelessWidget {
             ],
           ),
           if (pkg.description != null) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               pkg.description!,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
+                color: MatteSurface.muted(context),
                 fontSize: 13,
                 height: 1.4,
               ),

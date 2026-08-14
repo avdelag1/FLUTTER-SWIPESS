@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/insights/domain/price_point.dart';
@@ -28,7 +29,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   GestureDetector(
@@ -39,14 +40,14 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                       ),
-                      child: const Center(
-                        child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                      child: Center(
+                        child: Icon(Icons.arrow_back_ios_new_rounded, color: MatteSurface.ink(context), size: 18),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +55,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                         Text('MARKET PRICES', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
                         Text(
                           'Neighborhood averages from price_history',
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 11),
+                          style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 11),
                         ),
                       ],
                     ),
@@ -64,13 +65,13 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
             ),
             Expanded(
               child: async.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                loading: () => Center(
+                  child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
                     onPressed: () => ref.invalidate(priceHistoryProvider),
-                    child: const Text('Could not load prices — retry'),
+                    child: Text('Could not load prices — retry'),
                   ),
                 ),
                 data: (points) {
@@ -78,7 +79,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                     return Center(
                       child: Text(
                         'No price history yet.',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
                       ),
                     );
                   }
@@ -110,23 +111,23 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       for (final stat in stats) ...[
                         Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(20),
+                          margin: EdgeInsets.only(bottom: 12),
+                          padding: EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 stat.zone,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: MatteSurface.ink(context),
                                   fontWeight: FontWeight.w800,
                                   fontSize: 16,
                                 ),
@@ -161,10 +162,10 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Text(
                                 '${stat.count} listings · latest sample',
-                                style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+                                style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 12),
                               ),
                               const SizedBox(height: 16),
                               _MiniBars(points: stat.series.length > 8
@@ -250,10 +251,10 @@ class _MiniBars extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       _monthLabel(point.month),
-                      style: const TextStyle(color: Colors.white38, fontSize: 9),
+                      style: TextStyle(color: MatteSurface.faint(context), fontSize: 9),
                     ),
                   ],
                 ),

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
 /// Cap PublicProfilePreview — guest-friendly member deep link.
 class PublicProfilePreviewScreen extends ConsumerWidget {
-  const PublicProfilePreviewScreen({super.key, required this.userId});
+  PublicProfilePreviewScreen({super.key, required this.userId});
 
   final String userId;
 
@@ -17,8 +18,8 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
 
     return Scaffold(
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -28,9 +29,9 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
         ),
         data: (profile) {
           if (profile == null) {
-            return const Center(
+            return Center(
               child: Text('Profile not found',
-                  style: TextStyle(color: Colors.white70)),
+                  style: TextStyle(color: MatteSurface.muted(context))),
             );
           }
           final hero =
@@ -66,8 +67,8 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                                 context.go('/welcome');
                               }
                             },
-                            icon: const Icon(Icons.close_rounded,
-                                color: Colors.white),
+                            icon: Icon(Icons.close_rounded,
+                                color: MatteSurface.ink(context)),
                           ),
                           const Spacer(),
                           IconButton(
@@ -78,20 +79,20 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                                   ClipboardData(text: url));
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
+                                  SnackBar(
                                       content: Text('Profile link copied')),
                                 );
                               }
                             },
-                            icon: const Icon(Icons.share_rounded,
-                                color: Colors.white),
+                            icon: Icon(Icons.share_rounded,
+                                color: MatteSurface.ink(context)),
                           ),
                         ],
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                      padding: EdgeInsets.fromLTRB(24, 0, 24, 40),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -100,29 +101,29 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                                 ? '${profile.name.toUpperCase()}, ${profile.age}'
                                 : profile.name.toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
+                              color: MatteSurface.ink(context),
                               fontWeight: FontWeight.w900,
                               fontStyle: FontStyle.italic,
                               fontSize: 32,
                               letterSpacing: -0.8,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             profile.locationLabel,
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
+                              color: MatteSurface.muted(context),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           if (profile.bio?.trim().isNotEmpty == true) ...[
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Text(
                               profile.bio!,
                               maxLines: 4,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
+                                color: MatteSurface.muted(context),
                                 height: 1.4,
                               ),
                             ),

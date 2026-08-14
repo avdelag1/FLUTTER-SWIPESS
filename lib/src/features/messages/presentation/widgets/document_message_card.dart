@@ -63,7 +63,7 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open this document')),
+          SnackBar(content: Text('Could not open this document')),
         );
       }
     } finally {
@@ -79,10 +79,10 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
 
     final bg = mine
         ? Colors.white.withAlpha(26)
-        : (isLight ? Colors.white : const Color(0xFF141418));
+        : (isLight ? Colors.white : Color(0xFF141418));
     final border = mine
         ? Colors.white.withAlpha(51)
-        : (isLight ? const Color(0xFFE2E2E6) : Colors.white.withAlpha(31));
+        : (isLight ? Color(0xFFE2E2E6) : Colors.white.withAlpha(31));
     final textColor = mine ? Colors.white : MatteSurface.ink(context);
 
     return GestureDetector(

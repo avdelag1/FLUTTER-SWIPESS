@@ -24,6 +24,11 @@ abstract final class MatteSurface {
       ? const Color(0xFF5C5C66)
       : AppTheme.textSecondary;
 
+  /// Tertiary / placeholder ink.
+  static Color faint(BuildContext context) => isLight(context)
+      ? const Color(0xFF8A8A96)
+      : const Color(0x99FFFFFF);
+
   /// Cap soft hairline — `border-white/10` dark, not solid white.
   static Color hairline(BuildContext context) => isLight(context)
       ? Colors.black.withAlpha(28)

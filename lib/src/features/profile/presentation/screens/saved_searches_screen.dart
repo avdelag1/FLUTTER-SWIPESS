@@ -28,7 +28,7 @@ class SavedSearchesScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
                   GestureDetector(
@@ -50,7 +50,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +86,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                 error: (_, _) => Center(
                   child: TextButton(
                     onPressed: () => ref.read(savedSearchesProvider.notifier).refresh(),
-                    child: const Text('Could not load — retry'),
+                    child: Text('Could not load — retry'),
                   ),
                 ),
                 data: (items) {
@@ -266,7 +266,7 @@ class _SearchTile extends StatelessWidget {
       onTap: onOpen,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(20),

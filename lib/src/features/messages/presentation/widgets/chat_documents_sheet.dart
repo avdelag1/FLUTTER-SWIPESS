@@ -425,10 +425,10 @@ class _TabPill extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: selected
-              ? const LinearGradient(
+              ? LinearGradient(
                   colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
                 )
               : null,
@@ -621,7 +621,7 @@ class _ContractRow extends StatelessWidget {
 }
 
 class _FileRow extends StatelessWidget {
-  const _FileRow({required this.doc, required this.onShare});
+  _FileRow({required this.doc, required this.onShare});
 
   final LegalDocument doc;
   final VoidCallback onShare;

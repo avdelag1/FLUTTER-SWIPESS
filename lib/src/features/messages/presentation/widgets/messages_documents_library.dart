@@ -235,7 +235,7 @@ class _MessagesDocumentsLibraryState
 }
 
 class _FilterPill extends StatelessWidget {
-  const _FilterPill({
+  _FilterPill({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -253,10 +253,10 @@ class _FilterPill extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           gradient: selected
-              ? const LinearGradient(
+              ? LinearGradient(
                   colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
                 )
               : null,
@@ -283,7 +283,7 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _VaultCard extends StatelessWidget {
-  const _VaultCard({required this.contract});
+  _VaultCard({required this.contract});
   final DigitalContract contract;
 
   @override
@@ -426,12 +426,12 @@ class _ActionBtn extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           color: accent
-              ? const Color(0xFFF43F5E).withAlpha(36)
+              ? Color(0xFFF43F5E).withAlpha(36)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: accent
-                ? const Color(0xFFF43F5E).withAlpha(90)
+                ? Color(0xFFF43F5E).withAlpha(90)
                 : MatteSurface.hairline(context),
           ),
         ),

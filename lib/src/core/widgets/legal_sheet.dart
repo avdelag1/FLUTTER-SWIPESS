@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,7 +51,7 @@ class _LegalSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
@@ -61,13 +62,13 @@ class _LegalSheet extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: Icon(Icons.close, color: MatteSurface.ink(context)),
                       style: IconButton.styleFrom(
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Expanded(
                   child: ListView(
                     controller: controller,
@@ -77,7 +78,7 @@ class _LegalSheet extends StatelessWidget {
                             ? 'By creating an account or signing in, you agree to these Terms of Use (EULA) and the Privacy Policy. If you do not agree, do not use Swipess.'
                             : 'We value your privacy and use technical and organizational safeguards, including encryption in transit. No online service can guarantee absolute security.',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontWeight: FontWeight.w700,
                           height: 1.5,
                         ),

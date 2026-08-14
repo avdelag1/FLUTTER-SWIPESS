@@ -12,9 +12,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `ActivityFeed` — top 5 match/message/like cards on profile.
 class ActivityFeed extends ConsumerWidget {
-  const ActivityFeed({super.key});
+  ActivityFeed({super.key});
 
-  static const _relevant = {'match', 'message', 'like', 'super_like'};
+  static _relevant = {'match', 'message', 'like', 'super_like'};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -283,7 +283,7 @@ class _ActivityCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: notification.isRead
                 ? MatteSurface.cardFill(context)
@@ -312,7 +312,7 @@ class _ActivityCard extends StatelessWidget {
                     right: -2,
                     bottom: -2,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: _badgeColor,
                         shape: BoxShape.circle,

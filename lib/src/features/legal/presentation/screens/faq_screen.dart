@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,13 +24,13 @@ class FAQScreen extends StatelessWidget {
                 elevation: 0,
                 leading: IconButton(
                   icon: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
+                    child: Icon(Icons.arrow_back_ios_new_rounded, color: MatteSurface.ink(context), size: 16),
                   ),
                   onPressed: () {
                     AppHaptics.light();
@@ -37,12 +38,12 @@ class FAQScreen extends StatelessWidget {
                   },
                 ),
                 flexibleSpace: FlexibleSpaceBar(
-                  stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
-                  titlePadding: const EdgeInsets.only(left: 24, bottom: 20),
+                  stretchModes: [StretchMode.zoomBackground, StretchMode.blurBackground],
+                  titlePadding: EdgeInsets.only(left: 24, bottom: 20),
                   title: Text(
                     audience == 'owner' ? 'OWNER SUPPORT' : 'PROTOCOL SUPPORT',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
                       fontStyle: FontStyle.italic,
@@ -59,7 +60,7 @@ class FAQScreen extends StatelessWidget {
                     for (final item in audience == 'owner'
                         ? _ownerFaqs
                         : _clientFaqs) ...[
-                      _buildFAQItem(item.$1, item.$2),
+                      _buildFAQItem(context, item.$1, item.$2),
                     ],
                   ]),
                 ),
@@ -69,13 +70,13 @@ class FAQScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFAQItem(String question, String answer) {
+  Widget _buildFAQItem(BuildContext context, String question, String answer) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Theme(
         data: ThemeData(dividerColor: Colors.transparent),
@@ -83,20 +84,20 @@ class FAQScreen extends StatelessWidget {
           title: Text(
             question, 
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white, 
+              color: MatteSurface.ink(context), 
               fontSize: 16, 
               fontWeight: FontWeight.bold,
             ),
           ),
-          iconColor: Colors.white,
-          collapsedIconColor: Colors.white54,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          childrenPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+          iconColor: MatteSurface.ink(context),
+          collapsedIconColor: MatteSurface.muted(context),
+          tilePadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          childrenPadding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
           children: [
             Text(
               answer, 
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70, 
+                color: MatteSurface.muted(context), 
                 fontSize: 14, 
                 height: 1.6,
               ),

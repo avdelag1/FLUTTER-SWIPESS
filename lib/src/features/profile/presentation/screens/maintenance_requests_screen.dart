@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
@@ -56,7 +57,7 @@ class _MaintenanceRequestsScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   GestureDetector(
@@ -67,15 +68,15 @@ class _MaintenanceRequestsScreenState
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white, size: 18),
+                            color: MatteSurface.ink(context), size: 18),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +87,7 @@ class _MaintenanceRequestsScreenState
                         Text(
                           'Report and track property issues',
                           style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white54, fontSize: 11),
+                              color: MatteSurface.muted(context), fontSize: 11),
                         ),
                       ],
                     ),
@@ -120,9 +121,9 @@ class _MaintenanceRequestsScreenState
             ),
             Expanded(
               child: async.when(
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                      color: MatteSurface.ink(context), strokeWidth: 2),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -140,7 +141,7 @@ class _MaintenanceRequestsScreenState
                       child: Text(
                         'No maintenance requests yet.',
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54),
+                            color: MatteSurface.muted(context)),
                       ),
                     );
                   }
@@ -204,17 +205,17 @@ class _MaintenanceRequestsScreenState
                   children: [
                     Text('NEW REQUEST',
                         style: AppTheme.displayItalic.copyWith(fontSize: 18)),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     GlassTextField(
                       controller: title,
                       hint: 'Issue title',
                       icon: Icons.build_rounded,
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     Text(
                       'CATEGORY',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: MatteSurface.muted(context),
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 1.2,
@@ -235,11 +236,11 @@ class _MaintenanceRequestsScreenState
                           ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     Text(
                       'PRIORITY',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: MatteSurface.muted(context),
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 1.2,
@@ -263,18 +264,18 @@ class _MaintenanceRequestsScreenState
                           ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     GlassTextField(
                       controller: description,
                       hint: 'Describe the issue',
                       icon: Icons.notes_rounded,
                       maxLines: 4,
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     Text(
                       'PHOTOS (OPTIONAL)',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: MatteSurface.muted(context),
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 1.2,
@@ -313,8 +314,8 @@ class _MaintenanceRequestsScreenState
                                           color: Colors.black.withAlpha(180),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.close,
-                                            color: Colors.white, size: 12),
+                                        child: Icon(Icons.close,
+                                            color: MatteSurface.ink(context), size: 12),
                                       ),
                                     ),
                                   ),
@@ -337,13 +338,13 @@ class _MaintenanceRequestsScreenState
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: Colors.white24,
+                                    color: MatteSurface.hairline(context),
                                     style: BorderStyle.solid,
                                   ),
                                   color: Colors.transparent,
                                 ),
-                                child: const Icon(Icons.camera_alt_rounded,
-                                    color: Colors.white54),
+                                child: Icon(Icons.camera_alt_rounded,
+                                    color: MatteSurface.muted(context)),
                               ),
                             ),
                         ],
@@ -404,11 +405,11 @@ class _Ticket extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Row(
         children: [
@@ -421,17 +422,17 @@ class _Ticket extends StatelessWidget {
             ),
             child: Icon(Icons.handyman_rounded, color: _statusColor),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   request.title,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: MatteSurface.ink(context), fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   [
                     request.categoryLabel,
@@ -440,16 +441,16 @@ class _Ticket extends StatelessWidget {
                     if (request.propertyLabel != null) request.propertyLabel!,
                   ].join(' · '),
                   style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54, fontSize: 12),
+                      color: MatteSurface.muted(context), fontSize: 12),
                 ),
               ],
             ),
           ),
           if (request.photoUrls.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: 8),
               child: Icon(Icons.photo_rounded,
-                  color: Colors.white38, size: 18),
+                  color: MatteSurface.faint(context), size: 18),
             ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

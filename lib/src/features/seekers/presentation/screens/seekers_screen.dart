@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -24,13 +25,13 @@ class SeekersScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showSeekerRequestSheet(context, ref),
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Post request'),
+        icon: Icon(Icons.add_rounded),
+        label: Text('Post request'),
       ),
       body: async.when(
-            loading: () => const Center(
+            loading: () => Center(
               child: CircularProgressIndicator(
-                  color: Colors.white, strokeWidth: 2),
+                  color: MatteSurface.ink(context), strokeWidth: 2),
             ),
             error: (e, _) => Center(
               child: TextButton(
@@ -52,11 +53,11 @@ class SeekersScreen extends ConsumerWidget {
                           style: AppTheme.displayItalic
                               .copyWith(fontSize: 28, height: 1.05),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Text(
                           'People looking for workers & help nearby',
                           style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70, fontSize: 13),
+                              color: MatteSurface.muted(context), fontSize: 13),
                         ),
                       ],
                     ),
@@ -67,7 +68,7 @@ class SeekersScreen extends ConsumerWidget {
                             child: Text(
                               'No open seeker requests right now.',
                               style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54),
+                                  color: MatteSurface.muted(context)),
                             ),
                           )
                         : PageView.builder(
@@ -161,9 +162,9 @@ class _SeekerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0D),
+        color: Color(0xFF0A0A0D),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white, width: 1.0),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.0),
         image: request.seekerAvatar != null
             ? DecorationImage(
                 image: NetworkImage(request.seekerAvatar!),
@@ -197,7 +198,7 @@ class _SeekerCard extends StatelessWidget {
                 ),
               ),
             ),
-            const Spacer(),
+            Spacer(),
             Row(
               children: [
                 CircleAvatar(
@@ -206,26 +207,26 @@ class _SeekerCard extends StatelessWidget {
                       ? NetworkImage(request.seekerAvatar!)
                       : null,
                   child: request.seekerAvatar == null
-                      ? Text(request.initials, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900))
+                      ? Text(request.initials, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900))
                       : null,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(request.seekerName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                      Text(request.seekerName, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900)),
                       Text(request.location, style: TextStyle(color: Colors.white.withAlpha(160), fontSize: 12)),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text(
               request.title,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: MatteSurface.ink(context),
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 height: 1.1,

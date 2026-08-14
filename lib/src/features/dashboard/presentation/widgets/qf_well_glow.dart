@@ -28,7 +28,7 @@ class _QfWellGlowState extends State<QfWellGlow>
     super.initState();
     _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 7),
+      duration: const Duration(seconds: 9),
     )..repeat(reverse: true);
   }
 
@@ -40,9 +40,29 @@ class _QfWellGlowState extends State<QfWellGlow>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: widget.padding,
-      child: widget.child,
+    final wash = widget.isLight
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFFE8E8EE);
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_pulse.value);
+        // ~3–8% white/grey — breathes slowly, almost imperceptible.
+        final alpha = widget.isLight
+            ? (10 + (t * 12)).round()
+            : (8 + (t * 10)).round();
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: wash.withAlpha(alpha),
+            borderRadius: widget.borderRadius,
+          ),
+          child: child,
+        );
+      },
+      child: Padding(
+        padding: widget.padding,
+        child: widget.child,
+      ),
     );
   }
 }

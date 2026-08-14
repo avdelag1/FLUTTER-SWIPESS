@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -46,7 +47,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                  padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
                   child: Row(
                     children: [
                       GestureDetector(
@@ -57,10 +58,10 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            border: Border.all(color: MatteSurface.ink(context), width: 1.5),
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white, size: 18),
+                          child: Icon(Icons.arrow_back_ios_new_rounded,
+                              color: MatteSurface.ink(context), size: 18),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -75,8 +76,8 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           AppHaptics.medium();
                           setState(() => _qrOpen = true);
                         },
-                        icon: const Icon(Icons.qr_code_2_rounded,
-                            color: Colors.white),
+                        icon: Icon(Icons.qr_code_2_rounded,
+                            color: MatteSurface.ink(context)),
                       ),
                     ],
                   ),
@@ -185,17 +186,17 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                       Text(
                                         'MY RESIDENT CARD',
                                         style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white60,
+                                          color: MatteSurface.muted(context),
                                           fontSize: 10,
                                           fontWeight: FontWeight.w900,
                                           letterSpacing: 1.6,
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
+                                      SizedBox(height: 6),
                                       Text(
                                         'Show QR for Perks',
                                         style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white,
+                                          color: MatteSurface.ink(context),
                                           fontSize: 20,
                                           fontWeight: FontWeight.w900,
                                         ),
@@ -217,7 +218,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                         child: Text(
                                           'RESIDENT ID: $residentId',
                                           style: GoogleFonts.plusJakartaSans(
-                                            color: Colors.white,
+                                            color: MatteSurface.ink(context),
                                             fontSize: 9,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 1.2,
@@ -237,8 +238,8 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                       color: Colors.transparent,
                                     ),
                                   ),
-                                  child: const Icon(Icons.qr_code_2_rounded,
-                                      color: Colors.white, size: 28),
+                                  child: Icon(Icons.qr_code_2_rounded,
+                                      color: MatteSurface.ink(context), size: 28),
                                 ),
                               ],
                             ),
@@ -261,16 +262,16 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                 label: 'Locations',
                                 value: '0',
                                 icon: Icons.emoji_events_rounded,
-                                color: const Color(0xFFA78BFA),
+                                color: Color(0xFFA78BFA),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 22),
+                        SizedBox(height: 22),
                         Text(
                           'PARTNER OFFERS',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white38,
+                            color: MatteSurface.faint(context),
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
@@ -290,7 +291,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                         Text(
                           'PARTNER NETWORK',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white38,
+                            color: MatteSurface.faint(context),
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
@@ -332,18 +333,18 @@ class _Offer {
 }
 
 class _OfferTile extends StatelessWidget {
-  const _OfferTile({required this.offer});
+  _OfferTile({required this.offer});
   final _Offer offer;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Row(
         children: [
@@ -352,13 +353,13 @@ class _OfferTile extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [Color(0xFFF43F5E), Color(0xFF7C3AED)],
               ),
             ),
-            child: Icon(offer.icon, color: Colors.white),
+            child: Icon(offer.icon, color: MatteSurface.ink(context)),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +367,7 @@ class _OfferTile extends StatelessWidget {
                 Text(
                   offer.name.toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
                   ),
@@ -374,7 +375,7 @@ class _OfferTile extends StatelessWidget {
                 Text(
                   offer.detail.toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: MatteSurface.faint(context),
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
@@ -421,11 +422,11 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,11 +434,11 @@ class _StatCard extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: color, size: 16),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
                 label.toUpperCase(),
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white38,
+                  color: MatteSurface.faint(context),
                   fontSize: 9,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
@@ -445,11 +446,11 @@ class _StatCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: MatteSurface.ink(context),
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -475,7 +476,7 @@ class _EmptyPane extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 24),
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
@@ -486,22 +487,22 @@ class _EmptyPane extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white24, size: 36),
-          const SizedBox(height: 14),
+          Icon(icon, color: MatteSurface.hairline(context), size: 36),
+          SizedBox(height: 14),
           Text(
             title,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
+              color: MatteSurface.muted(context),
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             body,
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white38,
+              color: MatteSurface.faint(context),
               fontSize: 13,
             ),
           ),
@@ -527,13 +528,13 @@ class _ResidentQrModal extends StatelessWidget {
       child: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(28),
+            padding: EdgeInsets.all(28),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF101014),
+                color: Color(0xFF101014),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -544,20 +545,20 @@ class _ResidentQrModal extends StatelessWidget {
                         'RESIDENT QR',
                         style: AppTheme.displayItalic.copyWith(fontSize: 20),
                       ),
-                      const Spacer(),
+                      Spacer(),
                       IconButton(
                         onPressed: onClose,
-                        icon: const Icon(Icons.close_rounded,
-                            color: Colors.white70),
+                        icon: Icon(Icons.close_rounded,
+                            color: MatteSurface.muted(context)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Container(
                     width: 220,
                     height: 220,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Column(
@@ -576,12 +577,12 @@ class _ResidentQrModal extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'Show this at partner locations. Live partner scan wires in bases.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: MatteSurface.muted(context),
                       fontSize: 12,
                     ),
                   ),

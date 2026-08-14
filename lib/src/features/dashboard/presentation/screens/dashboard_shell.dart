@@ -39,6 +39,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final location = GoRouterState.of(context).matchedLocation;
     final isDashboard = location == AppPaths.clientDashboard ||
         location == AppPaths.legacyDashboard;
+    final isProfile = location == AppPaths.clientProfile;
     final isEvents = location == AppPaths.exploreEvents;
     if (isEvents) _eventsMounted = true;
     final routeTab = AppPaths.tabForLocation(location);
@@ -60,12 +61,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final bottomNavItems = [
       _BottomNavItem(
         id: NavTab.dashboard,
-        icon: Icons.bolt_rounded,
+        icon: Icons.dashboard_rounded,
         wash: const Color(0xFFFF4D00),
       ),
       _BottomNavItem(
         id: NavTab.likes,
-        icon: Icons.local_fire_department_rounded,
+        icon: Icons.favorite_rounded,
         wash: const Color(0xFFE4007C),
       ),
       _BottomNavItem(
@@ -75,23 +76,23 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       ),
       _BottomNavItem(
         id: NavTab.add,
-        icon: Icons.add_circle_rounded,
+        icon: Icons.add_rounded,
         accent: true,
         wash: const Color(0xFFFF4D00),
       ),
       _BottomNavItem(
         id: NavTab.messages,
-        icon: Icons.chat_bubble_outline_rounded,
+        icon: Icons.chat_bubble_rounded,
         wash: const Color(0xFF3B82F6),
       ),
       _BottomNavItem(
         id: NavTab.idCard,
-        icon: Icons.verified_user_outlined,
+        icon: Icons.badge_rounded,
         wash: const Color(0xFF7C3AED),
       ),
       _BottomNavItem(
         id: NavTab.seekers,
-        icon: Icons.people_outline_rounded,
+        icon: Icons.groups_rounded,
         wash: const Color(0xFFEB4898),
       ),
       _BottomNavItem(
@@ -101,12 +102,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       ),
       _BottomNavItem(
         id: NavTab.legal,
-        icon: Icons.balance_rounded,
+        icon: Icons.gavel_rounded,
         wash: const Color(0xFF6366F1),
       ),
       _BottomNavItem(
         id: NavTab.events,
-        icon: Icons.celebration_rounded,
+        icon: Icons.local_activity_rounded,
         wash: const Color(0xFFE4007C),
       ),
     ];
@@ -114,6 +115,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isLight = ref.watch(isLightThemeProvider);
     final chromeVisible = ref.watch(chromeVisibilityProvider);
     final showChrome = chromeVisible;
+    final showHeader = showChrome && (isDashboard || isProfile);
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
         ? NavTab.idCard
@@ -166,15 +168,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             left: 0,
             right: 0,
             child: AnimatedOpacity(
-              opacity: (showChrome && isDashboard) ? 1 : 0,
+              opacity: showHeader ? 1 : 0,
               duration: Duration(milliseconds: showChrome ? 360 : 340),
               curve: const Cubic(0.25, 0.1, 0.25, 1),
               child: AnimatedSlide(
-                offset: (showChrome && isDashboard) ? Offset.zero : const Offset(0, -0.12),
+                offset: showHeader ? Offset.zero : const Offset(0, -0.12),
                 duration: Duration(milliseconds: showChrome ? 360 : 340),
                 curve: const Cubic(0.25, 0.1, 0.25, 1),
                 child: IgnorePointer(
-                  ignoring: !showChrome || !isDashboard,
+                  ignoring: !showHeader,
                   child: AppTopBar(
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,

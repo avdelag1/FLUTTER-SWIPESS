@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,7 +9,7 @@ import 'package:go_router/go_router.dart';
 
 /// Cap PublicListingPreview — guest-friendly listing deep link.
 class PublicListingPreviewScreen extends ConsumerWidget {
-  const PublicListingPreviewScreen({super.key, required this.listingId});
+  PublicListingPreviewScreen({super.key, required this.listingId});
 
   final String listingId;
 
@@ -18,19 +19,19 @@ class PublicListingPreviewScreen extends ConsumerWidget {
 
     return Scaffold(
       body: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
         error: (e, _) => Center(
           child: Text('Could not load listing\n$e',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white70)),
+              style: TextStyle(color: MatteSurface.muted(context))),
         ),
         data: (listing) {
           if (listing == null) {
-            return const Center(
+            return Center(
               child: Text('Listing not found',
-                  style: TextStyle(color: Colors.white70)),
+                  style: TextStyle(color: MatteSurface.muted(context))),
             );
           }
           final image = listing.primaryImage;
@@ -72,14 +73,14 @@ class PublicListingPreviewScreen extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+                  padding: EdgeInsets.fromLTRB(24, 24, 24, 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         (listing.title ?? 'Listing').toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontWeight: FontWeight.w900,
                           fontStyle: FontStyle.italic,
                           fontSize: 28,
@@ -95,19 +96,19 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                           fontSize: 20,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         listing.formattedLocation,
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70),
+                            color: MatteSurface.muted(context)),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       Text(
                         listing.description?.trim().isNotEmpty == true
                             ? listing.description!
                             : 'Discover this listing on Swipess.',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: MatteSurface.muted(context),
                           height: 1.5,
                         ),
                       ),
