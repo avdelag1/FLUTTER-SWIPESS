@@ -8,7 +8,7 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
-import 'package:flutter_swipes/src/core/widgets/chunky_ink_pill.dart';
+import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
@@ -161,9 +161,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           ),
           Positioned(
             bottom: 18,
-            left: 0,
-            right: 0,
-            child: AnimatedOpacity(
+            left: 12,
+            right: 12,
+            child: IgnorePointer(
+              ignoring: !showChrome,
+              child: AnimatedOpacity(
               opacity: showChrome ? 1 : 0,
               duration: Duration(milliseconds: showChrome ? 360 : 340),
               curve: const Cubic(0.25, 0.1, 0.25, 1),
@@ -174,75 +176,73 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 child: SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 340),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Colors.white, width: 2.0),
-                      ),
-                      child: SingleChildScrollView(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: LiquidGlassPanel(
+                    borderRadius: 999,
+                    blur: LiquidGlass.blurLg,
+                    weight: LiquidGlassWeight.frostPill,
+                    floating: true,
+                    child: SizedBox(
+                      height: 58,
+                      child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < bottomNavItems.length; i++)
-                              _DockButton(
-                                item: bottomNavItems[i],
-                                wash: _washes[i % _washes.length],
-                                selected:
-                                    dockSelected == bottomNavItems[i].id,
-                                isLight: isLight,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  final id = bottomNavItems[i].id;
-                                  if (id == NavTab.filter) {
-                                    FilterBottomSheet.show(context);
-                                    return;
-                                  }
-                                  if (id == NavTab.add) {
-                                    context.push(AppPaths.ownerProperties);
-                                    return;
-                                  }
-                                  if (id == NavTab.ai) {
-                                    if (overlays.showConcierge) {
-                                      ref
-                                          .read(chromeVisibilityProvider
-                                              .notifier)
-                                          .hide();
-                                      return;
-                                    }
-                                    ref
-                                        .read(overlayModalsProvider.notifier)
-                                        .openConcierge();
-                                    return;
-                                  }
-                                  if (id == NavTab.idCard) {
-                                    ref
-                                        .read(overlayModalsProvider.notifier)
-                                        .openVapId();
-                                    return;
-                                  }
-                                  if (id == NavTab.seekers) {
-                                    showSeekerRequestSheet(context, ref);
-                                    return;
-                                  }
-                                  ref.read(navTabProvider.notifier).set(id);
-                                  context.go(AppPaths.pathForTab(id));
-                                },
-                              ),
-                          ],
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        itemCount: bottomNavItems.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 4),
+                        itemBuilder: (context, i) {
+                          final item = bottomNavItems[i];
+                          return _DockButton(
+                            item: item,
+                            wash: _washes[i % _washes.length],
+                            selected: dockSelected == item.id,
+                            isLight: isLight,
+                            onTap: () {
+                              AppHaptics.light();
+                              final id = item.id;
+                              if (id == NavTab.filter) {
+                                FilterBottomSheet.show(context);
+                                return;
+                              }
+                              if (id == NavTab.add) {
+                                context.push(AppPaths.ownerProperties);
+                                return;
+                              }
+                              if (id == NavTab.ai) {
+                                if (overlays.showConcierge) {
+                                  ref
+                                      .read(chromeVisibilityProvider
+                                          .notifier)
+                                      .hide();
+                                  return;
+                                }
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .openConcierge();
+                                return;
+                              }
+                              if (id == NavTab.idCard) {
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .openVapId();
+                                return;
+                              }
+                              if (id == NavTab.seekers) {
+                                showSeekerRequestSheet(context, ref);
+                                return;
+                              }
+                              ref.read(navTabProvider.notifier).set(id);
+                              context.go(AppPaths.pathForTab(id));
+                            },
+                          );
+                        },
                       ),
                     ),
                   ),
                 ),
               ),
             ),
+          ),
           ),
           ),
           ),
@@ -292,7 +292,6 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     // Cap: active = full ink; inactive muted. No circular glass discs.
     final color = item.accent
         ? const Color(0xFFFF4D00)

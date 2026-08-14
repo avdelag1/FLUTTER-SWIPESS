@@ -32,7 +32,7 @@ void main() {
     expect(MapBasemap.streetsUrl.contains('dark_all'), isFalse);
   });
 
-  test('a single live listing is padded so the map is not empty', () {
+  test('a single live listing is not padded with fake Tulum homes', () {
     final center = const LatLng(20.2114, -87.4654);
     final live = [
       Listing(
@@ -43,7 +43,25 @@ void main() {
       ),
     ];
     final merged = listingsForMap(live, center, 'Tulum');
-    expect(merged.length, greaterThanOrEqualTo(5));
+    expect(merged.length, 1);
+    expect(merged.single.id, 'live-1');
+    expect(merged.every((l) => !l.id.startsWith('map-demo-')), isTrue);
+  });
+
+  test('Paris does not inherit Tulum demo pins', () {
+    final paris = const LatLng(48.8566, 2.3522);
+    final tulumListing = Listing(
+      id: 'tulum-1',
+      title: 'Jungle Villa',
+      city: 'Tulum',
+      latitude: 20.21,
+      longitude: -87.46,
+    );
+    final merged = listingsForMap([tulumListing], paris, 'Paris');
+    expect(merged, isNotEmpty);
+    // listingsForMap no longer fabricates pins; city radius is applied
+    // by the provider. This just guarantees no demo overlay is injected.
+    expect(merged.any((l) => l.id.startsWith('map-demo-')), isFalse);
   });
 
   test('five nearby listings stay unclustered at a 50 km zoom', () {

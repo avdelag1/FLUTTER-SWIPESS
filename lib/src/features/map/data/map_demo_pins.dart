@@ -2,22 +2,16 @@ import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Pad sparse live results so a 10 km frame still shows a full passport map.
+/// Live pins only. Fake Tulum homes / stock faces must never ride along
+/// when the user picks another city — they look glued on top of the map.
 List<Listing> listingsForMap(
   List<Listing> live,
   LatLng center,
   String city,
 ) {
-  if (live.length >= 4) return live;
-  final demos = demoMapListings(center, city);
-  if (live.isEmpty) return demos;
   return [
-    ...live,
-    ...demos.where(
-      (d) => live.every(
-        (l) => (l.title ?? '').toLowerCase() != (d.title ?? '').toLowerCase(),
-      ),
-    ),
+    for (final listing in live)
+      if (listing.latitude != null && listing.longitude != null) listing,
   ];
 }
 
@@ -26,10 +20,10 @@ List<Profile> peopleForMap(
   LatLng center,
   String city,
 ) {
-  if (live.length >= 3) return live;
-  final demos = demoMapProfiles(center, city);
-  if (live.isEmpty) return demos;
-  return [...live, ...demos];
+  return [
+    for (final profile in live)
+      if (profile.latitude != null && profile.longitude != null) profile,
+  ];
 }
 
 /// Spread demo homes inside a 10 km ring so every pin stays in-radius.

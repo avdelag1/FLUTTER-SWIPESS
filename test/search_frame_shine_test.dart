@@ -20,12 +20,12 @@ void main() {
     expect(find.byType(SearchFrameShine), findsOneWidget);
   });
 
-  test('blue light lives in a 10s cycle, not a constant chase', () {
-    expect(SearchFrameShine.cycle, const Duration(seconds: 10));
-    expect(SearchFrameShine.shineFraction, 0.04);
+  test('blue light lives in an 8s cycle, not a constant chase', () {
+    expect(SearchFrameShine.cycle, const Duration(seconds: 8));
+    expect(SearchFrameShine.shineFraction, 0.25);
     expect(SearchFrameShine.isShineWindow(0.0), isTrue);
-    expect(SearchFrameShine.isShineWindow(0.03), isTrue);
-    expect(SearchFrameShine.isShineWindow(0.05), isFalse);
+    expect(SearchFrameShine.isShineWindow(0.20), isTrue);
+    expect(SearchFrameShine.isShineWindow(0.30), isFalse);
     expect(SearchFrameShine.isShineWindow(0.50), isFalse);
   });
 }

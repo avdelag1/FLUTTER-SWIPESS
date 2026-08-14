@@ -18,7 +18,6 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_ch
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_sheet.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_gps_dot.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_layer_rail.dart';
-import 'package:flutter_swipes/src/features/map/presentation/widgets/map_perspective_stage.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_preview_card.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_results_rail.dart';
@@ -108,6 +107,19 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   @override
   Widget build(BuildContext context) {
     final location = ref.watch(discoveryLocationProvider);
+    ref.listen(discoveryLocationProvider, (prev, next) {
+      if (prev == null) return;
+      if (prev.latitude == next.latitude &&
+          prev.longitude == next.longitude &&
+          prev.radiusKm == next.radiusKm) {
+        return;
+      }
+      _selected = null;
+      _safeMove(
+        LatLng(next.latitude, next.longitude),
+        _zoomForRadius(next.radiusKm),
+      );
+    });
     final asyncListings = ref.watch(mapListingsProvider);
     final asyncProfiles = ref.watch(mapProfilesProvider);
     final center = LatLng(location.latitude, location.longitude);

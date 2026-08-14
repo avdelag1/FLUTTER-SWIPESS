@@ -352,7 +352,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             tag: 'swipe_hero_${widget.listing.id}_$_photoIndex',
                             child: Image.network(
                               current,
-                              fit: BoxFit.cover,
+                              fit: BoxFit.contain,
+                              alignment: Alignment.center,
                               width: double.infinity,
                               height: double.infinity,
                             // Decode near display size — full Unsplash
@@ -735,7 +736,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return _fallback();
     }
     return FittedBox(
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
       child: SizedBox(
         width: player.value.size.width,
         height: player.value.size.height,

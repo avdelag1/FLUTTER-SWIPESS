@@ -65,7 +65,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     super.initState();
     _categoryId = widget.categoryId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chromeRevealProvider.notifier).reveal();
+      // Show the card immediately. Overlay chrome on tap — don't wait
+      // for the dock/header hide animation to "reveal" the photo.
+      ref.read(chromeRevealProvider.notifier).hide();
     });
   }
 
@@ -264,15 +266,8 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
               Positioned.fill(
                 child: SafeArea(
                   bottom: false,
-                  child: AnimatedPadding(
-                    duration: const Duration(milliseconds: 320),
-                    curve: Curves.easeOutCubic,
-                    padding: EdgeInsets.fromLTRB(
-                      10,
-                      chrome.chromeVisible ? 56 : 8,
-                      10,
-                      chrome.chromeVisible ? 78 : 16,
-                    ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
                     child: deck.isEmpty
                         ? _exhausted()
                         : SwipeableCardStack(
