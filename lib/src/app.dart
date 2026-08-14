@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/overlay_modals_host.dart';
 import 'package:flutter_swipes/src/features/native/biometric_gate.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
 
 class NativeSwipeApp extends ConsumerWidget {
   const NativeSwipeApp({super.key});
@@ -23,40 +24,43 @@ class NativeSwipeApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     final locale = ref.watch(appLocaleProvider);
     final isLight = ref.watch(isLightThemeProvider);
-    return MaterialApp.router(
-      title: 'Swipess',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
-      // Spelled out instead of `routerConfig:` so the Android Back key runs
-      // through our dispatcher (Cap `useGlobalBackButton`) before GoRouter.
-      routeInformationProvider: router.routeInformationProvider,
-      routeInformationParser: router.routeInformationParser,
-      routerDelegate: router.routerDelegate,
-      backButtonDispatcher: ref.watch(globalBackButtonDispatcherProvider),
-      debugShowCheckedModeBanner: false,
-      locale: Locale(locale.code),
-      supportedLocales: const [Locale('en'), Locale('es')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      builder: (context, child) {
-        return SystemChromeSync(
-          child: ConnectivityWatcher(
-            child: AppLifecycleWatcher(
-              child: AppBadgeSync(
-                child: BiometricGate(
-                  child: OverlayModalsHost(
-                    child: child ?? const SizedBox.shrink(),
+
+    return OfflineSwipeSyncBootstrap(
+      child: MaterialApp.router(
+        title: 'Swipess',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
+        // Spelled out instead of `routerConfig:` so the Android Back key runs
+        // through our dispatcher (Cap `useGlobalBackButton`) before GoRouter.
+        routeInformationProvider: router.routeInformationProvider,
+        routeInformationParser: router.routeInformationParser,
+        routerDelegate: router.routerDelegate,
+        backButtonDispatcher: ref.watch(globalBackButtonDispatcherProvider),
+        debugShowCheckedModeBanner: false,
+        locale: Locale(locale.code),
+        supportedLocales: const [Locale('en'), Locale('es')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (context, child) {
+          return SystemChromeSync(
+            child: ConnectivityWatcher(
+              child: AppLifecycleWatcher(
+                child: AppBadgeSync(
+                  child: BiometricGate(
+                    child: OverlayModalsHost(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

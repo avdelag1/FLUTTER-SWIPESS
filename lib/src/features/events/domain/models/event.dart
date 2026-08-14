@@ -9,6 +9,8 @@ class Event {
   final String? imageUrl;
   final List<String> imageUrls;
   final String? videoUrl;
+  final String? backgroundMusicUrl;
+  final bool videoAudioEnabled;
   final DateTime? eventDate;
   final DateTime? eventEndDate;
   final String? location;
@@ -32,6 +34,8 @@ class Event {
     this.imageUrl,
     this.imageUrls = const [],
     this.videoUrl,
+    this.backgroundMusicUrl,
+    this.videoAudioEnabled = true,
     this.eventDate,
     this.eventEndDate,
     this.location,
@@ -88,6 +92,8 @@ class Event {
       imageUrl: _pickImage(json),
       imageUrls: _pickGallery(json),
       videoUrl: json['video_url'] as String?,
+      backgroundMusicUrl: json['background_music_url'] as String?,
+      videoAudioEnabled: json['video_audio_enabled'] as bool? ?? true,
       eventDate: json['event_date'] != null
           ? DateTime.tryParse(json['event_date'] as String)
           : null,

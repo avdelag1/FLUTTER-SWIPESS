@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
+import 'package:flutter_swipes/src/core/widgets/chunky_ink_pill.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
@@ -90,14 +91,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             ? NavTab.ai
             : currentTab;
     final canvas = AppTheme.canvasFor(isLight: isLight);
-    // Cap `getBottomNavChrome` — neo-naïve glass + hard ink ring.
-    final dockFill = isLight
-        ? const Color(0xF5FFFFFF)
-        : const Color(0xF5101016);
-    final dockBorder =
-        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(230);
-    final dockHardShadow =
-        isLight ? const Color(0xFF141414) : Colors.white.withAlpha(90);
 
     return Scaffold(
       backgroundColor: canvas,
@@ -174,74 +167,67 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 340),
-                  child: Container(
-                    height: 52,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: dockFill,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: dockBorder,
-                        width: 2.25,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: dockHardShadow,
-                          offset: const Offset(1.5, 1.5),
-                          blurRadius: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ChunkyInkPill(
+                      isLight: isLight,
+                      height: 52,
+                      depth: 3.5,
+                      frameWidth: 3.5,
+                      closedFrame: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            for (var i = 0; i < bottomNavItems.length; i++)
+                              _DockButton(
+                                item: bottomNavItems[i],
+                                wash: _washes[i % _washes.length],
+                                selected:
+                                    dockSelected == bottomNavItems[i].id,
+                                isLight: isLight,
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  final id = bottomNavItems[i].id;
+                                  if (id == NavTab.filter) {
+                                    FilterBottomSheet.show(context);
+                                    return;
+                                  }
+                                  if (id == NavTab.add) {
+                                    context.push(AppPaths.ownerProperties);
+                                    return;
+                                  }
+                                  if (id == NavTab.ai) {
+                                    if (overlays.showConcierge) {
+                                      ref
+                                          .read(chromeVisibilityProvider
+                                              .notifier)
+                                          .hide();
+                                      return;
+                                    }
+                                    ref
+                                        .read(overlayModalsProvider.notifier)
+                                        .openConcierge();
+                                    return;
+                                  }
+                                  if (id == NavTab.idCard) {
+                                    ref
+                                        .read(overlayModalsProvider.notifier)
+                                        .openVapId();
+                                    return;
+                                  }
+                                  if (id == NavTab.seekers) {
+                                    showSeekerRequestSheet(context, ref);
+                                    return;
+                                  }
+                                  ref.read(navTabProvider.notifier).set(id);
+                                  context.go(AppPaths.pathForTab(id));
+                                },
+                              ),
+                          ],
                         ),
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isLight ? 40 : 160),
-                          blurRadius: 22,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          for (var i = 0; i < bottomNavItems.length; i++)
-                            _DockButton(
-                              item: bottomNavItems[i],
-                              wash: _washes[i % _washes.length],
-                              selected: dockSelected == bottomNavItems[i].id,
-                              isLight: isLight,
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                final id = bottomNavItems[i].id;
-                                if (id == NavTab.filter) {
-                                  FilterBottomSheet.show(context);
-                                  return;
-                                }
-                                if (id == NavTab.add) {
-                                  context.push(AppPaths.ownerProperties);
-                                  return;
-                                }
-                                if (id == NavTab.ai) {
-                                  ref
-                                      .read(overlayModalsProvider.notifier)
-                                      .openConcierge();
-                                  return;
-                                }
-                                if (id == NavTab.idCard) {
-                                  ref
-                                      .read(overlayModalsProvider.notifier)
-                                      .openVapId();
-                                  return;
-                                }
-                                // Cap SEEKERS dock opens SeekerRequestDialog.
-                                if (id == NavTab.seekers) {
-                                  showSeekerRequestSheet(context, ref);
-                                  return;
-                                }
-                                ref.read(navTabProvider.notifier).set(id);
-                                context.go(AppPaths.pathForTab(id));
-                              },
-                            ),
-                        ],
                       ),
                     ),
                   ),

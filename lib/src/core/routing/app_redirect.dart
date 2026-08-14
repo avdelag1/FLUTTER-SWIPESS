@@ -52,20 +52,23 @@ abstract final class AppRedirect {
 
     if (isPublic(location)) return null;
 
-    if (!granted && location != AppPaths.gate) {
+    // Gate always wins over a persisted session. A signed-in user who has not
+    // passed the code (bookmark to /client/dashboard, stale localStorage)
+    // used to bounce dashboard → gate → dashboard until GoRouter threw.
+    if (!granted) {
+      if (location == AppPaths.gate) return null;
       pending.remember(uri);
       return AppPaths.gate;
     }
 
-    if (granted && !signedIn) {
+    if (!signedIn) {
       if (location == AppPaths.gate) return AppPaths.welcome;
       if (_authScreens.contains(location)) return null;
       pending.remember(uri);
       return AppPaths.welcome;
     }
 
-    if (signedIn &&
-        (location == AppPaths.gate || _authScreens.contains(location))) {
+    if (location == AppPaths.gate || _authScreens.contains(location)) {
       // A share link followed before signing in wins over the default landing
       // spot; `take` clears it so it only resumes once.
       return pending.take() ?? AppPaths.clientDashboard;

@@ -4,16 +4,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mute_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 /// Cap `EventsVideoQuickFilter` — segments + shared mute + advance on end.
 ///
-/// Plays on web too (one HTML5 video). Falls back to demo clips when the
-/// events feed has no `video_url` rows yet.
+/// Sound stays on for the whole deck after one unmute (Cap: do not auto-mute
+/// on event change). Background music uses its own looping player so clip
+/// swaps don't kill audio.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -25,10 +28,13 @@ class EventsTeaserCard extends ConsumerStatefulWidget {
 
 class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   VideoPlayerController? _player;
+  VideoPlayerController? _music;
   int _index = 0;
   String? _boundUrl;
+  String? _musicUrl;
   double _dragDx = 0;
   bool _binding = false;
+  bool _advancing = false;
 
   static const _demo = <Event>[
     Event(
@@ -55,6 +61,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   void dispose() {
     _player?.removeListener(_onTick);
     _player?.dispose();
+    _music?.dispose();
     super.dispose();
   }
 
@@ -63,28 +70,47 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     return _demo;
   }
 
+  Event? _currentOf(List<Event> videos) {
+    if (videos.isEmpty) return null;
+    return videos[_index % videos.length];
+  }
+
+  bool get _wantSound {
+    final notifier = ref.read(deckSoundOnProvider.notifier);
+    return ref.read(deckSoundOnProvider) &&
+        (notifier.mediaUnlocked || !kIsWeb);
+  }
+
   void _onTick() {
+    if (_binding || _advancing) return;
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
     final videos = _videos(ref.read(videoEventsProvider));
     if (videos.length <= 1) return;
     final pos = player.value.position;
     final dur = player.value.duration;
-    if (dur > Duration.zero && pos >= dur - const Duration(milliseconds: 120)) {
-      _index = (_index + 1) % videos.length;
-      _bind(videos);
-    }
+    final ended = player.value.isCompleted ||
+        (dur > Duration.zero && pos >= dur - const Duration(milliseconds: 80));
+    if (!ended) return;
+    _advancing = true;
+    player.removeListener(_onTick);
+    _index = (_index + 1) % videos.length;
+    _bind(videos);
   }
 
   Future<void> _bind(List<Event> videos) async {
     if (_binding) return;
     if (videos.isEmpty) return;
     if (_index >= videos.length) _index = 0;
-    final url = videos[_index].videoUrl?.trim();
+    final event = videos[_index];
+    final url = event.videoUrl?.trim();
     if (url == null || url.isEmpty) return;
     if (url == _boundUrl &&
         _player != null &&
         _player!.value.isInitialized) {
+      await _applySound(_player);
+      await _syncMusic(event);
+      _advancing = false;
       return;
     }
 
@@ -92,7 +118,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _boundUrl = url;
     final previous = _player;
     previous?.removeListener(_onTick);
-    // Web autoplay requires muted start; Cap mute toggle unmutes after gesture.
     final next = VideoPlayerController.networkUrl(
       Uri.parse(url),
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
@@ -109,24 +134,18 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         return;
       }
       await next.setLooping(videos.length == 1);
-      // Always mute before first play so browsers allow autoplay.
-      await next.setVolume(0);
-      await next.play();
-      final soundOn = ref.read(deckSoundOnProvider);
-      if (soundOn && !kIsWeb) {
-        await next.setVolume(1);
-      } else if (soundOn && kIsWeb) {
-        // Web: only unmute after a user gesture (mute button).
-        await next.setVolume(0);
-      }
+      // Keep previous clip playing (unmuted) until the next one is actually
+      // playing — browsers treat that as continued media engagement.
+      await _playWithDeckSound(next, event);
       next.addListener(_onTick);
+      await _syncMusic(event);
       if (mounted) setState(() {});
     } catch (_) {
-      // Skip broken clip and try the next one once.
       if (mounted && videos.length > 1) {
         _index = (_index + 1) % videos.length;
         _boundUrl = null;
         _binding = false;
+        _advancing = false;
         await previous?.dispose();
         await _bind(videos);
         return;
@@ -134,16 +153,102 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       if (mounted) setState(() {});
     } finally {
       _binding = false;
+      _advancing = false;
+      await previous?.dispose();
+    }
+  }
+
+  Future<void> _playWithDeckSound(
+    VideoPlayerController next,
+    Event _,
+  ) async {
+    final videoSound = _wantSound;
+    try {
+      await next.setVolume(videoSound ? 1 : 0);
+      await next.play();
+      if (videoSound) await next.setVolume(1);
+    } catch (_) {
+      await next.setVolume(0);
+      await next.play();
+      if (videoSound) {
+        try {
+          await next.setVolume(1);
+        } catch (_) {}
+      }
+    }
+  }
+
+  Future<void> _applySound(VideoPlayerController? player) async {
+    if (player == null) return;
+    final videoSound = _wantSound;
+    await player.setVolume(videoSound ? 1 : 0);
+    if (videoSound) await player.play();
+  }
+
+  Future<void> _syncMusic(Event event) async {
+    final url = event.backgroundMusicUrl?.trim();
+    final soundOn = _wantSound;
+    if (url == null || url.isEmpty || !soundOn) {
+      await _music?.setVolume(0);
+      await _music?.pause();
+      return;
+    }
+    if (url == _musicUrl && _music != null && _music!.value.isInitialized) {
+      await _music!.setVolume(0.5);
+      await _music!.play();
+      return;
+    }
+    final previous = _music;
+    _musicUrl = url;
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _music = next;
+    try {
+      await next.initialize();
+      if (!mounted || _musicUrl != url) {
+        await next.dispose();
+        return;
+      }
+      await next.setLooping(true);
+      await next.setVolume(0.5);
+      await next.play();
+    } catch (_) {
+      await next.dispose();
+      if (identical(_music, next)) {
+        _music = null;
+        _musicUrl = null;
+      }
+    } finally {
       await previous?.dispose();
     }
   }
 
   void _advance(List<Event> videos, int delta) {
-    if (videos.isEmpty) return;
+    if (videos.isEmpty || _binding) return;
     _index = (_index + delta) % videos.length;
     if (_index < 0) _index += videos.length;
     _boundUrl = null;
     _bind(videos);
+  }
+
+  void _toggleSound() {
+    HapticFeedback.selectionClick();
+    unlockDeckMedia();
+    final nextOn = !ref.read(deckSoundOnProvider);
+    ref.read(deckSoundOnProvider.notifier).setSoundOn(nextOn);
+    final event = _currentOf(_videos(ref.read(videoEventsProvider)));
+    // Cap: unmute the clip itself whenever sound is on.
+    _player?.setVolume(nextOn ? 1 : 0);
+    if (nextOn) {
+      unlockDeckMedia();
+      _player?.play();
+      if (event != null) _syncMusic(event);
+    } else {
+      _music?.setVolume(0);
+      _music?.pause();
+    }
   }
 
   @override
@@ -152,7 +257,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final videos = _videos(apiVideos);
     final soundOn = ref.watch(deckSoundOnProvider);
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
-      _player?.setVolume(on ? 1 : 0);
+      final event = _currentOf(videos);
+      _applySound(_player);
+      if (on && event != null) {
+        _syncMusic(event);
+      } else {
+        _music?.pause();
+      }
     });
     ref.listen<List<Event>>(videoEventsProvider, (_, next) {
       _bind(_videos(next));
@@ -162,7 +273,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         if (mounted) _bind(videos);
       });
     }
-    final current = videos.isEmpty ? null : videos[_index % videos.length];
+    final current = _currentOf(videos);
     final ready = _player != null && _player!.value.isInitialized;
     final segmentCount = videos.isEmpty ? 1 : videos.length.clamp(1, 8);
 
@@ -248,35 +359,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               ),
             ),
             Positioned(
-              top: 6,
-              right: 6,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  final next = !ref.read(deckSoundOnProvider);
-                  ref.read(deckSoundOnProvider.notifier).toggle();
-                  // Web unmute must happen in this tap gesture.
-                  _player?.setVolume(next ? 1 : 0);
-                  if (next) {
-                    _player?.play();
-                  }
-                },
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(120),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                  child: Icon(
-                    soundOn
-                        ? Icons.volume_up_rounded
-                        : Icons.volume_off_rounded,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
+              top: 0,
+              right: 0,
+              child: EventMuteButton(
+                soundOn: soundOn,
+                onToggle: _toggleSound,
               ),
             ),
             Positioned(

@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/swipes/data/repositories/client_filter_preferences_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Capacitor ClientFilters — white/light sheet with category picker + detail filters.
 class FilterBottomSheet extends ConsumerStatefulWidget {
@@ -87,6 +89,26 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _propertyTypes = List.of(current.propertyTypes);
     _city = current.city;
     _radiusKm = current.radiusKm;
+    _hydrateFromCloud();
+  }
+
+  Future<void> _hydrateFromCloud() async {
+    if (Supabase.instance.client.auth.currentUser == null) return;
+    final row = await ClientFilterPreferencesRepository().fetchOwn();
+    if (!mounted || row == null) return;
+    final remote = ClientFilterPreferencesRepository().toFilter(row);
+    if (remote == null) return;
+    setState(() {
+      _interestType = remote.interestType;
+      _priceRange = remote.priceRangeLabel;
+      _minBeds = remote.minBeds ?? 0;
+      _minBaths = remote.minBaths ?? 0;
+      _furnished = remote.furnished == true;
+      _petFriendly = remote.petFriendly == true;
+      _propertyTypes = List.of(remote.propertyTypes);
+      _city = remote.city;
+      // Radius isn't part of Cap's persisted columns — keep the session value.
+    });
   }
 
   List<(String, String, double, double)> get _budgets {
@@ -127,6 +149,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             radiusKm: _radiusKm,
           ),
         );
+    // Cap: persist preferences when logged in (best-effort).
+    final next = ref.read(swipeFilterProvider);
+    ClientFilterPreferencesRepository().upsertFromFilter(next);
     // Force deck reload with new filters.
     ref.invalidate(swipeListingsProvider);
     HapticFeedback.mediumImpact();

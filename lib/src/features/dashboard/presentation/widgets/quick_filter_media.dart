@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:video_player/video_player.dart';
@@ -163,9 +164,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
         return;
       }
       final soundOn = ref.read(deckSoundOnProvider);
+      final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+      final wantSound = soundOn && (unlocked || !kIsWeb);
       await next.setLooping(true);
-      await next.setVolume(soundOn ? 1 : 0);
+      await next.setVolume(wantSound ? 1 : 0);
       await next.play();
+      if (wantSound) await next.setVolume(1);
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});
@@ -289,22 +293,30 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
               child: GestureDetector(
                 onTap: () {
                   HapticFeedback.selectionClick();
+                  unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
+                  _video?.setVolume(
+                    ref.read(deckSoundOnProvider) ? 1 : 0,
+                  );
+                  if (ref.read(deckSoundOnProvider)) {
+                    _video?.play();
+                  }
                 },
                 child: Container(
                   width: 28,
                   height: 28,
+                  alignment: Alignment.center,
+                  // No white ring — icon + soft dark chip only.
                   decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(120),
+                    color: Colors.black.withAlpha(110),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Icon(
                     soundOn
                         ? Icons.volume_up_rounded
                         : Icons.volume_off_rounded,
                     color: Colors.white,
-                    size: 14,
+                    size: 15,
                   ),
                 ),
               ),

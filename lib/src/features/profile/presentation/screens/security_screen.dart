@@ -9,6 +9,8 @@ import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/client_verification_flow.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/blocked_users_section.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -202,29 +204,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         ),
       ),
       const SizedBox(height: 14),
-      _Panel(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'BLOCKED USERS',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'No blocked members yet. Blocks from chat will appear here.',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white54,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
+      const _Panel(
+        child: BlockedUsersSection(),
       ),
     ];
   }
@@ -232,34 +213,29 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   List<Widget> _verification(BuildContext context) {
     return [
       _Panel(
+        child: ClientVerificationFlow(
+          onComplete: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Documents submitted. Verification is pending review.',
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      const SizedBox(height: 14),
+      _Panel(
         child: Column(
           children: [
-            const Icon(Icons.verified_user_rounded,
-                color: Color(0xFFE879F9), size: 42),
-            const SizedBox(height: 12),
-            Text(
-              'Resident verification',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Upload identity docs in the vault, then complete your PEARL card.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white54,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 18),
-            BrandPrimaryButton(
+            BrandGhostButton(
               label: 'Open document vault',
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const DocumentVaultScreen(),
+                  ),
                 );
               },
             ),

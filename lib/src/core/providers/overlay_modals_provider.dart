@@ -39,11 +39,11 @@ class OverlayModalsNotifier extends Notifier<OverlayModals> {
 
   void closeAll() => state = const OverlayModals();
 
-  void openVapId() => state = const OverlayModals(showVapId: true);
+  void openVapId() => state = state.copyWith(showVapId: true);
 
   void closeVapId() => state = state.copyWith(showVapId: false);
 
-  void openPassportMap({bool showCities = false}) => state = OverlayModals(
+  void openPassportMap({bool showCities = false}) => state = state.copyWith(
         showPassportMap: true,
         mapShowCities: showCities,
       );

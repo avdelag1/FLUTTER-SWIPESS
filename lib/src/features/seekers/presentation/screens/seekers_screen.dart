@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_request.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/providers/seekers_provider.dart';
@@ -94,19 +94,17 @@ class SeekersScreen extends ConsumerWidget {
                                               ownerId: ownerId,
                                               listingId: req.id);
                                       if (context.mounted && convoId != null) {
-                                        await Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => ChatScreen(
-                                              conversation: ChatConversation(
-                                                id: convoId,
-                                                otherUserId: ownerId,
-                                                name: req.seekerName,
-                                                lastMessage: '',
-                                                timestamp: 'now',
-                                                avatarUrl: req.seekerAvatar,
-                                                listingTag: req.title,
-                                              ),
-                                            ),
+                                        await showChatPopup(
+                                          context,
+                                          isNewConversation: true,
+                                          conversation: ChatConversation(
+                                            id: convoId,
+                                            otherUserId: ownerId,
+                                            name: req.seekerName,
+                                            lastMessage: '',
+                                            timestamp: 'now',
+                                            avatarUrl: req.seekerAvatar,
+                                            listingTag: req.title,
                                           ),
                                         );
                                       }
