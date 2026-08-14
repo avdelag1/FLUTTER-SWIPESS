@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/category_card.dart';
@@ -141,7 +142,7 @@ class _CategoryPokerCardState extends State<CategoryPokerCard> {
                         borderRadius: BorderRadius.circular(16),
                         onTap: widget.isTop
                             ? () {
-                                HapticFeedback.mediumImpact();
+                                AppHaptics.medium();
                                 widget.onEngage();
                               }
                             : null,

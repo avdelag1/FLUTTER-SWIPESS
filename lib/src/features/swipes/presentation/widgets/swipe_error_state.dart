@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -86,7 +87,7 @@ class SwipeErrorState extends StatelessWidget {
                 onTap: isRetrying
                     ? null
                     : () {
-                        HapticFeedback.mediumImpact();
+                        AppHaptics.medium();
                         onRetry();
                       },
                 child: AnimatedOpacity(

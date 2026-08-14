@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/legal/data/repositories/contract_repository.dart';
@@ -42,7 +43,7 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
 
   Future<void> _handleOpen() async {
     if (_opening) return;
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     if (!widget.attachment.isContract) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Open the Documents vault to view this file')),

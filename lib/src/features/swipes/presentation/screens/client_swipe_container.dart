@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
@@ -115,7 +116,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       );
       return;
     }
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final convoId = await swipe_repo.SwipeRepository().startConversation(
           ownerId: ownerId,
           listingId: listing.id,
@@ -138,7 +139,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   void _undo() {
     final last = _undoable;
     if (last == null || _deck == null) return;
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     setState(() {
       _undoable = null;
       _deck = [last, ..._deck!];
@@ -482,7 +483,7 @@ class _DockIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         onTap();
       },
       child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -202,7 +203,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                           );
                         },
                         onRemove: () {
-                          HapticFeedback.mediumImpact();
+                          AppHaptics.medium();
                           ref
                               .read(favoritedEventsProvider.notifier)
                               .remove(event.id);

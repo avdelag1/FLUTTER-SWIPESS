@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -67,7 +68,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
   Future<void> _sendContract(DigitalContract contract) async {
     if (_sending) return;
     setState(() => _sending = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       await ref.read(messageRepositoryProvider).sendDocumentMessage(
             conversationId: widget.conversationId,
@@ -90,7 +91,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
   Future<void> _sendFile(LegalDocument doc) async {
     if (_sending) return;
     setState(() => _sending = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       await ref.read(messageRepositoryProvider).sendDocumentMessage(
             conversationId: widget.conversationId,
@@ -111,7 +112,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
   }
 
   Future<void> _exportPdf(DigitalContract contract) async {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     final body = contract.content?.trim();
     if (body == null || body.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -420,7 +421,7 @@ class _TabPill extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onTap();
       },
       child: Container(

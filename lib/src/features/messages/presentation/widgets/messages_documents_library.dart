@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -141,7 +142,7 @@ class _MessagesDocumentsLibraryState
                         child: InkWell(
                           borderRadius: BorderRadius.circular(18),
                           onTap: () {
-                            HapticFeedback.mediumImpact();
+                            AppHaptics.medium();
                             context.push(AppPaths.clientContracts);
                           },
                           child: Center(
@@ -248,7 +249,7 @@ class _FilterPill extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onTap();
       },
       child: Container(
@@ -365,7 +366,7 @@ class _VaultCard extends StatelessWidget {
                   label: 'SHARE',
                   icon: Icons.ios_share_rounded,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     final body = contract.content?.trim();
                     SharePlus.instance.share(
                       ShareParams(
@@ -385,7 +386,7 @@ class _VaultCard extends StatelessWidget {
                   icon: Icons.open_in_new_rounded,
                   accent: true,
                   onTap: () {
-                    HapticFeedback.mediumImpact();
+                    AppHaptics.medium();
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) =>

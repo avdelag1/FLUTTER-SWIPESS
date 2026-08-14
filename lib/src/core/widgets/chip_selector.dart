@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -45,7 +46,7 @@ class ChipSelector extends StatelessWidget {
                 label: option,
                 active: selected.contains(option),
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   if (!multi) {
                     onChanged(selected.contains(option) ? const [] : [option]);
                     return;

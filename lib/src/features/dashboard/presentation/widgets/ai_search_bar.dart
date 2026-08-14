@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -28,7 +29,7 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
 
   Future<void> _runSearch() async {
     final q = _controller.text.trim();
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     _focus.unfocus();
     await showIntelCoreSheet(context, initialQuery: q);
   }

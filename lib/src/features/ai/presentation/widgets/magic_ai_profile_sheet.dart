@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
@@ -43,7 +44,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
       return;
     }
     setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final ai = ref.read(aiEdgeRepositoryProvider);
     final draft = await ai.extractProfile(narrative: text);
     var bio = draft['bio']?.toString().trim();

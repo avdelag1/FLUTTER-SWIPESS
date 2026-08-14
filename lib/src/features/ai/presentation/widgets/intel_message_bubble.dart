@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
@@ -88,7 +89,7 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
           children: [
             GestureDetector(
               onTap: () {
-                HapticFeedback.selectionClick();
+                AppHaptics.selection();
                 setState(() => _showActions = !_showActions);
               },
               child: Container(
@@ -261,7 +262,7 @@ class _ActionBtn extends StatelessWidget {
       padding: const EdgeInsets.only(right: 6),
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
           onTap();
         },
         child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -68,7 +69,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
   }
 
   Future<void> _enable() async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     // Bases: wire flutter_local_notifications / FCM subscribe.
     await _dismiss();
     if (!mounted) return;

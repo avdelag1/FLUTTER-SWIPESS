@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
@@ -45,7 +46,7 @@ class ActivityFeed extends ConsumerWidget {
                 muted: muted,
                 hairline: hairline,
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   ref.read(notificationsProvider.notifier).markRead(n.id);
                   openNotificationTarget(context, n);
                 },
@@ -58,7 +59,7 @@ class ActivityFeed extends ConsumerWidget {
               height: 48,
               child: OutlinedButton(
                 onPressed: () {
-                  HapticFeedback.lightImpact();
+                  AppHaptics.light();
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => const NotificationsScreen(),
@@ -197,7 +198,7 @@ class _ActivityFeedError extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onRetry();
       },
       child: Container(

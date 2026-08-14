@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
@@ -248,7 +249,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
       onHorizontalDragEnd: (_) {
         if (_dragDx.abs() > 20) {
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
           _advance(_dragDx < 0 ? 1 : -1);
         }
         _dragDx = 0;
@@ -293,7 +294,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
               right: 6,
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
                   _video?.setVolume(

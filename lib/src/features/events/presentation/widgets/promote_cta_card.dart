@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `PromoteCTACard` — full-bleed end-of-events-feed promote onboarding.
@@ -196,7 +197,7 @@ class PromoteCTACard extends StatelessWidget {
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () {
-                    HapticFeedback.mediumImpact();
+                    AppHaptics.medium();
                     onPromote();
                   },
                   child: Container(

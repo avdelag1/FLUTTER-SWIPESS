@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/spotlight_listings.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
@@ -63,7 +64,7 @@ class _SpotlightCard extends StatelessWidget {
     final image = listing.primaryImage;
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => ListingDetailScreen(listingData: listing),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/camera/data/bake_camera_filter.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/widgets/camera_filters_strip.dart';
@@ -34,7 +35,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
   Future<void> _capture() async {
     if (_remaining <= 0 || _busy) return;
     setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final file = await ImagePicker().pickImage(
         source: ImageSource.camera,

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/camera/data/video_recut.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -83,7 +84,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   Future<void> _confirm() async {
     if (_processing || !_ready) return;
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final window = _end - _start;
     if (window > VideoCropperScreen.maxSeconds + 0.05) {
       ScaffoldMessenger.of(context).showSnackBar(

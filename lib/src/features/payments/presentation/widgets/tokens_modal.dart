@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+
 class TokensModal extends ConsumerWidget {
   const TokensModal({super.key});
 
@@ -70,7 +72,7 @@ class TokensModal extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: InkWell(
                     onTap: () async {
-                      HapticFeedback.lightImpact();
+                      AppHaptics.light();
                       final result = await ref
                           .read(paymentServiceProvider)
                           .buy(offer);
@@ -78,7 +80,7 @@ class TokensModal extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(result.userMessage)),
                       );
-                      if (result.isSuccess) Navigator.of(context).pop();
+                      if (result.isSuccess) { await AppHaptics.success(); Navigator.of(context).pop(); }
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
@@ -179,7 +181,7 @@ class TokensModal extends ConsumerWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(24),
                     onTap: () async {
-                      HapticFeedback.selectionClick();
+                      AppHaptics.selection();
                       final result = await ref
                           .read(paymentServiceProvider)
                           .presentPaywall();
@@ -187,7 +189,7 @@ class TokensModal extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text(result.userMessage)),
                       );
-                      if (result.isSuccess) Navigator.of(context).pop();
+                      if (result.isSuccess) { await AppHaptics.success(); Navigator.of(context).pop(); }
                     },
                     child: const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
@@ -226,7 +228,7 @@ class TokensModal extends ConsumerWidget {
               const SizedBox(height: 20),
               TextButton(
                 onPressed: () async {
-                  HapticFeedback.lightImpact();
+                  AppHaptics.light();
                   final result = await ref
                       .read(paymentServiceProvider)
                       .restorePurchases();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
@@ -91,7 +92,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
             if (_pendingCategory == null) ...[
               _MagicCard(
                 onTap: () {
-                  HapticFeedback.mediumImpact();
+                  AppHaptics.medium();
                   Navigator.pop(context);
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -198,12 +199,12 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
   }
 
   void _pickCategory(String category) {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     setState(() => _pendingCategory = category);
   }
 
   void _openManual(String category, ListingMode mode) {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     Navigator.pop(context);
     Navigator.of(context).push(
       MaterialPageRoute(

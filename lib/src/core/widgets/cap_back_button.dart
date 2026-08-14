@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 
@@ -20,7 +21,7 @@ class CapBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         if (onTap != null) {
           onTap!();
           return;

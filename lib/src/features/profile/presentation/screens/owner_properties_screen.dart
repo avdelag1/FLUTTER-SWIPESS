@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -50,7 +51,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
   }
 
   void _openChooser() {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     showCreateListingChooser(context);
   }
 
@@ -365,7 +366,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       final count = _count(all, tab.$1);
                       return GestureDetector(
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          AppHaptics.selection();
                           setState(() => _tab = tab.$1);
                         },
                         child: AnimatedContainer(
@@ -672,7 +673,7 @@ class _AssetCard extends ConsumerWidget {
   final VoidCallback onChanged;
 
   Future<void> _setStatus(BuildContext context, WidgetRef ref, String status) async {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     await ref.read(ownerListingsActionsProvider).setStatus(listing.id, status);
     onChanged();
     if (context.mounted) {

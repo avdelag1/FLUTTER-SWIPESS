@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -246,7 +247,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                             height: c.count >= 10 ? 56 : 48,
                             child: GestureDetector(
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                AppHaptics.selection();
                                 _safeMove(
                                   c.point,
                                   math.min(_zoom + 1.6, 16),
@@ -401,7 +402,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               hud: MapGpsHud(
                 locateButton: GestureDetector(
                   onTap: () {
-                    HapticFeedback.mediumImpact();
+                    AppHaptics.medium();
                     _safeMove(center, _zoomForRadius(radiusKm));
                   },
                   child: Container(
@@ -446,7 +447,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                             for (final km in _radiusOptions)
                               GestureDetector(
                                 onTap: () {
-                                  HapticFeedback.selectionClick();
+                                  AppHaptics.selection();
                                   ref
                                       .read(discoveryLocationProvider.notifier)
                                       .setRadiusKm(km);
@@ -612,7 +613,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   }
 
   Future<void> _locateGps() async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -669,7 +670,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
         alignment: MapListingPinMarker.anchor,
         child: GestureDetector(
           onTap: () {
-            HapticFeedback.selectionClick();
+            AppHaptics.selection();
             setState(() => _selected = pin);
           },
           child: MapListingPinMarker(
@@ -687,7 +688,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       alignment: Alignment.center,
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
           setState(() => _selected = pin);
         },
         child: MapProfilePinMarker(

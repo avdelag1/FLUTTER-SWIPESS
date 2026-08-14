@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,7 +85,7 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
   }
 
   Future<void> _finish() async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     await GuidedTourOverlay.markCompleted();
     if (!mounted) return;
     setState(() {
@@ -94,7 +95,7 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
   }
 
   void _next() {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     if (_step >= _steps.length - 1) {
       _finish();
       return;

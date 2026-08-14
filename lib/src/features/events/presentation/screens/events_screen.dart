@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -80,7 +81,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 // Cap: one extra virtual row — PromoteCTACard at end of feed.
                 itemCount: events.length + 1,
                 onPageChanged: (i) {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   setState(() => _index = i);
                 },
                 itemBuilder: (context, i) {
@@ -136,7 +137,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                   category: c,
                                   active: _category == c.key,
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    AppHaptics.light();
                                     setState(() {
                                       _category = c.key;
                                       _index = 0;
@@ -162,7 +163,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                 ),
                                 active: false,
                                 onTap: () {
-                                  HapticFeedback.lightImpact();
+                                  AppHaptics.light();
                                   context.push(AppPaths.exploreEventsLikes);
                                 },
                               ),
@@ -417,7 +418,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
     final current = _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
     setState(() => _favoritedOverride = !current);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       await ref.read(eventRepositoryProvider).setFavorited(
             event.id,
@@ -431,7 +432,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _share() async {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     await Clipboard.setData(ClipboardData(
       text: 'Check out ${event.title} on Swipess! ${event.shareUrl}',
     ));

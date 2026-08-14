@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
@@ -73,7 +74,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       _busy = true;
       _error = null;
     });
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       await Supabase.instance.client.auth.updateUser(
         UserAttributes(password: _password.text),

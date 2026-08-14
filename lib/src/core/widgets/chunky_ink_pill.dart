@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 /// Neo-naïve chunky stadium.
 ///
@@ -17,6 +18,7 @@ class ChunkyInkPill extends StatelessWidget {
     this.fill,
     this.padding,
     this.expandWidth = true,
+    this.useBlur = false,
   });
 
   final Widget child;
@@ -28,13 +30,14 @@ class ChunkyInkPill extends StatelessWidget {
   final Color? fill;
   final EdgeInsetsGeometry? padding;
   final bool expandWidth;
+  final bool useBlur;
 
   static Color ink(bool isLight) =>
       isLight ? const Color(0xFF141414) : Colors.white;
 
-  static Color face(bool isLight) => isLight
-      ? const Color(0xF5FFFFFF)
-      : const Color(0xF5101016);
+  Color face(bool isLight) => isLight
+      ? (useBlur ? const Color(0xA6FFFFFF) : const Color(0xF5FFFFFF))
+      : (useBlur ? const Color(0x99101016) : const Color(0xF5101016));
 
   @override
   Widget build(BuildContext context) {
@@ -68,9 +71,15 @@ class ChunkyInkPill extends StatelessWidget {
           ),
           Padding(
             padding: EdgeInsets.only(right: depth, bottom: depth),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: faceColor,
+            child: ClipRRect(
+              borderRadius: radius,
+              child: BackdropFilter(
+                filter: useBlur
+                    ? ImageFilter.blur(sigmaX: 18, sigmaY: 18)
+                    : ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: faceColor,
                 borderRadius: radius,
                 border: closedFrame
                     ? Border.all(color: inkColor, width: frameWidth)
@@ -91,6 +100,8 @@ class ChunkyInkPill extends StatelessWidget {
                   padding: padding ?? EdgeInsets.zero,
                   child: child,
                 ),
+              ),
+            ),
               ),
             ),
           ),

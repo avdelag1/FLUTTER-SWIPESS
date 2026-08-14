@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
@@ -143,9 +144,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _snapController.addListener(_updateFromAnimation);
     _snapController.forward(from: 0).then((_) {
       if (direction == SwipeDirection.right) {
-        HapticFeedback.heavyImpact();
+        AppHaptics.heavy();
       } else {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
       }
       final swiped = widget.listings.first;
       widget.onSwiped(swiped, direction);

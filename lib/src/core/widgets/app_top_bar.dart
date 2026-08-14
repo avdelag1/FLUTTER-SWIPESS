@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -40,7 +42,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   static const _hudSize = 48.0;
 
   void _openProfile(BuildContext context) {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     if (onProfileTap != null) {
       onProfileTap!();
       return;
@@ -135,7 +137,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     showCreateListingChooser(context);
                   },
                   child: _WashIcon(
@@ -156,7 +158,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   border: pillBorder,
                   wide: tokens > 0,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     showGlassModal(
                       context: context,
                       builder: (_) => const TokensModal(),
@@ -193,7 +195,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
                   child: _WashIcon(
@@ -210,7 +212,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     ref.read(visualThemeProvider.notifier).toggle();
                   },
                   child: _WashIcon(
@@ -229,7 +231,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     showGlassModal(
                       context: context,
                       builder: (_) => const NotificationsScreen(),
@@ -307,17 +309,23 @@ class _HudButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             customBorder: const StadiumBorder(),
-            child: Container(
-              height: AppTopBar._hudSize,
-              width: wide ? null : AppTopBar._hudSize,
-              padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: fill,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: border, width: 1.5),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  height: AppTopBar._hudSize,
+                  width: wide ? null : AppTopBar._hudSize,
+                  padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: fill.withAlpha(fill.alpha ~/ 2), // Make it more translucent to see blur
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: border, width: 1.0),
+                  ),
+                  child: child,
+                ),
               ),
-              child: child,
             ),
           ),
         ),

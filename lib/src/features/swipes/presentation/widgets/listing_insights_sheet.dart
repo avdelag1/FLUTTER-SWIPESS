@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -317,7 +318,7 @@ class _InsightsSheet extends StatelessWidget {
                   _Rail(
                     icon: Icons.flag_outlined,
                     onTap: () {
-                      HapticFeedback.mediumImpact();
+                      AppHaptics.medium();
                       Navigator.pop(context);
                       onReport();
                     },

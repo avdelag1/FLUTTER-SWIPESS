@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
@@ -123,7 +124,7 @@ class _TourPageState extends State<_TourPage> {
   }
 
   Future<void> _like() async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     setState(() => _liked = true);
     try {
       await SwipeRepository().likeListing(widget.listing.id);

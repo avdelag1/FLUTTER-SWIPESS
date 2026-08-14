@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
@@ -53,7 +54,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       return;
     }
     setState(() => _enhancing = true);
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     final polished = await ref.read(aiEdgeRepositoryProvider).enhanceText(
           text: raw,
           type: 'profile',

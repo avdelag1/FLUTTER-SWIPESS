@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -69,7 +70,7 @@ class NotificationsScreen extends ConsumerWidget {
                     if (items.any((n) => !n.isRead))
                       TextButton(
                         onPressed: () {
-                          HapticFeedback.mediumImpact();
+                          AppHaptics.medium();
                           ref.read(notificationsProvider.notifier).markAllRead();
                         },
                         child: Text(
@@ -186,7 +187,7 @@ class _NotificationTile extends StatelessWidget {
       ),
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
           onTap();
         },
         child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -32,7 +33,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
   bool _submitting = false;
 
   Future<void> _pick(ImageSource source, {required bool selfie}) async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: source,
@@ -87,7 +88,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
           _step = 2;
         }
       });
-      HapticFeedback.heavyImpact();
+      AppHaptics.heavy();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -146,7 +147,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
         _documentPath == null) {
       return;
     }
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavy();
     setState(() => _submitting = true);
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;

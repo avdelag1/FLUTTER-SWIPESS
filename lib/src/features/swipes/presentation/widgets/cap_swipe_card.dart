@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
@@ -185,7 +186,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _pointerStart = local;
     _holdTimer = Timer(_holdDelay, () {
       if (!_holdPending || _movedPastCancel || !widget.isTop) return;
-      HapticFeedback.mediumImpact();
+      AppHaptics.medium();
       setState(() {
         _zoomed = true;
         _zoomPan = Offset.zero;
@@ -275,19 +276,19 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
     final media = _media;
     if (media.length > 1 && x < w * 0.28) {
-      HapticFeedback.selectionClick();
+      AppHaptics.selection();
       _setPhoto((_photoIndex - 1 + media.length) % media.length);
       return;
     }
     if (media.length > 1 && x > w * 0.72) {
-      HapticFeedback.selectionClick();
+      AppHaptics.selection();
       _setPhoto((_photoIndex + 1) % media.length);
       return;
     }
 
     // Center tap → Insights
     if (y > h * 0.25 && y < h * 0.75) {
-      HapticFeedback.lightImpact();
+      AppHaptics.light();
       widget.onInsights?.call();
     }
   }
@@ -347,11 +348,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ? _fallback()
                     : _isVideo(current)
                         ? _buildVideo()
-                        : Image.network(
-                            current,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
+                        : Hero(
+                            tag: 'swipe_hero_${widget.listing.id}_$_photoIndex',
+                            child: Image.network(
+                              current,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
                             // Decode near display size — full Unsplash
                             // bitmaps crush Flutter web FPS.
                             cacheWidth:
@@ -361,6 +364,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             filterQuality: FilterQuality.medium,
                             gaplessPlayback: true,
                             errorBuilder: (_, _, _) => _fallback(),
+                            ),
                           ),
               ),
 
@@ -524,7 +528,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       _MuteIconButton(
                         soundOn: soundOn,
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          AppHaptics.selection();
                           unlockDeckMedia();
                           ref.read(deckSoundOnProvider.notifier).toggle();
                         },
@@ -564,7 +568,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         iconSize: 22,
                         icon: Icons.map_rounded,
                         onTap: () {
-                          HapticFeedback.lightImpact();
+                          AppHaptics.light();
                           widget.onOpenMap?.call();
                         },
                       ),
@@ -875,7 +879,7 @@ class _RailBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onTap?.call();
       },
       behavior: HitTestBehavior.opaque,

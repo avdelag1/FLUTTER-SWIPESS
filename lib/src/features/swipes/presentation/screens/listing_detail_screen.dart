@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -139,7 +140,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   }
 
   void _back() {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     if (Navigator.of(context).canPop()) {
       Navigator.pop(context);
     } else {
@@ -163,7 +164,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
       return;
     }
     setState(() => _messaging = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final convoId = await SwipeRepository().startConversation(
         ownerId: ownerId,
@@ -188,7 +189,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   }
 
   void _openInsights() {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     showListingInsightsSheet(
       context,
       listing: listing,
@@ -199,12 +200,12 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   }
 
   void _openShare() {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     showListingShareSheet(context, listing: listing);
   }
 
   void _openReport() {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     showListingReportSheet(context, listing: listing);
   }
 
@@ -308,6 +309,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                   child: SizedBox(
                     height: heroH,
                     child: _Gallery(
+                      listingId: listing.id,
                       pages: _pages,
                       images: _images,
                       index: _index,
@@ -656,12 +658,14 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
 
 class _Gallery extends StatelessWidget {
   const _Gallery({
+    required this.listingId,
     required this.pages,
     required this.images,
     required this.index,
     required this.onChanged,
     required this.onTap,
   });
+  final String listingId;
 
   final PageController pages;
   final List<String> images;
@@ -691,15 +695,18 @@ class _Gallery extends StatelessWidget {
             }
             return GestureDetector(
               onTap: onTap,
-              child: Image.network(
-                url,
-                fit: BoxFit.cover,
+              child: Hero(
+                tag: 'swipe_hero_${listingId}_$i',
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => const ColoredBox(
                   color: Color(0xFF16161C),
                   child: Center(
                     child: Icon(Icons.broken_image_outlined,
                         color: Colors.white24, size: 48),
                   ),
+                ),
                 ),
               ),
             );

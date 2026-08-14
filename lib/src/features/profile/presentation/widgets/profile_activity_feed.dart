@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
@@ -78,7 +79,7 @@ class ProfileActivityFeed extends ConsumerWidget {
                 ink: ink,
                 muted: muted,
                 onTap: () async {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   await ref.read(notificationsProvider.notifier).markRead(n.id);
                   if (!context.mounted) return;
                   await openNotificationTarget(context, n);

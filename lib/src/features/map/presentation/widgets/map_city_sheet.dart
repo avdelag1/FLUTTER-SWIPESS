@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -91,7 +92,7 @@ class _MapCitySheetState extends State<MapCitySheet> {
                 final city = cities[i];
                 return GestureDetector(
                   onTap: () {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selection();
                     widget.onPick(city);
                   },
                   child: ClipRRect(

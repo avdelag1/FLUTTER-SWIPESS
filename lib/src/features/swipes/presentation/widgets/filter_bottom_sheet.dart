@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -154,7 +155,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     ClientFilterPreferencesRepository().upsertFromFilter(next);
     // Force deck reload with new filters.
     ref.invalidate(swipeListingsProvider);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final title = _categories
             .where((c) => c.$1 == cat)
             .map((c) => c.$2)
@@ -189,7 +190,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       _city = null;
       _radiusKm = 50;
     });
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
   }
 
   @override
@@ -268,7 +269,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           title: cat.$2,
                           subtitle: cat.$3,
                           onTap: () {
-                            HapticFeedback.selectionClick();
+                            AppHaptics.selection();
                             setState(() => _activeCategory = cat.$1);
                           },
                         ),
@@ -808,7 +809,7 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onTap();
       },
       child: AnimatedContainer(

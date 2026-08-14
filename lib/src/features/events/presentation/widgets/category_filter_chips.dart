@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
@@ -26,7 +27,7 @@ class CategoryFilterChips extends ConsumerWidget {
 
           return GestureDetector(
             onTap: () {
-              HapticFeedback.selectionClick();
+              AppHaptics.selection();
               ref
                   .read(selectedCategoryProvider.notifier)
                   .setCategory(category);

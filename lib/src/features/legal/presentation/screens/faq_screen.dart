@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -31,7 +32,7 @@ class FAQScreen extends StatelessWidget {
                     child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
                   ),
                   onPressed: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     Navigator.of(context).pop();
                   },
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -234,7 +235,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   void _toggleSound() {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     unlockDeckMedia();
     final nextOn = !ref.read(deckSoundOnProvider);
     ref.read(deckSoundOnProvider.notifier).setSoundOn(nextOn);
@@ -279,13 +280,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
         widget.onTap?.call();
       },
       onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
       onHorizontalDragEnd: (_) {
         if (_dragDx.abs() > 20 && videos.length > 1) {
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
           _advance(videos, _dragDx < 0 ? 1 : -1);
         }
         _dragDx = 0;

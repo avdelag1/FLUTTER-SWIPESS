@@ -1,6 +1,7 @@
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 
 /// Cap `EventVideoMuteButton` — 44pt hit, glass chip, unlocks audio
@@ -25,7 +26,7 @@ class EventMuteButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          HapticFeedback.selectionClick();
+          AppHaptics.selection();
           unlockDeckMedia();
           onToggle();
         },

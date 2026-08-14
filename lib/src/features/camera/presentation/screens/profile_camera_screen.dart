@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,7 +31,7 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
       _busy = true;
       _error = null;
     });
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final file = await ImagePicker().pickImage(
         source: ImageSource.camera,

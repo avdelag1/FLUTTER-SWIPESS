@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
@@ -96,7 +97,7 @@ class NotFoundScreen extends StatelessWidget {
                         height: 52,
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            HapticFeedback.mediumImpact();
+                            AppHaptics.medium();
                             context.go(AppPaths.clientDashboard);
                           },
                           icon: const Icon(Icons.home_rounded),
@@ -140,7 +141,7 @@ class NotFoundScreen extends StatelessWidget {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                AppHaptics.selection();
                                 context.go(s.$1);
                               },
                               child: Padding(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
 /// Cap `ChromeSummonZones` — invisible edge taps that bring HUD chrome back.
 class ChromeSummonZones extends StatelessWidget {
@@ -29,7 +30,7 @@ class ChromeSummonZones extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.light();
               onSummon();
             },
           ),
@@ -42,7 +43,7 @@ class ChromeSummonZones extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.light();
               onSummon();
             },
           ),

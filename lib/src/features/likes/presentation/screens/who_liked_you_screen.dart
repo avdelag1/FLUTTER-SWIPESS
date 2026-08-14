@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
@@ -193,7 +194,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                         category: 'Profile',
                         description: person.bio,
                         onMessage: () async {
-                          HapticFeedback.mediumImpact();
+                          AppHaptics.medium();
                           final convoId = await SwipeRepository()
                               .startConversation(ownerId: person.userId);
                           if (!context.mounted || convoId == null) return;

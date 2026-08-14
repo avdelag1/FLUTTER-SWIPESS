@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `CAMERA_FILTERS` — ColorFilter matrices for listing camera preview.
@@ -120,7 +121,7 @@ class CameraFiltersStrip extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   onSelected(f);
                 },
                 child: Container(

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -151,7 +152,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               right: -6,
                               child: GestureDetector(
                                 onTap: () async {
-                                  HapticFeedback.lightImpact();
+                                  AppHaptics.light();
                                   final url = await Navigator.of(context)
                                       .push<String>(
                                     MaterialPageRoute(
@@ -272,7 +273,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   // Magic AI + primary actions (nexus, not a rainbow grid)
                   GestureDetector(
                     onTap: () {
-                      HapticFeedback.mediumImpact();
+                      AppHaptics.medium();
                       showMagicAiProfileSheet(context);
                     },
                     child: Container(
@@ -462,7 +463,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   // Holographic Identity Vault
                   GestureDetector(
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                      AppHaptics.light();
                       context.go(AppPaths.clientVapId);
                     },
                     child: Column(
@@ -659,7 +660,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Center(
                     child: TextButton(
                       onPressed: () async {
-                        HapticFeedback.mediumImpact();
+                        AppHaptics.medium();
                         await ref.read(authRepositoryProvider).signOut();
                         ref.read(currentUserProvider.notifier).clear();
                         if (context.mounted) context.go(AppPaths.welcome);
@@ -743,7 +744,7 @@ class _HeroAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
         onTap();
       },
       child: Container(
@@ -794,7 +795,7 @@ class _NexusRow extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return InkWell(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         onTap();
       },
       child: Padding(
@@ -888,7 +889,7 @@ class _StatTile extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         onTap();
       },
       child: Container(
@@ -1191,7 +1192,7 @@ class _ShareEarn extends StatelessWidget {
             height: 48,
             child: ElevatedButton(
               onPressed: () {
-                HapticFeedback.mediumImpact();
+                AppHaptics.medium();
                 showInviteFriendsDialog(context);
               },
               style: ElevatedButton.styleFrom(
@@ -1236,7 +1237,7 @@ class _ShareEarn extends StatelessWidget {
                 GestureDetector(
                   onTap: () async {
                     await Clipboard.setData(ClipboardData(text: url));
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selection();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Invite link copied')),

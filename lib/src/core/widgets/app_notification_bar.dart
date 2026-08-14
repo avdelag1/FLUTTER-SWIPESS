@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/app_notification_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -66,7 +67,7 @@ class _AppNotificationBarState extends ConsumerState<AppNotificationBar>
     final toast = _current;
     if (toast == null) return;
     _timer?.cancel();
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     await _controller.reverse();
     if (!mounted) return;
     setState(() => _current = null);
@@ -78,7 +79,7 @@ class _AppNotificationBarState extends ConsumerState<AppNotificationBar>
     if (toast == null) return;
     _timer?.cancel();
     _controller.value = 0;
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     setState(() => _current = null);
     ref.read(appNotificationsProvider.notifier).dismiss(toast.id);
   }

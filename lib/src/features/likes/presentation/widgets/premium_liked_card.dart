@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `PremiumLikedCard` — listing or profile favorite tile.
@@ -105,7 +106,7 @@ class PremiumLikedCard extends StatelessWidget {
                   right: 16,
                   child: GestureDetector(
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                      AppHaptics.light();
                       onRemove();
                     },
                     child: Container(
@@ -248,7 +249,7 @@ class PremiumLikedCard extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          HapticFeedback.mediumImpact();
+                          AppHaptics.medium();
                           onMessage();
                         },
                         child: Container(
@@ -287,7 +288,7 @@ class PremiumLikedCard extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          AppHaptics.selection();
                           onView();
                         },
                         child: Container(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/data/access_code_repository.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -37,7 +38,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     if (code.isEmpty) {
       setState(() => _error = 'Enter access code');
       try {
-        HapticFeedback.heavyImpact();
+        AppHaptics.heavy();
       } catch (_) {}
       return;
     }
@@ -52,7 +53,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       try {
         await ref.read(accessGrantedProvider.notifier).grant();
         try {
-          HapticFeedback.lightImpact();
+          AppHaptics.light();
         } catch (_) {}
         if (!mounted) return;
         context.go(AppPaths.welcome);
@@ -67,7 +68,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     }
 
     try {
-      HapticFeedback.heavyImpact();
+      AppHaptics.heavy();
     } catch (_) {}
     setState(() {
       _error = 'Invalid access code';
@@ -91,7 +92,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
             whatsapp: _whatsappController.text,
             message: _messageController.text,
           );
-      HapticFeedback.lightImpact();
+      AppHaptics.light();
       if (mounted) setState(() => _submitted = true);
     } catch (_) {
       if (mounted) {

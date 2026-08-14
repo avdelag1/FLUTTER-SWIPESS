@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/documents/data/repositories/document_repository.dart';
@@ -61,7 +62,7 @@ class _VerificationSheetState extends ConsumerState<_VerificationSheet> {
             documentType: type,
             filePath: file.name,
           );
-      HapticFeedback.mediumImpact();
+      AppHaptics.medium();
       if (mounted) setState(() => _done = true);
     } catch (_) {
       if (mounted) setState(() => _error = 'Upload failed. Try a file under 10MB.');

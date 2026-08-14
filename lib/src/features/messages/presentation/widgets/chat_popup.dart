@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/screens/chat_screen.dart';
@@ -15,7 +16,7 @@ Future<void> showChatPopup(
   required ChatConversation conversation,
   bool isNewConversation = false,
 }) async {
-  HapticFeedback.selectionClick();
+  AppHaptics.selection();
 
   // Cap `messagingEntitlements.ts` — soft-gate starting NEW threads only.
   if (isNewConversation) {
@@ -135,7 +136,7 @@ class _ChatPopupPanelState extends State<_ChatPopupPanel>
     final velocity = d.primaryVelocity ?? 0;
     if (_dragY >= _dismissThreshold || velocity > 900) {
       setState(() => _dismissing = true);
-      HapticFeedback.mediumImpact();
+      AppHaptics.medium();
       Navigator.of(context).pop();
       return;
     }

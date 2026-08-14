@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -95,7 +96,7 @@ class CapEmptyState extends StatelessWidget {
             const SizedBox(height: 28),
             GestureDetector(
               onTap: () {
-                HapticFeedback.mediumImpact();
+                AppHaptics.medium();
                 onAction!();
               },
               child: Container(
@@ -149,7 +150,7 @@ class CapPageHeader extends StatelessWidget {
         if (onBack != null) ...[
           GestureDetector(
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.light();
               onBack!();
             },
             child: Container(

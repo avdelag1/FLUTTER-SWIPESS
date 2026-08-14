@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -104,7 +105,7 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                           );
                         },
                         onMessage: () async {
-                          HapticFeedback.mediumImpact();
+                          AppHaptics.medium();
                           final convoId = await SwipeRepository()
                               .startConversation(ownerId: client.userId);
                           if (!context.mounted || convoId == null) return;

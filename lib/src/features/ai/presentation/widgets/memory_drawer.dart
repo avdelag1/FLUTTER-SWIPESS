@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/domain/user_memory.dart';
@@ -40,7 +41,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
   Future<void> _save() async {
     if (_title.text.trim().isEmpty || _content.text.trim().isEmpty) return;
     setState(() => _saving = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final ok = await ref.read(memoriesProvider.notifier).add(
           category: _newCat,
           title: _title.text.trim(),

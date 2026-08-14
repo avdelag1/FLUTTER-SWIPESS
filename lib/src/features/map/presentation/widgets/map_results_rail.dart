@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -69,7 +70,7 @@ class MapResultsRail extends StatelessWidget {
                   : (pin.profile?.city ?? '');
               return GestureDetector(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  AppHaptics.selection();
                   onSelect(pin);
                 },
                 child: AnimatedContainer(

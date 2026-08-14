@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -190,7 +191,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   title: 'Video',
                   subtitle: 'Live',
                   onTap: () {
-                    HapticFeedback.mediumImpact();
+                    AppHaptics.medium();
                     if (user == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -212,7 +213,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   title: 'WhatsApp',
                   subtitle: 'Soon',
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
@@ -236,7 +237,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
                       onTap: () {
-                        HapticFeedback.selectionClick();
+                        AppHaptics.selection();
                         setState(() => _category = c.$1);
                       },
                       child: AnimatedContainer(
@@ -434,7 +435,7 @@ class _PackageCard extends StatelessWidget {
             height: 48,
             child: ElevatedButton(
               onPressed: () {
-                HapticFeedback.mediumImpact();
+                AppHaptics.medium();
                 onRequest();
               },
               style: ElevatedButton.styleFrom(

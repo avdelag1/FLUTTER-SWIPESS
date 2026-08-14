@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
@@ -152,7 +153,7 @@ class _BodyState extends State<_Body> {
 
   Future<void> _message() async {
     setState(() => _messaging = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final convoId = await SwipeRepository()
           .startConversation(ownerId: widget.profile.userId);

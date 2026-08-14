@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -99,7 +100,7 @@ class _ShareSheet extends StatelessWidget {
                   label: 'COPY',
                   onTap: () async {
                     await Clipboard.setData(ClipboardData(text: _url));
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selection();
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(

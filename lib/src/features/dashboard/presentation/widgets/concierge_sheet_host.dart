@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,7 +51,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   }
 
   Future<void> _close() async {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     await _slide.reverse();
     if (!mounted) return;
     ref.read(chromeVisibilityProvider.notifier).show();
@@ -58,12 +59,12 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   }
 
   void _peekChrome() {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     ref.read(chromeVisibilityProvider.notifier).show();
   }
 
   void _coverPage() {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     ref.read(chromeVisibilityProvider.notifier).hide();
   }
 

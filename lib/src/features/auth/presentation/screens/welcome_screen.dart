@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -45,7 +46,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   Future<void> _enterAuth(String mode) async {
     if (_launching) return;
     _launching = true;
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     ref.read(authIntentProvider.notifier).set(
           mode == 'signup' ? AuthIntent.signup : AuthIntent.login,
         );

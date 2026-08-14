@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -74,13 +75,13 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
   ];
 
   Future<void> _finish() async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     await LegendaryOnboardingScreen.markCompleted();
     widget.onFinish();
   }
 
   void _next() {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     if (_index >= _slides.length - 1) {
       _finish();
       return;

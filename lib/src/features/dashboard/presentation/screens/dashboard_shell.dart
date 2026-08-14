@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -149,7 +150,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,
                     onProfileTap: () {
-                      HapticFeedback.lightImpact();
+                      AppHaptics.light();
                       ref.read(chromeVisibilityProvider.notifier).show();
                       context.go(AppPaths.clientProfile);
                     },
@@ -182,6 +183,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                       depth: 3.5,
                       frameWidth: 3.5,
                       closedFrame: true,
+                      useBlur: true,
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -196,7 +198,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                     dockSelected == bottomNavItems[i].id,
                                 isLight: isLight,
                                 onTap: () {
-                                  HapticFeedback.lightImpact();
+                                  AppHaptics.light();
                                   final id = bottomNavItems[i].id;
                                   if (id == NavTab.filter) {
                                     FilterBottomSheet.show(context);

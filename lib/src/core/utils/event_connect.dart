@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Builds public contact URLs for event hosts (WhatsApp first).
@@ -63,7 +64,7 @@ abstract final class EventConnect {
 
   static Future<void> open(Uri? uri) async {
     if (uri == null) return;
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

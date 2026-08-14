@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -46,7 +47,7 @@ class _ReportSheetState extends State<_ReportSheet> {
   Future<void> _submit() async {
     if (_type == null || _details.text.trim().isEmpty) return;
     setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final user = Supabase.instance.client.auth.currentUser;
       await Supabase.instance.client.from('reports').insert({

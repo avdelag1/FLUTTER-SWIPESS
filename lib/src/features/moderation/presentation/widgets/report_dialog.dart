@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -122,7 +123,7 @@ class _ReportDialogState extends State<ReportDialog> {
   Future<void> _submit() async {
     if (_type == null) return;
     setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       final user = Supabase.instance.client.auth.currentUser;
       await Supabase.instance.client.from('reports').insert({
@@ -145,7 +146,7 @@ class _ReportDialogState extends State<ReportDialog> {
   Future<void> _blockUser() async {
     final id = widget.reportedUserId;
     if (id == null || id.isEmpty) return;
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavy();
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
@@ -375,7 +376,7 @@ class _TypeRow extends StatelessWidget {
     final hairline = MatteSurface.hairline(context);
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onTap();
       },
       child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `filterData.FILTERS` — category → prompt chips for Intel Core welcome.
@@ -174,7 +175,7 @@ class _IntelWelcomeGridState extends State<IntelWelcomeGrid> {
           if (_active != null) ...[
             GestureDetector(
               onTap: () {
-                HapticFeedback.selectionClick();
+                AppHaptics.selection();
                 setState(() => _active = null);
               },
               child: Padding(
@@ -227,7 +228,7 @@ class _IntelWelcomeGridState extends State<IntelWelcomeGrid> {
                   isLight: widget.isLight,
                   centered: true,
                   onTap: () {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selection();
                     setState(() => _active = cat);
                   },
                 );

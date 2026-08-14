@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
@@ -156,7 +157,7 @@ class _VapIdModalBody extends ConsumerWidget {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () async {
-                    HapticFeedback.selectionClick();
+                    AppHaptics.selection();
                     await ref.read(vapIdProvider.notifier).save(
                           card.copyWith(
                             name: name.text.trim(),

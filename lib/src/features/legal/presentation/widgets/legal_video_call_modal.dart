@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/legal/data/legal_repository.dart';
@@ -62,7 +63,7 @@ class _LegalVideoCallBodyState extends ConsumerState<_LegalVideoCallBody> {
         _call = call;
         _phase = 'ringing';
       });
-      HapticFeedback.mediumImpact();
+      AppHaptics.medium();
       Future<void>.delayed(const Duration(seconds: 60), () async {
         if (!mounted || _phase != 'ringing' || _call == null) return;
         await ref

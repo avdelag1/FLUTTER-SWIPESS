@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
@@ -58,7 +59,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       _busyFavorite = true;
       _favoritedOverride = !current;
     });
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       await ref.read(eventRepositoryProvider).setFavorited(
             event.id,
@@ -78,7 +79,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _share() async {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     final text = 'Check out ${event.title} on Swipess! ${event.shareUrl}';
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
@@ -88,7 +89,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _addToCalendar() async {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     final start = event.eventDate ?? DateTime.now().add(const Duration(days: 1));
     final end = event.eventEndDate ?? start.add(const Duration(hours: 2));
     String fmt(DateTime d) =>
@@ -108,7 +109,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Future<void> _whatsApp() async {
     if (!event.hasWhatsApp) return;
-    HapticFeedback.heavyImpact();
+    AppHaptics.heavy();
     await EventConnect.open(
       EventConnect.whatsAppUri(
         event.organizerWhatsapp,

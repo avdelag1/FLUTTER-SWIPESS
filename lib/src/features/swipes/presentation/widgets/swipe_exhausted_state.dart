@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -271,7 +272,7 @@ class _RadiusCard extends StatelessWidget {
               max: maxStep.toDouble(),
               divisions: maxStep,
               onChanged: (v) {
-                HapticFeedback.selectionClick();
+                AppHaptics.selection();
                 onStep(v.round());
               },
             ),
@@ -281,7 +282,7 @@ class _RadiusCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  AppHaptics.light();
                   onDetect!();
                 },
                 child: Container(
@@ -342,7 +343,7 @@ class _MapCta extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.heavyImpact();
+        AppHaptics.heavy();
         onTap();
       },
       child: Container(
@@ -391,7 +392,7 @@ class _AiCta extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.heavyImpact();
+        AppHaptics.heavy();
         onTap();
       },
       child: Container(
@@ -480,7 +481,7 @@ class _CategoryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
         onTap();
       },
       child: Container(
@@ -524,7 +525,7 @@ class _GlassRoundButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         onTap();
       },
       child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -61,7 +62,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_welcomeKey, true);
     } catch (_) {}
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     setState(() => _step = 'compose');
   }
 
@@ -84,7 +85,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
 
   Future<void> _enhance() async {
     if (_enhancing) return;
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     final raw = _description.text.trim();
     if (raw.length < 5) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +118,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
       _busy = true;
       _step = 'processing';
     });
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final notifier = ref.read(addListingProvider.notifier);
     var cat = switch (_category) {
       'motorcycle' => ListingCategory.motorcycle,
@@ -402,7 +403,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                         label: c.$2,
                         selected: _category == c.$1,
                         onTap: () {
-                          HapticFeedback.selectionClick();
+                          AppHaptics.selection();
                           setState(() => _category = c.$1);
                         },
                       ),

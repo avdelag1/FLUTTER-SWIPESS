@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
@@ -60,7 +61,7 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
                             spec: _chips[i],
                             selected: _chip == i,
                             onTap: () {
-                              HapticFeedback.selectionClick();
+                              AppHaptics.selection();
                               setState(() => _chip = i);
                               if (i == 1) {
                                 widget.onOpenEvents();
@@ -197,7 +198,7 @@ class _PhotoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
         onTap();
       },
       child: ClipRRect(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
@@ -152,7 +153,7 @@ class MessageActivationPackages extends ConsumerWidget {
         ],
         TextButton(
           onPressed: () async {
-            HapticFeedback.selectionClick();
+            AppHaptics.selection();
             final result =
                 await ref.read(paymentServiceProvider).restorePurchases();
             if (!context.mounted) return;
@@ -177,7 +178,7 @@ class MessageActivationPackages extends ConsumerWidget {
     WidgetRef ref,
     _TokenPack pack,
   ) async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final offer = IapCatalog.tokenById(pack.id);
     if (offer == null) return;
     final result = await ref.read(paymentServiceProvider).buy(offer);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -19,7 +20,7 @@ class InviteFriendsDialog extends ConsumerWidget {
 
   Future<void> _copyLink(BuildContext context, String link) async {
     await Clipboard.setData(ClipboardData(text: link));
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Link copied! Share with friends to earn perks.')),
@@ -29,7 +30,7 @@ class InviteFriendsDialog extends ConsumerWidget {
   }
 
   Future<void> _shareInvite(BuildContext context, String link) async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final message =
         'Hey! Check out Swipess — the elite marketplace for properties, vehicles & experiences. Join with my link: $link';
     final uri = Uri.parse(

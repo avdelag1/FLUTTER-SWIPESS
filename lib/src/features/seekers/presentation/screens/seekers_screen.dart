@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -80,13 +81,13 @@ class SeekersScreen extends ConsumerWidget {
                                 child: _SeekerCard(
                                   request: req,
                                   onPass: () {
-                                    HapticFeedback.lightImpact();
+                                    AppHaptics.light();
                                     ref
                                         .read(seekersProvider.notifier)
                                         .dismiss(req.id);
                                   },
                                   onInterested: () async {
-                                    HapticFeedback.mediumImpact();
+                                    AppHaptics.medium();
                                     final ownerId = req.ownerId;
                                     if (ownerId != null) {
                                       final convoId = await SwipeRepository()

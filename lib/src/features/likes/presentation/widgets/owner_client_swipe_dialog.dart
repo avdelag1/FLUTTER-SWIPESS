@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
@@ -34,7 +35,7 @@ class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog>
   int _index = 0;
 
   Future<void> _message(InterestedClient client) async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final convoId =
         await SwipeRepository().startConversation(ownerId: client.userId);
     if (!mounted || convoId == null) return;
@@ -54,12 +55,12 @@ class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog>
   }
 
   void _pass(InterestedClient client) {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     setState(() => _index++);
   }
 
   void _like(InterestedClient client) {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     setState(() => _index++);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Interested in ${client.name}')),

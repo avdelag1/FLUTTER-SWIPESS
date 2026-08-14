@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -276,7 +277,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 setState(() => _haptics = v);
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('haptics', v);
-                if (v) HapticFeedback.selectionClick();
+                if (v) AppHaptics.selection();
               },
             ),
             Divider(height: 1, color: Colors.transparent),
@@ -287,7 +288,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 setState(() => _biometric = v);
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setBool('swipess_biometric_enabled', v);
-                if (v) HapticFeedback.selectionClick();
+                if (v) AppHaptics.selection();
               },
             ),
           ],
@@ -330,7 +331,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   Future<void> _setLang(String code) async {
     setState(() => _lang = code);
     await ref.read(appLocaleProvider.notifier).setCode(code);
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
   }
 
   Future<void> _savePassword() async {

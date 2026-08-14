@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
@@ -99,7 +100,7 @@ class _LegalPackageRequestSheetState
             preferredContact: _contact,
             requestType: _type,
           );
-      HapticFeedback.mediumImpact();
+      AppHaptics.medium();
       if (mounted) setState(() => _success = true);
     } catch (_) {
       if (mounted) {

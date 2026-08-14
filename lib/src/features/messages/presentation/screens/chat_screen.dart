@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
@@ -125,7 +126,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _send([String? preset]) async {
     final text = (preset ?? _controller.text).trim();
     if (text.isEmpty || _sending) return;
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     setState(() {
       _sending = true;
       _showEmoji = false;
@@ -480,7 +481,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           for (final e in _emojis)
                             GestureDetector(
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                AppHaptics.selection();
                                 _controller.text += e;
                                 _controller.selection =
                                     TextSelection.collapsed(
@@ -643,7 +644,7 @@ class _RoundIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
+        AppHaptics.light();
         onTap();
       },
       child: Container(

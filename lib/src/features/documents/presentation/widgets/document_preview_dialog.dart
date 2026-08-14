@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
@@ -13,7 +14,7 @@ Future<void> showDocumentPreviewDialog(
   BuildContext context,
   LegalDocument doc,
 ) {
-  HapticFeedback.lightImpact();
+  AppHaptics.light();
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,

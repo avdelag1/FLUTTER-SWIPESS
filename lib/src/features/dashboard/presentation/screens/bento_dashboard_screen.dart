@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -71,13 +74,22 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       backgroundColor: canvas,
       body: NotificationListener<ScrollNotification>(
         onNotification: _onScroll,
-        child: ListView(
-          controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(12, 84, 12, 120),
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          children: [
+        child: LiquidPullToRefresh(
+          onRefresh: () async {
+            await AppHaptics.success();
+            await Future.delayed(const Duration(milliseconds: 1200));
+          },
+          color: const Color(0xFFFF4D00),
+          backgroundColor: Colors.white,
+          springAnimationDurationInMilliseconds: 400,
+          showChildOpacityTransition: false,
+          child: ListView(
+            controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(12, 84, 12, 120),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            children: [
             _SearchChromeWell(
               visible: searchVisible,
               isLight: isLight,
@@ -126,6 +138,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             const SizedBox(height: 18),
             ListingSpotlightRail(isLight: isLight),
           ],
+          ),
         ),
       ),
     );
@@ -137,7 +150,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     String id,
     String title,
   ) {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     switch (id) {
       case 'legal':
         context.go(AppPaths.clientLegal);
@@ -166,7 +179,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   }
 
   void _pickCity(BuildContext context, WidgetRef ref) {
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     context.push(AppPaths.map);
   }
 
@@ -409,7 +422,7 @@ class _DashboardFilterPill extends StatelessWidget {
     final ink = isLight ? const Color(0xFF111111) : Colors.white;
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        AppHaptics.selection();
         onTap();
       },
       child: ChunkyInkPill(
@@ -444,6 +457,7 @@ class _DashboardFilterPill extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

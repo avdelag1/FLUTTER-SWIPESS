@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
@@ -179,7 +180,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       return;
     }
     setState(() => _submitting = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       String? imageUrl;
       String? videoUrl;
@@ -294,7 +295,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   }
 
   Future<void> _launchPayment() async {
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final offer = IapCatalog.promoById(_selectedPackage);
     if (offer == null) return;
     final result = await ref.read(paymentServiceProvider).buy(offer);
@@ -305,7 +306,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   }
 
   Future<void> _restore() async {
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     final result = await ref.read(paymentServiceProvider).restorePurchases();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

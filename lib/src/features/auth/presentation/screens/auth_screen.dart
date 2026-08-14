@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -45,7 +46,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Future<void> _handleOAuth(OAuthProvider provider) async {
     setState(() => _isLoading = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     try {
       await ref.read(authRepositoryProvider).signInWithOAuth(provider);
       final user = Supabase.instance.client.auth.currentUser;
@@ -81,7 +82,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
 
     setState(() => _isLoading = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
 
     final repo = ref.read(authRepositoryProvider);
     try {
@@ -139,7 +140,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               left: 16,
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  AppHaptics.light();
                   context.pop();
                 },
                 behavior: HitTestBehavior.opaque,
@@ -292,7 +293,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         label: _isLogin ? 'CREATE AN ACCOUNT' : 'LOG IN',
                         tone: SwipessCtaTone.ghost,
                         onPressed: () {
-                          HapticFeedback.lightImpact();
+                          AppHaptics.light();
                           setState(() {
                             _isLogin = !_isLogin;
                             _passwordController.clear();

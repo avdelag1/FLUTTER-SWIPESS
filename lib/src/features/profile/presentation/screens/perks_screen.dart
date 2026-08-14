@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -71,7 +72,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                       ),
                       IconButton(
                         onPressed: () {
-                          HapticFeedback.mediumImpact();
+                          AppHaptics.medium();
                           setState(() => _qrOpen = true);
                         },
                         icon: const Icon(Icons.qr_code_2_rounded,
@@ -95,7 +96,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 3),
                             child: GestureDetector(
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                AppHaptics.selection();
                                 setState(() => _tab = i);
                               },
                               child: AnimatedContainer(
@@ -150,7 +151,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                       if (_tab == 0) ...[
                         GestureDetector(
                           onTap: () {
-                            HapticFeedback.mediumImpact();
+                            AppHaptics.medium();
                             setState(() => _qrOpen = true);
                           },
                           child: Container(

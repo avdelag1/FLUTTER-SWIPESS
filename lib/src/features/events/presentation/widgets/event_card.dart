@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
@@ -144,7 +145,7 @@ class EventCard extends StatelessWidget {
                             icon: Icons.bookmark_border_rounded,
                             iconColor: Colors.white.withAlpha(220),
                             onTap: () {
-                              HapticFeedback.lightImpact();
+                              AppHaptics.light();
                               onBookmarkTap?.call();
                             },
                           ),

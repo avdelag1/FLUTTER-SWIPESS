@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -91,7 +92,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
             height: 52,
             child: ElevatedButton(
               onPressed: () {
-                HapticFeedback.mediumImpact();
+                AppHaptics.medium();
                 final interest = switch (_clientType) {
                   'buy' => 'sale',
                   'rent' => 'rent',

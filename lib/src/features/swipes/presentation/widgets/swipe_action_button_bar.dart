@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
 class SwipeActionButtonBar extends StatelessWidget {
   final VoidCallback onLike;
@@ -67,7 +68,7 @@ class _ActionButtonState extends State<_ActionButton> with SingleTickerProviderS
   }
 
   void _handleTapDown(_) => _controller.forward();
-  void _handleTapUp(_) { _controller.reverse(); if (widget.onTap != null) { HapticFeedback.lightImpact(); widget.onTap!(); } }
+  void _handleTapUp(_) { _controller.reverse(); if (widget.onTap != null) { AppHaptics.light(); widget.onTap!(); } }
   void _handleTapCancel() => _controller.reverse();
 
   @override

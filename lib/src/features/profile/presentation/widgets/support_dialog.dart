@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -53,7 +54,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
 
   Future<void> _submit() async {
     if (_subject.text.trim().isEmpty || _message.text.trim().isEmpty) return;
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     setState(() => _sending = true);
     await Future<void>.delayed(const Duration(milliseconds: 600));
     // Bases: insert into support_tickets via repository.

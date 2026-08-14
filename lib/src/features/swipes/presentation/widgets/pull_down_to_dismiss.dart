@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
 /// Cap `usePullDownToDismiss` — top-edge pull only.
 ///
@@ -94,7 +95,7 @@ class _PullDownToDismissState extends State<PullDownToDismiss>
     final v = d.primaryVelocity ?? 0;
     if (_y >= widget.threshold || v > 1100) {
       _dismissing = true;
-      HapticFeedback.mediumImpact();
+      AppHaptics.medium();
       final h = MediaQuery.sizeOf(context).height;
       _runTo(h * 0.95, onDone: widget.onDismiss);
     } else {

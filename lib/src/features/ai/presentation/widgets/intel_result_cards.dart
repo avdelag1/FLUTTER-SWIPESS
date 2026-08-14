@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -33,7 +34,7 @@ class IntelListingCard extends StatelessWidget {
       onTap: id.isEmpty
           ? null
           : () {
-              HapticFeedback.selectionClick();
+              AppHaptics.selection();
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => ListingDetailScreen(listingId: id),
@@ -126,7 +127,7 @@ class IntelProfileCard extends StatelessWidget {
       onTap: id.isEmpty
           ? null
           : () {
-              HapticFeedback.selectionClick();
+              AppHaptics.selection();
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => ProfileDetailScreen(userId: id),

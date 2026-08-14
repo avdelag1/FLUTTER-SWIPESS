@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -53,7 +54,7 @@ class BrandPrimaryButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             onTap: enabled
                 ? () {
-                    HapticFeedback.mediumImpact();
+                    AppHaptics.medium();
                     onPressed?.call();
                   }
                 : null,
@@ -130,7 +131,7 @@ class BrandGhostButton extends StatelessWidget {
             onTap: onPressed == null
                 ? null
                 : () {
-                    HapticFeedback.lightImpact();
+                    AppHaptics.light();
                     onPressed?.call();
                   },
             child: Padding(
@@ -189,7 +190,7 @@ class SocialAuthButton extends StatelessWidget {
             onTap: onPressed == null
                 ? null
                 : () {
-                    HapticFeedback.mediumImpact();
+                    AppHaptics.medium();
                     onPressed?.call();
                   },
             child: Padding(
@@ -246,7 +247,7 @@ class GlassIconCircle extends StatelessWidget {
         ),
         child: IconButton(
           onPressed: () {
-            HapticFeedback.lightImpact();
+            AppHaptics.light();
             onPressed();
           },
           icon: Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 20),

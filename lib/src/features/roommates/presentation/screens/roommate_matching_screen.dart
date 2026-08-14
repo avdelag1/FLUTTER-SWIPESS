@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
@@ -171,7 +172,7 @@ class _RoommateMatchingScreenState
 
   Future<void> _swipe(RoommateProfile profile, {required bool like}) async {
     setState(() => _busy = true);
-    HapticFeedback.selectionClick();
+    AppHaptics.selection();
     final repo = SwipeRepository();
     try {
       if (like) {
@@ -199,7 +200,7 @@ class _RoommateMatchingScreenState
   Future<void> _undo() async {
     if (_history.isEmpty || _index <= 0) return;
     final last = _history.removeLast();
-    HapticFeedback.lightImpact();
+    AppHaptics.light();
     try {
       await SwipeRepository().undoProfileSwipe(last.userId);
     } catch (_) {}

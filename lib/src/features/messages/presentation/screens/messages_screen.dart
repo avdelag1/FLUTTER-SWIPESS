@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
@@ -130,7 +131,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: GestureDetector(
                     onTap: () {
-                      HapticFeedback.mediumImpact();
+                      AppHaptics.medium();
                       showMessageActivationPackages(context);
                     },
                     child: Container(
@@ -250,7 +251,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                               onLongPress: conversation.archived
                                   ? null
                                   : () {
-                                      HapticFeedback.mediumImpact();
+                                      AppHaptics.medium();
                                       ref
                                           .read(conversationsProvider.notifier)
                                           .archive(conversation.id);
@@ -282,7 +283,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           icon: Icons.inbox_rounded,
           isActive: _activeSection == 'chats',
           onTap: () {
-            HapticFeedback.lightImpact();
+            AppHaptics.light();
             setState(() => _activeSection = 'chats');
           },
         ),
@@ -292,7 +293,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           icon: Icons.folder_special_rounded,
           isActive: _activeSection == 'documents',
           onTap: () {
-            HapticFeedback.lightImpact();
+            AppHaptics.light();
             setState(() => _activeSection = 'documents');
           },
         ),
@@ -310,7 +311,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             icon: Icons.inbox_rounded,
             isActive: _activeFilter == 'all',
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.light();
               setState(() => _activeFilter = 'all');
             },
           ),
@@ -320,7 +321,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             icon: Icons.auto_awesome_rounded,
             isActive: _activeFilter == 'unread',
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.light();
               setState(() => _activeFilter = 'unread');
             },
           ),
@@ -330,7 +331,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             icon: Icons.archive_outlined,
             isActive: _activeFilter == 'archived',
             onTap: () {
-              HapticFeedback.lightImpact();
+              AppHaptics.light();
               setState(() => _activeFilter = 'archived');
             },
           ),
@@ -491,7 +492,7 @@ class _ChatTile extends StatelessWidget {
     final hairline = MatteSurface.hairline(context);
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        AppHaptics.medium();
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ChatScreen(conversation: conversation),

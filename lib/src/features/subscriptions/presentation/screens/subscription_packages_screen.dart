@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
@@ -21,7 +22,7 @@ class _SubscriptionPackagesScreenState
 
   Future<void> _buy(IapOffer offer) async {
     setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
+    AppHaptics.medium();
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!mounted) return;
     setState(() => _busy = false);
