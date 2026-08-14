@@ -157,27 +157,19 @@ class MapHudCircle extends StatelessWidget {
         height: 40,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: accent
-              ? const LinearGradient(
-                  colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
-                )
-              : null,
-          color: accent ? null : const Color(0xF2161B27),
+          color: (selected || accent) ? Colors.white : const Color(0xFF0A0A0D),
           border: Border.all(
-            color: selected || accent
-                ? const Color(0xFF00E5FF)
-                : const Color(0xCCFFFFFF),
+            color: Colors.white,
             width: 1.5,
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: (accent ? const Color(0xFF00C6FF) : Colors.black)
-                  .withAlpha(100),
+              color: Colors.black54,
               blurRadius: 10,
             ),
           ],
         ),
-        child: Icon(icon, color: Colors.white, size: 18),
+        child: Icon(icon, color: (selected || accent) ? Colors.black : Colors.white, size: 18),
       ),
     );
   }

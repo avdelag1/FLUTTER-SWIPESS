@@ -45,18 +45,18 @@ class _MapGpsDotState extends State<MapGpsDot>
                 height: ring,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color.fromRGBO(0, 198, 255, 0.35 * (1 - t)),
+                  color: Color.fromRGBO(255, 255, 255, 0.35 * (1 - t)),
                 ),
               ),
               Container(
                 width: 16,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00C6FF),
+                  color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.5),
+                  border: Border.all(color: Colors.black, width: 2.5),
                   boxShadow: const [
-                    BoxShadow(color: Color(0x8800C6FF), blurRadius: 10),
+                    BoxShadow(color: Colors.black54, blurRadius: 10),
                   ],
                 ),
               ),

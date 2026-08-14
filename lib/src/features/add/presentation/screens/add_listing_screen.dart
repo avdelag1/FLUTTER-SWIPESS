@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
@@ -153,10 +154,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                    ),
+                    const CapBackButton(),
                   ],
                 ),
                 const SizedBox(height: 14),

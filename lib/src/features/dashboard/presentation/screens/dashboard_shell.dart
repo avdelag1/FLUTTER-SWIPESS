@@ -177,14 +177,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   constraints: const BoxConstraints(maxWidth: 340),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: ChunkyInkPill(
-                      isLight: isLight,
-                      height: 52,
-                      depth: 3.5,
-                      frameWidth: 3.5,
-                      closedFrame: true,
-                      useBlur: true,
+                    child: Container(
+                      height: 56,
                       padding: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white, width: 2.0),
+                      ),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
@@ -293,8 +293,8 @@ class _DockButton extends StatelessWidget {
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     // Cap: active = full ink; inactive muted. No circular glass discs.
     final color = item.accent
-        ? const Color(0xFFFF4D6A)
-        : (selected ? ink : ink.withAlpha(isLight ? 140 : 170));
+        ? const Color(0xFFFF4D00)
+        : (selected ? Colors.white : Colors.white.withAlpha(120));
 
     return GestureDetector(
       onTap: onTap,
@@ -339,7 +339,7 @@ class _DockButton extends StatelessWidget {
                     )
                   : Icon(
                       item.icon,
-                      size: item.accent ? 22 : 18,
+                      size: item.accent ? 24 : 22,
                       color: color,
                     ),
             ],
@@ -360,7 +360,7 @@ class _AiRobotPainter extends CustomPainter {
     final p = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
+      ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 

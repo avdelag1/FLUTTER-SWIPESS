@@ -39,20 +39,14 @@ class MapCityChips extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
-                gradient: active
-                    ? const LinearGradient(
-                        colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
-                      )
-                    : null,
-                color: active ? null : const Color(0xE6121824),
+                color: active ? Colors.white : const Color(0xFF0A0A0D),
                 border: Border.all(
-                  color: active ? Colors.white : const Color(0xAA00C6FF),
-                  width: active ? 1.5 : 1.2,
+                  color: Colors.white,
+                  width: active ? 2.0 : 1.0,
                 ),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
-                    color: (active ? const Color(0xFF00C6FF) : Colors.black)
-                        .withAlpha(active ? 90 : 80),
+                    color: Colors.black54,
                     blurRadius: 10,
                   ),
                 ],
@@ -60,14 +54,15 @@ class MapCityChips extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ClipOval(
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
                     child: Image.network(
                       city.photoUrl,
                       width: 28,
                       height: 28,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const ColoredBox(
-                        color: Color(0xFF1D4ED8),
+                        color: Colors.white24,
                         child: SizedBox(width: 28, height: 28),
                       ),
                     ),
@@ -76,7 +71,7 @@ class MapCityChips extends StatelessWidget {
                   Text(
                     city.name.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: active ? Colors.black : Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 11,
                       letterSpacing: 1.1,

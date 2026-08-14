@@ -410,12 +410,11 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     height: 44,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
-                      ),
-                      boxShadow: [
+                      color: Colors.white,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                      boxShadow: const [
                         BoxShadow(
-                          color: Color(0x880072FF),
+                          color: Colors.black54,
                           blurRadius: 12,
                           offset: Offset(0, 4),
                         ),
@@ -423,7 +422,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     ),
                     child: const Icon(
                       Icons.navigation_rounded,
-                      color: Colors.white,
+                      color: Colors.black,
                       size: 20,
                     ),
                   ),
@@ -437,9 +436,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xF212161F),
+                          color: const Color(0xFF0A0A0D),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0x8800C6FF)),
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

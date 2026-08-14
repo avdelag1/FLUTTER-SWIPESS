@@ -39,7 +39,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   static const lemonWash = Color(0xFFFFE066);
   static const mintWash = Color(0xFF7DFFAA);
 
-  static const _hudSize = 40.0;
+  static const _hudSize = 42.0;
 
   void _openProfile(BuildContext context) { AppHaptics.medium();
     AppHaptics.medium();
@@ -144,7 +144,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     wash: mintWash,
                     child: Icon(
                       Icons.auto_awesome_rounded,
-                      size: 20,
+                      size: 22,
                       color: ink,
                     ),
                   ),
@@ -172,7 +172,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       children: [
                         Icon(
                           Icons.workspace_premium_rounded,
-                          size: 20,
+                          size: 22,
                           color: ink,
                         ),
                         if (tokens > 0) ...[
@@ -202,7 +202,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     wash: skyWash,
                     child: Icon(
                       Icons.public_rounded,
-                      size: 20,
+                      size: 22,
                       color: ink,
                     ),
                   ),
@@ -221,7 +221,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       isLight
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
-                      size: 20,
+                      size: 22,
                       color: ink,
                     ),
                   ),
@@ -244,7 +244,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         wash: coralWash,
                         child: Icon(
                           Icons.notifications_rounded,
-                          size: 20,
+                          size: 22,
                           color: ink,
                         ),
                       ),
@@ -321,7 +321,7 @@ class _HudButton extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: fill.withAlpha(fill.alpha ~/ 2), // Make it more translucent to see blur
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: border, width: 1.0),
+                    border: Border.all(color: border, width: 2.0),
                   ),
                   child: child,
                 ),
