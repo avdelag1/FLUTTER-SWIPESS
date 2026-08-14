@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 class AddListingNotifier extends Notifier<ListingDraft> {
@@ -120,6 +121,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       await repo.createListing(payload);
       ref.invalidate(swipeListingsProvider);
+      ref.invalidate(myListingsProvider);
+      ref.invalidate(ownerListingsStatsProvider);
       state = const ListingDraft();
       return true;
     } catch (error) {
@@ -162,7 +165,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'price': double.tryParse(draft.price) ?? 0,
       'currency': 'USD',
       'description': description,
-      'country': draft.country.isEmpty ? coords.country : draft.country,
+      'country': coords.country,
       'state': coords.state,
       'city': draft.city,
       'location': location,

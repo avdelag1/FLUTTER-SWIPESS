@@ -56,7 +56,16 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   @override
   void initState() {
     super.initState();
-    final draft = ref.read(addListingProvider);
+    var draft = ref.read(addListingProvider);
+    final seeded = draft.photos.isNotEmpty ||
+        draft.title.trim().isNotEmpty ||
+        draft.description.trim().isNotEmpty;
+    if (widget.initialCategory == null &&
+        widget.initialMode == null &&
+        !seeded) {
+      ref.read(addListingProvider.notifier).reset();
+      draft = ref.read(addListingProvider);
+    }
     _title = TextEditingController(text: draft.title);
     _price = TextEditingController(text: draft.price);
     _description = TextEditingController(text: draft.description);

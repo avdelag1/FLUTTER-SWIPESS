@@ -517,8 +517,10 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
               GlassTextField(
                 controller: _description,
                 hint:
-                    "Describe your listing or just tap publish. E.g. 'Stunning ocean view property with private pool'...",
-                icon: Icons.mic_none_rounded,
+                    "Describe your listing. E.g. 'Stunning ocean view villa with private pool, 2 bedrooms'...",
+                icon: Icons.notes_rounded,
+                maxLines: 5,
+                height: 140,
               ),
               const SizedBox(height: 16),
               Text(
@@ -553,7 +555,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                       onTap: _busy ? null : _create,
                       child: Center(
                         child: Text(
-                          _busy ? 'PREPARING…' : 'CREATE AI LISTING',
+                          _busy ? 'PREPARING…' : 'CONTINUE TO LISTING',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,

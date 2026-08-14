@@ -3,8 +3,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 /// Edit-form state for Cap UnifiedListingForm (editingProperty path).
 class EditListingState {
@@ -177,6 +179,13 @@ class EditListingNotifier extends Notifier<EditListingState?> {
 
   void load(Listing listing) {
     state = EditListingState.fromListing(listing);
+    Future(() async {
+      try {
+        final full =
+            await ref.read(listingRepositoryProvider).fetchById(listing.id);
+        if (full != null) state = EditListingState.fromListing(full);
+      } catch (_) {}
+    });
   }
 
   void clear() => state = null;
@@ -289,6 +298,9 @@ class EditListingNotifier extends Notifier<EditListingState?> {
 
       payload.removeWhere((_, value) => value == null);
       await repo.updateListing(current.listingId, payload);
+      ref.invalidate(myListingsProvider);
+      ref.invalidate(ownerListingsStatsProvider);
+      ref.invalidate(swipeListingsProvider);
       state = null;
       return true;
     } catch (error) {

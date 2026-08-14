@@ -93,8 +93,8 @@ class Listing {
   /// Parse from Supabase JSON row.
   factory Listing.fromJson(Map<String, dynamic> json) {
     return Listing(
-      id: json['id'] as String,
-      ownerId: json['owner_id'] as String?,
+      id: json['id']?.toString() ?? '',
+      ownerId: json['owner_id']?.toString(),
       title: json['title'] as String?,
       description: json['description'] as String?,
       category: json['category'] as String?,
@@ -109,20 +109,20 @@ class Listing {
       location: json['location'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
-      bedrooms: json['bedrooms'] as int?,
-      beds: json['beds'] as int?,
+      bedrooms: (json['bedrooms'] as num?)?.toInt(),
+      beds: (json['beds'] as num?)?.toInt(),
       bathrooms: (json['bathrooms'] as num?)?.toDouble(),
       baths: (json['baths'] as num?)?.toDouble(),
       squareFootage: (json['square_footage'] as num?)?.toDouble(),
       furnished: json['furnished'] as bool?,
       petFriendly: json['pet_friendly'] as bool?,
       amenities: _parseStringList(json['amenities']),
-      images: _parseStringList(json['images']),
+      images: _imagesFromJson(json),
       videoUrl: json['video_url'] as String?,
       status: json['status'] as String?,
       isActive: json['is_active'] as bool?,
-      likes: json['likes'] as int?,
-      views: json['views'] as int?,
+      likes: (json['likes'] as num?)?.toInt(),
+      views: (json['views'] as num?)?.toInt(),
       hasVerifiedDocuments: json['has_verified_documents'] == true ||
           json['background_check_verified'] == true ||
           json['insurance_verified'] == true,
@@ -130,10 +130,10 @@ class Listing {
       updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
       vehicleBrand: json['vehicle_brand'] as String?,
       vehicleModel: json['vehicle_model'] as String?,
-      year: json['year'] as int?,
-      mileage: json['mileage'] as int?,
+      year: (json['year'] as num?)?.toInt(),
+      mileage: (json['mileage'] as num?)?.toInt(),
       serviceCategory: json['service_category'] as String?,
-      experienceYears: json['experience_years'] as int?,
+      experienceYears: (json['experience_years'] as num?)?.toInt(),
       experienceLevel: json['experience_level'] as String?,
     );
   }
@@ -171,5 +171,13 @@ class Listing {
     if (value == null) return [];
     if (value is List) return value.map((e) => e.toString()).toList();
     return [];
+  }
+
+  static List<String> _imagesFromJson(Map<String, dynamic> json) {
+    final images = _parseStringList(json['images']);
+    if (images.isNotEmpty) return images;
+    final single = json['image_url']?.toString().trim();
+    if (single != null && single.isNotEmpty) return [single];
+    return const [];
   }
 }
