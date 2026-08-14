@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
@@ -358,39 +359,34 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Promote Your Event',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                          ),
+                          'PROMOTE',
+                          style: NexusTheme.sectionLabel,
+                        ),
+                        Text(
+                          _step == 0 ? 'Your event' : 'Event',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
                         ),
                         if (_step >= 1 && _step <= 3)
                           Text(
                             'Step $_step of 3',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white38,
-                              fontSize: 11,
+                              color: Colors.white54,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                       ],
                     ),
                   ),
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.orange.withAlpha(50),
-                          Colors.purple.withAlpha(50),
-                        ],
-                      ),
-                      border: Border.all(color: Colors.transparent),
+                      gradient: NexusTheme.warm,
                     ),
                     child: const Icon(Icons.campaign_rounded,
-                        color: Color(0xFFFB923C), size: 18),
+                        color: Colors.white, size: 22),
                   ),
                 ],
               ),
@@ -448,20 +444,20 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.transparent,
+            color: AppTheme.brandPrimary.withAlpha(28),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.transparent),
+            border: Border.all(color: AppTheme.brandPrimary.withAlpha(90)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.movie_creation_outlined,
-                  color: Color(0xFFFB923C), size: 16),
+                  color: Color(0xFFFF8A4C), size: 16),
               const SizedBox(width: 8),
               Text(
                 'PHOTO + VIDEO · MAX 1 MIN',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFFFB923C),
+                  color: const Color(0xFFFF8A4C),
                   fontWeight: FontWeight.w900,
                   fontSize: 11,
                   letterSpacing: 1.6,
@@ -471,37 +467,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           ),
         ),
       ),
-      const SizedBox(height: 18),
-      Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: 'Get your event ',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 36,
-                height: 1.05,
-                letterSpacing: -1.2,
-              ),
-            ),
-            TextSpan(
-              text: 'on Swipess',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w900,
-                fontSize: 36,
-                fontStyle: FontStyle.italic,
-                height: 1.05,
-                letterSpacing: -1.2,
-                foreground: Paint()
-                  ..shader = const LinearGradient(
-                    colors: [Color(0xFFF97316), Color(0xFF38BDF8)],
-                  ).createShader(const Rect.fromLTWH(0, 0, 220, 50)),
-              ),
-            ),
-          ],
-        ),
+      const SizedBox(height: 22),
+      Text(
+        'GET YOUR\nEVENT LIVE',
         textAlign: TextAlign.center,
+        style: AppTheme.displayItalic.copyWith(fontSize: 36, height: 1.02),
       ),
       const SizedBox(height: 12),
       Text(
@@ -571,20 +541,27 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   Widget _howRow(String n, String title, String desc) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
+      padding: const EdgeInsets.all(14),
+      decoration: NexusTheme.glassCard(radius: 20).copyWith(
+        color: NexusTheme.cardDark,
       ),
       child: Row(
         children: [
-          Text(
-            n,
-            style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFFFB923C),
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
+          Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: NexusTheme.warm,
+            ),
+            child: Text(
+              n,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -715,58 +692,61 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _typeStep() {
     return [
       Text(
-        'What are you\npromoting?',
-        style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
-          fontWeight: FontWeight.w900,
-          fontSize: 28,
-          height: 1.05,
-          letterSpacing: -0.8,
-        ),
+        'WHAT ARE YOU\nPROMOTING?',
+        style: AppTheme.displayItalic.copyWith(fontSize: 28, height: 1.05),
       ),
       const SizedBox(height: 8),
       Text(
-        'Choose the category that fits your business',
+        'Pick a category — same energy as posting a seeker request',
         style: GoogleFonts.plusJakartaSans(color: Colors.white54),
       ),
       const SizedBox(height: 18),
-      for (final t in _types) ...[
-        GestureDetector(
-          onTap: () => setState(() => _type = t.$1),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _type == t.$1
-                  ? AppTheme.brandPrimary.withAlpha(40)
-                  : Colors.white.withAlpha(12),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _type == t.$1
-                    ? AppTheme.brandPrimary
-                    : Colors.white24,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(t.$3, color: Colors.white),
-                const SizedBox(width: 12),
-                Text(
-                  t.$2,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
+      GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.35,
+        children: [
+          for (final t in _types)
+            GestureDetector(
+              onTap: () => setState(() => _type = t.$1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  gradient: _type == t.$1
+                      ? NexusTheme.warm
+                      : null,
+                  color: _type == t.$1 ? null : NexusTheme.cardDark,
+                  border: Border.all(
+                    color: _type == t.$1
+                        ? Colors.white24
+                        : NexusTheme.border,
                   ),
                 ),
-                const Spacer(),
-                if (_type == t.$1)
-                  const Icon(Icons.check_circle, color: AppTheme.brandPrimary),
-              ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(t.$3, color: Colors.white, size: 26),
+                    const Spacer(),
+                    Text(
+                      t.$2,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
-      const SizedBox(height: 12),
+        ],
+      ),
+      const SizedBox(height: 16),
       _primaryBtn(label: 'Continue', onPressed: () => setState(() => _step = 2)),
     ];
   }
@@ -990,28 +970,34 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   Widget _primaryBtn({required String label, VoidCallback? onPressed}) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: onPressed == null
-            ? null
-            : const LinearGradient(
-                colors: [Color(0xFFFF4D00), Color(0xFFEA580C)],
-              ),
+        borderRadius: BorderRadius.circular(999),
+        gradient: onPressed == null ? null : NexusTheme.warm,
         color: onPressed == null ? Colors.white24 : null,
+        boxShadow: onPressed == null
+            ? null
+            : [
+                BoxShadow(
+                  color: AppTheme.brandPrimary.withAlpha(80),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(18),
+          customBorder: const StadiumBorder(),
           child: SizedBox(
-            height: 56,
+            height: 58,
             child: Center(
               child: Text(
-                label,
+                label.toUpperCase(),
                 style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 0.4,
+                  letterSpacing: 1.2,
+                  fontSize: 14,
                 ),
               ),
             ),
