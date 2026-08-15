@@ -47,9 +47,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     if (_launching) return;
     _launching = true;
     AppHaptics.medium();
-    ref.read(authIntentProvider.notifier).set(
-          mode == 'signup' ? AuthIntent.signup : AuthIntent.login,
-        );
+    ref
+        .read(authIntentProvider.notifier)
+        .set(mode == 'signup' ? AuthIntent.signup : AuthIntent.login);
     await context.push('${AppPaths.auth}?mode=$mode');
     if (!mounted) return;
     _launching = false;
@@ -57,7 +57,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   void _onLogoDragEnd(DragEndDetails details) {
-    final shouldSwipe = _dragX > 80 || details.velocity.pixelsPerSecond.dx > 400;
+    final shouldSwipe =
+        _dragX > 80 || details.velocity.pixelsPerSecond.dx > 400;
     if (shouldSwipe) {
       _enterAuth('login');
       return;
@@ -98,8 +99,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                             onTap: () => _enterAuth('login'),
                             onHorizontalDragUpdate: (d) {
                               if (d.delta.dx <= 0 && _dragX <= 0) return;
-                              setState(() => _dragX = (_dragX + d.delta.dx)
-                                  .clamp(0.0, width));
+                              setState(
+                                () => _dragX = (_dragX + d.delta.dx).clamp(
+                                  0.0,
+                                  width,
+                                ),
+                              );
                             },
                             onHorizontalDragEnd: _onLogoDragEnd,
                             child: Transform.translate(

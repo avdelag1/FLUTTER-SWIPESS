@@ -151,8 +151,11 @@ class NotFoundScreen extends StatelessWidget {
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(s.$3,
-                                        color: AppTheme.brandPrimary, size: 18),
+                                    Icon(
+                                      s.$3,
+                                      color: AppTheme.brandPrimary,
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
@@ -163,8 +166,10 @@ class NotFoundScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    const Icon(Icons.chevron_right_rounded,
-                                        color: Colors.white38),
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Colors.white38,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -207,14 +212,8 @@ class _GhostCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: orange
-              ? [
-                  const Color(0xFFF97316).withAlpha(18),
-                  Colors.transparent,
-                ]
-              : [
-                  Colors.white.withAlpha(14),
-                  Colors.transparent,
-                ],
+              ? [const Color(0xFFF97316).withAlpha(18), Colors.transparent]
+              : [Colors.white.withAlpha(14), Colors.transparent],
         ),
       ),
     );

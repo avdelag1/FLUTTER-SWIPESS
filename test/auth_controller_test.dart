@@ -23,6 +23,7 @@ void main() {
     return ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(mockRepo),
+        currentUserProvider.overrideWith(() => CurrentUserNotifier()),
       ],
     );
   }

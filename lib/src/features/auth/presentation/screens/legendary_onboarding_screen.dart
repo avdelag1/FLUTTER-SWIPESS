@@ -15,8 +15,9 @@ class LegendaryOnboardingScreen extends StatefulWidget {
 
   static Future<bool> hasCompleted() async {
     try {
-      final prefs = await SharedPreferences.getInstance()
-          .timeout(const Duration(seconds: 2));
+      final prefs = await SharedPreferences.getInstance().timeout(
+        const Duration(seconds: 2),
+      );
       return prefs.getBool(prefsKey) ?? false;
     } catch (_) {
       return true; // Don't trap users on a spinner if prefs hang.
@@ -110,11 +111,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Color(0x99000000),
-                  Colors.black,
-                ],
+                colors: [Colors.transparent, Color(0x99000000), Colors.black],
                 stops: [0.35, 0.65, 1],
               ),
             ),
