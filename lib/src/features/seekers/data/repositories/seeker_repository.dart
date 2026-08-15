@@ -43,7 +43,7 @@ class SeekerRepository {
             .order('created_at', ascending: false)
             .limit(50) as List;
       } catch (_) {
-        rethrow;
+        return const [];
       }
     }
 

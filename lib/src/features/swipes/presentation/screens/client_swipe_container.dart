@@ -528,7 +528,7 @@ class _DockIcon extends StatelessWidget {
         child: Icon(
           icon,
           size: accent ? 24 : 21,
-          color: accent ? Colors.white : idleColor,
+          color: accent ? const Color(0xFFFF4D6A) : idleColor,
         ),
       ),
     );
