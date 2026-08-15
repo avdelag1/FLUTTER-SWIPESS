@@ -59,14 +59,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   bool _didFly = false;
   bool _mapReady = false;
   bool _hudVisible = true;
-  Timer? _hudTimer;
 
   static const _radiusOptions = [5, 10, 25, 50, 100, 200];
 
   @override
   void initState() {
     super.initState();
-    _revealHud();
     _citiesOpen = widget.showCitiesOnOpen;
     _fly = AnimationController(
       vsync: this,
@@ -76,7 +74,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   @override
   void dispose() {
-    _hudTimer?.cancel();
     _fly.stop();
     _fly.dispose();
     _mapController.dispose();
@@ -85,19 +82,10 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   double _zoomForRadius(int km) => MapCameraMath.zoomForRadiusKm(km);
 
-  void _revealHud() {
-    _hudTimer?.cancel();
-    if (!_hudVisible && mounted) setState(() => _hudVisible = true);
-    _hudTimer = Timer(const Duration(seconds: 7), () {
-      if (!mounted) return;
-      if (_citiesOpen || _selected != null) {
-        _revealHud();
-        return;
-      }
-      setState(() {
-        _hudVisible = false;
-        _radiusOpen = false;
-      });
+  void _toggleHud() {
+    setState(() {
+      _hudVisible = !_hudVisible;
+      if (!_hudVisible) _radiusOpen = false;
     });
   }
 
@@ -571,7 +559,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   child: GestureDetector(
                     onTap: () {
                       AppHaptics.light();
-                      _revealHud();
+                      _toggleHud();
                     },
                     child: Container(
                       width: 38,
@@ -585,10 +573,41 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         ],
                       ),
                       child: const Icon(
-                        Icons.tune_rounded,
+                        Icons.visibility_rounded, // Better indicates 'reveal'
                         color: Color(0xFF111318),
                         size: 18,
                       ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+          // Add a hide button when HUD is visible
+          if (_hudVisible)
+            Positioned(
+              top: pad.top + 12,
+              right: 12,
+              child: Semantics(
+                button: true,
+                label: 'Hide map controls',
+                child: GestureDetector(
+                  onTap: () {
+                    AppHaptics.light();
+                    _toggleHud();
+                  },
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: const Icon(
+                      Icons.visibility_off_rounded,
+                      color: Colors.white,
+                      size: 18,
                     ),
                   ),
                 ),

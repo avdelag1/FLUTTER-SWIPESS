@@ -15,12 +15,12 @@ abstract final class MapCameraMath {
 
   static const flyInDurationMs = 3000;
 
-  static const openBankDegrees = 15.0; // slight bank on fly-in
-  static const openPitch = 1.0; // steeper on dive
-  static const cruisePitch = 0.698; // ~40 degrees
-  static const perspective = 0.0015;
-  static const stageScale = 1.6;
-  static const stageTranslateY = -120.0;
+  static const openBankDegrees = 0.0;
+  static const openPitch = 0.0;
+  static const cruisePitch = 0.0;
+  static const perspective = 0.0;
+  static const stageScale = 1.0;
+  static const stageTranslateY = 0.0;
 
   static const openGlideMs = 3000;
 

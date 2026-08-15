@@ -32,7 +32,7 @@ List<MapPin> _scatterOverlaps(List<MapPin> raw) {
     } else {
       final baseRadius = 0.002; // ~200 meters
       for (var i = 0; i < group.length; i++) {
-        final rand = math.Random(group[i].hashCode);
+        final rand = math.Random(group[i].id.hashCode);
         final r = baseRadius + (rand.nextDouble() * 0.008); // up to ~1km
         final angle = rand.nextDouble() * 2 * math.pi;
         
