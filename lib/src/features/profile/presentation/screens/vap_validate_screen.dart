@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/pulsing_verified_badge.dart';
-import 'package:flutter_swipes/src/core/widgets/neo_naive_card.dart';
 import 'package:flutter_swipes/src/features/profile/data/repositories/vap_id_repository.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -69,7 +68,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
     });
 
     try {
-      final row = await ref.read(vapIdRepositoryProvider).lookup(id);
+      final row = await ref.read(vapIdRepositoryProvider).lookupResident(id);
       if (!mounted) return;
       setState(() {
         _loading = false;
