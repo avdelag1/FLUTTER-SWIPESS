@@ -29,4 +29,13 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
   ) {
     return child;
   }
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child; // Hides all scrollbars
+  }
 }

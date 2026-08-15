@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/features/moderation/presentation/widgets/repo
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final publicProfileProvider = FutureProvider.family<PublicMemberProfile?, String>((
@@ -237,7 +238,13 @@ class _BodyState extends State<_Body> {
                     children: [
                       _Round(
                         icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: () => Navigator.pop(context),
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/dashboard');
+                          }
+                        },
                       ),
                       const Spacer(),
                       _Round(

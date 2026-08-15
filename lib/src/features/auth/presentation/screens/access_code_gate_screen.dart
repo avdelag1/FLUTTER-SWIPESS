@@ -192,10 +192,8 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
           ),
         ),
         const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: isDesktop
-              ? MainAxisAlignment.start
-              : MainAxisAlignment.center,
+        Wrap(
+          alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
           children: [
             Container(
               height: 48,

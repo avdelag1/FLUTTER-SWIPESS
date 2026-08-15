@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
@@ -651,17 +652,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   void _openSelected() {
     if (_selected == null) return;
     if (_selected!.isListing) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ListingDetailScreen(listingData: _selected!.listing!),
-        ),
-      );
+      context.push('/listing/${_selected!.listing!.id}');
     } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ProfileDetailScreen(userId: _selected!.profile!.id),
-        ),
-      );
+      context.push('/profile/${_selected!.profile!.id}');
     }
   }
 
