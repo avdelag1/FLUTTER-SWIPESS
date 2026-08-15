@@ -37,7 +37,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ex
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap listing swipe deck — no like/dislike buttons; chrome auto-hides ~5s.
+/// Cap listing swipe deck — chrome auto-hides after seven seconds and the
+/// full-bleed photo grows smoothly into the released space.
 class ClientSwipeContainer extends ConsumerStatefulWidget {
   const ClientSwipeContainer({
     super.key,
@@ -544,7 +545,7 @@ class _DockIcon extends StatelessWidget {
         ),
         child: Icon(
           icon,
-          size: accent ? 22 : 18,
+          size: accent ? 24 : 21,
           color: accent ? const Color(0xFFFF4D6A) : idleColor,
         ),
       ),
