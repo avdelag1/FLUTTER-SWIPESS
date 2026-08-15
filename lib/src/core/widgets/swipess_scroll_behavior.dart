@@ -3,11 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// Consistent, glow-free scrolling for touch, mouse, trackpad and stylus.
-///
-/// Apple platforms keep their familiar soft edge bounce. Android, Windows and
-/// Linux use clamping physics so long feeds stop precisely without the default
-/// Material overscroll glow obscuring the black Swipess canvas.
+/// Consistent, glow-free bouncing scrolling for touch, mouse, trackpad and stylus.
 class SwipessScrollBehavior extends MaterialScrollBehavior {
   const SwipessScrollBehavior();
 
@@ -21,15 +17,10 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
-    return switch (getPlatform(context)) {
-      TargetPlatform.iOS || TargetPlatform.macOS =>
-        const BouncingScrollPhysics(
-          parent: RangeMaintainingScrollPhysics(),
-        ),
-      _ => const ClampingScrollPhysics(
-          parent: RangeMaintainingScrollPhysics(),
-        ),
-    };
+    // Always use BouncingScrollPhysics to make scrolling feel kinetic, fast, and sensible, especially on Web.
+    return const BouncingScrollPhysics(
+      parent: RangeMaintainingScrollPhysics(),
+    );
   }
 
   @override
