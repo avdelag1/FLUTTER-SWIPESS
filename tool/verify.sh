@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-"$(dirname "$0")/check_vercel_config.sh"
-
 if command -v flutter >/dev/null 2>&1; then
   FLUTTER_BIN="$(command -v flutter)"
 elif [[ -x "$PWD/flutter/bin/flutter" ]]; then

@@ -17,11 +17,11 @@ depends on external services, credentials, schemas, or another repository.
 | Events | PARTIAL | Feed, detail, favorites, promotion, admin approval, and media exist. Verify event purchase receipts and moderation end-to-end. |
 | Filters | PARTIAL | Listing/client filters exist. Confirm every filter is represented in the query/RPC and persisted per account. |
 | Global navigation | PARTIAL | GoRouter and global back handling exist. Add a route-by-route device smoke suite for header/dock/back visibility. |
-| Header chrome | PARTIAL | Scroll hide/show and route reset exist. The create control has separate sparkle/plus glyphs, the token control always shows its balance, and compact screens reduce only inter-control spacing so every action remains visible. Verify on profile, events, likes, messages, and every shell destination. |
+| Header chrome | PARTIAL | Scroll hide/show and route reset exist. Verify on dashboard, profile, events, likes, messages, and every shell destination. |
 | In-app purchases | PARTIAL | StoreKit/Play purchase stream, restore, product IDs, and receipt edge-function calls exist. App Store Connect products, agreements, sandbox receipts, server validation, entitlement grants, renewal/revoke webhooks, and restore behavior must be verified. |
 | Jobs / seekers | PARTIAL | Request feed/create repository exists. Confirm production schema and RLS; never convert transport/schema errors into empty success. |
 | Lawyer portal | BLOCKED | Client request/video-call flow and Jitsi launch exist. A complete lawyer-side queue, availability dashboard, push/ringing, package assignment, call acceptance, and role/RLS validation are not present here. |
-| Live map | PARTIAL | Satellite imagery, labels, clustering, photo-title pins, radius, and an auto-hiding HUD exist. Vercel now forwards its public Mapbox token into the Flutter web compilation. Genuine vector terrain/buildings still require the official Mapbox Flutter SDK, a production style, and device performance verification. |
+| Live map | PARTIAL | Satellite imagery, labels, clustering, photo-title pins, radius, and an auto-hiding HUD exist. A genuine Mapbox vector/terrain/building implementation requires the official native SDK, token, style, and device performance pass. |
 | Messaging | PARTIAL | Conversations, popup, attachments, and listing context exist. Verify realtime delivery, pagination, unread state, blocking, notification fan-out, and RLS. |
 | Notifications | PARTIAL | Local lifecycle notifications and in-app feed exist; remote push prompt is intentionally disabled until APNs/FCM is wired. |
 | Owner listings | PARTIAL | Create/edit/publish/control surfaces and back navigation exist. Verify every listing category, upload rollback, validation, ownership, moderation, and deletion. |
@@ -30,12 +30,12 @@ depends on external services, credentials, schemas, or another repository.
 | QR partner redemption | BLOCKED | Resident QR display exists; business scanner validation, replay prevention, redemption transaction, audit trail, and business permissions need implementation/verification. |
 | Reporting and safety | PARTIAL | Report/block UI exists. Move direct writes behind repositories and verify admin review, rate limits, evidence handling, and RLS. |
 | Subscriptions | PARTIAL | Monthly/semiannual/annual products exist. Verify StoreKit subscription group, introductory offers, status sync, expiry/grace/billing retry, restore, and server notifications. |
-| Swipe decks | PARTIAL | Full-bleed cards, five keyed high-contrast dock icons, actions, undo, and empty/error states exist. An automated lifecycle test now covers the seven-second hide and top-tap restore; deck entry/category changes reset hidden chrome before painting. Add physical-device and per-category gesture checks. |
-| Tests and CI | PARTIAL | PR/main CI runs analyzer, tests, and a web release build; local verification also checks that Vercel compile-time configuration is wired without committed tokens. Device/E2E, Android release, and iOS build verification remain required. |
+| Swipe decks | PARTIAL | Full-bleed cards, visible five-icon dock, chrome timer, restore zones, actions, undo, and empty/error states exist. Add timer/gesture/device tests for every listing category. |
+| Tests and CI | PARTIAL | PR/main CI now runs analyzer, tests, and a web release build; local verification can opt into a full format check. Device/E2E, Android release, and iOS build verification remain required. |
 | User roles | BLOCKED | Client and owner paths exist; admin, lawyer, and business permissions need a single documented role matrix plus database RLS tests. |
 | Video | PARTIAL | Event/listing video and legal external calls exist. Verify codec, recut, autoplay, audio focus, call lifecycle, and low-connectivity behavior. |
 | Web deployment | PARTIAL | Vercel previews work. Production requires the PR commit to reach remote `main`; local branch naming is not deployment. |
-| eXternal services | BLOCKED | Mapbox public-token delivery is wired for Vercel. Supabase, Mapbox style/API health, Apple, Google, PayPal, APNs/FCM, Jitsi, and Vercel still require production health checks and provider-side configuration. |
+| eXternal services | BLOCKED | Supabase, Mapbox, Apple, Google, PayPal, APNs/FCM, Jitsi, and Vercel each need production credentials and health checks. |
 | Yield / performance | PARTIAL | Video budgets and image cache sizing exist. Profile frames, map tile/marker load, long lists, and low-memory devices need profiling. |
 | Zero-trust release | BLOCKED | Require analyzer, tests, schema/RLS tests, signed production builds, receipt validation, secret scanning, and a smoke deployment before automatic merge. |
 

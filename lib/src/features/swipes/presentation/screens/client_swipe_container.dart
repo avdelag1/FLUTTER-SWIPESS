@@ -475,28 +475,24 @@ class SwipeDeckDock extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DockIcon(
-                key: const ValueKey('swipe-dock-dashboard'),
                 semanticLabel: 'Dashboard',
                 icon: Icons.dashboard_rounded,
                 onTap: onDashboard,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                key: const ValueKey('swipe-dock-tokens'),
                 semanticLabel: 'Tokens',
                 icon: Icons.diamond_rounded,
                 onTap: onTokens,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                key: const ValueKey('swipe-dock-ai'),
                 semanticLabel: 'AI concierge',
                 icon: Icons.smart_toy_rounded,
                 onTap: onAi,
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                key: const ValueKey('swipe-dock-create'),
                 semanticLabel: 'Create listing',
                 icon: Icons.add_rounded,
                 onTap: onAdd,
@@ -504,7 +500,6 @@ class SwipeDeckDock extends StatelessWidget {
                 idleColor: iconIdle,
               ),
               _DockIcon(
-                key: const ValueKey('swipe-dock-messages'),
                 semanticLabel: 'Messages',
                 icon: Icons.chat_bubble_rounded,
                 onTap: onMessages,
@@ -536,29 +531,25 @@ class _DockIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: () {
-          AppHaptics.light();
-          onTap();
-        },
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: accent ? const Color(0xFFFF4D00) : const Color(0x2EFFFFFF),
-            border: accent
-                ? null
-                : Border.all(color: const Color(0x52FFFFFF), width: 1),
-          ),
-          child: Icon(
-            icon,
-            size: accent ? 24 : 21,
-            color: accent ? Colors.white : idleColor,
-          ),
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.light();
+        onTap();
+      },
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: accent ? const Color(0xFFFF4D00) : const Color(0x1FFFFFFF),
+          border: accent
+              ? null
+              : Border.all(color: const Color(0x2EFFFFFF), width: 1),
+        ),
+        child: Icon(
+          icon,
+          size: accent ? 24 : 21,
+          color: accent ? const Color(0xFFFF4D6A) : idleColor,
         ),
       ),
     );

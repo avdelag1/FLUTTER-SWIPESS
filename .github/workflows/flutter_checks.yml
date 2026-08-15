@@ -24,8 +24,6 @@ jobs:
           cache: true
       - name: Flutter version
         run: flutter --version
-      - name: Deployment configuration
-        run: ./tool/check_vercel_config.sh
       - name: Dependencies
         run: flutter pub get
       - name: Analyzer

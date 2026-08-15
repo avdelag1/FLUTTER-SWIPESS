@@ -203,7 +203,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     }
                     _fly.addListener(flyCamera);
                     _fly.forward(from: 0);
-                    _revealHud();
                   },
                   onTap: (_, _) => setState(() {
                     _selected = null;

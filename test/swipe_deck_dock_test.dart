@@ -26,12 +26,6 @@ void main() {
     expect(find.byIcon(Icons.smart_toy_rounded), findsOneWidget);
     expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     expect(find.byIcon(Icons.chat_bubble_rounded), findsOneWidget);
-    expect(find.byKey(const ValueKey('swipe-deck-dock')), findsOneWidget);
-    expect(find.byKey(const ValueKey('swipe-dock-dashboard')), findsOneWidget);
-    expect(find.byKey(const ValueKey('swipe-dock-tokens')), findsOneWidget);
-    expect(find.byKey(const ValueKey('swipe-dock-ai')), findsOneWidget);
-    expect(find.byKey(const ValueKey('swipe-dock-create')), findsOneWidget);
-    expect(find.byKey(const ValueKey('swipe-dock-messages')), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.chat_bubble_rounded));
     await tester.pump();

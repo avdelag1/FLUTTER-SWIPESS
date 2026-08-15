@@ -106,22 +106,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
                   },
-                  child: const _WashIcon(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 17,
-                          color: addWash,
-                        ),
-                        SizedBox(width: 1),
-                        Icon(
-                          Icons.add_rounded,
-                          size: 15,
-                          color: Colors.white,
-                        ),
-                      ],
+                  child: _WashIcon(
+                    child: const Icon(
+                      Icons.add_rounded,
+                      size: 22,
+                      color: addWash,
                     ),
                   ),
                 ),
@@ -142,13 +131,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       builder: (_) => const TokensModal(),
                     );
                   },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 25,
-                        height: 25,
-                        decoration: const BoxDecoration(
+                  child: _WashIcon(
+                    badge: tokens > 0,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.diamond_rounded,
+                          size: 20,
                           color: tokenWash,
                           shape: BoxShape.circle,
                         ),

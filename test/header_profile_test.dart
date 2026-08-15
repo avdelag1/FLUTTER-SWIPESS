@@ -136,45 +136,6 @@ void main() {
     expect(radialWashes, isEmpty);
   });
 
-  testWidgets('create and token controls remain explicit and readable',
-      (tester) async {
-    await tester.pumpWidget(
-      host(
-        child: const MaterialApp(
-          home: Scaffold(
-            body: AppTopBar(firstName: 'Maya'),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-
-    expect(find.byKey(const ValueKey('header-create')), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('header-create')),
-        matching: find.byIcon(Icons.auto_awesome_rounded),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('header-create')),
-        matching: find.byIcon(Icons.add_rounded),
-      ),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('header-tokens')),
-        matching: find.byIcon(Icons.diamond_rounded),
-      ),
-      findsOneWidget,
-    );
-    expect(find.text('4'), findsOneWidget);
-  });
-
   testWidgets('header HUD buttons are thick nexus 48px controls', (tester) async {
     await tester.pumpWidget(
       host(
