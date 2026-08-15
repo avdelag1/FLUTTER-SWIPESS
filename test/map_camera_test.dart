@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
-import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
+import 'package:flutter_swipes/src/features/map/data/map_pin_sources.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_bottom_dock.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
@@ -41,7 +41,6 @@ void main() {
   });
 
   test('a single live listing is not padded with fake Tulum homes', () {
-    final center = const LatLng(20.2114, -87.4654);
     final live = [
       Listing(
         id: 'live-1',
@@ -50,14 +49,13 @@ void main() {
         longitude: -87.46,
       ),
     ];
-    final merged = listingsForMap(live, center, 'Tulum');
+    final merged = listingsForMap(live);
     expect(merged.length, 1);
     expect(merged.single.id, 'live-1');
     expect(merged.every((l) => !l.id.startsWith('map-demo-')), isTrue);
   });
 
-  test('Paris does not inherit Tulum demo pins', () {
-    final paris = const LatLng(48.8566, 2.3522);
+  test('live listing sources never inject demo pins', () {
     final tulumListing = Listing(
       id: 'tulum-1',
       title: 'Jungle Villa',
@@ -65,7 +63,7 @@ void main() {
       latitude: 20.21,
       longitude: -87.46,
     );
-    final merged = listingsForMap([tulumListing], paris, 'Paris');
+    final merged = listingsForMap([tulumListing]);
     expect(merged, isNotEmpty);
     // listingsForMap no longer fabricates pins; city radius is applied
     // by the provider. This just guarantees no demo overlay is injected.
@@ -74,7 +72,15 @@ void main() {
 
   test('five nearby listings stay unclustered at a 50 km zoom', () {
     final center = const LatLng(20.2114, -87.4654);
-    final listings = demoMapListings(center, 'Tulum');
+    final listings = List.generate(
+      6,
+      (index) => Listing(
+        id: 'live-$index',
+        title: 'Listing $index',
+        latitude: center.latitude + index * 0.004,
+        longitude: center.longitude + index * 0.004,
+      ),
+    );
     expect(listings.length, greaterThanOrEqualTo(5));
     final pins = listings.map(MapPin.listing).toList();
     final groups = clusterMapPins(pins, MapCameraMath.zoomForRadiusKm(50));

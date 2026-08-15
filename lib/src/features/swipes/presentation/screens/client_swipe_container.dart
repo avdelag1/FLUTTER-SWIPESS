@@ -56,7 +56,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   /// One-shot return: only the most recent swipe can be restored once.
   Listing? _undoable;
   late String _categoryId;
-  bool _demoMatchShown = false;
   bool _retrying = false;
   bool _detecting = false;
   bool _detected = false;
@@ -225,9 +224,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       var matched = false;
       if (authUser != null) {
         matched = await swipe_repo.SwipeRepository().checkForMatch(listing.id);
-      } else if (!_demoMatchShown) {
-        matched = true;
-        _demoMatchShown = true;
       }
       if (matched && mounted) {
         final profile = ref.read(currentProfileProvider).value;

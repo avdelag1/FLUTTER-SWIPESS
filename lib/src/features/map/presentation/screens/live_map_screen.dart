@@ -10,7 +10,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
-import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
+import 'package:flutter_swipes/src/features/map/data/map_pin_sources.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
@@ -132,8 +132,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final listingsRaw = asyncListings.value ?? [];
     final profiles = asyncProfiles.value ?? [];
     final isLoading = asyncListings.isLoading || asyncProfiles.isLoading;
-    final listings = listingsForMap(listingsRaw, center, location.city);
-    final people = peopleForMap(profiles, center, location.city);
+    final listings = listingsForMap(listingsRaw);
+    final people = peopleForMap(profiles);
     const haversine = Distance();
     bool inRadius(double lat, double lng) {
       return haversine.as(
