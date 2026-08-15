@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> showListingReportSheet(
   BuildContext context, {
@@ -17,15 +18,15 @@ Future<void> showListingReportSheet(
   );
 }
 
-class _ReportSheet extends StatefulWidget {
+class _ReportSheet extends ConsumerStatefulWidget {
   const _ReportSheet({required this.listing});
   final Listing listing;
 
   @override
-  State<_ReportSheet> createState() => _ReportSheetState();
+  ConsumerState<_ReportSheet> createState() => _ReportSheetState();
 }
 
-class _ReportSheetState extends State<_ReportSheet> {
+class _ReportSheetState extends ConsumerState<_ReportSheet> {
   String? _type;
   final _details = TextEditingController();
   bool _busy = false;
@@ -48,20 +49,16 @@ class _ReportSheetState extends State<_ReportSheet> {
     if (_type == null || _details.text.trim().isEmpty) return;
     setState(() => _busy = true);
     AppHaptics.medium();
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      await Supabase.instance.client.from('reports').insert({
-        'reporter_id': user?.id,
-        'reported_listing_id': widget.listing.id,
-        'reported_user_id': widget.listing.ownerId,
-        'report_type': _type,
-        'report_category': 'listing',
-        'description': _details.text.trim(),
-        'status': 'open',
-      });
-    } catch (_) {
-      // Best-effort — still thank the user like Cap.
-    }
+    
+    final user = ref.read(currentUserProvider);
+    await ref.read(swipeRepositoryProvider).reportListing(
+          reporterId: user?.id,
+          listingId: widget.listing.id,
+          ownerId: widget.listing.ownerId,
+          type: _type!,
+          details: _details.text.trim(),
+        );
+
     if (!mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -150,16 +147,16 @@ class _ReportSheetState extends State<_ReportSheet> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Describe the issue…',
-                  hintStyle: TextStyle(color: Colors.transparent),
+                  hintStyle: const TextStyle(color: Colors.white38),
                   filled: true,
                   fillColor: Colors.transparent,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.white, width: 1),
+                    borderSide: const BorderSide(color: Colors.white, width: 1),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: Colors.white, width: 1),
+                    borderSide: const BorderSide(color: Colors.white30, width: 1),
                   ),
                 ),
               ),

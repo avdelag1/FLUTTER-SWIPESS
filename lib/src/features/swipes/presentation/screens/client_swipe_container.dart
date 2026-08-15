@@ -20,8 +20,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
-import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart'
-    as swipe_repo;
+
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/chrome_reveal_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
@@ -35,7 +34,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/pull_dow
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_error_state.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_exhausted_state.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 
 /// Cap listing swipe deck — chrome auto-hides after seven seconds and the
 /// full-bleed photo grows smoothly into the released space.
@@ -115,7 +114,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       );
       return;
     }
-    final me = Supabase.instance.client.auth.currentUser?.id;
+    final me = ref.read(currentUserProvider)?.id;
     if (me != null && me == ownerId) {
       ScaffoldMessenger.of(
         context,
@@ -123,7 +122,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       return;
     }
     AppHaptics.medium();
-    final convoId = await swipe_repo.SwipeRepository().startConversation(
+    final convoId = await ref.read(swipeRepositoryProvider).startConversation(
       ownerId: ownerId,
       listingId: listing.id,
     );
@@ -212,7 +211,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 
   Future<void> _afterSwipe(Listing listing, SwipeDirection direction) async {
-    final authUser = Supabase.instance.client.auth.currentUser?.id;
+    final authUser = ref.read(currentUserProvider)?.id;
     if (authUser != null) {
       if (direction == SwipeDirection.right) {
         await ref
@@ -228,7 +227,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     if (direction == SwipeDirection.right && mounted) {
       var matched = false;
       if (authUser != null) {
-        matched = await swipe_repo.SwipeRepository().checkForMatch(listing.id);
+        matched = await ref.read(swipeRepositoryProvider).checkForMatch(listing.id);
       } else if (!_demoMatchShown) {
         matched = true;
         _demoMatchShown = true;

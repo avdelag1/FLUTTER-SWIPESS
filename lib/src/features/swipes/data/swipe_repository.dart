@@ -54,4 +54,37 @@ class SwipeRepository {
 
   Future<({int synced, int failed})> flushOfflineQueue() =>
       _swipes.flushOfflineQueue();
+
+  Future<String?> startConversation({
+    required String ownerId,
+    required String listingId,
+  }) {
+    return _swipes.startConversation(ownerId: ownerId, listingId: listingId);
+  }
+
+  Future<bool> checkForMatch(String listingId) {
+    return _swipes.checkForMatch(listingId);
+  }
+
+  Future<void> reportListing({
+    required String? reporterId,
+    required String listingId,
+    required String ownerId,
+    required String type,
+    required String details,
+  }) async {
+    try {
+      await _supabase.from('reports').insert({
+        'reporter_id': reporterId,
+        'reported_listing_id': listingId,
+        'reported_user_id': ownerId,
+        'report_type': type,
+        'report_category': 'listing',
+        'description': details,
+        'status': 'open',
+      });
+    } catch (_) {
+      // Best-effort — still thank the user like Cap.
+    }
+  }
 }
