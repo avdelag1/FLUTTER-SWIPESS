@@ -93,7 +93,7 @@ class _LayerOrb extends StatelessWidget {
             child: Icon(
               icon,
               color: selected ? Colors.white : const Color(0xFF111318),
-              size: 18,
+              size: 21,
             ),
           ),
           if (badge > 0)

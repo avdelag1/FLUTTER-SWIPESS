@@ -528,29 +528,25 @@ class _DockIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        onTap: () {
-          AppHaptics.light();
-          onTap();
-        },
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: accent ? const Color(0xFFFF4D00) : const Color(0x1FFFFFFF),
-            border: accent
-                ? null
-                : Border.all(color: const Color(0x2EFFFFFF), width: 1),
-          ),
-          child: Icon(
-            icon,
-            size: accent ? 24 : 21,
-            color: accent ? Colors.white : idleColor,
-          ),
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.light();
+        onTap();
+      },
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: accent ? const Color(0xFFFF4D00) : const Color(0x1FFFFFFF),
+          border: accent
+              ? null
+              : Border.all(color: const Color(0x2EFFFFFF), width: 1),
+        ),
+        child: Icon(
+          icon,
+          size: accent ? 24 : 21,
+          color: accent ? const Color(0xFFFF4D6A) : idleColor,
         ),
       ),
     );
