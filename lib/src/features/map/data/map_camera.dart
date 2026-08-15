@@ -27,7 +27,8 @@ abstract final class MapCameraMath {
   static const perspective = 0.0008;
 
   /// Scale after perspective to prevent clipping black void. Increase since pitch is steep.
-  static const stageScale = 1.8;
+  static const stageScale = 2.1;
+  static const stageTranslateY = -280.0;
 
   static const openGlideMs = 3000;
 

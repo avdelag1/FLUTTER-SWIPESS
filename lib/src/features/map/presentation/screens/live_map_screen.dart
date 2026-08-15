@@ -66,6 +66,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   @override
   void initState() {
     super.initState();
+    _revealHud();
     _citiesOpen = widget.showCitiesOnOpen;
     _fly = AnimationController(
       vsync: this,

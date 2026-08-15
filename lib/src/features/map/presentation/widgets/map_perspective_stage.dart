@@ -31,6 +31,7 @@ class MapPerspectiveStage extends StatelessWidget {
           ..setEntry(3, 2, MapCameraMath.perspective)
           ..rotateX(-pitch)
           ..rotateZ(bank)
+          ..translate(0.0, MapCameraMath.stageTranslateY, 0.0)
           ..scaleByDouble(
             MapCameraMath.stageScale,
             MapCameraMath.stageScale,
