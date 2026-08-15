@@ -10,7 +10,6 @@ import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_p
 import 'package:flutter_swipes/src/features/roommates/domain/roommate_profile.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/providers/roommates_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap RoommateMatching — deck + filters + profile swipe + message.
@@ -90,18 +89,14 @@ class _RoommateMatchingScreenState
               Positioned.fill(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 100, 16, 150),
-                  child: SwipeCard(
-                    title: current.title,
-                    subtitle: current.subtitle,
-                    imageUrl: current.avatarUrl,
-                    price: current.budget == null
-                        ? null
-                        : 'Budget: \$${current.budget!.toStringAsFixed(0)}/mo',
-                    tags: [
-                      if (current.city != null) current.city!,
-                      if (current.occupation != null) current.occupation!,
-                      if (current.age != null) '${current.age}',
-                    ],
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Center(
+                      child: Text(current.name, style: const TextStyle(color: Colors.white, fontSize: 24)),
+                    ),
                   ),
                 ),
               ),

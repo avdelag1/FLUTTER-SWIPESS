@@ -14,7 +14,7 @@ void main() {
     );
 
     // Give images time to load/fail
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     // Verify search bar exists (case-sensitive)
     expect(find.text('SEARCH ASSETS...'), findsOneWidget);
