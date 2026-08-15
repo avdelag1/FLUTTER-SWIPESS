@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/pulsing_verified_badge.dart';
+import 'package:flutter_swipes/src/core/widgets/neo_naive_card.dart';
 import 'package:flutter_swipes/src/features/profile/data/repositories/vap_id_repository.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 /// Cap `VapValidate` — pulsing verified badge + resident details.
 class VapValidateScreen extends ConsumerStatefulWidget {
@@ -20,6 +22,8 @@ class VapValidateScreen extends ConsumerStatefulWidget {
 
 class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   late final TextEditingController _id;
+  late final MobileScannerController _scannerController;
+  
   VapIdCard? _data;
   bool _loading = false;
   bool _lookedUp = false;
@@ -29,6 +33,10 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   void initState() {
     super.initState();
     _id = TextEditingController(text: widget.userId ?? '');
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+      facing: CameraFacing.back,
+    );
     if (widget.userId != null && widget.userId!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _lookup());
     }
@@ -37,23 +45,31 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   @override
   void dispose() {
     _id.dispose();
+    _scannerController.dispose();
     super.dispose();
   }
 
   Future<void> _lookup() async {
     var id = _id.text.trim();
+    if (id.isEmpty) return;
+    
+    // Support scanning a full URL
+    if (id.startsWith('https://swipess.com/vap-validate/')) {
+      id = id.replaceAll('https://swipess.com/vap-validate/', '');
+    }
+    
     if (id.toUpperCase().startsWith('NX-')) {
       id = id.substring(3);
     }
-    if (id.isEmpty) return;
+    
     setState(() {
       _loading = true;
-      _error = null;
-      _data = null;
       _lookedUp = true;
+      _error = null;
     });
+
     try {
-      final row = await ref.read(vapIdRepositoryProvider).lookupResident(id);
+      final row = await ref.read(vapIdRepositoryProvider).lookup(id);
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -68,6 +84,19 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
     }
   }
 
+  void _onDetect(BarcodeCapture capture) {
+    if (_loading || _lookedUp) return;
+    
+    final List<Barcode> barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      if (barcode.rawValue != null) {
+        _id.text = barcode.rawValue!;
+        _lookup();
+        break;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final valid = _data != null;
@@ -75,101 +104,303 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
+          child: Column(
             children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: const Icon(Icons.chevron_left_rounded,
-                          color: Colors.white),
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.verified_user_rounded,
-                      color: Colors.white70, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'SWIPESS RESIDENT PORTAL',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2.4,
-                    ),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 40),
-                ],
-              ),
-              const SizedBox(height: 16),
-            TextField(
-              controller: _id,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'User id…',
-                hintStyle: TextStyle(color: Colors.transparent),
-                filled: true,
-                fillColor: Colors.transparent,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.white, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.white, width: 1),
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 80),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white24,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                )
-              else if (_error != null)
-                NeoNaiveCard(
-                  inkStamp: true,
-                  child: Column(
-                    children: [
-                      const PulsingVerifiedBadge(valid: false),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Could not verify this ID.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
+                        child: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.qr_code_scanner_rounded, color: Colors.white70, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'BUSINESS VALIDATION',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.4,
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(width: 40),
+                  ],
+                ),
+              ),
+              
+              if (!_lookedUp && !_loading)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          MobileScanner(
+                            controller: _scannerController,
+                            onDetect: _onDetect,
+                          ),
+                          CustomPaint(
+                            painter: _ScannerOverlayPainter(),
+                          ),
+                          Positioned(
+                            bottom: 24,
+                            left: 24,
+                            right: 24,
+                            child: Text(
+                              'Scan Resident PEARL QR',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withAlpha(200),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                
+              Expanded(
+                flex: _lookedUp || _loading ? 1 : 0,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                  children: [
+                    if (!_lookedUp && !_loading) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(height: 1, color: Colors.white24),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR ENTER ID MANUALLY',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(height: 1, color: Colors.white24),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
-                      BrandPrimaryButton(label: 'Try again', onPressed: _lookup),
+                      TextField(
+                        controller: _id,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'User ID (e.g. NX-ABC123)',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: Colors.white.withAlpha(10),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.white24, width: 1),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.white24, width: 1),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                        onSubmitted: (_) => _lookup(),
+                      ),
+                      const SizedBox(height: 16),
+                      BrandPrimaryButton(label: 'Verify ID', onPressed: _lookup),
                     ],
-                  ),
-                )
-              else if (_lookedUp && valid)
-                _ValidCard(data: _data!)
-              else if (_lookedUp)
-                const _InvalidCard(),
+
+                    if (_loading)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 80),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white24,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      )
+                    else if (_error != null)
+                      NeoNaiveCard(
+                        inkStamp: true,
+                        child: Column(
+                          children: [
+                            const PulsingVerifiedBadge(valid: false),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Could not verify this ID.',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            BrandPrimaryButton(
+                              label: 'Try again', 
+                              onPressed: () {
+                                setState(() {
+                                  _lookedUp = false;
+                                  _error = null;
+                                  _id.clear();
+                                });
+                              }
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (_lookedUp && valid) ...[
+                      _ValidCard(data: _data!),
+                      const SizedBox(height: 24),
+                      BrandPrimaryButton(
+                        label: 'Scan Another', 
+                        onPressed: () {
+                          setState(() {
+                            _lookedUp = false;
+                            _data = null;
+                            _id.clear();
+                          });
+                        }
+                      ),
+                    ]
+                    else if (_lookedUp) ...[
+                      const _InvalidCard(),
+                      const SizedBox(height: 24),
+                      BrandPrimaryButton(
+                        label: 'Scan Another', 
+                        onPressed: () {
+                          setState(() {
+                            _lookedUp = false;
+                            _id.clear();
+                          });
+                        }
+                      ),
+                    ]
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+class _ScannerOverlayPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withAlpha(120)
+      ..style = PaintingStyle.fill;
+
+    // The clear cutout in the center
+    final cutoutWidth = size.width * 0.7;
+    final cutoutHeight = size.width * 0.7;
+    final cutoutRect = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: cutoutWidth,
+      height: cutoutHeight,
+    );
+
+    // Draw the dark background with a clear rounded rect inside
+    final path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addRRect(RRect.fromRectAndRadius(cutoutRect, const Radius.circular(24)))
+      ..fillType = PathFillType.evenOdd;
+
+    canvas.drawPath(path, paint);
+
+    // Draw the target corners
+    final cornerPaint = Paint()
+      ..color = const Color(0xFFFF4D00)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    const cornerLength = 32.0;
+    
+    // Top Left
+    canvas.drawLine(
+      Offset(cutoutRect.left, cutoutRect.top + cornerLength),
+      Offset(cutoutRect.left, cutoutRect.top),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(cutoutRect.left, cutoutRect.top),
+      Offset(cutoutRect.left + cornerLength, cutoutRect.top),
+      cornerPaint,
+    );
+
+    // Top Right
+    canvas.drawLine(
+      Offset(cutoutRect.right - cornerLength, cutoutRect.top),
+      Offset(cutoutRect.right, cutoutRect.top),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(cutoutRect.right, cutoutRect.top),
+      Offset(cutoutRect.right, cutoutRect.top + cornerLength),
+      cornerPaint,
+    );
+
+    // Bottom Left
+    canvas.drawLine(
+      Offset(cutoutRect.left, cutoutRect.bottom - cornerLength),
+      Offset(cutoutRect.left, cutoutRect.bottom),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(cutoutRect.left, cutoutRect.bottom),
+      Offset(cutoutRect.left + cornerLength, cutoutRect.bottom),
+      cornerPaint,
+    );
+
+    // Bottom Right
+    canvas.drawLine(
+      Offset(cutoutRect.right - cornerLength, cutoutRect.bottom),
+      Offset(cutoutRect.right, cutoutRect.bottom),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(cutoutRect.right, cutoutRect.bottom),
+      Offset(cutoutRect.right, cutoutRect.bottom - cornerLength),
+      cornerPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _ValidCard extends StatelessWidget {
