@@ -36,12 +36,12 @@ class AppBottomNav extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _DockIcon(
-                      icon: Icons.local_fire_department_rounded,
+                      icon: Icons.space_dashboard_rounded,
                       active: activeTab == NavTab.dashboard,
                       onTap: () => onTabSelected(NavTab.dashboard),
                     ),
                     _DockIcon(
-                      icon: Icons.favorite_rounded,
+                      icon: Icons.local_fire_department_rounded,
                       active: activeTab == NavTab.likes,
                       onTap: () => onTabSelected(NavTab.likes),
                     ),

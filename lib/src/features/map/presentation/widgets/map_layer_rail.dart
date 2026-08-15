@@ -1,9 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// High-contrast layer controls without neon bloom around their frames.
+/// Minimal, glassmorphic layer controls without glowing neon colors.
 class MapLayerRail extends StatelessWidget {
   const MapLayerRail({
     super.key,
@@ -20,33 +19,42 @@ class MapLayerRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = listingCount + peopleCount;
-    return Column(
-      children: [
-        _LayerOrb(
-          icon: Icons.public_rounded,
-          colors: const [Color(0xFFFF4D00), Color(0xFFE4007C)],
-          badge: total,
-          selected: layer == 'all',
-          onTap: () => onLayer('all'),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: 44,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(120),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withAlpha(60), width: 1.25),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LayerOrb(
+                icon: Icons.public_rounded,
+                selected: layer == 'all',
+                onTap: () => onLayer('all'),
+              ),
+              const SizedBox(height: 8),
+              _LayerOrb(
+                icon: Icons.apartment_rounded,
+                selected: layer == 'listings',
+                onTap: () => onLayer('listings'),
+              ),
+              const SizedBox(height: 8),
+              _LayerOrb(
+                icon: Icons.people_alt_rounded,
+                selected: layer == 'people',
+                onTap: () => onLayer('people'),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
-        _LayerOrb(
-          icon: Icons.apartment_rounded,
-          colors: const [Color(0xFFFF6B35), Color(0xFFFF4D00)],
-          badge: listingCount,
-          selected: layer == 'listings',
-          onTap: () => onLayer('listings'),
-        ),
-        const SizedBox(height: 10),
-        _LayerOrb(
-          icon: Icons.people_alt_rounded,
-          colors: const [Color(0xFFEC4899), Color(0xFFE4007C)],
-          badge: peopleCount,
-          selected: layer == 'people',
-          onTap: () => onLayer('people'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -54,15 +62,11 @@ class MapLayerRail extends StatelessWidget {
 class _LayerOrb extends StatelessWidget {
   const _LayerOrb({
     required this.icon,
-    required this.colors,
-    required this.badge,
     required this.selected,
     required this.onTap,
   });
 
   final IconData icon;
-  final List<Color> colors;
-  final int badge;
   final bool selected;
   final VoidCallback onTap;
 
@@ -73,53 +77,18 @@ class _LayerOrb extends StatelessWidget {
         AppHaptics.selection();
         onTap();
       },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: selected ? colors.first : const Color(0xEFFFFFFF),
-              border: Border.all(
-                color: Colors.white,
-                width: 1,
-              ),
-              boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 8),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: selected ? Colors.white : const Color(0xFF111318),
-              size: 21,
-            ),
-          ),
-          if (badge > 0)
-            Positioned(
-              right: -4,
-              top: -4,
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 18),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: BoxDecoration(
-                  color: colors.first,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.2),
-                ),
-                child: Text(
-                  '$badge',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 9,
-                  ),
-                ),
-              ),
-            ),
-        ],
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: selected ? const Color(0xFFFF4D00) : Colors.transparent,
+        ),
+        child: Icon(
+          icon,
+          color: selected ? Colors.white : Colors.white70,
+          size: 18,
+        ),
       ),
     );
   }

@@ -44,12 +44,6 @@ class MapCityChips extends StatelessWidget {
                   color: Colors.white,
                   width: active ? 2.0 : 1.0,
                 ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black54,
-                    blurRadius: 10,
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

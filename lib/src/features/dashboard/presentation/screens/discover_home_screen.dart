@@ -140,13 +140,13 @@ class _CategoryChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         height: 40,
         decoration: BoxDecoration(
-          color: selected ? spec.color.withValues(alpha: 0.18) : const Color(0x14101016),
+          color: selected ? Colors.white : Colors.black,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? spec.color.withValues(alpha: 0.7) : const Color(0x33FFFFFF),
+            color: selected ? Colors.white : const Color(0x33FFFFFF),
           ),
           boxShadow: selected
-              ? [BoxShadow(color: spec.color.withValues(alpha: 0.35), blurRadius: 12)]
+              ? const [BoxShadow(color: Colors.black54, blurRadius: 12)]
               : null,
         ),
         child: Row(
@@ -157,10 +157,9 @@ class _CategoryChip extends StatelessWidget {
               height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: spec.color.withValues(alpha: 0.25),
-                border: Border.all(color: spec.color, width: 1.2),
+                color: selected ? Colors.black.withAlpha(20) : Colors.white12,
               ),
-              child: Icon(spec.icon, size: 10, color: spec.color),
+              child: Icon(spec.icon, size: 10, color: selected ? Colors.black : Colors.white),
             ),
             const SizedBox(width: 6),
             Flexible(
@@ -169,7 +168,7 @@ class _CategoryChip extends StatelessWidget {
                 child: Text(
                   spec.label,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: selected ? Colors.black : Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),

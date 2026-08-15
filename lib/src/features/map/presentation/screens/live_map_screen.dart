@@ -86,7 +86,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   void _revealHud() {
     _hudTimer?.cancel();
     if (!_hudVisible && mounted) setState(() => _hudVisible = true);
-    _hudTimer = Timer(const Duration(seconds: 6), () {
+    _hudTimer = Timer(const Duration(seconds: 7), () {
       if (!mounted) return;
       if (_citiesOpen || _selected != null) {
         _revealHud();
@@ -576,7 +576,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white),
                         boxShadow: const [
-                          BoxShadow(color: Colors.black45, blurRadius: 8),
+                          BoxShadow(color: Color(0xFFFF4D00), blurRadius: 16),
                         ],
                       ),
                       child: const Icon(

@@ -107,10 +107,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     showCreateListingChooser(context);
                   },
                   child: _WashIcon(
-                    child: const Icon(
-                      Icons.add_rounded,
-                      size: 22,
-                      color: addWash,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.auto_awesome_rounded, size: 14, color: addWash),
+                        SizedBox(width: 2),
+                        Icon(Icons.add_rounded, size: 20, color: addWash),
+                      ],
                     ),
                   ),
                 ),
@@ -137,18 +140,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.diamond_rounded,
+                          Icons.generating_tokens_rounded,
                           size: 20,
                           color: tokenWash,
-                          shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.diamond_rounded,
-                          size: 15,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
+                        const SizedBox(width: 5),
                       Text(
                         '$tokens',
                         style: GoogleFonts.plusJakartaSans(
