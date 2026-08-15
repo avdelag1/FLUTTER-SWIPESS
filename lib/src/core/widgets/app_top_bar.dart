@@ -140,7 +140,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                               .generating_tokens_rounded, // Changed from diamond to ensure rendering
                           size: 20,
                           color: Color(
-                            0xFFFFB300,
+                            0xFFFFD54F,
                           ), // Amber to be highly visible
                         ),
                         const SizedBox(width: 5),

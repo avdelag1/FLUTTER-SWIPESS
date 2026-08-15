@@ -14,7 +14,36 @@ class MapClusterGroup {
 
 /// Cluster passport pins. Nearby-but-distinct listings stay separate so a
 /// 50 km zoom never collapses a city into a single bubble.
-List<MapClusterGroup> clusterMapPins(List<MapPin> pins, double zoom) {
+
+import 'dart:math' as math;
+
+List<MapPin> _scatterOverlaps(List<MapPin> raw) {
+  final exact = <String, List<MapPin>>{};
+  for (final p in raw) {
+    final key = '${p.lat.toStringAsFixed(4)}_${p.lng.toStringAsFixed(4)}';
+    exact.putIfAbsent(key, () => []).add(p);
+  }
+  
+  final scattered = <MapPin>[];
+  for (final group in exact.values) {
+    if (group.length == 1) {
+      scattered.add(group.first);
+    } else {
+      final radius = 0.00015 + (0.00005 * group.length); 
+      for (var i = 0; i < group.length; i++) {
+        final angle = (2 * math.pi / group.length) * i;
+        final dLat = radius * math.cos(angle);
+        final dLng = radius * math.sin(angle);
+        scattered.add(MapPin.scattered(group[i], group[i].lat + dLat, group[i].lng + dLng));
+      }
+    }
+  }
+  return scattered;
+}
+
+List<MapClusterGroup> clusterMapPins(List<MapPin> originalPins, double zoom) {
+  final pins = _scatterOverlaps(originalPins);
+
   if (pins.isEmpty) return const [];
   if (pins.length <= MapCameraMath.alwaysShowBelow) {
     return [

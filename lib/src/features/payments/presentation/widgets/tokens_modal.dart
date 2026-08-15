@@ -270,7 +270,7 @@ class _TokenPackageCard extends StatelessWidget {
                     : null,
               ),
               child: const Icon(
-                Icons.generating_tokens_rounded,
+                Icons.stars_rounded,
                 color: Colors.white,
                 size: 28,
               ),

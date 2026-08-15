@@ -20,5 +20,11 @@ class MapPin {
       lat = profile!.latitude!,
       lng = profile.longitude!;
 
+
+  MapPin.scattered(MapPin original, this.lat, this.lng)
+    : isListing = original.isListing,
+      listing = original.listing,
+      profile = original.profile;
+
   String get id => isListing ? listing!.id : profile!.id;
 }

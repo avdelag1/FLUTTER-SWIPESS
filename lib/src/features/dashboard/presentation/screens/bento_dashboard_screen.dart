@@ -26,10 +26,10 @@ const _chips = [
   _ChipSpec(
     'property',
     'Properties',
-    Color(0xFFFF4D4D),
+    Color(0xFFFF6B6B),
     Icons.apartment_rounded,
   ),
-  _ChipSpec('events', 'Events', Color(0xFF3B82F6), Icons.celebration_rounded),
+  _ChipSpec('events', 'Events', Color(0xFF60A5FA), Icons.celebration_rounded),
   _ChipSpec('worker', 'Pros', Color(0xFFEAB308), Icons.auto_awesome),
 ];
 
@@ -173,16 +173,16 @@ class _CategoryChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 18,
-              height: 18,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: selected ? Colors.black.withAlpha(20) : Colors.white12,
               ),
               child: Icon(
                 spec.icon,
-                size: 10,
-                color: selected ? Colors.black : Colors.white,
+                size: 14,
+                color: selected ? Colors.black : spec.color,
               ),
             ),
             const SizedBox(width: 6),
@@ -192,7 +192,7 @@ class _CategoryChip extends StatelessWidget {
                 child: Text(
                   spec.label,
                   style: GoogleFonts.plusJakartaSans(
-                    color: selected ? Colors.black : Colors.white,
+                    color: selected ? Colors.black : spec.color,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
