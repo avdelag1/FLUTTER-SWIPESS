@@ -152,4 +152,31 @@ void main() {
     expect(profile.height, 42);
     expect(profile.width, 42);
   });
+
+  testWidgets('all header controls fit a compact phone without overflow',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      host(
+        child: const MaterialApp(
+          home: Scaffold(
+            body: AppTopBar(firstName: 'Maya'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-create')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
+    expect(find.byIcon(Icons.public_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.dark_mode_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.notifications_rounded), findsOneWidget);
+  });
 }

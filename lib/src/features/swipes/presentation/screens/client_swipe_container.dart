@@ -65,9 +65,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   void initState() {
     super.initState();
     _categoryId = widget.categoryId;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chromeRevealProvider.notifier).reveal();
-    });
+    // A provider can retain its hidden state between deck routes. Reset it before
+    // the first frame so the new deck never opens with an empty-looking dock.
+    ref.read(chromeRevealProvider.notifier).reveal();
   }
 
   @override
@@ -77,6 +77,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       _categoryId = widget.categoryId;
       _deck = null;
       _undoable = null;
+      ref.read(chromeRevealProvider.notifier).reveal();
     }
   }
 
@@ -456,17 +457,18 @@ class SwipeDeckDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const iconIdle = Colors.white;
+    const iconIdle = Color(0xFFF7F7F8);
 
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 300),
         child: Container(
+          key: const ValueKey('swipe-deck-dock'),
           height: 58,
           decoration: BoxDecoration(
-            color: const Color(0xCC000000),
+            color: const Color(0xE6000000),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withAlpha(36), width: 1),
+            border: Border.all(color: const Color(0x42FFFFFF), width: 1),
           ),
           clipBehavior: Clip.antiAlias,
           child: Row(
@@ -513,6 +515,7 @@ class SwipeDeckDock extends StatelessWidget {
 
 class _DockIcon extends StatelessWidget {
   const _DockIcon({
+    super.key,
     required this.icon,
     required this.onTap,
     required this.idleColor,
