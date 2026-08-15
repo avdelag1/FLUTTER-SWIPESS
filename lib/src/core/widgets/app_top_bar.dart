@@ -140,7 +140,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.generating_tokens_rounded,
+                          Icons.diamond_rounded,
                           size: 20,
                           color: tokenWash,
                         ),

@@ -36,42 +36,25 @@ class MapCityChips extends StatelessWidget {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
-                color: active ? Colors.white : const Color(0xFF0A0A0D),
+                color: active ? Colors.white : Colors.black.withAlpha(180),
                 border: Border.all(
-                  color: Colors.white,
-                  width: active ? 2.0 : 1.0,
+                  color: active ? Colors.white : Colors.white24,
+                  width: 1.0,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Image.network(
-                      city.photoUrl,
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const ColoredBox(
-                        color: Colors.white24,
-                        child: SizedBox(width: 28, height: 28),
-                      ),
-                    ),
+              child: Center(
+                child: Text(
+                  city.name.toUpperCase(),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: active ? Colors.black : Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                    letterSpacing: 0.8,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    city.name.toUpperCase(),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: active ? Colors.black : Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 11,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );

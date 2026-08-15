@@ -3,6 +3,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
+import 'package:flutter_swipes/src/core/widgets/app_bottom_nav.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -408,15 +409,20 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                       ),
                       curve: const Cubic(0.25, 0.1, 0.25, 1),
                       child: SafeArea(
-                  child: SwipeDeckDock(
-                    onDashboard: _goDashboard,
-                    onMessages: _goMessages,
-                    onAi: () => showIntelCoreSheet(context),
-                    onAdd: () => showCreateListingChooser(context),
-                    onTokens: () => showGlassModal(
-                      context: context,
-                      builder: (_) => const TokensModal(),
-                    ),
+                  child: AppBottomNav(
+                    activeTab: NavTab.dashboard, // Swipe deck is part of dashboard map flow
+                    onTabSelected: (tab) {
+                      if (tab == NavTab.dashboard) {
+                        _goDashboard();
+                      } else if (tab == NavTab.messages) {
+                        _goMessages();
+                      } else if (tab == NavTab.add) {
+                        showCreateListingChooser(context);
+                      } else {
+                        context.pop();
+                        ref.read(navTabProvider.notifier).set(tab);
+                      }
+                    },
                   ),
                       ),
                     ),
@@ -439,119 +445,3 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 }
 
-class SwipeDeckDock extends StatelessWidget {
-  const SwipeDeckDock({
-    super.key,
-    required this.onDashboard,
-    required this.onMessages,
-    required this.onAi,
-    required this.onAdd,
-    required this.onTokens,
-  });
-
-  final VoidCallback onDashboard;
-  final VoidCallback onMessages;
-  final VoidCallback onAi;
-  final VoidCallback onAdd;
-  final VoidCallback onTokens;
-
-  @override
-  Widget build(BuildContext context) {
-    const iconIdle = Color(0xFFF7F7F8);
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 300),
-        child: Container(
-          key: const ValueKey('swipe-deck-dock'),
-          height: 58,
-          decoration: BoxDecoration(
-            color: const Color(0xE6000000),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: const Color(0x42FFFFFF), width: 1),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _DockIcon(
-                semanticLabel: 'Dashboard',
-                icon: Icons.dashboard_rounded,
-                onTap: onDashboard,
-                idleColor: iconIdle,
-              ),
-              _DockIcon(
-                semanticLabel: 'Tokens',
-                icon: Icons.diamond_rounded,
-                onTap: onTokens,
-                idleColor: iconIdle,
-              ),
-              _DockIcon(
-                semanticLabel: 'AI concierge',
-                icon: Icons.smart_toy_rounded,
-                onTap: onAi,
-                idleColor: iconIdle,
-              ),
-              _DockIcon(
-                semanticLabel: 'Create listing',
-                icon: Icons.add_rounded,
-                onTap: onAdd,
-                accent: true,
-                idleColor: iconIdle,
-              ),
-              _DockIcon(
-                semanticLabel: 'Messages',
-                icon: Icons.chat_bubble_rounded,
-                onTap: onMessages,
-                idleColor: iconIdle,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DockIcon extends StatelessWidget {
-  const _DockIcon({
-    super.key,
-    required this.icon,
-    required this.onTap,
-    required this.idleColor,
-    required this.semanticLabel,
-    this.accent = false,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final Color idleColor;
-  final String semanticLabel;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: accent ? const Color(0xFFFF4D00) : const Color(0x1FFFFFFF),
-          border: accent
-              ? null
-              : Border.all(color: const Color(0x2EFFFFFF), width: 1),
-        ),
-        child: Icon(
-          icon,
-          size: accent ? 24 : 21,
-          color: accent ? const Color(0xFFFF4D6A) : idleColor,
-        ),
-      ),
-    );
-  }
-}
