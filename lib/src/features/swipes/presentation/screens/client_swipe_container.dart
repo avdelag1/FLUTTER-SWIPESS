@@ -403,27 +403,25 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     child: AnimatedSlide(
                       offset: chrome.chromeVisible
                           ? Offset.zero
-                          : const Offset(0, 0.5),
+                          : const Offset(0, 1.0),
                       duration: Duration(
                         milliseconds: chrome.chromeVisible ? 360 : 340,
                       ),
                       curve: const Cubic(0.25, 0.1, 0.25, 1),
-                      child: SafeArea(
-                  child: AppBottomNav(
-                    activeTab: NavTab.dashboard, // Swipe deck is part of dashboard map flow
-                    onTabSelected: (tab) {
-                      if (tab == NavTab.dashboard) {
-                        _goDashboard();
-                      } else if (tab == NavTab.messages) {
-                        _goMessages();
-                      } else if (tab == NavTab.add) {
-                        showCreateListingChooser(context);
-                      } else {
-                        context.pop();
-                        ref.read(navTabProvider.notifier).set(tab);
-                      }
-                    },
-                  ),
+                      child: AppBottomNav(
+                        activeTab: NavTab.dashboard, // Swipe deck is part of dashboard map flow
+                        onTabSelected: (tab) {
+                          if (tab == NavTab.dashboard) {
+                            _goDashboard();
+                          } else if (tab == NavTab.messages) {
+                            _goMessages();
+                          } else if (tab == NavTab.add) {
+                            showCreateListingChooser(context);
+                          } else {
+                            context.pop();
+                            ref.read(navTabProvider.notifier).set(tab);
+                          }
+                        },
                       ),
                     ),
                   ),

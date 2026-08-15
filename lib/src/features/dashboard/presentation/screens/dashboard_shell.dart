@@ -145,26 +145,34 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               }
               return false; // let the notification bubble up if needed
             },
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Offstage(
-                  offstage: !isDashboard,
-                  child: TickerMode(
-                    enabled: isDashboard,
-                    child: const BentoDashboardScreen(),
-                  ),
-                ),
-                if (_eventsMounted)
+            child: AnimatedPadding(
+              duration: Duration(milliseconds: showChrome ? 360 : 340),
+              curve: const Cubic(0.25, 0.1, 0.25, 1),
+              padding: EdgeInsets.only(
+                top: showHeader ? 96 : 0, // AppTopBar height + safe area approx
+                bottom: showChrome ? 88 : 0, // Dock height + safe area approx
+              ),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
                   Offstage(
-                    offstage: !isEvents,
+                    offstage: !isDashboard,
                     child: TickerMode(
-                      enabled: isEvents,
-                      child: const EventsScreen(),
+                      enabled: isDashboard,
+                      child: const BentoDashboardScreen(),
                     ),
                   ),
-                if (!isDashboard && !isEvents) widget.child,
-              ],
+                  if (_eventsMounted)
+                    Offstage(
+                      offstage: !isEvents,
+                      child: TickerMode(
+                        enabled: isEvents,
+                        child: const EventsScreen(),
+                      ),
+                    ),
+                  if (!isDashboard && !isEvents) widget.child,
+                ],
+              ),
             ),
           ),
           // Overlay (not Scaffold.appBar) so nested page Scaffolds cannot
@@ -207,7 +215,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               duration: Duration(milliseconds: showChrome ? 360 : 340),
               curve: const Cubic(0.25, 0.1, 0.25, 1),
               child: AnimatedSlide(
-                offset: showChrome ? Offset.zero : const Offset(0, 0.5),
+                offset: showChrome ? Offset.zero : const Offset(0, 1.0),
                 duration: Duration(milliseconds: showChrome ? 360 : 340),
                 curve: const Cubic(0.25, 0.1, 0.25, 1),
                 child: SafeArea(
