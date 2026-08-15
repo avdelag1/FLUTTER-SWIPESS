@@ -58,7 +58,9 @@ class _VapIdModalBody extends ConsumerWidget {
       error: (_, _) => Center(
         child: TextButton(
           onPressed: () => ref.read(vapIdProvider.notifier).refresh(),
-          child: Text(t(ref, 'flutter.vapRetry', 'Could not load PEARL — retry')),
+          child: Text(
+            t(ref, 'flutter.vapRetry', 'Could not load PEARL — retry'),
+          ),
         ),
       ),
       data: (card) {
@@ -94,10 +96,7 @@ class _VapIdModalBody extends ConsumerWidget {
                     onTap: () => _edit(context, ref, data),
                   ),
                   const SizedBox(width: 8),
-                  _Round(
-                    icon: Icons.close_rounded,
-                    onTap: onClose,
-                  ),
+                  _Round(icon: Icons.close_rounded, onTap: onClose),
                 ],
               ),
             ),
@@ -158,7 +157,9 @@ class _VapIdModalBody extends ConsumerWidget {
                 child: ElevatedButton(
                   onPressed: () async {
                     AppHaptics.selection();
-                    await ref.read(vapIdProvider.notifier).save(
+                    await ref
+                        .read(vapIdProvider.notifier)
+                        .save(
                           card.copyWith(
                             name: name.text.trim(),
                             occupation: occupation.text.trim(),

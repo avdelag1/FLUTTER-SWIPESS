@@ -48,7 +48,10 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
     final contract = widget.contract;
     return Scaffold(
       appBar: AppBar(
-        title: Text(contract.title, style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+        title: Text(
+          contract.title,
+          style: AppTheme.displayItalic.copyWith(fontSize: 18),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
@@ -72,7 +75,10 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          Text('YOUR SIGNATURE', style: AppTheme.displayItalic.copyWith(fontSize: 16)),
+          Text(
+            'YOUR SIGNATURE',
+            style: AppTheme.displayItalic.copyWith(fontSize: 16),
+          ),
           const SizedBox(height: 12),
           FingerSignaturePad(controller: _pad),
           if (_error != null) ...[
@@ -102,15 +108,14 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
       if (bytes == null) throw Exception('Could not capture signature');
       final dataUrl =
           'data:image/png;base64,${base64Encode(bytes.buffer.asUint8List())}';
-      await ref.read(contractRepositoryProvider).sign(
-            contract: widget.contract,
-            signatureData: dataUrl,
-          );
+      await ref
+          .read(contractRepositoryProvider)
+          .sign(contract: widget.contract, signatureData: dataUrl);
       await ref.read(contractsProvider.notifier).refresh();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Signature saved')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Signature saved')));
         Navigator.of(context).pop();
       }
     } catch (e) {

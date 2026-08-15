@@ -4,11 +4,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FingerSignaturePad extends StatefulWidget {
-  const FingerSignaturePad({
-    super.key,
-    required this.controller,
-    this.onClear,
-  });
+  const FingerSignaturePad({super.key, required this.controller, this.onClear});
 
   final SignatureController controller;
   final VoidCallback? onClear;
@@ -38,9 +34,7 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              Signature(
-                controller: widget.controller,
-              ),
+              Signature(controller: widget.controller),
               if (!widget.controller.isNotEmpty)
                 IgnorePointer(
                   child: Center(
@@ -64,7 +58,10 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
             setState(() {});
           },
           icon: const Icon(Icons.delete_outline_rounded, color: Colors.white70),
-          label: const Text('Clear signature', style: TextStyle(color: Colors.white70)),
+          label: const Text(
+            'Clear signature',
+            style: TextStyle(color: Colors.white70),
+          ),
         ),
       ],
     );

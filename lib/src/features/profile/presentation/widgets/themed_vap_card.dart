@@ -97,7 +97,11 @@ class ThemedVapCard extends StatelessWidget {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          Icon(Icons.translate_rounded, size: 16, color: t.textSecondary),
+                          Icon(
+                            Icons.translate_rounded,
+                            size: 16,
+                            color: t.textSecondary,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -122,7 +126,9 @@ class ThemedVapCard extends StatelessWidget {
                           for (final tag in data.interests.take(8))
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: t.tagBg,
                                 borderRadius: BorderRadius.circular(999),
@@ -152,10 +158,7 @@ class ThemedVapCard extends StatelessWidget {
                 ),
               ),
             ),
-            _QrFooter(
-              theme: t,
-              validationUrl: validationUrl,
-            ),
+            _QrFooter(theme: t, validationUrl: validationUrl),
           ],
         ),
       ),
@@ -202,7 +205,8 @@ class _IdentityHeader extends StatelessWidget {
                   ? Image.network(
                       data.avatarUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _Initials(data: data, theme: t),
+                      errorBuilder: (_, _, _) =>
+                          _Initials(data: data, theme: t),
                     )
                   : _Initials(data: data, theme: t),
             ),
@@ -215,7 +219,11 @@ class _IdentityHeader extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.verified_user_rounded, size: 20, color: t.badge),
+                        Icon(
+                          Icons.verified_user_rounded,
+                          size: 20,
+                          color: t.badge,
+                        ),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
@@ -263,8 +271,11 @@ class _IdentityHeader extends StatelessWidget {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.location_on_outlined,
-                            size: 15, color: t.textSecondary),
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 15,
+                          color: t.textSecondary,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -377,11 +388,14 @@ class _AuthorizedVault extends StatelessWidget {
               ),
               docsAsync.maybeWhen(
                 data: (items) {
-                  final verified =
-                      items.where((d) => d.status == 'verified').length;
+                  final verified = items
+                      .where((d) => d.status == 'verified')
+                      .length;
                   return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: t.isDark
                           ? Colors.white.withAlpha(28)
@@ -453,7 +467,9 @@ class _VaultDocRow extends StatelessWidget {
     return Opacity(
       opacity: hasFile ? 1 : 0.72,
       child: Material(
-        color: t.isDark ? Colors.white.withAlpha(22) : Colors.white.withAlpha(200),
+        color: t.isDark
+            ? Colors.white.withAlpha(22)
+            : Colors.white.withAlpha(200),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: hasFile ? () => onPreview(doc!) : null,
@@ -479,9 +495,7 @@ class _VaultDocRow extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        hasFile
-                            ? 'Tap for authorized preview'
-                            : 'Not uploaded',
+                        hasFile ? 'Tap for authorized preview' : 'Not uploaded',
                         style: GoogleFonts.plusJakartaSans(
                           color: t.textTertiary,
                           fontSize: 10,
@@ -494,14 +508,14 @@ class _VaultDocRow extends StatelessWidget {
                   verified
                       ? Icons.check_circle_rounded
                       : pending
-                          ? Icons.schedule_rounded
-                          : Icons.description_outlined,
+                      ? Icons.schedule_rounded
+                      : Icons.description_outlined,
                   size: 18,
                   color: verified
                       ? const Color(0xFF16A34A)
                       : pending
-                          ? t.textSecondary
-                          : t.textTertiary,
+                      ? t.textSecondary
+                      : t.textTertiary,
                 ),
               ],
             ),
@@ -536,13 +550,20 @@ class _VaultThumb extends ConsumerWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(color: t.tagBorder, width: 1.0),
-        color: t.isDark ? Colors.black.withAlpha(50) : Colors.white.withAlpha(100),
+        color: t.isDark
+            ? Colors.black.withAlpha(50)
+            : Colors.white.withAlpha(100),
       ),
       clipBehavior: Clip.antiAlias,
       child: urlAsync != null
           ? urlAsync.maybeWhen(
               data: (url) {
-                if (url == null) return Icon(Icons.description_outlined, color: t.textSecondary, size: 20);
+                if (url == null)
+                  return Icon(
+                    Icons.description_outlined,
+                    color: t.textSecondary,
+                    size: 20,
+                  );
                 return ImageFiltered(
                   imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                   child: Transform.scale(
@@ -550,14 +571,26 @@ class _VaultThumb extends ConsumerWidget {
                     child: Image.network(
                       url,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Icon(Icons.description_outlined, color: t.textSecondary, size: 20),
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.description_outlined,
+                        color: t.textSecondary,
+                        size: 20,
+                      ),
                     ),
                   ),
                 );
               },
-              orElse: () => Icon(Icons.description_outlined, color: t.textSecondary, size: 20),
+              orElse: () => Icon(
+                Icons.description_outlined,
+                color: t.textSecondary,
+                size: 20,
+              ),
             )
-          : Icon(Icons.insert_drive_file_outlined, color: t.textTertiary, size: 20),
+          : Icon(
+              Icons.insert_drive_file_outlined,
+              color: t.textTertiary,
+              size: 20,
+            ),
     );
   }
 }

@@ -64,7 +64,9 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                       ? 0
                       : existing.last.sortOrder + 1;
                   for (final file in files) {
-                    await ref.read(adminRepositoryProvider).uploadCategoryPhoto(
+                    await ref
+                        .read(adminRepositoryProvider)
+                        .uploadCategoryPhoto(
                           categoryId: selected,
                           file: file,
                           sortOrder: order++,
@@ -74,8 +76,7 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                 },
                 icon: const Icon(Icons.upload_rounded, size: 16),
                 label: Text(t(ref, 'flutter.upload', 'Upload')),
-                style: FilledButton.styleFrom(
-                ),
+                style: FilledButton.styleFrom(),
               ),
             ),
           ),
@@ -126,7 +127,11 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                             },
                             child: const CircleAvatar(
                               radius: 12,
-                              child: Icon(Icons.close, size: 14, color: Colors.white),
+                              child: Icon(
+                                Icons.close,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),

@@ -24,8 +24,9 @@ class AmbientPageBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = MatteSurface.isLight(context);
-    final body =
-        padding == null ? child : Padding(padding: padding!, child: child);
+    final body = padding == null
+        ? child
+        : Padding(padding: padding!, child: child);
     return ColoredBox(
       color: AppTheme.canvasFor(isLight: isLight),
       child: Stack(
@@ -99,11 +100,7 @@ class _AmbientWells extends StatelessWidget {
 
 /// Shared inner-page chrome: ambient canvas + safe padded column.
 class NeoNaivePage extends StatelessWidget {
-  const NeoNaivePage({
-    super.key,
-    required this.child,
-    this.scrollable = true,
-  });
+  const NeoNaivePage({super.key, required this.child, this.scrollable = true});
 
   final Widget child;
   final bool scrollable;
@@ -185,11 +182,7 @@ class NeoNaiveGroup extends StatelessWidget {
 
 /// Black canvas + ambient wells. Drop-in for inner Cap pages (not gate/swipe).
 class NeoNaiveScaffold extends StatelessWidget {
-  NeoNaiveScaffold({
-    super.key,
-    required this.body,
-    this.floatingActionButton,
-  });
+  NeoNaiveScaffold({super.key, required this.body, this.floatingActionButton});
 
   final Widget body;
   final Widget? floatingActionButton;

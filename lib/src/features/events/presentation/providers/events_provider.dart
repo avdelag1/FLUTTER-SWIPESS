@@ -12,8 +12,9 @@ class CategoryNotifier extends Notifier<String> {
   }
 }
 
-final selectedCategoryProvider =
-    NotifierProvider<CategoryNotifier, String>(CategoryNotifier.new);
+final selectedCategoryProvider = NotifierProvider<CategoryNotifier, String>(
+  CategoryNotifier.new,
+);
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
   return EventRepository();
@@ -38,8 +39,9 @@ class EventsNotifier extends AsyncNotifier<List<Event>> {
   }
 }
 
-final eventsListProvider =
-    AsyncNotifierProvider<EventsNotifier, List<Event>>(EventsNotifier.new);
+final eventsListProvider = AsyncNotifierProvider<EventsNotifier, List<Event>>(
+  EventsNotifier.new,
+);
 
 final filteredEventsProvider = Provider<AsyncValue<List<Event>>>((ref) {
   final category = ref.watch(selectedCategoryProvider);
@@ -48,9 +50,11 @@ final filteredEventsProvider = Provider<AsyncValue<List<Event>>>((ref) {
 
   return eventsAsync.whenData((events) {
     return events.where((e) {
-      final matchesCategory = category == 'All' ||
+      final matchesCategory =
+          category == 'All' ||
           e.category.toLowerCase() == category.toLowerCase();
-      final matchesQuery = query.isEmpty ||
+      final matchesQuery =
+          query.isEmpty ||
           e.title.toLowerCase().contains(query) ||
           (e.location?.toLowerCase().contains(query) ?? false);
       return matchesCategory && matchesQuery;
@@ -65,8 +69,9 @@ class EventSearchNotifier extends Notifier<String> {
   void set(String value) => state = value;
 }
 
-final eventSearchProvider =
-    NotifierProvider<EventSearchNotifier, String>(EventSearchNotifier.new);
+final eventSearchProvider = NotifierProvider<EventSearchNotifier, String>(
+  EventSearchNotifier.new,
+);
 
 final videoEventsProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsListProvider).value ?? const <Event>[];
@@ -151,13 +156,14 @@ final categoriesProvider = Provider<List<String>>((ref) {
   return eventFeedCategories.map((c) => c.key).toList(growable: false);
 });
 
-
 final eventByIdProvider = FutureProvider.family<Event?, String>((ref, id) {
   return ref.read(eventRepositoryProvider).fetchById(id);
 });
 
-final eventFavoriteProvider =
-    FutureProvider.family<bool, String>((ref, eventId) {
+final eventFavoriteProvider = FutureProvider.family<bool, String>((
+  ref,
+  eventId,
+) {
   return ref.read(eventRepositoryProvider).isFavorited(eventId);
 });
 
@@ -190,5 +196,5 @@ class FavoritedEventsNotifier extends AsyncNotifier<List<Event>> {
 
 final favoritedEventsProvider =
     AsyncNotifierProvider<FavoritedEventsNotifier, List<Event>>(
-  FavoritedEventsNotifier.new,
-);
+      FavoritedEventsNotifier.new,
+    );

@@ -26,10 +26,8 @@ class _BreathingWidgetState extends State<BreathingWidget>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat(reverse: true);
     _opacity = Tween<double>(
       begin: widget.minOpacity,
       end: widget.maxOpacity,
@@ -44,10 +42,6 @@ class _BreathingWidgetState extends State<BreathingWidget>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacity,
-      child: widget.child,
-    );
+    return FadeTransition(opacity: _opacity, child: widget.child);
   }
 }
-

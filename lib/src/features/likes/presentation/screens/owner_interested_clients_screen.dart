@@ -55,12 +55,18 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                   IconButton(
                     tooltip: 'Discover clients',
                     onPressed: () => showOwnerClientSwipeDialog(context),
-                    icon: Icon(Icons.swipe_rounded, color: MatteSurface.muted(context)),
+                    icon: Icon(
+                      Icons.swipe_rounded,
+                      color: MatteSurface.muted(context),
+                    ),
                   ),
                   IconButton(
                     onPressed: () =>
                         ref.read(interestedClientsProvider.notifier).refresh(),
-                    icon: Icon(Icons.sync_rounded, color: MatteSurface.muted(context)),
+                    icon: Icon(
+                      Icons.sync_rounded,
+                      color: MatteSurface.muted(context),
+                    ),
                   ),
                 ],
               ),
@@ -69,13 +75,14 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
               child: async.when(
                 loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: MatteSurface.ink(context), strokeWidth: 2),
+                    color: MatteSurface.ink(context),
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
-                    onPressed: () => ref
-                        .read(interestedClientsProvider.notifier)
-                        .refresh(),
+                    onPressed: () =>
+                        ref.read(interestedClientsProvider.notifier).refresh(),
                     child: Text('Could not load — retry'),
                   ),
                 ),
@@ -85,7 +92,8 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                       child: Text(
                         'No interested clients yet.',
                         style: GoogleFonts.plusJakartaSans(
-                            color: MatteSurface.muted(context)),
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     );
                   }
@@ -128,11 +136,17 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                           final ok = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: Text('Dismiss client?',
-                                  style: TextStyle(color: MatteSurface.ink(context))),
+                              title: Text(
+                                'Dismiss client?',
+                                style: TextStyle(
+                                  color: MatteSurface.ink(context),
+                                ),
+                              ),
                               content: Text(
                                 'Remove ${client.name} from interested clients?',
-                                style: TextStyle(color: MatteSurface.muted(context)),
+                                style: TextStyle(
+                                  color: MatteSurface.muted(context),
+                                ),
                               ),
                               actions: [
                                 TextButton(
@@ -200,7 +214,10 @@ class _ClientCard extends StatelessWidget {
                     ? NetworkImage(client.primaryImage!)
                     : null,
                 child: client.primaryImage == null
-                    ? Icon(Icons.person_rounded, color: MatteSurface.muted(context))
+                    ? Icon(
+                        Icons.person_rounded,
+                        color: MatteSurface.muted(context),
+                      )
                     : null,
               ),
               SizedBox(width: 12),
@@ -211,7 +228,9 @@ class _ClientCard extends StatelessWidget {
                     Text(
                       client.name,
                       style: TextStyle(
-                          color: MatteSurface.ink(context), fontWeight: FontWeight.w800),
+                        color: MatteSurface.ink(context),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     if (client.likedListingTitle != null)
@@ -232,19 +251,26 @@ class _ClientCard extends StatelessWidget {
                           if (client.age != null) '${client.age}',
                         ].join(' · '),
                         style: GoogleFonts.plusJakartaSans(
-                            color: MatteSurface.muted(context), fontSize: 12),
+                          color: MatteSurface.muted(context),
+                          fontSize: 12,
+                        ),
                       ),
                   ],
                 ),
               ),
               IconButton(
                 onPressed: onMessage,
-                icon: Icon(Icons.chat_bubble_outline_rounded,
-                    color: AppTheme.brandPrimary),
+                icon: Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: AppTheme.brandPrimary,
+                ),
               ),
               IconButton(
                 onPressed: onDismiss,
-                icon: Icon(Icons.close_rounded, color: MatteSurface.faint(context)),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: MatteSurface.faint(context),
+                ),
               ),
             ],
           ),
@@ -253,4 +279,3 @@ class _ClientCard extends StatelessWidget {
     );
   }
 }
-

@@ -5,11 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Cap event host contacts — WhatsApp, Instagram, website, Facebook.
 class EventConnectBar extends StatelessWidget {
-  const EventConnectBar({
-    super.key,
-    required this.event,
-    this.message,
-  });
+  const EventConnectBar({super.key, required this.event, this.message});
 
   final Event event;
   final String? message;
@@ -69,11 +65,7 @@ class EventConnectBar extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: items,
-        ),
+        Wrap(spacing: 8, runSpacing: 8, children: items),
       ],
     );
   }

@@ -61,7 +61,9 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
     Iterable<Listing> rows = all;
     switch (_tab) {
       case 'property':
-        rows = rows.where((l) => l.category == null || l.category == 'property');
+        rows = rows.where(
+          (l) => l.category == null || l.category == 'property',
+        );
       case 'motorcycle':
         rows = rows.where((l) => l.category == 'motorcycle');
       case 'bicycle':
@@ -73,9 +75,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
       case 'likes':
         rows = rows.where((l) => (l.likes ?? 0) > 0);
       case 'active':
-        rows = rows.where(
-          (l) => l.status == 'active' || l.isActive == true,
-        );
+        rows = rows.where((l) => l.status == 'active' || l.isActive == true);
       case 'rented':
         rows = rows.where((l) => l.status == 'rented');
     }
@@ -229,8 +229,11 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.add_rounded,
-                                color: MatteSurface.ink(context), size: 18),
+                            Icon(
+                              Icons.add_rounded,
+                              color: MatteSurface.ink(context),
+                              size: 18,
+                            ),
                             SizedBox(width: 6),
                             Text(
                               'ADD LISTING',
@@ -254,8 +257,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                 error: (_, _) => Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: TextButton(
-                    onPressed: () =>
-                        ref.invalidate(ownerListingsStatsProvider),
+                    onPressed: () => ref.invalidate(ownerListingsStatsProvider),
                     child: const Text('Could not load stats — retry'),
                   ),
                 ),
@@ -327,8 +329,11 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.search_rounded,
-                          color: MatteSurface.muted(context), size: 20),
+                      Icon(
+                        Icons.search_rounded,
+                        color: MatteSurface.muted(context),
+                        size: 20,
+                      ),
                       SizedBox(width: 10),
                       Expanded(
                         child: TextField(
@@ -394,9 +399,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                               Icon(
                                 tab.$3,
                                 size: 16,
-                                color: selected
-                                    ? Colors.white
-                                    : Colors.white70,
+                                color: selected ? Colors.white : Colors.white70,
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -436,7 +439,9 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                 child: async.when(
                   loading: () => Center(
                     child: CircularProgressIndicator(
-                        color: MatteSurface.ink(context), strokeWidth: 2),
+                      color: MatteSurface.ink(context),
+                      strokeWidth: 2,
+                    ),
                   ),
                   error: (_, _) => Center(
                     child: TextButton(
@@ -460,11 +465,11 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: cols,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: cols == 1 ? 0.92 : 0.74,
-                          ),
+                                crossAxisCount: cols,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: cols == 1 ? 0.92 : 0.74,
+                              ),
                           itemCount: listings.length,
                           itemBuilder: (context, index) => _AssetCard(
                             listing: listings[index],
@@ -507,66 +512,66 @@ class _HudStat extends StatelessWidget {
     return SizedBox(
       height: 108,
       child: Container(
-      padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: Colors.black.withAlpha(102),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: MatteSurface.hairline(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: MatteSurface.muted(context),
-                    fontWeight: FontWeight.w900,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 9,
-                    letterSpacing: 1.6,
+        padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(102),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: MatteSurface.hairline(context)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title.toUpperCase(),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: MatteSurface.muted(context),
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 9,
+                      letterSpacing: 1.6,
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: iconColor.withAlpha(28),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: iconColor.withAlpha(60)),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: iconColor.withAlpha(28),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: iconColor.withAlpha(60)),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 16),
                 ),
-                child: Icon(icon, color: iconColor, size: 16),
+              ],
+            ),
+            Spacer(),
+            Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                color: MatteSurface.ink(context),
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                fontSize: 26,
+                height: 1,
+                letterSpacing: -1,
               ),
-            ],
-          ),
-          Spacer(),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              color: MatteSurface.ink(context),
-              fontWeight: FontWeight.w900,
-              fontStyle: FontStyle.italic,
-              fontSize: 26,
-              height: 1,
-              letterSpacing: -1,
             ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            detail,
-            style: GoogleFonts.plusJakartaSans(
-              color: MatteSurface.muted(context),
-              fontWeight: FontWeight.w800,
-              fontStyle: FontStyle.italic,
-              fontSize: 9,
-              letterSpacing: 1.4,
+            SizedBox(height: 6),
+            Text(
+              detail,
+              style: GoogleFonts.plusJakartaSans(
+                color: MatteSurface.muted(context),
+                fontWeight: FontWeight.w800,
+                fontStyle: FontStyle.italic,
+                fontSize: 9,
+                letterSpacing: 1.4,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -644,7 +649,10 @@ class _EmptyGallery extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
+                              Icon(
+                                Icons.add_rounded,
+                                color: MatteSurface.ink(context),
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 'DEPLOY FIRST LISTING',
@@ -676,14 +684,18 @@ class _AssetCard extends ConsumerWidget {
   final Listing listing;
   final VoidCallback onChanged;
 
-  Future<void> _setStatus(BuildContext context, WidgetRef ref, String status) async {
+  Future<void> _setStatus(
+    BuildContext context,
+    WidgetRef ref,
+    String status,
+  ) async {
     AppHaptics.selection();
     await ref.read(ownerListingsActionsProvider).setStatus(listing.id, status);
     onChanged();
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Status → $status')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Status → $status')));
     }
   }
 
@@ -691,19 +703,23 @@ class _AssetCard extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Delete listing?',
-            style: TextStyle(color: MatteSurface.ink(context))),
+        title: Text(
+          'Delete listing?',
+          style: TextStyle(color: MatteSurface.ink(context)),
+        ),
         content: Text(
           'Permanently remove "${listing.title ?? 'this listing'}"?',
           style: TextStyle(color: MatteSurface.muted(context)),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
@@ -741,9 +757,9 @@ class _AssetCard extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -752,9 +768,9 @@ class _AssetCard extends ConsumerWidget {
     final url = 'https://www.swipess.com/listing/${listing.id}';
     await Clipboard.setData(ClipboardData(text: url));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Listing link copied')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Listing link copied')));
     }
   }
 
@@ -771,15 +787,14 @@ class _AssetCard extends ConsumerWidget {
         children: [
           Expanded(
             child: InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ListingDetailScreen(listingData: listing),
-                ),
-              );
-            },
-            child: Stack(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ListingDetailScreen(listingData: listing),
+                  ),
+                );
+              },
+              child: Stack(
                 fit: StackFit.expand,
                 children: [
                   listing.primaryImage != null
@@ -799,7 +814,9 @@ class _AssetCard extends ConsumerWidget {
                     left: 14,
                     child: Container(
                       padding: EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Color(0xFFE4007C).withAlpha(200),
                         borderRadius: BorderRadius.circular(999),
@@ -820,11 +837,15 @@ class _AssetCard extends ConsumerWidget {
                     left: 14,
                     child: Container(
                       padding: EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withAlpha(200),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: MatteSurface.hairline(context)),
+                        border: Border.all(
+                          color: MatteSurface.hairline(context),
+                        ),
                       ),
                       child: Text(
                         listing.price == null
@@ -883,15 +904,49 @@ class _AssetCard extends ConsumerWidget {
                   onSelected: (v) => _setStatus(context, ref, v),
                   color: Color(0xFF14141A),
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'active', child: Text('Active', style: TextStyle(color: MatteSurface.ink(context)))),
-                    PopupMenuItem(value: 'pending', child: Text('Pending', style: TextStyle(color: MatteSurface.ink(context)))),
-                    PopupMenuItem(value: 'rented', child: Text('Rented', style: TextStyle(color: MatteSurface.ink(context)))),
-                    PopupMenuItem(value: 'sold', child: Text('Sold', style: TextStyle(color: MatteSurface.ink(context)))),
-                    PopupMenuItem(value: 'maintenance', child: Text('Maintenance', style: TextStyle(color: MatteSurface.ink(context)))),
+                    PopupMenuItem(
+                      value: 'active',
+                      child: Text(
+                        'Active',
+                        style: TextStyle(color: MatteSurface.ink(context)),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'pending',
+                      child: Text(
+                        'Pending',
+                        style: TextStyle(color: MatteSurface.ink(context)),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'rented',
+                      child: Text(
+                        'Rented',
+                        style: TextStyle(color: MatteSurface.ink(context)),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'sold',
+                      child: Text(
+                        'Sold',
+                        style: TextStyle(color: MatteSurface.ink(context)),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'maintenance',
+                      child: Text(
+                        'Maintenance',
+                        style: TextStyle(color: MatteSurface.ink(context)),
+                      ),
+                    ),
                   ],
                   child: Padding(
                     padding: EdgeInsets.all(8),
-                    child: Icon(Icons.tune_rounded, color: MatteSurface.muted(context), size: 20),
+                    child: Icon(
+                      Icons.tune_rounded,
+                      color: MatteSurface.muted(context),
+                      size: 20,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -904,27 +959,39 @@ class _AssetCard extends ConsumerWidget {
                     );
                     if (updated == true) onChanged();
                   },
-                  icon: Icon(Icons.edit_rounded,
-                      color: MatteSurface.muted(context), size: 20),
+                  icon: Icon(
+                    Icons.edit_rounded,
+                    color: MatteSurface.muted(context),
+                    size: 20,
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Add photos',
                   onPressed: () => _addPhotos(context, ref),
-                  icon: Icon(Icons.photo_camera_rounded,
-                      color: MatteSurface.muted(context), size: 20),
+                  icon: Icon(
+                    Icons.photo_camera_rounded,
+                    color: MatteSurface.muted(context),
+                    size: 20,
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Share',
                   onPressed: () => _share(context),
-                  icon: Icon(Icons.share_rounded,
-                      color: MatteSurface.muted(context), size: 20),
+                  icon: Icon(
+                    Icons.share_rounded,
+                    color: MatteSurface.muted(context),
+                    size: 20,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Delete',
                   onPressed: () => _delete(context, ref),
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: Color(0xFFF87171), size: 20),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFF87171),
+                    size: 20,
+                  ),
                 ),
               ],
             ),

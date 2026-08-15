@@ -13,7 +13,7 @@ class ListingRepository {
   final SupabaseClient _client;
 
   ListingRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   /// Swipe card fields — matches web app's SWIPE_CARD_FIELDS.
   static const _swipeFields = '''
@@ -46,12 +46,15 @@ class ListingRepository {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId != null) {
-        final data = await _client.rpc('get_smart_listings', params: {
-          'p_user_id': userId,
-          'p_category': category ?? 'property',
-          'p_limit': limit,
-          'p_offset': offset,
-        });
+        final data = await _client.rpc(
+          'get_smart_listings',
+          params: {
+            'p_user_id': userId,
+            'p_category': category ?? 'property',
+            'p_limit': limit,
+            'p_offset': offset,
+          },
+        );
         if (data is List && data.isNotEmpty) {
           final listings = data
               .map((row) => Listing.fromJson(row as Map<String, dynamic>))
@@ -222,9 +225,10 @@ class ListingRepository {
       final file = files[i];
       final bytes = await file.readAsBytes();
       final ext = _extensionFor(file.name);
-      final path =
-          '$userId/${DateTime.now().millisecondsSinceEpoch}-$i.$ext';
-      await _client.storage.from('listing-images').uploadBinary(
+      final path = '$userId/${DateTime.now().millisecondsSinceEpoch}-$i.$ext';
+      await _client.storage
+          .from('listing-images')
+          .uploadBinary(
             path,
             bytes,
             fileOptions: FileOptions(
@@ -261,15 +265,17 @@ class ListingRepository {
     final ext = lower.endsWith('.webm')
         ? 'webm'
         : lower.endsWith('.mov')
-            ? 'mov'
-            : 'mp4';
+        ? 'mov'
+        : 'mp4';
     final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
     final contentType = switch (ext) {
       'webm' => 'video/webm',
       'mov' => 'video/quicktime',
       _ => 'video/mp4',
     };
-    await _client.storage.from('listing-videos').uploadBinary(
+    await _client.storage
+        .from('listing-videos')
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(contentType: contentType, upsert: true),
@@ -304,11 +310,11 @@ class ListingRepository {
         final data = editingId == null
             ? await _client.from('listings').insert(safe).select().single()
             : await _client
-                .from('listings')
-                .update(safe)
-                .eq('id', editingId)
-                .select()
-                .single();
+                  .from('listings')
+                  .update(safe)
+                  .eq('id', editingId)
+                  .select()
+                  .single();
         return Listing.fromJson(data);
       } catch (error) {
         final message = error.toString();
@@ -332,14 +338,15 @@ class ListingRepository {
   }) async {
     final active = status == 'active' || status == 'available';
     try {
-      await _client.from('listings').update({
-        'status': status,
-        'is_active': active,
-      }).eq('id', listingId);
+      await _client
+          .from('listings')
+          .update({'status': status, 'is_active': active})
+          .eq('id', listingId);
     } catch (_) {
-      await _client.from('listings').update({
-        'status': status,
-      }).eq('id', listingId);
+      await _client
+          .from('listings')
+          .update({'status': status})
+          .eq('id', listingId);
     }
   }
 
@@ -362,10 +369,13 @@ class ListingRepository {
       existing.addAll(raw.map((e) => e.toString()));
     }
     final merged = [...existing, ...imageUrls];
-    await _client.from('listings').update({
-      'images': merged,
-      'image_url': merged.isNotEmpty ? merged.first : null,
-    }).eq('id', listingId);
+    await _client
+        .from('listings')
+        .update({
+          'images': merged,
+          'image_url': merged.isNotEmpty ? merged.first : null,
+        })
+        .eq('id', listingId);
   }
 
   String _extensionFor(String name) {

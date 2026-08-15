@@ -40,16 +40,14 @@ class _GeniePanelState extends State<GeniePanel>
         reverseCurve: const Cubic(0.4, 0, 0.7, 0.2),
       ),
     );
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.42),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _ctrl,
-        curve: const Cubic(0.22, 1.1, 0.36, 1),
-        reverseCurve: Curves.easeInCubic,
-      ),
-    );
+    _slide = Tween<Offset>(begin: const Offset(0, 0.42), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _ctrl,
+            curve: const Cubic(0.22, 1.1, 0.36, 1),
+            reverseCurve: Curves.easeInCubic,
+          ),
+        );
     _ctrl.forward();
   }
 

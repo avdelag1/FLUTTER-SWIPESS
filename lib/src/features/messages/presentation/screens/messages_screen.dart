@@ -34,7 +34,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(conversationsProvider);
-    
+
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final well = MatteSurface.well(context);
@@ -57,7 +57,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ),
             ),
           ),
-          
+
           SafeArea(
             bottom: false,
             child: Column(
@@ -93,8 +93,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             ),
                           ],
                         ),
-                        child: Icon(Icons.chat_bubble_rounded,
-                            color: MatteSurface.ink(context), size: 28),
+                        child: Icon(
+                          Icons.chat_bubble_rounded,
+                          color: MatteSurface.ink(context),
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -144,14 +147,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             const Color(0xFFFBBF24).withAlpha(24),
                           ],
                         ),
-                        border: Border.all(
-                          color: Colors.transparent,
-                        ),
+                        border: Border.all(color: Colors.transparent),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.bolt_rounded,
-                              color: Color(0xFFFBBF24)),
+                          const Icon(
+                            Icons.bolt_rounded,
+                            color: Color(0xFFFBBF24),
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -178,7 +181,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 if (_activeSection == 'chats') ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -206,16 +209,27 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   Expanded(
                     child: async.when(
-                      loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
-                      error: (e, _) => Center(child: Text('Error: $e', style: TextStyle(color: muted))),
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(
+                          color: AppTheme.brandPrimary,
+                        ),
+                      ),
+                      error: (e, _) => Center(
+                        child: Text(
+                          'Error: $e',
+                          style: TextStyle(color: muted),
+                        ),
+                      ),
                       data: (items) {
                         final q = _searchController.text.trim().toLowerCase();
                         var filtered = items.where((c) {
-                          if (q.isNotEmpty && !c.name.toLowerCase().contains(q)) return false;
-                          if (_activeFilter == 'unread' && c.unreadCount == 0) return false;
+                          if (q.isNotEmpty && !c.name.toLowerCase().contains(q))
+                            return false;
+                          if (_activeFilter == 'unread' && c.unreadCount == 0)
+                            return false;
                           if (_activeFilter == 'archived' && !c.archived) {
                             return false;
                           }
@@ -224,17 +238,24 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           }
                           return true;
                         }).toList();
-                        
+
                         if (filtered.isEmpty) {
                           return Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.message_rounded, size: 64, color: ink.withAlpha(40)),
+                                Icon(
+                                  Icons.message_rounded,
+                                  size: 64,
+                                  color: ink.withAlpha(40),
+                                ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'NO MESSAGES YET',
-                                  style: AppTheme.displayItalic.copyWith(fontSize: 24, color: muted),
+                                  style: AppTheme.displayItalic.copyWith(
+                                    fontSize: 24,
+                                    color: muted,
+                                  ),
                                 ),
                               ],
                             ),
@@ -244,7 +265,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         return ListView.separated(
                           padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final conversation = filtered[index];
                             return GestureDetector(
@@ -362,9 +384,7 @@ class _TogglePill extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: isActive
-              ? LinearGradient(
-                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                )
+              ? LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)])
               : null,
           color: isActive ? null : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
@@ -390,9 +410,7 @@ class _TogglePill extends StatelessWidget {
               Icon(
                 icon,
                 size: 12,
-                color: isActive
-                    ? Colors.white
-                    : const Color(0xFFEB4898),
+                color: isActive ? Colors.white : const Color(0xFFEB4898),
               ),
               const SizedBox(width: 6),
             ],
@@ -435,9 +453,7 @@ class _FilterChip extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
-              ? (isLight
-                  ? Color(0xFFFFF1F2)
-                  : rose.withAlpha(40))
+              ? (isLight ? Color(0xFFFFF1F2) : rose.withAlpha(40))
               : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
@@ -446,12 +462,7 @@ class _FilterChip extends StatelessWidget {
                 : MatteSurface.hairline(context),
           ),
           boxShadow: isActive && !isLight
-              ? [
-                  BoxShadow(
-                    color: rose.withAlpha(50),
-                    blurRadius: 12,
-                  ),
-                ]
+              ? [BoxShadow(color: rose.withAlpha(50), blurRadius: 12)]
               : null,
         ),
         child: Row(
@@ -514,15 +525,19 @@ class _ChatTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundImage: conversation.avatarUrl != null 
-                    ? NetworkImage(conversation.avatarUrl!) 
-                    : null,
+                  backgroundImage: conversation.avatarUrl != null
+                      ? NetworkImage(conversation.avatarUrl!)
+                      : null,
                   child: conversation.avatarUrl == null
-                    ? Text(
-                        conversation.name[0].toUpperCase(),
-                        style: TextStyle(color: ink, fontWeight: FontWeight.bold, fontSize: 20),
-                      )
-                    : null,
+                      ? Text(
+                          conversation.name[0].toUpperCase(),
+                          style: TextStyle(
+                            color: ink,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -535,14 +550,22 @@ class _ChatTile extends StatelessWidget {
                           Expanded(
                             child: Text(
                               conversation.name,
-                              style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: 16),
+                              style: TextStyle(
+                                color: ink,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
                             conversation.timestamp,
-                            style: TextStyle(color: muted, fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -551,7 +574,9 @@ class _ChatTile extends StatelessWidget {
                         conversation.lastMessage,
                         style: TextStyle(
                           color: conversation.unreadCount > 0 ? ink : muted,
-                          fontWeight: conversation.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: conversation.unreadCount > 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 14,
                         ),
                         maxLines: 1,
@@ -570,7 +595,11 @@ class _ChatTile extends StatelessWidget {
                     ),
                     child: Text(
                       '${conversation.unreadCount}',
-                      style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900, fontSize: 12),
+                      style: TextStyle(
+                        color: MatteSurface.ink(context),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],

@@ -6,11 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor PaymentSuccess / PaymentCancel shells.
 class PaymentResultScreen extends StatelessWidget {
-  const PaymentResultScreen({
-    super.key,
-    required this.success,
-    this.message,
-  });
+  const PaymentResultScreen({super.key, required this.success, this.message});
 
   final bool success;
   final String? message;
@@ -36,8 +32,11 @@ class PaymentResultScreen extends StatelessWidget {
                 height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: (success ? const Color(0xFF10B981) : const Color(0xFFEF4444))
-                      .withAlpha(40),
+                  color:
+                      (success
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFEF4444))
+                          .withAlpha(40),
                   border: Border.all(
                     color: success
                         ? const Color(0xFF10B981)
@@ -46,10 +45,11 @@ class PaymentResultScreen extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (success
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444))
-                          .withAlpha(90),
+                      color:
+                          (success
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFEF4444))
+                              .withAlpha(90),
                       blurRadius: 28,
                       spreadRadius: 6,
                     ),

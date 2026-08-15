@@ -51,8 +51,9 @@ class GlassTextField extends StatelessWidget {
               ),
             ),
             child: Row(
-              crossAxisAlignment:
-                  multi ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              crossAxisAlignment: multi
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
               children: [
                 if (icon != null) ...[
                   SizedBox(width: 16, height: multi ? 52 : null),

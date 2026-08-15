@@ -30,8 +30,9 @@ class MapPreviewCard extends StatelessWidget {
     final price = pin.isListing
         ? (pin.listing?.formattedPrice ?? '')
         : (pin.profile?.role ?? '');
-    final imageUrl =
-        pin.isListing ? pin.listing?.primaryImage : pin.profile?.avatarUrl;
+    final imageUrl = pin.isListing
+        ? pin.listing?.primaryImage
+        : pin.profile?.avatarUrl;
 
     return Material(
       color: Colors.transparent,
@@ -42,10 +43,7 @@ class MapPreviewCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0x88FF4D00)),
           boxShadow: const [
-            BoxShadow(
-              color: Color(0x66FF4D00),
-              blurRadius: 16,
-            ),
+            BoxShadow(color: Color(0x66FF4D00), blurRadius: 16),
           ],
         ),
         clipBehavior: Clip.antiAlias,
@@ -120,7 +118,11 @@ class MapPreviewCard extends StatelessWidget {
             ),
             IconButton(
               onPressed: onClose,
-              icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Colors.white70,
+                size: 20,
+              ),
             ),
           ],
         ),

@@ -51,17 +51,25 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       shape: BoxShape.circle,
-                      border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                      border: Border.all(
+                        color: MatteSurface.ink(context),
+                        width: 1.5,
+                      ),
                     ),
                     child: Center(
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          color: MatteSurface.ink(context), size: 18),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: MatteSurface.ink(context),
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text('CONTACT',
-                    style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                Text(
+                  'CONTACT',
+                  style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                ),
               ],
             ),
             SizedBox(height: 28),
@@ -71,12 +79,18 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                border: Border.all(
+                  color: MatteSurface.ink(context),
+                  width: 1.5,
+                ),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.forum_rounded,
-                      color: AppTheme.brandPrimary, size: 48),
+                  Icon(
+                    Icons.forum_rounded,
+                    color: AppTheme.brandPrimary,
+                    size: 48,
+                  ),
                   SizedBox(height: 16),
                   Text(
                     'NEED ASSISTANCE?',
@@ -92,7 +106,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     'Questions, bugs, or account help — reach the Swipess team.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context), height: 1.4),
+                      color: MatteSurface.muted(context),
+                      height: 1.4,
+                    ),
                   ),
                   SizedBox(height: 20),
                   Align(

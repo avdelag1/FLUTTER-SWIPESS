@@ -25,13 +25,15 @@ class AiListingBuilderScreen extends ConsumerStatefulWidget {
       _AiListingBuilderScreenState();
 }
 
-class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen> {
+class _AiListingBuilderScreenState
+    extends ConsumerState<AiListingBuilderScreen> {
   String _category = 'property';
   final _city = TextEditingController();
   final _description = TextEditingController();
   final _photos = <XFile>[];
   bool _busy = false;
   bool _enhancing = false;
+
   /// Cap wizard: welcome | compose | processing
   String _step = 'compose';
   bool _hydrated = false;
@@ -103,10 +105,9 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
       return;
     }
     setState(() => _enhancing = true);
-    final polished = await ref.read(aiEdgeRepositoryProvider).enhanceText(
-          text: raw,
-          type: 'listing',
-        );
+    final polished = await ref
+        .read(aiEdgeRepositoryProvider)
+        .enhanceText(text: raw, type: 'listing');
     if (!mounted) return;
     setState(() => _enhancing = false);
     if (polished == null || polished.isEmpty) {
@@ -116,9 +117,9 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
       return;
     }
     setState(() => _description.text = polished);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('AI enhance applied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('AI enhance applied')));
   }
 
   Future<void> _create() async {
@@ -145,11 +146,9 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
 
     Map<String, dynamic> parsed = const {};
     if (desc.isNotEmpty) {
-      parsed = await ref.read(aiEdgeRepositoryProvider).extractListing(
-            category: _category,
-            prompt: desc,
-            city: city,
-          );
+      parsed = await ref
+          .read(aiEdgeRepositoryProvider)
+          .extractListing(category: _category, prompt: desc, city: city);
     }
 
     final detected = parsed['category']?.toString();
@@ -185,7 +184,8 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
         ...((parsed['amenities'] as List).map((e) => e.toString())),
       if (desc.toLowerCase().contains('wifi')) 'WiFi',
       if (desc.toLowerCase().contains('pool')) 'Private Pool',
-      if (desc.toLowerCase().contains('ac') || desc.toLowerCase().contains('air'))
+      if (desc.toLowerCase().contains('ac') ||
+          desc.toLowerCase().contains('air'))
         'AC',
     ];
     final adjectives = <String>[
@@ -207,10 +207,10 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
         title: (titleRaw != null && titleRaw.isNotEmpty)
             ? titleRaw
             : (descOut.isEmpty
-                ? d.title
-                : (descOut.length > 48
-                    ? '${descOut.substring(0, 48)}…'
-                    : descOut)),
+                  ? d.title
+                  : (descOut.length > 48
+                        ? '${descOut.substring(0, 48)}…'
+                        : descOut)),
         price: priceOut.isNotEmpty ? priceOut : d.price,
         photos: [..._photos],
         adjectives: adjectives.isEmpty ? d.adjectives : adjectives,
@@ -220,7 +220,8 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
         propertyType: parsed['property_type']?.toString() ?? d.propertyType,
         furnished: parsed['furnished'] == true ? true : d.furnished,
         petFriendly: parsed['pet_friendly'] == true ? true : d.petFriendly,
-        brand: parsed['make']?.toString() ??
+        brand:
+            parsed['make']?.toString() ??
             parsed['brand']?.toString() ??
             d.brand,
         model: parsed['model']?.toString() ?? d.model,
@@ -294,10 +295,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [
-                    NexusTheme.violet.withAlpha(40),
-                    Colors.transparent,
-                  ],
+                  colors: [NexusTheme.violet.withAlpha(40), Colors.transparent],
                 ),
               ),
             ),
@@ -341,8 +339,10 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                     ),
                     border: Border.all(color: NexusTheme.violet.withAlpha(100)),
                   ),
-                  child: const Icon(Icons.auto_awesome_rounded,
-                      color: Color(0xFFA5B4FC)),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Color(0xFFA5B4FC),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -419,7 +419,7 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                         },
                       ),
                       const SizedBox(width: 10),
-                    ]
+                    ],
                   ],
                 ),
               ),
@@ -441,8 +441,11 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                             shape: BoxShape.circle,
                             color: Colors.white.withAlpha(20),
                           ),
-                          child: const Icon(Icons.add_a_photo_rounded,
-                              color: Colors.white, size: 28),
+                          child: const Icon(
+                            Icons.add_a_photo_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -501,8 +504,11 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
                               color: Color(0xFFC9B6FF),
                             ),
                           )
-                        : const Icon(Icons.auto_awesome,
-                            size: 16, color: Color(0xFFC9B6FF)),
+                        : const Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: Color(0xFFC9B6FF),
+                          ),
                     label: Text(
                       'AI ENHANCE',
                       style: GoogleFonts.plusJakartaSans(
@@ -584,11 +590,11 @@ class _AiListingBuilderScreenState extends ConsumerState<AiListingBuilderScreen>
   }
 
   TextStyle get _label => GoogleFonts.plusJakartaSans(
-        color: const Color(0xFFA5B4FC),
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2,
-      );
+    color: const Color(0xFFA5B4FC),
+    fontSize: 10,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 2,
+  );
 }
 
 class _ListingWelcome extends StatelessWidget {
@@ -612,8 +618,11 @@ class _ListingWelcome extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: NexusTheme.ai,
               ),
-              child: const Icon(Icons.auto_awesome_rounded,
-                  color: Colors.white, size: 40),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 40,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
@@ -746,7 +755,7 @@ class _CatChip extends StatelessWidget {
                     color: Colors.white.withAlpha(80),
                     blurRadius: 12,
                     spreadRadius: 1,
-                  )
+                  ),
                 ]
               : [],
         ),

@@ -55,10 +55,11 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
   }
 }
 
-final globalBackButtonDispatcherProvider =
-    Provider<GlobalBackButtonDispatcher>((ref) {
-  return GlobalBackButtonDispatcher(
-    router: ref.watch(appRouterProvider),
-    ref: ref,
-  );
-});
+final globalBackButtonDispatcherProvider = Provider<GlobalBackButtonDispatcher>(
+  (ref) {
+    return GlobalBackButtonDispatcher(
+      router: ref.watch(appRouterProvider),
+      ref: ref,
+    );
+  },
+);

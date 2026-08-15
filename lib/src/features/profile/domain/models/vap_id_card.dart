@@ -33,7 +33,10 @@ class VapIdCard {
       (name != null && name!.trim().isNotEmpty) ? name!.trim() : 'Resident';
 
   String get locationLabel {
-    final parts = [city, country].whereType<String>().where((s) => s.isNotEmpty);
+    final parts = [
+      city,
+      country,
+    ].whereType<String>().where((s) => s.isNotEmpty);
     return parts.isEmpty ? 'Swipess' : parts.join(', ');
   }
 
@@ -79,10 +82,13 @@ class VapIdCard {
       age: (json['age'] as num?)?.toInt(),
       country: json['country'] as String?,
       bio: json['bio'] as String? ?? json['vap_bio'] as String?,
-      occupation: json['occupation'] as String? ?? json['vap_occupation'] as String?,
+      occupation:
+          json['occupation'] as String? ?? json['vap_occupation'] as String?,
       city: json['city'] as String? ?? json['vap_city'] as String?,
-      nationality: json['nationality'] as String? ?? json['vap_nationality'] as String?,
-      yearsInCity: (json['years_in_city'] as num?)?.toInt() ??
+      nationality:
+          json['nationality'] as String? ?? json['vap_nationality'] as String?,
+      yearsInCity:
+          (json['years_in_city'] as num?)?.toInt() ??
           (json['vap_years_in_city'] as num?)?.toInt(),
       languages: _strings(json['languages'] ?? json['vap_languages']),
       interests: _strings(json['interests'] ?? json['vap_interests']),

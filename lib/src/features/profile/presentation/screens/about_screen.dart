@@ -9,25 +9,49 @@ class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   static const _owner = [
-    (Icons.people_rounded, 'Quality Tenants',
-        'Connect with pre-screened tenants who match your property requirements.'),
-    (Icons.bolt_rounded, 'Instant Protocol',
-        'No more endless calls. Match instantly and communicate directly.'),
-    (Icons.verified_user_rounded, 'Verified Profiles',
-        'Trusted profiles and secure digital agreements for peace of mind.'),
-    (Icons.chat_bubble_rounded, 'Direct Terminal',
-        'Chat directly, schedule viewings, and close deals in record time.'),
+    (
+      Icons.people_rounded,
+      'Quality Tenants',
+      'Connect with pre-screened tenants who match your property requirements.',
+    ),
+    (
+      Icons.bolt_rounded,
+      'Instant Protocol',
+      'No more endless calls. Match instantly and communicate directly.',
+    ),
+    (
+      Icons.verified_user_rounded,
+      'Verified Profiles',
+      'Trusted profiles and secure digital agreements for peace of mind.',
+    ),
+    (
+      Icons.chat_bubble_rounded,
+      'Direct Terminal',
+      'Chat directly, schedule viewings, and close deals in record time.',
+    ),
   ];
 
   static const _client = [
-    (Icons.home_rounded, 'Curated Discovery',
-        'Browse listings that match your unique lifestyle preferences.'),
-    (Icons.thumb_up_rounded, 'Fluid Interface',
-        'Swipe through properties with a fun, gamified experience.'),
-    (Icons.shield_rounded, 'Secure Environment',
-        'Engage with trusted owners in a secure, audited environment.'),
-    (Icons.wifi_tethering_rounded, 'Direct Signal',
-        'Open direct lines of communication with owners instantly.'),
+    (
+      Icons.home_rounded,
+      'Curated Discovery',
+      'Browse listings that match your unique lifestyle preferences.',
+    ),
+    (
+      Icons.thumb_up_rounded,
+      'Fluid Interface',
+      'Swipe through properties with a fun, gamified experience.',
+    ),
+    (
+      Icons.shield_rounded,
+      'Secure Environment',
+      'Engage with trusted owners in a secure, audited environment.',
+    ),
+    (
+      Icons.wifi_tethering_rounded,
+      'Direct Signal',
+      'Open direct lines of communication with owners instantly.',
+    ),
   ];
 
   @override
@@ -36,103 +60,107 @@ class AboutScreen extends StatelessWidget {
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: MatteSurface.ink(context), width: 1.5),
-                    ),
-                    child: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: MatteSurface.ink(context), size: 18),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(Icons.rocket_launch_rounded,
-                    color: AppTheme.brandPrimary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'ABOUT SWIPESS',
-                        style: AppTheme.displayItalic.copyWith(fontSize: 22),
-                      ),
-                      Text(
-                        'The Architecture of Modern Real Estate',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
-                          fontSize: 12,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            children: [
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: MatteSurface.ink(context),
+                          width: 1.5,
                         ),
                       ),
-                    ],
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: MatteSurface.ink(context),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.rocket_launch_rounded,
+                    color: AppTheme.brandPrimary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ABOUT SWIPESS',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                        ),
+                        Text(
+                          'The Architecture of Modern Real Estate',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.muted(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 24),
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    colors: [Color(0x33FF4D00), Color(0x33EB4898)],
+                  ),
+                  border: Border.all(color: MatteSurface.hairline(context)),
+                ),
+                child: Text(
+                  'Swipess turns finding a home, ride, yacht, or pro into a swipe-native protocol — verified residents, instant messaging, and digital contracts in one network.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.ink(context),
+                    fontSize: 14,
+                    height: 1.45,
                   ),
                 ),
+              ),
+              const SizedBox(height: 28),
+              Text('FOR OWNERS', style: _sectionStyle(context)),
+              const SizedBox(height: 12),
+              for (final item in _owner) ...[
+                _Benefit(icon: item.$1, title: item.$2, body: item.$3),
+                const SizedBox(height: 10),
               ],
-            ),
-            SizedBox(height: 24),
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  colors: [Color(0x33FF4D00), Color(0x33EB4898)],
-                ),
-                border: Border.all(color: MatteSurface.hairline(context)),
-              ),
-              child: Text(
-                'Swipess turns finding a home, ride, yacht, or pro into a swipe-native protocol — verified residents, instant messaging, and digital contracts in one network.',
-                style: GoogleFonts.plusJakartaSans(
-                  color: MatteSurface.ink(context),
-                  fontSize: 14,
-                  height: 1.45,
-                ),
-              ),
-            ),
-            const SizedBox(height: 28),
-            Text('FOR OWNERS', style: _sectionStyle(context)),
-            const SizedBox(height: 12),
-            for (final item in _owner) ...[
-              _Benefit(icon: item.$1, title: item.$2, body: item.$3),
-              const SizedBox(height: 10),
+              const SizedBox(height: 18),
+              Text('FOR SEEKERS', style: _sectionStyle(context)),
+              const SizedBox(height: 12),
+              for (final item in _client) ...[
+                _Benefit(icon: item.$1, title: item.$2, body: item.$3),
+                SizedBox(height: 10),
+              ],
             ],
-            const SizedBox(height: 18),
-            Text('FOR SEEKERS', style: _sectionStyle(context)),
-            const SizedBox(height: 12),
-            for (final item in _client) ...[
-              _Benefit(icon: item.$1, title: item.$2, body: item.$3),
-              SizedBox(height: 10),
-            ],
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 
   TextStyle _sectionStyle(BuildContext context) => GoogleFonts.plusJakartaSans(
-        color: MatteSurface.faint(context),
-        fontSize: 11,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2.4,
-      );
+    color: MatteSurface.faint(context),
+    fontSize: 11,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 2.4,
+  );
 }
 
 class _Benefit extends StatelessWidget {
-  const _Benefit({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
+  const _Benefit({required this.icon, required this.title, required this.body});
   final IconData icon;
   final String title;
   final String body;

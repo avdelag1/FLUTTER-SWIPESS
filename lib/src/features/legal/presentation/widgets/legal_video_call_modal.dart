@@ -25,7 +25,8 @@ class _LegalVideoCallBody extends ConsumerStatefulWidget {
   const _LegalVideoCallBody();
 
   @override
-  ConsumerState<_LegalVideoCallBody> createState() => _LegalVideoCallBodyState();
+  ConsumerState<_LegalVideoCallBody> createState() =>
+      _LegalVideoCallBodyState();
 }
 
 class _LegalVideoCallBodyState extends ConsumerState<_LegalVideoCallBody> {
@@ -48,12 +49,15 @@ class _LegalVideoCallBodyState extends ConsumerState<_LegalVideoCallBody> {
       });
       return;
     }
-    final name = (user.userMetadata?['full_name'] as String?) ??
+    final name =
+        (user.userMetadata?['full_name'] as String?) ??
         (user.userMetadata?['name'] as String?) ??
         user.email?.split('@').first ??
         'Client';
     try {
-      final call = await ref.read(legalRepositoryProvider).startVideoCall(
+      final call = await ref
+          .read(legalRepositoryProvider)
+          .startVideoCall(
             clientUserId: user.id,
             clientName: name,
             clientEmail: user.email,

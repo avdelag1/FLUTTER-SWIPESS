@@ -28,9 +28,7 @@ class CategoryFilterChips extends ConsumerWidget {
           return GestureDetector(
             onTap: () {
               AppHaptics.selection();
-              ref
-                  .read(selectedCategoryProvider.notifier)
-                  .setCategory(category);
+              ref.read(selectedCategoryProvider.notifier).setCategory(category);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -77,8 +75,9 @@ class CategoryFilterChips extends ConsumerWidget {
                             ? Colors.white
                             : Colors.white.withAlpha(200),
                         fontSize: 13,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         letterSpacing: -0.2,
                       ),
                     ),

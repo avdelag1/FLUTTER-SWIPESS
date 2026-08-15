@@ -41,7 +41,9 @@ class AiDisclosure extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         decoration: BoxDecoration(
-          color: isLight ? Colors.black.withAlpha(8) : Colors.white.withAlpha(10),
+          color: isLight
+              ? Colors.black.withAlpha(8)
+              : Colors.white.withAlpha(10),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isLight ? Colors.black.withAlpha(26) : Colors.white24,
@@ -52,8 +54,11 @@ class AiDisclosure extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome_rounded,
-                    size: 14, color: AppTheme.brandPrimary),
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 14,
+                  color: AppTheme.brandPrimary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Powered by AI',

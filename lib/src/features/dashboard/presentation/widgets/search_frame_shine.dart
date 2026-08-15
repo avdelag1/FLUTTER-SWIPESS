@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 /// Cap AI search light: quiet most of the time, then a ~1s snap
 /// every 10 seconds — inner sheen plus outline hotspot, then dark again.
 class SearchFrameShine extends StatefulWidget {
-  const SearchFrameShine({
-    super.key,
-    required this.child,
-    required this.color,
-  });
+  const SearchFrameShine({super.key, required this.child, required this.color});
 
   final Widget child;
   final Color color;
@@ -38,10 +34,8 @@ class _SearchFrameShineState extends State<SearchFrameShine>
   @override
   void initState() {
     super.initState();
-    _cycle = AnimationController(
-      vsync: this,
-      duration: SearchFrameShine.cycle,
-    )..repeat();
+    _cycle = AnimationController(vsync: this, duration: SearchFrameShine.cycle)
+      ..repeat();
   }
 
   @override
@@ -56,7 +50,7 @@ class _SearchFrameShineState extends State<SearchFrameShine>
       clipBehavior: Clip.none,
       children: [
         widget.child,
-        
+
         Positioned(
           left: -2,
           right: -2,
@@ -82,10 +76,7 @@ class _SearchFrameShineState extends State<SearchFrameShine>
 }
 
 class _InnerSheenPainter extends CustomPainter {
-  _InnerSheenPainter({
-    required this.progress,
-    required this.color,
-  });
+  _InnerSheenPainter({required this.progress, required this.color});
 
   /// 0–1 over a 10s cycle. Shine lives in the first 10% (~1s).
   final double progress;
@@ -96,8 +87,7 @@ class _InnerSheenPainter extends CustomPainter {
     if (size.isEmpty) return;
     if (!SearchFrameShine.isShineWindow(progress)) return;
 
-    final local =
-        (progress / SearchFrameShine.shineFraction).clamp(0.0, 1.0);
+    final local = (progress / SearchFrameShine.shineFraction).clamp(0.0, 1.0);
     final envelope = math.sin(local * math.pi);
     if (envelope <= 0.02) return;
 
@@ -123,12 +113,7 @@ class _InnerSheenPainter extends CustomPainter {
     canvas.drawRRect(rrect, wash);
 
     final x = -size.width * 0.45 + (size.width * 1.9 * local);
-    final bladeRect = Rect.fromLTWH(
-      x,
-      -4,
-      size.width * 0.38,
-      size.height + 8,
-    );
+    final bladeRect = Rect.fromLTWH(x, -4, size.width * 0.38, size.height + 8);
     final blade = Paint()
       ..blendMode = BlendMode.plus
       ..shader = ui.Gradient.linear(
@@ -153,10 +138,7 @@ class _InnerSheenPainter extends CustomPainter {
 }
 
 class _FrameShinePainter extends CustomPainter {
-  _FrameShinePainter({
-    required this.progress,
-    required this.color,
-  });
+  _FrameShinePainter({required this.progress, required this.color});
 
   /// 0–1 over a 10s cycle. Shine lives in the first 10% (~1s).
   final double progress;
@@ -167,8 +149,7 @@ class _FrameShinePainter extends CustomPainter {
     if (size.isEmpty) return;
     if (!SearchFrameShine.isShineWindow(progress)) return;
 
-    final local =
-        (progress / SearchFrameShine.shineFraction).clamp(0.0, 1.0);
+    final local = (progress / SearchFrameShine.shineFraction).clamp(0.0, 1.0);
     final envelope = math.sin(local * math.pi);
     if (envelope <= 0.02) return;
 

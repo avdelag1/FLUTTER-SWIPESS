@@ -4,15 +4,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final clientFilterPreferencesRepositoryProvider =
     Provider<ClientFilterPreferencesRepository>((ref) {
-  return ClientFilterPreferencesRepository();
-});
+      return ClientFilterPreferencesRepository();
+    });
 
 /// Cap `useClientFilterPreferences` — reads/writes `client_filter_preferences`,
 /// upserted by `user_id`. Mirrors only the fields the Flutter filter sheet
 /// exposes; extra Cap-only fields (moto/bicycle sub-filters) are left alone.
 class ClientFilterPreferencesRepository {
   ClientFilterPreferencesRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -49,10 +49,10 @@ class ClientFilterPreferencesRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
     try {
-      await _client.from('client_filter_preferences').upsert(
-        {...filter.toPreferencesPayload(), 'user_id': userId},
-        onConflict: 'user_id',
-      );
+      await _client.from('client_filter_preferences').upsert({
+        ...filter.toPreferencesPayload(),
+        'user_id': userId,
+      }, onConflict: 'user_id');
     } catch (_) {
       // Offline / RLS failure — session filter already applied locally.
     }

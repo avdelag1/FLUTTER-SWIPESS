@@ -30,8 +30,10 @@ class NotificationsScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: MatteSurface.ink(context)),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: MatteSurface.ink(context),
+                    ),
                   ),
                   Expanded(
                     child: Text(
@@ -60,7 +62,10 @@ class NotificationsScreen extends ConsumerWidget {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: MatteSurface.ink(context)),
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: MatteSurface.ink(context),
+                      ),
                     ),
                     Expanded(
                       child: Text(
@@ -72,7 +77,9 @@ class NotificationsScreen extends ConsumerWidget {
                       TextButton(
                         onPressed: () {
                           AppHaptics.medium();
-                          ref.read(notificationsProvider.notifier).markAllRead();
+                          ref
+                              .read(notificationsProvider.notifier)
+                              .markAllRead();
                         },
                         child: Text(
                           'CLEAR UNREAD',
@@ -97,7 +104,8 @@ class NotificationsScreen extends ConsumerWidget {
                         child: ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
                           itemCount: items.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 10),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final n = items[index];
                             return _NotificationTile(
@@ -172,7 +180,9 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final time = DateFormat.MMMd().add_jm().format(notification.createdAt.toLocal());
+    final time = DateFormat.MMMd().add_jm().format(
+      notification.createdAt.toLocal(),
+    );
     return Dismissible(
       key: ValueKey(notification.id),
       direction: DismissDirection.endToStart,
@@ -184,7 +194,10 @@ class _NotificationTile extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(22),
         ),
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.redAccent,
+        ),
       ),
       child: GestureDetector(
         onTap: () {

@@ -16,10 +16,7 @@ class AccessGrantService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _key,
-      jsonEncode({
-        'grantedAt': DateTime.now().millisecondsSinceEpoch,
-        'v': 1,
-      }),
+      jsonEncode({'grantedAt': DateTime.now().millisecondsSinceEpoch, 'v': 1}),
     );
   }
 

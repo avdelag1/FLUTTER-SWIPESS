@@ -28,6 +28,7 @@ class VapCardTheme {
   final Color tagBorder;
   final Color tagText;
   final bool isDark;
+
   /// Small circle shown in the color picker row.
   final Color swatch;
 

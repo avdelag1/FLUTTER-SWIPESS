@@ -9,11 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `AdminProtectedRoute` + page chrome for the four admin surfaces.
 class AdminShell extends ConsumerWidget {
-  const AdminShell({
-    super.key,
-    required this.title,
-    required this.child,
-  });
+  const AdminShell({super.key, required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -51,12 +47,27 @@ class AdminShell extends ConsumerWidget {
         }
         return Scaffold(
           appBar: AppBar(
-            title: Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 20)),
+            title: Text(
+              title,
+              style: AppTheme.displayItalic.copyWith(fontSize: 20),
+            ),
             actions: [
-              _NavChip(label: t(ref, 'flutter.adminEvents', 'Events'), path: AppPaths.adminEventos),
-              _NavChip(label: t(ref, 'flutter.adminPhotos', 'Photos'), path: AppPaths.adminPhotos),
-              _NavChip(label: t(ref, 'flutter.adminCategory', 'Categories'), path: AppPaths.adminCategoryPhotos),
-              _NavChip(label: t(ref, 'flutter.adminPerformance', 'Perf'), path: AppPaths.adminPerformance),
+              _NavChip(
+                label: t(ref, 'flutter.adminEvents', 'Events'),
+                path: AppPaths.adminEventos,
+              ),
+              _NavChip(
+                label: t(ref, 'flutter.adminPhotos', 'Photos'),
+                path: AppPaths.adminPhotos,
+              ),
+              _NavChip(
+                label: t(ref, 'flutter.adminCategory', 'Categories'),
+                path: AppPaths.adminCategoryPhotos,
+              ),
+              _NavChip(
+                label: t(ref, 'flutter.adminPerformance', 'Perf'),
+                path: AppPaths.adminPerformance,
+              ),
               const SizedBox(width: 8),
             ],
           ),

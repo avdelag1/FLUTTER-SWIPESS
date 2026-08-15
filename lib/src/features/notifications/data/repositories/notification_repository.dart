@@ -8,7 +8,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
 
 class NotificationRepository {
   NotificationRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 

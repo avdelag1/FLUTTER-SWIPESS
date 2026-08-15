@@ -13,8 +13,10 @@ import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repos
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final publicProfileProvider =
-    FutureProvider.family<PublicMemberProfile?, String>((ref, userId) async {
+final publicProfileProvider = FutureProvider.family<PublicMemberProfile?, String>((
+  ref,
+  userId,
+) async {
   final client = Supabase.instance.client;
   try {
     final row = await client
@@ -35,7 +37,8 @@ final publicProfileProvider =
         bio: row['bio'] as String?,
         city: row['city'] as String?,
         country: row['country'] as String?,
-        occupation: (row['vap_occupation'] as String?) ??
+        occupation:
+            (row['vap_occupation'] as String?) ??
             (row['occupation'] as String?),
         images: images is List
             ? images.map((e) => e.toString()).toList()
@@ -94,8 +97,10 @@ class PublicMemberProfile {
   final List<String> intentions;
 
   String get locationLabel {
-    final parts =
-        [city, country].whereType<String>().where((s) => s.isNotEmpty);
+    final parts = [
+      city,
+      country,
+    ].whereType<String>().where((s) => s.isNotEmpty);
     return parts.isEmpty ? 'Swipess' : parts.join(', ');
   }
 }
@@ -155,8 +160,9 @@ class _BodyState extends State<_Body> {
     setState(() => _messaging = true);
     AppHaptics.medium();
     try {
-      final convoId = await SwipeRepository()
-          .startConversation(ownerId: widget.profile.userId);
+      final convoId = await SwipeRepository().startConversation(
+        ownerId: widget.profile.userId,
+      );
       if (!mounted || convoId == null) return;
       await showChatPopup(
         context,
@@ -192,10 +198,12 @@ class _BodyState extends State<_Body> {
             right: 0,
             height: h * 0.52,
             child: hero != null
-                ? Image.network(hero, fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const ColoredBox(
-                          color: Color(0xFF16161C),
-                        ))
+                ? Image.network(
+                    hero,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        const ColoredBox(color: Color(0xFF16161C)),
+                  )
                 : const ColoredBox(color: Color(0xFF16161C)),
           ),
           Positioned(
@@ -221,8 +229,10 @@ class _BodyState extends State<_Body> {
             child: Column(
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       _Round(
@@ -255,8 +265,9 @@ class _BodyState extends State<_Body> {
                 ),
                 const Spacer(),
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(32)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(32),
+                  ),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                     child: Container(
@@ -286,8 +297,11 @@ class _BodyState extends State<_Body> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.location_on_outlined,
-                                  color: Color(0xFFEB4898), size: 16),
+                              const Icon(
+                                Icons.location_on_outlined,
+                                color: Color(0xFFEB4898),
+                                size: 16,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 p.locationLabel,
@@ -297,8 +311,10 @@ class _BodyState extends State<_Body> {
                                 ),
                               ),
                               if (p.occupation != null) ...[
-                                const Text('  ·  ',
-                                    style: TextStyle(color: Colors.white38)),
+                                const Text(
+                                  '  ·  ',
+                                  style: TextStyle(color: Colors.white38),
+                                ),
                                 Expanded(
                                   child: Text(
                                     p.occupation!,
@@ -331,13 +347,17 @@ class _BodyState extends State<_Body> {
                                 for (final i in p.intentions)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 7),
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(999),
                                       border: Border.all(
-                                          color: AppTheme.brandPrimary
-                                              .withAlpha(90)),
+                                        color: AppTheme.brandPrimary.withAlpha(
+                                          90,
+                                        ),
+                                      ),
                                     ),
                                     child: Text(
                                       i,
@@ -403,10 +423,10 @@ class _BodyState extends State<_Body> {
                                               'MESSAGE',
                                               style:
                                                   GoogleFonts.plusJakartaSans(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                letterSpacing: 1.4,
-                                              ),
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w900,
+                                                    letterSpacing: 1.4,
+                                                  ),
                                             ),
                                     ),
                                   ),
@@ -419,11 +439,13 @@ class _BodyState extends State<_Body> {
                                   final url =
                                       'https://www.swipess.com/u/${p.userId}';
                                   await Clipboard.setData(
-                                      ClipboardData(text: url));
+                                    ClipboardData(text: url),
+                                  );
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                          content: Text('Profile link copied')),
+                                        content: Text('Profile link copied'),
+                                      ),
                                     );
                                   }
                                 },

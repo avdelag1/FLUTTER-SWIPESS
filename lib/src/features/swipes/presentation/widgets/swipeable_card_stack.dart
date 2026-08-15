@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 
-typedef SwipeCallback = void Function(Listing listing, SwipeDirection direction);
+typedef SwipeCallback =
+    void Function(Listing listing, SwipeDirection direction);
 
 enum SwipeDirection { left, right }
 
@@ -74,8 +75,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     super.dispose();
   }
 
-  double get _rotation =>
-      (_dragOffset.dx / 400).clamp(-1.0, 1.0) * 0.28;
+  double get _rotation => (_dragOffset.dx / 400).clamp(-1.0, 1.0) * 0.28;
 
   double get _swipeProgress =>
       (_dragOffset.dx.abs() / _swipeThreshold).clamp(0.0, 1.0);
@@ -98,8 +98,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _onPanStart(DragStartDetails details) {
-    if (_zoomLocksDrag ||
-        (_topCardKey.currentState?.interceptsDrag ?? false)) {
+    if (_zoomLocksDrag || (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
     }
     _snapController.stop();
@@ -107,8 +106,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (_zoomLocksDrag ||
-        (_topCardKey.currentState?.interceptsDrag ?? false)) {
+    if (_zoomLocksDrag || (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
     }
     setState(() => _dragOffset += details.delta);
@@ -121,8 +119,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         _dragOffset.dx.abs() > _swipeThreshold || velocity.abs() > 800;
 
     if (shouldSwipe && widget.listings.isNotEmpty) {
-      final direction =
-          _dragOffset.dx > 0 ? SwipeDirection.right : SwipeDirection.left;
+      final direction = _dragOffset.dx > 0
+          ? SwipeDirection.right
+          : SwipeDirection.left;
       _animateOffScreen(direction);
     } else {
       _animateSnapBack();
@@ -131,15 +130,17 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   void _animateOffScreen(SwipeDirection direction) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final endX =
-        direction == SwipeDirection.right ? screenWidth * 1.5 : -screenWidth * 1.5;
+    final endX = direction == SwipeDirection.right
+        ? screenWidth * 1.5
+        : -screenWidth * 1.5;
 
-    _snapAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset(endX, _dragOffset.dy),
-    ).animate(
-      CurvedAnimation(parent: _snapController, curve: Curves.easeOutCubic),
-    );
+    _snapAnimation =
+        Tween<Offset>(
+          begin: _dragOffset,
+          end: Offset(endX, _dragOffset.dy),
+        ).animate(
+          CurvedAnimation(parent: _snapController, curve: Curves.easeOutCubic),
+        );
 
     _snapController.addListener(_updateFromAnimation);
     _snapController.forward(from: 0).then((_) {
@@ -162,8 +163,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _animateSnapBack() {
     _snapAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero)
         .animate(
-      CurvedAnimation(parent: _snapController, curve: Curves.easeOutBack),
-    );
+          CurvedAnimation(parent: _snapController, curve: Curves.easeOutBack),
+        );
     _snapController.addListener(_updateFromAnimation);
     _snapController.forward(from: 0).then((_) {
       setState(() {
@@ -230,8 +231,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final glow = _dragOffset.dx > 20
         ? const Color(0xFF34D399).withAlpha((_likeOpacity * 140).toInt())
         : _dragOffset.dx < -20
-            ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
-            : Colors.transparent;
+        ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
+        : Colors.transparent;
 
     return Positioned.fill(
       child: GestureDetector(

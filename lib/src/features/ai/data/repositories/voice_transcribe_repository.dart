@@ -8,8 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:record/record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final voiceTranscribeRepositoryProvider =
-    Provider<VoiceTranscribeRepository>((ref) {
+final voiceTranscribeRepositoryProvider = Provider<VoiceTranscribeRepository>((
+  ref,
+) {
   return VoiceTranscribeRepository();
 });
 
@@ -19,9 +20,9 @@ class VoiceTranscribeRepository {
     AudioRecorder? recorder,
     http.Client? httpClient,
     SupabaseClient? client,
-  })  : _recorder = recorder ?? AudioRecorder(),
-        _http = httpClient ?? http.Client(),
-        _client = client ?? Supabase.instance.client;
+  }) : _recorder = recorder ?? AudioRecorder(),
+       _http = httpClient ?? http.Client(),
+       _client = client ?? Supabase.instance.client;
 
   final AudioRecorder _recorder;
   final http.Client _http;
@@ -44,7 +45,9 @@ class VoiceTranscribeRepository {
     if (path == null || path.isEmpty) return '';
     final bytes = await _readBytes(path);
     if (bytes.length < 800) {
-      throw VoiceTranscribeException('Recording too short — please speak longer');
+      throw VoiceTranscribeException(
+        'Recording too short — please speak longer',
+      );
     }
     return transcribe(bytes, mimeType: _mimeFor(path), language: language);
   }

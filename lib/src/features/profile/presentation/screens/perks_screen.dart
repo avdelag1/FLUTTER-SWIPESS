@@ -22,10 +22,25 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
   bool _qrOpen = false;
 
   static const _offers = [
-    _Offer('Tulum Cafe Collective', 'Breakfast bowls', 15, Icons.coffee_rounded),
-    _Offer('Coastal Gym Pass', 'Guest day / month', 100, Icons.fitness_center_rounded),
+    _Offer(
+      'Tulum Cafe Collective',
+      'Breakfast bowls',
+      15,
+      Icons.coffee_rounded,
+    ),
+    _Offer(
+      'Coastal Gym Pass',
+      'Guest day / month',
+      100,
+      Icons.fitness_center_rounded,
+    ),
     _Offer('Laguna Surf School', 'First lesson', 20, Icons.surfing_rounded),
-    _Offer('Night Market Collective', 'Night vendor booths', 10, Icons.storefront_rounded),
+    _Offer(
+      'Night Market Collective',
+      'Night vendor booths',
+      10,
+      Icons.storefront_rounded,
+    ),
   ];
 
   @override
@@ -58,10 +73,16 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                            border: Border.all(
+                              color: MatteSurface.ink(context),
+                              width: 1.5,
+                            ),
                           ),
-                          child: Icon(Icons.arrow_back_ios_new_rounded,
-                              color: MatteSurface.ink(context), size: 18),
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: MatteSurface.ink(context),
+                            size: 18,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -76,8 +97,10 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                           AppHaptics.medium();
                           setState(() => _qrOpen = true);
                         },
-                        icon: Icon(Icons.qr_code_2_rounded,
-                            color: MatteSurface.ink(context)),
+                        icon: Icon(
+                          Icons.qr_code_2_rounded,
+                          color: MatteSurface.ink(context),
+                        ),
                       ),
                     ],
                   ),
@@ -102,8 +125,9 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: _tab == i
                                       ? Colors.white
@@ -209,8 +233,9 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.black.withAlpha(50),
-                                          borderRadius:
-                                              BorderRadius.circular(999),
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
                                           border: Border.all(
                                             color: Colors.transparent,
                                           ),
@@ -238,8 +263,11 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                       color: Colors.transparent,
                                     ),
                                   ),
-                                  child: Icon(Icons.qr_code_2_rounded,
-                                      color: MatteSurface.ink(context), size: 28),
+                                  child: Icon(
+                                    Icons.qr_code_2_rounded,
+                                    color: MatteSurface.ink(context),
+                                    size: 28,
+                                  ),
                                 ),
                               ],
                             ),
@@ -480,10 +508,7 @@ class _EmptyPane extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.transparent,
-          style: BorderStyle.solid,
-        ),
+        border: Border.all(color: Colors.transparent, style: BorderStyle.solid),
       ),
       child: Column(
         children: [
@@ -513,10 +538,7 @@ class _EmptyPane extends StatelessWidget {
 }
 
 class _ResidentQrModal extends StatelessWidget {
-  const _ResidentQrModal({
-    required this.residentId,
-    required this.onClose,
-  });
+  const _ResidentQrModal({required this.residentId, required this.onClose});
 
   final String residentId;
   final VoidCallback onClose;
@@ -534,7 +556,10 @@ class _ResidentQrModal extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Color(0xFF101014),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                border: Border.all(
+                  color: MatteSurface.ink(context),
+                  width: 1.5,
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -548,8 +573,10 @@ class _ResidentQrModal extends StatelessWidget {
                       Spacer(),
                       IconButton(
                         onPressed: onClose,
-                        icon: Icon(Icons.close_rounded,
-                            color: MatteSurface.muted(context)),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     ],
                   ),
@@ -564,8 +591,11 @@ class _ResidentQrModal extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.qr_code_2_rounded,
-                            size: 140, color: Colors.black),
+                        const Icon(
+                          Icons.qr_code_2_rounded,
+                          size: 140,
+                          color: Colors.black,
+                        ),
                         Text(
                           residentId,
                           style: GoogleFonts.plusJakartaSans(

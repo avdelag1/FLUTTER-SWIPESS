@@ -22,8 +22,9 @@ Future<void> showChatPopup(
   if (isNewConversation) {
     try {
       final container = ProviderScope.containerOf(context, listen: false);
-      final entitlements =
-          await container.read(messagingEntitlementsProvider.future);
+      final entitlements = await container.read(
+        messagingEntitlementsProvider.future,
+      );
       if (!entitlements.canStartConversation) {
         if (!context.mounted) return;
         await showModalBottomSheet<void>(
@@ -85,13 +86,16 @@ class _ChatPopup extends StatelessWidget {
           child: FadeTransition(
             opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
             child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 0.06),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: anim,
-                curve: const Cubic(0.22, 1, 0.36, 1),
-              )),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.06),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: anim,
+                      curve: const Cubic(0.22, 1, 0.36, 1),
+                    ),
+                  ),
               child: _ChatPopupPanel(conversation: conversation),
             ),
           ),
@@ -145,9 +149,10 @@ class _ChatPopupPanelState extends State<_ChatPopupPanel>
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
-    final tween = Tween<double>(begin: _dragY, end: 0).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeOut),
-    );
+    final tween = Tween<double>(
+      begin: _dragY,
+      end: 0,
+    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
     tween.addListener(() => setState(() => _dragY = tween.value));
     _snapBack = controller;
     controller.forward();

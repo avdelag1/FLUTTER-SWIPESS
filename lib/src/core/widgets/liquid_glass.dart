@@ -11,7 +11,10 @@ abstract final class LiquidGlass {
   static const double blurLg = 40;
   static const double blurUltra = 64;
 
-  static Color fill(BuildContext context, {LiquidGlassWeight weight = LiquidGlassWeight.regular}) {
+  static Color fill(
+    BuildContext context, {
+    LiquidGlassWeight weight = LiquidGlassWeight.regular,
+  }) {
     final light = MatteSurface.isLight(context);
     switch (weight) {
       case LiquidGlassWeight.thin:
@@ -37,7 +40,10 @@ abstract final class LiquidGlass {
     }
   }
 
-  static Color border(BuildContext context, {LiquidGlassWeight weight = LiquidGlassWeight.regular}) {
+  static Color border(
+    BuildContext context, {
+    LiquidGlassWeight weight = LiquidGlassWeight.regular,
+  }) {
     final light = MatteSurface.isLight(context);
     if (light) return Colors.black.withAlpha(28);
     switch (weight) {
@@ -53,7 +59,10 @@ abstract final class LiquidGlass {
     }
   }
 
-  static List<BoxShadow> shadows(BuildContext context, {bool floating = false}) {
+  static List<BoxShadow> shadows(
+    BuildContext context, {
+    bool floating = false,
+  }) {
     final light = MatteSurface.isLight(context);
     if (light) {
       return [
@@ -154,10 +163,7 @@ class LiquidGlassPanel extends StatelessWidget {
             ),
           ),
         ),
-        Padding(
-          padding: padding ?? EdgeInsets.zero,
-          child: child,
-        ),
+        Padding(padding: padding ?? EdgeInsets.zero, child: child),
       ],
     );
 
@@ -222,7 +228,10 @@ class LiquidGlassSheet extends StatelessWidget {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: LiquidGlass.blurLg, sigmaY: LiquidGlass.blurLg),
+        filter: ImageFilter.blur(
+          sigmaX: LiquidGlass.blurLg,
+          sigmaY: LiquidGlass.blurLg,
+        ),
         child: Container(
           height: h,
           decoration: BoxDecoration(

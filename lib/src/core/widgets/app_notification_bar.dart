@@ -156,7 +156,9 @@ class _ToastCard extends StatelessWidget {
                 : const Color(0xBF141418), // rgba(20,20,24,.75)
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isLight ? const Color(0x0D000000) : const Color(0x1AFFFFFF),
+              color: isLight
+                  ? const Color(0x0D000000)
+                  : const Color(0x1AFFFFFF),
             ),
             boxShadow: const [
               BoxShadow(
@@ -254,23 +256,41 @@ class _ToastStyle {
   final Color accent;
 
   static _ToastStyle of(AppToastType type) => switch (type) {
-        AppToastType.like =>
-          const _ToastStyle(Icons.thumb_up_rounded, Color(0xFFF43F5E)),
-        AppToastType.superLike =>
-          const _ToastStyle(Icons.star_rounded, Color(0xFFF59E0B)),
-        AppToastType.message =>
-          const _ToastStyle(Icons.chat_bubble_rounded, Color(0xFF3B82F6)),
-        AppToastType.match =>
-          const _ToastStyle(Icons.auto_awesome_rounded, Color(0xFFA855F7)),
-        AppToastType.newUser =>
-          const _ToastStyle(Icons.person_add_rounded, Color(0xFF10B981)),
-        AppToastType.success =>
-          const _ToastStyle(Icons.check_circle_rounded, Color(0xFF10B981)),
-        AppToastType.error =>
-          const _ToastStyle(Icons.error_rounded, Color(0xFFEF4444)),
-        AppToastType.warning =>
-          const _ToastStyle(Icons.warning_rounded, Color(0xFFF59E0B)),
-        AppToastType.info =>
-          const _ToastStyle(Icons.info_rounded, Color(0xFF3B82F6)),
-      };
+    AppToastType.like => const _ToastStyle(
+      Icons.thumb_up_rounded,
+      Color(0xFFF43F5E),
+    ),
+    AppToastType.superLike => const _ToastStyle(
+      Icons.star_rounded,
+      Color(0xFFF59E0B),
+    ),
+    AppToastType.message => const _ToastStyle(
+      Icons.chat_bubble_rounded,
+      Color(0xFF3B82F6),
+    ),
+    AppToastType.match => const _ToastStyle(
+      Icons.auto_awesome_rounded,
+      Color(0xFFA855F7),
+    ),
+    AppToastType.newUser => const _ToastStyle(
+      Icons.person_add_rounded,
+      Color(0xFF10B981),
+    ),
+    AppToastType.success => const _ToastStyle(
+      Icons.check_circle_rounded,
+      Color(0xFF10B981),
+    ),
+    AppToastType.error => const _ToastStyle(
+      Icons.error_rounded,
+      Color(0xFFEF4444),
+    ),
+    AppToastType.warning => const _ToastStyle(
+      Icons.warning_rounded,
+      Color(0xFFF59E0B),
+    ),
+    AppToastType.info => const _ToastStyle(
+      Icons.info_rounded,
+      Color(0xFF3B82F6),
+    ),
+  };
 }

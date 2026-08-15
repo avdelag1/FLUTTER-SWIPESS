@@ -35,15 +35,17 @@ void main() {
     );
   }
 
-  testWidgets('mounting clears anything pending — the user is here now',
-      (tester) async {
+  testWidgets('mounting clears anything pending — the user is here now', (
+    tester,
+  ) async {
     await tester.pumpWidget(host());
     await tester.pump();
     expect(service.calls, ['initialize', 'cancel']);
   });
 
-  testWidgets('backgrounding schedules the nudges, returning clears them',
-      (tester) async {
+  testWidgets('backgrounding schedules the nudges, returning clears them', (
+    tester,
+  ) async {
     await tester.pumpWidget(host());
     await tester.pump();
     service.calls.clear();
@@ -61,8 +63,7 @@ void main() {
 
   test('a tapped reminder routes to the notifications feed', () async {
     final routed = <String>[];
-    final plain = LocalNotificationsService()
-      ..onNotificationRoute = routed.add;
+    final plain = LocalNotificationsService()..onNotificationRoute = routed.add;
 
     plain.handleTapForTest(null);
     plain.handleTapForTest('/messages/42');

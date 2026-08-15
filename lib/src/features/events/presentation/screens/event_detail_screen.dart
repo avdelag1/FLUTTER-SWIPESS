@@ -68,7 +68,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Future<void> _toggleFavorite() async {
     if (_busyFavorite) return;
-    final current = _favoritedOverride ??
+    final current =
+        _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
     setState(() {
       _busyFavorite = true;
@@ -76,17 +77,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     });
     AppHaptics.medium();
     try {
-      await ref.read(eventRepositoryProvider).setFavorited(
-            event.id,
-            favorited: !current,
-          );
+      await ref
+          .read(eventRepositoryProvider)
+          .setFavorited(event.id, favorited: !current);
       ref.invalidate(eventFavoriteProvider(event.id));
     } catch (_) {
       setState(() => _favoritedOverride = current);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign in to save events')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Sign in to save events')));
       }
     } finally {
       if (mounted) setState(() => _busyFavorite = false);
@@ -98,14 +98,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final text = 'Check out ${event.title} on Swipess! ${event.shareUrl}';
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Event link copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Event link copied')));
   }
 
   Future<void> _addToCalendar() async {
     AppHaptics.light();
-    final start = event.eventDate ?? DateTime.now().add(const Duration(days: 1));
+    final start =
+        event.eventDate ?? DateTime.now().add(const Duration(days: 1));
     final end = event.eventEndDate ?? start.add(const Duration(hours: 2));
     String fmt(DateTime d) =>
         DateFormat("yyyyMMdd'T'HHmmss'Z'").format(d.toUtc());
@@ -139,10 +140,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (next == null || !mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => EventDetailScreen(
-          event: next,
-          siblings: widget.siblings,
-        ),
+        builder: (_) =>
+            EventDetailScreen(event: next, siblings: widget.siblings),
       ),
     );
   }
@@ -150,18 +149,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final favAsync = ref.watch(eventFavoriteProvider(event.id));
-    final favorited =
-        _favoritedOverride ?? favAsync.value ?? false;
+    final favorited = _favoritedOverride ?? favAsync.value ?? false;
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final gallery = _media;
 
     final idx = widget.siblings.indexWhere((e) => e.id == event.id);
     final prevId = idx > 0 ? widget.siblings[idx - 1].id : null;
-    final nextId =
-        idx >= 0 && idx < widget.siblings.length - 1
-            ? widget.siblings[idx + 1].id
-            : null;
+    final nextId = idx >= 0 && idx < widget.siblings.length - 1
+        ? widget.siblings[idx + 1].id
+        : null;
 
     final dateLabel = event.eventDate == null
         ? 'TBA'
@@ -196,8 +193,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             return const ColoredBox(
                               color: Color(0xFF16161C),
                               child: Center(
-                                child: Icon(Icons.celebration_rounded,
-                                    color: Colors.white24, size: 64),
+                                child: Icon(
+                                  Icons.celebration_rounded,
+                                  color: Colors.white24,
+                                  size: 64,
+                                ),
                               ),
                             );
                           }
@@ -207,9 +207,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           return Image.network(
                             url,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const ColoredBox(
-                              color: Color(0xFF16161C),
-                            ),
+                            errorBuilder: (_, _, _) =>
+                                const ColoredBox(color: Color(0xFF16161C)),
                           );
                         },
                       ),
@@ -250,10 +249,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               onTap: _toggleFavorite,
                             ),
                             const SizedBox(width: 8),
-                            _GlassBtn(
-                              icon: Icons.share_rounded,
-                              onTap: _share,
-                            ),
+                            _GlassBtn(icon: Icons.share_rounded, onTap: _share),
                           ],
                         ),
                       ),
@@ -265,15 +261,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              for (var i = 0;
-                                  i < gallery.length.clamp(0, 8);
-                                  i++)
+                              for (
+                                var i = 0;
+                                i < gallery.length.clamp(0, 8);
+                                i++
+                              )
                                 AnimatedContainer(
                                   duration: const Duration(milliseconds: 220),
                                   width: i == _index ? 22 : 6,
                                   height: 6,
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 3),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 3,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: i == _index
                                         ? Colors.white
@@ -289,7 +288,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         bottom: 20,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black.withAlpha(120),
                             borderRadius: BorderRadius.circular(999),
@@ -363,12 +364,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         const SizedBox(height: 14),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF59E0B).withAlpha(30),
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                                color: const Color(0xFFF59E0B).withAlpha(80)),
+                              color: const Color(0xFFF59E0B).withAlpha(80),
+                            ),
                           ),
                           child: Text(
                             event.promoText!.toUpperCase(),
@@ -395,7 +399,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         iconColor: const Color(0xFFF43F5E),
                         eyebrow: 'The Location',
                         title: event.location ?? 'TBA',
-                        subtitle: event.locationDetail ?? 'Verified destination',
+                        subtitle:
+                            event.locationDetail ?? 'Verified destination',
                       ),
                       const SizedBox(height: 28),
                       Row(
@@ -454,7 +459,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     event.isFree
                                         ? 'FREE ENTRY'
                                         : (event.priceText ?? 'PREMIUM')
-                                            .toUpperCase(),
+                                              .toUpperCase(),
                                     style: GoogleFonts.plusJakartaSans(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w900,
@@ -483,8 +488,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(18),
                               ),
-                              child: const Icon(Icons.verified_user_rounded,
-                                  color: Color(0xFFFB7185)),
+                              child: const Icon(
+                                Icons.verified_user_rounded,
+                                color: Color(0xFFFB7185),
+                              ),
                             ),
                           ],
                         ),
@@ -503,13 +510,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 28,
-                                backgroundImage:
-                                    event.organizerPhotoUrl != null
-                                        ? NetworkImage(event.organizerPhotoUrl!)
-                                        : null,
+                                backgroundImage: event.organizerPhotoUrl != null
+                                    ? NetworkImage(event.organizerPhotoUrl!)
+                                    : null,
                                 child: event.organizerPhotoUrl == null
-                                    ? const Icon(Icons.person_rounded,
-                                        color: Colors.white54)
+                                    ? const Icon(
+                                        Icons.person_rounded,
+                                        color: Colors.white54,
+                                      )
                                     : null,
                               ),
                               const SizedBox(width: 14),
@@ -541,7 +549,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(14),
@@ -614,8 +624,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.chat_rounded,
-                                  color: Colors.white, size: 22),
+                              const Icon(
+                                Icons.chat_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                               const SizedBox(width: 10),
                               Text(
                                 'WHATSAPP',
@@ -662,10 +675,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     onTap: _addToCalendar,
                   ),
                   const SizedBox(width: 10),
-                  _FooterSquare(
-                    icon: Icons.ios_share_rounded,
-                    onTap: _share,
-                  ),
+                  _FooterSquare(icon: Icons.ios_share_rounded, onTap: _share),
                 ],
               ),
             ),
@@ -884,14 +894,17 @@ class _EventVideoState extends State<_EventVideo> {
     super.initState();
     final next = VideoPlayerController.networkUrl(Uri.parse(widget.url));
     _player = next;
-    next.initialize().then((_) {
-      if (!mounted || !identical(_player, next)) return;
-      next
-        ..setLooping(true)
-        ..setVolume(0)
-        ..play();
-      setState(() {});
-    }).catchError((_) {});
+    next
+        .initialize()
+        .then((_) {
+          if (!mounted || !identical(_player, next)) return;
+          next
+            ..setLooping(true)
+            ..setVolume(0)
+            ..play();
+          setState(() {});
+        })
+        .catchError((_) {});
   }
 
   @override

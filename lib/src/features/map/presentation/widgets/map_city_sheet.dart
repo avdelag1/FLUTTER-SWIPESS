@@ -7,11 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Cap passport city sheet — searchable photo grid, not a grey list.
 class MapCitySheet extends StatefulWidget {
-  const MapCitySheet({
-    super.key,
-    required this.onClose,
-    required this.onPick,
-  });
+  const MapCitySheet({super.key, required this.onClose, required this.onPick});
 
   final VoidCallback onClose;
   final void Function(PassportCity city) onPick;
@@ -66,8 +62,10 @@ class _MapCitySheetState extends State<MapCitySheet> {
                   color: Colors.white38,
                   fontSize: 13,
                 ),
-                prefixIcon:
-                    const Icon(Icons.search_rounded, color: Colors.white54),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Colors.white54,
+                ),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.06),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -103,9 +101,8 @@ class _MapCitySheetState extends State<MapCitySheet> {
                         Image.network(
                           city.photoUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const ColoredBox(
-                            color: Color(0xFF1E293B),
-                          ),
+                          errorBuilder: (_, _, _) =>
+                              const ColoredBox(color: Color(0xFF1E293B)),
                         ),
                         const DecoratedBox(
                           decoration: BoxDecoration(

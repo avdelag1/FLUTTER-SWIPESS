@@ -40,9 +40,8 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   Future<void> _boot() async {
     try {
       final path = widget.file.path;
-      final controller = (!kIsWeb &&
-              !path.startsWith('http') &&
-              !path.startsWith('blob:'))
+      final controller =
+          (!kIsWeb && !path.startsWith('http') && !path.startsWith('blob:'))
           ? VideoPlayerController.file(File(path))
           : VideoPlayerController.networkUrl(Uri.parse(path));
       await controller.initialize();
@@ -108,7 +107,9 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       if (mounted) {
         setState(() => _processing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not recut video — try a shorter clip.')),
+          const SnackBar(
+            content: Text('Could not recut video — try a shorter clip.'),
+          ),
         );
       }
     }
@@ -135,8 +136,10 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                       style: AppTheme.displayItalic.copyWith(fontSize: 18),
                     ),
                   ),
-                  const Icon(Icons.content_cut_rounded,
-                      color: AppTheme.brandPrimary),
+                  const Icon(
+                    Icons.content_cut_rounded,
+                    color: AppTheme.brandPrimary,
+                  ),
                 ],
               ),
             ),
@@ -146,22 +149,23 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                       child: Text(
                         'Could not preview video',
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70),
+                          color: Colors.white70,
+                        ),
                       ),
                     )
                   : !_ready
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : AspectRatio(
-                          aspectRatio: _player!.value.aspectRatio == 0
-                              ? 16 / 9
-                              : _player!.value.aspectRatio,
-                          child: VideoPlayer(_player!),
-                        ),
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : AspectRatio(
+                      aspectRatio: _player!.value.aspectRatio == 0
+                          ? 16 / 9
+                          : _player!.value.aspectRatio,
+                      child: VideoPlayer(_player!),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -187,8 +191,10 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                       max: _duration <= 0 ? 1 : _duration,
                       value: _start.clamp(0, _duration <= 0 ? 1 : _duration),
                       onChanged: (v) {
-                        final window = (_end - _start)
-                            .clamp(0.5, VideoCropperScreen.maxSeconds);
+                        final window = (_end - _start).clamp(
+                          0.5,
+                          VideoCropperScreen.maxSeconds,
+                        );
                         setState(() {
                           _start = v;
                           _end = (_start + window).clamp(0, _duration);

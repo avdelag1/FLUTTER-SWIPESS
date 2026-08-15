@@ -19,7 +19,8 @@ class IntelListingCard extends StatelessWidget {
     final city = data['city']?.toString() ?? '';
     final price = data['price'];
     final images = data['images'];
-    final image = data['image']?.toString() ??
+    final image =
+        data['image']?.toString() ??
         (images is List && images.isNotEmpty ? images.first.toString() : null);
     final beds = data['beds'] ?? data['bedrooms'];
     final baths = data['baths'] ?? data['bathrooms'];
@@ -117,10 +118,10 @@ class IntelProfileCard extends StatelessWidget {
     final id = data['id']?.toString() ?? '';
     final name = (data['name']?.toString() ?? 'User').split(' ').first;
     final age = data['age'];
-    final city =
-        data['city']?.toString() ?? data['location']?.toString() ?? '';
+    final city = data['city']?.toString() ?? data['location']?.toString() ?? '';
     final images = data['images'];
-    final image = data['image']?.toString() ??
+    final image =
+        data['image']?.toString() ??
         (images is List && images.isNotEmpty ? images.first.toString() : null);
 
     return GestureDetector(

@@ -5,7 +5,7 @@ class EventRepository {
   final SupabaseClient _client;
 
   EventRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   static const _social =
       'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, organizer_name, organizer_photo_url, organizer_whatsapp, organizer_instagram, organizer_website, organizer_facebook, promo_text, discount_tag, is_free, price_text, created_at';
@@ -130,12 +130,13 @@ class EventRepository {
 
     for (final select in eventRepositoryProviderFallbackSelects) {
       try {
-        final rows =
-            await _client.from('events').select(select).inFilter('id', ids);
+        final rows = await _client
+            .from('events')
+            .select(select)
+            .inFilter('id', ids);
         final byId = {
           for (final row in rows as List)
-            (row as Map<String, dynamic>)['id'] as String:
-                Event.fromJson(row),
+            (row as Map<String, dynamic>)['id'] as String: Event.fromJson(row),
         };
         return ids.map((id) => byId[id]).whereType<Event>().toList();
       } catch (_) {

@@ -8,7 +8,7 @@ final seekerRepositoryProvider = Provider<SeekerRepository>((ref) {
 
 class SeekerRepository {
   SeekerRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -29,19 +29,22 @@ class SeekerRepository {
       if (userId != null) {
         filter = filter.neq('owner_id', userId);
       }
-      data = await filter.order('created_at', ascending: false).limit(50) as List;
+      data =
+          await filter.order('created_at', ascending: false).limit(50) as List;
     } catch (_) {
       // Fallback if mode/listing_type columns differ — worker requests by title.
       try {
-        data = await _client
-            .from('listings')
-            .select(
-              'id, title, category, service_category, description, available_from, time_slots_available, minimum_booking_hours, days_available, price, pricing_unit, location, city, status, owner_id',
-            )
-            .eq('category', 'worker')
-            .eq('is_active', true)
-            .order('created_at', ascending: false)
-            .limit(50) as List;
+        data =
+            await _client
+                    .from('listings')
+                    .select(
+                      'id, title, category, service_category, description, available_from, time_slots_available, minimum_booking_hours, days_available, price, pricing_unit, location, city, status, owner_id',
+                    )
+                    .eq('category', 'worker')
+                    .eq('is_active', true)
+                    .order('created_at', ascending: false)
+                    .limit(50)
+                as List;
       } catch (_) {
         return const [];
       }
@@ -141,7 +144,9 @@ class SeekerRepository {
     throw Exception('Could not post seeker request.');
   }
 
-  Future<Map<String, Map<String, dynamic>>> _loadProfiles(List<String> ids) async {
+  Future<Map<String, Map<String, dynamic>>> _loadProfiles(
+    List<String> ids,
+  ) async {
     if (ids.isEmpty) return {};
     final map = <String, Map<String, dynamic>>{};
     try {

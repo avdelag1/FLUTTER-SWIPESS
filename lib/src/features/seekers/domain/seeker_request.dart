@@ -42,7 +42,9 @@ class SeekerRequest {
 
   String get priceLabel {
     if (price <= 0) return 'Budget TBD';
-    final unit = pricingUnit == null || pricingUnit!.isEmpty ? '' : '/$pricingUnit';
+    final unit = pricingUnit == null || pricingUnit!.isEmpty
+        ? ''
+        : '/$pricingUnit';
     return '\$${price.toStringAsFixed(price % 1 == 0 ? 0 : 2)}$unit';
   }
 
@@ -54,7 +56,8 @@ class SeekerRequest {
     return SeekerRequest(
       id: json['id'] as String,
       title: json['title'] as String? ?? 'Service request',
-      category: (json['category'] as String?) ??
+      category:
+          (json['category'] as String?) ??
           (json['service_category'] as String?) ??
           'other',
       serviceCategory: json['service_category'] as String?,
@@ -64,7 +67,8 @@ class SeekerRequest {
           : null,
       price: (json['price'] as num?)?.toDouble() ?? 0,
       pricingUnit: json['pricing_unit'] as String?,
-      location: (json['location'] as String?) ??
+      location:
+          (json['location'] as String?) ??
           (json['city'] as String?) ??
           'Location TBD',
       status: json['status'] as String?,

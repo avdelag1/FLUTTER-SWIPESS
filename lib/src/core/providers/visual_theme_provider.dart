@@ -41,8 +41,8 @@ class VisualThemeNotifier extends Notifier<AppVisualTheme> {
 
 final visualThemeProvider =
     NotifierProvider<VisualThemeNotifier, AppVisualTheme>(
-  VisualThemeNotifier.new,
-);
+      VisualThemeNotifier.new,
+    );
 
 /// Sync value for widgets.
 final isLightThemeProvider = Provider<bool>((ref) {

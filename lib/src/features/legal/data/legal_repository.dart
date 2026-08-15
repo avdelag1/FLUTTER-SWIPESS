@@ -84,7 +84,8 @@ class LegalRepository {
   }) async {
     await _client.from('legal_package_requests').insert({
       'requested_by': userId,
-      'package_id': packageId.startsWith('seed-') || packageId.startsWith('contract-')
+      'package_id':
+          packageId.startsWith('seed-') || packageId.startsWith('contract-')
           ? null
           : packageId,
       'package_name': packageName,
@@ -131,19 +132,18 @@ class LegalRepository {
       'room_id': roomId,
       'topic': topic,
     });
-    return LegalVideoCall(
-      id: id,
-      roomId: roomId,
-      status: 'ringing',
-    );
+    return LegalVideoCall(id: id, roomId: roomId, status: 'ringing');
   }
 
   Future<void> updateVideoCallStatus(String callId, String status) async {
     final ended = {'ended', 'missed', 'cancelled', 'declined'}.contains(status);
-    await _client.from('legal_video_calls').update({
-      'status': status,
-      if (ended) 'ended_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', callId);
+    await _client
+        .from('legal_video_calls')
+        .update({
+          'status': status,
+          if (ended) 'ended_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', callId);
   }
 
   Stream<Map<String, dynamic>> watchVideoCall(String callId) {

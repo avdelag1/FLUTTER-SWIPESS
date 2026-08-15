@@ -38,10 +38,7 @@ class AppReview {
       }
       if (!await _review.isAvailable()) return false;
 
-      await prefs.setInt(
-        _lastAskedKey,
-        DateTime.now().millisecondsSinceEpoch,
-      );
+      await prefs.setInt(_lastAskedKey, DateTime.now().millisecondsSinceEpoch);
       await _review.requestReview();
       return true;
     } catch (e) {

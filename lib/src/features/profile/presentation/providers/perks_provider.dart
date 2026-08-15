@@ -57,8 +57,10 @@ final perksSnapshotProvider = FutureProvider<PerksSnapshot>((ref) async {
       offers.add(
         PerkOffer(
           name: partnerName,
-          detail: map['title']?.toString() ?? map['description']?.toString() ?? '',
-          percent: (map['percent_off'] as num?)?.toInt() ??
+          detail:
+              map['title']?.toString() ?? map['description']?.toString() ?? '',
+          percent:
+              (map['percent_off'] as num?)?.toInt() ??
               (map['discount_percent'] as num?)?.toInt() ??
               10,
         ),

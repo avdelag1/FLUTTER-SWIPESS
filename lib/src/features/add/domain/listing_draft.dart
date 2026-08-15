@@ -56,9 +56,11 @@ class ListingDraft {
   final ListingCategory category;
   final ListingMode mode;
   final List<XFile> photos;
+
   /// Optional Cap 10s loop video for the swipe card.
   final XFile? video;
   final String title;
+
   /// Freeform Airbnb-style description (chips still auto-fill if empty).
   final String description;
   final String price;
@@ -92,6 +94,7 @@ class ListingDraft {
   final String maxPassengers;
   final String? serviceCategory;
   final List<String> traits;
+
   /// Cap SERVICE_SUBSPECIALTIES skills for the selected service.
   final List<String> skills;
   final List<String> availability;
@@ -190,8 +193,9 @@ class ListingDraft {
       neighborhood: neighborhood ?? this.neighborhood,
       adjectives: adjectives ?? this.adjectives,
       sizes: sizes ?? this.sizes,
-      propertyType:
-          clearPropertyType ? null : (propertyType ?? this.propertyType),
+      propertyType: clearPropertyType
+          ? null
+          : (propertyType ?? this.propertyType),
       beds: beds ?? this.beds,
       baths: baths ?? this.baths,
       vibe: vibe ?? this.vibe,

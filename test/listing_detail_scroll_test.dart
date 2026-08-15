@@ -14,15 +14,15 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: ListingDetailScreen(listingData: _sample()),
-      ),
+      MaterialApp(home: ListingDetailScreen(listingData: _sample())),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
   }
 
-  testWidgets('listing page shows scroll body under the gallery', (tester) async {
+  testWidgets('listing page shows scroll body under the gallery', (
+    tester,
+  ) async {
     await pumpListing(tester);
 
     expect(find.textContaining('JUNGLE SUITE'), findsOneWidget);

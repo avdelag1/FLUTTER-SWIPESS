@@ -30,7 +30,9 @@ class EscrowNotifier extends AsyncNotifier<List<EscrowDeposit>> {
     String? notes,
     bool asOwner = true,
   }) async {
-    await ref.read(escrowRepositoryProvider).createDeposit(
+    await ref
+        .read(escrowRepositoryProvider)
+        .createDeposit(
           amount: amount,
           counterpartyId: counterpartyId,
           currency: currency,
@@ -43,4 +45,6 @@ class EscrowNotifier extends AsyncNotifier<List<EscrowDeposit>> {
 }
 
 final escrowProvider =
-    AsyncNotifierProvider<EscrowNotifier, List<EscrowDeposit>>(EscrowNotifier.new);
+    AsyncNotifierProvider<EscrowNotifier, List<EscrowDeposit>>(
+      EscrowNotifier.new,
+    );

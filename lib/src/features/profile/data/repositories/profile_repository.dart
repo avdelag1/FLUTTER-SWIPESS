@@ -4,7 +4,7 @@ import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 
 class ProfileRepository {
   ProfileRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -68,7 +68,8 @@ class ProfileRepository {
 
     return UserProfile(
       userId: user.id,
-      name: user.userMetadata?['full_name'] as String? ??
+      name:
+          user.userMetadata?['full_name'] as String? ??
           user.email ??
           'Swipess member',
       avatarUrl: user.userMetadata?['avatar_url'] as String?,
@@ -99,17 +100,20 @@ class ProfileRepository {
     required double longitude,
   }) async {
     try {
-      await _client.from('client_profiles').update({
-        'latitude': latitude,
-        'longitude': longitude,
-        'location_updated_at': DateTime.now().toUtc().toIso8601String(),
-        'location_source': 'device',
-      }).eq('user_id', userId);
+      await _client
+          .from('client_profiles')
+          .update({
+            'latitude': latitude,
+            'longitude': longitude,
+            'location_updated_at': DateTime.now().toUtc().toIso8601String(),
+            'location_source': 'device',
+          })
+          .eq('user_id', userId);
     } catch (_) {
-      await _client.from('client_profiles').update({
-        'latitude': latitude,
-        'longitude': longitude,
-      }).eq('user_id', userId);
+      await _client
+          .from('client_profiles')
+          .update({'latitude': latitude, 'longitude': longitude})
+          .eq('user_id', userId);
     }
   }
 
@@ -121,16 +125,15 @@ class ProfileRepository {
     final user = _client.auth.currentUser;
     if (user == null) throw Exception('Not signed in');
     try {
-      await _client.from('client_profiles').update({
-        'name': displayName,
-        'bio': bio,
-        'city': city,
-      }).eq('user_id', user.id);
+      await _client
+          .from('client_profiles')
+          .update({'name': displayName, 'bio': bio, 'city': city})
+          .eq('user_id', user.id);
     } catch (_) {
-      await _client.from('owner_profiles').update({
-        'business_name': displayName,
-        'city': city,
-      }).eq('user_id', user.id);
+      await _client
+          .from('owner_profiles')
+          .update({'business_name': displayName, 'city': city})
+          .eq('user_id', user.id);
     }
   }
 }

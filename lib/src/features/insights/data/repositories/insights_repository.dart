@@ -9,7 +9,7 @@ final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {
 
 class InsightsRepository {
   InsightsRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 

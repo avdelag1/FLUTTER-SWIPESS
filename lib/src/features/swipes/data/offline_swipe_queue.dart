@@ -12,7 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// the device is back online / on app start / after a successful swipe path.
 class OfflineSwipeQueue {
   OfflineSwipeQueue({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   static const queueKey = 'offline-swipe-queue';
   static const maxRetries = 3;
@@ -219,11 +219,11 @@ class QueuedSwipe {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'targetId': targetId,
-        'direction': direction,
-        'targetType': targetType,
-        'timestamp': timestamp,
-        'retryCount': retryCount,
-      };
+    'id': id,
+    'targetId': targetId,
+    'direction': direction,
+    'targetType': targetType,
+    'timestamp': timestamp,
+    'retryCount': retryCount,
+  };
 }

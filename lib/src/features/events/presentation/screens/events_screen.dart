@@ -63,7 +63,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   TextButton(
                     onPressed: () {
                       setState(() => _category = 'All');
-                      ref.read(selectedCategoryProvider.notifier).setCategory('All');
+                      ref
+                          .read(selectedCategoryProvider.notifier)
+                          .setCategory('All');
                     },
                     child: const Text('Show all'),
                   ),
@@ -87,8 +89,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 itemBuilder: (context, i) {
                   if (i == events.length) {
                     return PromoteCTACard(
-                      onPromote: () =>
-                          context.push(AppPaths.clientAdvertise),
+                      onPromote: () => context.push(AppPaths.clientAdvertise),
                     );
                   }
                   final event = events[i];
@@ -289,7 +290,10 @@ class _EventCategoryRing extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF0A0A0B), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFF0A0A0B),
+                    width: 1.5,
+                  ),
                   color: const Color(0xFF1A1A1B),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -415,15 +419,15 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _toggleFavorite() async {
-    final current = _favoritedOverride ??
+    final current =
+        _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
     setState(() => _favoritedOverride = !current);
     AppHaptics.medium();
     try {
-      await ref.read(eventRepositoryProvider).setFavorited(
-            event.id,
-            favorited: !current,
-          );
+      await ref
+          .read(eventRepositoryProvider)
+          .setFavorited(event.id, favorited: !current);
       ref.invalidate(eventFavoriteProvider(event.id));
       ref.invalidate(favoritedEventsProvider);
     } catch (_) {
@@ -433,13 +437,15 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
 
   Future<void> _share() async {
     AppHaptics.light();
-    await Clipboard.setData(ClipboardData(
-      text: 'Check out ${event.title} on Swipess! ${event.shareUrl}',
-    ));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Event link copied')),
+    await Clipboard.setData(
+      ClipboardData(
+        text: 'Check out ${event.title} on Swipess! ${event.shareUrl}',
+      ),
     );
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Event link copied')));
   }
 
   Future<void> _whatsApp() async {
@@ -457,7 +463,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final favorited = _favoritedOverride ??
+    final favorited =
+        _favoritedOverride ??
         (ref.watch(eventFavoriteProvider(event.id)).value ?? false);
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _player?.setVolume(on ? 1 : 0);
@@ -539,7 +546,9 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 8, horizontal: 6),
+                      vertical: 8,
+                      horizontal: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withAlpha(150),
                       borderRadius: BorderRadius.circular(22),
@@ -585,17 +594,11 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                       ),
                       if (event.isFree) ...[
                         const SizedBox(width: 6),
-                        const _Pill(
-                          label: 'FREE',
-                          color: Color(0xFF34D399),
-                        ),
+                        const _Pill(label: 'FREE', color: Color(0xFF34D399)),
                       ],
                       if (_hasVideo) ...[
                         const SizedBox(width: 6),
-                        const _Pill(
-                          label: 'VIDEO',
-                          color: Color(0xFF38BDF8),
-                        ),
+                        const _Pill(label: 'VIDEO', color: Color(0xFF38BDF8)),
                       ],
                       if (event.discountTag != null) ...[
                         const SizedBox(width: 6),
@@ -652,8 +655,9 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                       if (event.eventDate != null)
                         _MetaChip(
                           icon: Icons.calendar_today_rounded,
-                          label: DateFormat('MMM d · h:mm a')
-                              .format(event.eventDate!.toLocal()),
+                          label: DateFormat(
+                            'MMM d · h:mm a',
+                          ).format(event.eventDate!.toLocal()),
                         ),
                       if (event.location != null)
                         _MetaChip(

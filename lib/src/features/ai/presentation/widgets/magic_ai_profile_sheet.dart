@@ -58,24 +58,24 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
         ? name
         : (existing?.displayName ?? 'Swipess User');
     try {
-      await ref.read(profileRepositoryProvider).updateProfile(
+      await ref
+          .read(profileRepositoryProvider)
+          .updateProfile(
             displayName: displayName,
             bio: bio,
-            city: (city != null && city.isNotEmpty)
-                ? city
-                : existing?.city,
+            city: (city != null && city.isNotEmpty) ? city : existing?.city,
           );
       ref.invalidate(currentProfileProvider);
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Magic AI Profile applied')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Magic AI Profile applied')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not save profile: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not save profile: $e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

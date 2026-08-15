@@ -70,7 +70,9 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
     setState(() => _sending = true);
     AppHaptics.medium();
     try {
-      await ref.read(messageRepositoryProvider).sendDocumentMessage(
+      await ref
+          .read(messageRepositoryProvider)
+          .sendDocumentMessage(
             conversationId: widget.conversationId,
             attachment: DocumentAttachment(
               type: 'digital_contract',
@@ -93,7 +95,9 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
     setState(() => _sending = true);
     AppHaptics.medium();
     try {
-      await ref.read(messageRepositoryProvider).sendDocumentMessage(
+      await ref
+          .read(messageRepositoryProvider)
+          .sendDocumentMessage(
             conversationId: widget.conversationId,
             attachment: DocumentAttachment(
               type: 'vault_file',
@@ -115,14 +119,12 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
     AppHaptics.light();
     final body = contract.content?.trim();
     if (body == null || body.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No content to export')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No content to export')));
       return;
     }
-    await Clipboard.setData(
-      ClipboardData(text: '${contract.title}\n\n$body'),
-    );
+    await Clipboard.setData(ClipboardData(text: '${contract.title}\n\n$body'));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -135,16 +137,16 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
   Widget build(BuildContext context) {
     final contractsAsync = ref.watch(contractsProvider);
     final docsAsync = ref.watch(documentsProvider);
-    final messagesAsync =
-        ref.watch(conversationMessagesProvider(widget.conversationId));
+    final messagesAsync = ref.watch(
+      conversationMessagesProvider(widget.conversationId),
+    );
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
     final isLight = MatteSurface.isLight(context);
     final height = MediaQuery.sizeOf(context).height * 0.82;
 
-    final contracts =
-        contractsAsync.asData?.value ?? const <DigitalContract>[];
+    final contracts = contractsAsync.asData?.value ?? const <DigitalContract>[];
     final files = docsAsync.asData?.value ?? const <LegalDocument>[];
     final messages = messagesAsync.asData?.value ?? const [];
 
@@ -341,10 +343,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                           ),
                         ),
                         for (final f in files.take(8)) ...[
-                          _FileRow(
-                            doc: f,
-                            onShare: () => _sendFile(f),
-                          ),
+                          _FileRow(doc: f, onShare: () => _sendFile(f)),
                           const SizedBox(height: 8),
                         ],
                       ],
@@ -370,9 +369,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                                 },
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: const Color(0xFFFB7185),
-                                  side: BorderSide(
-                                    color: _rose.withAlpha(90),
-                                  ),
+                                  side: BorderSide(color: _rose.withAlpha(90)),
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                     vertical: 14,
@@ -428,9 +425,7 @@ class _TabPill extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: selected
-              ? LinearGradient(
-                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                )
+              ? LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)])
               : null,
           color: selected ? null : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
@@ -442,11 +437,7 @@ class _TabPill extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 14,
-              color: selected ? Colors.white : muted,
-            ),
+            Icon(icon, size: 14, color: selected ? Colors.white : muted),
             const SizedBox(width: 6),
             Text(
               label,
@@ -528,8 +519,10 @@ class _ContractRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
@@ -566,8 +559,11 @@ class _ContractRow extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.send_rounded,
-                            color: Colors.white, size: 14),
+                        const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'SEND',
@@ -595,8 +591,11 @@ class _ContractRow extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.download_rounded,
-                            size: 12, color: ink.withAlpha(160)),
+                        Icon(
+                          Icons.download_rounded,
+                          size: 12,
+                          color: ink.withAlpha(160),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'PDF',
@@ -641,8 +640,11 @@ class _FileRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.description_outlined,
-              color: Color(0xFF38BDF8), size: 20),
+          const Icon(
+            Icons.description_outlined,
+            color: Color(0xFF38BDF8),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

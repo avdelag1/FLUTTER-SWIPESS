@@ -35,7 +35,8 @@ class MaintenanceRequest {
       status: (json['status'] as String?) ?? 'submitted',
       category: json['category'] as String?,
       priority: json['priority'] as String?,
-      propertyLabel: json['property_name'] as String? ??
+      propertyLabel:
+          json['property_name'] as String? ??
           json['listing_title'] as String? ??
           json['location'] as String?,
       description: json['description'] as String?,

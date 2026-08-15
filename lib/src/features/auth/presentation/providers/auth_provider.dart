@@ -2,50 +2,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
+import 'package:flutter_swipes/src/core/providers/supabase_provider.dart';
 
 enum AuthIntent { login, signup }
 
-/// Tracks whether the current session is fully authenticated.
 final authStateProvider = StreamProvider<AuthState>((ref) {
   try {
-    return Supabase.instance.client.auth.onAuthStateChange;
+    return ref.watch(supabaseClientProvider).auth.onAuthStateChange;
   } catch (_) {
-    // Supabase not ready — empty stream so the app still mounts.
     return const Stream<AuthState>.empty();
   }
 });
 
-/// Live session user. A [Notifier] so email login can stamp the user
-/// immediately — a plain Provider stays cached as `null` until the
-/// auth stream emits, and the router then bounces LOG IN back to Welcome.
 class CurrentUserNotifier extends Notifier<User?> {
   @override
   User? build() {
     ref.listen<AsyncValue<AuthState>>(authStateProvider, (_, next) {
-      state = next.value?.session?.user ??
-          Supabase.instance.client.auth.currentUser;
+      state =
+          next.value?.session?.user ??
+          ref.read(supabaseClientProvider).auth.currentUser;
     });
-    return Supabase.instance.client.auth.currentUser;
+    return ref.read(supabaseClientProvider).auth.currentUser;
   }
 
-  /// Call after `signInWithPassword` / sign-up so GoRouter sees the
-  /// session on the same frame as `context.go(dashboard)`.
   void apply(User? user) {
-    state = user ?? Supabase.instance.client.auth.currentUser;
+    state = user ?? ref.read(supabaseClientProvider).auth.currentUser;
   }
 
   void clear() {
-    // Signing out invalidates any share link the previous session had queued.
     ref.read(pendingDeepLinkProvider).clear();
     state = null;
   }
 }
 
-final currentUserProvider =
-    NotifierProvider<CurrentUserNotifier, User?>(CurrentUserNotifier.new);
+final currentUserProvider = NotifierProvider<CurrentUserNotifier, User?>(
+  CurrentUserNotifier.new,
+);
 
-/// Access-code gate state. AsyncNotifier so grant flips true immediately
-/// (FutureProvider invalidate left `.value` null → router treated as denied).
 class AccessGrantedNotifier extends AsyncNotifier<bool> {
   @override
   Future<bool> build() => AccessGrantService.isGranted();
@@ -63,8 +56,8 @@ class AccessGrantedNotifier extends AsyncNotifier<bool> {
 
 final accessGrantedProvider =
     AsyncNotifierProvider<AccessGrantedNotifier, bool>(
-  AccessGrantedNotifier.new,
-);
+      AccessGrantedNotifier.new,
+    );
 
 class AuthIntentNotifier extends Notifier<AuthIntent> {
   @override
@@ -73,5 +66,6 @@ class AuthIntentNotifier extends Notifier<AuthIntent> {
   void set(AuthIntent intent) => state = intent;
 }
 
-final authIntentProvider =
-    NotifierProvider<AuthIntentNotifier, AuthIntent>(AuthIntentNotifier.new);
+final authIntentProvider = NotifierProvider<AuthIntentNotifier, AuthIntent>(
+  AuthIntentNotifier.new,
+);

@@ -9,10 +9,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
-            child: IntelWelcomeGrid(
-              isLight: true,
-              onPick: (_) {},
-            ),
+            child: IntelWelcomeGrid(isLight: true, onPick: (_) {}),
           ),
         ),
       ),
@@ -56,7 +53,9 @@ void main() {
     expect(picked, 'Show me all rental properties');
   });
 
-  testWidgets('AI disclosure names the live model and fallbacks', (tester) async {
+  testWidgets('AI disclosure names the live model and fallbacks', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -72,16 +71,19 @@ void main() {
     );
 
     expect(find.textContaining('Llama 3.3 (via Groq)'), findsOneWidget);
-    expect(find.textContaining('Google Gemini, Moonshot & MiniMax'), findsOneWidget);
+    expect(
+      find.textContaining('Google Gemini, Moonshot & MiniMax'),
+      findsOneWidget,
+    );
     expect(find.textContaining('password or payment'), findsOneWidget);
   });
 
-  testWidgets('compact disclosure includes AI can make mistakes', (tester) async {
+  testWidgets('compact disclosure includes AI can make mistakes', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: AiDisclosure(isLight: false, showModelLine: true),
-        ),
+        home: Scaffold(body: AiDisclosure(isLight: false, showModelLine: true)),
       ),
     );
 

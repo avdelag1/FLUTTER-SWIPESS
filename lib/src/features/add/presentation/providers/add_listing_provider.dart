@@ -17,7 +17,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
 
   void reset() => state = const ListingDraft();
 
-  void setStep(int step) => state = state.copyWith(step: step, clearError: true);
+  void setStep(int step) =>
+      state = state.copyWith(step: step, clearError: true);
 
   void setCategory(ListingCategory category) {
     state = state.copyWith(category: category, clearError: true);
@@ -46,7 +47,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final picker = ImagePicker();
     final remaining = state.maxPhotos - state.photos.length;
     if (remaining <= 0) {
-      state = state.copyWith(error: 'Maximum photos reached for this category.');
+      state = state.copyWith(
+        error: 'Maximum photos reached for this category.',
+      );
       return;
     }
     final picked = await picker.pickMultiImage(limit: remaining);
@@ -86,7 +89,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   Future<bool> publish() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      state = state.copyWith(error: 'Session expired — sign in again to publish.');
+      state = state.copyWith(
+        error: 'Session expired — sign in again to publish.',
+      );
       return false;
     }
     if (state.photos.isEmpty) {
@@ -96,7 +101,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final coords = ListingLocations.resolve(state.city);
     if (coords == null) {
       state = state.copyWith(
-        error: 'Select a city from the location picker so your listing appears on the map.',
+        error:
+            'Select a city from the location picker so your listing appears on the map.',
       );
       return false;
     }
@@ -113,10 +119,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       String? videoUrl;
       final video = state.video;
       if (video != null) {
-        videoUrl = await repo.uploadListingVideo(
-          userId: user.id,
-          file: video,
-        );
+        videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       await repo.createListing(payload);
@@ -141,7 +144,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     String? videoUrl,
   }) {
     final draft = state;
-    final isVehicle = draft.category == ListingCategory.motorcycle ||
+    final isVehicle =
+        draft.category == ListingCategory.motorcycle ||
         draft.category == ListingCategory.bicycle ||
         draft.category == ListingCategory.yacht;
     final listingType = draft.category == ListingCategory.worker
@@ -185,8 +189,10 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['property_type'] = draft.propertyType?.toLowerCase();
       data['beds'] = _bedsValue(draft.beds);
       data['baths'] = double.tryParse(draft.baths ?? '');
-      data['furnished'] = draft.furnished || draft.amenities.contains('Furnished');
-      data['pet_friendly'] = draft.petFriendly ||
+      data['furnished'] =
+          draft.furnished || draft.amenities.contains('Furnished');
+      data['pet_friendly'] =
+          draft.petFriendly ||
           draft.vibe.contains('Pet-friendly') ||
           draft.rules.contains('Pets allowed');
       data['house_rules'] = ListingTaxonomies.joinChips(draft.rules);
@@ -196,10 +202,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (draft.category == ListingCategory.worker) {
       data['service_category'] = draft.serviceCategory;
       data['pricing_unit'] = _pricingUnitSlug(draft.pricingUnit);
-      data['skills'] = <String>{
-        ...draft.skills,
-        ...draft.traits,
-      }.toList();
+      data['skills'] = <String>{...draft.skills, ...draft.traits}.toList();
       data['time_slots_available'] = draft.availability;
       data['languages'] = draft.languages;
     }
@@ -208,8 +211,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['vehicle_type'] = draft.categoryValue;
       data['vehicle_brand'] = draft.brand;
       data['vehicle_model'] = draft.model;
-      data['vehicle_condition'] =
-          ListingTaxonomies.conditionSlug(draft.condition);
+      data['vehicle_condition'] = ListingTaxonomies.conditionSlug(
+        draft.condition,
+      );
       data['year'] = int.tryParse(draft.year);
       data['mileage'] = int.tryParse(draft.mileage);
       data['engine_cc'] = int.tryParse(draft.engineCc);
@@ -225,7 +229,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (draft.category == ListingCategory.bicycle) {
       data['bicycle_type'] = draft.vehicleType;
       data['frame_size'] = draft.frameSize;
-      data['electric_assist'] = draft.vehicleType == 'Electric' ||
+      data['electric_assist'] =
+          draft.vehicleType == 'Electric' ||
           draft.features.contains('Electric');
       data['includes_lock'] = draft.vehicleIncluded.contains('Lock');
       data['includes_lights'] = draft.vehicleIncluded.contains('Lights');
@@ -324,5 +329,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   }
 }
 
-final addListingProvider =
-    NotifierProvider<AddListingNotifier, ListingDraft>(AddListingNotifier.new);
+final addListingProvider = NotifierProvider<AddListingNotifier, ListingDraft>(
+  AddListingNotifier.new,
+);

@@ -68,9 +68,9 @@ abstract final class NexusTheme {
   }
 
   static TextStyle get sectionLabel => const TextStyle(
-        color: violet,
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2.8,
-      );
+    color: violet,
+    fontSize: 10,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 2.8,
+  );
 }

@@ -61,14 +61,7 @@ const spotlightListings = <Listing>[
     squareFootage: 2100,
     furnished: true,
     petFriendly: false,
-    amenities: [
-      'Patio',
-      'Wi-Fi',
-      'Kitchen',
-      'Washer',
-      'AC',
-      'Workspace',
-    ],
+    amenities: ['Patio', 'Wi-Fi', 'Kitchen', 'Washer', 'AC', 'Workspace'],
     images: [
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=90',
       'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=90',
@@ -97,14 +90,7 @@ const spotlightListings = <Listing>[
     squareFootage: 780,
     furnished: true,
     petFriendly: true,
-    amenities: [
-      'Rooftop',
-      'Wi-Fi',
-      'Kitchen',
-      'AC',
-      'Gym',
-      'Doorman',
-    ],
+    amenities: ['Rooftop', 'Wi-Fi', 'Kitchen', 'AC', 'Gym', 'Doorman'],
     images: [
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=90',
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=90',

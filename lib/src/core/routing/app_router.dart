@@ -90,9 +90,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.onboarding,
-        builder: (ctx, _) => LegendaryOnboardingScreen(
-          onFinish: () => ctx.go(AppPaths.welcome),
-        ),
+        builder: (ctx, _) =>
+            LegendaryOnboardingScreen(onFinish: () => ctx.go(AppPaths.welcome)),
       ),
       GoRoute(
         path: AppPaths.auth,
@@ -111,15 +110,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/preview/listing/:id',
-        builder: (ctx, state) => PublicListingPreviewScreen(
-          listingId: state.pathParameters['id']!,
-        ),
+        builder: (ctx, state) =>
+            PublicListingPreviewScreen(listingId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/preview/profile/:id',
-        builder: (ctx, state) => PublicProfilePreviewScreen(
-          userId: state.pathParameters['id']!,
-        ),
+        builder: (ctx, state) =>
+            PublicProfilePreviewScreen(userId: state.pathParameters['id']!),
       ),
       // Public member link the share sheets hand out as
       // `https://www.swipess.com/u/<id>`.
@@ -151,10 +148,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppPaths.paymentCancel,
         builder: (ctx, _) => const PaymentResultScreen(success: false),
       ),
-      GoRoute(
-        path: AppPaths.about,
-        builder: (ctx, _) => const AboutScreen(),
-      ),
+      GoRoute(path: AppPaths.about, builder: (ctx, _) => const AboutScreen()),
       GoRoute(
         path: AppPaths.contact,
         builder: (ctx, _) => const ContactSupportScreen(),
@@ -173,21 +167,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/vap-validate/:id',
-        builder: (ctx, state) => VapValidateScreen(
-          userId: state.pathParameters['id'],
-        ),
+        builder: (ctx, state) =>
+            VapValidateScreen(userId: state.pathParameters['id']),
       ),
       GoRoute(
         path: '/listing/:id',
-        builder: (ctx, state) => ListingDetailScreen(
-          listingId: state.pathParameters['id'],
-        ),
+        builder: (ctx, state) =>
+            ListingDetailScreen(listingId: state.pathParameters['id']),
       ),
       GoRoute(
         path: '/profile/:id',
-        builder: (ctx, state) => ProfileDetailScreen(
-          userId: state.pathParameters['id']!,
-        ),
+        builder: (ctx, state) =>
+            ProfileDetailScreen(userId: state.pathParameters['id']!),
       ),
       // Legacy event_card push target
       GoRoute(
@@ -353,9 +344,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/owner/view-client/:clientId',
-        builder: (ctx, state) => ProfileDetailScreen(
-          userId: state.pathParameters['clientId']!,
-        ),
+        builder: (ctx, state) =>
+            ProfileDetailScreen(userId: state.pathParameters['clientId']!),
       ),
       GoRoute(
         path: AppPaths.notifications,
@@ -371,9 +361,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/explore/events/:id',
-        builder: (ctx, state) => EventDetailRouteScreen(
-          eventId: state.pathParameters['id']!,
-        ),
+        builder: (ctx, state) =>
+            EventDetailRouteScreen(eventId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: AppPaths.explorePrices,
@@ -399,10 +388,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppPaths.escrow,
         builder: (ctx, _) => const EscrowDashboardScreen(),
       ),
-      GoRoute(
-        path: AppPaths.map,
-        builder: (ctx, _) => const LiveMapScreen(),
-      ),
+      GoRoute(path: AppPaths.map, builder: (ctx, _) => const LiveMapScreen()),
       GoRoute(
         path: '/messages/:conversationId',
         builder: (ctx, state) => const MessagesScreen(),
@@ -425,9 +411,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '*',
-        builder: (ctx, state) => NotFoundScreen(
-          path: state.uri.toString(),
-        ),
+        builder: (ctx, state) => NotFoundScreen(path: state.uri.toString()),
       ),
     ],
   );

@@ -42,10 +42,7 @@ class ConciergeOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConciergeSheetHost(
       onClose: onClose,
-      child: _IntelCoreSheet(
-        initialQuery: initialQuery,
-        onClose: onClose,
-      ),
+      child: _IntelCoreSheet(initialQuery: initialQuery, onClose: onClose),
     );
   }
 }
@@ -55,9 +52,9 @@ Future<void> showIntelCoreSheet(
   BuildContext context, {
   String initialQuery = '',
 }) async {
-  ProviderScope.containerOf(context)
-      .read(overlayModalsProvider.notifier)
-      .openConcierge(initialQuery);
+  ProviderScope.containerOf(
+    context,
+  ).read(overlayModalsProvider.notifier).openConcierge(initialQuery);
 }
 
 class _IntelCoreSheet extends ConsumerStatefulWidget {
@@ -127,7 +124,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   Future<void> _loadPrivacy() async {
     final prefs = await SharedPreferences.getInstance();
-    final ok = prefs.getString('Swipess_ai_privacy') == 'true' ||
+    final ok =
+        prefs.getString('Swipess_ai_privacy') == 'true' ||
         widget.initialQuery.trim().isNotEmpty;
     if (mounted) setState(() => _privacyAccepted = ok);
   }
@@ -188,10 +186,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         ],
       });
       final trimmed = list.take(20).toList();
-      await prefs.setString(
-        'Swipess-ai-conversations',
-        jsonEncode(trimmed),
-      );
+      await prefs.setString('Swipess-ai-conversations', jsonEncode(trimmed));
       if (mounted) {
         setState(() {
           _saved
@@ -228,8 +223,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         }
       } on VoiceTranscribeException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (mounted) {
@@ -291,7 +287,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         );
       });
       await for (final delta
-          in ref.read(aiEdgeRepositoryProvider).chatConciergeTokens(
+          in ref
+              .read(aiEdgeRepositoryProvider)
+              .chatConciergeTokens(
                 messages: history,
                 character: _character == 'default' ? null : _character,
                 locationContext: {
@@ -305,13 +303,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         if (!mounted) return;
         reply += delta;
         setState(() {
-          _messages[_messages.length - 1] =
-              _messages.last.copyWith(content: reply);
+          _messages[_messages.length - 1] = _messages.last.copyWith(
+            content: reply,
+          );
         });
         _scrollToEnd();
       }
       if (reply.trim().isEmpty) {
-        reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
+        reply = await ref
+            .read(aiEdgeRepositoryProvider)
+            .chatConcierge(
               messages: history,
               character: _character == 'default' ? null : _character,
               locationContext: {
@@ -325,8 +326,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
             );
         if (mounted) {
           setState(() {
-            _messages[_messages.length - 1] =
-                _messages.last.copyWith(content: reply);
+            _messages[_messages.length - 1] = _messages.last.copyWith(
+              content: reply,
+            );
           });
         }
       }
@@ -334,16 +336,18 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       reply = e.message;
       if (mounted) {
         setState(() {
-          _messages[_messages.length - 1] =
-              _messages.last.copyWith(content: reply);
+          _messages[_messages.length - 1] = _messages.last.copyWith(
+            content: reply,
+          );
         });
       }
     } catch (_) {
       reply = 'AI is temporarily unavailable. Try again in a moment.';
       if (mounted) {
         setState(() {
-          _messages[_messages.length - 1] =
-              _messages.last.copyWith(content: reply);
+          _messages[_messages.length - 1] = _messages.last.copyWith(
+            content: reply,
+          );
         });
       }
     }
@@ -382,21 +386,23 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   /// Cap-style curated routing — follow-up chips after Intel Core replies.
   void _openIntent(String q) {
     _peekChrome();
-    if (RegExp(r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b')
-        .hasMatch(q)) {
+    if (RegExp(
+      r'\b(map|near me|nearby|gps|passport|location|ciudad|city|zona|area)\b',
+    ).hasMatch(q)) {
       ref.read(overlayModalsProvider.notifier).openPassportMap();
       return;
     }
 
     if (RegExp(
-          r'\b(people|person|user|users|profile|profiles|roommate|roommates|seeker|seekers|who.?s looking|looking for)\b',
-        ).hasMatch(q)) {
+      r'\b(people|person|user|users|profile|profiles|roommate|roommates|seeker|seekers|who.?s looking|looking for)\b',
+    ).hasMatch(q)) {
       context.go(AppPaths.exploreSeekers);
       return;
     }
 
-    if (RegExp(r'\b(worker|workers|hire|service|services|maintenance|plumber|cleaner)\b')
-        .hasMatch(q)) {
+    if (RegExp(
+      r'\b(worker|workers|hire|service|services|maintenance|plumber|cleaner)\b',
+    ).hasMatch(q)) {
       context.push(AppPaths.clientServices);
       return;
     }
@@ -407,8 +413,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
 
     if (RegExp(
-          r'\b(listing|listings|property|properties|home|homes|house|houses|apartment|rent|rental|buy|sale|yacht|moto|motorcycle|bike|bicycle)\b',
-        ).hasMatch(q)) {
+      r'\b(listing|listings|property|properties|home|homes|house|houses|apartment|rent|rental|buy|sale|yacht|moto|motorcycle|bike|bicycle)\b',
+    ).hasMatch(q)) {
       String category = 'property';
       String title = 'PROPERTIES';
       if (q.contains('yacht')) {
@@ -424,11 +430,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         category = 'worker';
         title = 'WORKERS';
       }
-      openClientSwipeDeck(
-        context,
-        categoryId: category,
-        categoryTitle: title,
-      );
+      openClientSwipeDeck(context, categoryId: category, categoryTitle: title);
       return;
     }
 
@@ -456,7 +458,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
             label: 'Applying Search Filters',
             onTap: () => _applyConciergeFilter(parsed.filterAction!),
           ),
-        if (parsed.passportCity != null && parsed.passportCity!.trim().isNotEmpty)
+        if (parsed.passportCity != null &&
+            parsed.passportCity!.trim().isNotEmpty)
           (
             label: 'Explore ${parsed.passportCity}',
             onTap: () {
@@ -476,23 +479,27 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         .firstOrNull;
     if (lastUser == null) return const [];
     final out = <({String label, VoidCallback onTap})>[];
-    if (RegExp(r'\b(people|person|seeker|roommate|who.?s looking)\b')
-        .hasMatch(lastUser)) {
+    if (RegExp(
+      r'\b(people|person|seeker|roommate|who.?s looking)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Seekers', onTap: () => _openIntent(lastUser)));
     }
-    if (RegExp(r'\b(worker|hire|maintenance|plumber|cleaner)\b')
-        .hasMatch(lastUser)) {
+    if (RegExp(
+      r'\b(worker|hire|maintenance|plumber|cleaner)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Workers', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(r'\b(event|party|nightlife|concert)\b').hasMatch(lastUser)) {
       out.add((label: 'Open Events', onTap: () => _openIntent(lastUser)));
     }
-    if (RegExp(r'\b(map|near me|nearby|gps|location|city)\b').hasMatch(lastUser)) {
+    if (RegExp(
+      r'\b(map|near me|nearby|gps|location|city)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Map', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(
-          r'\b(listing|property|home|house|apartment|rent|rental|buy|yacht|moto|bike)\b',
-        ).hasMatch(lastUser)) {
+      r'\b(listing|property|home|house|apartment|rent|rental|buy|yacht|moto|bike)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Listings', onTap: () => _openIntent(lastUser)));
     }
     return out;
@@ -607,9 +614,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         ? parsed!.cleanContent
         : m.content;
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Telemetry Copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Telemetry Copied')));
   }
 
   void _delete(IntelChatBubble m) {
@@ -647,7 +654,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   void _translate(IntelChatBubble m) {
     final parsed = ConciergeParse.of(m.content);
-    final text = parsed.cleanContent.isNotEmpty ? parsed.cleanContent : m.content;
+    final text = parsed.cleanContent.isNotEmpty
+        ? parsed.cleanContent
+        : m.content;
     _submit('Translate the following to Spanish:\n\n$text');
   }
 
@@ -713,73 +722,78 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 child: Column(
                   children: [
                     _header(isLight: isLight, ink: ink, online: edgeReady),
-                  Expanded(
-                    child: ListView(
-                      controller: _scroll,
-                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
-                      children: [
-                        if (_messages.isEmpty)
-                          IntelWelcomeGrid(
-                            isLight: isLight,
-                            onPick: (prompt) => _submit(prompt),
-                          )
-                        else ...[
-                          for (final m in _messages)
-                            IntelMessageBubble(
-                              message: m,
+                    Expanded(
+                      child: ListView(
+                        controller: _scroll,
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+                        children: [
+                          if (_messages.isEmpty)
+                            IntelWelcomeGrid(
                               isLight: isLight,
-                              speaking: _speakingId == m.id,
-                              onCopy: () => _copy(m),
-                              onDelete: () => _delete(m),
-                              onSpeak: () => _speak(m),
-                              onEdit: m.isUser ? () => _edit(m) : null,
-                              onResend: () => _resend(m),
-                              onTranslate:
-                                  m.isUser ? null : () => _translate(m),
-                            ),
-                          if (_loading &&
-                              (_messages.isEmpty ||
-                                  _messages.last.content.trim().isEmpty))
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16, top: 4),
-                              child: Text(
-                                t(ref, 'flutter.thinking', 'Thinking…'),
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: ink.withAlpha(110),
-                                  fontSize: 12,
-                                ),
-                              ),
+                              onPick: (prompt) => _submit(prompt),
                             )
-                          else if (_followUps().isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                for (final chip in _followUps())
-                                  ActionChip(
-                                    label: Text(
-                                      chip.label,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: ink,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    onPressed: chip.onTap,
+                          else ...[
+                            for (final m in _messages)
+                              IntelMessageBubble(
+                                message: m,
+                                isLight: isLight,
+                                speaking: _speakingId == m.id,
+                                onCopy: () => _copy(m),
+                                onDelete: () => _delete(m),
+                                onSpeak: () => _speak(m),
+                                onEdit: m.isUser ? () => _edit(m) : null,
+                                onResend: () => _resend(m),
+                                onTranslate: m.isUser
+                                    ? null
+                                    : () => _translate(m),
+                              ),
+                            if (_loading &&
+                                (_messages.isEmpty ||
+                                    _messages.last.content.trim().isEmpty))
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 16,
+                                  top: 4,
+                                ),
+                                child: Text(
+                                  t(ref, 'flutter.thinking', 'Thinking…'),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: ink.withAlpha(110),
+                                    fontSize: 12,
                                   ),
-                              ],
-                            ),
+                                ),
+                              )
+                            else if (_followUps().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final chip in _followUps())
+                                    ActionChip(
+                                      label: Text(
+                                        chip.label,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: ink,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      onPressed: chip.onTap,
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  _composer(isLight: isLight, ink: ink),
-                ],
+                    _composer(isLight: isLight, ink: ink),
+                  ],
+                ),
               ),
-            ),
-            if (_showHistory) _historyDrawer(isLight: isLight, ink: ink, online: edgeReady),
+            if (_showHistory)
+              _historyDrawer(isLight: isLight, ink: ink, online: edgeReady),
             if (_showPersona) _personaSheet(isLight: isLight, ink: ink),
           ],
         ),
@@ -883,18 +897,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     color: persona.$4.withAlpha(40),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.auto_awesome_rounded,
-                      color: persona.$4, size: 16),
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    color: persona.$4,
+                    size: 16,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 6),
-          _ChromeIcon(
-            icon: Icons.close_rounded,
-            ink: ink,
-            onTap: _dismiss,
-          ),
+          _ChromeIcon(icon: Icons.close_rounded, ink: ink, onTap: _dismiss),
         ],
       ),
     );
@@ -916,8 +929,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.timer_outlined,
-                      size: 14, color: AppTheme.brandPrimary),
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 14,
+                    color: AppTheme.brandPrimary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'SEND IN',
@@ -962,7 +978,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                         ? const Color(0xFFF4F4F7)
                         : const Color(0xFF14141A),
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: ink.withAlpha(isLight ? 40 : 200), width: 1.2),
+                    border: Border.all(
+                      color: ink.withAlpha(isLight ? 40 : 200),
+                      width: 1.2,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -971,16 +990,19 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           setState(() => _autoSend = !_autoSend);
                           if (!_autoSend) _cancelCountdown();
                         },
-                        child: Icon(Icons.timer_outlined,
-                            color: _autoSend
-                                ? AppTheme.brandPrimary
-                                : ink.withAlpha(120),
-                            size: 20),
+                        child: Icon(
+                          Icons.timer_outlined,
+                          color: _autoSend
+                              ? AppTheme.brandPrimary
+                              : ink.withAlpha(120),
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 2),
                       GestureDetector(
-                        onTap:
-                            (_loading || _transcribing) ? null : _toggleVoice,
+                        onTap: (_loading || _transcribing)
+                            ? null
+                            : _toggleVoice,
                         child: Icon(
                           _recording
                               ? Icons.mic_rounded
@@ -1004,10 +1026,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             hintText: _recording
                                 ? t(ref, 'flutter.listening', 'Listening…')
                                 : _transcribing
-                                    ? t(ref, 'flutter.transcribing',
-                                        'Transcribing…')
-                                    : t(ref, 'flutter.askAnything',
-                                        'Ask anything...'),
+                                ? t(
+                                    ref,
+                                    'flutter.transcribing',
+                                    'Transcribing…',
+                                  )
+                                : t(
+                                    ref,
+                                    'flutter.askAnything',
+                                    'Ask anything...',
+                                  ),
                             hintStyle: TextStyle(color: ink.withAlpha(100)),
                           ),
                           onChanged: (value) {
@@ -1031,8 +1059,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     shape: BoxShape.circle,
                     color: _controller.text.trim().isEmpty || _loading
                         ? (isLight
-                            ? const Color(0xFFE8E8EE)
-                            : Colors.white.withAlpha(18))
+                              ? const Color(0xFFE8E8EE)
+                              : Colors.white.withAlpha(18))
                         : AppTheme.brandPrimary,
                   ),
                   child: _loading
@@ -1072,8 +1100,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               borderRadius: BorderRadius.circular(28),
               border: Border.all(color: AppTheme.brandPrimary.withAlpha(50)),
             ),
-            child: const Icon(Icons.auto_awesome_rounded,
-                color: AppTheme.brandPrimary, size: 40),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: AppTheme.brandPrimary,
+              size: 40,
+            ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -1285,15 +1316,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   leading: CircleAvatar(
                     radius: 14,
                     backgroundColor: p.$4.withAlpha(40),
-                    child: Icon(Icons.auto_awesome_rounded,
-                        size: 14, color: p.$4),
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 14,
+                      color: p.$4,
+                    ),
                   ),
                   title: Text(
                     p.$2.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: p.$1 == _character
-                          ? AppTheme.brandPrimary
-                          : ink,
+                      color: p.$1 == _character ? AppTheme.brandPrimary : ink,
                       fontWeight: FontWeight.w900,
                       fontSize: 11,
                     ),
@@ -1307,8 +1339,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     ),
                   ),
                   trailing: p.$1 == _character
-                      ? const Icon(Icons.circle,
-                          size: 8, color: AppTheme.brandPrimary)
+                      ? const Icon(
+                          Icons.circle,
+                          size: 8,
+                          color: AppTheme.brandPrimary,
+                        )
                       : null,
                 ),
             ],

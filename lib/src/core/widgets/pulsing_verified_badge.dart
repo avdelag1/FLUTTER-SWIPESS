@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Cap VapValidate success mark — pulsing green ring + check.
 class PulsingVerifiedBadge extends StatefulWidget {
-  const PulsingVerifiedBadge({
-    super.key,
-    this.valid = true,
-    this.size = 80,
-  });
+  const PulsingVerifiedBadge({super.key, this.valid = true, this.size = 80});
 
   final bool valid;
   final double size;
@@ -43,7 +39,9 @@ class _PulsingVerifiedBadgeState extends State<PulsingVerifiedBadge>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.valid ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final color = widget.valid
+        ? const Color(0xFF22C55E)
+        : const Color(0xFFEF4444);
     return AnimatedBuilder(
       animation: _pulse,
       builder: (context, child) {

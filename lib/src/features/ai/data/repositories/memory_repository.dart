@@ -9,7 +9,7 @@ final memoryRepositoryProvider = Provider<MemoryRepository>((ref) {
 /// Cap `useUserMemories` — `user_memories` table behind a repository.
 class MemoryRepository {
   MemoryRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 

@@ -49,9 +49,6 @@ void main() {
     );
     expect(event.hasWhatsApp, isTrue);
     expect(event.hasConnectLinks, isTrue);
-    expect(
-      const Event(id: '2', title: 'Quiet').hasConnectLinks,
-      isFalse,
-    );
+    expect(const Event(id: '2', title: 'Quiet').hasConnectLinks, isFalse);
   });
 }

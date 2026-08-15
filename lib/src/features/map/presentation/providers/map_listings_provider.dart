@@ -54,7 +54,9 @@ Future<List<Listing>> _fallbackListings(
   DiscoveryLocation loc,
 ) async {
   Future<List<Listing>> fetch({required bool withStatus}) async {
-    var query = client.from('listings').select(
+    var query = client
+        .from('listings')
+        .select(
           'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
         );
     query = query.eq('is_active', true);

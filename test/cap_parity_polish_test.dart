@@ -6,16 +6,15 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ma
 void main() {
   testWidgets('Pulse Feed empty state is visible', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: PulseFeedEmpty()),
-      ),
+      const MaterialApp(home: Scaffold(body: PulseFeedEmpty())),
     );
     expect(find.text('SILENCE IS GOLDEN'), findsOneWidget);
     expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
   });
 
-  testWidgets('SwipeMatchMeter hides at 0 and shows percent when matching',
-      (tester) async {
+  testWidgets('SwipeMatchMeter hides at 0 and shows percent when matching', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(

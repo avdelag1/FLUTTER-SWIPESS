@@ -83,20 +83,27 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.search_rounded,
-                        color: Colors.white54, size: 18),
+                    const Icon(
+                      Icons.search_rounded,
+                      color: Colors.white54,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: _search,
                         onChanged: (_) => setState(() {}),
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
                         decoration: const InputDecoration(
                           border: InputBorder.none,
                           hintText: 'Search title or location...',
-                          hintStyle:
-                              TextStyle(color: Colors.white38, fontSize: 13),
+                          hintStyle: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),
@@ -136,7 +143,9 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
               child: async.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -148,9 +157,11 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                 data: (events) {
                   final q = _search.text.trim().toLowerCase();
                   final filtered = events.where((e) {
-                    final catOk = _category == 'all' ||
+                    final catOk =
+                        _category == 'all' ||
                         e.category.toLowerCase() == _category.toLowerCase();
-                    final qOk = q.isEmpty ||
+                    final qOk =
+                        q.isEmpty ||
                         e.title.toLowerCase().contains(q) ||
                         (e.location?.toLowerCase().contains(q) ?? false);
                     return catOk && qOk;
@@ -163,8 +174,11 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.favorite_border_rounded,
-                                color: Colors.white24, size: 48),
+                            const Icon(
+                              Icons.favorite_border_rounded,
+                              color: Colors.white24,
+                              size: 48,
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               'Your favorite experiences are waiting. Start browsing events to curate your calendar.',
@@ -300,8 +314,10 @@ class _FavCard extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline_rounded,
-                    color: Colors.white38),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.white38,
+                ),
               ),
             ],
           ),
@@ -310,4 +326,3 @@ class _FavCard extends StatelessWidget {
     );
   }
 }
-

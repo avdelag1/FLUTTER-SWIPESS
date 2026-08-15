@@ -84,8 +84,9 @@ class MapResultsRail extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF4D00)
-                            .withAlpha(selected ? 80 : 30),
+                        color: const Color(
+                          0xFFFF4D00,
+                        ).withAlpha(selected ? 80 : 30),
                         blurRadius: 10,
                       ),
                     ],
@@ -149,11 +150,7 @@ class MapResultsRail extends StatelessWidget {
 }
 
 class _CountChip extends StatelessWidget {
-  const _CountChip({
-    required this.label,
-    required this.colors,
-    this.icon,
-  });
+  const _CountChip({required this.label, required this.colors, this.icon});
 
   final String label;
   final List<Color> colors;

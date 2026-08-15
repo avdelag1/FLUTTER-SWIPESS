@@ -16,11 +16,9 @@ class SwipeRepository {
   final SupabaseClient _client;
   final OfflineSwipeQueue _offlineQueue;
 
-  SwipeRepository({
-    SupabaseClient? client,
-    OfflineSwipeQueue? offlineQueue,
-  })  : _client = client ?? Supabase.instance.client,
-        _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
+  SwipeRepository({SupabaseClient? client, OfflineSwipeQueue? offlineQueue})
+    : _client = client ?? Supabase.instance.client,
+      _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
 
   /// Flush any locally queued swipes (Cap `syncQueuedSwipes`).
   Future<({int synced, int failed})> flushOfflineQueue() =>
@@ -89,7 +87,10 @@ class SwipeRepository {
 
       // 1st dismiss = 5-day cooldown, 2nd+ = permanent pass
       final cooldownUntil = newCount == 1
-          ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
+          ? DateTime.now()
+                .add(const Duration(days: 5))
+                .toUtc()
+                .toIso8601String()
           : null;
 
       await _client.from('likes').upsert({
@@ -185,7 +186,10 @@ class SwipeRepository {
       final currentCount = (existing?['dismiss_count'] as int?) ?? 0;
       final newCount = currentCount + 1;
       final cooldownUntil = newCount == 1
-          ? DateTime.now().add(const Duration(days: 5)).toUtc().toIso8601String()
+          ? DateTime.now()
+                .add(const Duration(days: 5))
+                .toUtc()
+                .toIso8601String()
           : null;
 
       await _client.from('likes').upsert({
@@ -255,13 +259,17 @@ class SwipeRepository {
         .maybeSingle();
     if (existing != null) return existing['id'] as String;
 
-    final inserted = await _client.from('conversations').insert({
-      'client_id': userId,
-      'owner_id': ownerId,
-      'listing_id': listingId,
-      'status': 'active',
-      'free_messaging': true,
-    }).select('id').single();
+    final inserted = await _client
+        .from('conversations')
+        .insert({
+          'client_id': userId,
+          'owner_id': ownerId,
+          'listing_id': listingId,
+          'status': 'active',
+          'free_messaging': true,
+        })
+        .select('id')
+        .single();
     return inserted['id'] as String;
   }
 }

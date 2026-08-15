@@ -12,7 +12,8 @@ void unlockDeckMedia() {
 external JSAny? _eval(JSString code);
 
 void _unlockJs() {
-  _eval(r'''
+  _eval(
+    r'''
     (function () {
       try {
         var AC = window.AudioContext || window.webkitAudioContext;
@@ -29,5 +30,7 @@ void _unlockJs() {
         src.start(0);
       } catch (e) {}
     })();
-  '''.toJS);
+  '''
+        .toJS,
+  );
 }

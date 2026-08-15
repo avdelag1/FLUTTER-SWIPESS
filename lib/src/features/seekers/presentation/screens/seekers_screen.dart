@@ -47,9 +47,8 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
           ),
         ),
         data: (requests) {
-          final cats = <String>{
-            for (final r in requests) r.category,
-          }..removeWhere((id) => id.isEmpty);
+          final cats = <String>{for (final r in requests) r.category}
+            ..removeWhere((id) => id.isEmpty);
           final filtered = _category == null
               ? requests
               : requests.where((r) => r.category == _category).toList();
@@ -98,7 +97,11 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                      const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Post a request',
@@ -326,8 +329,10 @@ class _SeekerCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: accent.withAlpha(32),
                   borderRadius: BorderRadius.circular(999),
@@ -401,7 +406,11 @@ class _SeekerCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
                     gradient: LinearGradient(
-                      colors: [accent, Color.lerp(accent, const Color(0xFFEB4898), 0.55) ?? accent],
+                      colors: [
+                        accent,
+                        Color.lerp(accent, const Color(0xFFEB4898), 0.55) ??
+                            accent,
+                      ],
                     ),
                   ),
                   child: ElevatedButton(

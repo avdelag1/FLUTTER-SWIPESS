@@ -65,8 +65,7 @@ class AdminPhotosScreen extends ConsumerWidget {
                 },
                 icon: const Icon(Icons.upload_rounded, size: 16),
                 label: Text(t(ref, 'flutter.upload', 'Upload')),
-                style: FilledButton.styleFrom(
-                ),
+                style: FilledButton.styleFrom(),
               ),
             ),
           ),
@@ -115,23 +114,17 @@ class AdminPhotosScreen extends ConsumerWidget {
                           top: 4,
                           child: Row(
                             children: [
-                              _tiny(
-                                Icons.link,
-                                () async {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: p.publicUrl),
-                                  );
-                                },
-                              ),
-                              _tiny(
-                                Icons.delete_outline,
-                                () async {
-                                  await ref
-                                      .read(adminRepositoryProvider)
-                                      .deletePhoto(p.name);
-                                  ref.invalidate(adminPhotosProvider);
-                                },
-                              ),
+                              _tiny(Icons.link, () async {
+                                await Clipboard.setData(
+                                  ClipboardData(text: p.publicUrl),
+                                );
+                              }),
+                              _tiny(Icons.delete_outline, () async {
+                                await ref
+                                    .read(adminRepositoryProvider)
+                                    .deletePhoto(p.name);
+                                ref.invalidate(adminPhotosProvider);
+                              }),
                             ],
                           ),
                         ),

@@ -7,7 +7,7 @@ import 'package:flutter_swipes/src/features/messages/domain/models/document_atta
 
 class MessageRepository {
   MessageRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -57,8 +57,12 @@ class MessageRepository {
         name: profile?['name'] as String? ?? 'Swipess member',
         avatarUrl: profile?['avatar'] as String?,
         lastMessage: last?['text'] as String? ?? '',
-        timestamp: _relative(row['last_message_at'] as String? ?? last?['at'] as String?),
-        unreadCount: last?['unread'] == true && last?['sender'] != userId ? 1 : 0,
+        timestamp: _relative(
+          row['last_message_at'] as String? ?? last?['at'] as String?,
+        ),
+        unreadCount: last?['unread'] == true && last?['sender'] != userId
+            ? 1
+            : 0,
         listingTag: listing?['title'] as String?,
         archived: row['status'] == 'archived',
       );
@@ -130,10 +134,12 @@ class MessageRepository {
         id: map['id'] as String,
         conversationId: map['conversation_id'] as String,
         senderId: map['sender_id'] as String? ?? '',
-        text: (map['message_text'] as String?) ??
+        text:
+            (map['message_text'] as String?) ??
             (map['content'] as String?) ??
             '',
-        createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(map['created_at'] as String? ?? '') ??
             DateTime.now(),
         isRead: map['is_read'] as bool? ?? false,
         messageType: map['message_type'] as String? ?? 'text',
@@ -167,9 +173,10 @@ class MessageRepository {
       'content': text.trim(),
       'message_type': 'text',
     });
-    await _client.from('conversations').update({
-      'last_message_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', conversationId);
+    await _client
+        .from('conversations')
+        .update({'last_message_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('id', conversationId);
   }
 
   Future<void> sendDocumentMessage({
@@ -186,22 +193,26 @@ class MessageRepository {
       'message_type': attachment.isContract ? 'contract' : 'document',
       'attachments': [attachment.toJson()],
     });
-    await _client.from('conversations').update({
-      'last_message_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', conversationId);
+    await _client
+        .from('conversations')
+        .update({'last_message_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('id', conversationId);
   }
 
   Future<void> archiveConversation(String conversationId) async {
     try {
-      await _client.from('conversations').update({
-        'status': 'archived',
-      }).eq('id', conversationId);
+      await _client
+          .from('conversations')
+          .update({'status': 'archived'})
+          .eq('id', conversationId);
     } catch (_) {
       // Column may not exist on older schemas; filter still works locally.
     }
   }
 
-  Future<Map<String, Map<String, dynamic>>> _loadProfiles(List<String> ids) async {
+  Future<Map<String, Map<String, dynamic>>> _loadProfiles(
+    List<String> ids,
+  ) async {
     if (ids.isEmpty) return {};
     final map = <String, Map<String, dynamic>>{};
     try {
@@ -240,10 +251,15 @@ class MessageRepository {
     return map;
   }
 
-  Future<Map<String, Map<String, dynamic>>> _loadListings(List<String> ids) async {
+  Future<Map<String, Map<String, dynamic>>> _loadListings(
+    List<String> ids,
+  ) async {
     if (ids.isEmpty) return {};
     try {
-      final rows = await _client.from('listings').select('id, title').inFilter('id', ids);
+      final rows = await _client
+          .from('listings')
+          .select('id, title')
+          .inFilter('id', ids);
       return {
         for (final row in rows as List)
           (row as Map<String, dynamic>)['id'] as String: row,
@@ -260,7 +276,9 @@ class MessageRepository {
     try {
       final rows = await _client
           .from('conversation_messages')
-          .select('conversation_id, content, message_text, created_at, sender_id, is_read')
+          .select(
+            'conversation_id, content, message_text, created_at, sender_id, is_read',
+          )
           .inFilter('conversation_id', conversationIds)
           .order('created_at', ascending: false)
           .limit(conversationIds.length * 3);
@@ -270,7 +288,8 @@ class MessageRepository {
         final id = r['conversation_id'] as String;
         if (map.containsKey(id)) continue;
         map[id] = {
-          'text': (r['message_text'] as String?) ?? (r['content'] as String?) ?? '',
+          'text':
+              (r['message_text'] as String?) ?? (r['content'] as String?) ?? '',
           'at': r['created_at'],
           'sender': r['sender_id'],
           'unread': r['is_read'] == false,

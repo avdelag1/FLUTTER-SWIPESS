@@ -7,8 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const cardKey = ValueKey('swipe-card-well');
 
-  testWidgets('expanded stack still paints a fill child next to a shrink',
-      (tester) async {
+  testWidgets('expanded stack still paints a fill child next to a shrink', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -36,8 +37,9 @@ void main() {
     expect(find.text('CARD'), findsOneWidget);
   });
 
-  testWidgets('loose stack collapses when the only loose child is shrink',
-      (tester) async {
+  testWidgets('loose stack collapses when the only loose child is shrink', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -45,10 +47,7 @@ void main() {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: ColoredBox(
-                    key: cardKey,
-                    color: Color(0xFFFF0000),
-                  ),
+                  child: ColoredBox(key: cardKey, color: Color(0xFFFF0000)),
                 ),
                 SizedBox.shrink(),
               ],

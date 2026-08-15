@@ -28,10 +28,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: EventMuteButton(
-            soundOn: on,
-            onToggle: () => on = !on,
-          ),
+          body: EventMuteButton(soundOn: on, onToggle: () => on = !on),
         ),
       ),
     );
@@ -64,8 +61,9 @@ void main() {
     }
   });
 
-  testWidgets('map pins paint listing pills and a pulsing GPS dot',
-      (tester) async {
+  testWidgets('map pins paint listing pills and a pulsing GPS dot', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(

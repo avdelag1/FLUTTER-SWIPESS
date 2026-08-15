@@ -14,9 +14,9 @@ class DailyQuestsNotifier extends AsyncNotifier<DailyQuestBoard> {
   }
 
   Future<void> increment(String questId) async {
-    final next = await ref.read(questRepositoryProvider).increment(
-          questId: questId,
-        );
+    final next = await ref
+        .read(questRepositoryProvider)
+        .increment(questId: questId);
     if (next.isEmpty) return;
     final points = await ref.read(questRepositoryProvider).fetchPoints();
     state = AsyncData(DailyQuestBoard(quests: next, points: points));
@@ -33,5 +33,5 @@ class DailyQuestsNotifier extends AsyncNotifier<DailyQuestBoard> {
 
 final dailyQuestsProvider =
     AsyncNotifierProvider<DailyQuestsNotifier, DailyQuestBoard>(
-  DailyQuestsNotifier.new,
-);
+      DailyQuestsNotifier.new,
+    );

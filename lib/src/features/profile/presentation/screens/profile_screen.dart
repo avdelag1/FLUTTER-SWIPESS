@@ -101,623 +101,657 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         children: [
           Positioned.fill(
             child: async.when(
-            loading: () => Center(
-              child: CircularProgressIndicator(color: ink, strokeWidth: 2),
-            ),
-            error: (_, _) => Center(
-              child: TextButton(
-                onPressed: () => ref.invalidate(currentProfileProvider),
-                child: const Text('Could not load profile — retry'),
+              loading: () => Center(
+                child: CircularProgressIndicator(color: ink, strokeWidth: 2),
               ),
-            ),
-            data: (profile) {
-              final name = profile?.name ?? 'Identity';
-              final email = profile?.email ??
-                  Supabase.instance.client.auth.currentUser?.email ??
-                  '';
-              final avatar = profile?.avatarUrl;
-              final completion = profile?.completionPercent ?? 0;
-              final likes = ref.watch(whoLikedYouProvider).value?.length ?? 0;
-              final chats = ref.watch(conversationsProvider).value?.length ?? 0;
-              final headline = _displayName(name, email);
+              error: (_, _) => Center(
+                child: TextButton(
+                  onPressed: () => ref.invalidate(currentProfileProvider),
+                  child: const Text('Could not load profile — retry'),
+                ),
+              ),
+              data: (profile) {
+                final name = profile?.name ?? 'Identity';
+                final email =
+                    profile?.email ??
+                    Supabase.instance.client.auth.currentUser?.email ??
+                    '';
+                final avatar = profile?.avatarUrl;
+                final completion = profile?.completionPercent ?? 0;
+                final likes = ref.watch(whoLikedYouProvider).value?.length ?? 0;
+                final chats =
+                    ref.watch(conversationsProvider).value?.length ?? 0;
+                final headline = _displayName(name, email);
 
-              return NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification is ScrollUpdateNotification) {
-                    ref.read(chromeVisibilityProvider.notifier).onScroll(
-                          pixels: notification.metrics.pixels,
-                          delta: notification.scrollDelta ?? 0,
-                        );
-                  }
-                  return false;
-                },
-                child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20, top + 132, 20, 140),
-                children: [
-                  // Identity core
-                  Center(
-                    child: Column(
-                      children: [
-                        Stack(
-                          clipBehavior: Clip.none,
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      ref
+                          .read(chromeVisibilityProvider.notifier)
+                          .onScroll(
+                            pixels: notification.metrics.pixels,
+                            delta: notification.scrollDelta ?? 0,
+                          );
+                    }
+                    return false;
+                  },
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(20, top + 132, 20, 140),
+                    children: [
+                      // Identity core
+                      Center(
+                        child: Column(
                           children: [
-                            Container(
-                              width: 132,
-                              height: 132,
-                              padding: const EdgeInsets.all(3),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 132,
+                                  height: 132,
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFFFF4D00),
+                                        Color(0xFFEB4898),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Color(0xFF080C14),
+                                    ),
+                                    child: ClipOval(
+                                      child: avatar != null
+                                          ? Image.network(
+                                              avatar,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) =>
+                                                  const Icon(
+                                                    Icons.person_rounded,
+                                                    color: Colors.white24,
+                                                    size: 56,
+                                                  ),
+                                            )
+                                          : const Icon(
+                                              Icons.person_rounded,
+                                              color: Colors.white24,
+                                              size: 56,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: -6,
+                                  right: -6,
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      AppHaptics.light();
+                                      final url = await Navigator.of(context)
+                                          .push<String>(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const ProfileCameraScreen(
+                                                    mode: ProfileCameraMode
+                                                        .selfie,
+                                                  ),
+                                            ),
+                                          );
+                                      if (url != null) {
+                                        ref.invalidate(currentProfileProvider);
+                                      }
+                                    },
+                                    child: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(18),
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFFF4D00),
+                                            Color(0xFFFF6B00),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: const Color(0xFF0A0A0D),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Text('PROFILE', style: NexusTheme.sectionLabel),
+                            const SizedBox(height: 6),
+                            Text(
+                              headline,
+                              textAlign: TextAlign.center,
+                              style: AppTheme.displayItalic.copyWith(
+                                fontSize: 34,
+                                height: 1.05,
+                                color: ink,
+                              ),
+                            ),
+                            if (email.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                email,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: muted,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(0xFF080C14),
-                                ),
-                                child: ClipOval(
-                                  child: avatar != null
-                                      ? Image.network(
-                                          avatar,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) =>
-                                              const Icon(Icons.person_rounded,
-                                                  color: Colors.white24, size: 56),
-                                        )
-                                      : const Icon(Icons.person_rounded,
-                                          color: Colors.white24, size: 56),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // HUD stats
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatTile(
+                              icon: Icons.thumb_up_alt_outlined,
+                              iconColor: const Color(0xFFFF4D00),
+                              value: likes,
+                              label: 'Likes',
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const WhoLikedYouScreen(),
                                 ),
                               ),
                             ),
-                            Positioned(
-                              bottom: -6,
-                              right: -6,
-                              child: GestureDetector(
-                                onTap: () async {
-                                  AppHaptics.light();
-                                  final url = await Navigator.of(context)
-                                      .push<String>(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const ProfileCameraScreen(
-                                        mode: ProfileCameraMode.selfie,
-                                      ),
-                                    ),
-                                  );
-                                  if (url != null) {
-                                    ref.invalidate(currentProfileProvider);
-                                  }
-                                },
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(18),
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFFFF4D00), Color(0xFFFF6B00)],
-                                    ),
-                                    border: Border.all(
-                                      color: const Color(0xFF0A0A0D),
-                                      width: 2,
-                                    ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _StatTile(
+                              icon: Icons.auto_awesome_rounded,
+                              iconColor: const Color(0xFFEB4898),
+                              value: likes,
+                              label: 'Total Matches',
+                              onTap: () {
+                                context.go(AppPaths.clientLikedProperties);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _StatTile(
+                              icon: Icons.chat_bubble_outline_rounded,
+                              iconColor: const Color(0xFFFF8C42),
+                              value: chats,
+                              label: 'Messages',
+                              onTap: () {
+                                context.go(AppPaths.messages);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Daily Quests
+                      _Panel(
+                        child: _DailyQuests(
+                          expanded: _questsOpen,
+                          onToggle: () =>
+                              setState(() => _questsOpen = !_questsOpen),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Magic AI + primary actions (nexus, not a rainbow grid)
+                      GestureDetector(
+                        onTap: () {
+                          AppHaptics.medium();
+                          showMagicAiProfileSheet(context);
+                        },
+                        child: Container(
+                          height: 62,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            gradient: NexusTheme.ai,
+                            boxShadow: [
+                              BoxShadow(
+                                color: NexusTheme.cyan.withAlpha(70),
+                                blurRadius: 22,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Magic AI Profile',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontStyle: FontStyle.italic,
+                                  letterSpacing: 1.6,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _HeroAction(
+                              label: 'Edit Profile',
+                              icon: Icons.person_rounded,
+                              gradient: NexusTheme.warm,
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const EditProfileScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _HeroAction(
+                              label: 'Promote Event',
+                              icon: Icons.campaign_rounded,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
+                              ),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const AdvertiseScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _Panel(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Column(
+                          children: [
+                            _NexusRow(
+                              label: 'Seekers',
+                              hint: 'Post what you need nearby',
+                              icon: Icons.people_rounded,
+                              tint: NexusTheme.indigo,
+                              onTap: () => context.go(AppPaths.exploreSeekers),
+                            ),
+                            _NexusRow(
+                              label: 'Tokens',
+                              hint: 'Balance & packages',
+                              icon: Icons.toll_rounded,
+                              tint: NexusTheme.cyan,
+                              onTap: () => showGlassModal(
+                                context: context,
+                                builder: (_) => const TokensModal(),
+                              ),
+                            ),
+                            _NexusRow(
+                              label: 'Verify Owner',
+                              hint: 'Trust badge',
+                              icon: Icons.verified_rounded,
+                              tint: NexusTheme.violet,
+                              onTap: () =>
+                                  showVerificationRequestSheet(context),
+                            ),
+                            _NexusRow(
+                              label: 'Premium',
+                              hint: 'Unlock the full deck',
+                              icon: Icons.workspace_premium_rounded,
+                              tint: const Color(0xFFF59E0B),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const SubscriptionPackagesScreen(),
+                                ),
+                              ),
+                            ),
+                            _NexusRow(
+                              label: 'Settings',
+                              hint: 'Account & privacy',
+                              icon: Icons.settings_rounded,
+                              tint: ink.withAlpha(160),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => SettingsScreen(
+                                    audience: profile?.role == 'owner'
+                                        ? 'owner'
+                                        : 'client',
                                   ),
-                                  child: const Icon(Icons.camera_alt_rounded,
-                                      color: Colors.white, size: 18),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'PROFILE',
-                          style: NexusTheme.sectionLabel,
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Share & Earn
+                      _Panel(
+                        child: _ShareEarn(
+                          profileId:
+                              profile?.userId ??
+                              Supabase.instance.client.auth.currentUser?.id ??
+                              '',
+                          profileName: name,
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          headline,
-                          textAlign: TextAlign.center,
-                          style: AppTheme.displayItalic.copyWith(
-                            fontSize: 34,
-                            height: 1.05,
-                            color: ink,
-                          ),
-                        ),
-                        if (email.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            email,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: muted,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Feedback
+                      _Panel(
+                        padding: const EdgeInsets.all(18),
+                        child: _feedbackDone
+                            ? Column(
+                                children: [
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Color(0xFF10B981),
+                                    size: 44,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Thank you!',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: ink,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Your feedback helps us build a better Swipess.',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: muted,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => setState(() {
+                                      _feedbackDone = false;
+                                      _feedbackCtrl.clear();
+                                      _feedbackCategory = null;
+                                    }),
+                                    child: const Text('Send another'),
+                                  ),
+                                ],
+                              )
+                            : _FeedbackForm(
+                                category: _feedbackCategory,
+                                controller: _feedbackCtrl,
+                                sending: _feedbackSending,
+                                onCategory: (c) =>
+                                    setState(() => _feedbackCategory = c),
+                                onSubmit: _submitFeedback,
+                              ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Holographic Identity Vault
+                      GestureDetector(
+                        onTap: () {
+                          AppHaptics.light();
+                          context.go(AppPaths.clientVapId);
+                        },
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: Text(
+                                  'Sync Protocol',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
                             ),
+                            HolographicIDCard(
+                              name: name,
+                              idNumber:
+                                  'NX-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
+                              avatarUrl: avatar,
+                              occupation: profile?.role ?? 'Client',
+                              location: profile?.city ?? '',
+                              years: profile?.age?.toString() ?? '',
+                              bio: profile?.bio ?? '',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Seeker requests teaser
+                      GestureDetector(
+                        onTap: () {
+                          context.go(AppPaths.exploreSeekers);
+                        },
+                        child: _Panel(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3B82F6).withAlpha(40),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.campaign_outlined,
+                                  color: Color(0xFF60A5FA),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Seeker Requests',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: ink,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Post what professional you need',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: muted,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.white38,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                      ),
+
+                      if (completion < 100) ...[
+                        const SizedBox(height: 14),
+                        _Panel(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: Color(0xFFEB4898),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Profile Completeness',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: muted,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '$completion%',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: ink,
+                                      fontWeight: FontWeight.w900,
+                                      fontStyle: FontStyle.italic,
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(999),
+                                child: LinearProgressIndicator(
+                                  value: completion / 100,
+                                  minHeight: 10,
+                                  valueColor: const AlwaysStoppedAnimation(
+                                    Color(0xFFFF4D00),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 28),
 
-                  // HUD stats
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatTile(
-                          icon: Icons.thumb_up_alt_outlined,
-                          iconColor: const Color(0xFFFF4D00),
-                          value: likes,
-                          label: 'Likes',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const WhoLikedYouScreen(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatTile(
-                          icon: Icons.auto_awesome_rounded,
-                          iconColor: const Color(0xFFEB4898),
-                          value: likes,
-                          label: 'Total Matches',
-                          onTap: () {
-                            context.go(AppPaths.clientLikedProperties);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatTile(
-                          icon: Icons.chat_bubble_outline_rounded,
-                          iconColor: const Color(0xFFFF8C42),
-                          value: chats,
-                          label: 'Messages',
-                          onTap: () {
-                            context.go(AppPaths.messages);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Daily Quests
-                  _Panel(
-                    child: _DailyQuests(
-                      expanded: _questsOpen,
-                      onToggle: () => setState(() => _questsOpen = !_questsOpen),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Magic AI + primary actions (nexus, not a rainbow grid)
-                  GestureDetector(
-                    onTap: () {
-                      AppHaptics.medium();
-                      showMagicAiProfileSheet(context);
-                    },
-                    child: Container(
-                      height: 62,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        gradient: NexusTheme.ai,
-                        boxShadow: [
-                          BoxShadow(
-                            color: NexusTheme.cyan.withAlpha(70),
-                            blurRadius: 22,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Row(
+                      const SizedBox(height: 18),
+                      ProfileActivityFeed(ink: ink, muted: muted),
+                      const SizedBox(height: 18),
+                      // Language row
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.auto_awesome_rounded,
-                              color: Colors.white, size: 22),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Magic AI Profile',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontStyle: FontStyle.italic,
-                              letterSpacing: 1.6,
-                              fontSize: 16,
-                            ),
+                          _LangChip(
+                            label: 'EN',
+                            active: !ref.watch(appLocaleProvider).isEs,
+                            onTap: () => ref
+                                .read(appLocaleProvider.notifier)
+                                .setCode('en'),
+                          ),
+                          const SizedBox(width: 8),
+                          _LangChip(
+                            label: 'ES',
+                            active: ref.watch(appLocaleProvider).isEs,
+                            onTap: () => ref
+                                .read(appLocaleProvider.notifier)
+                                .setCode('es'),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _HeroAction(
-                          label: 'Edit Profile',
-                          icon: Icons.person_rounded,
-                          gradient: NexusTheme.warm,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const EditProfileScreen(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _HeroAction(
-                          label: 'Promote Event',
-                          icon: Icons.campaign_rounded,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
-                          ),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const AdvertiseScreen(),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _Panel(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Column(
-                      children: [
-                        _NexusRow(
-                          label: 'Seekers',
-                          hint: 'Post what you need nearby',
-                          icon: Icons.people_rounded,
-                          tint: NexusTheme.indigo,
-                          onTap: () => context.go(AppPaths.exploreSeekers),
-                        ),
-                        _NexusRow(
-                          label: 'Tokens',
-                          hint: 'Balance & packages',
-                          icon: Icons.toll_rounded,
-                          tint: NexusTheme.cyan,
-                          onTap: () => showGlassModal(
-                            context: context,
-                            builder: (_) => const TokensModal(),
-                          ),
-                        ),
-                        _NexusRow(
-                          label: 'Verify Owner',
-                          hint: 'Trust badge',
-                          icon: Icons.verified_rounded,
-                          tint: NexusTheme.violet,
-                          onTap: () => showVerificationRequestSheet(context),
-                        ),
-                        _NexusRow(
-                          label: 'Premium',
-                          hint: 'Unlock the full deck',
-                          icon: Icons.workspace_premium_rounded,
-                          tint: const Color(0xFFF59E0B),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const SubscriptionPackagesScreen(),
-                            ),
-                          ),
-                        ),
-                        _NexusRow(
-                          label: 'Settings',
-                          hint: 'Account & privacy',
-                          icon: Icons.settings_rounded,
-                          tint: ink.withAlpha(160),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => SettingsScreen(
-                                audience: profile?.role == 'owner'
-                                    ? 'owner'
-                                    : 'client',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
+                      const SizedBox(height: 20),
 
-                  // Share & Earn
-                  _Panel(
-                    child: _ShareEarn(
-                      profileId: profile?.userId ??
-                          Supabase.instance.client.auth.currentUser?.id ??
-                          '',
-                      profileName: name,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Feedback
-                  _Panel(
-                    padding: const EdgeInsets.all(18),
-                    child: _feedbackDone
-                        ? Column(
-                            children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  color: Color(0xFF10B981), size: 44),
-                              const SizedBox(height: 10),
-                              Text(
-                                'Thank you!',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: ink,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Your feedback helps us build a better Swipess.',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: muted,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => setState(() {
-                                  _feedbackDone = false;
-                                  _feedbackCtrl.clear();
-                                  _feedbackCategory = null;
-                                }),
-                                child: const Text('Send another'),
-                              ),
-                            ],
-                          )
-                        : _FeedbackForm(
-                            category: _feedbackCategory,
-                            controller: _feedbackCtrl,
-                            sending: _feedbackSending,
-                            onCategory: (c) =>
-                                setState(() => _feedbackCategory = c),
-                            onSubmit: _submitFeedback,
-                          ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Holographic Identity Vault
-                  GestureDetector(
-                    onTap: () {
-                      AppHaptics.light();
-                      context.go(AppPaths.clientVapId);
-                    },
-                    child: Column(
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.white24),
-                            ),
-                            child: Text(
-                              'Sync Protocol',
+                      // More tools (Flutter extras)
+                      GestureDetector(
+                        onTap: () => setState(() => _moreOpen = !_moreOpen),
+                        child: Row(
+                          children: [
+                            Text(
+                              'MORE TOOLS',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                                color: muted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2,
                               ),
                             ),
-                          ),
+                            const Spacer(),
+                            Icon(
+                              _moreOpen
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: muted,
+                            ),
+                          ],
                         ),
-                        HolographicIDCard(
-                          name: name,
-                          idNumber:
-                              'NX-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
-                          avatarUrl: avatar,
-                          occupation: profile?.role ?? 'Client',
-                          location: profile?.city ?? '',
-                          years: profile?.age?.toString() ?? '',
-                          bio: profile?.bio ?? '',
+                      ),
+                      if (_moreOpen) ...[
+                        const SizedBox(height: 12),
+                        _MoreToolsGrid(
+                          unread:
+                              ref.watch(unreadNotificationsProvider).value ?? 0,
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Seeker requests teaser
-                  GestureDetector(
-                    onTap: () {
-                      context.go(AppPaths.exploreSeekers);
-                    },
-                    child: _Panel(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF3B82F6).withAlpha(40),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.campaign_outlined,
-                                color: Color(0xFF60A5FA)),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Seeker Requests',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: ink,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 13,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                Text(
-                                  'Post what professional you need',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: muted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                      const SizedBox(height: 24),
+                      Center(
+                        child: TextButton(
+                          onPressed: () async {
+                            AppHaptics.medium();
+                            await ref.read(authRepositoryProvider).signOut();
+                            ref.read(currentUserProvider.notifier).clear();
+                            if (context.mounted) context.go(AppPaths.welcome);
+                          },
+                          child: Text(
+                            'Sign out',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: muted,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: Colors.white38),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-
-                  if (completion < 100) ...[
-                    const SizedBox(height: 14),
-                    _Panel(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.auto_awesome_rounded,
-                                  color: Color(0xFFEB4898), size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Profile Completeness',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: muted,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                '$completion%',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: ink,
-                                  fontWeight: FontWeight.w900,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 22,
-                                ),
-                              ),
-                            ],
+                      Center(
+                        child: Text(
+                          'Swipess v1.0.0',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: muted.withAlpha(120),
+                            fontSize: 12,
                           ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
-                            child: LinearProgressIndicator(
-                              value: completion / 100,
-                              minHeight: 10,
-                              valueColor: const AlwaysStoppedAnimation(
-                                Color(0xFFFF4D00),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 18),
-                  ProfileActivityFeed(ink: ink, muted: muted),
-                  const SizedBox(height: 18),
-                  // Language row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _LangChip(
-                        label: 'EN',
-                        active: !ref.watch(appLocaleProvider).isEs,
-                        onTap: () => ref
-                            .read(appLocaleProvider.notifier)
-                            .setCode('en'),
-                      ),
-                      const SizedBox(width: 8),
-                      _LangChip(
-                        label: 'ES',
-                        active: ref.watch(appLocaleProvider).isEs,
-                        onTap: () => ref
-                            .read(appLocaleProvider.notifier)
-                            .setCode('es'),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // More tools (Flutter extras)
-                  GestureDetector(
-                    onTap: () => setState(() => _moreOpen = !_moreOpen),
-                    child: Row(
-                      children: [
-                        Text(
-                          'MORE TOOLS',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: muted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const Spacer(),
-                        Icon(
-                          _moreOpen
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          color: muted,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_moreOpen) ...[
-                    const SizedBox(height: 12),
-                    _MoreToolsGrid(unread: ref.watch(unreadNotificationsProvider).value ?? 0),
-                  ],
-                  const SizedBox(height: 24),
-                  Center(
-                    child: TextButton(
-                      onPressed: () async {
-                        AppHaptics.medium();
-                        await ref.read(authRepositoryProvider).signOut();
-                        ref.read(currentUserProvider.notifier).clear();
-                        if (context.mounted) context.go(AppPaths.welcome);
-                      },
-                      child: Text(
-                        'Sign out',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: muted,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Center(
-                    child: Text(
-                      'Swipess v1.0.0',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: muted.withAlpha(120),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-          ),
-          Positioned(
-            top: top + 76,
-            left: 16,
-            child: const CapBackButton(),
-          ),
+          Positioned(top: top + 76, left: 16, child: const CapBackButton()),
         ],
       ),
     );
@@ -989,8 +1023,11 @@ class _DailyQuests extends ConsumerWidget {
           behavior: HitTestBehavior.opaque,
           child: Row(
             children: [
-              Icon(Icons.auto_awesome_rounded,
-                  color: AppTheme.brandPrimary, size: 20),
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: AppTheme.brandPrimary,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 capCopy(ref, 'Daily Quests', 'Misiones diarias'),
@@ -1002,8 +1039,10 @@ class _DailyQuests extends ConsumerWidget {
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
@@ -1085,15 +1124,15 @@ class _DailyQuests extends ConsumerWidget {
                         q.claimed
                             ? Icons.check_circle_rounded
                             : q.id == 'login'
-                                ? Icons.bolt_rounded
-                                : q.id == 'swipe'
-                                    ? Icons.gps_fixed_rounded
-                                    : Icons.auto_awesome_rounded,
+                            ? Icons.bolt_rounded
+                            : q.id == 'swipe'
+                            ? Icons.gps_fixed_rounded
+                            : Icons.auto_awesome_rounded,
                         color: q.claimed
                             ? const Color(0xFF10B981)
                             : q.completed
-                                ? AppTheme.brandPrimary
-                                : Colors.white38,
+                            ? AppTheme.brandPrimary
+                            : Colors.white38,
                         size: 18,
                       ),
                       const SizedBox(width: 10),
@@ -1132,7 +1171,8 @@ class _DailyQuests extends ConsumerWidget {
                                 .read(dailyQuestsProvider.notifier)
                                 .claim(q.id);
                             if (!context.mounted || !ok) return;
-                            final unlocked = before + q.points >=
+                            final unlocked =
+                                before + q.points >=
                                 DailyQuestBoard.pointsNeeded;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -1278,8 +1318,10 @@ class _ShareEarn extends StatelessWidget {
                     }
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
@@ -1409,8 +1451,11 @@ class _FeedbackForm extends StatelessWidget {
                   colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
                 ),
               ),
-              child: Icon(Icons.chat_bubble_outline_rounded,
-                  color: Colors.white, size: 20),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             SizedBox(width: 12),
             Expanded(
@@ -1446,8 +1491,10 @@ class _FeedbackForm extends StatelessWidget {
               GestureDetector(
                 onTap: () => onCategory(c.$1),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: category == c.$1
                         ? c.$3.withAlpha(50)
@@ -1563,24 +1610,24 @@ class _MoreToolsGrid extends StatelessWidget {
         Icons.home_work_outlined,
         'My listings',
         () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
-            )
+          MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
+        ),
       ),
       (
         Icons.how_to_reg_outlined,
         'Interested clients',
         () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const OwnerInterestedClientsScreen(),
-              ),
-            )
+          MaterialPageRoute(
+            builder: (_) => const OwnerInterestedClientsScreen(),
+          ),
+        ),
       ),
       (
         Icons.event_available_rounded,
         'Saved events',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EventFavoritesScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const EventFavoritesScreen())),
       ),
       (
         Icons.psychology_rounded,
@@ -1590,116 +1637,114 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.bookmark_border_rounded,
         'Saved searches',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SavedSearchesScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const SavedSearchesScreen())),
       ),
       (
         Icons.notifications_none_rounded,
         unread > 0 ? 'Alerts ($unread)' : 'Notifications',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
       ),
       (
         Icons.folder_outlined,
         'Document vault',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const DocumentVaultScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const DocumentVaultScreen())),
       ),
       (
         Icons.account_balance_wallet_outlined,
         'Escrow',
         () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
-            )
+          MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
+        ),
       ),
       (
         Icons.gavel_rounded,
         'Legal hub',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LegalHubScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LegalHubScreen())),
       ),
       (
         Icons.balance_rounded,
         'Lawyer services',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LawyerServicesScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LawyerServicesScreen())),
       ),
       (
         Icons.work_outline_rounded,
         'Worker discovery',
         () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const WorkerDiscoveryScreen()),
-            )
+          MaterialPageRoute(builder: (_) => const WorkerDiscoveryScreen()),
+        ),
       ),
       (
         Icons.card_giftcard_rounded,
         'Resident perks',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PerksScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const PerksScreen())),
       ),
       (
         Icons.info_outline_rounded,
         'About Swipess',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AboutScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const AboutScreen())),
       ),
       (
         Icons.qr_code_scanner_rounded,
         'Validate PEARL',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const VapValidateScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const VapValidateScreen())),
       ),
       (
         Icons.videocam_outlined,
         'Video tours',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const VideoToursScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const VideoToursScreen())),
       ),
       (
         Icons.people_outline_rounded,
         'Roommates',
         () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
-            )
+          MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
+        ),
       ),
       (
         Icons.newspaper_outlined,
         'Local intel',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LocalIntelScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LocalIntelScreen())),
       ),
       (
         Icons.trending_up_rounded,
         'Market prices',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PriceTrackerScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const PriceTrackerScreen())),
       ),
       (
         Icons.handyman_outlined,
         'Maintenance',
         () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const MaintenanceRequestsScreen(),
-              ),
-            )
+          MaterialPageRoute(builder: (_) => const MaintenanceRequestsScreen()),
+        ),
       ),
       (
         Icons.help_outline_rounded,
         'Help & FAQ',
-        () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const FAQScreen()),
-            )
+        () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const FAQScreen())),
       ),
     ];
 
@@ -1716,8 +1761,10 @@ class _MoreToolsGrid extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            trailing: Icon(Icons.chevron_right_rounded,
-                color: MatteSurface.muted(context)),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: MatteSurface.muted(context),
+            ),
             onTap: item.$3,
           ),
       ],

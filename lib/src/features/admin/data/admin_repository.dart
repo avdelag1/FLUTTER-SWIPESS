@@ -10,7 +10,7 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
 /// Cap admin pages — RPCs and tables stay behind this repository.
 class AdminRepository {
   AdminRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
   static const _uploads = 'admin-uploads';
@@ -107,7 +107,8 @@ class AdminRepository {
   Future<void> togglePublished(String id, bool currentlyPublished) async {
     await _client
         .from('events')
-        .update({'is_published': !currentlyPublished}).eq('id', id);
+        .update({'is_published': !currentlyPublished})
+        .eq('id', id);
   }
 
   Future<void> approveSubmission(PromoSubmission sub) async {
@@ -138,7 +139,8 @@ class AdminRepository {
     }
     await _client
         .from('business_promo_submissions')
-        .update({'status': 'approved'}).eq('id', sub.id);
+        .update({'status': 'approved'})
+        .eq('id', sub.id);
     if (sub.userId != null) {
       try {
         await _client.rpc(
@@ -158,7 +160,8 @@ class AdminRepository {
   Future<void> rejectSubmission(PromoSubmission sub) async {
     await _client
         .from('business_promo_submissions')
-        .update({'status': 'rejected'}).eq('id', sub.id);
+        .update({'status': 'rejected'})
+        .eq('id', sub.id);
     if (sub.userId != null) {
       try {
         await _client.rpc(
@@ -180,7 +183,9 @@ class AdminRepository {
     final ext = file.name.split('.').last;
     final path = '$uid/${DateTime.now().millisecondsSinceEpoch}.$ext';
     final bytes = await file.readAsBytes();
-    await _client.storage.from('event-images').uploadBinary(
+    await _client.storage
+        .from('event-images')
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(contentType: file.mimeType ?? 'image/jpeg'),
@@ -197,7 +202,9 @@ class AdminRepository {
     };
     final collected = <AdminPhoto>[];
     Future<void> listAt(String prefix) async {
-      final files = await _client.storage.from(_uploads).list(
+      final files = await _client.storage
+          .from(_uploads)
+          .list(
             path: prefix.isEmpty ? null : prefix.replaceAll(RegExp(r'/$'), ''),
           );
       for (final f in files) {
@@ -244,7 +251,9 @@ class AdminRepository {
     final ext = file.name.split('.').last;
     final path = '$prefix${DateTime.now().millisecondsSinceEpoch}.$ext';
     final bytes = await file.readAsBytes();
-    await _client.storage.from(_uploads).uploadBinary(
+    await _client.storage
+        .from(_uploads)
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(contentType: file.mimeType ?? 'image/jpeg'),
@@ -282,7 +291,9 @@ class AdminRepository {
     final path =
         'category-$categoryId/${DateTime.now().millisecondsSinceEpoch}.$ext';
     final bytes = await file.readAsBytes();
-    await _client.storage.from(_uploads).uploadBinary(
+    await _client.storage
+        .from(_uploads)
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(contentType: file.mimeType ?? 'image/jpeg'),

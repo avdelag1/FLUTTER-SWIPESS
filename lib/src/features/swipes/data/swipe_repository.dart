@@ -9,7 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// stays behind the repository layer (no Supabase from UI).
 class SwipeRepository {
   SwipeRepository(this._supabase, {cap.SwipeRepository? swipeRepository})
-      : _swipes = swipeRepository ?? cap.SwipeRepository(client: _supabase);
+    : _swipes = swipeRepository ?? cap.SwipeRepository(client: _supabase);
 
   final SupabaseClient _supabase;
   final cap.SwipeRepository _swipes;
@@ -29,8 +29,9 @@ class SwipeRepository {
         query = query.eq('category', category);
       }
 
-      final response =
-          await query.order('created_at', ascending: false).limit(limit);
+      final response = await query
+          .order('created_at', ascending: false)
+          .limit(limit);
 
       return (response as List).map((row) => Listing.fromJson(row)).toList();
     } catch (_) {

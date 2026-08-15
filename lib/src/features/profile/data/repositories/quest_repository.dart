@@ -11,7 +11,7 @@ final questRepositoryProvider = Provider<QuestRepository>((ref) {
 /// Cap `useDailyQuests` — RPCs stay on Supabase; Flutter only invokes them.
 class QuestRepository {
   QuestRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -53,11 +53,7 @@ class QuestRepository {
     try {
       final data = await _client.rpc(
         'rpc_increment_quest_progress',
-        params: {
-          'p_user_id': uid,
-          'p_quest_id': questId,
-          'p_amount': amount,
-        },
+        params: {'p_user_id': uid, 'p_quest_id': questId, 'p_amount': amount},
       );
       return _parse(data);
     } catch (_) {}

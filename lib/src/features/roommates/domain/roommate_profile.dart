@@ -32,10 +32,11 @@ class RoommateProfile {
       avatarUrl: images is List && images.isNotEmpty
           ? images.first.toString()
           : json['vap_avatar'] as String?,
-      budget: (json['budget'] as num?)?.toDouble() ??
+      budget:
+          (json['budget'] as num?)?.toDouble() ??
           (json['monthly_budget'] as num?)?.toDouble(),
-      occupation: json['occupation'] as String? ??
-          json['vap_occupation'] as String?,
+      occupation:
+          json['occupation'] as String? ?? json['vap_occupation'] as String?,
     );
   }
 

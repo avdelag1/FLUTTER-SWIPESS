@@ -5,27 +5,27 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_s
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('swipe chrome hides after seven seconds and top tap restores it',
-      (tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: _ChromeLifecycleHost()),
-      ),
-    );
+  testWidgets(
+    'swipe chrome hides after seven seconds and top tap restores it',
+    (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: _ChromeLifecycleHost())),
+      );
 
-    await tester.tap(find.byKey(const ValueKey('start-chrome-timer')));
-    await tester.pump();
-    expect(find.text('visible'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('start-chrome-timer')));
+      await tester.pump();
+      expect(find.text('visible'), findsOneWidget);
 
-    await tester.pump(
-      const Duration(milliseconds: ChromeRevealNotifier.chromeHideMs + 1),
-    );
-    expect(find.text('hidden'), findsOneWidget);
+      await tester.pump(
+        const Duration(milliseconds: ChromeRevealNotifier.chromeHideMs + 1),
+      );
+      expect(find.text('hidden'), findsOneWidget);
 
-    await tester.tapAt(const Offset(160, 20));
-    await tester.pump();
-    expect(find.text('visible'), findsOneWidget);
-  });
+      await tester.tapAt(const Offset(160, 20));
+      await tester.pump();
+      expect(find.text('visible'), findsOneWidget);
+    },
+  );
 }
 
 class _ChromeLifecycleHost extends ConsumerWidget {
@@ -54,8 +54,7 @@ class _ChromeLifecycleHost extends ConsumerWidget {
           Positioned.fill(
             child: ChromeSummonZones(
               visible: chrome.chromeVisible,
-              onSummon: () =>
-                  ref.read(chromeRevealProvider.notifier).reveal(),
+              onSummon: () => ref.read(chromeRevealProvider.notifier).reveal(),
             ),
           ),
         ],

@@ -14,7 +14,7 @@ import 'package:google_fonts/google_fonts.dart';
 class ActivityFeed extends ConsumerWidget {
   ActivityFeed({super.key});
 
-  static _relevant = {'match', 'message', 'like', 'super_like'};
+  static const _relevant = {'match', 'message', 'like', 'super_like'};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -303,8 +303,8 @@ class _ActivityCard extends StatelessWidget {
                       notification.type.toLowerCase() == 'match'
                           ? '🔥'
                           : notification.type.toLowerCase() == 'message'
-                              ? '💬'
-                              : '❤️',
+                          ? '💬'
+                          : '❤️',
                       style: const TextStyle(fontSize: 18),
                     ),
                   ),
@@ -356,8 +356,11 @@ class _ActivityCard extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.schedule_rounded,
-                                  size: 10, color: muted),
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 10,
+                                color: muted,
+                              ),
                               const SizedBox(width: 3),
                               Text(
                                 _relative,
@@ -393,6 +396,6 @@ class _ActivityCard extends StatelessWidget {
           ),
         ),
       ),
-                );
+    );
   }
 }

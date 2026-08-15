@@ -43,12 +43,14 @@ class _MessagesDocumentsLibraryState
       error: (e, _) => Center(
         child: TextButton(
           onPressed: () => ref.read(contractsProvider.notifier).refresh(),
-          child: Text('Could not load vault — retry', style: TextStyle(color: muted)),
+          child: Text(
+            'Could not load vault — retry',
+            style: TextStyle(color: muted),
+          ),
         ),
       ),
       data: (contracts) {
-        final signedCount =
-            contracts.where((c) => _isSigned(c.status)).length;
+        final signedCount = contracts.where((c) => _isSigned(c.status)).length;
         final filtered = contracts.where((c) {
           if (_filter == 'signed') return _isSigned(c.status);
           if (_filter == 'drafts') {
@@ -149,8 +151,11 @@ class _MessagesDocumentsLibraryState
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.add_rounded,
-                                    color: Colors.white, size: 18),
+                                const Icon(
+                                  Icons.add_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'NEW LEASE FROM TEMPLATE',
@@ -202,8 +207,11 @@ class _MessagesDocumentsLibraryState
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Column(
                   children: [
-                    Icon(Icons.description_outlined,
-                        size: 48, color: ink.withAlpha(40)),
+                    Icon(
+                      Icons.description_outlined,
+                      size: 48,
+                      color: ink.withAlpha(40),
+                    ),
                     const SizedBox(height: 14),
                     Text(
                       _filter == 'signed'
@@ -256,9 +264,7 @@ class _FilterPill extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           gradient: selected
-              ? LinearGradient(
-                  colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                )
+              ? LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)])
               : null,
           color: selected ? null : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
@@ -313,8 +319,11 @@ class _VaultCard extends StatelessWidget {
                   color: const Color(0xFFF43F5E).withAlpha(28),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.receipt_long_rounded,
-                    color: Color(0xFFFB7185), size: 24),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  color: Color(0xFFFB7185),
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -335,7 +344,9 @@ class _VaultCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
@@ -389,8 +400,7 @@ class _VaultCard extends StatelessWidget {
                     AppHaptics.medium();
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) =>
-                            ContractSignScreen(contract: contract),
+                        builder: (_) => ContractSignScreen(contract: contract),
                       ),
                     );
                   },
@@ -425,9 +435,7 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: accent
-              ? Color(0xFFF43F5E).withAlpha(36)
-              : Colors.transparent,
+          color: accent ? Color(0xFFF43F5E).withAlpha(36) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: accent

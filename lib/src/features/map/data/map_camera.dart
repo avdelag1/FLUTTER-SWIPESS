@@ -11,19 +11,19 @@ abstract final class MapCameraMath {
   /// Initial zoom level when the map opens (start high to see fly-in).
   static const openAltitudeZoom = 4.0;
   static const globeAltitudeZoom = 4.0;
-  
+
   /// Fly-in duration needs to be long enough to see the zoom!
   static const flyInDurationMs = 3000;
 
   /// Airplane bank (tilt side-to-side)
   static const openBankDegrees = 5.0;
 
-  /// Pitch in radians. 
+  /// Pitch in radians.
   /// Kept low so the 2D tiles and markers don't get squished and look "painted on".
   static const openPitch = 0.20;
   static const cruisePitch = 0.05;
 
-  /// Perspective factor. 
+  /// Perspective factor.
   static const perspective = 0.0002;
 
   /// Scale after perspective to prevent clipping black void.

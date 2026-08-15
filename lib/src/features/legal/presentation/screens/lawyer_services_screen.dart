@@ -155,12 +155,17 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                     ),
                   ],
                 ),
-                child: Icon(Icons.balance_rounded, color: MatteSurface.ink(context)),
+                child: Icon(
+                  Icons.balance_rounded,
+                  color: MatteSurface.ink(context),
+                ),
               ),
               const SizedBox(width: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0x1A6366F1),
                   borderRadius: BorderRadius.circular(999),
@@ -244,13 +249,18 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                       child: AnimatedContainer(
                         duration: Duration(milliseconds: 150),
                         padding: EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: _category == c.$1
                               ? Colors.white
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                          border: Border.all(
+                            color: MatteSurface.ink(context),
+                            width: 1.5,
+                          ),
                         ),
                         child: Text(
                           c.$2,
@@ -304,8 +314,10 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   fontSize: 12,
                 ),
               ),
-              trailing: Icon(Icons.chevron_right_rounded,
-                  color: MatteSurface.muted(context)),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: MatteSurface.muted(context),
+              ),
               onTap: () {
                 showLegalPackageRequestModal(
                   context,

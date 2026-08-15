@@ -30,8 +30,8 @@ class VapCardThemeIndexNotifier extends AsyncNotifier<int> {
 
 final vapCardThemeIndexProvider =
     AsyncNotifierProvider<VapCardThemeIndexNotifier, int>(
-  VapCardThemeIndexNotifier.new,
-);
+      VapCardThemeIndexNotifier.new,
+    );
 
 /// Convenience accessor — resolved theme, falling back to the first theme
 /// (Pearl) while the persisted index is still loading.

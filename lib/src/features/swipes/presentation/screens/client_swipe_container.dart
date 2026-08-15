@@ -56,6 +56,7 @@ class ClientSwipeContainer extends ConsumerStatefulWidget {
 
 class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   List<Listing>? _deck;
+
   /// One-shot return: only the most recent swipe can be restored once.
   Listing? _undoable;
   late String _categoryId;
@@ -116,16 +117,16 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     }
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This is your listing')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
     AppHaptics.medium();
     final convoId = await swipe_repo.SwipeRepository().startConversation(
-          ownerId: ownerId,
-          listingId: listing.id,
-        );
+      ownerId: ownerId,
+      listingId: listing.id,
+    );
     if (!mounted || convoId == null) return;
     await showChatPopup(
       context,
@@ -189,9 +190,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       },
       onOpenFilters: () => FilterBottomSheet.show(context),
       onOpenMap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LiveMapScreen()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LiveMapScreen()));
       },
       onOpenAi: () => showMagicAiProfileSheet(context),
       onCategoryChange: (cat) {
@@ -238,8 +239,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
           context,
           clientName: listing.title ?? 'this listing',
           clientImageUrl: profile?.avatarUrl,
-          ownerImageUrl:
-              listing.images.isNotEmpty ? listing.images.first : null,
+          ownerImageUrl: listing.images.isNotEmpty
+              ? listing.images.first
+              : null,
           onMessage: () => _message(listing),
         );
       }
@@ -261,190 +263,205 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       body: PullDownToDismiss(
         onDismiss: _goDashboard,
         child: listingsAsync.when(
-        loading: () => const SizedBox.expand(child: SwipeLoadingSkeleton()),
-        error: (err, _) => SwipeErrorState(
-          isRetrying: _retrying,
-          onRetry: () async {
-            setState(() => _retrying = true);
-            ref.invalidate(swipeListingsProvider(_categoryId));
-            await Future<void>.delayed(const Duration(milliseconds: 400));
-            if (mounted) setState(() => _retrying = false);
+          loading: () => const SizedBox.expand(child: SwipeLoadingSkeleton()),
+          error: (err, _) => SwipeErrorState(
+            isRetrying: _retrying,
+            onRetry: () async {
+              setState(() => _retrying = true);
+              ref.invalidate(swipeListingsProvider(_categoryId));
+              await Future<void>.delayed(const Duration(milliseconds: 400));
+              if (mounted) setState(() => _retrying = false);
+            },
+          ),
+          data: (listings) {
+            _ensureDeck(listings);
+            final deck = _deck ?? listings;
+
+            // Must expand. ChromeSummonZones is a zero-size child when the
+            // header is up — a loose Stack then collapses to 0×0 and the
+            // cards never paint (black page until chrome used to hide).
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned.fill(
+                  child: SafeArea(
+                    bottom: false,
+                    child: AnimatedPadding(
+                      duration: Duration(
+                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                      ),
+                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      padding: EdgeInsets.fromLTRB(
+                        8,
+                        chrome.chromeVisible ? 76 : 8,
+                        8,
+                        chrome.chromeVisible ? 72 : 12,
+                      ),
+                      child: deck.isEmpty
+                          ? _exhausted()
+                          : SwipeableCardStack(
+                              listings: deck,
+                              railVisible: chrome.railVisible,
+                              canUndo: _undoable != null,
+                              onUndo: _undo,
+                              onBack: _goDashboard,
+                              onSummonChrome: () {
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .toggle();
+                              },
+                              onOpenAi: () {
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .reveal();
+                                showIntelCoreSheet(context);
+                              },
+                              onOpenMap: () {
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .reveal();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LiveMapScreen(),
+                                  ),
+                                );
+                              },
+                              onInsights: (listing) {
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .reveal();
+                                showListingInsightsSheet(
+                                  context,
+                                  listing: listing,
+                                  onMessage: () => _message(listing),
+                                  onShare: () => showListingShareSheet(
+                                    context,
+                                    listing: listing,
+                                  ),
+                                  onReport: () => showListingReportSheet(
+                                    context,
+                                    listing: listing,
+                                  ),
+                                );
+                              },
+                              onShare: (listing) {
+                                showListingShareSheet(
+                                  context,
+                                  listing: listing,
+                                );
+                              },
+                              onMessage: _message,
+                              onReport: (listing) {
+                                showListingReportSheet(
+                                  context,
+                                  listing: listing,
+                                );
+                              },
+                              onSwiped: (listing, direction) {
+                                setState(() {
+                                  _undoable = listing;
+                                  _deck = List<Listing>.from(deck)
+                                    ..removeWhere((l) => l.id == listing.id);
+                                });
+                                _afterSwipe(listing, direction);
+                              },
+                            ),
+                    ),
+                  ),
+                ),
+
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    ignoring: !chrome.chromeVisible,
+                    child: AnimatedOpacity(
+                      opacity: chrome.chromeVisible ? 1 : 0,
+                      duration: Duration(
+                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                      ),
+                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      child: AnimatedSlide(
+                        offset: chrome.chromeVisible
+                            ? Offset.zero
+                            : const Offset(0, -0.12),
+                        duration: Duration(
+                          milliseconds: chrome.chromeVisible ? 360 : 340,
+                        ),
+                        curve: const Cubic(0.25, 0.1, 0.25, 1),
+                        child: AppTopBar(
+                          firstName: profile?.name.split(' ').first,
+                          avatarUrl: profile?.avatarUrl,
+                          onProfileTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const ProfileScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                Positioned(
+                  bottom: 18,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    ignoring: !chrome.chromeVisible,
+                    child: AnimatedOpacity(
+                      opacity: chrome.chromeVisible ? 1 : 0,
+                      duration: Duration(
+                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                      ),
+                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      child: AnimatedSlide(
+                        offset: chrome.chromeVisible
+                            ? Offset.zero
+                            : const Offset(0, 1.0),
+                        duration: Duration(
+                          milliseconds: chrome.chromeVisible ? 360 : 340,
+                        ),
+                        curve: const Cubic(0.25, 0.1, 0.25, 1),
+                        child: DashboardDock(
+                          items: defaultDashboardNavItems,
+                          selectedTab: NavTab.dashboard,
+                          onTabSelected: (id) {
+                            if (id == NavTab.dashboard) {
+                              _goDashboard();
+                            } else if (id == NavTab.messages) {
+                              _goMessages();
+                            } else if (id == NavTab.add) {
+                              showCreateListingChooser(context);
+                            } else if (id == NavTab.ai) {
+                              ref
+                                  .read(overlayModalsProvider.notifier)
+                                  .openConcierge();
+                            } else {
+                              context.pop();
+                              ref.read(navTabProvider.notifier).set(id);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: ChromeSummonZones(
+                    visible: chrome.chromeVisible,
+                    onSummon: () =>
+                        ref.read(chromeRevealProvider.notifier).reveal(),
+                  ),
+                ),
+              ],
+            );
           },
         ),
-        data: (listings) {
-          _ensureDeck(listings);
-          final deck = _deck ?? listings;
-
-          // Must expand. ChromeSummonZones is a zero-size child when the
-          // header is up — a loose Stack then collapses to 0×0 and the
-          // cards never paint (black page until chrome used to hide).
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              Positioned.fill(
-                child: SafeArea(
-                  bottom: false,
-                  child: AnimatedPadding(
-                    duration: Duration(
-                      milliseconds: chrome.chromeVisible ? 360 : 340,
-                    ),
-                    curve: const Cubic(0.25, 0.1, 0.25, 1),
-                    padding: EdgeInsets.fromLTRB(
-                      8,
-                      chrome.chromeVisible ? 76 : 8,
-                      8,
-                      chrome.chromeVisible ? 72 : 12,
-                    ),
-                    child: deck.isEmpty
-                        ? _exhausted()
-                        : SwipeableCardStack(
-                            listings: deck,
-                            railVisible: chrome.railVisible,
-                            canUndo: _undoable != null,
-                            onUndo: _undo,
-                            onBack: _goDashboard,
-                            onSummonChrome: () {
-                              ref.read(chromeRevealProvider.notifier).toggle();
-                            },
-                            onOpenAi: () {
-                              ref.read(chromeRevealProvider.notifier).reveal();
-                              showIntelCoreSheet(context);
-                            },
-                            onOpenMap: () {
-                              ref.read(chromeRevealProvider.notifier).reveal();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const LiveMapScreen(),
-                                ),
-                              );
-                            },
-                            onInsights: (listing) {
-                              ref.read(chromeRevealProvider.notifier).reveal();
-                              showListingInsightsSheet(
-                                context,
-                                listing: listing,
-                                onMessage: () => _message(listing),
-                                onShare: () => showListingShareSheet(
-                                  context,
-                                  listing: listing,
-                                ),
-                                onReport: () => showListingReportSheet(
-                                  context,
-                                  listing: listing,
-                                ),
-                              );
-                            },
-                            onShare: (listing) {
-                              showListingShareSheet(context, listing: listing);
-                            },
-                            onMessage: _message,
-                            onReport: (listing) {
-                              showListingReportSheet(context, listing: listing);
-                            },
-                            onSwiped: (listing, direction) {
-                              setState(() {
-                                _undoable = listing;
-                                _deck = List<Listing>.from(deck)
-                                  ..removeWhere((l) => l.id == listing.id);
-                              });
-                              _afterSwipe(listing, direction);
-                            },
-                          ),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  ignoring: !chrome.chromeVisible,
-                  child: AnimatedOpacity(
-                    opacity: chrome.chromeVisible ? 1 : 0,
-                    duration: Duration(
-                      milliseconds: chrome.chromeVisible ? 360 : 340,
-                    ),
-                    curve: const Cubic(0.25, 0.1, 0.25, 1),
-                    child: AnimatedSlide(
-                      offset: chrome.chromeVisible
-                          ? Offset.zero
-                          : const Offset(0, -0.12),
-                      duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 340,
-                      ),
-                      curve: const Cubic(0.25, 0.1, 0.25, 1),
-                      child: AppTopBar(
-                        firstName: profile?.name.split(' ').first,
-                        avatarUrl: profile?.avatarUrl,
-                        onProfileTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ProfileScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                bottom: 18,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  ignoring: !chrome.chromeVisible,
-                  child: AnimatedOpacity(
-                    opacity: chrome.chromeVisible ? 1 : 0,
-                    duration: Duration(
-                      milliseconds: chrome.chromeVisible ? 360 : 340,
-                    ),
-                    curve: const Cubic(0.25, 0.1, 0.25, 1),
-                    child: AnimatedSlide(
-                      offset: chrome.chromeVisible
-                          ? Offset.zero
-                          : const Offset(0, 1.0),
-                      duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 340,
-                      ),
-                      curve: const Cubic(0.25, 0.1, 0.25, 1),
-                      child: DashboardDock(
-                        items: defaultDashboardNavItems,
-                        selectedTab: NavTab.dashboard,
-                        onTabSelected: (id) {
-                          if (id == NavTab.dashboard) {
-                            _goDashboard();
-                          } else if (id == NavTab.messages) {
-                            _goMessages();
-                          } else if (id == NavTab.add) {
-                            showCreateListingChooser(context);
-                          } else if (id == NavTab.ai) {
-                            ref.read(overlayModalsProvider.notifier).openConcierge();
-                          } else {
-                            context.pop();
-                            ref.read(navTabProvider.notifier).set(id);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: ChromeSummonZones(
-                  visible: chrome.chromeVisible,
-                  onSummon: () =>
-                      ref.read(chromeRevealProvider.notifier).reveal(),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
       ),
     );
   }
 }
-

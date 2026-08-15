@@ -40,10 +40,17 @@ class PokerCategoryCard extends StatelessWidget {
     final double scale = 1 - (index * 0.05);
     final double zRotation = (index % 2 == 0 ? -1 : 1) * index * 0.02;
 
-    return isTop ? _buildDraggableCard(context) : _buildBackgroundCard(context, yOffset, scale, zRotation);
+    return isTop
+        ? _buildDraggableCard(context)
+        : _buildBackgroundCard(context, yOffset, scale, zRotation);
   }
 
-  Widget _buildBackgroundCard(BuildContext context, double yOffset, double scale, double zRotation) {
+  Widget _buildBackgroundCard(
+    BuildContext context,
+    double yOffset,
+    double scale,
+    double zRotation,
+  ) {
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
@@ -75,7 +82,8 @@ class PokerCategoryCard extends StatelessWidget {
       ),
       childWhenDragging: const SizedBox.shrink(),
       onDragEnd: (details) {
-        if (details.offset.dx.abs() > 100 || details.velocity.pixelsPerSecond.dx.abs() > 500) {
+        if (details.offset.dx.abs() > 100 ||
+            details.velocity.pixelsPerSecond.dx.abs() > 500) {
           onCycle(card.id, details.offset.dx > 0);
         }
       },
@@ -114,7 +122,10 @@ class PokerCategoryCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(32),
               gradient: LinearGradient(
-                colors: [Colors.black.withAlpha(50), Colors.black.withAlpha(180)],
+                colors: [
+                  Colors.black.withAlpha(50),
+                  Colors.black.withAlpha(180),
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),

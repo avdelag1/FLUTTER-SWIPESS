@@ -35,11 +35,7 @@ void main() {
   });
 
   test('still returns a floor score when filters miss', () {
-    final filters = SwipeFilter(
-      minPrice: 5000,
-      maxPrice: 9000,
-      city: 'Boston',
-    );
+    final filters = SwipeFilter(minPrice: 5000, maxPrice: 9000, city: 'Boston');
     expect(listingMatchPercentage(listing, filters), 55);
   });
 }

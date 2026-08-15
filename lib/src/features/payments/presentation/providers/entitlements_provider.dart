@@ -47,8 +47,9 @@ class MessagingEntitlements {
       trial.isTrialActive || hasPremium || tokenBalance > 0;
 }
 
-final messagingEntitlementsProvider =
-    FutureProvider<MessagingEntitlements>((ref) async {
+final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((
+  ref,
+) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     // Demo / gate path (e.g. URDBEST) — offline-friendly, trial-like access.
@@ -57,9 +58,7 @@ final messagingEntitlementsProvider =
       trial: FreeTrialInfo.fromCreatedAt(DateTime.now()),
     );
   }
-  final trial = FreeTrialInfo.fromCreatedAt(
-    DateTime.tryParse(user.createdAt),
-  );
+  final trial = FreeTrialInfo.fromCreatedAt(DateTime.tryParse(user.createdAt));
   final tokens = ref.read(tokenRepositoryProvider);
   final balance = await tokens.fetchBalance();
   final premium = await tokens.fetchHasPremium();
@@ -71,21 +70,21 @@ final messagingEntitlementsProvider =
 });
 
 final tokenBalanceProvider = Provider<int>((ref) {
-  return ref.watch(messagingEntitlementsProvider).maybeWhen(
-        data: (e) => e.tokenBalance,
-        orElse: () => 0,
-      );
+  return ref
+      .watch(messagingEntitlementsProvider)
+      .maybeWhen(data: (e) => e.tokenBalance, orElse: () => 0);
 });
 
 final freeTrialActiveProvider = Provider<bool>((ref) {
-  return ref.watch(messagingEntitlementsProvider).maybeWhen(
-        data: (e) => e.trial.isTrialActive,
-        orElse: () => false,
-      );
+  return ref
+      .watch(messagingEntitlementsProvider)
+      .maybeWhen(data: (e) => e.trial.isTrialActive, orElse: () => false);
 });
 
 final canStartConversationProvider = Provider<bool>((ref) {
-  return ref.watch(messagingEntitlementsProvider).maybeWhen(
+  return ref
+      .watch(messagingEntitlementsProvider)
+      .maybeWhen(
         data: (e) => e.canStartConversation,
         orElse: () => true, // Don't hard-block while loading.
       );

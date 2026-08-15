@@ -75,8 +75,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   List<String> get _sources {
     if (_pool.isEmpty) return const <String>[];
     if (widget.enableVideo) return _pool;
-    final stills =
-        _pool.where((u) => !isQuickFilterVideoUrl(u)).toList(growable: false);
+    final stills = _pool
+        .where((u) => !isQuickFilterVideoUrl(u))
+        .toList(growable: false);
     return stills.isEmpty ? _pool : stills;
   }
 
@@ -105,8 +106,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   void _reshuffle(List<String> sources) {
     _pool = List<String>.from(sources);
     if (_pool.length > 1) {
-      _pool.shuffle(math.Random(DateTime.now().microsecondsSinceEpoch ^
-          widget.rotateSlot * 7919));
+      _pool.shuffle(
+        math.Random(
+          DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+        ),
+      );
     }
     _index = 0;
   }
@@ -297,9 +301,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   AppHaptics.selection();
                   unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
-                  _video?.setVolume(
-                    ref.read(deckSoundOnProvider) ? 1 : 0,
-                  );
+                  _video?.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
                   if (ref.read(deckSoundOnProvider)) {
                     _video?.play();
                   }

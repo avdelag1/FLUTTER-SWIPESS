@@ -208,7 +208,10 @@ class AdminEventDraft {
     );
   }
 
-  Map<String, dynamic> toPayload({String? createdBy, bool includeSocials = true}) {
+  Map<String, dynamic> toPayload({
+    String? createdBy,
+    bool includeSocials = true,
+  }) {
     final map = <String, dynamic>{
       'title': title,
       'description': description.isEmpty ? null : description,
@@ -216,19 +219,23 @@ class AdminEventDraft {
       'image_url': imageUrl.isEmpty ? null : imageUrl,
       'location': location.isEmpty ? null : location,
       'organizer_name': organizerName.isEmpty ? null : organizerName,
-      'organizer_whatsapp':
-          organizerWhatsapp.isEmpty ? null : organizerWhatsapp,
+      'organizer_whatsapp': organizerWhatsapp.isEmpty
+          ? null
+          : organizerWhatsapp,
       'is_published': isPublished,
       'is_approved': isApproved,
       'created_by': ?createdBy,
     };
     if (includeSocials) {
-      map['organizer_instagram'] =
-          organizerInstagram.isEmpty ? null : organizerInstagram;
-      map['organizer_website'] =
-          organizerWebsite.isEmpty ? null : organizerWebsite;
-      map['organizer_facebook'] =
-          organizerFacebook.isEmpty ? null : organizerFacebook;
+      map['organizer_instagram'] = organizerInstagram.isEmpty
+          ? null
+          : organizerInstagram;
+      map['organizer_website'] = organizerWebsite.isEmpty
+          ? null
+          : organizerWebsite;
+      map['organizer_facebook'] = organizerFacebook.isEmpty
+          ? null
+          : organizerFacebook;
     }
     return map;
   }

@@ -32,7 +32,10 @@ class EscrowDashboardScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: MatteSurface.ink(context),
+            strokeWidth: 2,
+          ),
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -48,17 +51,23 @@ class EscrowDashboardScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: MatteSurface.ink(context)),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: MatteSurface.ink(context),
+                    ),
                   ),
-                  Text('ESCROW VAULT',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                  Text(
+                    'ESCROW VAULT',
+                    style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                  ),
                 ],
               ),
               SizedBox(height: 8),
               Text(
                 'Track and manage security deposits from contracts.',
-                style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
+                style: GoogleFonts.plusJakartaSans(
+                  color: MatteSurface.muted(context),
+                ),
               ),
               const SizedBox(height: 20),
               _EscrowMetrics(deposits: deposits),
@@ -68,8 +77,11 @@ class EscrowDashboardScreen extends ConsumerWidget {
                   padding: EdgeInsets.only(top: 80),
                   child: Column(
                     children: [
-                      Icon(Icons.shield_outlined,
-                          size: 56, color: Colors.transparent),
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 56,
+                        color: Colors.transparent,
+                      ),
                       SizedBox(height: 12),
                       Text(
                         'No deposits yet',
@@ -82,7 +94,9 @@ class EscrowDashboardScreen extends ConsumerWidget {
                         'Create a deposit or wait for one from a contract.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
-                            color: MatteSurface.faint(context), fontSize: 13),
+                          color: MatteSurface.faint(context),
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -143,8 +157,10 @@ class EscrowDashboardScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NEW DEPOSIT',
-                        style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                    Text(
+                      'NEW DEPOSIT',
+                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
+                    ),
                     const SizedBox(height: 14),
                     GlassTextField(
                       controller: amount,
@@ -214,7 +230,11 @@ class EscrowDashboardScreen extends ConsumerWidget {
                               onSelected: () => setModal(() {
                                 selectedContract = c;
                                 final me = Supabase
-                                    .instance.client.auth.currentUser?.id;
+                                    .instance
+                                    .client
+                                    .auth
+                                    .currentUser
+                                    ?.id;
                                 if (me != null) {
                                   final other = c.ownerId == me
                                       ? c.clientId
@@ -237,8 +257,9 @@ class EscrowDashboardScreen extends ConsumerWidget {
                       onPressed: submitting
                           ? null
                           : () async {
-                              final parsed =
-                                  double.tryParse(amount.text.trim());
+                              final parsed = double.tryParse(
+                                amount.text.trim(),
+                              );
                               final other = counterparty.text.trim();
                               if (parsed == null ||
                                   parsed <= 0 ||
@@ -264,9 +285,13 @@ class EscrowDashboardScreen extends ConsumerWidget {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                        content: Text(
-                                            e.toString().replaceFirst(
-                                                'Exception: ', ''))),
+                                      content: Text(
+                                        e.toString().replaceFirst(
+                                          'Exception: ',
+                                          '',
+                                        ),
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -343,9 +368,7 @@ class _MetricTile extends StatelessWidget {
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: color.withAlpha(70)),
-        boxShadow: [
-          BoxShadow(color: color.withAlpha(28), blurRadius: 18),
-        ],
+        boxShadow: [BoxShadow(color: color.withAlpha(28), blurRadius: 18)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,9 +453,7 @@ class _DepositCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                child: Icon(_icon, color: _color, size: 18),
-              ),
+              CircleAvatar(child: Icon(_icon, color: _color, size: 18)),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -461,7 +482,9 @@ class _DepositCard extends StatelessWidget {
               Text(
                 DateFormat.MMMd().format(deposit.createdAt.toLocal()),
                 style: TextStyle(
-                    color: MatteSurface.muted(context), fontSize: 12),
+                  color: MatteSurface.muted(context),
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -470,7 +493,9 @@ class _DepositCard extends StatelessWidget {
             Text(
               deposit.notes!,
               style: GoogleFonts.plusJakartaSans(
-                  color: MatteSurface.muted(context), fontSize: 12),
+                color: MatteSurface.muted(context),
+                fontSize: 12,
+              ),
             ),
           ],
           SizedBox(height: 14),
@@ -491,7 +516,8 @@ class _DepositCard extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999)),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
                 child: const Text('Confirm deposit held'),
               ),
@@ -508,7 +534,8 @@ class _DepositCard extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999)),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                       ),
                       child: const Text('Release'),
                     ),
@@ -521,7 +548,8 @@ class _DepositCard extends StatelessWidget {
                       foregroundColor: const Color(0xFFEF4444),
                       side: const BorderSide(color: Color(0xFFEF4444)),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999)),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                     child: const Text('Dispute'),
                   ),

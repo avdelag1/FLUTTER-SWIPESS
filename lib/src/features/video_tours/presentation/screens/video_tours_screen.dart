@@ -38,13 +38,18 @@ class VideoToursScreen extends ConsumerWidget {
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const Spacer(),
-                  Icon(Icons.videocam_off_outlined,
-                      size: 56, color: Colors.transparent),
+                  Icon(
+                    Icons.videocam_off_outlined,
+                    size: 56,
+                    color: Colors.transparent,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'NO TOURS AVAILABLE',
@@ -52,12 +57,13 @@ class VideoToursScreen extends ConsumerWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 8),
+                      horizontal: 40,
+                      vertical: 8,
+                    ),
                     child: Text(
                       'Property video tours appear here as owners upload walkthroughs.',
                       textAlign: TextAlign.center,
-                      style:
-                          GoogleFonts.plusJakartaSans(color: Colors.white54),
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white54),
                     ),
                   ),
                   const Spacer(),
@@ -118,9 +124,9 @@ class _TourPageState extends State<_TourPage> {
     final url = 'https://www.swipess.com/listing/${widget.listing.id}';
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tour link copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Tour link copied')));
   }
 
   Future<void> _like() async {
@@ -175,8 +181,10 @@ class _TourPageState extends State<_TourPage> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                     Expanded(
                       child: Column(
@@ -192,16 +200,19 @@ class _TourPageState extends State<_TourPage> {
                           ),
                           Text(
                             'VIDEO TOURS',
-                            style:
-                                AppTheme.displayItalic.copyWith(fontSize: 14),
+                            style: AppTheme.displayItalic.copyWith(
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
                       onPressed: _share,
-                      icon: const Icon(Icons.share_rounded,
-                          color: Colors.white),
+                      icon: const Icon(
+                        Icons.share_rounded,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -223,13 +234,15 @@ class _TourPageState extends State<_TourPage> {
                           ),
                           Text(
                             listing.title ?? 'Listing',
-                            style:
-                                AppTheme.displayItalic.copyWith(fontSize: 22),
+                            style: AppTheme.displayItalic.copyWith(
+                              fontSize: 22,
+                            ),
                           ),
                           Text(
                             listing.formattedLocation,
                             style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70),
+                              color: Colors.white70,
+                            ),
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
@@ -239,14 +252,16 @@ class _TourPageState extends State<_TourPage> {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => ListingDetailScreen(
-                                        listingData: listing),
+                                      listingData: listing,
+                                    ),
                                   ),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
                                 foregroundColor: Colors.black,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(999),
                                 ),
@@ -254,8 +269,9 @@ class _TourPageState extends State<_TourPage> {
                               child: const Text(
                                 'OPEN LISTING',
                                 style: TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.2),
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                             ),
                           ),
@@ -285,8 +301,7 @@ class _TourPageState extends State<_TourPage> {
                               ? null
                               : () async {
                                   setState(() => _muted = !_muted);
-                                  await _player!
-                                      .setVolume(_muted ? 0 : 1);
+                                  await _player!.setVolume(_muted ? 0 : 1);
                                 },
                         ),
                         const SizedBox(height: 14),
@@ -297,8 +312,8 @@ class _TourPageState extends State<_TourPage> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => ListingDetailScreen(
-                                    listingData: listing),
+                                builder: (_) =>
+                                    ListingDetailScreen(listingData: listing),
                               ),
                             );
                           },

@@ -49,5 +49,6 @@ class PendingDeepLink {
   }
 }
 
-final pendingDeepLinkProvider =
-    Provider<PendingDeepLink>((ref) => PendingDeepLink());
+final pendingDeepLinkProvider = Provider<PendingDeepLink>(
+  (ref) => PendingDeepLink(),
+);

@@ -10,8 +10,10 @@ abstract final class MapBasemap {
   static const lightStyle = 'cmshyf3kh00gw01s9gu3yelwz';
 
   // Standard fallback map tiles
-  static const fallbackDarkUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png';
-  static const fallbackLightUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png';
+  static const fallbackDarkUrl =
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png';
+  static const fallbackLightUrl =
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png';
 
   static const subdomains = ['a', 'b', 'c', 'd'];
 
@@ -25,9 +27,8 @@ abstract final class MapBasemap {
 
   static String? get labelsUrl => null;
 
-  static Map<String, String> get additionalOptions => _mapbox
-      ? {'accessToken': AppConfig.mapboxAccessToken.trim()}
-      : const {};
+  static Map<String, String> get additionalOptions =>
+      _mapbox ? {'accessToken': AppConfig.mapboxAccessToken.trim()} : const {};
 
   static const userAgentPackageName = 'com.swipess.flutter';
 

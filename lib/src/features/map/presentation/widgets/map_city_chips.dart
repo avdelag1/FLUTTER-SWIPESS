@@ -28,7 +28,7 @@ class MapCityChips extends StatelessWidget {
           final city = PassportCities.all[i];
           final active =
               activeCity.toLowerCase().contains(city.name.toLowerCase()) ||
-                  city.name.toLowerCase() == activeCity.toLowerCase();
+              city.name.toLowerCase() == activeCity.toLowerCase();
           return GestureDetector(
             onTap: () {
               AppHaptics.selection();

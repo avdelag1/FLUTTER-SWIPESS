@@ -83,13 +83,13 @@ void main() {
 
   group('unreadBadgeCountProvider (Cap useAppBadge)', () {
     ChatConversation conversation(int unread) => ChatConversation(
-          id: 'c$unread',
-          otherUserId: 'u$unread',
-          name: 'Someone',
-          lastMessage: 'hey',
-          timestamp: 'now',
-          unreadCount: unread,
-        );
+      id: 'c$unread',
+      otherUserId: 'u$unread',
+      name: 'Someone',
+      lastMessage: 'hey',
+      timestamp: 'now',
+      unreadCount: unread,
+    );
 
     ProviderContainer containerWith({
       required int notifications,

@@ -160,11 +160,7 @@ class _ReportDialogState extends State<ReportDialog> {
     if (!mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Blocked ${widget.reportedUserName ?? 'user'}',
-        ),
-      ),
+      SnackBar(content: Text('Blocked ${widget.reportedUserName ?? 'user'}')),
     );
   }
 
@@ -174,7 +170,8 @@ class _ReportDialogState extends State<ReportDialog> {
     final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
     final isLight = MatteSurface.isLight(context);
-    final bottom = MediaQuery.viewInsetsOf(context).bottom +
+    final bottom =
+        MediaQuery.viewInsetsOf(context).bottom +
         MediaQuery.paddingOf(context).bottom;
     final subject = widget.reportedUserName ?? widget.reportedListingTitle;
 
@@ -204,8 +201,11 @@ class _ReportDialogState extends State<ReportDialog> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: NexusTheme.rose.withAlpha(80)),
                     ),
-                    child: const Icon(Icons.flag_rounded,
-                        color: NexusTheme.rose, size: 20),
+                    child: const Icon(
+                      Icons.flag_rounded,
+                      color: NexusTheme.rose,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -361,11 +361,7 @@ class _ReportDialogState extends State<ReportDialog> {
 }
 
 class _TypeRow extends StatelessWidget {
-  _TypeRow({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  _TypeRow({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -382,9 +378,7 @@ class _TypeRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: selected
-              ? NexusTheme.rose.withAlpha(28)
-              : Colors.transparent,
+          color: selected ? NexusTheme.rose.withAlpha(28) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? NexusTheme.rose.withAlpha(120) : hairline,

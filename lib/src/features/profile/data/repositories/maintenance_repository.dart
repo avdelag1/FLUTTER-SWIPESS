@@ -9,7 +9,7 @@ final maintenanceRepositoryProvider = Provider<MaintenanceRepository>((ref) {
 
 class MaintenanceRepository {
   MaintenanceRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -40,7 +40,9 @@ class MaintenanceRepository {
       final bytes = await file.readAsBytes();
       final path =
           'maintenance/$userId/${DateTime.now().millisecondsSinceEpoch}-$i.jpg';
-      await _client.storage.from('listing-images').uploadBinary(
+      await _client.storage
+          .from('listing-images')
+          .uploadBinary(
             path,
             bytes,
             fileOptions: const FileOptions(

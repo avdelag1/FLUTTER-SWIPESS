@@ -4,10 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Cap `useChromeReveal` — header/dock + rail fade after idle on the swipe deck.
 class ChromeRevealState {
-  const ChromeRevealState({
-    this.chromeVisible = true,
-    this.railVisible = true,
-  });
+  const ChromeRevealState({this.chromeVisible = true, this.railVisible = true});
 
   final bool chromeVisible;
   final bool railVisible;
@@ -62,5 +59,5 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
 
 final chromeRevealProvider =
     NotifierProvider<ChromeRevealNotifier, ChromeRevealState>(
-  ChromeRevealNotifier.new,
-);
+      ChromeRevealNotifier.new,
+    );

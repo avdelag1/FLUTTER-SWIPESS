@@ -71,7 +71,8 @@ class _ReportSheetState extends State<_ReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.viewInsetsOf(context).bottom +
+    final bottom =
+        MediaQuery.viewInsetsOf(context).bottom +
         MediaQuery.paddingOf(context).bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -118,7 +119,9 @@ class _ReportSheetState extends State<_ReportSheet> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 14),
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: _type == t.$1
                             ? AppTheme.brandPrimary.withAlpha(40)
@@ -164,9 +167,8 @@ class _ReportSheetState extends State<_ReportSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _busy ||
-                          _type == null ||
-                          _details.text.trim().isEmpty
+                  onPressed:
+                      _busy || _type == null || _details.text.trim().isEmpty
                       ? null
                       : _submit,
                   style: ElevatedButton.styleFrom(
@@ -179,8 +181,9 @@ class _ReportSheetState extends State<_ReportSheet> {
                   ),
                   child: Text(
                     _busy ? 'Submitting…' : 'Submit report',
-                    style:
-                        GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ),

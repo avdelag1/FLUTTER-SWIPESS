@@ -44,8 +44,8 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
         return;
       }
       final auth = LocalAuthentication();
-      final can = await auth.isDeviceSupported() &&
-          await auth.canCheckBiometrics;
+      final can =
+          await auth.isDeviceSupported() && await auth.canCheckBiometrics;
       if (!can) {
         setState(() {
           _locked = false;

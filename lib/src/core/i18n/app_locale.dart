@@ -50,8 +50,9 @@ class AppLocaleNotifier extends Notifier<AppLocale> {
       out.addAll(_flatten(jsonDecode(cap)));
     } catch (_) {}
     try {
-      final extra =
-          await rootBundle.loadString('assets/i18n/flutter_$code.json');
+      final extra = await rootBundle.loadString(
+        'assets/i18n/flutter_$code.json',
+      );
       final decoded = jsonDecode(extra);
       if (decoded is Map) {
         decoded.forEach((k, v) => out[k.toString()] = v.toString());
@@ -74,8 +75,9 @@ class AppLocaleNotifier extends Notifier<AppLocale> {
   }
 }
 
-final appLocaleProvider =
-    NotifierProvider<AppLocaleNotifier, AppLocale>(AppLocaleNotifier.new);
+final appLocaleProvider = NotifierProvider<AppLocaleNotifier, AppLocale>(
+  AppLocaleNotifier.new,
+);
 
 String capCopy(WidgetRef ref, String en, String es) {
   return ref.watch(appLocaleProvider).isEs ? es : en;

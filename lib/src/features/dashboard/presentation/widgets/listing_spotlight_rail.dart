@@ -16,8 +16,9 @@ class ListingSpotlightRail extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    final listings =
-        (ref.watch(mapListingsProvider).value ?? const <Listing>[]).take(8).toList();
+    final listings = (ref.watch(mapListingsProvider).value ?? const <Listing>[])
+        .take(8)
+        .toList();
     if (listings.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,10 +96,7 @@ class _SpotlightCard extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x33000000),
-                    Color(0xE6000000),
-                  ],
+                  colors: [Color(0x33000000), Color(0xE6000000)],
                 ),
               ),
             ),
@@ -132,8 +130,11 @@ class _SpotlightCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          color: Color(0xFFEB4898), size: 14),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: Color(0xFFEB4898),
+                        size: 14,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(

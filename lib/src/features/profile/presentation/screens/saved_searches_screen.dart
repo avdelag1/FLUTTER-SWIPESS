@@ -39,7 +39,9 @@ class SavedSearchesScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: MatteSurface.cardFill(context),
                         shape: BoxShape.circle,
-                        border: Border.all(color: MatteSurface.hairline(context)),
+                        border: Border.all(
+                          color: MatteSurface.hairline(context),
+                        ),
                       ),
                       child: Center(
                         child: Icon(
@@ -85,7 +87,8 @@ class SavedSearchesScreen extends ConsumerWidget {
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
-                    onPressed: () => ref.read(savedSearchesProvider.notifier).refresh(),
+                    onPressed: () =>
+                        ref.read(savedSearchesProvider.notifier).refresh(),
                     child: Text('Could not load — retry'),
                   ),
                 ),
@@ -107,8 +110,10 @@ class SavedSearchesScreen extends ConsumerWidget {
                     itemBuilder: (context, index) => _SearchTile(
                       search: items[index],
                       onOpen: () {
-                        final category = (items[index].filters['category'] as String?) ??
-                            (items[index].filters['property_type'] as String?) ??
+                        final category =
+                            (items[index].filters['category'] as String?) ??
+                            (items[index].filters['property_type']
+                                as String?) ??
                             'property';
                         openClientSwipeDeck(
                           context,
@@ -118,7 +123,10 @@ class SavedSearchesScreen extends ConsumerWidget {
                       },
                       onToggle: () => ref
                           .read(savedSearchesProvider.notifier)
-                          .toggleAlerts(items[index].id, items[index].alertsEnabled),
+                          .toggleAlerts(
+                            items[index].id,
+                            items[index].alertsEnabled,
+                          ),
                       onDelete: () => ref
                           .read(savedSearchesProvider.notifier)
                           .delete(items[index].id),
@@ -135,7 +143,9 @@ class SavedSearchesScreen extends ConsumerWidget {
 
   Future<void> _create(BuildContext context, WidgetRef ref) async {
     final name = TextEditingController();
-    final city = TextEditingController(text: ListingTaxonomies.popularCities.first);
+    final city = TextEditingController(
+      text: ListingTaxonomies.popularCities.first,
+    );
     final min = TextEditingController();
     final max = TextEditingController();
     String category = 'property';
@@ -168,9 +178,17 @@ class SavedSearchesScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    GlassTextField(controller: name, hint: 'Name', icon: Icons.bookmark_rounded),
+                    GlassTextField(
+                      controller: name,
+                      hint: 'Name',
+                      icon: Icons.bookmark_rounded,
+                    ),
                     const SizedBox(height: 10),
-                    GlassTextField(controller: city, hint: 'City', icon: Icons.location_city_rounded),
+                    GlassTextField(
+                      controller: city,
+                      hint: 'City',
+                      icon: Icons.location_city_rounded,
+                    ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       initialValue: category,
@@ -178,16 +196,49 @@ class SavedSearchesScreen extends ConsumerWidget {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.transparent,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'property', child: Text('Property', style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'worker', child: Text('Worker', style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'yacht', child: Text('Yacht', style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'motorcycle', child: Text('Motorcycle', style: TextStyle(color: Colors.white))),
-                        DropdownMenuItem(value: 'bicycle', child: Text('Bicycle', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(
+                          value: 'property',
+                          child: Text(
+                            'Property',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'worker',
+                          child: Text(
+                            'Worker',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'yacht',
+                          child: Text(
+                            'Yacht',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'motorcycle',
+                          child: Text(
+                            'Motorcycle',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'bicycle',
+                          child: Text(
+                            'Bicycle',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
                       ],
-                      onChanged: (v) => setModal(() => category = v ?? 'property'),
+                      onChanged: (v) =>
+                          setModal(() => category = v ?? 'property'),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -217,7 +268,9 @@ class SavedSearchesScreen extends ConsumerWidget {
                       child: FilledButton(
                         onPressed: () async {
                           if (name.text.trim().isEmpty) return;
-                          await ref.read(savedSearchesProvider.notifier).create(
+                          await ref
+                              .read(savedSearchesProvider.notifier)
+                              .create(
                                 name: name.text.trim(),
                                 city: city.text.trim(),
                                 category: category,
@@ -229,7 +282,9 @@ class SavedSearchesScreen extends ConsumerWidget {
                         style: FilledButton.styleFrom(
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         child: const Text('Save'),
                       ),
@@ -287,7 +342,10 @@ class _SearchTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     search.summary,
-                    style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 12),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: muted,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -295,7 +353,9 @@ class _SearchTile extends StatelessWidget {
             IconButton(
               onPressed: onToggle,
               icon: Icon(
-                search.alertsEnabled ? Icons.notifications_active_rounded : Icons.notifications_off_outlined,
+                search.alertsEnabled
+                    ? Icons.notifications_active_rounded
+                    : Icons.notifications_off_outlined,
                 color: search.alertsEnabled ? AppTheme.brandPrimary : muted,
               ),
             ),

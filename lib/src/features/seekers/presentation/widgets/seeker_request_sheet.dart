@@ -68,96 +68,103 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
       color: MatteSurface.canvas(context),
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        MediaQuery.viewInsetsOf(context).bottom + 24,
-      ),
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.78,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'STEP ${_step + 1} OF 2',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppTheme.brandPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 11,
-                          letterSpacing: 1.6,
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          MediaQuery.viewInsetsOf(context).bottom + 24,
+        ),
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.78,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'STEP ${_step + 1} OF 2',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: AppTheme.brandPrimary,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                            letterSpacing: 1.6,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _step == 0
-                            ? 'What do you need?'
-                            : (_active?.label ?? 'Details'),
-                        style: AppTheme.displayItalic.copyWith(fontSize: 22),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          _step == 0
+                              ? 'What do you need?'
+                              : (_active?.label ?? 'Details'),
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: _step == 0 ? _buildCategories() : _buildDetails(),
+              ),
+              if (_error != null) ...[
+                Text(
+                  _error!,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFFF87171),
+                    fontSize: 12,
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
-                ),
+                const SizedBox(height: 8),
               ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _step == 0 ? _buildCategories() : _buildDetails(),
-            ),
-            if (_error != null) ...[
-              Text(
-                _error!,
-                style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFFF87171),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            Row(
-              children: [
-                if (_step == 1)
-                  TextButton(
-                    onPressed: _submitting
-                        ? null
-                        : () => setState(() {
+              Row(
+                children: [
+                  if (_step == 1)
+                    TextButton(
+                      onPressed: _submitting
+                          ? null
+                          : () => setState(() {
                               _step = 0;
                               _error = null;
                             }),
-                    child: const Text('Back'),
-                  ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _submitting ? null : _primaryAction,
-                  style: FilledButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 22, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      child: const Text('Back'),
+                    ),
+                  const Spacer(),
+                  FilledButton(
+                    onPressed: _submitting ? null : _primaryAction,
+                    style: FilledButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      _submitting
+                          ? 'Posting…'
+                          : (_step == 0 ? 'Continue' : 'Post request'),
                     ),
                   ),
-                  child: Text(
-                    _submitting
-                        ? 'Posting…'
-                        : (_step == 0 ? 'Continue' : 'Post request'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -195,11 +202,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  cat.icon,
-                  color: cat.color,
-                  size: 22,
-                ),
+                Icon(cat.icon, color: cat.color, size: 22),
                 const SizedBox(height: 8),
                 Text(
                   cat.label,
@@ -228,7 +231,9 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           Text(
             'SUBCATEGORY',
             style: GoogleFonts.plusJakartaSans(
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.54),
               fontWeight: FontWeight.w800,
               fontSize: 11,
               letterSpacing: 1.2,
@@ -294,7 +299,9 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'DAYS',
           style: GoogleFonts.plusJakartaSans(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -323,7 +330,9 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'PRICING',
           style: GoogleFonts.plusJakartaSans(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -346,7 +355,9 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
         Text(
           'URGENCY',
           style: GoogleFonts.plusJakartaSans(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.54),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.2,
@@ -390,7 +401,9 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
       _error = null;
     });
     try {
-      await ref.read(seekersProvider.notifier).createRequest(
+      await ref
+          .read(seekersProvider.notifier)
+          .createRequest(
             categoryId: _categoryId!,
             subcategory: _subcategory,
             location: _location.text.trim(),
@@ -404,9 +417,9 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Seeker request posted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Seeker request posted')));
       }
     } catch (e) {
       setState(() {

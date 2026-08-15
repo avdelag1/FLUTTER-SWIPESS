@@ -41,5 +41,6 @@ class DeckAudioNotifier extends Notifier<bool> {
   }
 }
 
-final deckSoundOnProvider =
-    NotifierProvider<DeckAudioNotifier, bool>(DeckAudioNotifier.new);
+final deckSoundOnProvider = NotifierProvider<DeckAudioNotifier, bool>(
+  DeckAudioNotifier.new,
+);

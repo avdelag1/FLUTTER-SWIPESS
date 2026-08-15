@@ -5,8 +5,9 @@ import 'package:flutter_swipes/src/core/widgets/swipess_scroll_behavior.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('supports touch, mouse, trackpad and stylus without glow',
-      (tester) async {
+  testWidgets('supports touch, mouse, trackpad and stylus without glow', (
+    tester,
+  ) async {
     const behavior = SwipessScrollBehavior();
     late BuildContext context;
 

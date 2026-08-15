@@ -8,7 +8,8 @@ class AppTheme {
   static const Color brandPrimary = Color(0xFFFF4D00); // --color-brand-primary
   static const Color brandAccent = NexusTheme.rose; // Cap rose / pink accent
   static const Color brandAccent2 = NexusTheme.mexicanPink;
-  static const Color mexicanRed = NexusTheme.mexicanPink; // Rosa Mexicano #E4007C
+  static const Color mexicanRed =
+      NexusTheme.mexicanPink; // Rosa Mexicano #E4007C
 
   // Black Matte Backgrounds
   static const Color background = Color(0xFF0C0C0D); // --background
@@ -35,8 +36,12 @@ class AppTheme {
 
   // Glass & Borders — Cap soft glass, not hard white frames
   static const Color dashGlass = Color(0x84121218); // rgba(18, 18, 24, 0.52)
-  static const Color dashGlassStrong = Color(0xB716161E); // rgba(22, 22, 30, 0.72)
-  static const Color dashGlassBorder = Color(0x19FFFFFF); // rgba(255, 255, 255, 0.10)
+  static const Color dashGlassStrong = Color(
+    0xB716161E,
+  ); // rgba(22, 22, 30, 0.72)
+  static const Color dashGlassBorder = Color(
+    0x19FFFFFF,
+  ); // rgba(255, 255, 255, 0.10)
   static const Color nexusBorder = NexusTheme.border;
   static const Color nexusGlass = NexusTheme.glass;
 
@@ -85,20 +90,19 @@ class AppTheme {
   );
 
   static BoxDecoration get neoNaiveCard => BoxDecoration(
-        color: const Color(0xF50E0E14),
-        borderRadius: neoNaiveRadius,
-        border: Border.all(color: const Color(0xEBFFFFFF), width: 1.0),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x59000000), blurRadius: 22, offset: Offset(0, 8)),
-        ],
-      );
+    color: const Color(0xF50E0E14),
+    borderRadius: neoNaiveRadius,
+    border: Border.all(color: const Color(0xEBFFFFFF), width: 1.0),
+    boxShadow: const [
+      BoxShadow(color: Color(0x59000000), blurRadius: 22, offset: Offset(0, 8)),
+    ],
+  );
 
   static BoxDecoration get glassCard => BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
-      );
+    color: Colors.transparent,
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(color: Colors.white, width: 1.5),
+  );
 
   /// Cap soft surface card (messages/legal panels) — not ink-stamp.
   static BoxDecoration softSurfaceCard({required bool isLight}) =>
@@ -130,22 +134,15 @@ class AppTheme {
   /// Cap `.neo-naive-pill` filter chip on dashboard.
   static BoxDecoration dashboardFilterPill({required bool isLight}) =>
       BoxDecoration(
-        color: isLight
-            ? const Color(0xFAFFFFFF)
-            : const Color(0xF50E0E14),
+        color: isLight ? const Color(0xFAFFFFFF) : const Color(0xF50E0E14),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isLight
-              ? const Color(0xFF141414)
-              : const Color(0xF2FFFFFF),
+          color: isLight ? const Color(0xFF141414) : const Color(0xF2FFFFFF),
           width: 2.5,
         ),
         boxShadow: isLight
             ? const [
-                BoxShadow(
-                  color: Color(0xFF141414),
-                  offset: Offset(1.5, 1.5),
-                ),
+                BoxShadow(color: Color(0xFF141414), offset: Offset(1.5, 1.5)),
                 BoxShadow(
                   color: Color(0x12141414),
                   blurRadius: 12,
@@ -153,30 +150,24 @@ class AppTheme {
                 ),
               ]
             : const [
-                BoxShadow(
-                  color: Color(0x73FFFFFF),
-                  offset: Offset(1.5, 1.5),
-                ),
-                BoxShadow(
-                  color: Color(0x1FFFFFFF),
-                  blurRadius: 16,
-                ),
+                BoxShadow(color: Color(0x73FFFFFF), offset: Offset(1.5, 1.5)),
+                BoxShadow(color: Color(0x1FFFFFFF), blurRadius: 16),
               ],
       );
 
   static TextStyle get displayItalic => GoogleFonts.plusJakartaSans(
-        color: Colors.white,
-        fontWeight: FontWeight.w900,
-        fontStyle: FontStyle.italic,
-        letterSpacing: -1.0,
-      );
+    color: Colors.white,
+    fontWeight: FontWeight.w900,
+    fontStyle: FontStyle.italic,
+    letterSpacing: -1.0,
+  );
 
   static TextStyle get buttonLabel => GoogleFonts.plusJakartaSans(
-        color: Colors.white,
-        fontWeight: FontWeight.w800,
-        fontSize: 14,
-        letterSpacing: 2.2,
-      );
+    color: Colors.white,
+    fontWeight: FontWeight.w800,
+    fontSize: 14,
+    letterSpacing: 2.2,
+  );
 
   static BoxDecoration glassPill({bool glowing = false}) {
     return BoxDecoration(
@@ -202,21 +193,24 @@ class AppTheme {
   static const double radiusCard = 32;
 
   static TextStyle get kicker => GoogleFonts.plusJakartaSans(
-        color: const Color(0xB3FFFFFF),
-        fontWeight: FontWeight.w800,
-        fontSize: 10,
-        letterSpacing: 2,
-      );
+    color: const Color(0xB3FFFFFF),
+    fontWeight: FontWeight.w800,
+    fontSize: 10,
+    letterSpacing: 2,
+  );
 
   static BoxDecoration get bottomDockDecoration => BoxDecoration(
-        color: dashWell.withAlpha(240),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.transparent, width: 1.5),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x99000000), blurRadius: 24, offset: Offset(0, 12)),
-        ],
-      );
+    color: dashWell.withAlpha(240),
+    borderRadius: BorderRadius.circular(999),
+    border: Border.all(color: Colors.transparent, width: 1.5),
+    boxShadow: const [
+      BoxShadow(
+        color: Color(0x99000000),
+        blurRadius: 24,
+        offset: Offset(0, 12),
+      ),
+    ],
+  );
 
   static ThemeData get darkTheme {
     return ThemeData(
@@ -269,23 +263,20 @@ class AppTheme {
   }
 
   static BoxDecoration get cinematicGlassDecoration => BoxDecoration(
-        color: glassBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withAlpha(51),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(127),
-            blurRadius: 64,
-            offset: const Offset(0, 24),
-          ),
-          BoxShadow(
-            color: Colors.black.withAlpha(63),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      );
+    color: glassBg,
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(color: Colors.white.withAlpha(51), width: 1),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withAlpha(127),
+        blurRadius: 64,
+        offset: const Offset(0, 24),
+      ),
+      BoxShadow(
+        color: Colors.black.withAlpha(63),
+        blurRadius: 24,
+        offset: const Offset(0, 12),
+      ),
+    ],
+  );
 }

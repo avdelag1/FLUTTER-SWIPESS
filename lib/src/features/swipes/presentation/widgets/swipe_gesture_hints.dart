@@ -51,9 +51,7 @@ class _SwipeGestureHintsState extends State<SwipeGestureHints>
             // Cap: ±6px over 2s, then 1s rest.
             final t = _pulse.value;
             final active = t < (2 / 3);
-            final wave = active
-                ? math.sin((t / (2 / 3)) * math.pi * 2)
-                : 0.0;
+            final wave = active ? math.sin((t / (2 / 3)) * math.pi * 2) : 0.0;
             final dx = 6 * wave;
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),

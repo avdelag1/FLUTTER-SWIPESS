@@ -17,12 +17,11 @@ class MapPerspectiveStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Curves.easeInOutCubic.transform(progress.clamp(0.0, 1.0));
-    final pitch = MapCameraMath.openPitch +
+    final pitch =
+        MapCameraMath.openPitch +
         (MapCameraMath.cruisePitch - MapCameraMath.openPitch) * t;
-    final bank = MapCameraMath.openBankDegrees *
-        (1 - t) *
-        3.141592653589793 /
-        180;
+    final bank =
+        MapCameraMath.openBankDegrees * (1 - t) * 3.141592653589793 / 180;
     return ClipRect(
       child: Transform(
         alignment: Alignment.center,

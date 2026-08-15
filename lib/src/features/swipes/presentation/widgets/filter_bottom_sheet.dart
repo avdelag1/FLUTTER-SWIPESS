@@ -45,14 +45,62 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late double _radiusKm;
 
   static const _categories = [
-    ('property', 'Properties', 'Settle anywhere', Icons.home_rounded, Color(0xFFFF4D00)),
-    ('motorcycle', 'Motos', 'High velocity', Icons.two_wheeler_rounded, Color(0xFFFF4D6A)),
-    ('bicycle', 'Bikes', 'Urban agility', Icons.pedal_bike_rounded, Color(0xFF22C55E)),
-    ('yacht', 'Yachts', 'Open waters', Icons.sailing_rounded, Color(0xFF3B82F6)),
-    ('worker', 'Workers', 'Elite skillset', Icons.work_rounded, Color(0xFF8B5CF6)),
-    ('buyers', 'Buyers', 'Purchase ready', Icons.sell_rounded, Color(0xFF60A5FA)),
-    ('renters', 'Renters', 'Looking to move', Icons.key_rounded, Color(0xFFE4007C)),
-    ('leads', 'Leads', 'Seeking workers', Icons.groups_rounded, Color(0xFFEB4898)),
+    (
+      'property',
+      'Properties',
+      'Settle anywhere',
+      Icons.home_rounded,
+      Color(0xFFFF4D00),
+    ),
+    (
+      'motorcycle',
+      'Motos',
+      'High velocity',
+      Icons.two_wheeler_rounded,
+      Color(0xFFFF4D6A),
+    ),
+    (
+      'bicycle',
+      'Bikes',
+      'Urban agility',
+      Icons.pedal_bike_rounded,
+      Color(0xFF22C55E),
+    ),
+    (
+      'yacht',
+      'Yachts',
+      'Open waters',
+      Icons.sailing_rounded,
+      Color(0xFF3B82F6),
+    ),
+    (
+      'worker',
+      'Workers',
+      'Elite skillset',
+      Icons.work_rounded,
+      Color(0xFF8B5CF6),
+    ),
+    (
+      'buyers',
+      'Buyers',
+      'Purchase ready',
+      Icons.sell_rounded,
+      Color(0xFF60A5FA),
+    ),
+    (
+      'renters',
+      'Renters',
+      'Looking to move',
+      Icons.key_rounded,
+      Color(0xFFE4007C),
+    ),
+    (
+      'leads',
+      'Leads',
+      'Seeking workers',
+      Icons.groups_rounded,
+      Color(0xFFEB4898),
+    ),
   ];
 
   Color get _accent {
@@ -139,14 +187,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       'worker' => 'worker',
       _ => cat,
     };
-    ref.read(swipeFilterProvider.notifier).replace(
+    ref
+        .read(swipeFilterProvider.notifier)
+        .replace(
           SwipeFilter(
             category: mappedCategory,
             interestType: cat == 'buyers'
                 ? 'sale'
                 : cat == 'renters'
-                    ? 'rent'
-                    : _interestType,
+                ? 'rent'
+                : _interestType,
             minPrice: budget?.$3,
             maxPrice: budget?.$4,
             priceRangeLabel: _priceRange,
@@ -165,10 +215,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     // Force deck reload with new filters.
     ref.invalidate(swipeListingsProvider);
     AppHaptics.medium();
-    final title = _categories
-            .where((c) => c.$1 == cat)
-            .map((c) => c.$2)
-            .firstOrNull ??
+    final title =
+        _categories.where((c) => c.$1 == cat).map((c) => c.$2).firstOrNull ??
         'Scan';
     if (widget.asPage) {
       openClientSwipeDeck(
@@ -232,428 +280,428 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final canvas = MatteSurface.canvas(context);
     final accent = _accent;
     return Container(
-          decoration: BoxDecoration(
-            color: canvas,
-            borderRadius: widget.asPage
-                ? BorderRadius.zero
-                : const BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          child: Column(
-            children: [
-              if (!widget.asPage) ...[
-                const SizedBox(height: 10),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: muted.withAlpha(80),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ] else
-                SizedBox(height: MediaQuery.paddingOf(context).top + 8),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 120),
-                  children: [
-                    if (_activeCategory == null) ...[
-                      _titleBlock(context),
-                      const SizedBox(height: 8),
-                      if (!widget.asPage)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(Icons.chevron_left_rounded, color: ink),
-                            label: Text(
-                              'Back',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: ink,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 11,
-                                letterSpacing: 1.6,
-                              ),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      for (final cat in _categories) ...[
-                        _CategoryCard(
-                          icon: cat.$4,
-                          title: cat.$2,
-                          subtitle: cat.$3,
-                          color: cat.$5,
-                          onTap: () {
-                            AppHaptics.selection();
-                            setState(() => _activeCategory = cat.$1);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ] else ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () =>
-                              setState(() => _activeCategory = null),
-                          icon: Icon(Icons.chevron_left_rounded, color: ink),
-                          label: Text(
-                            'Back',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: ink,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                              letterSpacing: 1.6,
-                            ),
+      decoration: BoxDecoration(
+        color: canvas,
+        borderRadius: widget.asPage
+            ? BorderRadius.zero
+            : const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          if (!widget.asPage) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: muted.withAlpha(80),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ] else
+            SizedBox(height: MediaQuery.paddingOf(context).top + 8),
+          Expanded(
+            child: ListView(
+              controller: scrollController,
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 120),
+              children: [
+                if (_activeCategory == null) ...[
+                  _titleBlock(context),
+                  const SizedBox(height: 8),
+                  if (!widget.asPage)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.chevron_left_rounded, color: ink),
+                        label: Text(
+                          'Back',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                            letterSpacing: 1.6,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (final cat in _categories)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: _Pill(
-                                  label: cat.$2,
-                                  active: _activeCategory == cat.$1,
-                                  accent: cat.$5,
-                                  onTap: () => setState(
-                                      () => _activeCategory = cat.$1),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Text(
-                        _detailTitle,
+                    ),
+                  const SizedBox(height: 8),
+                  for (final cat in _categories) ...[
+                    _CategoryCard(
+                      icon: cat.$4,
+                      title: cat.$2,
+                      subtitle: cat.$3,
+                      color: cat.$5,
+                      onTap: () {
+                        AppHaptics.selection();
+                        setState(() => _activeCategory = cat.$1);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ] else ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => _activeCategory = null),
+                      icon: Icon(Icons.chevron_left_rounded, color: ink),
+                      label: Text(
+                        'Back',
                         style: GoogleFonts.plusJakartaSans(
                           color: ink,
-                          fontSize: 42,
                           fontWeight: FontWeight.w900,
-                          fontStyle: FontStyle.italic,
-                          letterSpacing: -1.6,
-                          height: 0.95,
-                        ),
-                      ),
-                      Text(
-                        'FILTERS',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: accent,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 3.2,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      if (_showsInterest) ...[
-                        _sectionLabel(context, 'INTEREST'),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final opt in const [
-                              ('rent', 'For Rent'),
-                              ('sale', 'For Sale'),
-                              ('both', 'Both'),
-                            ])
-                              _Pill(
-                                label: opt.$2,
-                                active: _interestType == opt.$1,
-                                accent: accent,
-                                onTap: () =>
-                                    setState(() => _interestType = opt.$1),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                      ],
-                      _sectionLabel(context, 'BUDGET'),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final b in _budgets)
-                            _Pill(
-                              label: b.$2,
-                              active: _priceRange == b.$1,
-                              accent: accent,
-                              onTap: () => setState(() => _priceRange = b.$1),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
-                      if (_activeCategory == 'property') ...[
-                        _sectionLabel(context, 'PROPERTY TYPE'),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final t in ListingTaxonomies.propertyTypes)
-                              _Pill(
-                                label: t,
-                                active: _propertyTypes.contains(t),
-                                accent: accent,
-                                onTap: () => setState(() {
-                                  if (_propertyTypes.contains(t)) {
-                                    _propertyTypes.remove(t);
-                                  } else {
-                                    _propertyTypes.add(t);
-                                  }
-                                }),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                        _sectionLabel(context, 'MIN BEDROOMS'),
-                        const SizedBox(height: 10),
-                        _NumberRow(
-                          value: _minBeds,
-                          max: 6,
-                          anyLabel: 'Any',
-                          accent: accent,
-                          onChanged: (v) => setState(() => _minBeds = v),
-                        ),
-                        const SizedBox(height: 18),
-                        _sectionLabel(context, 'MIN BATHROOMS'),
-                        const SizedBox(height: 10),
-                        _NumberRow(
-                          value: _minBaths,
-                          max: 5,
-                          anyLabel: 'Any',
-                          accent: accent,
-                          onChanged: (v) => setState(() => _minBaths = v),
-                        ),
-                        const SizedBox(height: 18),
-                        _FilterToggle(
-                          label: 'Furnished',
-                          value: _furnished,
-                          accent: accent,
-                          onChanged: (v) => setState(() => _furnished = v),
-                        ),
-                        const SizedBox(height: 10),
-                        _FilterToggle(
-                          label: 'Pet friendly',
-                          value: _petFriendly,
-                          accent: accent,
-                          onChanged: (v) => setState(() => _petFriendly = v),
-                        ),
-                        const SizedBox(height: 22),
-                      ],
-                      if (_activeCategory == 'motorcycle') ...[
-                        _sectionLabel(context, 'MOTO TYPE'),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final t in ListingTaxonomies.motoTypes)
-                              _Pill(
-                                label: t,
-                                active: _propertyTypes.contains(t),
-                                accent: accent,
-                                onTap: () => setState(() {
-                                  if (_propertyTypes.contains(t)) {
-                                    _propertyTypes.remove(t);
-                                  } else {
-                                    _propertyTypes.add(t);
-                                  }
-                                }),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                      ],
-                      if (_activeCategory == 'yacht') ...[
-                        _sectionLabel(context, 'YACHT TYPE'),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final t in const [
-                              'Motor yacht',
-                              'Sailboat',
-                              'Catamaran',
-                              'Super yacht',
-                              'Pontoon',
-                            ])
-                              _Pill(
-                                label: t,
-                                active: _propertyTypes.contains(t),
-                                accent: accent,
-                                onTap: () => setState(() {
-                                  if (_propertyTypes.contains(t)) {
-                                    _propertyTypes.remove(t);
-                                  } else {
-                                    _propertyTypes.add(t);
-                                  }
-                                }),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                      ],
-                      if (_activeCategory == 'bicycle') ...[
-                        _sectionLabel(context, 'BIKE TYPE'),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final t in const [
-                              'Road',
-                              'Mountain',
-                              'Hybrid',
-                              'Electric',
-                              'Cruiser',
-                              'BMX',
-                              'Folding',
-                            ])
-                              _Pill(
-                                label: t,
-                                active: _propertyTypes.contains(t),
-                                accent: accent,
-                                onTap: () => setState(() {
-                                  if (_propertyTypes.contains(t)) {
-                                    _propertyTypes.remove(t);
-                                  } else {
-                                    _propertyTypes.add(t);
-                                  }
-                                }),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-                      ],
-                      _sectionLabel(context, 'CITY'),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final c in ListingTaxonomies.popularCities)
-                            _Pill(
-                              label: c,
-                              active: _city == c,
-                              accent: accent,
-                              onTap: () => setState(
-                                  () => _city = _city == c ? null : c),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
-                      _sectionLabel(context, 'RADIUS  ${_radiusKm.round()} KM'),
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: accent,
-                          inactiveTrackColor: hairline,
-                          thumbColor: accent,
-                          overlayColor: accent.withAlpha(40),
-                        ),
-                        child: Slider(
-                          value: _radiusKm,
-                          min: 5,
-                          max: 200,
-                          divisions: 39,
-                          onChanged: (v) => setState(() => _radiusKm = v),
-                        ),
-                      ),
-                      Text(
-                        'Radius filtering uses your current GPS or selected location.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: muted,
                           fontSize: 11,
+                          letterSpacing: 1.6,
                         ),
                       ),
-                    ],
-                  ],
-                ),
-              ),
-              if (_activeCategory != null)
-                SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _reset,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: ink,
-                              side: BorderSide(color: hairline),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: Text(
-                              'Reset',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.4,
-                              ),
+                        for (final cat in _categories)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _Pill(
+                              label: cat.$2,
+                              active: _activeCategory == cat.$1,
+                              accent: cat.$5,
+                              onTap: () =>
+                                  setState(() => _activeCategory = cat.$1),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                colors: [
-                                  accent,
-                                  Color.lerp(accent, const Color(0xFFEB4898), 0.55) ??
-                                      accent,
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: accent.withAlpha(90),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: _apply,
-                              icon: const Icon(Icons.search_rounded),
-                          label: Text(
-                            'Apply Filters',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.4,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                shadowColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                ),
-            ],
+                  const SizedBox(height: 18),
+                  Text(
+                    _detailTitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: -1.6,
+                      height: 0.95,
+                    ),
+                  ),
+                  Text(
+                    'FILTERS',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: accent,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3.2,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  if (_showsInterest) ...[
+                    _sectionLabel(context, 'INTEREST'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final opt in const [
+                          ('rent', 'For Rent'),
+                          ('sale', 'For Sale'),
+                          ('both', 'Both'),
+                        ])
+                          _Pill(
+                            label: opt.$2,
+                            active: _interestType == opt.$1,
+                            accent: accent,
+                            onTap: () => setState(() => _interestType = opt.$1),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                  ],
+                  _sectionLabel(context, 'BUDGET'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final b in _budgets)
+                        _Pill(
+                          label: b.$2,
+                          active: _priceRange == b.$1,
+                          accent: accent,
+                          onTap: () => setState(() => _priceRange = b.$1),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  if (_activeCategory == 'property') ...[
+                    _sectionLabel(context, 'PROPERTY TYPE'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final t in ListingTaxonomies.propertyTypes)
+                          _Pill(
+                            label: t,
+                            active: _propertyTypes.contains(t),
+                            accent: accent,
+                            onTap: () => setState(() {
+                              if (_propertyTypes.contains(t)) {
+                                _propertyTypes.remove(t);
+                              } else {
+                                _propertyTypes.add(t);
+                              }
+                            }),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    _sectionLabel(context, 'MIN BEDROOMS'),
+                    const SizedBox(height: 10),
+                    _NumberRow(
+                      value: _minBeds,
+                      max: 6,
+                      anyLabel: 'Any',
+                      accent: accent,
+                      onChanged: (v) => setState(() => _minBeds = v),
+                    ),
+                    const SizedBox(height: 18),
+                    _sectionLabel(context, 'MIN BATHROOMS'),
+                    const SizedBox(height: 10),
+                    _NumberRow(
+                      value: _minBaths,
+                      max: 5,
+                      anyLabel: 'Any',
+                      accent: accent,
+                      onChanged: (v) => setState(() => _minBaths = v),
+                    ),
+                    const SizedBox(height: 18),
+                    _FilterToggle(
+                      label: 'Furnished',
+                      value: _furnished,
+                      accent: accent,
+                      onChanged: (v) => setState(() => _furnished = v),
+                    ),
+                    const SizedBox(height: 10),
+                    _FilterToggle(
+                      label: 'Pet friendly',
+                      value: _petFriendly,
+                      accent: accent,
+                      onChanged: (v) => setState(() => _petFriendly = v),
+                    ),
+                    const SizedBox(height: 22),
+                  ],
+                  if (_activeCategory == 'motorcycle') ...[
+                    _sectionLabel(context, 'MOTO TYPE'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final t in ListingTaxonomies.motoTypes)
+                          _Pill(
+                            label: t,
+                            active: _propertyTypes.contains(t),
+                            accent: accent,
+                            onTap: () => setState(() {
+                              if (_propertyTypes.contains(t)) {
+                                _propertyTypes.remove(t);
+                              } else {
+                                _propertyTypes.add(t);
+                              }
+                            }),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                  ],
+                  if (_activeCategory == 'yacht') ...[
+                    _sectionLabel(context, 'YACHT TYPE'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final t in const [
+                          'Motor yacht',
+                          'Sailboat',
+                          'Catamaran',
+                          'Super yacht',
+                          'Pontoon',
+                        ])
+                          _Pill(
+                            label: t,
+                            active: _propertyTypes.contains(t),
+                            accent: accent,
+                            onTap: () => setState(() {
+                              if (_propertyTypes.contains(t)) {
+                                _propertyTypes.remove(t);
+                              } else {
+                                _propertyTypes.add(t);
+                              }
+                            }),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                  ],
+                  if (_activeCategory == 'bicycle') ...[
+                    _sectionLabel(context, 'BIKE TYPE'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final t in const [
+                          'Road',
+                          'Mountain',
+                          'Hybrid',
+                          'Electric',
+                          'Cruiser',
+                          'BMX',
+                          'Folding',
+                        ])
+                          _Pill(
+                            label: t,
+                            active: _propertyTypes.contains(t),
+                            accent: accent,
+                            onTap: () => setState(() {
+                              if (_propertyTypes.contains(t)) {
+                                _propertyTypes.remove(t);
+                              } else {
+                                _propertyTypes.add(t);
+                              }
+                            }),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                  ],
+                  _sectionLabel(context, 'CITY'),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final c in ListingTaxonomies.popularCities)
+                        _Pill(
+                          label: c,
+                          active: _city == c,
+                          accent: accent,
+                          onTap: () =>
+                              setState(() => _city = _city == c ? null : c),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  _sectionLabel(context, 'RADIUS  ${_radiusKm.round()} KM'),
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: accent,
+                      inactiveTrackColor: hairline,
+                      thumbColor: accent,
+                      overlayColor: accent.withAlpha(40),
+                    ),
+                    child: Slider(
+                      value: _radiusKm,
+                      min: 5,
+                      max: 200,
+                      divisions: 39,
+                      onChanged: (v) => setState(() => _radiusKm = v),
+                    ),
+                  ),
+                  Text(
+                    'Radius filtering uses your current GPS or selected location.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: muted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
+          if (_activeCategory != null)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _reset,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ink,
+                          side: BorderSide(color: hairline),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Reset',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            colors: [
+                              accent,
+                              Color.lerp(
+                                    accent,
+                                    const Color(0xFFEB4898),
+                                    0.55,
+                                  ) ??
+                                  accent,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withAlpha(90),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: _apply,
+                          icon: const Icon(Icons.search_rounded),
+                          label: Text(
+                            'Apply Filters',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

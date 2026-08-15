@@ -28,8 +28,10 @@ class DigitalContract {
       id: json['id'] as String,
       title: json['title'] as String? ?? 'Contract',
       status: json['status'] as String? ?? 'draft',
-      content: json['content'] as String? ?? json['terms_and_conditions'] as String?,
-      templateType: json['template_type'] as String? ?? json['contract_type'] as String?,
+      content:
+          json['content'] as String? ?? json['terms_and_conditions'] as String?,
+      templateType:
+          json['template_type'] as String? ?? json['contract_type'] as String?,
       ownerId: json['owner_id'] as String?,
       clientId: json['client_id'] as String?,
       ownerSignedAt: _date(json['owner_signed_at']),

@@ -33,6 +33,7 @@ class Listing {
   final bool? isActive;
   final int? likes;
   final int? views;
+
   /// Cap `has_verified_documents` — drives the violet Verified pill on swipe.
   final bool hasVerifiedDocuments;
   final DateTime? createdAt;
@@ -123,11 +124,16 @@ class Listing {
       isActive: json['is_active'] as bool?,
       likes: (json['likes'] as num?)?.toInt(),
       views: (json['views'] as num?)?.toInt(),
-      hasVerifiedDocuments: json['has_verified_documents'] == true ||
+      hasVerifiedDocuments:
+          json['has_verified_documents'] == true ||
           json['background_check_verified'] == true ||
           json['insurance_verified'] == true,
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'] as String) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'] as String)
+          : null,
       vehicleBrand: json['vehicle_brand'] as String?,
       vehicleModel: json['vehicle_model'] as String?,
       year: (json['year'] as num?)?.toInt(),
@@ -160,8 +166,10 @@ class Listing {
   List<String> get quickTags {
     final tags = <String>[];
     if (beds != null && beds! > 0) tags.add('$beds bed');
-    if (baths != null && baths! > 0) tags.add('${baths!.toStringAsFixed(baths! % 1 == 0 ? 0 : 1)} bath');
-    if (squareFootage != null && squareFootage! > 0) tags.add('${squareFootage!.toStringAsFixed(0)} sqft');
+    if (baths != null && baths! > 0)
+      tags.add('${baths!.toStringAsFixed(baths! % 1 == 0 ? 0 : 1)} bath');
+    if (squareFootage != null && squareFootage! > 0)
+      tags.add('${squareFootage!.toStringAsFixed(0)} sqft');
     if (furnished == true) tags.add('Furnished');
     if (petFriendly == true) tags.add('Pet Friendly');
     return tags;

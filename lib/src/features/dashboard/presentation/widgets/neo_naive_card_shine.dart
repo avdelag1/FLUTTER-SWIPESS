@@ -6,10 +6,7 @@ import 'package:flutter/material.dart';
 /// - `::before` → inset box-shadow rim light (white edges)
 /// - `::after` → radial gradient blob (soft-light specular highlight)
 class NeoNaiveCardShine extends StatelessWidget {
-  const NeoNaiveCardShine({
-    super.key,
-    required this.borderRadius,
-  });
+  const NeoNaiveCardShine({super.key, required this.borderRadius});
 
   final BorderRadius borderRadius;
 

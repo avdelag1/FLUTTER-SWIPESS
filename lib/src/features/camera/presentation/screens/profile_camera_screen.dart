@@ -10,10 +10,7 @@ enum ProfileCameraMode { selfie, owner }
 
 /// Cap ClientSelfieCamera / OwnerProfileCamera — capture + upload avatar.
 class ProfileCameraScreen extends StatefulWidget {
-  const ProfileCameraScreen({
-    super.key,
-    this.mode = ProfileCameraMode.selfie,
-  });
+  const ProfileCameraScreen({super.key, this.mode = ProfileCameraMode.selfie});
 
   final ProfileCameraMode mode;
 
@@ -76,8 +73,7 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
     });
     try {
       final bytes = await shot.readAsBytes();
-      final path =
-          '${user.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = '${user.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
       await Supabase.instance.client.storage
           .from('profile-images')
           .uploadBinary(
@@ -100,14 +96,20 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
         });
       } catch (_) {}
       try {
-        await Supabase.instance.client.from('client_profiles').update({
-          'profile_images': [url],
-        }).eq('user_id', user.id);
+        await Supabase.instance.client
+            .from('client_profiles')
+            .update({
+              'profile_images': [url],
+            })
+            .eq('user_id', user.id);
       } catch (_) {}
       try {
-        await Supabase.instance.client.from('owner_profiles').update({
-          'profile_images': [url],
-        }).eq('user_id', user.id);
+        await Supabase.instance.client
+            .from('owner_profiles')
+            .update({
+              'profile_images': [url],
+            })
+            .eq('user_id', user.id);
       } catch (_) {}
       try {
         await Supabase.instance.client.auth.updateUser(
@@ -169,8 +171,11 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: _shot == null
                         ? const Center(
-                            child: Icon(Icons.person_rounded,
-                                color: Colors.white24, size: 72),
+                            child: Icon(
+                              Icons.person_rounded,
+                              color: Colors.white24,
+                              size: 72,
+                            ),
                           )
                         : FutureBuilder(
                             future: _shot!.readAsBytes(),
@@ -178,11 +183,15 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                               if (!snap.hasData) {
                                 return const Center(
                                   child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2),
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 );
                               }
-                              return Image.memory(snap.data!,
-                                  fit: BoxFit.cover);
+                              return Image.memory(
+                                snap.data!,
+                                fit: BoxFit.cover,
+                              );
                             },
                           ),
                   ),

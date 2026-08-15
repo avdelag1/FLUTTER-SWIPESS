@@ -34,7 +34,9 @@ class Message {
       messageType: json['message_type'] as String? ?? 'text',
       isRead: json['is_read'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
-      readAt: json['read_at'] != null ? DateTime.tryParse(json['read_at'] as String) : null,
+      readAt: json['read_at'] != null
+          ? DateTime.tryParse(json['read_at'] as String)
+          : null,
     );
   }
 }

@@ -21,6 +21,7 @@ class DocumentAttachment {
   final String type;
   final String id;
   final String title;
+
   /// draft | sent | signed | uploaded
   final String status;
   final String? templateType;
@@ -41,13 +42,13 @@ class DocumentAttachment {
   }
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'id': id,
-        'title': title,
-        'status': status,
-        if (templateType != null) 'template_type': templateType,
-        if (fileName != null) 'file_name': fileName,
-      };
+    'type': type,
+    'id': id,
+    'title': title,
+    'status': status,
+    if (templateType != null) 'template_type': templateType,
+    if (fileName != null) 'file_name': fileName,
+  };
 }
 
 /// Cap `parseDocumentAttachments` — tolerant of malformed/legacy rows.

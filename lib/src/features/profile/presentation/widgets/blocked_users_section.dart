@@ -19,8 +19,8 @@ class BlockedUserRow {
 
 final blockedUsersProvider =
     AsyncNotifierProvider<BlockedUsersNotifier, List<BlockedUserRow>>(
-  BlockedUsersNotifier.new,
-);
+      BlockedUsersNotifier.new,
+    );
 
 /// Cap `useBlockedUsers` / `useUnblockUser` — `user_blocks` (+ profiles).
 class BlockedUsersNotifier extends AsyncNotifier<List<BlockedUserRow>> {
@@ -39,8 +39,7 @@ class BlockedUsersNotifier extends AsyncNotifier<List<BlockedUserRow>> {
           .eq('blocker_id', me)
           .order('created_at', ascending: false);
       final ids = <String>[
-        for (final r in rows as List)
-          (r as Map)['blocked_id'] as String? ?? '',
+        for (final r in rows as List) (r as Map)['blocked_id'] as String? ?? '',
       ].where((id) => id.isNotEmpty).toList();
       if (ids.isEmpty) return [];
 
@@ -117,9 +116,7 @@ class BlockedUsersNotifier extends AsyncNotifier<List<BlockedUserRow>> {
       } catch (_) {}
     }
     final current = state.asData?.value ?? [];
-    state = AsyncData(
-      current.where((u) => u.blockedId != blockedId).toList(),
-    );
+    state = AsyncData(current.where((u) => u.blockedId != blockedId).toList());
   }
 }
 
@@ -231,8 +228,11 @@ class _BlockedTile extends StatelessWidget {
                 ? NetworkImage(user.avatarUrl!)
                 : null,
             child: user.avatarUrl == null
-                ? const Icon(Icons.person_off_rounded,
-                    color: Colors.white38, size: 18)
+                ? const Icon(
+                    Icons.person_off_rounded,
+                    color: Colors.white38,
+                    size: 18,
+                  )
                 : null,
           ),
           const SizedBox(width: 12),

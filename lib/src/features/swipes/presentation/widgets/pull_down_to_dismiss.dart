@@ -119,10 +119,7 @@ class _PullDownToDismissState extends State<PullDownToDismiss>
         child: Transform.scale(
           scale: scale,
           alignment: Alignment.topCenter,
-          child: Opacity(
-            opacity: opacity,
-            child: widget.child,
-          ),
+          child: Opacity(opacity: opacity, child: widget.child),
         ),
       ),
     );

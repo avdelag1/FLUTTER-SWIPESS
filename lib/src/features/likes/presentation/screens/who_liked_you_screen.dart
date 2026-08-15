@@ -48,7 +48,9 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
         ),
         content: Text(
           'This will remove their profile from your interest list.',
-          style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
+          style: GoogleFonts.plusJakartaSans(
+            color: MatteSurface.muted(context),
+          ),
         ),
         actions: [
           TextButton(
@@ -99,7 +101,10 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                   height: 64,
                   child: Row(
                     children: [
-                      Icon(Icons.search_rounded, color: MatteSurface.muted(context)),
+                      Icon(
+                        Icons.search_rounded,
+                        color: MatteSurface.muted(context),
+                      ),
                       SizedBox(width: 10),
                       Expanded(
                         child: TextField(
@@ -109,7 +114,9 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: 'Search connections...',
-                            hintStyle: TextStyle(color: MatteSurface.faint(context)),
+                            hintStyle: TextStyle(
+                              color: MatteSurface.faint(context),
+                            ),
                           ),
                         ),
                       ),
@@ -122,7 +129,9 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
               child: async.when(
                 loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: MatteSurface.ink(context), strokeWidth: 2),
+                    color: MatteSurface.ink(context),
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(

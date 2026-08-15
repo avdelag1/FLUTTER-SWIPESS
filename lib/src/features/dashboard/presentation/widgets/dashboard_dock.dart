@@ -42,10 +42,7 @@ class DashboardDock extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xCC000000),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: Colors.white.withAlpha(36),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withAlpha(36), width: 1),
           ),
           clipBehavior: Clip.antiAlias,
           child: ScrollConfiguration(
@@ -130,18 +127,10 @@ class DockButton extends StatelessWidget {
                           ],
                         )
                       : RadialGradient(
-                          colors: [
-                            wash.withAlpha(70),
-                            wash.withAlpha(0),
-                          ],
+                          colors: [wash.withAlpha(70), wash.withAlpha(0)],
                         ),
                   boxShadow: selected || item.accent
-                      ? [
-                          BoxShadow(
-                            color: wash.withAlpha(120),
-                            blurRadius: 10,
-                          ),
-                        ]
+                      ? [BoxShadow(color: wash.withAlpha(120), blurRadius: 10)]
                       : null,
                 ),
               ),
@@ -150,11 +139,7 @@ class DockButton extends StatelessWidget {
                       painter: AiRobotPainter(color: color),
                       size: const Size(18, 18),
                     )
-                  : Icon(
-                      item.icon,
-                      size: item.accent ? 22 : 20,
-                      color: color,
-                    ),
+                  : Icon(item.icon, size: item.accent ? 22 : 20, color: color),
             ],
           ),
         ),
@@ -184,16 +169,41 @@ class AiRobotPainter extends CustomPainter {
       Radius.circular(s * 0.08),
     );
     canvas.drawRRect(r, p);
-    canvas.drawLine(Offset(ox + s * 0.08, oy + s * 0.58), Offset(ox + s * 0.17, oy + s * 0.58), p);
-    canvas.drawLine(Offset(ox + s * 0.83, oy + s * 0.58), Offset(ox + s * 0.92, oy + s * 0.58), p);
-    canvas.drawLine(Offset(ox + s * 0.38, oy + s * 0.54), Offset(ox + s * 0.38, oy + s * 0.62), p);
-    canvas.drawLine(Offset(ox + s * 0.62, oy + s * 0.54), Offset(ox + s * 0.62, oy + s * 0.62), p);
-    canvas.drawLine(Offset(ox + s * 0.5, oy + s * 0.33), Offset(ox + s * 0.5, oy + s * 0.17), p);
-    canvas.drawLine(Offset(ox + s * 0.5, oy + s * 0.17), Offset(ox + s * 0.33, oy + s * 0.17), p);
+    canvas.drawLine(
+      Offset(ox + s * 0.08, oy + s * 0.58),
+      Offset(ox + s * 0.17, oy + s * 0.58),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * 0.83, oy + s * 0.58),
+      Offset(ox + s * 0.92, oy + s * 0.58),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * 0.38, oy + s * 0.54),
+      Offset(ox + s * 0.38, oy + s * 0.62),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * 0.62, oy + s * 0.54),
+      Offset(ox + s * 0.62, oy + s * 0.62),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * 0.5, oy + s * 0.33),
+      Offset(ox + s * 0.5, oy + s * 0.17),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * 0.5, oy + s * 0.17),
+      Offset(ox + s * 0.33, oy + s * 0.17),
+      p,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant AiRobotPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant AiRobotPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 const defaultDashboardNavItems = [
@@ -207,11 +217,7 @@ const defaultDashboardNavItems = [
     icon: Icons.local_fire_department_rounded,
     wash: Color(0xFFE4007C),
   ),
-  BottomNavItem(
-    id: NavTab.ai,
-    useAiIcon: true,
-    wash: Color(0xFF8B5CF6),
-  ),
+  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF8B5CF6)),
   BottomNavItem(
     id: NavTab.add,
     icon: Icons.add_rounded,

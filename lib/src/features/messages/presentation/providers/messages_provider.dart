@@ -47,13 +47,13 @@ class ConversationsNotifier extends AsyncNotifier<List<ChatConversation>> {
 
 final conversationsProvider =
     AsyncNotifierProvider<ConversationsNotifier, List<ChatConversation>>(
-  ConversationsNotifier.new,
-);
+      ConversationsNotifier.new,
+    );
 
 final conversationMessagesProvider =
     StreamProvider.family<List<ChatMessage>, String>((ref, conversationId) {
-  return ref.read(messageRepositoryProvider).watchMessages(conversationId);
-});
+      return ref.read(messageRepositoryProvider).watchMessages(conversationId);
+    });
 
 class MessagesSearchQueryNotifier extends Notifier<String> {
   @override
@@ -64,5 +64,5 @@ class MessagesSearchQueryNotifier extends Notifier<String> {
 
 final messagesSearchQueryProvider =
     NotifierProvider<MessagesSearchQueryNotifier, String>(
-  MessagesSearchQueryNotifier.new,
-);
+      MessagesSearchQueryNotifier.new,
+    );

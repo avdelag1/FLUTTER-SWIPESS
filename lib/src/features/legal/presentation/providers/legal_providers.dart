@@ -7,7 +7,9 @@ final legalRepositoryProvider = Provider<LegalRepository>((ref) {
   return LegalRepository(Supabase.instance.client);
 });
 
-final legalServicePackagesProvider = FutureProvider<List<LegalServicePackage>>((ref) async {
+final legalServicePackagesProvider = FutureProvider<List<LegalServicePackage>>((
+  ref,
+) async {
   final repo = ref.watch(legalRepositoryProvider);
   return repo.fetchActivePackages();
 });

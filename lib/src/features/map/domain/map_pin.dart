@@ -9,16 +9,16 @@ class MapPin {
   final double lng;
 
   MapPin.listing(this.listing)
-      : isListing = true,
-        profile = null,
-        lat = listing!.latitude!,
-        lng = listing.longitude!;
+    : isListing = true,
+      profile = null,
+      lat = listing!.latitude!,
+      lng = listing.longitude!;
 
   MapPin.profile(this.profile)
-      : isListing = false,
-        listing = null,
-        lat = profile!.latitude!,
-        lng = profile.longitude!;
+    : isListing = false,
+      listing = null,
+      lat = profile!.latitude!,
+      lng = profile.longitude!;
 
   String get id => isListing ? listing!.id : profile!.id;
 }

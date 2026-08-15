@@ -22,10 +22,12 @@ Future<void> main() async {
   }
 
   await SystemChromeService.initialize();
-  unawaited(SystemChrome.setPreferredOrientations(const [
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]));
+  unawaited(
+    SystemChrome.setPreferredOrientations(const [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]),
+  );
 
   // Router/auth touch Supabase.instance — must init before runApp.
   try {

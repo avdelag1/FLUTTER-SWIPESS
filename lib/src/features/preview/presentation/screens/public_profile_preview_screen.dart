@@ -19,7 +19,10 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
     return Scaffold(
       body: async.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: MatteSurface.ink(context),
+            strokeWidth: 2,
+          ),
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -30,12 +33,13 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
         data: (profile) {
           if (profile == null) {
             return Center(
-              child: Text('Profile not found',
-                  style: TextStyle(color: MatteSurface.muted(context))),
+              child: Text(
+                'Profile not found',
+                style: TextStyle(color: MatteSurface.muted(context)),
+              ),
             );
           }
-          final hero =
-              profile.images.isNotEmpty ? profile.images.first : null;
+          final hero = profile.images.isNotEmpty ? profile.images.first : null;
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -67,25 +71,29 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                                 context.go('/welcome');
                               }
                             },
-                            icon: Icon(Icons.close_rounded,
-                                color: MatteSurface.ink(context)),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: MatteSurface.ink(context),
+                            ),
                           ),
                           const Spacer(),
                           IconButton(
                             onPressed: () async {
                               final url =
                                   'https://www.swipess.com/u/${profile.userId}';
-                              await Clipboard.setData(
-                                  ClipboardData(text: url));
+                              await Clipboard.setData(ClipboardData(text: url));
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                      content: Text('Profile link copied')),
+                                    content: Text('Profile link copied'),
+                                  ),
                                 );
                               }
                             },
-                            icon: Icon(Icons.share_rounded,
-                                color: MatteSurface.ink(context)),
+                            icon: Icon(
+                              Icons.share_rounded,
+                              color: MatteSurface.ink(context),
+                            ),
                           ),
                         ],
                       ),
@@ -134,8 +142,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                             height: 54,
                             child: FilledButton(
                               onPressed: () => context.go('/welcome'),
-                              style: FilledButton.styleFrom(
-                              ),
+                              style: FilledButton.styleFrom(),
                               child: Text(
                                 'JOIN TO CONNECT',
                                 style: GoogleFonts.plusJakartaSans(

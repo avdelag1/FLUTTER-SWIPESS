@@ -5,8 +5,9 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/conci
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Intel Core card slides up and keeps chat when MENU is tapped',
-      (tester) async {
+  testWidgets('Intel Core card slides up and keeps chat when MENU is tapped', (
+    tester,
+  ) async {
     var closed = false;
     await tester.pumpWidget(
       ProviderScope(
@@ -37,13 +38,11 @@ void main() {
     expect(closed, isFalse);
   });
 
-  testWidgets('Intel Core card is bounded and does not overflow', (tester) async {
+  testWidgets('Intel Core card is bounded and does not overflow', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: _HostApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: _HostApp()));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('CHAT BODY'), findsOneWidget);

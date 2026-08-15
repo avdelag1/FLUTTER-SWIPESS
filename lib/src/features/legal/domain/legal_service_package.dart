@@ -29,7 +29,8 @@ class LegalServicePackage {
       price: (json['price'] as num).toDouble(),
       durationDays: json['duration_days'] as int?,
       duration: json['duration'] as String?,
-      features: (json['features'] as List<dynamic>?)
+      features:
+          (json['features'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

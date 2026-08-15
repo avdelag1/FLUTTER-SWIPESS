@@ -44,7 +44,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
       });
     }
-    final isDashboard = location == AppPaths.clientDashboard ||
+    final isDashboard =
+        location == AppPaths.clientDashboard ||
         location == AppPaths.legacyDashboard;
     final isProfile = location == AppPaths.clientProfile;
     final isEvents = location == AppPaths.exploreEvents;
@@ -74,8 +75,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final dockSelected = overlays.showVapId
         ? NavTab.idCard
         : overlays.showConcierge
-            ? NavTab.ai
-            : currentTab;
+        ? NavTab.ai
+        : currentTab;
     final canvas = AppTheme.canvasFor(isLight: isLight);
 
     return Scaffold(
@@ -86,7 +87,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (notification is ScrollUpdateNotification) {
-                ref.read(chromeVisibilityProvider.notifier).onScroll(
+                ref
+                    .read(chromeVisibilityProvider.notifier)
+                    .onScroll(
                       pixels: notification.metrics.pixels,
                       delta: notification.scrollDelta ?? 0,
                     );
@@ -151,51 +154,52 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             child: IgnorePointer(
               ignoring: !showChrome,
               child: AnimatedOpacity(
-              opacity: showChrome ? 1 : 0,
-              duration: Duration(milliseconds: showChrome ? 360 : 340),
-              curve: const Cubic(0.25, 0.1, 0.25, 1),
-              child: AnimatedSlide(
-                offset: showChrome ? Offset.zero : const Offset(0, 1.0),
+                opacity: showChrome ? 1 : 0,
                 duration: Duration(milliseconds: showChrome ? 360 : 340),
                 curve: const Cubic(0.25, 0.1, 0.25, 1),
-                child: SafeArea(
-              child: DashboardDock(
-                items: defaultDashboardNavItems,
-                selectedTab: dockSelected,
-                onTabSelected: (id) {
-                  if (id == NavTab.filter) {
-                    FilterBottomSheet.show(context);
-                    return;
-                  }
-                  if (id == NavTab.add) {
-                    context.push(AppPaths.ownerProperties);
-                    return;
-                  }
-                  if (id == NavTab.ai) {
-                    if (overlays.showConcierge) {
-                      ref.read(chromeVisibilityProvider.notifier).hide();
-                      return;
-                    }
-                    ref.read(overlayModalsProvider.notifier).openConcierge();
-                    return;
-                  }
-                  if (id == NavTab.idCard) {
-                    ref.read(overlayModalsProvider.notifier).openVapId();
-                    return;
-                  }
-                  ref.read(navTabProvider.notifier).set(id);
-                  context.go(AppPaths.pathForTab(id));
-                },
+                child: AnimatedSlide(
+                  offset: showChrome ? Offset.zero : const Offset(0, 1.0),
+                  duration: Duration(milliseconds: showChrome ? 360 : 340),
+                  curve: const Cubic(0.25, 0.1, 0.25, 1),
+                  child: SafeArea(
+                    child: DashboardDock(
+                      items: defaultDashboardNavItems,
+                      selectedTab: dockSelected,
+                      onTabSelected: (id) {
+                        if (id == NavTab.filter) {
+                          FilterBottomSheet.show(context);
+                          return;
+                        }
+                        if (id == NavTab.add) {
+                          context.push(AppPaths.ownerProperties);
+                          return;
+                        }
+                        if (id == NavTab.ai) {
+                          if (overlays.showConcierge) {
+                            ref.read(chromeVisibilityProvider.notifier).hide();
+                            return;
+                          }
+                          ref
+                              .read(overlayModalsProvider.notifier)
+                              .openConcierge();
+                          return;
+                        }
+                        if (id == NavTab.idCard) {
+                          ref.read(overlayModalsProvider.notifier).openVapId();
+                          return;
+                        }
+                        ref.read(navTabProvider.notifier).set(id);
+                        context.go(AppPaths.pathForTab(id));
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-          ),
-          ),
-          ),
           ChromeSummonZones(
             visible: showChrome,
-            onSummon: () =>
-                ref.read(chromeVisibilityProvider.notifier).show(),
+            onSummon: () => ref.read(chromeVisibilityProvider.notifier).show(),
           ),
           // Hidden until remote push is wired. Showing a prompt that
           // then says "not wired" is an App Store 2.1 reject.
@@ -206,5 +210,3 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     );
   }
 }
-
-

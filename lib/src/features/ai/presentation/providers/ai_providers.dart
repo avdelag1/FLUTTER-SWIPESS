@@ -23,11 +23,9 @@ class MemoriesNotifier extends AsyncNotifier<List<UserMemory>> {
     required String content,
   }) async {
     try {
-      final created = await ref.read(memoryRepositoryProvider).addMemory(
-            category: category,
-            title: title,
-            content: content,
-          );
+      final created = await ref
+          .read(memoryRepositoryProvider)
+          .addMemory(category: category, title: title, content: content);
       if (created == null) return false;
       final current = state.value ?? const <UserMemory>[];
       state = AsyncData([created, ...current]);
@@ -50,14 +48,12 @@ class MemoriesNotifier extends AsyncNotifier<List<UserMemory>> {
 
 final memoriesProvider =
     AsyncNotifierProvider<MemoriesNotifier, List<UserMemory>>(
-  MemoriesNotifier.new,
-);
+      MemoriesNotifier.new,
+    );
 
 /// Bolt / Brain status — AI runs via Supabase Edge Functions (no client keys).
 class AiBrainConfig {
-  const AiBrainConfig({
-    this.enabled = true,
-  });
+  const AiBrainConfig({this.enabled = true});
 
   final bool enabled;
 
@@ -76,8 +72,8 @@ class AiBrainConfigNotifier extends Notifier<AiBrainConfig> {
 
 final aiBrainConfigProvider =
     NotifierProvider<AiBrainConfigNotifier, AiBrainConfig>(
-  AiBrainConfigNotifier.new,
-);
+      AiBrainConfigNotifier.new,
+    );
 
 /// Convenience: edge AI available for the current session (anon or signed-in).
 final aiEdgeReadyProvider = Provider<bool>((ref) {

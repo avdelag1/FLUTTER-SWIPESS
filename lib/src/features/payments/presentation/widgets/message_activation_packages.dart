@@ -77,8 +77,11 @@ class MessageActivationPackages extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    size: 14, color: Color(0xFFFBBF24)),
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 14,
+                  color: Color(0xFFFBBF24),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   '$roleLabel Privilege'.toUpperCase(),
@@ -146,21 +149,19 @@ class MessageActivationPackages extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         for (final pkg in _packages) ...[
-          _PackCard(
-            pack: pkg,
-            onBuy: () => _purchase(context, ref, pkg),
-          ),
+          _PackCard(pack: pkg, onBuy: () => _purchase(context, ref, pkg)),
           const SizedBox(height: 14),
         ],
         TextButton(
           onPressed: () async {
             AppHaptics.selection();
-            final result =
-                await ref.read(paymentServiceProvider).restorePurchases();
+            final result = await ref
+                .read(paymentServiceProvider)
+                .restorePurchases();
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result.userMessage)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(result.userMessage)));
           },
           child: Text(
             'Restore purchases',
@@ -185,9 +186,9 @@ class MessageActivationPackages extends ConsumerWidget {
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!context.mounted) return;
     ref.invalidate(messagingEntitlementsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
     if (result.isSuccess) {
       onClose?.call();
       Navigator.of(context).maybePop();
@@ -211,7 +212,9 @@ Future<void> showMessageActivationPackages(
           return Container(
             decoration: BoxDecoration(
               color: const Color(0xFF050505),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               border: Border.all(color: Colors.white, width: 1.5),
             ),
             child: Column(
@@ -275,13 +278,13 @@ class _PackCard extends StatelessWidget {
     final border = isPremium
         ? const Color(0xFFF59E0B).withAlpha(140)
         : isStandard
-            ? Colors.white.withAlpha(55)
-            : Colors.white.withAlpha(28);
+        ? Colors.white.withAlpha(55)
+        : Colors.white.withAlpha(28);
     final icon = isPremium
         ? Icons.workspace_premium_rounded
         : isStandard
-            ? Icons.bolt_rounded
-            : Icons.chat_bubble_rounded;
+        ? Icons.bolt_rounded
+        : Icons.chat_bubble_rounded;
     final iconColor = isPremium ? const Color(0xFFFBBF24) : Colors.white;
 
     return Container(
@@ -399,10 +402,11 @@ class _PackCard extends StatelessWidget {
                 backgroundColor: isPremium
                     ? AppTheme.brandPrimary
                     : isStandard
-                        ? Colors.white
-                        : const Color(0xFF334155),
-                foregroundColor:
-                    isStandard && !isPremium ? Colors.black : Colors.white,
+                    ? Colors.white
+                    : const Color(0xFF334155),
+                foregroundColor: isStandard && !isPremium
+                    ? Colors.black
+                    : Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),

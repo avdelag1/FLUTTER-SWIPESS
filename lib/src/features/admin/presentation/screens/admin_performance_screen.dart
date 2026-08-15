@@ -27,16 +27,13 @@ class AdminPerformanceScreen extends ConsumerWidget {
   static const issues = [
     (
       'Improve image delivery',
-      'Swipess-logo.webp is oversized vs display size. Convert PNG logos to modern formats.'
+      'Swipess-logo.webp is oversized vs display size. Convert PNG logos to modern formats.',
     ),
     (
       'Reduce unused JavaScript',
-      'vendor.js / supabase.js still ship unused code. Prefer dynamic imports.'
+      'vendor.js / supabase.js still ship unused code. Prefer dynamic imports.',
     ),
-    (
-      'Reduce unused CSS',
-      'index.css transfers unused rules on first load.'
-    ),
+    ('Reduce unused CSS', 'index.css transfers unused rules on first load.'),
   ];
 
   @override

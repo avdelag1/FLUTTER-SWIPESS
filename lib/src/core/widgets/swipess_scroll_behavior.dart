@@ -9,18 +9,16 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
 
   @override
   Set<PointerDeviceKind> get dragDevices => const {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-        PointerDeviceKind.stylus,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+  };
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
     // Always use BouncingScrollPhysics to make scrolling feel kinetic, fast, and sensible, especially on Web.
-    return const BouncingScrollPhysics(
-      parent: RangeMaintainingScrollPhysics(),
-    );
+    return const BouncingScrollPhysics(parent: RangeMaintainingScrollPhysics());
   }
 
   @override

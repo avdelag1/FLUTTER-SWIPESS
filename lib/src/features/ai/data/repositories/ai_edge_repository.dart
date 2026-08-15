@@ -15,11 +15,9 @@ final aiEdgeRepositoryProvider = Provider<AiEdgeRepository>((ref) {
 /// reads SSE (`text/event-stream`) first, then JSON. `functions.invoke` leaves
 /// SSE as a live byte stream, so we talk HTTP like Cap and accumulate deltas.
 class AiEdgeRepository {
-  AiEdgeRepository({
-    SupabaseClient? client,
-    http.Client? httpClient,
-  })  : _client = client ?? Supabase.instance.client,
-        _http = httpClient ?? http.Client();
+  AiEdgeRepository({SupabaseClient? client, http.Client? httpClient})
+    : _client = client ?? Supabase.instance.client,
+      _http = httpClient ?? http.Client();
 
   final SupabaseClient _client;
   final http.Client _http;
@@ -40,11 +38,10 @@ class AiEdgeRepository {
     final trimmed = text.trim();
     if (trimmed.length < 5) return null;
     try {
-      final raw = await _postEdge(
-        'ai-enhance-text',
-        {'text': trimmed, 'type': type},
-        stream: false,
-      );
+      final raw = await _postEdge('ai-enhance-text', {
+        'text': trimmed,
+        'type': type,
+      }, stream: false);
       final out = _parseEnhanceText(raw);
       if (out != null && out.isNotEmpty) return out;
     } on AiUnavailableException {
@@ -57,10 +54,10 @@ class AiEdgeRepository {
             role: 'system',
             content: type == 'profile'
                 ? 'You are Swipess profile copy. Rewrite the user text into a '
-                    'polished, cinematic bio. Return only the bio.'
+                      'polished, cinematic bio. Return only the bio.'
                 : 'You are an elite listing architect for Swipess. Transform '
-                    'raw input into a professional, cinematic listing '
-                    'description. Return only the description.',
+                      'raw input into a professional, cinematic listing '
+                      'description. Return only the description.',
           ),
           AiChatMessage(role: 'user', content: trimmed),
         ],
@@ -94,7 +91,8 @@ class AiEdgeRepository {
         .where((m) => m.role == 'user')
         .map((m) => m.content)
         .firstOrNull;
-    final intent = preferredIntent ??
+    final intent =
+        preferredIntent ??
         (lastUser != null && _profileIntent.hasMatch(lastUser)
             ? 'profiles'
             : null);
@@ -151,7 +149,9 @@ class AiEdgeRepository {
       if (price != null && price.trim().isNotEmpty) 'price': price.trim(),
     };
     try {
-      final data = _asMap(await _postEdge('ai-listing-extract', body, stream: false));
+      final data = _asMap(
+        await _postEdge('ai-listing-extract', body, stream: false),
+      );
       final nested = data['data'];
       if (nested is Map && nested.isNotEmpty) {
         return Map<String, dynamic>.from(nested);
@@ -190,11 +190,10 @@ class AiEdgeRepository {
   }) async {
     try {
       final data = _asMap(
-        await _postEdge(
-          'ai-profile-extract',
-          {'mode': mode, 'narrative': narrative},
-          stream: false,
-        ),
+        await _postEdge('ai-profile-extract', {
+          'mode': mode,
+          'narrative': narrative,
+        }, stream: false),
       );
       final profile = data['profile'];
       if (profile is Map && profile.isNotEmpty) {
@@ -214,7 +213,9 @@ class AiEdgeRepository {
     Map<String, dynamic> verdict;
     try {
       verdict = _asMap(
-        await _postEdge('moderate-image', {'imageUrl': imageUrl}, stream: false),
+        await _postEdge('moderate-image', {
+          'imageUrl': imageUrl,
+        }, stream: false),
       );
     } catch (_) {
       return;
@@ -449,7 +450,8 @@ class AiEdgeRepository {
         .where((m) => m.role == 'user')
         .map((m) => m.content)
         .firstOrNull;
-    final intent = preferredIntent ??
+    final intent =
+        preferredIntent ??
         (lastUser != null && _profileIntent.hasMatch(lastUser)
             ? 'profiles'
             : null);

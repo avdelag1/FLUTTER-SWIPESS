@@ -26,62 +26,71 @@ class ContractsScreen extends ConsumerWidget {
       body: AmbientPageBackground(
         fill: true,
         child: async.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
-        ),
-        error: (e, _) => Center(
-          child: TextButton(
-            onPressed: () => ref.read(contractsProvider.notifier).refresh(),
-            child: const Text('Could not load contracts — retry'),
+          loading: () => Center(
+            child: CircularProgressIndicator(
+              color: MatteSurface.ink(context),
+              strokeWidth: 2,
+            ),
           ),
-        ),
-        data: (contracts) {
-          return ListView(
-            padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: CapBackButton(),
-              ),
-              SizedBox(height: 24),
-              Text('CONTRACTS', style: AppTheme.displayItalic.copyWith(fontSize: 32)),
-              SizedBox(height: 8),
-              Text(
-                'Create contracts and sign with your finger.',
-                style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
-              ),
-              SizedBox(height: 24),
-              BrandPrimaryButton(
-                label: 'New contract',
-                icon: Icons.edit_document,
-                onPressed: () => _pickTemplate(context, ref),
-              ),
-              SizedBox(height: 28),
-              if (contracts.isEmpty)
+          error: (e, _) => Center(
+            child: TextButton(
+              onPressed: () => ref.read(contractsProvider.notifier).refresh(),
+              child: const Text('Could not load contracts — retry'),
+            ),
+          ),
+          data: (contracts) {
+            return ListView(
+              padding: EdgeInsets.fromLTRB(24, top + 24, 24, 140),
+              children: [
+                Align(alignment: Alignment.centerLeft, child: CapBackButton()),
+                SizedBox(height: 24),
                 Text(
-                  'No contracts yet. Start from a template, then sign it here.',
-                  style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
-                )
-              else
-                for (final contract in contracts) ...[
-                  _ContractTile(
-                    contract: contract,
-                    needsSign: userId != null && contract.needsSignature(userId),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ContractSignScreen(contract: contract),
-                        ),
-                      );
-                    },
+                  'CONTRACTS',
+                  style: AppTheme.displayItalic.copyWith(fontSize: 32),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Create contracts and sign with your finger.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.muted(context),
                   ),
-                  const SizedBox(height: 12),
-                ],
-            ],
-          );
-        },
+                ),
+                SizedBox(height: 24),
+                BrandPrimaryButton(
+                  label: 'New contract',
+                  icon: Icons.edit_document,
+                  onPressed: () => _pickTemplate(context, ref),
+                ),
+                SizedBox(height: 28),
+                if (contracts.isEmpty)
+                  Text(
+                    'No contracts yet. Start from a template, then sign it here.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: MatteSurface.muted(context),
+                    ),
+                  )
+                else
+                  for (final contract in contracts) ...[
+                    _ContractTile(
+                      contract: contract,
+                      needsSign:
+                          userId != null && contract.needsSignature(userId),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ContractSignScreen(contract: contract),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+              ],
+            );
+          },
+        ),
       ),
-    ),
     );
   }
 
@@ -98,12 +107,24 @@ class ContractsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('TEMPLATES', style: AppTheme.displayItalic.copyWith(fontSize: 20)),
+              Text(
+                'TEMPLATES',
+                style: AppTheme.displayItalic.copyWith(fontSize: 20),
+              ),
               SizedBox(height: 12),
               for (final item in contractTemplates)
                 ListTile(
-                  title: Text(item.name, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w800)),
-                  subtitle: Text(item.description, style: TextStyle(color: MatteSurface.muted(context))),
+                  title: Text(
+                    item.name,
+                    style: TextStyle(
+                      color: MatteSurface.ink(context),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  subtitle: Text(
+                    item.description,
+                    style: TextStyle(color: MatteSurface.muted(context)),
+                  ),
                   onTap: () => Navigator.pop(context, item),
                 ),
             ],
@@ -113,10 +134,14 @@ class ContractsScreen extends ConsumerWidget {
     );
     if (template == null) return;
     try {
-      final created = await ref.read(contractsProvider.notifier).create(template);
+      final created = await ref
+          .read(contractsProvider.notifier)
+          .create(template);
       if (!context.mounted) return;
       await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ContractSignScreen(contract: created)),
+        MaterialPageRoute(
+          builder: (_) => ContractSignScreen(contract: created),
+        ),
       );
     } catch (e) {
       if (context.mounted) {

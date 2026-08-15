@@ -62,10 +62,7 @@ class MapListingPinMarker extends StatelessWidget {
 }
 
 class _PhotoDot extends StatelessWidget {
-  const _PhotoDot({
-    required this.imageUrl,
-    required this.selected,
-  });
+  const _PhotoDot({required this.imageUrl, required this.selected});
 
   final String? imageUrl;
   final bool selected;
@@ -98,11 +95,7 @@ class _PhotoDot extends StatelessWidget {
 
 /// People pin — circular avatar with indigo ring (never a listing title).
 class MapProfilePinMarker extends StatelessWidget {
-  const MapProfilePinMarker({
-    super.key,
-    this.imageUrl,
-    this.selected = false,
-  });
+  const MapProfilePinMarker({super.key, this.imageUrl, this.selected = false});
 
   final String? imageUrl;
   final bool selected;
@@ -145,23 +138,23 @@ class MapClusterMarker extends StatelessWidget {
     final size = count >= 10 ? 46.0 : 38.0;
     return Center(
       child: Container(
-          width: size,
-          height: size,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF111318),
-            border: Border.all(color: Colors.white, width: 2),
-          ),
-          child: Text(
-            '$count',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: count >= 100 ? 11 : 13,
-            ),
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF111318),
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: Text(
+          '$count',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: count >= 100 ? 11 : 13,
           ),
         ),
+      ),
     );
   }
 }

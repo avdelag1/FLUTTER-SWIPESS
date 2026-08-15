@@ -20,24 +20,20 @@ abstract final class MatteSurface {
   static Color ink(BuildContext context) =>
       isLight(context) ? const Color(0xFF0A0A0D) : Colors.white;
 
-  static Color muted(BuildContext context) => isLight(context)
-      ? const Color(0xFF5C5C66)
-      : AppTheme.textSecondary;
+  static Color muted(BuildContext context) =>
+      isLight(context) ? const Color(0xFF5C5C66) : AppTheme.textSecondary;
 
   /// Tertiary / placeholder ink.
-  static Color faint(BuildContext context) => isLight(context)
-      ? const Color(0xFF8A8A96)
-      : const Color(0x99FFFFFF);
+  static Color faint(BuildContext context) =>
+      isLight(context) ? const Color(0xFF8A8A96) : const Color(0x99FFFFFF);
 
   /// Cap soft hairline — `border-white/10` dark, not solid white.
-  static Color hairline(BuildContext context) => isLight(context)
-      ? Colors.black.withAlpha(28)
-      : NexusTheme.border;
+  static Color hairline(BuildContext context) =>
+      isLight(context) ? Colors.black.withAlpha(28) : NexusTheme.border;
 
   /// Cap soft panel fill — `#141418` dark / white light.
-  static Color cardFill(BuildContext context) => isLight(context)
-      ? Colors.white
-      : NexusTheme.cardDark;
+  static Color cardFill(BuildContext context) =>
+      isLight(context) ? Colors.white : NexusTheme.cardDark;
 
   static Color accent(BuildContext context) => AppTheme.brandAccent;
 

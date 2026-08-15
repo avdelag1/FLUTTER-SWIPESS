@@ -14,15 +14,14 @@ void main() {
     return UncontrolledProviderScope(
       container: container,
       child: const MaterialApp(
-        home: SystemChromeSync(
-          child: Scaffold(backgroundColor: Colors.black),
-        ),
+        home: SystemChromeSync(child: Scaffold(backgroundColor: Colors.black)),
       ),
     );
   }
 
-  testWidgets('dark canvas asks the platform for light system bar icons',
-      (tester) async {
+  testWidgets('dark canvas asks the platform for light system bar icons', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap(isLight: false));
     await tester.pumpAndSettle();
 
@@ -44,12 +43,17 @@ void main() {
     );
   });
 
-  test('both styles keep the bars transparent, like the Cap overlay WebView',
-      () {
-    for (final style in [SystemChromeService.dark, SystemChromeService.light]) {
-      expect(style.statusBarColor, Colors.transparent);
-      expect(style.systemNavigationBarColor, Colors.transparent);
-      expect(style.systemNavigationBarContrastEnforced, isFalse);
-    }
-  });
+  test(
+    'both styles keep the bars transparent, like the Cap overlay WebView',
+    () {
+      for (final style in [
+        SystemChromeService.dark,
+        SystemChromeService.light,
+      ]) {
+        expect(style.statusBarColor, Colors.transparent);
+        expect(style.systemNavigationBarColor, Colors.transparent);
+        expect(style.systemNavigationBarContrastEnforced, isFalse);
+      }
+    },
+  );
 }

@@ -19,13 +19,16 @@ void main() {
     );
   }
 
-  testWidgets('a banner appears, then clears itself after five seconds',
-      (tester) async {
+  testWidgets('a banner appears, then clears itself after five seconds', (
+    tester,
+  ) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     await tester.pumpWidget(host(container));
 
-    container.read(appNotificationsProvider.notifier).error(
+    container
+        .read(appNotificationsProvider.notifier)
+        .error(
           'Connection Lost 📱',
           "You're now offline. Some features may be limited.",
         );

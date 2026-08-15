@@ -51,15 +51,17 @@ class _LegalPackageRequestSheetState
     final user = Supabase.instance.client.auth.currentUser;
     _email.text = user?.email ?? '';
     if (user != null) {
-      ref.read(legalRepositoryProvider).fetchProfilePrefill(user.id, user.email)
+      ref
+          .read(legalRepositoryProvider)
+          .fetchProfilePrefill(user.id, user.email)
           .then((p) {
-        if (!mounted) return;
-        setState(() {
-          if (p.fullName.isNotEmpty) _name.text = p.fullName;
-          if (p.email.isNotEmpty) _email.text = p.email;
-          if (p.phone.isNotEmpty) _phone.text = p.phone;
-        });
-      });
+            if (!mounted) return;
+            setState(() {
+              if (p.fullName.isNotEmpty) _name.text = p.fullName;
+              if (p.email.isNotEmpty) _email.text = p.email;
+              if (p.phone.isNotEmpty) _phone.text = p.phone;
+            });
+          });
     }
   }
 
@@ -87,7 +89,9 @@ class _LegalPackageRequestSheetState
       _error = null;
     });
     try {
-      await ref.read(legalRepositoryProvider).submitPackageRequest(
+      await ref
+          .read(legalRepositoryProvider)
+          .submitPackageRequest(
             userId: user.id,
             packageId: widget.pkg.id,
             packageName: widget.pkg.name,
@@ -122,9 +126,7 @@ class _LegalPackageRequestSheetState
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
-        child: SingleChildScrollView(
-          child: _success ? _done() : _form(),
-        ),
+        child: SingleChildScrollView(child: _success ? _done() : _form()),
       ),
     );
   }
@@ -133,11 +135,16 @@ class _LegalPackageRequestSheetState
     return Column(
       children: [
         const SizedBox(height: 12),
-        const Icon(Icons.check_circle_rounded,
-            color: Color(0xFF34D399), size: 56),
+        const Icon(
+          Icons.check_circle_rounded,
+          color: Color(0xFF34D399),
+          size: 56,
+        ),
         const SizedBox(height: 16),
-        Text('REQUEST SENT',
-            style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+        Text(
+          'REQUEST SENT',
+          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+        ),
         const SizedBox(height: 8),
         Text(
           'A provider will confirm scope, jurisdiction and a quote before any engagement.',
@@ -182,8 +189,10 @@ class _LegalPackageRequestSheetState
           ),
         ),
         const SizedBox(height: 16),
-        Text(widget.pkg.name.toUpperCase(),
-            style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+        Text(
+          widget.pkg.name.toUpperCase(),
+          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+        ),
         const SizedBox(height: 4),
         Text(
           widget.pkg.description ?? 'Confirm the details for this request.',
@@ -200,8 +209,11 @@ class _LegalPackageRequestSheetState
               setState(() => _type = 'request');
             }),
             const SizedBox(width: 8),
-            _chip('Custom quote', _type == 'custom_quote',
-                () => setState(() => _type = 'custom_quote')),
+            _chip(
+              'Custom quote',
+              _type == 'custom_quote',
+              () => setState(() => _type = 'custom_quote'),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -231,14 +243,19 @@ class _LegalPackageRequestSheetState
               ('whatsapp', 'WhatsApp'),
               ('email', 'Email'),
             ])
-              _chip(opt.$2, _contact == opt.$1,
-                  () => setState(() => _contact = opt.$1)),
+              _chip(
+                opt.$2,
+                _contact == opt.$1,
+                () => setState(() => _contact = opt.$1),
+              ),
           ],
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!,
-              style: GoogleFonts.plusJakartaSans(color: const Color(0xFFF87171))),
+          Text(
+            _error!,
+            style: GoogleFonts.plusJakartaSans(color: const Color(0xFFF87171)),
+          ),
         ],
         const SizedBox(height: 18),
         SizedBox(
@@ -310,8 +327,8 @@ class _LegalPackageRequestSheetState
       keyboardType: email
           ? TextInputType.emailAddress
           : phone
-              ? TextInputType.phone
-              : TextInputType.text,
+          ? TextInputType.phone
+          : TextInputType.text,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,

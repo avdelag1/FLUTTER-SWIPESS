@@ -141,8 +141,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   }
 
   Future<void> _pickCover() async {
-    final file = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (file != null) setState(() => _cover = file);
   }
 
@@ -162,9 +164,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not pick video: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not pick video: $e')));
       }
     } finally {
       if (mounted) setState(() => _videoChecking = false);
@@ -190,7 +192,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         final bytes = await _cover!.readAsBytes();
         final path =
             'promo-submissions/$userId-${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await Supabase.instance.client.storage.from('event-images').uploadBinary(
+        await Supabase.instance.client.storage
+            .from('event-images')
+            .uploadBinary(
               path,
               bytes,
               fileOptions: const FileOptions(
@@ -209,16 +213,18 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         final ext = name.endsWith('.mov')
             ? 'mov'
             : name.endsWith('.webm')
-                ? 'webm'
-                : 'mp4';
+            ? 'webm'
+            : 'mp4';
         final path =
             'promo-submissions/videos/$userId-${DateTime.now().millisecondsSinceEpoch}.$ext';
         final contentType = ext == 'mov'
             ? 'video/quicktime'
             : ext == 'webm'
-                ? 'video/webm'
-                : 'video/mp4';
-        await Supabase.instance.client.storage.from('event-images').uploadBinary(
+            ? 'video/webm'
+            : 'video/mp4';
+        await Supabase.instance.client.storage
+            .from('event-images')
+            .uploadBinary(
               path,
               bytes,
               fileOptions: FileOptions(contentType: contentType, upsert: true),
@@ -234,8 +240,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         'title': _title.text.trim(),
         'description': _description.text.trim(),
         'event_date': _date.text.trim().isEmpty ? null : _date.text.trim(),
-        'location':
-            _location.text.trim().isEmpty ? null : _location.text.trim(),
+        'location': _location.text.trim().isEmpty
+            ? null
+            : _location.text.trim(),
         'contact_name': _contactName.text.trim().isEmpty
             ? null
             : _contactName.text.trim(),
@@ -268,13 +275,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           await Supabase.instance.client
               .from('business_promo_submissions')
               .insert({
-            'user_id': userId,
-            'title': _title.text.trim(),
-            'description': _description.text.trim(),
-            'promo_type': _type,
-            'status': 'pending',
-            'image_url': ?imageUrl,
-          });
+                'user_id': userId,
+                'title': _title.text.trim(),
+                'description': _description.text.trim(),
+                'promo_type': _type,
+                'status': 'pending',
+                'image_url': ?imageUrl,
+              });
         }
       }
 
@@ -287,9 +294,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Submit failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Submit failed: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -302,18 +309,18 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!mounted) return;
     ref.invalidate(messagingEntitlementsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
   }
 
   Future<void> _restore() async {
     AppHaptics.light();
     final result = await ref.read(paymentServiceProvider).restorePurchases();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
   }
 
   @override
@@ -342,17 +349,16 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                         setState(() => _step = _step - 1);
                       }
                     },
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                    ),
                   ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'PROMOTE',
-                          style: NexusTheme.sectionLabel,
-                        ),
+                        Text('PROMOTE', style: NexusTheme.sectionLabel),
                         Text(
                           _step == 0 ? 'Your event' : 'Event',
                           style: AppTheme.displayItalic.copyWith(fontSize: 22),
@@ -376,8 +382,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                       shape: BoxShape.circle,
                       gradient: NexusTheme.warm,
                     ),
-                    child: const Icon(Icons.campaign_rounded,
-                        color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.campaign_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                 ],
               ),
@@ -442,8 +451,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.movie_creation_outlined,
-                  color: Color(0xFFFF8A4C), size: 16),
+              const Icon(
+                Icons.movie_creation_outlined,
+                color: Color(0xFFFF8A4C),
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 'PHOTO + VIDEO · MAX 1 MIN',
@@ -477,7 +489,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 10),
       TextButton.icon(
         onPressed: _restore,
-        icon: const Icon(Icons.refresh_rounded, size: 14, color: Colors.white38),
+        icon: const Icon(
+          Icons.refresh_rounded,
+          size: 14,
+          color: Colors.white38,
+        ),
         label: Text(
           'RESTORE PURCHASES',
           style: GoogleFonts.plusJakartaSans(
@@ -501,9 +517,21 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       ),
       const SizedBox(height: 10),
       for (final s in const [
-        ('01', 'Tell us about your night', 'Category, venue, WhatsApp — add a cover photo'),
-        ('02', 'Upload a video commercial', 'Optional MP4/MOV up to 60 seconds'),
-        ('03', 'We review in under 24h', 'No charge until approved — then pick a plan'),
+        (
+          '01',
+          'Tell us about your night',
+          'Category, venue, WhatsApp — add a cover photo',
+        ),
+        (
+          '02',
+          'Upload a video commercial',
+          'Optional MP4/MOV up to 60 seconds',
+        ),
+        (
+          '03',
+          'We review in under 24h',
+          'No charge until approved — then pick a plan',
+        ),
       ])
         _howRow(s.$1, s.$2, s.$3),
       const SizedBox(height: 16),
@@ -533,9 +561,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
-      decoration: NexusTheme.glassCard(radius: 20).copyWith(
-        color: NexusTheme.cardDark,
-      ),
+      decoration: NexusTheme.glassCard(
+        radius: 20,
+      ).copyWith(color: NexusTheme.cardDark),
       child: Row(
         children: [
           Container(
@@ -560,12 +588,20 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white, fontWeight: FontWeight.w900)),
-                Text(desc,
-                    style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54, fontSize: 12)),
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -577,9 +613,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   Widget _packageCard(_PromoPackage p, {required bool selectable}) {
     final selected = _selectedPackage == p.id;
     return GestureDetector(
-      onTap: selectable
-          ? () => setState(() => _selectedPackage = p.id)
-          : null,
+      onTap: selectable ? () => setState(() => _selectedPackage = p.id) : null,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -609,8 +643,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 ),
                 if (p.popular)
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: p.color.withAlpha(50),
                       borderRadius: BorderRadius.circular(999),
@@ -650,9 +686,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(p.tagline,
-                style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38, fontSize: 12)),
+            Text(
+              p.tagline,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white38,
+                fontSize: 12,
+              ),
+            ),
             const SizedBox(height: 10),
             for (final perk in p.perks)
               Padding(
@@ -708,14 +748,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
-                  gradient: _type == t.$1
-                      ? NexusTheme.warm
-                      : null,
+                  gradient: _type == t.$1 ? NexusTheme.warm : null,
                   color: _type == t.$1 ? null : NexusTheme.cardDark,
                   border: Border.all(
-                    color: _type == t.$1
-                        ? Colors.white24
-                        : NexusTheme.border,
+                    color: _type == t.$1 ? Colors.white24 : NexusTheme.border,
                   ),
                 ),
                 child: Column(
@@ -738,14 +774,20 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ],
       ),
       const SizedBox(height: 16),
-      _primaryBtn(label: 'Continue', onPressed: () => setState(() => _step = 2)),
+      _primaryBtn(
+        label: 'Continue',
+        onPressed: () => setState(() => _step = 2),
+      ),
     ];
   }
 
   List<Widget> _detailsStep() {
     return [
       GlassTextField(
-          controller: _title, hint: 'Event title', icon: Icons.title_rounded),
+        controller: _title,
+        hint: 'Event title',
+        icon: Icons.title_rounded,
+      ),
       const SizedBox(height: 12),
       GlassTextField(
         controller: _description,
@@ -755,30 +797,35 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       ),
       const SizedBox(height: 12),
       GlassTextField(
-          controller: _date,
-          hint: 'Date (e.g. 2026-08-20)',
-          icon: Icons.calendar_today_rounded),
+        controller: _date,
+        hint: 'Date (e.g. 2026-08-20)',
+        icon: Icons.calendar_today_rounded,
+      ),
       const SizedBox(height: 12),
       GlassTextField(
-          controller: _location,
-          hint: 'Location',
-          icon: Icons.location_on_outlined),
+        controller: _location,
+        hint: 'Location',
+        icon: Icons.location_on_outlined,
+      ),
       const SizedBox(height: 12),
       GlassTextField(
-          controller: _contactName,
-          hint: 'Contact name',
-          icon: Icons.person_outline_rounded),
+        controller: _contactName,
+        hint: 'Contact name',
+        icon: Icons.person_outline_rounded,
+      ),
       const SizedBox(height: 12),
       GlassTextField(
-          controller: _contactPhone,
-          hint: 'WhatsApp / phone',
-          icon: Icons.phone_outlined,
-          keyboardType: TextInputType.phone),
+        controller: _contactPhone,
+        hint: 'WhatsApp / phone',
+        icon: Icons.phone_outlined,
+        keyboardType: TextInputType.phone,
+      ),
       const SizedBox(height: 12),
       GlassTextField(
-          controller: _website,
-          hint: 'Website (optional)',
-          icon: Icons.link_rounded),
+        controller: _website,
+        hint: 'Website (optional)',
+        icon: Icons.link_rounded,
+      ),
       const SizedBox(height: 16),
       OutlinedButton.icon(
         onPressed: _pickCover,
@@ -792,13 +839,15 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 10),
       OutlinedButton.icon(
         onPressed: _videoChecking ? null : _pickVideo,
-        icon: Icon(_video == null ? Icons.videocam_outlined : Icons.check_rounded),
+        icon: Icon(
+          _video == null ? Icons.videocam_outlined : Icons.check_rounded,
+        ),
         label: Text(
           _videoChecking
               ? 'Checking video…'
               : _video == null
-                  ? 'Upload video commercial (optional, ≤1 min)'
-                  : _video!.name,
+              ? 'Upload video commercial (optional, ≤1 min)'
+              : _video!.name,
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
@@ -817,9 +866,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         label: 'Review',
         onPressed: () {
           if (_title.text.trim().isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Title required')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Title required')));
             return;
           }
           setState(() => _step = 3);
@@ -844,21 +893,32 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         style: GoogleFonts.plusJakartaSans(color: Colors.white54),
       ),
       const SizedBox(height: 16),
-      Text(_title.text,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
+      Text(
+        _title.text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: 20,
+        ),
+      ),
       const SizedBox(height: 6),
-      Text(_types.firstWhere((t) => t.$1 == _type).$2,
-          style: GoogleFonts.plusJakartaSans(color: AppTheme.brandPrimary)),
+      Text(
+        _types.firstWhere((t) => t.$1 == _type).$2,
+        style: GoogleFonts.plusJakartaSans(color: AppTheme.brandPrimary),
+      ),
       const SizedBox(height: 10),
-      Text(_description.text,
-          style: GoogleFonts.plusJakartaSans(color: Colors.white70)),
+      Text(
+        _description.text,
+        style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+      ),
       if (_video != null) ...[
         const SizedBox(height: 10),
         Text(
           'Video: Attached (≤1 min)',
           style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFF34D399), fontWeight: FontWeight.w800),
+            color: const Color(0xFF34D399),
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ],
       const SizedBox(height: 24),
@@ -887,8 +947,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ),
         child: Column(
           children: [
-            const Icon(Icons.schedule_rounded,
-                color: Color(0xFFFB923C), size: 56),
+            const Icon(
+              Icons.schedule_rounded,
+              color: Color(0xFFFB923C),
+              size: 56,
+            ),
             const SizedBox(height: 16),
             Text(
               'Review in Progress',
@@ -953,7 +1016,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         const SizedBox(height: 10),
       ],
       const SizedBox(height: 8),
-      _primaryBtn(label: 'Launch with selected plan', onPressed: _launchPayment),
+      _primaryBtn(
+        label: 'Launch with selected plan',
+        onPressed: _launchPayment,
+      ),
       TextButton(onPressed: _restore, child: const Text('Restore Purchases')),
     ];
   }

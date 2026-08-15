@@ -62,10 +62,9 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
               draft: _draft,
               editing: _editingId != null,
               onSave: (d) async {
-                await ref.read(adminRepositoryProvider).upsertEvent(
-                      d,
-                      editingId: _editingId,
-                    );
+                await ref
+                    .read(adminRepositoryProvider)
+                    .upsertEvent(d, editingId: _editingId);
                 setState(() {
                   _formOpen = false;
                   _editingId = null;
@@ -135,7 +134,9 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
                         ref.invalidate(adminEventsProvider);
                       },
                       onDelete: () async {
-                        await ref.read(adminRepositoryProvider).deleteEvent(e.id);
+                        await ref
+                            .read(adminRepositoryProvider)
+                            .deleteEvent(e.id);
                         ref.invalidate(adminEventsProvider);
                       },
                     ),
@@ -246,7 +247,9 @@ class _EventTile extends StatelessWidget {
             onPressed: onToggle,
             icon: Icon(
               event.isPublished ? Icons.visibility : Icons.visibility_off,
-              color: event.isPublished ? const Color(0xFF10B981) : Colors.white38,
+              color: event.isPublished
+                  ? const Color(0xFF10B981)
+                  : Colors.white38,
             ),
           ),
           IconButton(
@@ -290,7 +293,10 @@ class _SubCard extends StatelessWidget {
           ),
           Text(
             '${sub.status} · ${sub.location ?? ''}',
-            style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
+              fontSize: 12,
+            ),
           ),
           if (sub.status == 'pending')
             Row(
@@ -444,9 +450,9 @@ class _EventFormState extends State<_EventForm> {
                     source: ImageSource.gallery,
                   );
                   if (file == null || !context.mounted) return;
-                  final url = await ProviderScope.containerOf(context)
-                      .read(adminRepositoryProvider)
-                      .uploadEventImage(file);
+                  final url = await ProviderScope.containerOf(
+                    context,
+                  ).read(adminRepositoryProvider).uploadEventImage(file);
                   setState(() => _imageUrl = url);
                 },
                 icon: const Icon(Icons.image_outlined),

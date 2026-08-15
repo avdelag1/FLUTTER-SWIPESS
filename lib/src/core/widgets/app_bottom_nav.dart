@@ -5,7 +5,8 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 
 // Re-export so any old imports still work
-export 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart' show NavTab;
+export 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart'
+    show NavTab;
 
 class AppBottomNav extends StatelessWidget {
   final NavTab activeTab;
@@ -115,8 +116,8 @@ class _DockIcon extends StatelessWidget {
                 color: emphasized
                     ? AppTheme.brandPrimary.withValues(alpha: 0.2)
                     : active
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : Colors.transparent,
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.transparent,
               ),
               child: Icon(
                 icon,
@@ -124,8 +125,8 @@ class _DockIcon extends StatelessWidget {
                 color: emphasized
                     ? const Color(0xFFFF4D6A)
                     : active
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.82),
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.82),
               ),
             ),
             if (badge > 0)

@@ -83,7 +83,9 @@ class BrandPrimaryButton extends StatelessWidget {
                         ],
                         Text(
                           label.toUpperCase(),
-                          style: AppTheme.buttonLabel.copyWith(color: foregroundColor),
+                          style: AppTheme.buttonLabel.copyWith(
+                            color: foregroundColor,
+                          ),
                         ),
                       ],
                     ],
@@ -180,7 +182,11 @@ class SocialAuthButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xE6FFFFFF), width: 2),
           boxShadow: const [
-            BoxShadow(color: Color(0x33FFFFFF), blurRadius: 24, offset: Offset(0, 6)),
+            BoxShadow(
+              color: Color(0x33FFFFFF),
+              blurRadius: 24,
+              offset: Offset(0, 6),
+            ),
           ],
         ),
         child: Material(
@@ -250,7 +256,11 @@ class GlassIconCircle extends StatelessWidget {
             AppHaptics.light();
             onPressed();
           },
-          icon: Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 20),
+          icon: Icon(
+            icon,
+            color: Colors.white.withValues(alpha: 0.85),
+            size: 20,
+          ),
         ),
       ),
     );

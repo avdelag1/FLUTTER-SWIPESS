@@ -80,28 +80,25 @@ class ChunkyInkPill extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: faceColor,
-                borderRadius: radius,
-                border: closedFrame
-                    ? Border.all(color: inkColor, width: frameWidth)
-                    : null,
-                boxShadow: closedFrame && !isLight
-                    ? const [
-                        BoxShadow(
-                          color: Color(0x24FFFFFF),
-                          blurRadius: 22,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: SizedBox(
-                height: height,
-                width: expandWidth ? double.infinity : null,
-                child: Padding(
-                  padding: padding ?? EdgeInsets.zero,
-                  child: child,
+                    borderRadius: radius,
+                    border: closedFrame
+                        ? Border.all(color: inkColor, width: frameWidth)
+                        : null,
+                    boxShadow: closedFrame && !isLight
+                        ? const [
+                            BoxShadow(color: Color(0x24FFFFFF), blurRadius: 22),
+                          ]
+                        : null,
+                  ),
+                  child: SizedBox(
+                    height: height,
+                    width: expandWidth ? double.infinity : null,
+                    child: Padding(
+                      padding: padding ?? EdgeInsets.zero,
+                      child: child,
+                    ),
+                  ),
                 ),
-              ),
-            ),
               ),
             ),
           ),

@@ -105,8 +105,8 @@ class Event {
       organizerName: json['organizer_name'] as String?,
       organizerPhotoUrl: json['organizer_photo_url'] as String?,
       organizerWhatsapp: json['organizer_whatsapp'] as String?,
-      organizerInstagram: (json['organizer_instagram'] ?? json['instagram'])
-          as String?,
+      organizerInstagram:
+          (json['organizer_instagram'] ?? json['instagram']) as String?,
       organizerWebsite:
           (json['organizer_website'] ?? json['website']) as String?,
       organizerFacebook:

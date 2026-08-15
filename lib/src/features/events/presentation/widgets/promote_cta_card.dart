@@ -71,8 +71,10 @@ class PromoteCTACard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(90),
                     borderRadius: BorderRadius.circular(999),
@@ -81,8 +83,11 @@ class PromoteCTACard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.auto_awesome_rounded,
-                          color: Color(0xFFFB923C), size: 14),
+                      const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Color(0xFFFB923C),
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'SWIPESS EVENTS',
@@ -121,9 +126,7 @@ class PromoteCTACard extends StatelessWidget {
                           foreground: Paint()
                             ..shader = const LinearGradient(
                               colors: [Color(0xFFFF4D00), Color(0xFF38BDF8)],
-                            ).createShader(
-                              const Rect.fromLTWH(0, 0, 280, 60),
-                            ),
+                            ).createShader(const Rect.fromLTWH(0, 0, 280, 60)),
                         ),
                       ),
                     ],
@@ -162,8 +165,11 @@ class PromoteCTACard extends StatelessWidget {
                             ),
                             border: Border.all(color: Colors.white24),
                           ),
-                          child: Icon(f.$1,
-                              color: const Color(0xFFFB923C), size: 18),
+                          child: Icon(
+                            f.$1,
+                            color: const Color(0xFFFB923C),
+                            size: 18,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(

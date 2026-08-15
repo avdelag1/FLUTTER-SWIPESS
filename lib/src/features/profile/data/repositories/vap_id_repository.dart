@@ -8,7 +8,7 @@ final vapIdRepositoryProvider = Provider<VapIdRepository>((ref) {
 
 class VapIdRepository {
   VapIdRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -42,7 +42,8 @@ class VapIdRepository {
           'bio': legacy['vap_bio'],
           'occupation': legacy['vap_occupation'],
           'city': legacy['vap_city'],
-          'avatar_url': legacy['vap_avatar'] ??
+          'avatar_url':
+              legacy['vap_avatar'] ??
               (images is List && images.isNotEmpty ? images.first : null),
         }, user.id);
       }
@@ -50,7 +51,8 @@ class VapIdRepository {
 
     return VapIdCard(
       userId: user.id,
-      name: user.userMetadata?['full_name'] as String? ??
+      name:
+          user.userMetadata?['full_name'] as String? ??
           user.email?.split('@').first,
       avatarUrl: user.userMetadata?['avatar_url'] as String?,
     );
@@ -85,7 +87,8 @@ class VapIdRepository {
           'bio': legacy['vap_bio'],
           'occupation': legacy['vap_occupation'],
           'city': legacy['vap_city'],
-          'avatar_url': legacy['vap_avatar'] ??
+          'avatar_url':
+              legacy['vap_avatar'] ??
               (images is List && images.isNotEmpty ? images.first : null),
         }, userId);
       }

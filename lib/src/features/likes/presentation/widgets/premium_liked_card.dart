@@ -44,7 +44,11 @@ class PremiumLikedCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(32),
         border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
         boxShadow: const [
-          BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 12)),
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
@@ -83,12 +87,17 @@ class PremiumLikedCard extends StatelessWidget {
                   top: 16,
                   left: 16,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
+                      border: Border.all(
+                        color: Colors.white.withAlpha(15),
+                        width: 1.0,
+                      ),
                     ),
                     child: Text(
                       category.toUpperCase(),
@@ -115,7 +124,10 @@ class PremiumLikedCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.black.withAlpha(102),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
+                        border: Border.all(
+                          color: Colors.white.withAlpha(15),
+                          width: 1.0,
+                        ),
                       ),
                       child: const Icon(
                         Icons.delete_outline_rounded,
@@ -146,8 +158,11 @@ class PremiumLikedCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.place_outlined,
-                              size: 12, color: accent),
+                          const Icon(
+                            Icons.place_outlined,
+                            size: 12,
+                            color: accent,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -179,14 +194,13 @@ class PremiumLikedCard extends StatelessWidget {
                   runSpacing: 8,
                   children: [
                     if (bedsLabel != null)
-                      _SpecChip(
-                        icon: Icons.bed_outlined,
-                        label: bedsLabel!,
-                      ),
+                      _SpecChip(icon: Icons.bed_outlined, label: bedsLabel!),
                     if (priceLabel != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: accent.withAlpha(26),
                           borderRadius: BorderRadius.circular(12),
@@ -204,7 +218,9 @@ class PremiumLikedCard extends StatelessWidget {
                     if (verified)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0x26F43F5E),
                           borderRadius: BorderRadius.circular(12),
@@ -213,8 +229,11 @@ class PremiumLikedCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.bolt_rounded,
-                                size: 12, color: Color(0xFFF43F5E)),
+                            const Icon(
+                              Icons.bolt_rounded,
+                              size: 12,
+                              color: Color(0xFFF43F5E),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'VERIFIED',
@@ -268,8 +287,11 @@ class PremiumLikedCard extends StatelessWidget {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.chat_bubble_outline_rounded,
-                                  color: Colors.white, size: 16),
+                              const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'MESSAGE',
@@ -296,14 +318,16 @@ class PremiumLikedCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
-                            border:
-                                Border.all(color: Colors.transparent),
+                            border: Border.all(color: Colors.transparent),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.visibility_outlined,
-                                  color: Colors.white, size: 16),
+                              const Icon(
+                                Icons.visibility_outlined,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'VIEW',

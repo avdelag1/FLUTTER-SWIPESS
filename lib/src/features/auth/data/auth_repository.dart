@@ -5,24 +5,44 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/config/app_config.dart';
+import 'package:flutter_swipes/src/core/providers/supabase_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(Supabase.instance.client.auth);
+  return SupabaseAuthRepository(ref.watch(supabaseClientProvider));
 });
 
-class AuthRepository {
-  final GoTrueClient _auth;
-  AuthRepository(this._auth);
+abstract class AuthRepository {
+  Future<AuthResponse> signInWithEmailPassword(String email, String password);
+  Future<AuthResponse> signUpWithEmailPassword(
+    String email,
+    String password, {
+    String? name,
+  });
+  Future<void> signOut();
+  Future<void> deleteAccount();
+  String? get currentEmail;
+  Future<void> resetPassword(String email);
+  Future<bool> signInWithOAuth(OAuthProvider provider);
+  Future<void> updatePassword(String password);
+}
+
+class SupabaseAuthRepository implements AuthRepository {
+  final SupabaseClient _client;
+  GoTrueClient get _auth => _client.auth;
+
+  SupabaseAuthRepository(this._client);
 
   static const _resetRedirect = 'https://www.swipess.com/reset-password';
 
+  @override
   Future<AuthResponse> signInWithEmailPassword(String email, String password) {
     return _auth.signInWithPassword(email: email, password: password);
   }
 
+  @override
   Future<AuthResponse> signUpWithEmailPassword(
     String email,
     String password, {
@@ -32,27 +52,28 @@ class AuthRepository {
     final res = await _auth.signUp(
       email: email,
       password: password,
-      data: {
-        'role': 'client',
-        'name': trimmed,
-        'full_name': trimmed,
-      },
+      data: {'role': 'client', 'name': trimmed, 'full_name': trimmed},
     );
     if (res.session != null) return res;
     // Cap auto-signs in when email confirmation is off so signup lands on dashboard.
     return _auth.signInWithPassword(email: email, password: password);
   }
 
+  @override
   Future<void> signOut() => _auth.signOut();
 
-  /// Permanently deletes the signed-in user via the `delete-user` Edge Function
-  /// (Guideline 5.1.1(v)). Signs out locally after a successful delete.
+  @override
+  Future<void> updatePassword(String password) {
+    return _auth.updateUser(UserAttributes(password: password));
+  }
+
+  @override
   Future<void> deleteAccount() async {
     final session = _auth.currentSession;
     if (session == null) {
       throw Exception('No active session');
     }
-    final res = await Supabase.instance.client.functions.invoke(
+    final res = await _client.functions.invoke(
       'delete-user',
       headers: {'Authorization': 'Bearer ${session.accessToken}'},
     );
@@ -69,13 +90,15 @@ class AuthRepository {
     } catch (_) {}
   }
 
+  @override
   String? get currentEmail => _auth.currentUser?.email;
 
+  @override
   Future<void> resetPassword(String email) {
     return _auth.resetPasswordForEmail(email, redirectTo: _resetRedirect);
   }
 
-  /// Cap `signInWithOAuth` — native Apple/Google ID tokens on device, web redirect in browser.
+  @override
   Future<bool> signInWithOAuth(OAuthProvider provider) async {
     if (provider == OAuthProvider.apple && !kIsWeb) {
       return _signInWithNativeApple();
@@ -124,12 +147,14 @@ class AuthRepository {
       final fullName = ('$given $family').trim();
       if (fullName.isNotEmpty) {
         _auth
-            .updateUser(UserAttributes(data: {'full_name': fullName, 'name': fullName}))
+            .updateUser(
+              UserAttributes(data: {'full_name': fullName, 'name': fullName}),
+            )
             .ignore();
       }
       final code = credential.authorizationCode;
       if (code.isNotEmpty) {
-        Supabase.instance.client.functions
+        _client.functions
             .invoke('apple-link-token', body: {'authorizationCode': code})
             .ignore();
       }
@@ -187,7 +212,9 @@ class AuthRepository {
     const charset =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
-        .join();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 }

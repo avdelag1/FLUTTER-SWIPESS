@@ -52,8 +52,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     GoRouter.maybeOf(context)?.go(AppPaths.clientProfile);
   }
 
-
-
   String get _label {
     final raw = firstName?.trim() ?? '';
     if (raw.isEmpty) return 'You';
@@ -68,8 +66,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
-    final pillFill =
-        isLight ? Colors.white.withAlpha(50) : Colors.black.withAlpha(150);
+    final pillFill = isLight
+        ? Colors.white.withAlpha(50)
+        : Colors.black.withAlpha(150);
     final pillBorder = ink.withAlpha(90);
     final chromeGap = MediaQuery.sizeOf(context).width < 360 ? 4.0 : 8.0;
 
@@ -137,24 +136,27 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.generating_tokens_rounded, // Changed from diamond to ensure rendering
+                          Icons
+                              .generating_tokens_rounded, // Changed from diamond to ensure rendering
                           size: 20,
-                          color: Color(0xFFFFB300), // Amber to be highly visible
+                          color: Color(
+                            0xFFFFB300,
+                          ), // Amber to be highly visible
                         ),
                         const SizedBox(width: 5),
-                      Text(
-                        '$tokens',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
+                        Text(
+                          '$tokens',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: chromeGap),
+                SizedBox(width: chromeGap),
                 _HudButton(
                   fill: pillFill,
                   border: pillBorder,
@@ -209,7 +211,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                           color: bellWash,
                         ),
                       ),
-                      ref.watch(unreadNotificationsProvider).when(
+                      ref
+                          .watch(unreadNotificationsProvider)
+                          .when(
                             data: (count) {
                               if (count <= 0) return const SizedBox.shrink();
                               return Positioned(
@@ -272,7 +276,9 @@ class _ProfileAvatarButton extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isLight ? const Color(0x14000000) : const Color(0x22FFFFFF),
+                color: isLight
+                    ? const Color(0x14000000)
+                    : const Color(0x22FFFFFF),
                 image: avatarUrl != null
                     ? DecorationImage(
                         image: NetworkImage(avatarUrl!),
@@ -331,9 +337,14 @@ class _HudButton extends StatelessWidget {
                   padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: fill.withAlpha(fill.alpha ~/ 2), // Make it more translucent to see blur
+                    color: fill.withAlpha(
+                      fill.alpha ~/ 2,
+                    ), // Make it more translucent to see blur
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: border.withAlpha(90), width: 1.25),
+                    border: Border.all(
+                      color: border.withAlpha(90),
+                      width: 1.25,
+                    ),
                   ),
                   child: child,
                 ),
@@ -347,10 +358,7 @@ class _HudButton extends StatelessWidget {
 }
 
 class _WashIcon extends StatelessWidget {
-  const _WashIcon({
-    required this.child,
-    this.badge = false,
-  });
+  const _WashIcon({required this.child, this.badge = false});
 
   final Widget child;
   final bool badge;

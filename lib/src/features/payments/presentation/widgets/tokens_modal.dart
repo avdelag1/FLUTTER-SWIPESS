@@ -28,9 +28,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
-      ),
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: SafeArea(
         top: false,
         child: Padding(
@@ -185,9 +183,9 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                         .restorePurchases();
                     if (!context.mounted) return;
                     ref.invalidate(messagingEntitlementsProvider);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(result.userMessage)),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
                     if (context.mounted) Navigator.of(context).pop();
                   },
                   child: Text(
@@ -267,7 +265,7 @@ class _TokenPackageCard extends StatelessWidget {
                           color: const Color(0xFFFF4D00).withAlpha(100),
                           blurRadius: 16,
                           spreadRadius: 2,
-                        )
+                        ),
                       ]
                     : null,
               ),

@@ -141,7 +141,9 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withAlpha(28),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF10B981).withAlpha(80)),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withAlpha(80),
+                ),
               ),
               child: Text(
                 'Support ticket created. Our team will sync back soon.',
@@ -204,10 +206,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
             ],
           ),
           const SizedBox(height: 14),
-          GlassTextField(
-            controller: _subject,
-            hint: 'Subject',
-          ),
+          GlassTextField(controller: _subject, hint: 'Subject'),
           const SizedBox(height: 10),
           GlassTextField(
             controller: _message,

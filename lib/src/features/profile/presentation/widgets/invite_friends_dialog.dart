@@ -23,7 +23,9 @@ class InviteFriendsDialog extends ConsumerWidget {
     AppHaptics.selection();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copied! Share with friends to earn perks.')),
+      const SnackBar(
+        content: Text('Link copied! Share with friends to earn perks.'),
+      ),
     );
     onClose?.call();
     if (Navigator.of(context).canPop()) Navigator.of(context).pop();
@@ -33,9 +35,7 @@ class InviteFriendsDialog extends ConsumerWidget {
     AppHaptics.medium();
     final message =
         'Hey! Check out Swipess — the elite marketplace for properties, vehicles & experiences. Join with my link: $link';
-    final uri = Uri.parse(
-      'sms:?body=${Uri.encodeComponent(message)}',
-    );
+    final uri = Uri.parse('sms:?body=${Uri.encodeComponent(message)}');
     var shared = false;
     try {
       if (await canLaunchUrl(uri)) {
@@ -50,7 +50,9 @@ class InviteFriendsDialog extends ConsumerWidget {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Invite ready — pick a friend to send it to.')),
+      const SnackBar(
+        content: Text('Invite ready — pick a friend to send it to.'),
+      ),
     );
     onClose?.call();
     if (Navigator.of(context).canPop()) Navigator.of(context).pop();
@@ -130,7 +132,10 @@ class InviteFriendsDialog extends ConsumerWidget {
                           onClose?.call();
                           Navigator.of(context).maybePop();
                         },
-                        icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),

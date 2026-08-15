@@ -16,9 +16,7 @@ abstract final class EventConnect {
     if (message == null || message.trim().isEmpty) {
       return Uri.parse('https://wa.me/$d');
     }
-    return Uri.parse(
-      'https://wa.me/$d?text=${Uri.encodeComponent(message)}',
-    );
+    return Uri.parse('https://wa.me/$d?text=${Uri.encodeComponent(message)}');
   }
 
   static Uri? instagramUri(String? raw) {

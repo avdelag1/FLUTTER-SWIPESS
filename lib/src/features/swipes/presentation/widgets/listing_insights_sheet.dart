@@ -54,14 +54,14 @@ class _InsightsSheet extends StatelessWidget {
         specs.add((
           Icons.bathtub_rounded,
           'Baths',
-          baths % 1 == 0 ? baths.toInt().toString() : baths.toString()
+          baths % 1 == 0 ? baths.toInt().toString() : baths.toString(),
         ));
       }
       if (listing.squareFootage != null) {
         specs.add((
           Icons.square_foot_rounded,
           'Size',
-          '${listing.squareFootage!.toStringAsFixed(0)} ft²'
+          '${listing.squareFootage!.toStringAsFixed(0)} ft²',
         ));
       }
       if (listing.propertyType != null) {
@@ -75,10 +75,18 @@ class _InsightsSheet extends StatelessWidget {
       }
     } else if (cat == 'motorcycle' || cat == 'bicycle' || cat == 'yacht') {
       if (listing.vehicleBrand != null) {
-        specs.add((Icons.branding_watermark_rounded, 'Brand', listing.vehicleBrand!));
+        specs.add((
+          Icons.branding_watermark_rounded,
+          'Brand',
+          listing.vehicleBrand!,
+        ));
       }
       if (listing.vehicleModel != null) {
-        specs.add((Icons.precision_manufacturing_rounded, 'Model', listing.vehicleModel!));
+        specs.add((
+          Icons.precision_manufacturing_rounded,
+          'Model',
+          listing.vehicleModel!,
+        ));
       }
       if (listing.year != null) {
         specs.add((Icons.calendar_today_rounded, 'Year', '${listing.year}'));
@@ -94,7 +102,7 @@ class _InsightsSheet extends StatelessWidget {
         specs.add((
           Icons.timeline_rounded,
           'Experience',
-          '${listing.experienceYears} yrs'
+          '${listing.experienceYears} yrs',
         ));
       }
       if (listing.pricingUnit != null) {
@@ -143,7 +151,10 @@ class _InsightsSheet extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white70,
+                    ),
                   ),
                 ],
               ),
@@ -159,8 +170,11 @@ class _InsightsSheet extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.location_on_outlined,
-                      color: Color(0xFFEB4898), size: 16),
+                  const Icon(
+                    Icons.location_on_outlined,
+                    color: Color(0xFFEB4898),
+                    size: 16,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -262,7 +276,9 @@ class _InsightsSheet extends StatelessWidget {
                     for (final a in listing.amenities)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(999),

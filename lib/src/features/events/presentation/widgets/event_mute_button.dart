@@ -46,9 +46,7 @@ class EventMuteButton extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  soundOn
-                      ? Icons.volume_up_rounded
-                      : Icons.volume_off_rounded,
+                  soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
                   color: Colors.white,
                   size: size * 0.54,
                 ),

@@ -42,10 +42,16 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                        border: Border.all(
+                          color: MatteSurface.ink(context),
+                          width: 1.5,
+                        ),
                       ),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          color: MatteSurface.ink(context), size: 18),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: MatteSurface.ink(context),
+                        size: 18,
+                      ),
                     ),
                   ),
                   SizedBox(width: 12),
@@ -53,9 +59,10 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('WORKER DISCOVERY',
-                            style:
-                                AppTheme.displayItalic.copyWith(fontSize: 20)),
+                        Text(
+                          'WORKER DISCOVERY',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 20),
+                        ),
                         Text(
                           'Cleaners · chauffeurs · massage · guides · holistic',
                           style: GoogleFonts.plusJakartaSans(
@@ -69,8 +76,10 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                   IconButton(
                     onPressed: () =>
                         ref.invalidate(swipeListingsProvider('worker')),
-                    icon: Icon(Icons.refresh_rounded,
-                        color: MatteSurface.muted(context)),
+                    icon: Icon(
+                      Icons.refresh_rounded,
+                      color: MatteSurface.muted(context),
+                    ),
                   ),
                 ],
               ),
@@ -122,8 +131,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       child: NeoNaiveChip(
                         label: s.label,
                         selected: _service == s.value,
-                        onSelected: () =>
-                            setState(() => _service = s.value),
+                        onSelected: () => setState(() => _service = s.value),
                         selectedColor: AppTheme.brandPrimary,
                       ),
                     ),
@@ -135,7 +143,9 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
               child: async.when(
                 loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: MatteSurface.ink(context), strokeWidth: 2),
+                    color: MatteSurface.ink(context),
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -161,7 +171,8 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                       child: Text(
                         'No workers match this filter yet.',
                         style: GoogleFonts.plusJakartaSans(
-                            color: MatteSurface.muted(context)),
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     );
                   }

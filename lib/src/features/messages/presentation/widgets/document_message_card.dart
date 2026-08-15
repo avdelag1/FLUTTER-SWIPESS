@@ -22,7 +22,8 @@ class DocumentMessageCard extends ConsumerStatefulWidget {
   final bool isMyMessage;
 
   @override
-  ConsumerState<DocumentMessageCard> createState() => _DocumentMessageCardState();
+  ConsumerState<DocumentMessageCard> createState() =>
+      _DocumentMessageCardState();
 }
 
 class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
@@ -46,14 +47,17 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
     AppHaptics.medium();
     if (!widget.attachment.isContract) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Open the Documents vault to view this file')),
+        const SnackBar(
+          content: Text('Open the Documents vault to view this file'),
+        ),
       );
       return;
     }
     setState(() => _opening = true);
     try {
-      final contract =
-          await ref.read(contractRepositoryProvider).fetchById(widget.attachment.id);
+      final contract = await ref
+          .read(contractRepositoryProvider)
+          .fetchById(widget.attachment.id);
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -62,9 +66,9 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
       );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open this document')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open this document')));
       }
     } finally {
       if (mounted) setState(() => _opening = false);
@@ -107,10 +111,11 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: (att.isSigned
-                              ? const Color(0xFF34D399)
-                              : const Color(0xFFFB7185))
-                          .withAlpha(38),
+                      color:
+                          (att.isSigned
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFFFB7185))
+                              .withAlpha(38),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -173,9 +178,11 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
               Row(
                 children: [
                   if (att.isContract && att.status == 'sent') ...[
-                    Icon(Icons.edit_note_rounded,
-                        size: 13,
-                        color: mine ? Colors.white70 : const Color(0xFFFB7185)),
+                    Icon(
+                      Icons.edit_note_rounded,
+                      size: 13,
+                      color: mine ? Colors.white70 : const Color(0xFFFB7185),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       mine ? 'AWAITING SIGNATURE' : 'TAP TO SIGN',
@@ -197,9 +204,11 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
                       ),
                     ),
                   ] else if (att.status == 'uploaded') ...[
-                    Icon(Icons.open_in_new_rounded,
-                        size: 13,
-                        color: mine ? Colors.white70 : textColor.withAlpha(140)),
+                    Icon(
+                      Icons.open_in_new_rounded,
+                      size: 13,
+                      color: mine ? Colors.white70 : textColor.withAlpha(140),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'OPEN FILE',

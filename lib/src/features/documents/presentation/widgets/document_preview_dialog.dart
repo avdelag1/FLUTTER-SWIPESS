@@ -67,7 +67,11 @@ class DocumentPreviewDialog extends ConsumerWidget {
                           padding: const EdgeInsets.fromLTRB(20, 18, 12, 16),
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
+                              colors: [
+                                Color(0xFF6366F1),
+                                Color(0xFF8B5CF6),
+                                Color(0xFFEC4899),
+                              ],
                             ),
                           ),
                           child: Row(
@@ -79,8 +83,11 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.verified_user_rounded,
-                                            size: 16, color: Colors.white70),
+                                        const Icon(
+                                          Icons.verified_user_rounded,
+                                          size: 16,
+                                          color: Colors.white70,
+                                        ),
                                         const SizedBox(width: 8),
                                         Text(
                                           'AUTHORIZED PREVIEW',
@@ -119,7 +126,10 @@ class DocumentPreviewDialog extends ConsumerWidget {
                               ),
                               IconButton(
                                 onPressed: () => Navigator.of(context).pop(),
-                                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                ),
                               ),
                             ],
                           ),
@@ -141,7 +151,9 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                           strokeWidth: 2,
                                         ),
                                       ),
-                                      error: (_, _) => _SecureFileFallback(type: doc.documentType),
+                                      error: (_, _) => _SecureFileFallback(
+                                        type: doc.documentType,
+                                      ),
                                       data: (url) {
                                         if (doc.isImage && url != null) {
                                           return _BlurredImagePreview(
@@ -149,7 +161,9 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                             type: doc.documentType,
                                           );
                                         }
-                                        return _SecureFileFallback(type: doc.documentType);
+                                        return _SecureFileFallback(
+                                          type: doc.documentType,
+                                        );
                                       },
                                     ),
                                   ),
@@ -158,11 +172,16 @@ class DocumentPreviewDialog extends ConsumerWidget {
                               const SizedBox(height: 14),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 12),
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.transparent,
                                   borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: Colors.white, width: 1.5),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 child: Row(
                                   children: [
@@ -170,22 +189,22 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                       verified
                                           ? Icons.check_circle_rounded
                                           : pending
-                                              ? Icons.schedule_rounded
-                                              : Icons.description_outlined,
+                                          ? Icons.schedule_rounded
+                                          : Icons.description_outlined,
                                       size: 18,
                                       color: verified
                                           ? const Color(0xFF34D399)
                                           : pending
-                                              ? const Color(0xFFFBBF24)
-                                              : Colors.white38,
+                                          ? const Color(0xFFFBBF24)
+                                          : Colors.white38,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       verified
                                           ? 'VERIFIED'
                                           : pending
-                                              ? 'PENDING REVIEW'
-                                              : doc.status.toUpperCase(),
+                                          ? 'PENDING REVIEW'
+                                          : doc.status.toUpperCase(),
                                       style: GoogleFonts.plusJakartaSans(
                                         color: Colors.white70,
                                         fontSize: 11,
@@ -274,7 +293,11 @@ class _BlurredImagePreview extends StatelessWidget {
                 child: Text(
                   'Blurred for privacy. Full document is reviewed by Swipess verification only.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54, fontSize: 10, height: 1.4),
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 10,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
@@ -310,8 +333,11 @@ class _SecureFileFallback extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: const Color(0x408B5CF6)),
                 ),
-                child: const Icon(Icons.description_rounded,
-                    color: Color(0xFF8B5CF6), size: 32),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Color(0xFF8B5CF6),
+                  size: 32,
+                ),
               ),
               const SizedBox(height: 10),
               Text(

@@ -9,14 +9,16 @@ final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
 });
 
 /// Family provider to fetch listings by category — respects active Cap filters.
-final swipeListingsProvider =
-    FutureProvider.family<List<Listing>, String>((ref, category) async {
+final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
+  ref,
+  category,
+) async {
   final filters = ref.watch(swipeFilterProvider);
   final repository = ref.read(listingRepositoryProvider);
   final effectiveCategory =
       (category == 'all' || category == 'recommended' || category == 'popular')
-          ? filters.category
-          : category;
+      ? filters.category
+      : category;
 
   return repository.fetchSwipeFeed(
     category: effectiveCategory,
@@ -51,6 +53,7 @@ class SwipeFilter {
   });
 
   final String category;
+
   /// rent | sale | both
   final String interestType;
   final double? minPrice;
@@ -87,8 +90,9 @@ class SwipeFilter {
       interestType: interestType ?? this.interestType,
       minPrice: clearPrice ? null : (minPrice ?? this.minPrice),
       maxPrice: clearPrice ? null : (maxPrice ?? this.maxPrice),
-      priceRangeLabel:
-          clearPrice ? null : (priceRangeLabel ?? this.priceRangeLabel),
+      priceRangeLabel: clearPrice
+          ? null
+          : (priceRangeLabel ?? this.priceRangeLabel),
       minBeds: clearBeds ? null : (minBeds ?? this.minBeds),
       minBaths: clearBaths ? null : (minBaths ?? this.minBaths),
       furnished: furnished ?? this.furnished,
@@ -144,7 +148,8 @@ extension SwipeFilterPreferencesMapping on SwipeFilter {
       category = 'property';
     }
 
-    final listingTypes = (row['preferred_listing_types'] as List?)
+    final listingTypes =
+        (row['preferred_listing_types'] as List?)
             ?.map((e) => e.toString())
             .toList() ??
         const <String>[];
@@ -153,12 +158,11 @@ extension SwipeFilterPreferencesMapping on SwipeFilter {
     final interestType = hasRent && hasBuy
         ? 'both'
         : hasBuy
-            ? 'sale'
-            : (hasRent ? 'rent' : base.interestType);
+        ? 'sale'
+        : (hasRent ? 'rent' : base.interestType);
 
-    final locationZones = (row['location_zones'] as List?)
-            ?.map((e) => e.toString())
-            .toList() ??
+    final locationZones =
+        (row['location_zones'] as List?)?.map((e) => e.toString()).toList() ??
         const <String>[];
 
     return base.copyWith(
@@ -170,9 +174,8 @@ extension SwipeFilterPreferencesMapping on SwipeFilter {
       minBaths: (row['min_bathrooms'] as num?)?.toInt(),
       furnished: row['furnished_required'] as bool?,
       petFriendly: row['pet_friendly_required'] as bool?,
-      propertyTypes: (row['property_types'] as List?)
-              ?.map((e) => e.toString())
-              .toList() ??
+      propertyTypes:
+          (row['property_types'] as List?)?.map((e) => e.toString()).toList() ??
           base.propertyTypes,
       city: locationZones.isNotEmpty ? locationZones.first : base.city,
     );
@@ -194,19 +197,17 @@ class SwipeFilterNotifier extends Notifier<SwipeFilter> {
   }
 
   void setCity(String? city) => state = state.copyWith(
-        city: city,
-        clearCity: city == null || city.trim().isEmpty,
-      );
+    city: city,
+    clearCity: city == null || city.trim().isEmpty,
+  );
 
   void setRadiusKm(double km) => state = state.copyWith(radiusKm: km);
 
   void setPriceRange(double? minPrice, double? maxPrice) =>
       state = state.copyWith(minPrice: minPrice, maxPrice: maxPrice);
 
-  void setMinBeds(int? minBeds) => state = state.copyWith(
-        minBeds: minBeds,
-        clearBeds: minBeds == null,
-      );
+  void setMinBeds(int? minBeds) =>
+      state = state.copyWith(minBeds: minBeds, clearBeds: minBeds == null);
 
   void setFurnished(bool? furnished) =>
       state = state.copyWith(furnished: furnished);
@@ -217,5 +218,6 @@ class SwipeFilterNotifier extends Notifier<SwipeFilter> {
   void reset() => state = SwipeFilter();
 }
 
-final swipeFilterProvider =
-    NotifierProvider<SwipeFilterNotifier, SwipeFilter>(SwipeFilterNotifier.new);
+final swipeFilterProvider = NotifierProvider<SwipeFilterNotifier, SwipeFilter>(
+  SwipeFilterNotifier.new,
+);

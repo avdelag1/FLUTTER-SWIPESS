@@ -54,8 +54,12 @@ void main() {
     test('a listing link bounces to the gate and is remembered', () {
       final pending = PendingDeepLink();
       expect(
-        redirect('/listing/42', granted: false, signedIn: false,
-            pending: pending),
+        redirect(
+          '/listing/42',
+          granted: false,
+          signedIn: false,
+          pending: pending,
+        ),
         AppPaths.gate,
       );
       expect(pending.peek, '/listing/42');
@@ -78,8 +82,10 @@ void main() {
     test('the link only resumes once', () {
       final pending = PendingDeepLink()..remember('/listing/42');
       expect(redirect(AppPaths.auth, pending: pending), '/listing/42');
-      expect(redirect(AppPaths.welcome, pending: pending),
-          AppPaths.clientDashboard);
+      expect(
+        redirect(AppPaths.welcome, pending: pending),
+        AppPaths.clientDashboard,
+      );
     });
 
     test('query strings survive the round trip', () {
@@ -90,8 +96,10 @@ void main() {
         pending: pending,
         uri: '/explore/events?city=tulum',
       );
-      expect(redirect(AppPaths.auth, pending: pending),
-          '/explore/events?city=tulum');
+      expect(
+        redirect(AppPaths.auth, pending: pending),
+        '/explore/events?city=tulum',
+      );
     });
 
     test('with nothing queued, signing in lands on the dashboard', () {
@@ -163,16 +171,17 @@ void main() {
         redirect(AppPaths.clientDashboard, granted: false, signedIn: true),
         AppPaths.gate,
       );
-      expect(
-        redirect(AppPaths.gate, granted: false, signedIn: true),
-        isNull,
-      );
+      expect(redirect(AppPaths.gate, granted: false, signedIn: true), isNull);
     });
 
     test('nothing bounces while the grant is still loading', () {
       expect(
-        redirect('/listing/42',
-            grantLoading: true, granted: false, signedIn: false),
+        redirect(
+          '/listing/42',
+          grantLoading: true,
+          granted: false,
+          signedIn: false,
+        ),
         isNull,
       );
     });

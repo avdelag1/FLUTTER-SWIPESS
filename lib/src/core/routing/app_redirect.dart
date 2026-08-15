@@ -34,8 +34,7 @@ abstract final class AppRedirect {
   };
 
   static bool isPublic(String location) =>
-      publicExact.contains(location) ||
-      publicPrefixes.any(location.startsWith);
+      publicExact.contains(location) || publicPrefixes.any(location.startsWith);
 
   /// [location] is the matched path; [uri] is the full incoming location
   /// including any query, which is what gets queued as a pending deep link.

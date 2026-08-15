@@ -6,8 +6,8 @@ import 'package:flutter_swipes/src/features/roommates/domain/roommate_profile.da
 
 final roommateFiltersProvider =
     NotifierProvider<RoommateFiltersNotifier, RoommateFilters>(
-  RoommateFiltersNotifier.new,
-);
+      RoommateFiltersNotifier.new,
+    );
 
 class RoommateFiltersNotifier extends Notifier<RoommateFilters> {
   @override
@@ -26,18 +26,22 @@ final roommatesProvider = FutureProvider<List<RoommateProfile>>((ref) async {
 
   List data;
   try {
-    var query = client.from('client_profiles').select(
-      'user_id, name, bio, vap_bio, city, vap_city, age, profile_images, vap_avatar, occupation, vap_occupation, budget, monthly_budget',
-    );
+    var query = client
+        .from('client_profiles')
+        .select(
+          'user_id, name, bio, vap_bio, city, vap_city, age, profile_images, vap_avatar, occupation, vap_occupation, budget, monthly_budget',
+        );
     if (userId != null) {
       query = query.neq('user_id', userId);
     }
     data = await query.order('updated_at', ascending: false).limit(60) as List;
   } catch (_) {
-    data = await client
-        .from('client_profiles')
-        .select('user_id, name, bio, city, age, profile_images')
-        .limit(60) as List;
+    data =
+        await client
+                .from('client_profiles')
+                .select('user_id, name, bio, city, age, profile_images')
+                .limit(60)
+            as List;
   }
 
   final profiles = data

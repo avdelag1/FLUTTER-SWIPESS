@@ -10,7 +10,7 @@ final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
 
 class DocumentRepository {
   DocumentRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -45,9 +45,10 @@ class DocumentRepository {
     if (bytes.length > 10 * 1024 * 1024) {
       throw Exception('Max 10MB');
     }
-    final path =
-        '$userId/${DateTime.now().millisecondsSinceEpoch}-$fileName';
-    await _client.storage.from('legal-documents').uploadBinary(
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}-$fileName';
+    await _client.storage
+        .from('legal-documents')
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(
@@ -73,16 +74,19 @@ class DocumentRepository {
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not signed in');
-    await _client.from('owner_profiles').update({
-      'verification_submitted_at': DateTime.now().toUtc().toIso8601String(),
-      'verification_documents': [
-        {
-          'type': documentType,
-          'file_path': filePath,
-          'submitted_at': DateTime.now().toUtc().toIso8601String(),
-        }
-      ],
-    }).eq('user_id', userId);
+    await _client
+        .from('owner_profiles')
+        .update({
+          'verification_submitted_at': DateTime.now().toUtc().toIso8601String(),
+          'verification_documents': [
+            {
+              'type': documentType,
+              'file_path': filePath,
+              'submitted_at': DateTime.now().toUtc().toIso8601String(),
+            },
+          ],
+        })
+        .eq('user_id', userId);
   }
 
   Future<void> delete(LegalDocument doc) async {

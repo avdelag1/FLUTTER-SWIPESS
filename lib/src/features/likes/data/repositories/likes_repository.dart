@@ -34,7 +34,7 @@ class InterestedClient {
 
 class LikesRepository {
   LikesRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -86,14 +86,14 @@ class LikesRepository {
     final profiles = await _loadProfiles(ids);
     final likeAt = {
       for (final row in likes as List)
-        (row as Map<String, dynamic>)['target_id'] as String:
-            DateTime.tryParse(row['created_at']?.toString() ?? ''),
+        (row as Map<String, dynamic>)['target_id'] as String: DateTime.tryParse(
+          row['created_at']?.toString() ?? '',
+        ),
     };
 
     return [
       for (final id in ids)
-        if (profiles[id] != null)
-          profiles[id]!.copyWithLikedAt(likeAt[id]),
+        if (profiles[id] != null) profiles[id]!.copyWithLikedAt(likeAt[id]),
     ];
   }
 
@@ -124,10 +124,12 @@ class LikesRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return const [];
 
-    final listings = await _client
-        .from('listings')
-        .select('id, title')
-        .eq('owner_id', userId) as List;
+    final listings =
+        await _client
+                .from('listings')
+                .select('id, title')
+                .eq('owner_id', userId)
+            as List;
     if (listings.isEmpty) return const [];
 
     final listingIds = listings
@@ -187,10 +189,9 @@ class LikesRepository {
   Future<void> dismissInterestedClient(String clientId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
-    final listings = await _client
-        .from('listings')
-        .select('id')
-        .eq('owner_id', userId) as List;
+    final listings =
+        await _client.from('listings').select('id').eq('owner_id', userId)
+            as List;
     final listingIds = listings
         .map((row) => (row as Map)['id'] as String?)
         .whereType<String>()
@@ -210,7 +211,9 @@ class LikesRepository {
     try {
       final rows = await _client
           .from('profiles')
-          .select('user_id, full_name, bio, images, avatar_url, age, occupation')
+          .select(
+            'user_id, full_name, bio, images, avatar_url, age, occupation',
+          )
           .inFilter('user_id', ids);
       for (final row in rows as List) {
         final map = row as Map<String, dynamic>;

@@ -61,9 +61,7 @@ class EditListingState {
   bool get isProperty => category == 'property';
   bool get isWorker => category == 'worker';
   bool get isVehicle =>
-      category == 'motorcycle' ||
-      category == 'bicycle' ||
-      category == 'yacht';
+      category == 'motorcycle' || category == 'bicycle' || category == 'yacht';
 
   int get maxPhotos {
     switch (category) {
@@ -152,9 +150,7 @@ class EditListingState {
       description: listing.description ?? '',
       price: listing.price == null
           ? ''
-          : listing.price!.toStringAsFixed(
-              listing.price! % 1 == 0 ? 0 : 2,
-            ),
+          : listing.price!.toStringAsFixed(listing.price! % 1 == 0 ? 0 : 2),
       city: listing.city ?? 'Tulum',
       neighborhood: listing.neighborhood ?? '',
       beds: bedsLabel,
@@ -181,8 +177,9 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     state = EditListingState.fromListing(listing);
     Future(() async {
       try {
-        final full =
-            await ref.read(listingRepositoryProvider).fetchById(listing.id);
+        final full = await ref
+            .read(listingRepositoryProvider)
+            .fetchById(listing.id);
         if (full != null) state = EditListingState.fromListing(full);
       } catch (_) {}
     });
@@ -215,7 +212,9 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     if (current == null) return;
     final remaining = current.maxPhotos - current.photoCount;
     if (remaining <= 0) {
-      state = current.copyWith(error: 'Maximum photos reached for this category.');
+      state = current.copyWith(
+        error: 'Maximum photos reached for this category.',
+      );
       return;
     }
     final picked = await ImagePicker().pickMultiImage(limit: remaining);
@@ -322,5 +321,5 @@ class EditListingNotifier extends Notifier<EditListingState?> {
 
 final editListingProvider =
     NotifierProvider<EditListingNotifier, EditListingState?>(
-  EditListingNotifier.new,
-);
+      EditListingNotifier.new,
+    );

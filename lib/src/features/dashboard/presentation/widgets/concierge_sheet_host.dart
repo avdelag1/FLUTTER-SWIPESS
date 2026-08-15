@@ -77,9 +77,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
         : media.padding.top + 28;
     final bottomInset = chromeVisible
         ? media.padding.bottom +
-            ConciergeSheetHost.dockOffset +
-            ConciergeSheetHost.dockBody +
-            8
+              ConciergeSheetHost.dockOffset +
+              ConciergeSheetHost.dockBody +
+              8
         : 0.0;
     final side = chromeVisible ? 10.0 : 0.0;
 
@@ -111,8 +111,10 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                 alignment: Alignment.bottomCenter,
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 4),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xE6121824),
                     borderRadius: BorderRadius.circular(999),
@@ -121,8 +123,11 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.unfold_more_rounded,
-                          color: Colors.white, size: 14),
+                      const Icon(
+                        Icons.unfold_more_rounded,
+                        color: Colors.white,
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'MENU',
@@ -145,14 +150,14 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
           right: side,
           bottom: bottomInset,
           child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: _slide,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
-            )),
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: _slide,
+                    curve: Curves.easeOutCubic,
+                    reverseCurve: Curves.easeInCubic,
+                  ),
+                ),
             child: Transform.translate(
               offset: Offset(0, _drag),
               child: Material(

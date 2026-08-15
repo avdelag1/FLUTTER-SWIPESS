@@ -22,7 +22,7 @@ class VapValidateScreen extends ConsumerStatefulWidget {
 class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   late final TextEditingController _id;
   late final MobileScannerController _scannerController;
-  
+
   VapIdCard? _data;
   bool _loading = false;
   bool _lookedUp = false;
@@ -51,16 +51,16 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   Future<void> _lookup() async {
     var id = _id.text.trim();
     if (id.isEmpty) return;
-    
+
     // Support scanning a full URL
     if (id.startsWith('https://swipess.com/vap-validate/')) {
       id = id.replaceAll('https://swipess.com/vap-validate/', '');
     }
-    
+
     if (id.toUpperCase().startsWith('NX-')) {
       id = id.substring(3);
     }
-    
+
     setState(() {
       _loading = true;
       _lookedUp = true;
@@ -85,7 +85,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
 
   void _onDetect(BarcodeCapture capture) {
     if (_loading || _lookedUp) return;
-    
+
     final List<Barcode> barcodes = capture.barcodes;
     for (final barcode in barcodes) {
       if (barcode.rawValue != null) {
@@ -119,11 +119,18 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
-                        child: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                        child: const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                     const Spacer(),
-                    const Icon(Icons.qr_code_scanner_rounded, color: Colors.white70, size: 18),
+                    const Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Colors.white70,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'BUSINESS VALIDATION',
@@ -139,11 +146,14 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                   ],
                 ),
               ),
-              
+
               if (!_lookedUp && !_loading)
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 8.0,
+                    ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
                       child: Stack(
@@ -153,9 +163,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                             controller: _scannerController,
                             onDetect: _onDetect,
                           ),
-                          CustomPaint(
-                            painter: _ScannerOverlayPainter(),
-                          ),
+                          CustomPaint(painter: _ScannerOverlayPainter()),
                           Positioned(
                             bottom: 24,
                             left: 24,
@@ -181,7 +189,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                     ),
                   ),
                 ),
-                
+
               Expanded(
                 flex: _lookedUp || _loading ? 1 : 0,
                 child: ListView(
@@ -220,24 +228,39 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                           hintStyle: const TextStyle(color: Colors.white38),
                           filled: true,
                           fillColor: Colors.white.withAlpha(10),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Colors.white24, width: 1),
+                            borderSide: const BorderSide(
+                              color: Colors.white24,
+                              width: 1,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Colors.white24, width: 1),
+                            borderSide: const BorderSide(
+                              color: Colors.white24,
+                              width: 1,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Colors.white, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: Colors.white,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         onSubmitted: (_) => _lookup(),
                       ),
                       const SizedBox(height: 16),
-                      BrandPrimaryButton(label: 'Verify ID', onPressed: _lookup),
+                      BrandPrimaryButton(
+                        label: 'Verify ID',
+                        onPressed: _lookup,
+                      ),
                     ],
 
                     if (_loading)
@@ -266,14 +289,14 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                             ),
                             const SizedBox(height: 16),
                             BrandPrimaryButton(
-                              label: 'Try again', 
+                              label: 'Try again',
                               onPressed: () {
                                 setState(() {
                                   _lookedUp = false;
                                   _error = null;
                                   _id.clear();
                                 });
-                              }
+                              },
                             ),
                           ],
                         ),
@@ -282,29 +305,28 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                       _ValidCard(data: _data!),
                       const SizedBox(height: 24),
                       BrandPrimaryButton(
-                        label: 'Scan Another', 
+                        label: 'Scan Another',
                         onPressed: () {
                           setState(() {
                             _lookedUp = false;
                             _data = null;
                             _id.clear();
                           });
-                        }
+                        },
                       ),
-                    ]
-                    else if (_lookedUp) ...[
+                    ] else if (_lookedUp) ...[
                       const _InvalidCard(),
                       const SizedBox(height: 24),
                       BrandPrimaryButton(
-                        label: 'Scan Another', 
+                        label: 'Scan Another',
                         onPressed: () {
                           setState(() {
                             _lookedUp = false;
                             _id.clear();
                           });
-                        }
+                        },
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),
@@ -348,7 +370,7 @@ class _ScannerOverlayPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     const cornerLength = 32.0;
-    
+
     // Top Left
     canvas.drawLine(
       Offset(cutoutRect.left, cutoutRect.top + cornerLength),

@@ -21,10 +21,10 @@ class OwnerListingsStats {
 }
 
 int _activeCategoryCount(List<Listing> listings) {
-  final properties =
-      listings.where((l) => l.category == null || l.category == 'property').isNotEmpty;
-  final motorcycles =
-      listings.any((l) => l.category == 'motorcycle');
+  final properties = listings
+      .where((l) => l.category == null || l.category == 'property')
+      .isNotEmpty;
+  final motorcycles = listings.any((l) => l.category == 'motorcycle');
   final bicycles = listings.any((l) => l.category == 'bicycle');
   final services = listings.any(
     (l) => l.category == 'worker' || l.category == 'services',
@@ -39,8 +39,10 @@ int _activeCategoryCount(List<Listing> listings) {
   ].where((v) => v).length;
 }
 
-final myListingsProvider =
-    FutureProvider.family<List<Listing>, String>((ref, status) async {
+final myListingsProvider = FutureProvider.family<List<Listing>, String>((
+  ref,
+  status,
+) async {
   ref.watch(authStateProvider);
   final client = Supabase.instance.client;
   final userId = client.auth.currentUser?.id;
@@ -55,7 +57,9 @@ final myListingsProvider =
         .eq('owner_id', userId);
 
     if (status == 'active') {
-      filter = filter.or('status.eq.active,status.eq.available,is_active.eq.true');
+      filter = filter.or(
+        'status.eq.active,status.eq.available,is_active.eq.true',
+      );
     } else if (status == 'pending') {
       filter = filter.eq('status', 'pending');
     } else if (status == 'rented') {
@@ -91,8 +95,9 @@ final myListingsProvider =
   }
 });
 
-final ownerListingsStatsProvider =
-    FutureProvider<OwnerListingsStats>((ref) async {
+final ownerListingsStatsProvider = FutureProvider<OwnerListingsStats>((
+  ref,
+) async {
   ref.watch(authStateProvider);
   final all = await ref.watch(myListingsProvider('all').future);
   if (all.isEmpty) {
@@ -110,9 +115,7 @@ final ownerListingsStatsProvider =
       : prices.reduce((a, b) => a + b) / prices.length;
   return OwnerListingsStats(
     total: all.length,
-    active: all
-        .where((l) => l.isActive == true || l.status == 'active')
-        .length,
+    active: all.where((l) => l.isActive == true || l.status == 'active').length,
     views: all.fold<int>(0, (sum, l) => sum + (l.views ?? 0)),
     avgPrice: avg,
     categories: _activeCategoryCount(all),
@@ -124,10 +127,9 @@ class OwnerListingsActions {
   final Ref _ref;
 
   Future<void> setStatus(String id, String status) async {
-    await _ref.read(listingRepositoryProvider).updateListingStatus(
-          listingId: id,
-          status: status,
-        );
+    await _ref
+        .read(listingRepositoryProvider)
+        .updateListingStatus(listingId: id, status: status);
     _ref.invalidate(myListingsProvider);
     _ref.invalidate(ownerListingsStatsProvider);
   }

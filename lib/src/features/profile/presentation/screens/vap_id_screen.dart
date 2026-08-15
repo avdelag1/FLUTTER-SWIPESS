@@ -15,7 +15,6 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
 import 'dart:ui'; // Ensure dart:ui is available for ImageFilter
 
 Future<void> showVapIdModal(BuildContext context) async {
@@ -25,16 +24,12 @@ Future<void> showVapIdModal(BuildContext context) async {
     barrierLabel: 'VAP ID',
     barrierColor: Colors.black54,
     pageBuilder: (context, anim1, anim2) {
-      return FadeTransition(
-        opacity: anim1,
-        child: const VapIdScreen(),
-      );
+      return FadeTransition(opacity: anim1, child: const VapIdScreen());
     },
   );
 }
 
 class VapIdScreen extends ConsumerStatefulWidget {
-
   const VapIdScreen({super.key});
 
   @override
@@ -72,82 +67,93 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
         child: ColoredBox(
           color: Colors.black.withAlpha(140),
           child: async.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-        ),
-        error: (e, _) => Center(
-          child: TextButton(
-            onPressed: () => ref.read(vapIdProvider.notifier).refresh(),
-            child: Text(t(ref, 'flutter.vapRetry', 'Could not load PEARL — retry')),
-          ),
-        ),
-        data: (card) {
-          final data = card ?? VapIdCard(userId: userId);
-          final slice = userId.length >= 8 ? userId.substring(0, 8) : userId;
-          final idNumber = 'NX-${slice.toUpperCase()}';
-          final validationUrl = 'https://swipess.com/vap-validate/$userId';
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            ),
+            error: (e, _) => Center(
+              child: TextButton(
+                onPressed: () => ref.read(vapIdProvider.notifier).refresh(),
+                child: Text(
+                  t(ref, 'flutter.vapRetry', 'Could not load PEARL — retry'),
+                ),
+              ),
+            ),
+            data: (card) {
+              final data = card ?? VapIdCard(userId: userId);
+              final slice = userId.length >= 8
+                  ? userId.substring(0, 8)
+                  : userId;
+              final idNumber = 'NX-${slice.toUpperCase()}';
+              final validationUrl = 'https://swipess.com/vap-validate/$userId';
 
-          return Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, top + 16, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'STARK', // Just a label now
-                        textAlign: TextAlign.left,
-                        maxLines: 1,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 2.6,
+              return Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(16, top + 16, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'STARK', // Just a label now
+                            textAlign: TextAlign.left,
+                            maxLines: 1,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2.6,
+                            ),
+                          ),
                         ),
+                        _PearlRoundBtn(
+                          icon: Icons.edit_outlined,
+                          onTap: () => _edit(context, ref, data),
+                        ),
+                        const SizedBox(width: 8),
+                        _PearlRoundBtn(
+                          icon: Icons.close_rounded,
+                          onTap: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(AppPaths.clientDashboard);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(0, 0, 0, bottom),
+                      child: ThemedVapCard(
+                        theme: VapCardTheme.themes.first,
+                        data: data,
+                        idNumber: idNumber,
+                        validationUrl: validationUrl,
+                        docsAsync: docs,
+                        onPreview: (doc) =>
+                            showDocumentPreviewDialog(context, doc),
                       ),
                     ),
-                    _PearlRoundBtn(
-                      icon: Icons.edit_outlined,
-                      onTap: () => _edit(context, ref, data),
-                    ),
-                    const SizedBox(width: 8),
-                    _PearlRoundBtn(
-                      icon: Icons.close_rounded,
-                      onTap: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go(AppPaths.clientDashboard);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, bottom),
-                  child: ThemedVapCard(
-                    theme: VapCardTheme.themes.first,
-                    data: data,
-                    idNumber: idNumber,
-                    validationUrl: validationUrl,
-                    docsAsync: docs,
-                    onPreview: (doc) => showDocumentPreviewDialog(context, doc),
                   ),
-                ),
-              ),
-            ],
-          );
-        },
+                ],
+              );
+            },
+          ),
         ),
-      ),
       ),
     );
   }
 
   Future<void> _edit(
-      BuildContext context, WidgetRef ref, VapIdCard card) async {
+    BuildContext context,
+    WidgetRef ref,
+    VapIdCard card,
+  ) async {
     final name = TextEditingController(text: card.name ?? '');
     final occupation = TextEditingController(text: card.occupation ?? '');
     final city = TextEditingController(text: card.city ?? '');
@@ -188,22 +194,28 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                 ),
                 const SizedBox(height: 16),
                 GlassTextField(
-                    controller: name, hint: 'Name', icon: Icons.person_rounded),
+                  controller: name,
+                  hint: 'Name',
+                  icon: Icons.person_rounded,
+                ),
                 const SizedBox(height: 10),
                 GlassTextField(
-                    controller: occupation,
-                    hint: 'Occupation',
-                    icon: Icons.work_rounded),
+                  controller: occupation,
+                  hint: 'Occupation',
+                  icon: Icons.work_rounded,
+                ),
                 const SizedBox(height: 10),
                 GlassTextField(
-                    controller: city,
-                    hint: 'City',
-                    icon: Icons.location_city_rounded),
+                  controller: city,
+                  hint: 'City',
+                  icon: Icons.location_city_rounded,
+                ),
                 const SizedBox(height: 10),
                 GlassTextField(
-                    controller: country,
-                    hint: 'Country',
-                    icon: Icons.public_rounded),
+                  controller: country,
+                  hint: 'Country',
+                  icon: Icons.public_rounded,
+                ),
                 const SizedBox(height: 10),
                 GlassTextField(
                   controller: years,
@@ -213,12 +225,17 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                 ),
                 const SizedBox(height: 10),
                 GlassTextField(
-                    controller: bio, hint: 'Bio', icon: Icons.notes_rounded),
+                  controller: bio,
+                  hint: 'Bio',
+                  icon: Icons.notes_rounded,
+                ),
                 const SizedBox(height: 20),
                 BrandPrimaryButton(
                   label: t(ref, 'flutter.vapSave', 'Save card'),
                   onPressed: () async {
-                    await ref.read(vapIdProvider.notifier).save(
+                    await ref
+                        .read(vapIdProvider.notifier)
+                        .save(
                           VapIdCard(
                             userId: card.userId,
                             name: name.text.trim(),

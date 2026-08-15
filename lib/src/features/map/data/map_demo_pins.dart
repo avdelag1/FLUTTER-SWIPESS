@@ -4,22 +4,14 @@ import 'package:latlong2/latlong.dart';
 
 /// Live pins only. Fake Tulum homes / stock faces must never ride along
 /// when the user picks another city — they look glued on top of the map.
-List<Listing> listingsForMap(
-  List<Listing> live,
-  LatLng center,
-  String city,
-) {
+List<Listing> listingsForMap(List<Listing> live, LatLng center, String city) {
   return [
     for (final listing in live)
       if (listing.latitude != null && listing.longitude != null) listing,
   ];
 }
 
-List<Profile> peopleForMap(
-  List<Profile> live,
-  LatLng center,
-  String city,
-) {
+List<Profile> peopleForMap(List<Profile> live, LatLng center, String city) {
   return [
     for (final profile in live)
       if (profile.latitude != null && profile.longitude != null) profile,

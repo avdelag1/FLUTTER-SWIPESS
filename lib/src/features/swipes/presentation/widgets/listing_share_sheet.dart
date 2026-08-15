@@ -72,7 +72,10 @@ class _ShareSheet extends StatelessWidget {
                     width: 56,
                     height: 56,
                     child: listing.primaryImage != null
-                        ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
+                        ? Image.network(
+                            listing.primaryImage!,
+                            fit: BoxFit.cover,
+                          )
                         : const ColoredBox(color: Color(0xFF16161C)),
                   ),
                 ),

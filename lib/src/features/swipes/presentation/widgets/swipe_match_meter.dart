@@ -21,25 +21,25 @@ class SwipeMatchMeter extends StatelessWidget {
     final color = percentage >= 90
         ? const Color(0xFF34D399)
         : percentage >= 75
-            ? const Color(0xFF22D3EE)
-            : percentage >= 55
-                ? const Color(0xFF60A5FA)
-                : const Color(0xFFFBBF24);
+        ? const Color(0xFF22D3EE)
+        : percentage >= 55
+        ? const Color(0xFF60A5FA)
+        : const Color(0xFFFBBF24);
     final glow = color.withAlpha(70);
     final icon = percentage >= 90
         ? Icons.star_rounded
         : percentage >= 75
-            ? Icons.local_fire_department_rounded
-            : percentage >= 55
-                ? Icons.bolt_rounded
-                : Icons.auto_awesome_rounded;
+        ? Icons.local_fire_department_rounded
+        : percentage >= 55
+        ? Icons.bolt_rounded
+        : Icons.auto_awesome_rounded;
     final label = percentage >= 90
         ? 'Perfect'
         : percentage >= 75
-            ? 'Great'
-            : percentage >= 55
-                ? 'Good'
-                : 'Match';
+        ? 'Great'
+        : percentage >= 55
+        ? 'Good'
+        : 'Match';
 
     if (compact) {
       return Container(

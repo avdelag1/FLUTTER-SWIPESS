@@ -82,7 +82,8 @@ abstract final class SectionNavigation {
         : withoutQuery;
   }
 
-  static bool isPreAuth(String path) => _preAuthRoots.contains(_normalize(path));
+  static bool isPreAuth(String path) =>
+      _preAuthRoots.contains(_normalize(path));
 
   /// The section a path belongs to, or `null` when it is not under a known one.
   /// Picks the most specific (longest) matching root.

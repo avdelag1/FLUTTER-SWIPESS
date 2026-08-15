@@ -10,7 +10,11 @@ import 'package:flutter_swipes/src/features/notifications/presentation/providers
 /// A launcher that does not support badges simply reports unsupported.
 final unreadBadgeCountProvider = Provider<int>((ref) {
   final notifications = ref.watch(unreadNotificationsProvider).value ?? 0;
-  final messages = ref.watch(conversationsProvider).value?.fold<int>(
+  final messages =
+      ref
+          .watch(conversationsProvider)
+          .value
+          ?.fold<int>(
             0,
             (sum, conversation) => sum + conversation.unreadCount,
           ) ??

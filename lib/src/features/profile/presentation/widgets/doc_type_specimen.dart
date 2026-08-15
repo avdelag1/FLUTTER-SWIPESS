@@ -134,7 +134,12 @@ class _DocTypeSpecimenPainter extends CustomPainter {
     );
   }
 
-  void _paper(Canvas canvas, Size size, {required String title, required Color bar}) {
+  void _paper(
+    Canvas canvas,
+    Size size, {
+    required String title,
+    required Color bar,
+  }) {
     final r = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
       const Radius.circular(3),
@@ -173,14 +178,24 @@ class _DocTypeSpecimenPainter extends CustomPainter {
     );
   }
 
-  void _lines(Canvas canvas, Offset origin, double width, int count, Color color) {
+  void _lines(
+    Canvas canvas,
+    Offset origin,
+    double width,
+    int count,
+    Color color,
+  ) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1.1;
     for (var i = 0; i < count; i++) {
       final y = origin.dy + i * 5.2;
       final w = i == count - 1 ? width * 0.55 : width;
-      canvas.drawLine(origin.translate(0, y - origin.dy), origin.translate(w, y - origin.dy), paint);
+      canvas.drawLine(
+        origin.translate(0, y - origin.dy),
+        origin.translate(w, y - origin.dy),
+        paint,
+      );
     }
   }
 

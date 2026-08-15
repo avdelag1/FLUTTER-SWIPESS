@@ -25,7 +25,8 @@ class AppNotification {
       title: json['title'] as String? ?? 'Notification',
       message: json['message'] as String? ?? '',
       type: json['notification_type'] as String? ?? 'system',
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.now(),
       isRead: json['is_read'] as bool? ?? false,
       linkUrl: json['link_url'] as String?,

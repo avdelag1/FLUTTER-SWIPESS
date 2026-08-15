@@ -20,18 +20,25 @@ class PublicListingPreviewScreen extends ConsumerWidget {
     return Scaffold(
       body: async.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: MatteSurface.ink(context),
+            strokeWidth: 2,
+          ),
         ),
         error: (e, _) => Center(
-          child: Text('Could not load listing\n$e',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: MatteSurface.muted(context))),
+          child: Text(
+            'Could not load listing\n$e',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: MatteSurface.muted(context)),
+          ),
         ),
         data: (listing) {
           if (listing == null) {
             return Center(
-              child: Text('Listing not found',
-                  style: TextStyle(color: MatteSurface.muted(context))),
+              child: Text(
+                'Listing not found',
+                style: TextStyle(color: MatteSurface.muted(context)),
+              ),
             );
           }
           final image = listing.primaryImage;
@@ -100,7 +107,8 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                       Text(
                         listing.formattedLocation,
                         style: GoogleFonts.plusJakartaSans(
-                            color: MatteSurface.muted(context)),
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                       SizedBox(height: 20),
                       Text(
@@ -118,8 +126,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                         height: 54,
                         child: FilledButton(
                           onPressed: () => context.go('/welcome'),
-                          style: FilledButton.styleFrom(
-                          ),
+                          style: FilledButton.styleFrom(),
                           child: Text(
                             'JOIN SWIPESS TO MESSAGE',
                             style: GoogleFonts.plusJakartaSans(

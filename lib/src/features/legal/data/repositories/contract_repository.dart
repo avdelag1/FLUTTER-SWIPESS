@@ -8,7 +8,7 @@ final contractRepositoryProvider = Provider<ContractRepository>((ref) {
 
 class ContractRepository {
   ContractRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -28,14 +28,18 @@ class ContractRepository {
   Future<DigitalContract> createFromTemplate(ContractTemplate template) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not signed in');
-    final data = await _client.from('digital_contracts').insert({
-      'title': template.name,
-      'template_type': template.id,
-      'content': template.content,
-      'owner_id': userId,
-      'client_id': userId,
-      'status': 'draft',
-    }).select().single();
+    final data = await _client
+        .from('digital_contracts')
+        .insert({
+          'title': template.name,
+          'template_type': template.id,
+          'content': template.content,
+          'owner_id': userId,
+          'client_id': userId,
+          'status': 'draft',
+        })
+        .select()
+        .single();
     return DigitalContract.fromJson(data);
   }
 
@@ -78,17 +82,22 @@ class ContractRepository {
     final otherAlreadySigned = isOwner
         ? contract.clientSignedAt != null
         : contract.ownerSignedAt != null;
-    update['status'] = otherAlreadySigned || contract.clientId == contract.ownerId
+    update['status'] =
+        otherAlreadySigned || contract.clientId == contract.ownerId
         ? 'signed'
         : (isOwner ? 'signed_by_owner' : 'signed_by_client');
 
     try {
-      await _client.from('digital_contracts').update(update).eq('id', contract.id);
+      await _client
+          .from('digital_contracts')
+          .update(update)
+          .eq('id', contract.id);
     } catch (error) {
       // Live schema may not have signature columns — still keep status.
-      await _client.from('digital_contracts').update({
-        'status': update['status'],
-      }).eq('id', contract.id);
+      await _client
+          .from('digital_contracts')
+          .update({'status': update['status']})
+          .eq('id', contract.id);
     }
   }
 }

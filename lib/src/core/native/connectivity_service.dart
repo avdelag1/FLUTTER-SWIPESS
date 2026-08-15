@@ -57,8 +57,9 @@ class ConnectivityNotifier extends Notifier<bool> {
 }
 
 /// `true` while the device has a network interface.
-final connectivityProvider =
-    NotifierProvider<ConnectivityNotifier, bool>(ConnectivityNotifier.new);
+final connectivityProvider = NotifierProvider<ConnectivityNotifier, bool>(
+  ConnectivityNotifier.new,
+);
 
 /// Mounts the watcher for the lifetime of the app, the way Cap mounted the hook
 /// in `AppLayout`.

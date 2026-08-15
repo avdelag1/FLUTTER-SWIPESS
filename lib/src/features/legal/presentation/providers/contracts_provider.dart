@@ -18,8 +18,9 @@ class ContractsNotifier extends AsyncNotifier<List<DigitalContract>> {
   }
 
   Future<DigitalContract> create(ContractTemplate template) async {
-    final created =
-        await ref.read(contractRepositoryProvider).createFromTemplate(template);
+    final created = await ref
+        .read(contractRepositoryProvider)
+        .createFromTemplate(template);
     await refresh();
     return created;
   }
@@ -27,5 +28,5 @@ class ContractsNotifier extends AsyncNotifier<List<DigitalContract>> {
 
 final contractsProvider =
     AsyncNotifierProvider<ContractsNotifier, List<DigitalContract>>(
-  ContractsNotifier.new,
-);
+      ContractsNotifier.new,
+    );

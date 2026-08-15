@@ -33,7 +33,8 @@ class EscrowDeposit {
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       currency: json['currency'] as String? ?? 'USD',
       status: json['status'] as String? ?? 'pending',
-      createdAt: DateTime.tryParse(json['created_at'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['created_at'] as String? ?? '') ??
           DateTime.now(),
       contractId: json['contract_id'] as String?,
       clientId: json['client_id'] as String?,

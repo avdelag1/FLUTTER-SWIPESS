@@ -17,11 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddListingScreen extends ConsumerStatefulWidget {
-  const AddListingScreen({
-    super.key,
-    this.initialCategory,
-    this.initialMode,
-  });
+  const AddListingScreen({super.key, this.initialCategory, this.initialMode});
 
   /// Optional category id from create-listing chooser (`property`, `worker`, …).
   final String? initialCategory;
@@ -57,7 +53,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   void initState() {
     super.initState();
     var draft = ref.read(addListingProvider);
-    final seeded = draft.photos.isNotEmpty ||
+    final seeded =
+        draft.photos.isNotEmpty ||
         draft.title.trim().isNotEmpty ||
         draft.description.trim().isNotEmpty;
     if (widget.initialCategory == null &&
@@ -243,19 +240,21 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
 
   Future<void> _next(ListingDraft draft) async {
     final notifier = ref.read(addListingProvider.notifier);
-    notifier.update((current) => current.copyWith(
-          title: _title.text,
-          price: _price.text,
-          description: _description.text,
-          neighborhood: _neighborhood.text,
-          year: _year.text,
-          mileage: _mileage.text,
-          engineCc: _engine.text,
-          lengthM: _length.text,
-          berths: _berths.text,
-          maxPassengers: _guests.text,
-          model: _model.text.trim().isEmpty ? current.model : _model.text.trim(),
-        ));
+    notifier.update(
+      (current) => current.copyWith(
+        title: _title.text,
+        price: _price.text,
+        description: _description.text,
+        neighborhood: _neighborhood.text,
+        year: _year.text,
+        mileage: _mileage.text,
+        engineCc: _engine.text,
+        lengthM: _length.text,
+        berths: _berths.text,
+        maxPassengers: _guests.text,
+        model: _model.text.trim().isEmpty ? current.model : _model.text.trim(),
+      ),
+    );
     if (draft.step == 0 && draft.photos.isEmpty) {
       notifier.update(
         (c) => c.copyWith(error: 'Add at least one photo to continue.'),
@@ -270,9 +269,12 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? 'Listing published — it is live on the swipe deck.'
-            : (ref.read(addListingProvider).error ?? 'Could not save listing')),
+        content: Text(
+          ok
+              ? 'Listing published — it is live on the swipe deck.'
+              : (ref.read(addListingProvider).error ??
+                    'Could not save listing'),
+        ),
       ),
     );
     if (ok) Navigator.of(context).maybePop();
@@ -301,21 +303,23 @@ class _WizardStepPills extends StatelessWidget {
               onTap: () => onSelect(step.$1),
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: step.$1 == current
                       ? AppTheme.brandPrimary
                       : step.$1 < current
-                          ? const Color(0x2610B981)
-                          : Colors.white.withAlpha(12),
+                      ? const Color(0x2610B981)
+                      : Colors.white.withAlpha(12),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: step.$1 == current
                         ? AppTheme.brandPrimary
                         : step.$1 < current
-                            ? const Color(0x4D10B981)
-                            : Colors.white24,
+                        ? const Color(0x4D10B981)
+                        : Colors.white24,
                   ),
                   boxShadow: step.$1 == current
                       ? [
@@ -331,15 +335,13 @@ class _WizardStepPills extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      step.$1 < current
-                          ? Icons.check_rounded
-                          : step.$3,
+                      step.$1 < current ? Icons.check_rounded : step.$3,
                       size: 12,
                       color: step.$1 == current
                           ? Colors.white
                           : step.$1 < current
-                              ? const Color(0xFF34D399)
-                              : Colors.white54,
+                          ? const Color(0xFF34D399)
+                          : Colors.white54,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -348,8 +350,8 @@ class _WizardStepPills extends StatelessWidget {
                         color: step.$1 == current
                             ? Colors.white
                             : step.$1 < current
-                                ? const Color(0xFF34D399)
-                                : Colors.white54,
+                            ? const Color(0xFF34D399)
+                            : Colors.white54,
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.6,
@@ -485,11 +487,36 @@ class _CategoryStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const categories = [
-      (ListingCategory.property, Icons.home_work_rounded, 'Properties', 'Homes, rooms, land'),
-      (ListingCategory.motorcycle, Icons.two_wheeler_rounded, 'Motorcycles', 'Motos for rent or sale'),
-      (ListingCategory.bicycle, Icons.pedal_bike_rounded, 'Bicycles', 'Bikes and e-bikes'),
-      (ListingCategory.yacht, Icons.sailing_rounded, 'Yachts', 'Boats to charter or buy'),
-      (ListingCategory.worker, Icons.work_rounded, 'Workers', 'Services and professionals'),
+      (
+        ListingCategory.property,
+        Icons.home_work_rounded,
+        'Properties',
+        'Homes, rooms, land',
+      ),
+      (
+        ListingCategory.motorcycle,
+        Icons.two_wheeler_rounded,
+        'Motorcycles',
+        'Motos for rent or sale',
+      ),
+      (
+        ListingCategory.bicycle,
+        Icons.pedal_bike_rounded,
+        'Bicycles',
+        'Bikes and e-bikes',
+      ),
+      (
+        ListingCategory.yacht,
+        Icons.sailing_rounded,
+        'Yachts',
+        'Boats to charter or buy',
+      ),
+      (
+        ListingCategory.worker,
+        Icons.work_rounded,
+        'Workers',
+        'Services and professionals',
+      ),
     ];
 
     return Column(
@@ -523,7 +550,8 @@ class _CategoryStep extends ConsumerWidget {
               child: _ModePill(
                 label: 'For Rent',
                 icon: Icons.key_rounded,
-                active: draft.mode == ListingMode.rent ||
+                active:
+                    draft.mode == ListingMode.rent ||
                     draft.mode == ListingMode.both,
                 onTap: () => ref
                     .read(addListingProvider.notifier)
@@ -535,7 +563,8 @@ class _CategoryStep extends ConsumerWidget {
               child: _ModePill(
                 label: 'For Sale',
                 icon: Icons.sell_rounded,
-                active: draft.mode == ListingMode.sale ||
+                active:
+                    draft.mode == ListingMode.sale ||
                     draft.mode == ListingMode.both,
                 onTap: () => ref
                     .read(addListingProvider.notifier)
@@ -576,9 +605,7 @@ class _PhotosStep extends ConsumerWidget {
                     ref.read(addListingProvider.notifier).pickPhotos(),
                 icon: const Icon(Icons.photo_library_outlined, size: 18),
                 label: const Text('Gallery'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                ),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
               ),
             ),
             const SizedBox(width: 10),
@@ -596,18 +623,20 @@ class _PhotosStep extends ConsumerWidget {
                   if (files is! List || files.isEmpty) return;
                   final picked = files.whereType<XFile>().toList();
                   if (picked.isEmpty) return;
-                  ref.read(addListingProvider.notifier).update(
+                  ref
+                      .read(addListingProvider.notifier)
+                      .update(
                         (d) => d.copyWith(
-                          photos: [...d.photos, ...picked]
-                              .take(draft.maxPhotos)
-                              .toList(),
+                          photos: [
+                            ...d.photos,
+                            ...picked,
+                          ].take(draft.maxPhotos).toList(),
                         ),
                       );
                 },
                 icon: const Icon(Icons.photo_camera_rounded, size: 18),
                 label: const Text('Camera'),
-                style: FilledButton.styleFrom(
-                ),
+                style: FilledButton.styleFrom(),
               ),
             ),
           ],
@@ -625,8 +654,7 @@ class _PhotosStep extends ConsumerWidget {
           itemBuilder: (context, index) {
             if (index == draft.photos.length) {
               return GestureDetector(
-                onTap: () =>
-                    ref.read(addListingProvider.notifier).pickPhotos(),
+                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.transparent,
@@ -636,8 +664,10 @@ class _PhotosStep extends ConsumerWidget {
                       style: BorderStyle.solid,
                     ),
                   ),
-                  child: const Icon(Icons.add_a_photo_rounded,
-                      color: Colors.white70),
+                  child: const Icon(
+                    Icons.add_a_photo_rounded,
+                    color: Colors.white70,
+                  ),
                 ),
               );
             }
@@ -661,8 +691,9 @@ class _PhotosStep extends ConsumerWidget {
                   top: 4,
                   right: 4,
                   child: GestureDetector(
-                    onTap: () =>
-                        ref.read(addListingProvider.notifier).removePhoto(index),
+                    onTap: () => ref
+                        .read(addListingProvider.notifier)
+                        .removePhoto(index),
                     child: const CircleAvatar(
                       radius: 12,
                       child: Icon(Icons.close, size: 14, color: Colors.white),
@@ -675,7 +706,9 @@ class _PhotosStep extends ConsumerWidget {
                     bottom: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(8),
@@ -765,8 +798,11 @@ class _PhotosStep extends ConsumerWidget {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.video_call_rounded,
-                      color: Color(0xFFEB4898), size: 28),
+                  const Icon(
+                    Icons.video_call_rounded,
+                    color: Color(0xFFEB4898),
+                    size: 28,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Upload looping video',
@@ -827,7 +863,11 @@ class _DetailsStep extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GlassTextField(controller: title, hint: 'Title (optional — we can build it)', icon: Icons.title_rounded),
+        GlassTextField(
+          controller: title,
+          hint: 'Title (optional — we can build it)',
+          icon: Icons.title_rounded,
+        ),
         const SizedBox(height: 12),
         GlassTextField(
           controller: price,
@@ -841,8 +881,8 @@ class _DetailsStep extends ConsumerWidget {
           hint: draft.category == ListingCategory.property
               ? 'Description — Airbnb-style story of the stay'
               : draft.category == ListingCategory.worker
-                  ? 'Describe your service, experience, and vibe'
-                  : 'Description — optional if chips below tell the story',
+              ? 'Describe your service, experience, and vibe'
+              : 'Description — optional if chips below tell the story',
           icon: Icons.notes_rounded,
           maxLines: 5,
         ),
@@ -894,10 +934,12 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.propertyTypes,
         selected: draft.propertyType == null ? const [] : [draft.propertyType!],
         multi: false,
-        onChanged: (v) => n.update((c) => c.copyWith(
-              propertyType: v.isEmpty ? null : v.first,
-              clearPropertyType: v.isEmpty,
-            )),
+        onChanged: (v) => n.update(
+          (c) => c.copyWith(
+            propertyType: v.isEmpty ? null : v.first,
+            clearPropertyType: v.isEmpty,
+          ),
+        ),
       ),
       const SizedBox(height: 20),
       ChipSelector(
@@ -905,7 +947,8 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.bedroomCounts,
         selected: draft.beds == null ? const [] : [draft.beds!],
         multi: false,
-        onChanged: (v) => n.update((c) => c.copyWith(beds: v.isEmpty ? null : v.first)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(beds: v.isEmpty ? null : v.first)),
       ),
       const SizedBox(height: 20),
       ChipSelector(
@@ -913,7 +956,8 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.bathroomCounts,
         selected: draft.baths == null ? const [] : [draft.baths!],
         multi: false,
-        onChanged: (v) => n.update((c) => c.copyWith(baths: v.isEmpty ? null : v.first)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(baths: v.isEmpty ? null : v.first)),
       ),
       const SizedBox(height: 20),
       ChipSelector(
@@ -948,7 +992,9 @@ class _DetailsStep extends ConsumerWidget {
         ChipSelector(
           label: 'Rental duration',
           options: ListingTaxonomies.rentalDurations,
-          selected: draft.rentalDuration == null ? const [] : [draft.rentalDuration!],
+          selected: draft.rentalDuration == null
+              ? const []
+              : [draft.rentalDuration!],
           multi: false,
           onChanged: (v) => n.update(
             (c) => c.copyWith(rentalDuration: v.isEmpty ? null : v.first),
@@ -965,8 +1011,9 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.motoTypes,
         selected: draft.vehicleType == null ? const [] : [draft.vehicleType!],
         multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first)),
+        onChanged: (v) => n.update(
+          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first),
+        ),
       ),
       const SizedBox(height: 20),
       ChipSelector(
@@ -974,16 +1021,36 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.motoBrands,
         selected: draft.brand == null ? const [] : [draft.brand!],
         multi: false,
-        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
       ),
       const SizedBox(height: 12),
-      GlassTextField(controller: model, hint: 'Model', icon: Icons.two_wheeler_rounded),
+      GlassTextField(
+        controller: model,
+        hint: 'Model',
+        icon: Icons.two_wheeler_rounded,
+      ),
       const SizedBox(height: 12),
-      GlassTextField(controller: year, hint: 'Year', keyboardType: TextInputType.number, icon: Icons.calendar_today_rounded),
+      GlassTextField(
+        controller: year,
+        hint: 'Year',
+        keyboardType: TextInputType.number,
+        icon: Icons.calendar_today_rounded,
+      ),
       const SizedBox(height: 12),
-      GlassTextField(controller: mileage, hint: 'Mileage (km)', keyboardType: TextInputType.number, icon: Icons.speed_rounded),
+      GlassTextField(
+        controller: mileage,
+        hint: 'Mileage (km)',
+        keyboardType: TextInputType.number,
+        icon: Icons.speed_rounded,
+      ),
       const SizedBox(height: 12),
-      GlassTextField(controller: engine, hint: 'Engine cc', keyboardType: TextInputType.number, icon: Icons.tune_rounded),
+      GlassTextField(
+        controller: engine,
+        hint: 'Engine cc',
+        keyboardType: TextInputType.number,
+        icon: Icons.tune_rounded,
+      ),
       const SizedBox(height: 20),
       ChipSelector(
         label: 'Condition',
@@ -1017,8 +1084,9 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.bikeTypes,
         selected: draft.vehicleType == null ? const [] : [draft.vehicleType!],
         multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first)),
+        onChanged: (v) => n.update(
+          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first),
+        ),
       ),
       const SizedBox(height: 20),
       ChipSelector(
@@ -1026,10 +1094,15 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.bikeBrands,
         selected: draft.brand == null ? const [] : [draft.brand!],
         multi: false,
-        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
       ),
       const SizedBox(height: 12),
-      GlassTextField(controller: model, hint: 'Model', icon: Icons.pedal_bike_rounded),
+      GlassTextField(
+        controller: model,
+        hint: 'Model',
+        icon: Icons.pedal_bike_rounded,
+      ),
       const SizedBox(height: 20),
       ChipSelector(
         label: 'Frame size',
@@ -1072,8 +1145,9 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.yachtTypes,
         selected: draft.vehicleType == null ? const [] : [draft.vehicleType!],
         multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first)),
+        onChanged: (v) => n.update(
+          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first),
+        ),
       ),
       const SizedBox(height: 20),
       ChipSelector(
@@ -1081,16 +1155,36 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.yachtBrands,
         selected: draft.brand == null ? const [] : [draft.brand!],
         multi: false,
-        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
       ),
       const SizedBox(height: 12),
-      GlassTextField(controller: model, hint: 'Model', icon: Icons.sailing_rounded),
+      GlassTextField(
+        controller: model,
+        hint: 'Model',
+        icon: Icons.sailing_rounded,
+      ),
       const SizedBox(height: 12),
-      GlassTextField(controller: length, hint: 'Length (m)', keyboardType: TextInputType.number, icon: Icons.straighten_rounded),
+      GlassTextField(
+        controller: length,
+        hint: 'Length (m)',
+        keyboardType: TextInputType.number,
+        icon: Icons.straighten_rounded,
+      ),
       const SizedBox(height: 12),
-      GlassTextField(controller: berths, hint: 'Berths', keyboardType: TextInputType.number, icon: Icons.bed_rounded),
+      GlassTextField(
+        controller: berths,
+        hint: 'Berths',
+        keyboardType: TextInputType.number,
+        icon: Icons.bed_rounded,
+      ),
       const SizedBox(height: 12),
-      GlassTextField(controller: guests, hint: 'Max guests', keyboardType: TextInputType.number, icon: Icons.groups_rounded),
+      GlassTextField(
+        controller: guests,
+        hint: 'Max guests',
+        keyboardType: TextInputType.number,
+        icon: Icons.groups_rounded,
+      ),
       const SizedBox(height: 20),
       ChipSelector(
         label: 'Condition',
@@ -1150,18 +1244,18 @@ class _DetailsStep extends ConsumerWidget {
           multi: false,
           onChanged: (v) {
             if (v.isEmpty) {
-              n.update((c) =>
-                  c.copyWith(serviceCategory: null, skills: const []));
+              n.update(
+                (c) => c.copyWith(serviceCategory: null, skills: const []),
+              );
               return;
             }
             final match = serviceCategories.firstWhere(
               (s) => s.label == v.first,
               orElse: () => serviceCategories.last,
             );
-            n.update((c) => c.copyWith(
-                  serviceCategory: match.value,
-                  skills: const [],
-                ));
+            n.update(
+              (c) => c.copyWith(serviceCategory: match.value, skills: const []),
+            );
           },
         ),
         const SizedBox(height: 14),
@@ -1194,8 +1288,9 @@ class _DetailsStep extends ConsumerWidget {
         options: ListingTaxonomies.workerPricing,
         selected: draft.pricingUnit == null ? const [] : [draft.pricingUnit!],
         multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(pricingUnit: v.isEmpty ? null : v.first)),
+        onChanged: (v) => n.update(
+          (c) => c.copyWith(pricingUnit: v.isEmpty ? null : v.first),
+        ),
       ),
       const SizedBox(height: 20),
       ChipSelector(

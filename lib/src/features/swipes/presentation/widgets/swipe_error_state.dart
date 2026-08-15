@@ -26,8 +26,9 @@ class SwipeErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     final canvas = AppTheme.canvasFor(isLight: isLight);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    final inkMuted =
-        isLight ? const Color(0x990A0A0D) : Colors.white.withAlpha(153);
+    final inkMuted = isLight
+        ? const Color(0x990A0A0D)
+        : Colors.white.withAlpha(153);
     final retryBorder = isLight ? Colors.black.withAlpha(64) : Colors.white;
     final retryShadow = isLight
         ? Colors.black.withAlpha(30)
@@ -49,10 +50,7 @@ class SwipeErrorState extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: const Color(0x4DFB7185)),
                   boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x4D000000),
-                      blurRadius: 32,
-                    ),
+                    BoxShadow(color: Color(0x4D000000), blurRadius: 32),
                   ],
                 ),
                 child: const Icon(
@@ -102,10 +100,7 @@ class SwipeErrorState extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: retryBorder, width: 1.5),
                       boxShadow: [
-                        BoxShadow(
-                          color: retryShadow,
-                          blurRadius: 48,
-                        ),
+                        BoxShadow(color: retryShadow, blurRadius: 48),
                       ],
                     ),
                     child: Row(
@@ -121,11 +116,7 @@ class SwipeErrorState extends StatelessWidget {
                             ),
                           )
                         else
-                          Icon(
-                            Icons.refresh_rounded,
-                            color: ink,
-                            size: 18,
-                          ),
+                          Icon(Icons.refresh_rounded, color: ink, size: 18),
                         const SizedBox(width: 10),
                         Text(
                           isRetrying ? 'Retrying…' : 'Try again',
@@ -244,7 +235,9 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                     opacity: _pulse(0),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 7),
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(15),
                         borderRadius: BorderRadius.circular(999),
@@ -286,7 +279,9 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                     opacity: _pulse(0.2),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(15),
                         borderRadius: BorderRadius.circular(999),
@@ -324,8 +319,10 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                 right: 20,
                 bottom: 92,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0x8C141418),
                     borderRadius: BorderRadius.circular(24),
@@ -397,11 +394,12 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
     );
   }
 
-  Widget _bar(
-      {required double width,
-      required double height,
-      required double delay,
-      int alpha = 26}) {
+  Widget _bar({
+    required double width,
+    required double height,
+    required double delay,
+    int alpha = 26,
+  }) {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => Opacity(

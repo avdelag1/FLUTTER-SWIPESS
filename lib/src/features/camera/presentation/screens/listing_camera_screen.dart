@@ -130,13 +130,17 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.photo_camera_rounded,
-                              size: 64, color: Colors.transparent),
+                          Icon(
+                            Icons.photo_camera_rounded,
+                            size: 64,
+                            color: Colors.transparent,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'Shoot listing photos like Cap camera',
                             style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54),
+                              color: Colors.white54,
+                            ),
                           ),
                         ],
                       ),
@@ -146,10 +150,10 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                       itemCount: _shots.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                      ),
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                          ),
                       itemBuilder: (context, i) {
                         return Stack(
                           fit: StackFit.expand,
@@ -161,7 +165,8 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                                 builder: (context, snap) {
                                   if (!snap.hasData) {
                                     return const ColoredBox(
-                                        color: Color(0xFF16161C));
+                                      color: Color(0xFF16161C),
+                                    );
                                   }
                                   final image = Image.memory(
                                     snap.data!,
@@ -181,12 +186,14 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                               top: 4,
                               right: 4,
                               child: GestureDetector(
-                                onTap: () =>
-                                    setState(() => _shots.removeAt(i)),
+                                onTap: () => setState(() => _shots.removeAt(i)),
                                 child: const CircleAvatar(
                                   radius: 12,
-                                  child: Icon(Icons.close,
-                                      size: 14, color: Colors.white),
+                                  child: Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),

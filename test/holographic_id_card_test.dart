@@ -12,7 +12,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('HolographicIDCard paints the selected PEARL theme', (tester) async {
+  testWidgets('HolographicIDCard paints the selected PEARL theme', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -34,8 +36,9 @@ void main() {
     expect(find.text('SWIPESS GLOBAL REGISTRY'), findsOneWidget);
   });
 
-  testWidgets('vapCardThemeProvider follows the persisted theme index',
-      (tester) async {
+  testWidgets('vapCardThemeProvider follows the persisted theme index', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({'vap-card-theme-index': 4});
     final container = ProviderContainer();
     addTearDown(container.dispose);

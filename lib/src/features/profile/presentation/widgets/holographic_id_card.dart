@@ -25,7 +25,8 @@ class HolographicIDCard extends StatefulWidget {
   State<HolographicIDCard> createState() => _HolographicIDCardState();
 }
 
-class _HolographicIDCardState extends State<HolographicIDCard> with SingleTickerProviderStateMixin {
+class _HolographicIDCardState extends State<HolographicIDCard>
+    with SingleTickerProviderStateMixin {
   Offset _tilt = Offset.zero;
   late AnimationController _shimmerController;
 
@@ -59,7 +60,12 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final initials = widget.name.split(' ').map((n) => n.isNotEmpty ? n[0] : '').take(2).join('').toUpperCase();
+    final initials = widget.name
+        .split(' ')
+        .map((n) => n.isNotEmpty ? n[0] : '')
+        .take(2)
+        .join('')
+        .toUpperCase();
 
     return GestureDetector(
       onPanUpdate: _onPanUpdate,
@@ -127,7 +133,9 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                               Colors.white.withAlpha(12),
                               Colors.transparent,
                             ],
-                            transform: GradientRotation(_shimmerController.value * 2 * pi),
+                            transform: GradientRotation(
+                              _shimmerController.value * 2 * pi,
+                            ),
                           ),
                         ),
                       );
@@ -151,12 +159,20 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.public, size: 12, color: const Color(0xFFFF4D00).withAlpha(150)),
+                                  Icon(
+                                    Icons.public,
+                                    size: 12,
+                                    color: const Color(
+                                      0xFFFF4D00,
+                                    ).withAlpha(150),
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'SWIPESS GLOBAL REGISTRY',
                                     style: TextStyle(
-                                      color: const Color(0xFFFF4D00).withAlpha(150),
+                                      color: const Color(
+                                        0xFFFF4D00,
+                                      ).withAlpha(150),
                                       fontSize: 8,
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 4,
@@ -183,10 +199,16 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                             decoration: BoxDecoration(
                               color: const Color(0xFFFF4D00).withAlpha(25),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFFF4D00).withAlpha(50)),
+                              border: Border.all(
+                                color: const Color(0xFFFF4D00).withAlpha(50),
+                              ),
                             ),
                             child: const Center(
-                              child: Icon(Icons.verified_user_rounded, color: Color(0xFFFF4D00), size: 20),
+                              child: Icon(
+                                Icons.verified_user_rounded,
+                                color: Color(0xFFFF4D00),
+                                size: 20,
+                              ),
                             ),
                           ),
                         ],
@@ -203,16 +225,26 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: const Color(0xFFFF4D00).withAlpha(50),
-                              border: Border.all(color: const Color(0xFFFF4D00).withAlpha(75), width: 2),
+                              border: Border.all(
+                                color: const Color(0xFFFF4D00).withAlpha(75),
+                                width: 2,
+                              ),
                               image: widget.avatarUrl != null
-                                  ? DecorationImage(image: NetworkImage(widget.avatarUrl!), fit: BoxFit.cover)
+                                  ? DecorationImage(
+                                      image: NetworkImage(widget.avatarUrl!),
+                                      fit: BoxFit.cover,
+                                    )
                                   : null,
                             ),
                             child: widget.avatarUrl == null
                                 ? Center(
                                     child: Text(
                                       initials,
-                                      style: const TextStyle(color: Color(0xFFFF4D00), fontWeight: FontWeight.w900, fontSize: 18),
+                                      style: const TextStyle(
+                                        color: Color(0xFFFF4D00),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
+                                      ),
                                     ),
                                   )
                                 : null,
@@ -235,7 +267,9 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                                 Text(
                                   widget.idNumber,
                                   style: TextStyle(
-                                    color: const Color(0xFFFF4D00).withAlpha(150),
+                                    color: const Color(
+                                      0xFFFF4D00,
+                                    ).withAlpha(150),
                                     fontSize: 9,
                                     fontFamily: 'monospace',
                                     letterSpacing: 2,
@@ -246,23 +280,47 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                           ),
                           // Badges
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.transparent,
                               border: Border.all(color: Colors.transparent),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text('ACTIVE', style: TextStyle(color: Colors.green, fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                            child: const Text(
+                              'ACTIVE',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontSize: 7,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFF4D00).withAlpha(25),
-                              border: Border.all(color: const Color(0xFFFF4D00).withAlpha(50)),
+                              border: Border.all(
+                                color: const Color(0xFFFF4D00).withAlpha(50),
+                              ),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Text('VERIFIED', style: TextStyle(color: Color(0xFFFF4D00), fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                            child: const Text(
+                              'VERIFIED',
+                              style: TextStyle(
+                                color: Color(0xFFFF4D00),
+                                fontSize: 7,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -273,7 +331,10 @@ class _HolographicIDCardState extends State<HolographicIDCard> with SingleTicker
                         children: [
                           _buildDetail(Icons.work_rounded, widget.occupation),
                           const SizedBox(width: 16),
-                          _buildDetail(Icons.location_on_rounded, widget.location),
+                          _buildDetail(
+                            Icons.location_on_rounded,
+                            widget.location,
+                          ),
                           const SizedBox(width: 16),
                           _buildDetail(Icons.access_time_rounded, widget.years),
                         ],

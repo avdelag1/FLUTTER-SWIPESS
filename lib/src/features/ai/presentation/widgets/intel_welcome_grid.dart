@@ -26,15 +26,24 @@ const intelFilterCategories = <IntelFilterCategory>[
     label: 'Properties',
     glowColor: Color(0xFFF97316),
     options: [
-      IntelFilterOption(label: 'All Rentals', prompt: 'Show me all rental properties'),
+      IntelFilterOption(
+        label: 'All Rentals',
+        prompt: 'Show me all rental properties',
+      ),
       IntelFilterOption(label: 'Houses', prompt: 'Show me available houses'),
-      IntelFilterOption(label: 'Apartments', prompt: 'Find apartments for rent'),
+      IntelFilterOption(
+        label: 'Apartments',
+        prompt: 'Find apartments for rent',
+      ),
       IntelFilterOption(label: 'Studios', prompt: 'Show me studios'),
       IntelFilterOption(label: 'Penthouse', prompt: 'Find penthouses'),
       IntelFilterOption(label: 'Loft', prompt: 'Show me lofts'),
       IntelFilterOption(label: 'Cabin', prompt: 'Find cabins'),
       IntelFilterOption(label: 'Land', prompt: 'Find land for sale'),
-      IntelFilterOption(label: 'Commercial', prompt: 'Show me commercial properties'),
+      IntelFilterOption(
+        label: 'Commercial',
+        prompt: 'Show me commercial properties',
+      ),
       IntelFilterOption(label: 'Vacation', prompt: 'Find vacation rentals'),
       IntelFilterOption(label: 'Luxury', prompt: 'Show luxury properties'),
       IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest properties'),
@@ -45,8 +54,14 @@ const intelFilterCategories = <IntelFilterCategory>[
     glowColor: Color(0xFF3B82F6),
     options: [
       IntelFilterOption(label: 'Cleaning', prompt: 'Find me cleaning workers'),
-      IntelFilterOption(label: 'Maintenance', prompt: 'Find maintenance workers'),
-      IntelFilterOption(label: 'Construction', prompt: 'Find construction workers'),
+      IntelFilterOption(
+        label: 'Maintenance',
+        prompt: 'Find maintenance workers',
+      ),
+      IntelFilterOption(
+        label: 'Construction',
+        prompt: 'Find construction workers',
+      ),
       IntelFilterOption(label: 'Electrician', prompt: 'Find an electrician'),
       IntelFilterOption(label: 'Plumber', prompt: 'Find a plumber'),
       IntelFilterOption(label: 'Driver', prompt: 'Find a private driver'),
@@ -55,7 +70,10 @@ const intelFilterCategories = <IntelFilterCategory>[
       IntelFilterOption(label: 'Cook', prompt: 'Find a cook or chef'),
       IntelFilterOption(label: 'Tutor', prompt: 'Find a tutor'),
       IntelFilterOption(label: 'Wellness', prompt: 'Find massage and wellness'),
-      IntelFilterOption(label: 'All Workers', prompt: 'Show me all workers and services'),
+      IntelFilterOption(
+        label: 'All Workers',
+        prompt: 'Show me all workers and services',
+      ),
     ],
   ),
   IntelFilterCategory(
@@ -64,7 +82,10 @@ const intelFilterCategories = <IntelFilterCategory>[
     options: [
       IntelFilterOption(label: 'For Sale', prompt: 'Find motorcycles for sale'),
       IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest motorcycles'),
-      IntelFilterOption(label: 'New Listings', prompt: 'Show newest motorcycle listings'),
+      IntelFilterOption(
+        label: 'New Listings',
+        prompt: 'Show newest motorcycle listings',
+      ),
       IntelFilterOption(label: 'Near Me', prompt: 'Find motorcycles near me'),
     ],
   ),
@@ -74,7 +95,10 @@ const intelFilterCategories = <IntelFilterCategory>[
     options: [
       IntelFilterOption(label: 'For Sale', prompt: 'Find bicycles for sale'),
       IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest bicycles'),
-      IntelFilterOption(label: 'New Listings', prompt: 'Show new bicycle listings'),
+      IntelFilterOption(
+        label: 'New Listings',
+        prompt: 'Show new bicycle listings',
+      ),
       IntelFilterOption(label: 'Near Me', prompt: 'Find bicycles near me'),
     ],
   ),
@@ -82,7 +106,10 @@ const intelFilterCategories = <IntelFilterCategory>[
     label: 'Yachts',
     glowColor: Color(0xFF14B8A6),
     options: [
-      IntelFilterOption(label: 'For Charter', prompt: 'Find yachts for charter'),
+      IntelFilterOption(
+        label: 'For Charter',
+        prompt: 'Find yachts for charter',
+      ),
       IntelFilterOption(label: 'For Sale', prompt: 'Find yachts for sale'),
       IntelFilterOption(label: 'Catamarans', prompt: 'Show me catamarans'),
       IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest yachts'),
@@ -93,9 +120,18 @@ const intelFilterCategories = <IntelFilterCategory>[
     label: 'Buyers',
     glowColor: Color(0xFFA855F7),
     options: [
-      IntelFilterOption(label: 'Looking for Houses', prompt: 'Find people looking to buy houses'),
-      IntelFilterOption(label: 'Looking for Land', prompt: 'Find people looking to buy land'),
-      IntelFilterOption(label: 'Looking for Vehicles', prompt: 'Find people looking to buy vehicles'),
+      IntelFilterOption(
+        label: 'Looking for Houses',
+        prompt: 'Find people looking to buy houses',
+      ),
+      IntelFilterOption(
+        label: 'Looking for Land',
+        prompt: 'Find people looking to buy land',
+      ),
+      IntelFilterOption(
+        label: 'Looking for Vehicles',
+        prompt: 'Find people looking to buy vehicles',
+      ),
       IntelFilterOption(label: 'All Buyers', prompt: 'Show me all buyers'),
     ],
   ),
@@ -103,9 +139,18 @@ const intelFilterCategories = <IntelFilterCategory>[
     label: 'Renters',
     glowColor: Color(0xFFD946EF),
     options: [
-      IntelFilterOption(label: 'Looking for Apartments', prompt: 'Find people looking to rent apartments'),
-      IntelFilterOption(label: 'Looking for Houses', prompt: 'Find people looking to rent houses'),
-      IntelFilterOption(label: 'Looking for Rooms', prompt: 'Find people looking for rooms'),
+      IntelFilterOption(
+        label: 'Looking for Apartments',
+        prompt: 'Find people looking to rent apartments',
+      ),
+      IntelFilterOption(
+        label: 'Looking for Houses',
+        prompt: 'Find people looking to rent houses',
+      ),
+      IntelFilterOption(
+        label: 'Looking for Rooms',
+        prompt: 'Find people looking for rooms',
+      ),
       IntelFilterOption(label: 'All Renters', prompt: 'Show me all renters'),
     ],
   ),
@@ -113,11 +158,26 @@ const intelFilterCategories = <IntelFilterCategory>[
     label: 'Seekers',
     glowColor: Color(0xFF06B6D4),
     options: [
-      IntelFilterOption(label: 'Find Services', prompt: 'Find people looking for services'),
-      IntelFilterOption(label: 'Find Workers', prompt: 'Find people looking to hire workers'),
-      IntelFilterOption(label: 'Find Roommates', prompt: 'Find people looking for roommates'),
-      IntelFilterOption(label: 'Find Friends', prompt: 'Find people looking for friends'),
-      IntelFilterOption(label: 'All Seekers', prompt: 'Show me everyone looking for something'),
+      IntelFilterOption(
+        label: 'Find Services',
+        prompt: 'Find people looking for services',
+      ),
+      IntelFilterOption(
+        label: 'Find Workers',
+        prompt: 'Find people looking to hire workers',
+      ),
+      IntelFilterOption(
+        label: 'Find Roommates',
+        prompt: 'Find people looking for roommates',
+      ),
+      IntelFilterOption(
+        label: 'Find Friends',
+        prompt: 'Find people looking for friends',
+      ),
+      IntelFilterOption(
+        label: 'All Seekers',
+        prompt: 'Show me everyone looking for something',
+      ),
     ],
   ),
 ];
@@ -140,8 +200,7 @@ class IntelWelcomeGrid extends StatefulWidget {
 class _IntelWelcomeGridState extends State<IntelWelcomeGrid> {
   IntelFilterCategory? _active;
 
-  Color get _ink =>
-      widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
+  Color get _ink => widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
 
   @override
   Widget build(BuildContext context) {
@@ -182,8 +241,11 @@ class _IntelWelcomeGridState extends State<IntelWelcomeGrid> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
-                    Icon(Icons.arrow_back_rounded,
-                        size: 14, color: _ink.withAlpha(140)),
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 14,
+                      color: _ink.withAlpha(140),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'Back to categories',

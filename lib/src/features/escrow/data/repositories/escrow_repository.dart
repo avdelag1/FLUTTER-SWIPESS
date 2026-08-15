@@ -8,7 +8,7 @@ final escrowRepositoryProvider = Provider<EscrowRepository>((ref) {
 
 class EscrowRepository {
   EscrowRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -48,15 +48,19 @@ class EscrowRepository {
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw Exception('Not signed in');
-    final row = await _client.from('escrow_deposits').insert({
-      'amount': amount,
-      'currency': currency,
-      'status': 'pending',
-      'contract_id': contractId,
-      'notes': notes,
-      'owner_id': asOwner ? userId : counterpartyId,
-      'client_id': asOwner ? counterpartyId : userId,
-    }).select().single();
+    final row = await _client
+        .from('escrow_deposits')
+        .insert({
+          'amount': amount,
+          'currency': currency,
+          'status': 'pending',
+          'contract_id': contractId,
+          'notes': notes,
+          'owner_id': asOwner ? userId : counterpartyId,
+          'client_id': asOwner ? counterpartyId : userId,
+        })
+        .select()
+        .single();
     return EscrowDeposit.fromJson(row);
   }
 }

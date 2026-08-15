@@ -32,8 +32,7 @@ Future<void> openNotificationTarget(
       if (profileMatch != null) {
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                ProfileDetailScreen(userId: profileMatch.group(1)!),
+            builder: (_) => ProfileDetailScreen(userId: profileMatch.group(1)!),
           ),
         );
         return;
@@ -52,8 +51,7 @@ Future<void> openNotificationTarget(
         );
         return;
       }
-      if (uri.hasScheme &&
-          (uri.scheme == 'http' || uri.scheme == 'https')) {
+      if (uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
         return;
       }

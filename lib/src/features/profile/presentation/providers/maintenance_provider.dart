@@ -25,7 +25,9 @@ class MaintenanceNotifier extends AsyncNotifier<List<MaintenanceRequest>> {
     String priority = 'medium',
     List<XFile> photos = const [],
   }) async {
-    await ref.read(maintenanceRepositoryProvider).create(
+    await ref
+        .read(maintenanceRepositoryProvider)
+        .create(
           title: title,
           description: description,
           category: category,
@@ -38,5 +40,5 @@ class MaintenanceNotifier extends AsyncNotifier<List<MaintenanceRequest>> {
 
 final maintenanceProvider =
     AsyncNotifierProvider<MaintenanceNotifier, List<MaintenanceRequest>>(
-  MaintenanceNotifier.new,
-);
+      MaintenanceNotifier.new,
+    );

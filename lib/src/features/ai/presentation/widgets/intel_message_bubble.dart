@@ -65,14 +65,12 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
   bool _showActions = false;
   bool _copied = false;
 
-  Color get _ink =>
-      widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
+  Color get _ink => widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
 
   @override
   Widget build(BuildContext context) {
     final isUser = widget.message.isUser;
-    final parsed =
-        isUser ? null : ConciergeParse.of(widget.message.content);
+    final parsed = isUser ? null : ConciergeParse.of(widget.message.content);
     final text = parsed?.cleanContent.isNotEmpty == true
         ? parsed!.cleanContent
         : widget.message.content;
@@ -84,8 +82,9 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
           maxWidth: MediaQuery.sizeOf(context).width * 0.88,
         ),
         child: Column(
-          crossAxisAlignment:
-              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             GestureDetector(
               onTap: () {
@@ -94,14 +93,16 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
               },
               child: Container(
                 margin: const EdgeInsets.only(bottom: 6),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isUser
                       ? AppTheme.brandPrimary
                       : (widget.isLight
-                          ? Colors.white
-                          : Colors.white.withAlpha(12)),
+                            ? Colors.white
+                            : Colors.white.withAlpha(12)),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(22),
                     topRight: const Radius.circular(22),
@@ -156,8 +157,11 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.auto_awesome_rounded,
-                        size: 10, color: AppTheme.brandPrimary.withAlpha(180)),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 10,
+                      color: AppTheme.brandPrimary.withAlpha(180),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'POWERED BY ${aiProviderBubbleLabel(widget.message.provider).toUpperCase()}',
@@ -190,20 +194,15 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _ActionBtn(
-                      icon: _copied
-                          ? Icons.check_rounded
-                          : Icons.copy_rounded,
+                      icon: _copied ? Icons.check_rounded : Icons.copy_rounded,
                       color: _copied ? const Color(0xFF4ADE80) : _ink,
                       isLight: widget.isLight,
                       onTap: () {
                         widget.onCopy();
                         setState(() => _copied = true);
-                        Future<void>.delayed(
-                          const Duration(seconds: 2),
-                          () {
-                            if (mounted) setState(() => _copied = false);
-                          },
-                        );
+                        Future<void>.delayed(const Duration(seconds: 2), () {
+                          if (mounted) setState(() => _copied = false);
+                        });
                       },
                     ),
                     if (isUser && widget.onEdit != null)
@@ -269,7 +268,9 @@ class _ActionBtn extends StatelessWidget {
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: isLight ? const Color(0xFFF1F1F4) : Colors.white.withAlpha(28),
+            color: isLight
+                ? const Color(0xFFF1F1F4)
+                : Colors.white.withAlpha(28),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 14, color: color),

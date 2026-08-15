@@ -5,7 +5,9 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
   return ProfileRepository(Supabase.instance.client);
 });
 
-final currentProfileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+final currentProfileProvider = FutureProvider<Map<String, dynamic>?>((
+  ref,
+) async {
   final repo = ref.read(profileRepositoryProvider);
   return repo.fetchCurrentProfile();
 });
@@ -36,7 +38,7 @@ class ProfileRepository {
         .select()
         .eq('user_id', userId)
         .maybeSingle();
-        
+
     if (ownerData != null) {
       ownerData['role_type'] = 'owner';
     }

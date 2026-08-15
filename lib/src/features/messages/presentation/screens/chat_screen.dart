@@ -16,11 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Cap `MessagingInterface` — thread chrome, pink bubbles, empty Swipes Stream.
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({
-    super.key,
-    required this.conversation,
-    this.onBack,
-  });
+  const ChatScreen({super.key, required this.conversation, this.onBack});
 
   final ChatConversation conversation;
   final VoidCallback? onBack;
@@ -41,9 +37,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   static const _orange = AppTheme.brandPrimary;
   static const _emojis = [
-    '👋', '😊', '😄', '😂', '🥰', '😍', '🤩', '😎',
-    '🙏', '👍', '🔥', '❤️', '🎉', '✨', '💯', '🤝',
-    '💪', '👏', '🥳', '😇', '🤗', '😁', '🌟', '📬',
+    '👋',
+    '😊',
+    '😄',
+    '😂',
+    '🥰',
+    '😍',
+    '🤩',
+    '😎',
+    '🙏',
+    '👍',
+    '🔥',
+    '❤️',
+    '🎉',
+    '✨',
+    '💯',
+    '🤝',
+    '💪',
+    '👏',
+    '🥳',
+    '😇',
+    '🤗',
+    '😁',
+    '🌟',
+    '📬',
   ];
 
   @override
@@ -89,8 +106,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         }
       } on VoiceTranscribeException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (mounted) {
@@ -133,10 +151,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
     _controller.clear();
     try {
-      await ref.read(messageRepositoryProvider).sendMessage(
-            conversationId: widget.conversation.id,
-            text: text,
-          );
+      await ref
+          .read(messageRepositoryProvider)
+          .sendMessage(conversationId: widget.conversation.id, text: text);
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
       ref.read(dailyQuestsProvider.notifier).increment('message');
       _scrollToEnd();
@@ -156,8 +173,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final messagesAsync =
-        ref.watch(conversationMessagesProvider(widget.conversation.id));
+    final messagesAsync = ref.watch(
+      conversationMessagesProvider(widget.conversation.id),
+    );
     ref.listen(conversationMessagesProvider(widget.conversation.id), (_, next) {
       next.whenData((_) => _scrollToEnd());
     });
@@ -196,15 +214,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               radius: 20,
                               backgroundImage:
                                   widget.conversation.avatarUrl != null
-                                      ? NetworkImage(
-                                          widget.conversation.avatarUrl!,
-                                        )
-                                      : null,
+                                  ? NetworkImage(widget.conversation.avatarUrl!)
+                                  : null,
                               child: widget.conversation.avatarUrl == null
                                   ? Text(
                                       widget.conversation.name.isNotEmpty
                                           ? widget.conversation.name[0]
-                                              .toUpperCase()
+                                                .toUpperCase()
                                           : '?',
                                       style: GoogleFonts.plusJakartaSans(
                                         color: Colors.white,
@@ -306,7 +322,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search in this chat…',
                   hintStyle: TextStyle(color: Colors.transparent),
-                  prefixIcon: const Icon(Icons.search, color: _orange, size: 18),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: _orange,
+                    size: 18,
+                  ),
                   filled: true,
                   fillColor: Colors.transparent,
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -347,8 +367,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final visible = q.isEmpty
                     ? messages
                     : messages
-                        .where((m) => m.text.toLowerCase().contains(q))
-                        .toList();
+                          .where((m) => m.text.toLowerCase().contains(q))
+                          .toList();
                 if (messages.isEmpty) {
                   return const _ThreadEmpty(
                     icon: Icons.auto_awesome_rounded,
@@ -372,8 +392,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     final msg = visible[index];
                     final mine = msg.senderId == myId;
                     return Align(
-                      alignment:
-                          mine ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: mine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: ConstrainedBox(
@@ -398,9 +419,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                           colors: [_orange, Color(0xFFC0392B)],
                                         )
                                       : null,
-                                  color: mine
-                                      ? null
-                                      : const Color(0xFF16161C),
+                                  color: mine ? null : const Color(0xFF16161C),
                                   borderRadius: BorderRadius.only(
                                     topLeft: const Radius.circular(24),
                                     topRight: const Radius.circular(24),
@@ -409,9 +428,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   ),
                                   border: mine
                                       ? null
-                                      : Border.all(
-                                          color: Colors.transparent,
-                                        ),
+                                      : Border.all(color: Colors.transparent),
                                   boxShadow: mine
                                       ? const [
                                           BoxShadow(
@@ -425,19 +442,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 child: msg.isDocument
                                     ? _DocumentBubble(msg: msg)
                                     : Text(
-                                  msg.text,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.4,
-                                  ),
-                                ),
+                                        msg.text,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.4,
+                                        ),
+                                      ),
                               ),
                               const SizedBox(height: 4),
                               Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 child: Text(
                                   _relTime(msg.createdAt),
                                   style: GoogleFonts.plusJakartaSans(
@@ -483,8 +501,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               onTap: () {
                                 AppHaptics.selection();
                                 _controller.text += e;
-                                _controller.selection =
-                                    TextSelection.collapsed(
+                                _controller.selection = TextSelection.collapsed(
                                   offset: _controller.text.length,
                                 );
                                 setState(() => _showEmoji = false);
@@ -538,9 +555,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               'Type a message...',
                               'Escribe un mensaje...',
                             ),
-                            hintStyle: TextStyle(
-                              color: Colors.transparent,
-                            ),
+                            hintStyle: TextStyle(color: Colors.transparent),
                             filled: true,
                             fillColor: Colors.transparent,
                             contentPadding: const EdgeInsets.fromLTRB(
@@ -551,15 +566,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
+                              borderSide: BorderSide(color: Colors.transparent),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide(
-                                color: Colors.transparent,
-                              ),
+                              borderSide: BorderSide(color: Colors.transparent),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
@@ -652,9 +663,7 @@ class _RoundIcon extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: active
-              ? const Color(0x26F43F5E)
-              : Colors.white.withAlpha(14),
+          color: active ? const Color(0x26F43F5E) : Colors.white.withAlpha(14),
           border: Border.all(
             color: active
                 ? const Color(0x66F43F5E)
@@ -700,10 +709,7 @@ class _ThreadEmpty extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0x33F43F5E),
-                    const Color(0x337C3AED),
-                  ],
+                  colors: [const Color(0x33F43F5E), const Color(0x337C3AED)],
                 ),
                 border: Border.all(color: Colors.white, width: 1.5),
               ),
@@ -740,8 +746,10 @@ class _ThreadEmpty extends StatelessWidget {
               GestureDetector(
                 onTap: onAction,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
                     gradient: const LinearGradient(
@@ -790,8 +798,11 @@ class _DocumentBubble extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.description_rounded,
-                    color: Colors.white, size: 18),
+                const Icon(
+                  Icons.description_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(

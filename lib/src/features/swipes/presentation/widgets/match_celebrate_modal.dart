@@ -147,10 +147,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           height: 1,
                           color: Colors.white,
                           shadows: const [
-                            Shadow(
-                              color: Color(0x4DFFFFFF),
-                              blurRadius: 30,
-                            ),
+                            Shadow(color: Color(0x4DFFFFFF), blurRadius: 30),
                           ],
                         ),
                       ),
@@ -174,18 +171,14 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                               offset: const Offset(-40, 0),
                               child: Transform.rotate(
                                 angle: -0.14,
-                                child: _AvatarCard(
-                                  url: widget.clientImageUrl,
-                                ),
+                                child: _AvatarCard(url: widget.clientImageUrl),
                               ),
                             ),
                             Transform.translate(
                               offset: const Offset(40, 0),
                               child: Transform.rotate(
                                 angle: 0.14,
-                                child: _AvatarCard(
-                                  url: widget.ownerImageUrl,
-                                ),
+                                child: _AvatarCard(url: widget.ownerImageUrl),
                               ),
                             ),
                             ScaleTransition(
@@ -249,9 +242,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.transparent,
-                            ),
+                            border: Border.all(color: Colors.transparent),
                             boxShadow: const [
                               BoxShadow(
                                 color: Color(0x40FFFFFF),
@@ -289,9 +280,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           decoration: BoxDecoration(
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.transparent,
-                            ),
+                            border: Border.all(color: Colors.transparent),
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -346,9 +335,8 @@ class _AvatarCard extends StatelessWidget {
               url!,
               fit: BoxFit.cover,
               cacheWidth: 400,
-              errorBuilder: (_, _, _) => const ColoredBox(
-                color: Color(0xFF1E293B),
-              ),
+              errorBuilder: (_, _, _) =>
+                  const ColoredBox(color: Color(0xFF1E293B)),
             )
           else
             const ColoredBox(color: Color(0xFF1E293B)),

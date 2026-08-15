@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final whoLikedYouProvider =
     AsyncNotifierProvider<WhoLikedYouNotifier, List<ProfileLike>>(
-  WhoLikedYouNotifier.new,
-);
+      WhoLikedYouNotifier.new,
+    );
 
 class WhoLikedYouNotifier extends AsyncNotifier<List<ProfileLike>> {
   @override
@@ -20,14 +20,16 @@ class WhoLikedYouNotifier extends AsyncNotifier<List<ProfileLike>> {
     final userId = client.auth.currentUser?.id;
     if (userId == null) return const [];
 
-    final likes = await client
-        .from('likes')
-        .select('user_id, created_at')
-        .eq('target_id', userId)
-        .eq('target_type', 'profile')
-        .eq('direction', 'right')
-        .order('created_at', ascending: false)
-        .limit(100) as List;
+    final likes =
+        await client
+                .from('likes')
+                .select('user_id, created_at')
+                .eq('target_id', userId)
+                .eq('target_type', 'profile')
+                .eq('direction', 'right')
+                .order('created_at', ascending: false)
+                .limit(100)
+            as List;
 
     if (likes.isEmpty) return const [];
 
@@ -40,7 +42,9 @@ class WhoLikedYouNotifier extends AsyncNotifier<List<ProfileLike>> {
     try {
       final rows = await client
           .from('profiles')
-          .select('user_id, full_name, bio, images, avatar_url, age, occupation')
+          .select(
+            'user_id, full_name, bio, images, avatar_url, age, occupation',
+          )
           .inFilter('user_id', ownerIds);
       for (final row in rows as List) {
         final map = row as Map<String, dynamic>;
@@ -86,7 +90,9 @@ class WhoLikedYouNotifier extends AsyncNotifier<List<ProfileLike>> {
           : 'Member',
       bio: p['bio'] as String?,
       avatarUrl: p['avatar_url'] as String?,
-      images: images is List ? images.map((e) => e.toString()).toList() : const [],
+      images: images is List
+          ? images.map((e) => e.toString()).toList()
+          : const [],
       age: (p['age'] as num?)?.toInt(),
       occupation: p['occupation'] as String?,
       likedAt: DateTime.tryParse(like['created_at']?.toString() ?? ''),

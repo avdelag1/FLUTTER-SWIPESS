@@ -105,7 +105,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
           match
               ? 'Are you sure you want to remove $title?'
               : 'Are you sure you want to remove "$title" from your likes?',
-          style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
+          style: GoogleFonts.plusJakartaSans(
+            color: MatteSurface.muted(context),
+          ),
         ),
         actions: [
           TextButton(
@@ -225,8 +227,10 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       trailing: IconButton(
                         onPressed: () =>
                             ref.read(likedListingsProvider.notifier).refresh(),
-                        icon: Icon(Icons.sync_rounded,
-                            color: MatteSurface.muted(context)),
+                        icon: Icon(
+                          Icons.sync_rounded,
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -241,8 +245,11 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
-                          Icon(Icons.swap_vert_rounded,
-                              color: MatteSurface.muted(context), size: 18),
+                          Icon(
+                            Icons.swap_vert_rounded,
+                            color: MatteSurface.muted(context),
+                            size: 18,
+                          ),
                           const SizedBox(width: 6),
                           for (final s in _sorts)
                             _SortChip(
@@ -325,8 +332,10 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                           );
                         },
                         onRemove: () async {
-                          final ok = await _confirmRemove(person.name,
-                              match: true);
+                          final ok = await _confirmRemove(
+                            person.name,
+                            match: true,
+                          );
                           if (!ok) return;
                           await ref
                               .read(likedPeopleProvider.notifier)
@@ -361,11 +370,13 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       (l.city ?? '').toLowerCase().contains(q) ||
                       (l.description ?? '').toLowerCase().contains(q);
                 }).toList();
-                filtered = [...filtered]..sort((a, b) {
+                filtered = [...filtered]
+                  ..sort((a, b) {
                     switch (_sort) {
                       case 'oldest':
-                        return (a.createdAt ?? DateTime(0))
-                            .compareTo(b.createdAt ?? DateTime(0));
+                        return (a.createdAt ?? DateTime(0)).compareTo(
+                          b.createdAt ?? DateTime(0),
+                        );
                       case 'price_up':
                         return (a.price ?? 0).compareTo(b.price ?? 0);
                       case 'price_down':
@@ -373,8 +384,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       case 'az':
                         return (a.title ?? '').compareTo(b.title ?? '');
                       default:
-                        return (b.createdAt ?? DateTime(0))
-                            .compareTo(a.createdAt ?? DateTime(0));
+                        return (b.createdAt ?? DateTime(0)).compareTo(
+                          a.createdAt ?? DateTime(0),
+                        );
                     }
                   });
                 if (filtered.isEmpty) {
@@ -415,36 +427,33 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                       SliverGrid(
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 420,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 14,
-                          childAspectRatio: 0.72,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final listing = filtered[index];
-                            return _ListingCard(
-                              listing: listing,
-                              onMessage: (l) => _openChat(
-                                userId: l.ownerId ?? '',
-                                name: l.title ?? 'Owner',
-                                avatar: l.primaryImage,
-                                listingId: l.id,
-                              ),
-                              onRemove: (l) async {
-                                final ok = await _confirmRemove(
-                                  l.title ?? 'this listing',
-                                  match: false,
-                                );
-                                if (!ok) return;
-                                await ref
-                                    .read(likedListingsProvider.notifier)
-                                    .remove(l.id);
-                              },
-                            );
-                          },
-                          childCount: filtered.length,
-                        ),
+                              maxCrossAxisExtent: 420,
+                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 14,
+                              childAspectRatio: 0.72,
+                            ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final listing = filtered[index];
+                          return _ListingCard(
+                            listing: listing,
+                            onMessage: (l) => _openChat(
+                              userId: l.ownerId ?? '',
+                              name: l.title ?? 'Owner',
+                              avatar: l.primaryImage,
+                              listingId: l.id,
+                            ),
+                            onRemove: (l) async {
+                              final ok = await _confirmRemove(
+                                l.title ?? 'this listing',
+                                match: false,
+                              );
+                              if (!ok) return;
+                              await ref
+                                  .read(likedListingsProvider.notifier)
+                                  .remove(l.id);
+                            },
+                          );
+                        }, childCount: filtered.length),
                       ),
                     ],
                   ),
@@ -566,8 +575,10 @@ class _HChips extends StatelessWidget {
               child: GestureDetector(
                 onTap: () => onTap(item.$1),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: selected == item.$1
                         ? _LikesScreenState._gradient
@@ -575,15 +586,19 @@ class _HChips extends StatelessWidget {
                     color: selected == item.$1 ? null : well,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: selected == item.$1 ? Colors.transparent : hairline,
+                      color: selected == item.$1
+                          ? Colors.transparent
+                          : hairline,
                       width: 1.5,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(item.$3,
-                          size: 14,
-                          color: selected == item.$1 ? Colors.white : ink),
+                      Icon(
+                        item.$3,
+                        size: 14,
+                        color: selected == item.$1 ? Colors.white : ink,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         item.$2,
@@ -606,11 +621,7 @@ class _HChips extends StatelessWidget {
 }
 
 class _SortChip extends StatelessWidget {
-  _SortChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  _SortChip({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -630,7 +641,9 @@ class _SortChip extends StatelessWidget {
             color: selected ? null : well,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? Colors.transparent : MatteSurface.hairline(context),
+              color: selected
+                  ? Colors.transparent
+                  : MatteSurface.hairline(context),
             ),
           ),
           child: Text(

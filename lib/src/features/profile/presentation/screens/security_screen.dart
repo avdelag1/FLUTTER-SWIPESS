@@ -85,39 +85,42 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       body: AmbientPageBackground(
         fill: true,
         child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-          children: [
-            Row(
-              children: [
-                CapBackButton(onTap: () => Navigator.pop(context)),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 22)),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
-                          fontSize: 12,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            children: [
+              Row(
+                children: [
+                  CapBackButton(onTap: () => Navigator.pop(context)),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
                         ),
-                      ),
-                    ],
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.muted(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            if (_tab == 'security') ..._security(),
-            if (_tab == 'verification') ..._verification(context),
-            if (_tab == 'preferences') ..._preferences(),
-            if (_tab == 'language') ..._language(),
-          ],
+                ],
+              ),
+              const SizedBox(height: 24),
+              if (_tab == 'security') ..._security(),
+              if (_tab == 'verification') ..._verification(context),
+              if (_tab == 'preferences') ..._preferences(),
+              if (_tab == 'language') ..._language(),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -185,8 +188,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             SizedBox(height: 18),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.phonelink_lock_rounded,
-                  color: AppTheme.brandPrimary),
+              leading: Icon(
+                Icons.phonelink_lock_rounded,
+                color: AppTheme.brandPrimary,
+              ),
               title: Text(
                 '2FA Protocol',
                 style: GoogleFonts.plusJakartaSans(
@@ -206,9 +211,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         ),
       ),
       const SizedBox(height: 14),
-      const _Panel(
-        child: BlockedUsersSection(),
-      ),
+      const _Panel(child: BlockedUsersSection()),
     ];
   }
 
@@ -245,9 +248,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             BrandGhostButton(
               label: 'Open PEARL ID',
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const VapIdScreen()),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const VapIdScreen()));
               },
             ),
           ],
@@ -324,7 +327,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       SizedBox(height: 12),
       Text(
         'Full Spanish strings ship with the i18n pack — preference is saved now.',
-        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 12),
+        style: GoogleFonts.plusJakartaSans(
+          color: MatteSurface.muted(context),
+          fontSize: 12,
+        ),
       ),
     ];
   }
@@ -354,18 +360,18 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         UserAttributes(password: _next.text),
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password updated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Password updated')));
         _current.clear();
         _next.clear();
         _confirm.clear();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not update: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -391,7 +397,6 @@ class _Panel extends StatelessWidget {
     );
   }
 }
-
 
 class _PrefSwitch extends StatelessWidget {
   const _PrefSwitch({
@@ -431,11 +436,7 @@ class _PrefSwitch extends StatelessWidget {
 }
 
 class _Lang extends StatelessWidget {
-  const _Lang({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
+  const _Lang({required this.label, required this.active, required this.onTap});
   final String label;
   final bool active;
   final VoidCallback onTap;

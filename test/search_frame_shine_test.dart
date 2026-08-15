@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/search_frame_shine.dart';
 
 void main() {
-  testWidgets('search frame shine paints a CustomPaint over the bar',
-      (tester) async {
+  testWidgets('search frame shine paints a CustomPaint over the bar', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(

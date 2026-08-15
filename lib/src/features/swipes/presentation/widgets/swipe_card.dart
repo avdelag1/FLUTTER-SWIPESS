@@ -42,7 +42,8 @@ class SwipeCard extends StatelessWidget {
             Image.network(
               imageUrl!,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => _buildFallbackGradient(),
+              errorBuilder: (context, error, stackTrace) =>
+                  _buildFallbackGradient(),
             )
           else
             _buildFallbackGradient(),
@@ -72,7 +73,10 @@ class SwipeCard extends StatelessWidget {
               top: 24,
               left: 20,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(150),
                   borderRadius: BorderRadius.circular(20),
@@ -110,7 +114,11 @@ class SwipeCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on_rounded, color: Colors.white.withAlpha(200), size: 16),
+                    Icon(
+                      Icons.location_on_rounded,
+                      color: Colors.white.withAlpha(200),
+                      size: 16,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       subtitle.isNotEmpty ? subtitle : 'Unknown Location',

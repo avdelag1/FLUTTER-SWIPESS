@@ -66,11 +66,7 @@ class SwipessLogo extends StatelessWidget {
 }
 
 class _HeroWordmark extends StatelessWidget {
-  const _HeroWordmark({
-    this.width,
-    this.height,
-    required this.color,
-  });
+  const _HeroWordmark({this.width, this.height, required this.color});
 
   final double? width;
   final double? height;

@@ -122,16 +122,18 @@ void main() {
           routeInformationProvider: router.routeInformationProvider,
           routeInformationParser: router.routeInformationParser,
           routerDelegate: router.routerDelegate,
-          backButtonDispatcher:
-              container.read(globalBackButtonDispatcherProvider),
+          backButtonDispatcher: container.read(
+            globalBackButtonDispatcherProvider,
+          ),
         ),
       );
     }
 
     String location() => router.state.uri.path;
 
-    testWidgets('walks up from a section page to the section home',
-        (tester) async {
+    testWidgets('walks up from a section page to the section home', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp());
       router.go('/messages/thread-7');
       await tester.pumpAndSettle();
@@ -141,8 +143,9 @@ void main() {
       expect(location(), AppPaths.messages);
     });
 
-    testWidgets('walks up from a section home to the dashboard',
-        (tester) async {
+    testWidgets('walks up from a section home to the dashboard', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp());
       router.go(AppPaths.clientSettings);
       await tester.pumpAndSettle();
@@ -152,8 +155,9 @@ void main() {
       expect(location(), AppPaths.clientDashboard);
     });
 
-    testWidgets('lets the platform close the app on the dashboard root',
-        (tester) async {
+    testWidgets('lets the platform close the app on the dashboard root', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
@@ -173,8 +177,9 @@ void main() {
       expect(location(), AppPaths.messages);
     });
 
-    testWidgets('closes an open overlay first and keeps the route',
-        (tester) async {
+    testWidgets('closes an open overlay first and keeps the route', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp());
       router.go(AppPaths.clientSettings);
       await tester.pumpAndSettle();

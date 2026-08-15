@@ -95,8 +95,11 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: const Center(
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white, size: 18),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -137,17 +140,27 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       TextButton.icon(
                         onPressed: () =>
                             ref.read(editListingProvider.notifier).pickPhotos(),
-                        icon: const Icon(Icons.photo_library_rounded,
-                            color: Colors.white70, size: 18),
-                        label: const Text('Gallery',
-                            style: TextStyle(color: Colors.white70)),
+                        icon: const Icon(
+                          Icons.photo_library_rounded,
+                          color: Colors.white70,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Gallery',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ),
                       TextButton.icon(
                         onPressed: () => _openCamera(state),
-                        icon: const Icon(Icons.photo_camera_rounded,
-                            color: Colors.white70, size: 18),
-                        label: const Text('Camera',
-                            style: TextStyle(color: Colors.white70)),
+                        icon: const Icon(
+                          Icons.photo_camera_rounded,
+                          color: Colors.white70,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Camera',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ),
                     ],
                   ),
@@ -378,9 +391,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
       ),
     );
     if (files == null || files.isEmpty) return;
-    ref.read(editListingProvider.notifier).update(
-          (c) => c.copyWith(newPhotos: [...c.newPhotos, ...files]),
-        );
+    ref
+        .read(editListingProvider.notifier)
+        .update((c) => c.copyWith(newPhotos: [...c.newPhotos, ...files]));
   }
 
   Future<void> _save() async {
@@ -388,9 +401,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     final ok = await ref.read(editListingProvider.notifier).save();
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Listing updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Listing updated')));
       Navigator.of(context).pop(true);
     }
   }

@@ -33,8 +33,8 @@ class LikedListingsNotifier extends AsyncNotifier<List<Listing>> {
 
 final likedListingsProvider =
     AsyncNotifierProvider<LikedListingsNotifier, List<Listing>>(
-  LikedListingsNotifier.new,
-);
+      LikedListingsNotifier.new,
+    );
 
 class LikedPeopleNotifier extends AsyncNotifier<List<ProfileLike>> {
   @override
@@ -62,11 +62,10 @@ class LikedPeopleNotifier extends AsyncNotifier<List<ProfileLike>> {
 
 final likedPeopleProvider =
     AsyncNotifierProvider<LikedPeopleNotifier, List<ProfileLike>>(
-  LikedPeopleNotifier.new,
-);
+      LikedPeopleNotifier.new,
+    );
 
-class InterestedClientsNotifier
-    extends AsyncNotifier<List<InterestedClient>> {
+class InterestedClientsNotifier extends AsyncNotifier<List<InterestedClient>> {
   @override
   Future<List<InterestedClient>> build() {
     return ref.read(likesRepositoryProvider).fetchInterestedClients();
@@ -92,5 +91,5 @@ class InterestedClientsNotifier
 
 final interestedClientsProvider =
     AsyncNotifierProvider<InterestedClientsNotifier, List<InterestedClient>>(
-  InterestedClientsNotifier.new,
-);
+      InterestedClientsNotifier.new,
+    );

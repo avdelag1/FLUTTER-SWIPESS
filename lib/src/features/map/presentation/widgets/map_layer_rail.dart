@@ -119,16 +119,8 @@ class MapHudCircle extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: (selected || accent) ? Colors.white : const Color(0xFF0A0A0D),
-          border: Border.all(
-            color: Colors.white,
-            width: 1.5,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black54,
-              blurRadius: 10,
-            ),
-          ],
+          border: Border.all(color: Colors.white, width: 1.5),
+          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 10)],
         ),
         child: Icon(
           icon,

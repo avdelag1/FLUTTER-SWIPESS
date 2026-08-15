@@ -43,9 +43,9 @@ class _SubscriptionPackagesScreenState
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
   }
 
   Future<void> _restore() async {
@@ -54,9 +54,9 @@ class _SubscriptionPackagesScreenState
     if (!mounted) return;
     setState(() => _busy = false);
     ref.invalidate(messagingEntitlementsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
   }
 
   @override
@@ -64,119 +64,125 @@ class _SubscriptionPackagesScreenState
     return Scaffold(
       backgroundColor: MatteSurface.canvas(context),
       body: AmbientPageBackground(
-        child: 
-      SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: MatteSurface.ink(context).withAlpha(10),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: MatteSurface.ink(context).withAlpha(30),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: MatteSurface.ink(context),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _busy ? null : _restore,
-                    child: Text(
-                      'Restore',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.ink(context).withAlpha(150),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                children: [
-                  Text(
-                    'GO PREMIUM',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: MatteSurface.ink(context),
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      fontStyle: FontStyle.italic,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Unlock the ultimate Swipess experience. Priority placement, unlimited AI, and no messaging limits.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: MatteSurface.ink(context).withAlpha(180),
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  for (final offer in IapCatalog.subscriptions) ...[
-                    _PremiumPackageCard(
-                      title: (offer.label ?? offer.name).toUpperCase(),
-                      price: offer.priceLabel,
-                      duration: offer.durationLabel ?? '',
-                      features: offer.benefits,
-                      color: const Color(0xFFE4007C),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B5CF6), Color(0xFFE4007C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: MatteSurface.ink(context).withAlpha(10),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: MatteSurface.ink(context).withAlpha(30),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: MatteSurface.ink(context),
+                            size: 20,
+                          ),
+                        ),
                       ),
-                      isPopular: offer.popular,
-                      onSelect: _busy ? () {} : () => _buy(offer),
                     ),
-                    const SizedBox(height: 20),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _busy ? null : _restore,
+                      child: Text(
+                        'Restore',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: MatteSurface.ink(context).withAlpha(150),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ],
-                  _BasicPackageCard(
-                    title: 'BASIC',
-                    price: 'Free',
-                    features: const [
-                      'Unlimited Swipes',
-                      '1 Active Listing',
-                      'Standard Support',
-                    ],
-                    onSelect: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('You are on Basic')),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: ListView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                  children: [
+                    Text(
+                      'GO PREMIUM',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: MatteSurface.ink(context),
+                        fontSize: 36,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Unlock the ultimate Swipess experience. Priority placement, unlimited AI, and no messaging limits.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: MatteSurface.ink(context).withAlpha(180),
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    for (final offer in IapCatalog.subscriptions) ...[
+                      _PremiumPackageCard(
+                        title: (offer.label ?? offer.name).toUpperCase(),
+                        price: offer.priceLabel,
+                        duration: offer.durationLabel ?? '',
+                        features: offer.benefits,
+                        color: const Color(0xFFE4007C),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B5CF6), Color(0xFFE4007C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        isPopular: offer.popular,
+                        onSelect: _busy ? () {} : () => _buy(offer),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    _BasicPackageCard(
+                      title: 'BASIC',
+                      price: 'Free',
+                      features: const [
+                        'Unlimited Swipes',
+                        '1 Active Listing',
+                        'Standard Support',
+                      ],
+                      onSelect: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('You are on Basic')),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }
 
@@ -209,7 +215,9 @@ class _PremiumPackageCard extends StatelessWidget {
         color: isPopular ? null : MatteSurface.ink(context).withAlpha(10),
         borderRadius: BorderRadius.circular(36),
         border: Border.all(
-          color: isPopular ? Colors.transparent : MatteSurface.ink(context).withAlpha(20),
+          color: isPopular
+              ? Colors.transparent
+              : MatteSurface.ink(context).withAlpha(20),
           width: 2,
         ),
         boxShadow: isPopular
@@ -235,7 +243,10 @@ class _PremiumPackageCard extends StatelessWidget {
                 if (isPopular)
                   Container(
                     margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(999),
@@ -253,7 +264,9 @@ class _PremiumPackageCard extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.plusJakartaSans(
-                    color: isPopular ? Colors.white70 : MatteSurface.ink(context).withAlpha(150),
+                    color: isPopular
+                        ? Colors.white70
+                        : MatteSurface.ink(context).withAlpha(150),
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2,
@@ -266,7 +279,9 @@ class _PremiumPackageCard extends StatelessWidget {
                     Text(
                       price,
                       style: GoogleFonts.plusJakartaSans(
-                        color: isPopular ? Colors.white : MatteSurface.ink(context),
+                        color: isPopular
+                            ? Colors.white
+                            : MatteSurface.ink(context),
                         fontSize: 48,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -2,
@@ -279,7 +294,9 @@ class _PremiumPackageCard extends StatelessWidget {
                       child: Text(
                         duration,
                         style: GoogleFonts.plusJakartaSans(
-                          color: isPopular ? Colors.white70 : MatteSurface.ink(context).withAlpha(150),
+                          color: isPopular
+                              ? Colors.white70
+                              : MatteSurface.ink(context).withAlpha(150),
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
@@ -296,7 +313,9 @@ class _PremiumPackageCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: isPopular ? Colors.white24 : color.withAlpha(20),
+                            color: isPopular
+                                ? Colors.white24
+                                : color.withAlpha(20),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -310,7 +329,9 @@ class _PremiumPackageCard extends StatelessWidget {
                           child: Text(
                             f,
                             style: GoogleFonts.plusJakartaSans(
-                              color: isPopular ? Colors.white : MatteSurface.ink(context),
+                              color: isPopular
+                                  ? Colors.white
+                                  : MatteSurface.ink(context),
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -332,7 +353,7 @@ class _PremiumPackageCard extends StatelessWidget {
                               color: Colors.white.withAlpha(50),
                               blurRadius: 20,
                               offset: const Offset(0, 5),
-                            )
+                            ),
                           ]
                         : null,
                   ),

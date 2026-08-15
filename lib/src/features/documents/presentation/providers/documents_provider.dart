@@ -20,8 +20,8 @@ class DocumentsNotifier extends AsyncNotifier<List<LegalDocument>> {
 
 final documentsProvider =
     AsyncNotifierProvider<DocumentsNotifier, List<LegalDocument>>(
-  DocumentsNotifier.new,
-);
+      DocumentsNotifier.new,
+    );
 
 class DocumentFilterNotifier extends Notifier<String> {
   @override
@@ -30,10 +30,13 @@ class DocumentFilterNotifier extends Notifier<String> {
   void set(String tab) => state = tab;
 }
 
-final documentFilterProvider =
-    NotifierProvider<DocumentFilterNotifier, String>(DocumentFilterNotifier.new);
+final documentFilterProvider = NotifierProvider<DocumentFilterNotifier, String>(
+  DocumentFilterNotifier.new,
+);
 
-final filteredDocumentsProvider = Provider<AsyncValue<List<LegalDocument>>>((ref) {
+final filteredDocumentsProvider = Provider<AsyncValue<List<LegalDocument>>>((
+  ref,
+) {
   final tab = ref.watch(documentFilterProvider);
   final docs = ref.watch(documentsProvider);
   return docs.whenData((items) {
@@ -43,8 +46,8 @@ final filteredDocumentsProvider = Provider<AsyncValue<List<LegalDocument>>>((ref
 });
 
 /// Short-lived signed URL for vault / PEARL previews (Cap uses 120s).
-final documentSignedUrlProvider =
-    FutureProvider.autoDispose.family<String?, String>((ref, filePath) async {
-  if (filePath.isEmpty) return null;
-  return ref.read(documentRepositoryProvider).signedUrlForPath(filePath);
-});
+final documentSignedUrlProvider = FutureProvider.autoDispose
+    .family<String?, String>((ref, filePath) async {
+      if (filePath.isEmpty) return null;
+      return ref.read(documentRepositoryProvider).signedUrlForPath(filePath);
+    });

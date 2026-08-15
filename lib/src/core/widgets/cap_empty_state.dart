@@ -35,10 +35,7 @@ class CapEmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(48),
-        border: Border.all(
-          color: Colors.transparent,
-          style: BorderStyle.solid,
-        ),
+        border: Border.all(color: Colors.transparent, style: BorderStyle.solid),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -50,10 +47,10 @@ class CapEmptyState extends StatelessWidget {
               variant == CapEmptyVariant.likes
                   ? Icons.favorite_border_rounded
                   : variant == CapEmptyVariant.messages
-                      ? Icons.chat_bubble_outline_rounded
-                      : variant == CapEmptyVariant.search
-                          ? Icons.search_rounded
-                          : icon,
+                  ? Icons.chat_bubble_outline_rounded
+                  : variant == CapEmptyVariant.search
+                  ? Icons.search_rounded
+                  : icon,
               size: 56,
               color: accent.withAlpha(90),
             ),
@@ -100,8 +97,10 @@ class CapEmptyState extends StatelessWidget {
                 onAction!();
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: accent,
                   borderRadius: BorderRadius.circular(16),
@@ -174,10 +173,7 @@ class CapPageHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: AppTheme.displayItalic.copyWith(fontSize: 26),
-              ),
+              Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 26)),
               Text(
                 subtitle,
                 style: GoogleFonts.plusJakartaSans(

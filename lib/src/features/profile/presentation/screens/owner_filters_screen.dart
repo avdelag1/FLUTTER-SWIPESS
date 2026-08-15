@@ -48,8 +48,10 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
         children: [
           const CapBackButton(),
           const SizedBox(height: 16),
-          Text('OWNER FILTERS',
-              style: AppTheme.displayItalic.copyWith(fontSize: 28)),
+          Text(
+            'OWNER FILTERS',
+            style: AppTheme.displayItalic.copyWith(fontSize: 28),
+          ),
           const SizedBox(height: 8),
           Text(
             'Who should see your listings',
@@ -98,11 +100,10 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
                   'rent' => 'rent',
                   _ => 'both',
                 };
-                ref.read(swipeFilterProvider.notifier).replace(
-                      SwipeFilter(
-                        category: _category,
-                        interestType: interest,
-                      ),
+                ref
+                    .read(swipeFilterProvider.notifier)
+                    .replace(
+                      SwipeFilter(category: _category, interestType: interest),
                     );
                 context.go(AppPaths.clientDashboard);
               },

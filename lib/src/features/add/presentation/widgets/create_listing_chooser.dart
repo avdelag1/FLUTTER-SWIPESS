@@ -50,8 +50,11 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
                     onTap: () => setState(() => _pendingCategory = null),
                     child: const Padding(
                       padding: EdgeInsets.only(right: 8),
-                      child: Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white70, size: 18),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white70,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -179,21 +182,45 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
     switch (category) {
       case 'yacht':
         return const [
-          (ListingMode.rent, Icons.key_rounded, 'FOR CHARTER',
-              'Day trips, weekly, or seasonal charter'),
-          (ListingMode.sale, Icons.sell_rounded, 'FOR SALE',
-              'Yacht for purchase'),
-          (ListingMode.both, Icons.sync_rounded, 'BOTH OPTIONS',
-              'Charter & sale available'),
+          (
+            ListingMode.rent,
+            Icons.key_rounded,
+            'FOR CHARTER',
+            'Day trips, weekly, or seasonal charter',
+          ),
+          (
+            ListingMode.sale,
+            Icons.sell_rounded,
+            'FOR SALE',
+            'Yacht for purchase',
+          ),
+          (
+            ListingMode.both,
+            Icons.sync_rounded,
+            'BOTH OPTIONS',
+            'Charter & sale available',
+          ),
         ];
       default:
         return const [
-          (ListingMode.rent, Icons.key_rounded, 'FOR RENT',
-              'Monthly or short-term rental'),
-          (ListingMode.sale, Icons.sell_rounded, 'FOR SALE',
-              'Available for purchase'),
-          (ListingMode.both, Icons.sync_rounded, 'BOTH OPTIONS',
-              'Rent & sale available'),
+          (
+            ListingMode.rent,
+            Icons.key_rounded,
+            'FOR RENT',
+            'Monthly or short-term rental',
+          ),
+          (
+            ListingMode.sale,
+            Icons.sell_rounded,
+            'FOR SALE',
+            'Available for purchase',
+          ),
+          (
+            ListingMode.both,
+            Icons.sync_rounded,
+            'BOTH OPTIONS',
+            'Rent & sale available',
+          ),
         ];
     }
   }
@@ -208,10 +235,8 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
     Navigator.pop(context);
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddListingScreen(
-          initialCategory: category,
-          initialMode: mode,
-        ),
+        builder: (_) =>
+            AddListingScreen(initialCategory: category, initialMode: mode),
       ),
     );
   }
@@ -313,7 +338,10 @@ class _MagicCard extends StatelessWidget {
                   colors: [Color(0xFF9B5DE5), Color(0xFF4DABF7)],
                 ),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -336,7 +364,9 @@ class _MagicCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(999),
@@ -364,8 +394,11 @@ class _MagicCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                color: Color(0xFF9B5DE5), size: 16),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Color(0xFF9B5DE5),
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -448,8 +481,10 @@ class _ManualTile extends StatelessWidget {
                 top: -6,
                 right: 12,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.brandPrimary,
                     borderRadius: BorderRadius.circular(999),

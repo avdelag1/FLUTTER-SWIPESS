@@ -43,17 +43,13 @@ class OverlayModalsNotifier extends Notifier<OverlayModals> {
 
   void closeVapId() => state = state.copyWith(showVapId: false);
 
-  void openPassportMap({bool showCities = false}) => state = state.copyWith(
-        showPassportMap: true,
-        mapShowCities: showCities,
-      );
+  void openPassportMap({bool showCities = false}) =>
+      state = state.copyWith(showPassportMap: true, mapShowCities: showCities);
 
   void closePassportMap() => state = state.copyWith(showPassportMap: false);
 
-  void openConcierge([String query = '']) => state = OverlayModals(
-        showConcierge: true,
-        conciergeQuery: query,
-      );
+  void openConcierge([String query = '']) =>
+      state = OverlayModals(showConcierge: true, conciergeQuery: query);
 
   void closeConcierge() =>
       state = state.copyWith(showConcierge: false, conciergeQuery: '');
@@ -61,5 +57,5 @@ class OverlayModalsNotifier extends Notifier<OverlayModals> {
 
 final overlayModalsProvider =
     NotifierProvider<OverlayModalsNotifier, OverlayModals>(
-  OverlayModalsNotifier.new,
-);
+      OverlayModalsNotifier.new,
+    );

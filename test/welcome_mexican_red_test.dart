@@ -11,8 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('hero wordmark paints huge italic SWIPESS in Mexican red',
-      (tester) async {
+  testWidgets('hero wordmark paints huge italic SWIPESS in Mexican red', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -54,8 +55,9 @@ void main() {
     expect(gradient.colors.last, AppTheme.brandPrimary);
   });
 
-  testWidgets('Mexican LOG IN CTA is the primary auth action tone',
-      (tester) async {
+  testWidgets('Mexican LOG IN CTA is the primary auth action tone', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -69,23 +71,23 @@ void main() {
       ),
     );
 
-    final button = tester.widget<SwipessCtaButton>(find.byType(SwipessCtaButton));
+    final button = tester.widget<SwipessCtaButton>(
+      find.byType(SwipessCtaButton),
+    );
     expect(button.tone, SwipessCtaTone.mexican);
     expect(find.text('LOG IN'), findsOneWidget);
   });
 
-  testWidgets('AI search bar hosts inner + frame shine painters',
-      (tester) async {
+  testWidgets('AI search bar hosts inner + frame shine painters', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
           home: Scaffold(
             backgroundColor: Colors.black,
-            body: Padding(
-              padding: EdgeInsets.all(16),
-              child: AiSearchBar(),
-            ),
+            body: Padding(padding: EdgeInsets.all(16), child: AiSearchBar()),
           ),
         ),
       ),

@@ -95,5 +95,5 @@ class DiscoveryLocationNotifier extends Notifier<DiscoveryLocation> {
 
 final discoveryLocationProvider =
     NotifierProvider<DiscoveryLocationNotifier, DiscoveryLocation>(
-  DiscoveryLocationNotifier.new,
-);
+      DiscoveryLocationNotifier.new,
+    );

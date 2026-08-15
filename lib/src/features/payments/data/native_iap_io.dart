@@ -116,10 +116,7 @@ class NativeIap {
       }
       final res = await client.functions.invoke(
         'validate-google-play-purchase',
-        body: {
-          'productId': purchase.productID,
-          'purchaseToken': receipt,
-        },
+        body: {'productId': purchase.productID, 'purchaseToken': receipt},
       );
       final data = res.data;
       return data is Map && (data['ok'] == true || data['valid'] == true);

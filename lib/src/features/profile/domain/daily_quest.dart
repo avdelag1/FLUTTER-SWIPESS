@@ -36,16 +36,12 @@ class DailyQuest {
 }
 
 class DailyQuestBoard {
-  const DailyQuestBoard({
-    this.quests = const [],
-    this.points = 0,
-  });
+  const DailyQuestBoard({this.quests = const [], this.points = 0});
 
   final List<DailyQuest> quests;
   final int points;
 
   static const pointsNeeded = 10;
 
-  double get progressPercent =>
-      (points / pointsNeeded).clamp(0, 1).toDouble();
+  double get progressPercent => (points / pointsNeeded).clamp(0, 1).toDouble();
 }

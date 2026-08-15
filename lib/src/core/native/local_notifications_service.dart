@@ -10,7 +10,7 @@ import 'package:timezone/timezone.dart' as tz;
 /// reminder only ever fires if they *don't* return on their own.
 class LocalNotificationsService {
   LocalNotificationsService({FlutterLocalNotificationsPlugin? plugin})
-      : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   /// Stable ids, so we cancel exactly what we scheduled. Same numbers as Cap.
   static const reengageIds = [88001, 88002];
@@ -91,14 +91,19 @@ class LocalNotificationsService {
     if (_permissionGranted) return true;
     try {
       if (defaultTargetPlatform == TargetPlatform.android) {
-        final android = _plugin.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+        final android = _plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
         _permissionGranted =
             await android?.requestNotificationsPermission() ?? false;
       } else {
-        final ios = _plugin.resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>();
-        _permissionGranted = await ios?.requestPermissions(
+        final ios = _plugin
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >();
+        _permissionGranted =
+            await ios?.requestPermissions(
               alert: true,
               badge: true,
               sound: true,

@@ -23,5 +23,6 @@ class VapIdNotifier extends AsyncNotifier<VapIdCard?> {
   }
 }
 
-final vapIdProvider =
-    AsyncNotifierProvider<VapIdNotifier, VapIdCard?>(VapIdNotifier.new);
+final vapIdProvider = AsyncNotifierProvider<VapIdNotifier, VapIdCard?>(
+  VapIdNotifier.new,
+);

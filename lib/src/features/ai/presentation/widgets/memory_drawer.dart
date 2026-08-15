@@ -42,7 +42,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
     if (_title.text.trim().isEmpty || _content.text.trim().isEmpty) return;
     setState(() => _saving = true);
     AppHaptics.medium();
-    final ok = await ref.read(memoriesProvider.notifier).add(
+    final ok = await ref
+        .read(memoriesProvider.notifier)
+        .add(
           category: _newCat,
           title: _title.text.trim(),
           content: _content.text.trim(),
@@ -107,8 +109,11 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       color: Colors.transparent,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.psychology_rounded,
-                        color: Color(0xFF22D3EE), size: 20),
+                    child: const Icon(
+                      Icons.psychology_rounded,
+                      color: Color(0xFF22D3EE),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -234,7 +239,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
               child: async.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -253,7 +260,8 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                         'No memories yet — teach the brain preferences, contacts, and facts.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54),
+                          color: Colors.white54,
+                        ),
                       ),
                     );
                   }
@@ -310,8 +318,10 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                               onPressed: () => ref
                                   .read(memoriesProvider.notifier)
                                   .remove(m.id),
-                              icon: const Icon(Icons.delete_outline_rounded,
-                                  color: Colors.white38),
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                color: Colors.white38,
+                              ),
                             ),
                           ],
                         ),

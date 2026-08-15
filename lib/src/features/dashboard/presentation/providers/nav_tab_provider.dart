@@ -1,6 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-enum NavTab { dashboard, likes, ai, add, messages, idCard, seekers, filter, legal, events }
+enum NavTab {
+  dashboard,
+  likes,
+  ai,
+  add,
+  messages,
+  idCard,
+  seekers,
+  filter,
+  legal,
+  events,
+}
 
 class NavTabNotifier extends Notifier<NavTab> {
   @override
@@ -9,4 +20,6 @@ class NavTabNotifier extends Notifier<NavTab> {
   void set(NavTab tab) => state = tab;
 }
 
-final navTabProvider = NotifierProvider<NavTabNotifier, NavTab>(NavTabNotifier.new);
+final navTabProvider = NotifierProvider<NavTabNotifier, NavTab>(
+  NavTabNotifier.new,
+);

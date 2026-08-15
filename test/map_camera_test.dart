@@ -87,8 +87,9 @@ void main() {
     expect(MapCameraMath.clusterCellDegrees(12), lessThan(0.01));
   });
 
-  testWidgets('listing pin keeps the photo and title in one marker',
-      (tester) async {
+  testWidgets('listing pin keeps the photo and title in one marker', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -107,8 +108,9 @@ void main() {
     expect(MapListingPinMarker.height, lessThanOrEqualTo(48));
   });
 
-  testWidgets('preview sits above the GPS HUD, not on top of it',
-      (tester) async {
+  testWidgets('preview sits above the GPS HUD, not on top of it', (
+    tester,
+  ) async {
     final listing = Listing(
       id: 'p1',
       title: 'Tranquil Oasis',
@@ -144,9 +146,10 @@ void main() {
     );
     expect(find.text('TRANQUIL OASIS'), findsOneWidget);
     expect(find.text('You are here'), findsOneWidget);
-    final previewBottom =
-        tester.getBottomLeft(find.byType(MapPreviewCard)).dy;
-    final hudTop = tester.getTopLeft(find.byKey(const ValueKey('map-hud-slot'))).dy;
+    final previewBottom = tester.getBottomLeft(find.byType(MapPreviewCard)).dy;
+    final hudTop = tester
+        .getTopLeft(find.byKey(const ValueKey('map-hud-slot')))
+        .dy;
     expect(hudTop, greaterThanOrEqualTo(previewBottom - 0.5));
     expect(find.byKey(const ValueKey('map-rail-slot')), findsNothing);
   });

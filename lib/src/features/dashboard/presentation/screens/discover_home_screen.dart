@@ -66,7 +66,9 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
                               if (i == 1) {
                                 widget.onOpenEvents();
                               } else {
-                                widget.onOpenSwipe(i == 2 ? 'worker' : 'property');
+                                widget.onOpenSwipe(
+                                  i == 2 ? 'worker' : 'property',
+                                );
                               }
                             },
                           ),
@@ -87,24 +89,23 @@ class _DiscoverHomeScreenState extends State<DiscoverHomeScreen> {
                 crossAxisSpacing: 14,
                 childAspectRatio: 0.78,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  if (index == 0) {
-                    return _PhotoTile(
-                      image: AppAssets.filterEvents,
-                      label: 'Events',
-                      onTap: widget.onOpenEvents,
-                    );
-                  }
-                  final card = dashboardCategories[(index - 1) % dashboardCategories.length];
+              delegate: SliverChildBuilderDelegate((context, index) {
+                if (index == 0) {
                   return _PhotoTile(
-                    image: card.photos.first,
-                    label: card.label,
-                    onTap: () => widget.onOpenSwipe(_listingCategoryFor(card.id)),
+                    image: AppAssets.filterEvents,
+                    label: 'Events',
+                    onTap: widget.onOpenEvents,
                   );
-                },
-                childCount: 8,
-              ),
+                }
+                final card =
+                    dashboardCategories[(index - 1) %
+                        dashboardCategories.length];
+                return _PhotoTile(
+                  image: card.photos.first,
+                  label: card.label,
+                  onTap: () => widget.onOpenSwipe(_listingCategoryFor(card.id)),
+                );
+              }, childCount: 8),
             ),
           ),
         ],
@@ -159,7 +160,11 @@ class _CategoryChip extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: selected ? Colors.black.withAlpha(20) : Colors.white12,
               ),
-              child: Icon(spec.icon, size: 10, color: selected ? Colors.black : Colors.white),
+              child: Icon(
+                spec.icon,
+                size: 10,
+                color: selected ? Colors.black : Colors.white,
+              ),
             ),
             const SizedBox(width: 6),
             Flexible(
@@ -228,7 +233,9 @@ class _PhotoTile extends StatelessWidget {
                   label.toUpperCase(),
                   style: AppTheme.displayItalic.copyWith(
                     fontSize: 18,
-                    shadows: const [Shadow(color: Color(0xCC000000), blurRadius: 8)],
+                    shadows: const [
+                      Shadow(color: Color(0xCC000000), blurRadius: 8),
+                    ],
                   ),
                 ),
               ),

@@ -10,7 +10,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `ActivityFeed` — top likes / matches / messages on Profile.
 class ProfileActivityFeed extends ConsumerWidget {
-  const ProfileActivityFeed({super.key, required this.ink, required this.muted});
+  const ProfileActivityFeed({
+    super.key,
+    required this.ink,
+    required this.muted,
+  });
 
   final Color ink;
   final Color muted;
@@ -19,10 +23,12 @@ class ProfileActivityFeed extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(notificationsProvider);
     final items = (async.value ?? const <AppNotification>[])
-        .where((n) =>
-            n.visualType == 'like' ||
-            n.visualType == 'match' ||
-            n.visualType == 'message')
+        .where(
+          (n) =>
+              n.visualType == 'like' ||
+              n.visualType == 'match' ||
+              n.visualType == 'message',
+        )
         .take(5)
         .toList();
 
@@ -110,13 +116,13 @@ class _ActivityRow extends StatelessWidget {
     final icon = type == 'match'
         ? Icons.auto_awesome_rounded
         : type == 'message'
-            ? Icons.chat_bubble_rounded
-            : Icons.thumb_up_alt_rounded;
+        ? Icons.chat_bubble_rounded
+        : Icons.thumb_up_alt_rounded;
     final color = type == 'match'
         ? const Color(0xFFA78BFA)
         : type == 'message'
-            ? AppTheme.brandPrimary
-            : const Color(0xFFEB4898);
+        ? AppTheme.brandPrimary
+        : const Color(0xFFEB4898);
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),

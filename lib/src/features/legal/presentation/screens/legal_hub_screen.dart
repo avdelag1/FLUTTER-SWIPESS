@@ -31,10 +31,22 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
       'icon': Icons.home_rounded,
       'description': 'Problems with your landlord or property owner',
       'subcategories': [
-        {'id': 'lease-violation', 'title': 'Lease Violations', 'description': 'Landlord not following the lease terms'},
-        {'id': 'security-deposit', 'title': 'Security Deposit Disputes', 'description': 'Issues recovering your deposit'},
-        {'id': 'maintenance', 'title': 'Maintenance Issues', 'description': 'Landlord not maintaining the property'},
-      ]
+        {
+          'id': 'lease-violation',
+          'title': 'Lease Violations',
+          'description': 'Landlord not following the lease terms',
+        },
+        {
+          'id': 'security-deposit',
+          'title': 'Security Deposit Disputes',
+          'description': 'Issues recovering your deposit',
+        },
+        {
+          'id': 'maintenance',
+          'title': 'Maintenance Issues',
+          'description': 'Landlord not maintaining the property',
+        },
+      ],
     },
     {
       'id': 'rent-issues',
@@ -42,9 +54,17 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
       'icon': Icons.attach_money_rounded,
       'description': 'Disputes about rent payments or charges',
       'subcategories': [
-        {'id': 'rent-increase', 'title': 'Unlawful Rent Increase', 'description': 'Rent raised without proper notice'},
-        {'id': 'hidden-fees', 'title': 'Hidden Fees', 'description': 'Unexpected charges not in the lease'},
-      ]
+        {
+          'id': 'rent-increase',
+          'title': 'Unlawful Rent Increase',
+          'description': 'Rent raised without proper notice',
+        },
+        {
+          'id': 'hidden-fees',
+          'title': 'Hidden Fees',
+          'description': 'Unexpected charges not in the lease',
+        },
+      ],
     },
     {
       'id': 'contract-issues',
@@ -52,10 +72,18 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
       'icon': Icons.description_rounded,
       'description': 'Problems with rental agreements or contracts',
       'subcategories': [
-        {'id': 'unfair-terms', 'title': 'Unfair Contract Terms', 'description': 'One-sided or illegal clauses'},
-        {'id': 'early-termination', 'title': 'Early Termination', 'description': 'Need to break lease early'},
-      ]
-    }
+        {
+          'id': 'unfair-terms',
+          'title': 'Unfair Contract Terms',
+          'description': 'One-sided or illegal clauses',
+        },
+        {
+          'id': 'early-termination',
+          'title': 'Early Termination',
+          'description': 'Need to break lease early',
+        },
+      ],
+    },
   ];
 
   static const _ownerCategories = [
@@ -65,10 +93,22 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
       'icon': Icons.person_off_rounded,
       'description': 'Problems with tenants or renters',
       'subcategories': [
-        {'id': 'non-payment', 'title': 'Non-Payment of Rent', 'description': 'Tenant not paying rent on time'},
-        {'id': 'property-damage', 'title': 'Property Damage', 'description': 'Tenant damaged the property'},
-        {'id': 'eviction-process', 'title': 'Eviction Process', 'description': 'Need help with legal eviction'},
-      ]
+        {
+          'id': 'non-payment',
+          'title': 'Non-Payment of Rent',
+          'description': 'Tenant not paying rent on time',
+        },
+        {
+          'id': 'property-damage',
+          'title': 'Property Damage',
+          'description': 'Tenant damaged the property',
+        },
+        {
+          'id': 'eviction-process',
+          'title': 'Eviction Process',
+          'description': 'Need help with legal eviction',
+        },
+      ],
     },
     {
       'id': 'contract-legal',
@@ -76,9 +116,17 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
       'icon': Icons.description_rounded,
       'description': 'Legal help with contracts and leases',
       'subcategories': [
-        {'id': 'lease-creation', 'title': 'Lease Agreement Creation', 'description': 'Create legally binding leases'},
-        {'id': 'rental-rules', 'title': 'Rental Rules Documentation', 'description': 'Create enforceable property rules'},
-      ]
+        {
+          'id': 'lease-creation',
+          'title': 'Lease Agreement Creation',
+          'description': 'Create legally binding leases',
+        },
+        {
+          'id': 'rental-rules',
+          'title': 'Rental Rules Documentation',
+          'description': 'Create enforceable property rules',
+        },
+      ],
     },
   ];
 
@@ -89,13 +137,16 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
   }
 
   void _submitRequest(LegalServicePackage? pkg) {
-    if ((_selectedIssue == null && pkg == null) || _descriptionController.text.trim().isEmpty) {
+    if ((_selectedIssue == null && pkg == null) ||
+        _descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an issue and provide a description')),
+        const SnackBar(
+          content: Text('Please select an issue and provide a description'),
+        ),
       );
       return;
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Legal help request submitted!')),
     );
@@ -108,9 +159,10 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
 
   void _showSubmissionSheet([LegalServicePackage? pkg]) {
     if (pkg != null) {
-      _descriptionController.text = 'I\'m interested in the "${pkg.name}" legal service package. Please contact me with more details.';
+      _descriptionController.text =
+          'I\'m interested in the "${pkg.name}" legal service package. Please contact me with more details.';
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -119,7 +171,9 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
         return Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom + 32,
-            left: 20, right: 20, top: 32,
+            left: 20,
+            right: 20,
+            top: 32,
           ),
           decoration: BoxDecoration(
             color: Colors.black,
@@ -131,7 +185,7 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                pkg != null ? 'REQUEST SERVICE' : 'DESCRIBE ISSUE', 
+                pkg != null ? 'REQUEST SERVICE' : 'DESCRIBE ISSUE',
                 style: AppTheme.displayItalic.copyWith(fontSize: 24),
               ),
               SizedBox(height: 16),
@@ -146,11 +200,17 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   fillColor: Colors.transparent,
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: MatteSurface.ink(context), width: 1.5),
+                    borderSide: BorderSide(
+                      color: MatteSurface.ink(context),
+                      width: 1.5,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: MatteSurface.ink(context), width: 2),
+                    borderSide: BorderSide(
+                      color: MatteSurface.ink(context),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -162,10 +222,18 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.black,
                     backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
                   ),
                   onPressed: () => _submitRequest(pkg),
-                  child: const Text('SUBMIT SECURELY', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                  child: const Text(
+                    'SUBMIT SECURELY',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -193,7 +261,10 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                  border: Border.all(
+                    color: MatteSurface.ink(context),
+                    width: 1.5,
+                  ),
                 ),
                 padding: const EdgeInsets.all(4),
                 child: Row(
@@ -212,11 +283,11 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
           SizedBox(height: 32),
-          
+
           // PRIMARY FEATURE CARD
           Container(
             padding: EdgeInsets.all(24),
@@ -234,60 +305,94 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                    border: Border.all(
+                      color: MatteSurface.ink(context),
+                      width: 1.5,
+                    ),
                   ),
-                  child: Icon(Icons.gavel_rounded, color: MatteSurface.ink(context), size: 40),
+                  child: Icon(
+                    Icons.gavel_rounded,
+                    color: MatteSurface.ink(context),
+                    size: 40,
+                  ),
                 ),
                 SizedBox(height: 24),
                 Text(
                   'REQUEST\nINDEPENDENT\nLEGAL HELP',
                   textAlign: TextAlign.center,
-                  style: AppTheme.displayItalic.copyWith(fontSize: 40, height: 0.9, letterSpacing: -1),
+                  style: AppTheme.displayItalic.copyWith(
+                    fontSize: 40,
+                    height: 0.9,
+                    letterSpacing: -1,
+                  ),
                 ),
                 SizedBox(height: 16),
                 Text(
                   'Describe the legal topic you want help with. Provider availability, identity, license, jurisdiction, confidentiality, scope, timing, price, and engagement terms must be confirmed directly.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 13, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.muted(context),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
           ),
-          
+
           SizedBox(height: 40),
-          
+
           Row(
             children: [
-              Text('ISSUE CATEGORIES', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w900, color: MatteSurface.faint(context), letterSpacing: 2)),
+              Text(
+                'ISSUE CATEGORIES',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: MatteSurface.faint(context),
+                  letterSpacing: 2,
+                ),
+              ),
               SizedBox(width: 16),
-              Expanded(child: Divider(color: MatteSurface.faint(context), height: 1)),
+              Expanded(
+                child: Divider(color: MatteSurface.faint(context), height: 1),
+              ),
             ],
           ),
           const SizedBox(height: 24),
-          
+
           for (final cat in categories)
             _CategoryTile(
               category: cat,
               isExpanded: _expandedCategory == cat['id'],
-              selectedSubId: (_selectedIssue != null && _selectedIssue!['category'] == cat['id']) ? _selectedIssue!['subcategory'] : null,
+              selectedSubId:
+                  (_selectedIssue != null &&
+                      _selectedIssue!['category'] == cat['id'])
+                  ? _selectedIssue!['subcategory']
+                  : null,
               onToggle: () {
                 AppHaptics.light();
                 setState(() {
-                  _expandedCategory = _expandedCategory == cat['id'] ? null : cat['id'] as String;
+                  _expandedCategory = _expandedCategory == cat['id']
+                      ? null
+                      : cat['id'] as String;
                   _selectedIssue = null;
                 });
               },
               onSubSelect: (subId) {
                 AppHaptics.selection();
                 setState(() {
-                  _selectedIssue = {'category': cat['id'] as String, 'subcategory': subId};
+                  _selectedIssue = {
+                    'category': cat['id'] as String,
+                    'subcategory': subId,
+                  };
                 });
                 _showSubmissionSheet();
               },
             ),
-            
+
           SizedBox(height: 48),
-          
+
           // SERVICE PACKAGES BUTTON
           GestureDetector(
             onTap: () => context.push(AppPaths.clientLegalServices),
@@ -296,7 +401,10 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                border: Border.all(
+                  color: MatteSurface.ink(context),
+                  width: 1.5,
+                ),
               ),
               child: Row(
                 children: [
@@ -304,13 +412,26 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('SERVICE PACKAGES', style: AppTheme.displayItalic.copyWith(fontSize: 24)),
+                        Text(
+                          'SERVICE PACKAGES',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 24),
+                        ),
                         SizedBox(height: 4),
-                        Text('Browse currently listed service options', style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 12)),
+                        Text(
+                          'Browse currently listed service options',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.muted(context),
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios_rounded, color: MatteSurface.ink(context), size: 16),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: MatteSurface.ink(context),
+                    size: 16,
+                  ),
                 ],
               ),
             ),
@@ -322,7 +443,11 @@ class _LegalHubScreenState extends ConsumerState<LegalHubScreen> {
 }
 
 class _ToggleBtn extends StatelessWidget {
-  const _ToggleBtn({required this.label, required this.isActive, required this.onTap});
+  const _ToggleBtn({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
   final String label;
   final bool isActive;
   final VoidCallback onTap;
@@ -387,11 +512,31 @@ class _CategoryTile extends StatelessWidget {
                 border: Border.all(color: MatteSurface.ink(context), width: 1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(category['icon'] as IconData, color: MatteSurface.ink(context), size: 20),
+              child: Icon(
+                category['icon'] as IconData,
+                color: MatteSurface.ink(context),
+                size: 20,
+              ),
             ),
-            title: Text(category['title'] as String, style: TextStyle(color: MatteSurface.ink(context), fontWeight: FontWeight.w900, fontSize: 14)),
-            subtitle: Text(category['description'] as String, style: TextStyle(color: MatteSurface.muted(context), fontSize: 11)),
-            trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: MatteSurface.ink(context)),
+            title: Text(
+              category['title'] as String,
+              style: TextStyle(
+                color: MatteSurface.ink(context),
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: Text(
+              category['description'] as String,
+              style: TextStyle(
+                color: MatteSurface.muted(context),
+                fontSize: 11,
+              ),
+            ),
+            trailing: Icon(
+              isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              color: MatteSurface.ink(context),
+            ),
           ),
           if (isExpanded)
             Padding(
@@ -407,7 +552,10 @@ class _CategoryTile extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isSelected ? Colors.white : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                        border: Border.all(
+                          color: MatteSurface.ink(context),
+                          width: 1.5,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -415,13 +563,33 @@ class _CategoryTile extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(sub['title'] as String, style: TextStyle(color: isSelected ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                                Text(
+                                  sub['title'] as String,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.black
+                                        : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
-                                Text(sub['description'] as String, style: TextStyle(color: isSelected ? Colors.black54 : Colors.white54, fontSize: 11)),
+                                Text(
+                                  sub['description'] as String,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.black54
+                                        : Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right, color: isSelected ? Colors.black : Colors.white),
+                          Icon(
+                            Icons.chevron_right,
+                            color: isSelected ? Colors.black : Colors.white,
+                          ),
                         ],
                       ),
                     ),

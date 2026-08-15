@@ -23,9 +23,7 @@ class _OfflineSwipeSyncBootstrapState extends State<OfflineSwipeSyncBootstrap>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Cap: initial sync ~2s after startup.
-    unawaited(
-      Future<void>.delayed(const Duration(seconds: 2), _flush),
-    );
+    unawaited(Future<void>.delayed(const Duration(seconds: 2), _flush));
   }
 
   @override

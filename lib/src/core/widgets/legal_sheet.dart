@@ -63,8 +63,7 @@ class _LegalSheet extends StatelessWidget {
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: Icon(Icons.close, color: MatteSurface.ink(context)),
-                      style: IconButton.styleFrom(
-                      ),
+                      style: IconButton.styleFrom(),
                     ),
                   ],
                 ),

@@ -114,8 +114,7 @@ abstract final class AppPaths {
     if (location == clientDashboard || location == legacyDashboard) {
       return NavTab.dashboard;
     }
-    if (location == clientLikedProperties ||
-        location == ownerLikedClients) {
+    if (location == clientLikedProperties || location == ownerLikedClients) {
       return NavTab.likes;
     }
     if (location == messages || location.startsWith('$messages/')) {

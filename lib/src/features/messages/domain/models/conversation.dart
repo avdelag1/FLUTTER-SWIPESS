@@ -33,8 +33,9 @@ class Conversation {
     // Determine last message text from joined messages if any
     String? lastMsgText;
     int unreads = 0;
-    
-    if (json['conversation_messages'] != null && (json['conversation_messages'] as List).isNotEmpty) {
+
+    if (json['conversation_messages'] != null &&
+        (json['conversation_messages'] as List).isNotEmpty) {
       final msgs = json['conversation_messages'] as List;
       // Assume sorted descending by query
       lastMsgText = msgs.first['message_text'] as String?;
@@ -47,10 +48,16 @@ class Conversation {
       ownerId: json['owner_id'] as String,
       listingId: json['listing_id'] as String?,
       status: json['status'] as String? ?? 'active',
-      lastMessageAt: json['last_message_at'] != null ? DateTime.tryParse(json['last_message_at'] as String) : null,
+      lastMessageAt: json['last_message_at'] != null
+          ? DateTime.tryParse(json['last_message_at'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
-      clientProfile: json['client_profile'] != null ? Profile.fromJson(json['client_profile'] as Map<String, dynamic>) : null,
-      ownerProfile: json['owner_profile'] != null ? Profile.fromJson(json['owner_profile'] as Map<String, dynamic>) : null,
+      clientProfile: json['client_profile'] != null
+          ? Profile.fromJson(json['client_profile'] as Map<String, dynamic>)
+          : null,
+      ownerProfile: json['owner_profile'] != null
+          ? Profile.fromJson(json['owner_profile'] as Map<String, dynamic>)
+          : null,
       lastMessageText: lastMsgText,
       unreadCount: unreads,
     );

@@ -27,7 +27,11 @@ class GlowSearchBar extends StatelessWidget {
           child: Row(
             children: [
               const SizedBox(width: 16),
-              Icon(Icons.search_rounded, color: Colors.white.withValues(alpha: 0.7), size: 20),
+              Icon(
+                Icons.search_rounded,
+                color: Colors.white.withValues(alpha: 0.7),
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: IgnorePointer(

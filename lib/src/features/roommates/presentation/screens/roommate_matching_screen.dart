@@ -36,7 +36,10 @@ class _RoommateMatchingScreenState
     return Scaffold(
       body: async.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: MatteSurface.ink(context),
+            strokeWidth: 2,
+          ),
         ),
         error: (e, _) => Center(
           child: TextButton(
@@ -56,12 +59,16 @@ class _RoommateMatchingScreenState
                     onUndo: _undo,
                   ),
                   Spacer(),
-                  Text('NO MORE PROFILES',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                  Text(
+                    'NO MORE PROFILES',
+                    style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                  ),
                   SizedBox(height: 8),
                   Text(
                     'Adjust filters or check back later.',
-                    style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: MatteSurface.muted(context),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   TextButton(
@@ -149,8 +156,9 @@ class _RoommateMatchingScreenState
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed:
-                            _busy ? null : () => _swipe(current, like: true),
+                        onPressed: _busy
+                            ? null
+                            : () => _swipe(current, like: true),
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -192,9 +200,9 @@ class _RoommateMatchingScreenState
       _busy = false;
     });
     if (like && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Liked ${profile.name}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Liked ${profile.name}')));
     }
   }
 
@@ -263,13 +271,17 @@ class _RoommateMatchingScreenState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('ROOMMATE FILTERS',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                  Text(
+                    'ROOMMATE FILTERS',
+                    style: AppTheme.displayItalic.copyWith(fontSize: 18),
+                  ),
                   SizedBox(height: 18),
                   Text(
                     'Budget \$${draft.minBudget.toStringAsFixed(0)} – \$${draft.maxBudget.toStringAsFixed(0)}',
                     style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context), fontSize: 12),
+                      color: MatteSurface.muted(context),
+                      fontSize: 12,
+                    ),
                   ),
                   RangeSlider(
                     values: RangeValues(draft.minBudget, draft.maxBudget),
@@ -292,7 +304,9 @@ class _RoommateMatchingScreenState
                   Text(
                     'Age ${draft.minAge} – ${draft.maxAge}',
                     style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context), fontSize: 12),
+                      color: MatteSurface.muted(context),
+                      fontSize: 12,
+                    ),
                   ),
                   RangeSlider(
                     values: RangeValues(
@@ -333,7 +347,9 @@ class _RoommateMatchingScreenState
                         ),
                         selectedColor: AppTheme.brandPrimary,
                       ),
-                      for (final city in ListingTaxonomies.popularCities.take(8))
+                      for (final city in ListingTaxonomies.popularCities.take(
+                        8,
+                      ))
                         ChoiceChip(
                           label: Text(city),
                           selected: draft.city == city,
@@ -398,18 +414,24 @@ class _Header extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onBack,
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
-                color: MatteSurface.ink(context)),
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: MatteSurface.ink(context),
+            ),
           ),
-          Text('ROOMMATES',
-              style: AppTheme.displayItalic.copyWith(fontSize: 20)),
+          Text(
+            'ROOMMATES',
+            style: AppTheme.displayItalic.copyWith(fontSize: 20),
+          ),
           Spacer(),
           if (onToggleDetails != null)
             IconButton(
               tooltip: 'Details',
               onPressed: onToggleDetails,
               icon: Icon(
-                detailsOpen ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                detailsOpen
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
                 color: MatteSurface.muted(context),
               ),
             ),
@@ -451,7 +473,10 @@ class _DetailsPanel extends StatelessWidget {
           Text(
             profile.name,
             style: TextStyle(
-                color: MatteSurface.ink(context), fontWeight: FontWeight.w800, fontSize: 16),
+              color: MatteSurface.ink(context),
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
           ),
           SizedBox(height: 6),
           Text(
@@ -461,19 +486,26 @@ class _DetailsPanel extends StatelessWidget {
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
-                color: MatteSurface.muted(context), fontSize: 13, height: 1.35),
+              color: MatteSurface.muted(context),
+              fontSize: 13,
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (profile.city != null) _pill(context, Icons.place_outlined, profile.city!),
+              if (profile.city != null)
+                _pill(context, Icons.place_outlined, profile.city!),
               if (profile.occupation != null)
                 _pill(context, Icons.work_outline_rounded, profile.occupation!),
               if (profile.budget != null)
-                _pill(context, Icons.attach_money_rounded,
-                    '\$${profile.budget!.toStringAsFixed(0)}/mo'),
+                _pill(
+                  context,
+                  Icons.attach_money_rounded,
+                  '\$${profile.budget!.toStringAsFixed(0)}/mo',
+                ),
               if (profile.age != null)
                 _pill(context, Icons.cake_outlined, '${profile.age} yrs'),
             ],
@@ -496,9 +528,14 @@ class _DetailsPanel extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: MatteSurface.muted(context)),
           SizedBox(width: 6),
-          Text(label,
-              style: GoogleFonts.plusJakartaSans(
-                  color: MatteSurface.ink(context), fontSize: 11, fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: MatteSurface.ink(context),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );

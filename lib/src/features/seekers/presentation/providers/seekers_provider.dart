@@ -35,7 +35,9 @@ class SeekersNotifier extends AsyncNotifier<List<SeekerRequest>> {
     String? time,
     double? durationHours,
   }) async {
-    await ref.read(seekerRepositoryProvider).createRequest(
+    await ref
+        .read(seekerRepositoryProvider)
+        .createRequest(
           categoryId: categoryId,
           location: location,
           subcategory: subcategory,
@@ -52,4 +54,6 @@ class SeekersNotifier extends AsyncNotifier<List<SeekerRequest>> {
 }
 
 final seekersProvider =
-    AsyncNotifierProvider<SeekersNotifier, List<SeekerRequest>>(SeekersNotifier.new);
+    AsyncNotifierProvider<SeekersNotifier, List<SeekerRequest>>(
+      SeekersNotifier.new,
+    );

@@ -20,7 +20,10 @@ class MapBottomDock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (preview != null) ...[
-          KeyedSubtree(key: const ValueKey('map-preview-slot'), child: preview!),
+          KeyedSubtree(
+            key: const ValueKey('map-preview-slot'),
+            child: preview!,
+          ),
           const SizedBox(height: 10),
         ] else ...[
           KeyedSubtree(key: const ValueKey('map-rail-slot'), child: rail),

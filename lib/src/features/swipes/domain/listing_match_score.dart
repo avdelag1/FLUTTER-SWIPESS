@@ -59,8 +59,9 @@ int listingMatchPercentage(Listing listing, SwipeFilter filters) {
 
   final city = filters.city?.trim();
   if (city != null && city.isNotEmpty) {
-    final hay = '${listing.city ?? ''} ${listing.location ?? ''} ${listing.neighborhood ?? ''}'
-        .toLowerCase();
+    final hay =
+        '${listing.city ?? ''} ${listing.location ?? ''} ${listing.neighborhood ?? ''}'
+            .toLowerCase();
     check(hay.contains(city.toLowerCase()));
   }
 

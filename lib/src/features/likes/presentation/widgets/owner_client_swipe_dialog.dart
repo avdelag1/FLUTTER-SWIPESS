@@ -31,13 +31,15 @@ class OwnerClientSwipeDialog extends ConsumerStatefulWidget {
       _OwnerClientSwipeDialogState();
 }
 
-class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog> {
+class _OwnerClientSwipeDialogState
+    extends ConsumerState<OwnerClientSwipeDialog> {
   int _index = 0;
 
   Future<void> _message(InterestedClient client) async {
     AppHaptics.medium();
-    final convoId =
-        await SwipeRepository().startConversation(ownerId: client.userId);
+    final convoId = await SwipeRepository().startConversation(
+      ownerId: client.userId,
+    );
     if (!mounted || convoId == null) return;
     Navigator.of(context).pop();
     await showChatPopup(
@@ -62,9 +64,9 @@ class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog>
   void _like(InterestedClient client) {
     AppHaptics.medium();
     setState(() => _index++);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Interested in ${client.name}')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Interested in ${client.name}')));
   }
 
   @override
@@ -97,7 +99,9 @@ class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog>
                         children: [
                           Text(
                             'Discover Potential Clients',
-                            style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                            style: AppTheme.displayItalic.copyWith(
+                              fontSize: 22,
+                            ),
                           ),
                           Text(
                             'Swipe through people who matched your listings',
@@ -111,7 +115,10 @@ class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog>
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                      ),
                     ),
                   ],
                 ),
@@ -129,8 +136,11 @@ class _OwnerClientSwipeDialogState extends ConsumerState<OwnerClientSwipeDialog>
                                 padding: const EdgeInsets.all(28),
                                 child: Column(
                                   children: [
-                                    const Icon(Icons.people_outline_rounded,
-                                        color: Colors.white54, size: 40),
+                                    const Icon(
+                                      Icons.people_outline_rounded,
+                                      color: Colors.white54,
+                                      size: 40,
+                                    ),
                                     const SizedBox(height: 12),
                                     Text(
                                       'NO MORE CLIENTS',
@@ -250,15 +260,21 @@ class _Deck extends StatelessWidget {
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const ColoredBox(
                           color: Color(0xFF16161C),
-                          child: Icon(Icons.person_rounded,
-                              color: Colors.white24, size: 64),
+                          child: Icon(
+                            Icons.person_rounded,
+                            color: Colors.white24,
+                            size: 64,
+                          ),
                         ),
                       )
                     else
                       const ColoredBox(
                         color: Color(0xFF16161C),
-                        child: Icon(Icons.person_rounded,
-                            color: Colors.white24, size: 64),
+                        child: Icon(
+                          Icons.person_rounded,
+                          color: Colors.white24,
+                          size: 64,
+                        ),
                       ),
                     const DecoratedBox(
                       decoration: BoxDecoration(
@@ -329,10 +345,7 @@ class _Deck extends StatelessWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _RailBtn(
-                              icon: Icons.close_rounded,
-                              onTap: onPass,
-                            ),
+                            _RailBtn(icon: Icons.close_rounded, onTap: onPass),
                             const SizedBox(height: 10),
                             _RailBtn(
                               icon: Icons.chat_bubble_outline_rounded,
@@ -361,11 +374,7 @@ class _Deck extends StatelessWidget {
 }
 
 class _RailBtn extends StatelessWidget {
-  const _RailBtn({
-    required this.icon,
-    required this.onTap,
-    this.accent,
-  });
+  const _RailBtn({required this.icon, required this.onTap, this.accent});
 
   final IconData icon;
   final VoidCallback onTap;

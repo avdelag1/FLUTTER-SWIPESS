@@ -84,9 +84,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return const [];
     }
     final out = <String>[...images];
-    if (video != null &&
-        video.isNotEmpty &&
-        !out.contains(video)) {
+    if (video != null && video.isNotEmpty && !out.contains(video)) {
       out.add(video);
     }
     return out;
@@ -347,23 +345,22 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 child: current == null
                     ? _fallback()
                     : _isVideo(current)
-                        ? _buildVideo()
-                        : Image.network(
-                              current,
-                              fit: BoxFit.cover,
-                              alignment: const Alignment(0, -0.12),
-                              width: double.infinity,
-                              height: double.infinity,
-                            // Decode near display size — full Unsplash
-                            // bitmaps crush Flutter web FPS.
-                            cacheWidth:
-                                (MediaQuery.sizeOf(context).width * 2)
-                                    .round()
-                                    .clamp(480, 1600),
-                            filterQuality: FilterQuality.medium,
-                            gaplessPlayback: true,
-                            errorBuilder: (_, _, _) => _fallback(),
-                            ),
+                    ? _buildVideo()
+                    : Image.network(
+                        current,
+                        fit: BoxFit.cover,
+                        alignment: const Alignment(0, -0.12),
+                        width: double.infinity,
+                        height: double.infinity,
+                        // Decode near display size — full Unsplash
+                        // bitmaps crush Flutter web FPS.
+                        cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                            .round()
+                            .clamp(480, 1600),
+                        filterQuality: FilterQuality.medium,
+                        gaplessPlayback: true,
+                        errorBuilder: (_, _, _) => _fallback(),
+                      ),
               ),
 
               if (!_zoomed)
@@ -439,11 +436,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                                 color: Colors.black.withAlpha(90),
                                 borderRadius: BorderRadius.circular(999),
                                 border: Border.all(
-                                    color: Colors.white.withAlpha(70)),
+                                  color: Colors.white.withAlpha(70),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        const Color(0xFF8B5CF6).withAlpha(100),
+                                    color: const Color(
+                                      0xFF8B5CF6,
+                                    ).withAlpha(100),
                                     blurRadius: 16,
                                   ),
                                 ],
@@ -547,8 +546,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       _GlassPill(
                         child: Column(
                           children: [
-                            const Icon(Icons.location_on_rounded,
-                                color: Colors.white, size: 16),
+                            const Icon(
+                              Icons.location_on_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             Text(
                               '${radiusKm}KM',
                               style: GoogleFonts.plusJakartaSans(
@@ -604,8 +606,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded,
-                                color: Color(0xFFFFD43B), size: 14),
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFFFD43B),
+                              size: 14,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               '5.0',
@@ -770,9 +775,7 @@ class _Stamp extends StatelessWidget {
         borderRadius: BorderRadius.circular(isLike ? 24 : 999),
         border: isLike ? Border.all(color: color, width: 4) : null,
         color: Colors.black.withAlpha(isLike ? 50 : 0),
-        boxShadow: [
-          BoxShadow(color: color.withAlpha(100), blurRadius: 24),
-        ],
+        boxShadow: [BoxShadow(color: color.withAlpha(100), blurRadius: 24)],
       ),
       child: Text(
         text,
@@ -781,9 +784,7 @@ class _Stamp extends StatelessWidget {
           fontSize: isLike ? 48 : 44,
           fontWeight: FontWeight.w900,
           letterSpacing: -1.5,
-          shadows: [
-            Shadow(color: color.withAlpha(180), blurRadius: 20),
-          ],
+          shadows: [Shadow(color: color.withAlpha(180), blurRadius: 20)],
         ),
       ),
     );
@@ -842,23 +843,35 @@ class _ActionRail extends StatelessWidget {
               ),
               _RailBtn(
                 onTap: onShare,
-                child: const Icon(Icons.share_rounded,
-                    color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.share_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               _RailBtn(
                 onTap: onMessage,
-                child: const Icon(Icons.chat_bubble_outline_rounded,
-                    color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               _RailBtn(
                 onTap: onInsights,
-                child: const Icon(Icons.bar_chart_rounded,
-                    color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.bar_chart_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               _RailBtn(
                 onTap: onReport,
-                child: const Icon(Icons.flag_outlined,
-                    color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.flag_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ],
           ),

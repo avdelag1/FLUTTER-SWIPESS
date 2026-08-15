@@ -36,7 +36,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   }
 
-  testWidgets('Listing Control chrome matches Cap asset terminal', (tester) async {
+  testWidgets('Listing Control chrome matches Cap asset terminal', (
+    tester,
+  ) async {
     await pumpListingControl(tester);
 
     expect(find.text('LISTING CONTROL'), findsOneWidget);
@@ -51,7 +53,9 @@ void main() {
     expect(find.byType(CapBackButton), findsOneWidget);
   });
 
-  testWidgets('spark opens the create-listing multi-option sheet', (tester) async {
+  testWidgets('spark opens the create-listing multi-option sheet', (
+    tester,
+  ) async {
     await pumpListingControl(tester);
 
     await tester.tap(find.byKey(const Key('listing-control-spark')));

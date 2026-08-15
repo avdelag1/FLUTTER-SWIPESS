@@ -10,7 +10,7 @@ export 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 /// Cap payment entry — StoreKit / Play on device, PayPal NCP on web.
 class PaymentService {
   PaymentService({PaymentOrchestrator? orchestrator})
-      : _orchestrator = orchestrator ?? PaymentOrchestrator();
+    : _orchestrator = orchestrator ?? PaymentOrchestrator();
 
   final PaymentOrchestrator _orchestrator;
   bool _configured = false;

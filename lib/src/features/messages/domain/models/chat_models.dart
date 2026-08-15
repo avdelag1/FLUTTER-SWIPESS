@@ -73,7 +73,10 @@ class DocumentAttachment {
   factory DocumentAttachment.fromJson(Map<String, dynamic> json) {
     return DocumentAttachment(
       id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? json['file_name']?.toString() ?? 'Document',
+      title:
+          json['title']?.toString() ??
+          json['file_name']?.toString() ??
+          'Document',
       type: json['type']?.toString() ?? 'vault_file',
       status: json['status']?.toString() ?? 'uploaded',
       fileName: json['file_name']?.toString(),

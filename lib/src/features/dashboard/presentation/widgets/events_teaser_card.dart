@@ -54,8 +54,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   bool get _wantSound {
     final notifier = ref.read(deckSoundOnProvider.notifier);
-    return ref.read(deckSoundOnProvider) &&
-        (notifier.mediaUnlocked || !kIsWeb);
+    return ref.read(deckSoundOnProvider) && (notifier.mediaUnlocked || !kIsWeb);
   }
 
   void _onTick() {
@@ -66,7 +65,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     if (videos.length <= 1) return;
     final pos = player.value.position;
     final dur = player.value.duration;
-    final ended = player.value.isCompleted ||
+    final ended =
+        player.value.isCompleted ||
         (dur > Duration.zero && pos >= dur - const Duration(milliseconds: 80));
     if (!ended) return;
     _advancing = true;
@@ -82,9 +82,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final event = videos[_index];
     final url = event.videoUrl?.trim();
     if (url == null || url.isEmpty) return;
-    if (url == _boundUrl &&
-        _player != null &&
-        _player!.value.isInitialized) {
+    if (url == _boundUrl && _player != null && _player!.value.isInitialized) {
       await _applySound(_player);
       await _syncMusic(event);
       _advancing = false;
@@ -135,10 +133,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     }
   }
 
-  Future<void> _playWithDeckSound(
-    VideoPlayerController next,
-    Event _,
-  ) async {
+  Future<void> _playWithDeckSound(VideoPlayerController next, Event _) async {
     final videoSound = _wantSound;
     try {
       await next.setVolume(videoSound ? 1 : 0);
@@ -290,8 +285,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   : Image.network(
                       current.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          Image.asset(AppAssets.filterEvents, fit: BoxFit.cover),
+                      errorBuilder: (_, _, _) => Image.asset(
+                        AppAssets.filterEvents,
+                        fit: BoxFit.cover,
+                      ),
                     )
             else
               Image.asset(AppAssets.filterEvents, fit: BoxFit.cover),
@@ -338,10 +335,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
             Positioned(
               top: 0,
               right: 0,
-              child: EventMuteButton(
-                soundOn: soundOn,
-                onToggle: _toggleSound,
-              ),
+              child: EventMuteButton(soundOn: soundOn, onToggle: _toggleSound),
             ),
             Positioned(
               left: 14,

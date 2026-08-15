@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Cap `rpc_grant_welcome_tokens` + `rpc_get_user_tokens` / `tokens` table.
 class TokenRepository {
   TokenRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -31,7 +31,9 @@ class TokenRepository {
         final row = rpc.first;
         if (row is Map) {
           final rem =
-              row['remaining_activations'] ?? row['remaining'] ?? row['balance'];
+              row['remaining_activations'] ??
+              row['remaining'] ??
+              row['balance'];
           if (rem is num) return rem.toInt();
         }
       } else if (rpc is num) {

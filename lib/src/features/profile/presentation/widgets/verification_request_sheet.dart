@@ -52,20 +52,24 @@ class _VerificationSheetState extends ConsumerState<_VerificationSheet> {
       _error = null;
     });
     try {
-      await ref.read(documentRepositoryProvider).upload(
+      await ref
+          .read(documentRepositoryProvider)
+          .upload(
             fileName: file.name,
             bytes: bytes,
             documentType: type,
-            mimeType: file.extension == 'pdf' ? 'application/pdf' : 'image/jpeg',
+            mimeType: file.extension == 'pdf'
+                ? 'application/pdf'
+                : 'image/jpeg',
           );
-      await ref.read(documentRepositoryProvider).submitOwnerVerification(
-            documentType: type,
-            filePath: file.name,
-          );
+      await ref
+          .read(documentRepositoryProvider)
+          .submitOwnerVerification(documentType: type, filePath: file.name);
       AppHaptics.medium();
       if (mounted) setState(() => _done = true);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Upload failed. Try a file under 10MB.');
+      if (mounted)
+        setState(() => _error = 'Upload failed. Try a file under 10MB.');
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -79,8 +83,10 @@ class _VerificationSheetState extends ConsumerState<_VerificationSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('OWNER VERIFICATION',
-              style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+          Text(
+            'OWNER VERIFICATION',
+            style: AppTheme.displayItalic.copyWith(fontSize: 22),
+          ),
           const SizedBox(height: 8),
           Text(
             _done
@@ -137,8 +143,7 @@ class _VerificationSheetState extends ConsumerState<_VerificationSheet> {
                 ),
               ),
             if (_error != null)
-              Text(_error!,
-                  style: const TextStyle(color: Color(0xFFF87171))),
+              Text(_error!, style: const TextStyle(color: Color(0xFFF87171))),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,

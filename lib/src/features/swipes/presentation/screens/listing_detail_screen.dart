@@ -29,11 +29,7 @@ class ListingDetailScreen extends ConsumerWidget {
   final Listing? listingData;
   final String? listingId;
 
-  const ListingDetailScreen({
-    super.key,
-    this.listingData,
-    this.listingId,
-  });
+  const ListingDetailScreen({super.key, this.listingData, this.listingId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -82,8 +78,10 @@ class ListingDetailScreen extends ConsumerWidget {
         if (listing == null) {
           return const Scaffold(
             body: Center(
-              child: Text('Listing not found',
-                  style: TextStyle(color: Colors.white)),
+              child: Text(
+                'Listing not found',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           );
         }
@@ -122,8 +120,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
     super.dispose();
   }
 
-  List<String> get _images =>
-      listing.images.isNotEmpty ? listing.images : [''];
+  List<String> get _images => listing.images.isNotEmpty ? listing.images : [''];
 
   void _setChrome(bool visible) {
     if (_chromeVisible == visible) return;
@@ -174,9 +171,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
     }
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This is your listing')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
     setState(() => _messaging = true);
@@ -278,7 +275,11 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
         specs.add((Icons.two_wheeler_rounded, 'Brand', listing.vehicleBrand!));
       }
       if (listing.vehicleModel != null) {
-        specs.add((Icons.precision_manufacturing_rounded, 'Model', listing.vehicleModel!));
+        specs.add((
+          Icons.precision_manufacturing_rounded,
+          'Model',
+          listing.vehicleModel!,
+        ));
       }
       if (listing.year != null) {
         specs.add((Icons.calendar_today_rounded, 'Year', '${listing.year}'));
@@ -374,8 +375,11 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.location_on_outlined,
-                                  color: Color(0xFFEB4898), size: 16),
+                              const Icon(
+                                Icons.location_on_outlined,
+                                color: Color(0xFFEB4898),
+                                size: 16,
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -395,8 +399,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                for (final tag in listing.quickTags)
-                                  _Pill(tag),
+                                for (final tag in listing.quickTags) _Pill(tag),
                               ],
                             ),
                           ],
@@ -408,11 +411,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                             runSpacing: 10,
                             children: [
                               for (final s in _specs)
-                                _SpecTile(
-                                  icon: s.$1,
-                                  label: s.$2,
-                                  value: s.$3,
-                                ),
+                                _SpecTile(icon: s.$1, label: s.$2, value: s.$3),
                             ],
                           ),
                           const SizedBox(height: 26),
@@ -487,17 +486,20 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           const _Bullet(
                             icon: Icons.swipe_rounded,
                             title: '1 · Swipe the deck',
-                            body: 'Keep cards you want. A mutual like opens the thread — no spam DMs.',
+                            body:
+                                'Keep cards you want. A mutual like opens the thread — no spam DMs.',
                           ),
                           const _Bullet(
                             icon: Icons.chat_bubble_rounded,
                             title: '2 · Message the host',
-                            body: 'Ask for a tour, documents, or a hold. Share vault files in-chat.',
+                            body:
+                                'Ask for a tour, documents, or a hold. Share vault files in-chat.',
                           ),
                           const _Bullet(
                             icon: Icons.verified_user_outlined,
                             title: '3 · Close on SWIPESS',
-                            body: 'PEARL ID, contracts, and escrow stay inside the app. Never wire off-platform.',
+                            body:
+                                'PEARL ID, contracts, and escrow stay inside the app. Never wire off-platform.',
                           ),
                           const SizedBox(height: 26),
                           const _Kicker('SAFETY'),
@@ -556,7 +558,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                     if (_images.length > 1)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha(140),
                           borderRadius: BorderRadius.circular(999),
@@ -572,10 +576,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                         ),
                       ),
                     const SizedBox(width: 8),
-                    _CircleBtn(
-                      icon: Icons.flag_outlined,
-                      onTap: _openReport,
-                    ),
+                    _CircleBtn(icon: Icons.flag_outlined, onTap: _openReport),
                     const SizedBox(width: 8),
                     _CircleBtn(
                       icon: Icons.info_outline_rounded,
@@ -668,10 +669,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
             ),
           ),
 
-          ChromeSummonZones(
-            visible: show,
-            onSummon: () => _setChrome(true),
-          ),
+          ChromeSummonZones(visible: show, onSummon: () => _setChrome(true)),
         ],
       ),
     );
@@ -710,8 +708,11 @@ class _Gallery extends StatelessWidget {
               return const ColoredBox(
                 color: Color(0xFF16161C),
                 child: Center(
-                  child: Icon(Icons.home_work_rounded,
-                      color: Colors.white24, size: 64),
+                  child: Icon(
+                    Icons.home_work_rounded,
+                    color: Colors.white24,
+                    size: 64,
+                  ),
                 ),
               );
             }
@@ -722,13 +723,16 @@ class _Gallery extends StatelessWidget {
                 child: Image.network(
                   url,
                   fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: Color(0xFF16161C),
-                  child: Center(
-                    child: Icon(Icons.broken_image_outlined,
-                        color: Colors.white24, size: 48),
+                  errorBuilder: (_, _, _) => const ColoredBox(
+                    color: Color(0xFF16161C),
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white24,
+                        size: 48,
+                      ),
+                    ),
                   ),
-                ),
                 ),
               ),
             );
@@ -796,15 +800,10 @@ class _ChromeLayer extends StatelessWidget {
       duration: Duration(milliseconds: visible ? 360 : 340),
       curve: const Cubic(0.25, 0.1, 0.25, 1),
       child: AnimatedSlide(
-        offset: visible
-            ? Offset.zero
-            : Offset(0, fromTop ? -0.18 : 0.45),
+        offset: visible ? Offset.zero : Offset(0, fromTop ? -0.18 : 0.45),
         duration: Duration(milliseconds: visible ? 360 : 340),
         curve: const Cubic(0.25, 0.1, 0.25, 1),
-        child: IgnorePointer(
-          ignoring: !visible,
-          child: child,
-        ),
+        child: IgnorePointer(ignoring: !visible, child: child),
       ),
     );
   }
@@ -909,11 +908,7 @@ class _SpecTile extends StatelessWidget {
 }
 
 class _Bullet extends StatelessWidget {
-  const _Bullet({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
+  const _Bullet({required this.icon, required this.title, required this.body});
 
   final IconData icon;
   final String title;
@@ -1009,11 +1004,7 @@ class _GhostBtn extends StatelessWidget {
 }
 
 class _CircleBtn extends StatelessWidget {
-  const _CircleBtn({
-    required this.icon,
-    required this.onTap,
-    this.size = 48,
-  });
+  const _CircleBtn({required this.icon, required this.onTap, this.size = 48});
   final IconData icon;
   final VoidCallback onTap;
   final double size;

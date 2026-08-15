@@ -57,8 +57,8 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
 
 final notificationsProvider =
     AsyncNotifierProvider<NotificationsNotifier, List<AppNotification>>(
-  NotificationsNotifier.new,
-);
+      NotificationsNotifier.new,
+    );
 
 final unreadNotificationsProvider = FutureProvider<int>((ref) async {
   ref.watch(authStateProvider);

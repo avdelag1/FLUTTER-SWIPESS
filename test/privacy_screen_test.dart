@@ -12,9 +12,9 @@ void main() {
     PrivacyScreen.resetForTest();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(PrivacyScreen.channel, (call) async {
-      calls.add(call.method);
-      return true;
-    });
+          calls.add(call.method);
+          return true;
+        });
   });
 
   tearDown(() {
@@ -22,11 +22,10 @@ void main() {
         .setMockMethodCallHandler(PrivacyScreen.channel, null);
   });
 
-  testWidgets('a protected surface turns protection on and off with its life',
-      (tester) async {
-    await tester.pumpWidget(
-      const PrivacyScreenGuard(child: SizedBox.shrink()),
-    );
+  testWidgets('a protected surface turns protection on and off with its life', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const PrivacyScreenGuard(child: SizedBox.shrink()));
     await tester.pump();
     expect(calls, ['enable']);
 
@@ -35,8 +34,9 @@ void main() {
     expect(calls, ['enable', 'disable']);
   });
 
-  testWidgets('nested protected surfaces do not unprotect each other',
-      (tester) async {
+  testWidgets('nested protected surfaces do not unprotect each other', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const PrivacyScreenGuard(
         child: PrivacyScreenGuard(child: SizedBox.shrink()),
@@ -47,9 +47,7 @@ void main() {
     expect(calls, ['enable']);
     expect(PrivacyScreen.holders, 2);
 
-    await tester.pumpWidget(
-      const PrivacyScreenGuard(child: SizedBox.shrink()),
-    );
+    await tester.pumpWidget(const PrivacyScreenGuard(child: SizedBox.shrink()));
     await tester.pump();
     // Inner surface closed, outer one still open — stay protected.
     expect(calls, ['enable']);

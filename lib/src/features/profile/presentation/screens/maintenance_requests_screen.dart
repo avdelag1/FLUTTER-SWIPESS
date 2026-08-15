@@ -68,11 +68,17 @@ class _MaintenanceRequestsScreenState
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         shape: BoxShape.circle,
-                        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+                        border: Border.all(
+                          color: MatteSurface.ink(context),
+                          width: 1.5,
+                        ),
                       ),
                       child: Center(
-                        child: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: MatteSurface.ink(context), size: 18),
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: MatteSurface.ink(context),
+                          size: 18,
+                        ),
                       ),
                     ),
                   ),
@@ -81,13 +87,16 @@ class _MaintenanceRequestsScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('MAINTENANCE',
-                            style:
-                                AppTheme.displayItalic.copyWith(fontSize: 22)),
+                        Text(
+                          'MAINTENANCE',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                        ),
                         Text(
                           'Report and track property issues',
                           style: GoogleFonts.plusJakartaSans(
-                              color: MatteSurface.muted(context), fontSize: 11),
+                            color: MatteSurface.muted(context),
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),
@@ -123,7 +132,9 @@ class _MaintenanceRequestsScreenState
               child: async.when(
                 loading: () => Center(
                   child: CircularProgressIndicator(
-                      color: MatteSurface.ink(context), strokeWidth: 2),
+                    color: MatteSurface.ink(context),
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -141,7 +152,8 @@ class _MaintenanceRequestsScreenState
                       child: Text(
                         'No maintenance requests yet.',
                         style: GoogleFonts.plusJakartaSans(
-                            color: MatteSurface.muted(context)),
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     );
                   }
@@ -203,8 +215,10 @@ class _MaintenanceRequestsScreenState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NEW REQUEST',
-                        style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                    Text(
+                      'NEW REQUEST',
+                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
+                    ),
                     SizedBox(height: 16),
                     GlassTextField(
                       controller: title,
@@ -230,8 +244,7 @@ class _MaintenanceRequestsScreenState
                           NeoNaiveChip(
                             label: c.$2,
                             selected: category == c.$1,
-                            onSelected: () =>
-                                setModal(() => category = c.$1),
+                            onSelected: () => setModal(() => category = c.$1),
                             selectedColor: AppTheme.brandPrimary,
                           ),
                       ],
@@ -305,8 +318,8 @@ class _MaintenanceRequestsScreenState
                                     top: 2,
                                     right: 2,
                                     child: GestureDetector(
-                                      onTap: () => setModal(
-                                          () => photos.removeAt(i)),
+                                      onTap: () =>
+                                          setModal(() => photos.removeAt(i)),
                                       child: Container(
                                         width: 22,
                                         height: 22,
@@ -314,8 +327,11 @@ class _MaintenanceRequestsScreenState
                                           color: Colors.black.withAlpha(180),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: Icon(Icons.close,
-                                            color: MatteSurface.ink(context), size: 12),
+                                        child: Icon(
+                                          Icons.close,
+                                          color: MatteSurface.ink(context),
+                                          size: 12,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -325,10 +341,8 @@ class _MaintenanceRequestsScreenState
                           if (photos.length < 5)
                             GestureDetector(
                               onTap: () async {
-                                final picked =
-                                    await ImagePicker().pickMultiImage(
-                                  limit: 5 - photos.length,
-                                );
+                                final picked = await ImagePicker()
+                                    .pickMultiImage(limit: 5 - photos.length);
                                 if (picked.isEmpty) return;
                                 setModal(() => photos.addAll(picked));
                               },
@@ -343,8 +357,10 @@ class _MaintenanceRequestsScreenState
                                   ),
                                   color: Colors.transparent,
                                 ),
-                                child: Icon(Icons.camera_alt_rounded,
-                                    color: MatteSurface.muted(context)),
+                                child: Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: MatteSurface.muted(context),
+                                ),
                               ),
                             ),
                         ],
@@ -430,7 +446,9 @@ class _Ticket extends StatelessWidget {
                 Text(
                   request.title,
                   style: TextStyle(
-                      color: MatteSurface.ink(context), fontWeight: FontWeight.w700),
+                    color: MatteSurface.ink(context),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 SizedBox(height: 4),
                 Text(
@@ -441,7 +459,9 @@ class _Ticket extends StatelessWidget {
                     if (request.propertyLabel != null) request.propertyLabel!,
                   ].join(' · '),
                   style: GoogleFonts.plusJakartaSans(
-                      color: MatteSurface.muted(context), fontSize: 12),
+                    color: MatteSurface.muted(context),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -449,8 +469,11 @@ class _Ticket extends StatelessWidget {
           if (request.photoUrls.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 8),
-              child: Icon(Icons.photo_rounded,
-                  color: MatteSurface.faint(context), size: 18),
+              child: Icon(
+                Icons.photo_rounded,
+                color: MatteSurface.faint(context),
+                size: 18,
+              ),
             ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -461,9 +484,10 @@ class _Ticket extends StatelessWidget {
             child: Text(
               request.statusLabel,
               style: TextStyle(
-                  color: _statusColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800),
+                color: _statusColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],

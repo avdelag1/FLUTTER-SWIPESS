@@ -32,10 +32,7 @@ class SoftPaywallPreview extends StatelessWidget {
       child: Stack(
         children: [
           ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: blurSigma,
-              sigmaY: blurSigma,
-            ),
+            imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
             child: IgnorePointer(child: child),
           ),
           Positioned.fill(
@@ -50,8 +47,10 @@ class SoftPaywallPreview extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: AppTheme.brandPrimary.withAlpha(36),
                     ),
-                    child: const Icon(Icons.lock_rounded,
-                        color: AppTheme.brandPrimary),
+                    child: const Icon(
+                      Icons.lock_rounded,
+                      color: AppTheme.brandPrimary,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -78,8 +77,11 @@ class SoftPaywallPreview extends StatelessWidget {
                     const SizedBox(height: 12),
                     TextButton.icon(
                       onPressed: onUpgrade,
-                      icon: const Icon(Icons.auto_awesome_rounded,
-                          size: 14, color: Colors.white),
+                      icon: const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      ),
                       label: Text(
                         'UNLOCK',
                         style: GoogleFonts.plusJakartaSans(
@@ -174,8 +176,11 @@ class TrialLimitBanner extends StatelessWidget {
               const SizedBox(width: 12),
               TextButton.icon(
                 onPressed: onUpgrade,
-                icon: const Icon(Icons.auto_awesome_rounded,
-                    size: 14, color: Colors.white),
+                icon: const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 14,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Upgrade',
                   style: GoogleFonts.plusJakartaSans(

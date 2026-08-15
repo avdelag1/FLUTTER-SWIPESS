@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/core/providers/supabase_provider.dart';
 
 final accessCodeRepositoryProvider = Provider<AccessCodeRepository>((ref) {
-  return AccessCodeRepository();
+  return AccessCodeRepository(client: ref.watch(supabaseClientProvider));
 });
 
 /// Cap `AccessCodeGate` — `validate-access-code`, `code_requests`, notify.
 class AccessCodeRepository {
-  AccessCodeRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+  AccessCodeRepository({SupabaseClient? client}) : _client = client!;
 
   final SupabaseClient _client;
 
@@ -45,8 +45,9 @@ class AccessCodeRepository {
       'whatsapp': (whatsapp == null || whatsapp.trim().isEmpty)
           ? null
           : whatsapp.trim(),
-      'message':
-          (message == null || message.trim().isEmpty) ? null : message.trim(),
+      'message': (message == null || message.trim().isEmpty)
+          ? null
+          : message.trim(),
     };
     await _client.from('code_requests').insert(payload);
     try {

@@ -49,7 +49,10 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('LOCAL INTEL', style: AppTheme.displayItalic.copyWith(fontSize: 22)),
+                        Text(
+                          'LOCAL INTEL',
+                          style: AppTheme.displayItalic.copyWith(fontSize: 22),
+                        ),
                         Text(
                           'Verified neighborhood updates',
                           style: GoogleFonts.plusJakartaSans(
@@ -87,7 +90,10 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
             Expanded(
               child: async.when(
                 loading: () => Center(
-                  child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: MatteSurface.ink(context),
+                    strokeWidth: 2,
+                  ),
                 ),
                 error: (_, _) => Center(
                   child: TextButton(
@@ -103,7 +109,9 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                     return Center(
                       child: Text(
                         'No intel posts yet.',
-                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context)),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: MatteSurface.muted(context),
+                        ),
                       ),
                     );
                   }
@@ -111,7 +119,8 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                     itemCount: filtered.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) => _IntelCard(post: filtered[index]),
+                    itemBuilder: (context, index) =>
+                        _IntelCard(post: filtered[index]),
                   );
                 },
               ),
@@ -175,7 +184,11 @@ class _IntelCard extends StatelessWidget {
                   SizedBox(height: 8),
                   Text(
                     post.content,
-                    style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 13, height: 1.4),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: MatteSurface.muted(context),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -186,13 +199,19 @@ class _IntelCard extends StatelessWidget {
                     if (post.neighborhood != null)
                       Text(
                         post.neighborhood!,
-                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.muted(context), fontSize: 11),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: MatteSurface.muted(context),
+                          fontSize: 11,
+                        ),
                       ),
                     Spacer(),
                     if (when != null)
                       Text(
                         when,
-                        style: GoogleFonts.plusJakartaSans(color: MatteSurface.faint(context), fontSize: 11),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: MatteSurface.faint(context),
+                          fontSize: 11,
+                        ),
                       ),
                     if (post.sourceUrl != null) ...[
                       SizedBox(width: 8),
@@ -200,9 +219,17 @@ class _IntelCard extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         onPressed: () async {
                           final uri = Uri.tryParse(post.sourceUrl!);
-                          if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          if (uri != null)
+                            await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
                         },
-                        icon: Icon(Icons.open_in_new_rounded, color: MatteSurface.muted(context), size: 18),
+                        icon: Icon(
+                          Icons.open_in_new_rounded,
+                          color: MatteSurface.muted(context),
+                          size: 18,
+                        ),
                       ),
                     ],
                   ],
@@ -215,4 +242,3 @@ class _IntelCard extends StatelessWidget {
     );
   }
 }
-

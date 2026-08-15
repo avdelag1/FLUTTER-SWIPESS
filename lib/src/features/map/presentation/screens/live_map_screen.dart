@@ -139,30 +139,30 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final people = peopleForMap(profiles, center, location.city);
     const haversine = Distance();
     bool inRadius(double lat, double lng) {
-      return haversine.as(
-            LengthUnit.Kilometer,
-            center,
-            LatLng(lat, lng),
-          ) <=
+      return haversine.as(LengthUnit.Kilometer, center, LatLng(lat, lng)) <=
           radiusKm;
     }
 
     final listingPins = [
       if (_layer != 'people')
         ...listings
-            .where((l) =>
-                l.latitude != null &&
-                l.longitude != null &&
-                inRadius(l.latitude!, l.longitude!))
+            .where(
+              (l) =>
+                  l.latitude != null &&
+                  l.longitude != null &&
+                  inRadius(l.latitude!, l.longitude!),
+            )
             .map(MapPin.listing),
     ];
     final profilePins = [
       if (_layer != 'listings')
         ...people
-            .where((p) =>
-                p.latitude != null &&
-                p.longitude != null &&
-                inRadius(p.latitude!, p.longitude!))
+            .where(
+              (p) =>
+                  p.latitude != null &&
+                  p.longitude != null &&
+                  inRadius(p.latitude!, p.longitude!),
+            )
             .map(MapPin.profile),
     ];
     final allPins = [...listingPins, ...profilePins];
@@ -204,6 +204,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                       );
                       if (_fly.isCompleted) _fly.removeListener(flyCamera);
                     }
+
                     _fly.addListener(flyCamera);
                     _fly.forward(from: 0);
                   },
@@ -264,7 +265,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         if (c.count == 1)
                           _pinMarker(
                             c.pins.first,
-                            selected: _selected != null &&
+                            selected:
+                                _selected != null &&
                                 _samePin(_selected!, c.pins.first),
                           )
                         else
@@ -275,10 +277,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                             child: GestureDetector(
                               onTap: () {
                                 AppHaptics.selection();
-                                _safeMove(
-                                  c.point,
-                                  math.min(_zoom + 1.6, 16),
-                                );
+                                _safeMove(c.point, math.min(_zoom + 1.6, 16));
                               },
                               child: MapClusterMarker(count: c.count),
                             ),
@@ -287,8 +286,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   ),
                 ],
               ),
-              ),
             ),
+          ),
           if (isLoading)
             const Positioned(
               top: 0,
@@ -305,31 +304,31 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             child: _MapHudVisibility(
               visible: _hudVisible,
               child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  MapHudCircle(
-                    icon: Icons.close_rounded,
-                    onTap: () {
-                      if (widget.onClose != null) {
-                        widget.onClose!();
-                      } else {
-                        Navigator.of(context).maybePop();
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  MapHudCircle(
-                    icon: Icons.search_rounded,
-                    onTap: () => setState(() {
-                      _citiesOpen = !_citiesOpen;
-                      _radiusOpen = false;
-                    }),
-                  ),
-                  const Spacer(),
-                ],
-              ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MapHudCircle(
+                      icon: Icons.close_rounded,
+                      onTap: () {
+                        if (widget.onClose != null) {
+                          widget.onClose!();
+                        } else {
+                          Navigator.of(context).maybePop();
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    MapHudCircle(
+                      icon: Icons.search_rounded,
+                      onTap: () => setState(() {
+                        _citiesOpen = !_citiesOpen;
+                        _radiusOpen = false;
+                      }),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -341,24 +340,26 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             child: _MapHudVisibility(
               visible: _hudVisible,
               child: MapCityChips(
-              activeCity: location.city,
-              onSelect: (city) {
-                ref.read(discoveryLocationProvider.notifier).setCoordinates(
-                      city: city.name,
-                      country: city.country,
-                      latitude: city.lat,
-                      longitude: city.lng,
-                    );
-                _didFly = false;
-                _safeMove(
-                  LatLng(city.lat, city.lng),
-                  _zoomForRadius(radiusKm),
-                );
-                setState(() {
-                  _citiesOpen = false;
-                  _selected = null;
-                });
-              },
+                activeCity: location.city,
+                onSelect: (city) {
+                  ref
+                      .read(discoveryLocationProvider.notifier)
+                      .setCoordinates(
+                        city: city.name,
+                        country: city.country,
+                        latitude: city.lat,
+                        longitude: city.lng,
+                      );
+                  _didFly = false;
+                  _safeMove(
+                    LatLng(city.lat, city.lng),
+                    _zoomForRadius(radiusKm),
+                  );
+                  setState(() {
+                    _citiesOpen = false;
+                    _selected = null;
+                  });
+                },
               ),
             ),
           ),
@@ -369,13 +370,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             child: _MapHudVisibility(
               visible: _hudVisible,
               child: MapLayerRail(
-              layer: _layer,
-              listingCount: listingPins.length,
-              peopleCount: profilePins.length,
-              onLayer: (layer) => setState(() {
-                _layer = layer;
-                _selected = null;
-              }),
+                layer: _layer,
+                listingCount: listingPins.length,
+                peopleCount: profilePins.length,
+                onLayer: (layer) => setState(() {
+                  _layer = layer;
+                  _selected = null;
+                }),
               ),
             ),
           ),
@@ -387,172 +388,173 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             child: _MapHudVisibility(
               visible: _hudVisible,
               child: MapBottomDock(
-              preview: _selected == null
-                  ? null
-                  : MapPreviewCard(
-                      pin: _selected!,
-                      onOpen: _openSelected,
-                      onClose: () => setState(() => _selected = null),
-                    ),
-              rail: MapResultsRail(
-                pins: filtered,
-                selectedId: _selected?.id,
-                onSelect: (pin) {
-                  setState(() => _selected = pin);
-                  _safeMove(LatLng(pin.lat, pin.lng), math.max(_zoom, 11));
-                },
-              ),
-              hud: MapGpsHud(
-                locateButton: GestureDetector(
-                  onTap: () {
-                    _locateGps();
+                preview: _selected == null
+                    ? null
+                    : MapPreviewCard(
+                        pin: _selected!,
+                        onOpen: _openSelected,
+                        onClose: () => setState(() => _selected = null),
+                      ),
+                rail: MapResultsRail(
+                  pins: filtered,
+                  selectedId: _selected?.id,
+                  onSelect: (pin) {
+                    setState(() => _selected = pin);
+                    _safeMove(LatLng(pin.lat, pin.lng), math.max(_zoom, 11));
                   },
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      border: Border.all(color: Colors.white, width: 1.5),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black54,
-                          blurRadius: 12,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.navigation_rounded,
-                      color: Colors.black,
-                      size: 18,
+                ),
+                hud: MapGpsHud(
+                  locateButton: GestureDetector(
+                    onTap: () {
+                      _locateGps();
+                    },
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black54,
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.navigation_rounded,
+                        color: Colors.black,
+                        size: 18,
+                      ),
                     ),
                   ),
-                ),
-                radiusChip: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_radiusOpen)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0A0A0D),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white30),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (final km in _radiusOptions)
-                              GestureDetector(
-                                onTap: () {
-                                  AppHaptics.selection();
-                                  ref
-                                      .read(discoveryLocationProvider.notifier)
-                                      .setRadiusKm(km);
-                                  _safeMove(center, _zoomForRadius(km));
-                                  setState(() => _radiusOpen = false);
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    '$km km',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: km == radiusKm
-                                          ? const Color(0xFFFF4D00)
-                                          : Colors.white,
-                                      fontWeight: FontWeight.w800,
+                  radiusChip: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_radiusOpen)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0A0A0D),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white30),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final km in _radiusOptions)
+                                GestureDetector(
+                                  onTap: () {
+                                    AppHaptics.selection();
+                                    ref
+                                        .read(
+                                          discoveryLocationProvider.notifier,
+                                        )
+                                        .setRadiusKm(km);
+                                    _safeMove(center, _zoomForRadius(km));
+                                    setState(() => _radiusOpen = false);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      '$km km',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: km == radiusKm
+                                            ? const Color(0xFFFF4D00)
+                                            : Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    GestureDetector(
-                      onTap: () => setState(() {
-                        _radiusOpen = !_radiusOpen;
-                      }),
-                      child: Container(
-                        height: 40,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xF2161B27),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: Colors.white38,
-                            width: 1,
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.location_on_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '$radiusKm km',
-                              style: GoogleFonts.plusJakartaSans(
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _radiusOpen = !_radiusOpen;
+                        }),
+                        child: Container(
+                          height: 40,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xF2161B27),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white38, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.location_on_rounded,
                                 color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 13,
+                                size: 16,
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              _radiusOpen
-                                  ? Icons.expand_less_rounded
-                                  : Icons.expand_more_rounded,
-                              color: Colors.white70,
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                youAreHere: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xF2161B27),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white38),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF34D399),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'You are here',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
+                              const SizedBox(width: 6),
+                              Text(
+                                '$radiusKm km',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _radiusOpen
+                                    ? Icons.expand_less_rounded
+                                    : Icons.expand_more_rounded,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
+                  youAreHere: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xF2161B27),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white38),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF34D399),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'You are here',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
               ),
             ),
           ),
@@ -602,7 +604,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               child: MapCitySheet(
                 onClose: () => setState(() => _citiesOpen = false),
                 onPick: (city) {
-                  ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                  ref
+                      .read(discoveryLocationProvider.notifier)
+                      .setCoordinates(
                         city: city.name,
                         country: city.country,
                         latitude: city.lat,
@@ -630,8 +634,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     if (_selected!.isListing) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) =>
-              ListingDetailScreen(listingData: _selected!.listing!),
+          builder: (_) => ListingDetailScreen(listingData: _selected!.listing!),
         ),
       );
     } else {
@@ -665,7 +668,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
           timeLimit: Duration(seconds: 8),
         ),
       );
-      ref.read(discoveryLocationProvider.notifier).setCoordinates(
+      ref
+          .read(discoveryLocationProvider.notifier)
+          .setCoordinates(
             city: 'Near you',
             country: '',
             latitude: pos.latitude,

@@ -41,9 +41,7 @@ class SwipeExhaustedState extends ConsumerStatefulWidget {
 }
 
 class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
-  static const _kmSteps = [
-    1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100,
-  ];
+  static const _kmSteps = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100];
 
   static const _clientCategories = [
     ('property', 'Properties'),
@@ -131,8 +129,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                         maxStep: _kmSteps.length - 1,
                         detecting: widget.detecting,
                         detected: widget.detected,
-                        onStep: (s) =>
-                            widget.onRadiusChange!(_kmSteps[s]),
+                        onStep: (s) => widget.onRadiusChange!(_kmSteps[s]),
                         onDetect: widget.onDetectLocation,
                         onOpenFilters: widget.onOpenFilters,
                       ),
@@ -172,8 +169,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                           for (final cat in others)
                             _CategoryChip(
                               label: cat.$2,
-                              onTap: () =>
-                                  widget.onCategoryChange!(cat.$1),
+                              onTap: () => widget.onCategoryChange!(cat.$1),
                             ),
                         ],
                       ),

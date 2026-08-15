@@ -4,7 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Cap routes every piece of app feedback through one premium top banner
 /// instead of scattered toasts. This is the queue behind it.
-enum AppToastType { like, superLike, message, match, newUser, info, success, error, warning }
+enum AppToastType {
+  like,
+  superLike,
+  message,
+  match,
+  newUser,
+  info,
+  success,
+  error,
+  warning,
+}
 
 class AppToast {
   AppToast({
@@ -76,5 +86,5 @@ class AppNotificationsNotifier extends Notifier<List<AppToast>> {
 
 final appNotificationsProvider =
     NotifierProvider<AppNotificationsNotifier, List<AppToast>>(
-  AppNotificationsNotifier.new,
-);
+      AppNotificationsNotifier.new,
+    );

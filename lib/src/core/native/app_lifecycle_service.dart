@@ -83,18 +83,14 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
   Widget build(BuildContext context) {
     // Signing in is Cap's forced refresh; signing out drops the throttle so the
     // next account does not inherit it.
-    ref.listen(
-      currentUserProvider,
-      (previous, next) {
-        if (next?.id == previous?.id) return;
-        if (next == null) {
-          ref.read(profileGpsServiceProvider).reset();
-        } else {
-          _refreshGps(force: true);
-        }
-      },
-      onError: (_, _) {},
-    );
+    ref.listen(currentUserProvider, (previous, next) {
+      if (next?.id == previous?.id) return;
+      if (next == null) {
+        ref.read(profileGpsServiceProvider).reset();
+      } else {
+        _refreshGps(force: true);
+      }
+    }, onError: (_, _) {});
     return widget.child;
   }
 }

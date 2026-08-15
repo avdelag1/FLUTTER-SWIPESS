@@ -48,17 +48,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_enhancing) return;
     final raw = _bioController.text.trim();
     if (raw.length < 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Write a short bio first')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Write a short bio first')));
       return;
     }
     setState(() => _enhancing = true);
     AppHaptics.light();
-    final polished = await ref.read(aiEdgeRepositoryProvider).enhanceText(
-          text: raw,
-          type: 'profile',
-        );
+    final polished = await ref
+        .read(aiEdgeRepositoryProvider)
+        .enhanceText(text: raw, type: 'profile');
     if (!mounted) return;
     setState(() => _enhancing = false);
     if (polished == null || polished.isEmpty) {
@@ -88,9 +87,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -100,7 +99,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(currentProfileProvider).value;
-    final avatarUrl = profile?.avatarUrl ??
+    final avatarUrl =
+        profile?.avatarUrl ??
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb';
 
     return Scaffold(

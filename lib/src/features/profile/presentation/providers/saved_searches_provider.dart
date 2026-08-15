@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final savedSearchesProvider =
     AsyncNotifierProvider<SavedSearchesNotifier, List<SavedSearch>>(
-  SavedSearchesNotifier.new,
-);
+      SavedSearchesNotifier.new,
+    );
 
 class SavedSearchesNotifier extends AsyncNotifier<List<SavedSearch>> {
   @override
@@ -61,7 +61,8 @@ class SavedSearchesNotifier extends AsyncNotifier<List<SavedSearch>> {
   Future<void> toggleAlerts(String id, bool current) async {
     await Supabase.instance.client
         .from('saved_searches')
-        .update({'alerts_enabled': !current}).eq('id', id);
+        .update({'alerts_enabled': !current})
+        .eq('id', id);
     await refresh();
   }
 

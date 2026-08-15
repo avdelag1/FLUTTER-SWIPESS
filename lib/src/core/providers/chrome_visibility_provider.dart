@@ -46,4 +46,6 @@ class ChromeVisibilityNotifier extends Notifier<bool> {
 }
 
 final chromeVisibilityProvider =
-    NotifierProvider<ChromeVisibilityNotifier, bool>(ChromeVisibilityNotifier.new);
+    NotifierProvider<ChromeVisibilityNotifier, bool>(
+      ChromeVisibilityNotifier.new,
+    );

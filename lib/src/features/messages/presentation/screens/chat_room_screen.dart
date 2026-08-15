@@ -9,10 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final ChatConversation conversation;
 
-  const ChatRoomScreen({
-    super.key,
-    required this.conversation,
-  });
+  const ChatRoomScreen({super.key, required this.conversation});
 
   @override
   ConsumerState<ChatRoomScreen> createState() => _ChatRoomScreenState();
@@ -39,7 +36,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       );
       _textController.clear();
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
-      
+
       // Scroll to bottom after a delay to allow list to rebuild
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
@@ -52,9 +49,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sending message: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sending message: $e')));
       }
     } finally {
       setState(() {
@@ -72,9 +69,12 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final messagesAsync = ref.watch(conversationMessagesProvider(widget.conversation.id));
+    final messagesAsync = ref.watch(
+      conversationMessagesProvider(widget.conversation.id),
+    );
     final name = widget.conversation.name;
-    final avatarUrl = widget.conversation.avatarUrl ??
+    final avatarUrl =
+        widget.conversation.avatarUrl ??
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
@@ -84,74 +84,109 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
         child: AppBar(
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppTheme.textPrimary, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppTheme.textPrimary,
+              size: 20,
+            ),
             onPressed: () => context.pop(),
           ),
-              title: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundImage: NetworkImage(avatarUrl),
-                    radius: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
+          title: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: NetworkImage(avatarUrl),
+                radius: 20,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: Column(
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary)),
-              error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: AppTheme.textPrimary))),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppTheme.brandPrimary),
+              ),
+              error: (err, stack) => Center(
+                child: Text(
+                  'Error: $err',
+                  style: const TextStyle(color: AppTheme.textPrimary),
+                ),
+              ),
               data: (messages) {
                 if (messages.isEmpty) {
                   return Center(
                     child: Text(
                       'Say hi to $name!',
-                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16),
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 16,
+                      ),
                     ),
                   );
                 }
-                final sortedMessages = List.of(messages)..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                final sortedMessages = List.of(messages)
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
                 return ListView.separated(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
                   reverse: true,
                   itemCount: sortedMessages.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final msg = sortedMessages[index];
                     final isMe = msg.senderId == currentUserId;
 
                     return Align(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isMe
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.75,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           gradient: isMe
                               ? const LinearGradient(
-                                  colors: [AppTheme.brandAccent, AppTheme.brandPrimary],
+                                  colors: [
+                                    AppTheme.brandAccent,
+                                    AppTheme.brandPrimary,
+                                  ],
                                 )
                               : null,
                           color: isMe ? null : AppTheme.dashWell,
                           borderRadius: BorderRadius.circular(20).copyWith(
-                            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(20),
-                            bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(0),
+                            bottomRight: isMe
+                                ? const Radius.circular(0)
+                                : const Radius.circular(20),
+                            bottomLeft: isMe
+                                ? const Radius.circular(20)
+                                : const Radius.circular(0),
                           ),
-                          border: isMe ? null : Border.all(color: AppTheme.dashGlassBorder),
+                          border: isMe
+                              ? null
+                              : Border.all(color: AppTheme.dashGlassBorder),
                         ),
                         child: Text(
                           msg.text,
@@ -177,7 +212,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
             ),
             decoration: const BoxDecoration(
               color: AppTheme.dashElevated,
-              border: Border(top: BorderSide(color: AppTheme.dashGlassBorder, width: 1)),
+              border: Border(
+                top: BorderSide(color: AppTheme.dashGlassBorder, width: 1),
+              ),
             ),
             child: SafeArea(
               top: false,
@@ -190,7 +227,10 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                       decoration: BoxDecoration(
                         color: AppTheme.dashWell,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppTheme.dashGlassBorder, width: 1),
+                        border: Border.all(
+                          color: AppTheme.dashGlassBorder,
+                          width: 1,
+                        ),
                       ),
                       child: Center(
                         child: TextField(
@@ -220,8 +260,21 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                         ),
                       ),
                       child: _isSending
-                          ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
-                          : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                          ? const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ],

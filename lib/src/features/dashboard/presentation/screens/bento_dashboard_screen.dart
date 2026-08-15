@@ -46,7 +46,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
 
   bool _onScroll(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
-      ref.read(chromeVisibilityProvider.notifier).onScroll(
+      ref
+          .read(chromeVisibilityProvider.notifier)
+          .onScroll(
             pixels: notification.metrics.pixels,
             delta: notification.scrollDelta ?? 0,
           );
@@ -61,10 +63,8 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     final searchVisible = ref.watch(chromeVisibilityProvider);
     final canvas = AppTheme.canvasFor(isLight: isLight);
 
-    final leftColumn =
-        _bentoItems.where((item) => item.index.isEven).toList();
-    final rightColumn =
-        _bentoItems.where((item) => item.index.isOdd).toList();
+    final leftColumn = _bentoItems.where((item) => item.index.isEven).toList();
+    final rightColumn = _bentoItems.where((item) => item.index.isOdd).toList();
 
     return Scaffold(
       backgroundColor: canvas,
@@ -86,52 +86,52 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
               parent: AlwaysScrollableScrollPhysics(),
             ),
             children: [
-            _SearchChromeWell(
-              visible: searchVisible,
-              isLight: isLight,
-              location: location,
-              onPickCity: () => _pickCity(context, ref),
-              onPickDates: () => _pickDates(context, ref),
-              onPickGuests: () => _pickGuests(context, ref),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 768),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: QfWellGlow(
+              _SearchChromeWell(
+                visible: searchVisible,
                 isLight: isLight,
-                padding: const EdgeInsets.all(6),
-                borderRadius: BorderRadius.circular(24),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _BentoColumn(
-                        items: leftColumn,
-                        isLight: isLight,
-                        onOpen: (id, title) =>
-                            _openBento(context, ref, id, title),
+                location: location,
+                onPickCity: () => _pickCity(context, ref),
+                onPickDates: () => _pickDates(context, ref),
+                onPickGuests: () => _pickGuests(context, ref),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 768),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: QfWellGlow(
+                  isLight: isLight,
+                  padding: const EdgeInsets.all(6),
+                  borderRadius: BorderRadius.circular(24),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _BentoColumn(
+                          items: leftColumn,
+                          isLight: isLight,
+                          onOpen: (id, title) =>
+                              _openBento(context, ref, id, title),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _BentoColumn(
-                        items: rightColumn,
-                        isLight: isLight,
-                        onOpen: (id, title) =>
-                            _openBento(context, ref, id, title),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _BentoColumn(
+                          items: rightColumn,
+                          isLight: isLight,
+                          onOpen: (id, title) =>
+                              _openBento(context, ref, id, title),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            ListingSpotlightRail(isLight: isLight),
-          ],
+              const SizedBox(height: 18),
+              ListingSpotlightRail(isLight: isLight),
+            ],
           ),
         ),
       ),
@@ -164,11 +164,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         );
         return;
       default:
-        openClientSwipeDeck(
-          context,
-          categoryId: id,
-          categoryTitle: title,
-        );
+        openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
     }
   }
 
@@ -197,12 +193,17 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             shrinkWrap: true,
             children: [
-              Text('WHEN', style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+              Text(
+                'WHEN',
+                style: AppTheme.displayItalic.copyWith(fontSize: 18),
+              ),
               const SizedBox(height: 8),
               for (final option in options)
                 ListTile(
-                  title:
-                      Text(option, style: const TextStyle(color: Colors.white)),
+                  title: Text(
+                    option,
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   onTap: () => Navigator.pop(context, option),
                 ),
             ],
@@ -232,8 +233,10 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('GUESTS',
-                        style: AppTheme.displayItalic.copyWith(fontSize: 18)),
+                    Text(
+                      'GUESTS',
+                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
+                    ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -242,8 +245,11 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onPressed: () {
                             if (guests > 1) setModalState(() => guests -= 1);
                           },
-                          icon: const Icon(Icons.remove_circle_outline,
-                              color: Colors.white, size: 32),
+                          icon: const Icon(
+                            Icons.remove_circle_outline,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -260,8 +266,11 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onPressed: () {
                             if (guests < 16) setModalState(() => guests += 1);
                           },
-                          icon: const Icon(Icons.add_circle_outline,
-                              color: Colors.white, size: 32),
+                          icon: const Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.white,
+                            size: 32,
+                          ),
                         ),
                       ],
                     ),
@@ -466,11 +475,7 @@ class _BentoColumn extends StatelessWidget {
       children: [
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0) const SizedBox(height: 6),
-          _BentoTile(
-            item: items[i],
-            isLight: isLight,
-            onOpen: onOpen,
-          ),
+          _BentoTile(item: items[i], isLight: isLight, onOpen: onOpen),
         ],
       ],
     );
@@ -562,58 +567,58 @@ class _BentoCardState extends State<_BentoCard> {
           child: ClipRRect(
             borderRadius: AppTheme.qfNeoFrameRadius,
             child: Stack(
-            fit: StackFit.expand,
-            children: [
-              QuickFilterMedia(
-                sources: widget.media,
-                enableVideo: widget.enableVideo,
-              ),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.transparent,
-                      Color(0xAA000000),
-                    ],
-                    stops: [0, 0.65, 1],
+              fit: StackFit.expand,
+              children: [
+                QuickFilterMedia(
+                  sources: widget.media,
+                  enableVideo: widget.enableVideo,
+                ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        Color(0xAA000000),
+                      ],
+                      stops: [0, 0.65, 1],
+                    ),
                   ),
                 ),
-              ),
-              Positioned(
-                left: 8,
-                right: 8,
-                bottom: 8,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: AppTheme.displayItalic.copyWith(
-                        fontSize: 14,
-                        letterSpacing: 1.6,
-                        height: 1.1,
+                Positioned(
+                  left: 8,
+                  right: 8,
+                  bottom: 8,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: AppTheme.displayItalic.copyWith(
+                          fontSize: 14,
+                          letterSpacing: 1.6,
+                          height: 1.1,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xCCFFFFFF),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        letterSpacing: 0.4,
-                        height: 1.35,
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.subtitle,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xCCFFFFFF),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          letterSpacing: 0.4,
+                          height: 1.35,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
             ),
           ),
         ),

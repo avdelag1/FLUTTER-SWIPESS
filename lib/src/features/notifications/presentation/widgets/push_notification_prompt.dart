@@ -47,8 +47,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
     await Future<void>.delayed(const Duration(milliseconds: 4500));
     if (!mounted) return;
     // Wait until guided tour is done so prompts don't stack.
-    final tourDone =
-        prefs.getBool('guidedTourCompleted') ?? false;
+    final tourDone = prefs.getBool('guidedTourCompleted') ?? false;
     if (!tourDone) {
       await Future<void>.delayed(const Duration(seconds: 2));
       if (!mounted) return;
@@ -102,7 +101,10 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF0A0A0D),
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: Colors.white.withAlpha(100), width: 1.0),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(100),
+                    width: 1.0,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withAlpha(180),

@@ -34,13 +34,19 @@ void main() {
     ]);
   });
 
-  test('skips a fix that has barely moved inside the throttle window',
-      () async {
-    await service.persist(userId: 'u1', latitude: 20.21, longitude: -87.46);
-    // ~10 m away, seconds later.
-    await service.persist(userId: 'u1', latitude: 20.2101, longitude: -87.4601);
-    expect(repository.writes, hasLength(1));
-  });
+  test(
+    'skips a fix that has barely moved inside the throttle window',
+    () async {
+      await service.persist(userId: 'u1', latitude: 20.21, longitude: -87.46);
+      // ~10 m away, seconds later.
+      await service.persist(
+        userId: 'u1',
+        latitude: 20.2101,
+        longitude: -87.4601,
+      );
+      expect(repository.writes, hasLength(1));
+    },
+  );
 
   test('writes again once the user has actually moved', () async {
     await service.persist(userId: 'u1', latitude: 20.21, longitude: -87.46);
@@ -64,7 +70,11 @@ void main() {
 
   test('a nonsense fix is never written', () async {
     await service.persist(userId: 'u1', latitude: double.nan, longitude: 0);
-    await service.persist(userId: 'u1', latitude: 0, longitude: double.infinity);
+    await service.persist(
+      userId: 'u1',
+      latitude: 0,
+      longitude: double.infinity,
+    );
     expect(repository.writes, isEmpty);
   });
 }
