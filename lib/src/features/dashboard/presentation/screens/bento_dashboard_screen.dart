@@ -71,7 +71,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 72, 16, 16),
                 child: Column(
                   children: [
                     GlowSearchBar(
@@ -177,7 +177,7 @@ class _CategoryChip extends StatelessWidget {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? Colors.black.withAlpha(20) : Colors.white12,
+                color: selected ? Colors.black.withAlpha(20) : spec.color.withOpacity(0.2),
               ),
               child: Icon(
                 spec.icon,
