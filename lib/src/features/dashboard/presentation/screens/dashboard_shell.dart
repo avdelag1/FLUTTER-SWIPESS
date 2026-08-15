@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -64,59 +65,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final profile = ref.watch(currentProfileProvider).value;
 
     // Cap BottomNavigation order (scrollable dock).
-    final bottomNavItems = [
-      _BottomNavItem(
-        id: NavTab.dashboard,
-        icon: Icons.dashboard_rounded,
-        wash: const Color(0xFFFF4D00),
-      ),
-      _BottomNavItem(
-        id: NavTab.likes,
-        icon: Icons.favorite_rounded,
-        wash: const Color(0xFFE4007C),
-      ),
-      _BottomNavItem(
-        id: NavTab.ai,
-        useAiIcon: true,
-        wash: const Color(0xFF8B5CF6),
-      ),
-      _BottomNavItem(
-        id: NavTab.add,
-        icon: Icons.add_rounded,
-        accent: true,
-        wash: const Color(0xFFFF4D00),
-      ),
-      _BottomNavItem(
-        id: NavTab.messages,
-        icon: Icons.chat_bubble_rounded,
-        wash: const Color(0xFF3B82F6),
-      ),
-      _BottomNavItem(
-        id: NavTab.idCard,
-        icon: Icons.badge_rounded,
-        wash: const Color(0xFF7C3AED),
-      ),
-      _BottomNavItem(
-        id: NavTab.seekers,
-        icon: Icons.groups_rounded,
-        wash: const Color(0xFFEB4898),
-      ),
-      _BottomNavItem(
-        id: NavTab.filter,
-        icon: Icons.tune_rounded,
-        wash: const Color(0xFFFF8C42),
-      ),
-      _BottomNavItem(
-        id: NavTab.legal,
-        icon: Icons.gavel_rounded,
-        wash: const Color(0xFF6366F1),
-      ),
-      _BottomNavItem(
-        id: NavTab.events,
-        icon: Icons.local_activity_rounded,
-        wash: const Color(0xFFE4007C),
-      ),
-    ];
 
     final isLight = ref.watch(isLightThemeProvider);
     final chromeVisible = ref.watch(chromeVisibilityProvider);
@@ -145,34 +93,26 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               }
               return false; // let the notification bubble up if needed
             },
-            child: AnimatedPadding(
-              duration: Duration(milliseconds: showChrome ? 360 : 340),
-              curve: const Cubic(0.25, 0.1, 0.25, 1),
-              padding: EdgeInsets.only(
-                top: showHeader ? 96 : 0, // AppTopBar height + safe area approx
-                bottom: showChrome ? 88 : 0, // Dock height + safe area approx
-              ),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Offstage(
+                  offstage: !isDashboard,
+                  child: TickerMode(
+                    enabled: isDashboard,
+                    child: const BentoDashboardScreen(),
+                  ),
+                ),
+                if (_eventsMounted)
                   Offstage(
-                    offstage: !isDashboard,
+                    offstage: !isEvents,
                     child: TickerMode(
-                      enabled: isDashboard,
-                      child: const BentoDashboardScreen(),
+                      enabled: isEvents,
+                      child: const EventsScreen(),
                     ),
                   ),
-                  if (_eventsMounted)
-                    Offstage(
-                      offstage: !isEvents,
-                      child: TickerMode(
-                        enabled: isEvents,
-                        child: const EventsScreen(),
-                      ),
-                    ),
-                  if (!isDashboard && !isEvents) widget.child,
-                ],
-              ),
+                if (!isDashboard && !isEvents) widget.child,
+              ],
             ),
           ),
           // Overlay (not Scaffold.appBar) so nested page Scaffolds cannot
@@ -219,84 +159,33 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 duration: Duration(milliseconds: showChrome ? 360 : 340),
                 curve: const Cubic(0.25, 0.1, 0.25, 1),
                 child: SafeArea(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: Container(
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: const Color(0xCC000000),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: Colors.white.withAlpha(36),
-                        width: 1,
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(
-                        scrollbars: false,
-                        dragDevices: {
-                          PointerDeviceKind.touch,
-                          PointerDeviceKind.mouse,
-                          PointerDeviceKind.trackpad,
-                          PointerDeviceKind.stylus,
-                        },
-                      ),
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        itemCount: bottomNavItems.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 4),
-                        itemBuilder: (context, i) {
-                          final item = bottomNavItems[i];
-                          return _DockButton(
-                            item: item,
-                            wash: item.wash,
-                            selected: dockSelected == item.id,
-                            isLight: isLight,
-                            onTap: () {
-                              AppHaptics.light();
-                              final id = item.id;
-                              if (id == NavTab.filter) {
-                                FilterBottomSheet.show(context);
-                                return;
-                              }
-                              if (id == NavTab.add) {
-                                context.push(AppPaths.ownerProperties);
-                                return;
-                              }
-                              if (id == NavTab.ai) {
-                                if (overlays.showConcierge) {
-                                  ref
-                                      .read(chromeVisibilityProvider
-                                          .notifier)
-                                          .hide();
-                                  return;
-                                }
-                                ref
-                                    .read(overlayModalsProvider.notifier)
-                                    .openConcierge();
-                                return;
-                              }
-                              if (id == NavTab.idCard) {
-                                ref
-                                    .read(overlayModalsProvider.notifier)
-                                    .openVapId();
-                                return;
-                              }
-                              ref.read(navTabProvider.notifier).set(id);
-                              context.go(AppPaths.pathForTab(id));
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
+              child: DashboardDock(
+                items: defaultDashboardNavItems,
+                selectedTab: dockSelected,
+                onTabSelected: (id) {
+                  if (id == NavTab.filter) {
+                    FilterBottomSheet.show(context);
+                    return;
+                  }
+                  if (id == NavTab.add) {
+                    context.push(AppPaths.ownerProperties);
+                    return;
+                  }
+                  if (id == NavTab.ai) {
+                    if (overlays.showConcierge) {
+                      ref.read(chromeVisibilityProvider.notifier).hide();
+                      return;
+                    }
+                    ref.read(overlayModalsProvider.notifier).openConcierge();
+                    return;
+                  }
+                  if (id == NavTab.idCard) {
+                    ref.read(overlayModalsProvider.notifier).openVapId();
+                    return;
+                  }
+                  ref.read(navTabProvider.notifier).set(id);
+                  context.go(AppPaths.pathForTab(id));
+                },
               ),
             ),
           ),
@@ -318,14 +207,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   }
 }
 
-class _BottomNavItem {
-  _BottomNavItem({
-    required this.id,
-    required this.wash,
-    this.icon,
-    this.accent = false,
-    this.useAiIcon = false,
-  });
 
   final NavTab id;
   final Color wash;
@@ -334,139 +215,5 @@ class _BottomNavItem {
   final bool useAiIcon;
 }
 
-class _DockButton extends StatelessWidget {
-  const _DockButton({
-    required this.item,
-    required this.wash,
-    required this.selected,
-    required this.onTap,
-    this.isLight = false,
-  });
-
-  final _BottomNavItem item;
-  final Color wash;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool isLight;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected || item.accent ? Colors.white : wash;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.deferToChild,
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: selected || item.accent ? 34 : 30,
-                height: selected || item.accent ? 34 : 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: selected || item.accent
-                      ? LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            wash,
-                            Color.lerp(wash, const Color(0xFFEB4898), 0.55) ??
-                                wash,
-                          ],
-                        )
-                      : RadialGradient(
-                          colors: [
-                            wash.withAlpha(70),
-                            wash.withAlpha(0),
-                          ],
-                        ),
-                  boxShadow: selected || item.accent
-                      ? [
-                          BoxShadow(
-                            color: wash.withAlpha(120),
-                            blurRadius: 10,
-                          ),
-                        ]
-                      : null,
-                ),
-              ),
-              item.useAiIcon
-                  ? CustomPaint(
-                      painter: _AiRobotPainter(color: color),
-                      size: const Size(18, 18),
-                    )
-                  : Icon(
-                      item.icon,
-                      size: item.accent ? 22 : 20,
-                      color: color,
-                    ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Cap `AIIcon` — robot head for Intel Core dock button.
-class _AiRobotPainter extends CustomPainter {
-  _AiRobotPainter({required this.color});
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final s = size.shortestSide;
-    final ox = (size.width - s) / 2;
-    final oy = (size.height - s) / 2;
-    final r = RRect.fromRectAndRadius(
-      Rect.fromLTWH(ox + s * 0.17, oy + s * 0.33, s * 0.66, s * 0.5),
-      Radius.circular(s * 0.08),
-    );
-    canvas.drawRRect(r, p);
-    canvas.drawLine(
-      Offset(ox + s * 0.08, oy + s * 0.58),
-      Offset(ox + s * 0.17, oy + s * 0.58),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.83, oy + s * 0.58),
-      Offset(ox + s * 0.92, oy + s * 0.58),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.38, oy + s * 0.54),
-      Offset(ox + s * 0.38, oy + s * 0.62),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.62, oy + s * 0.54),
-      Offset(ox + s * 0.62, oy + s * 0.62),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.5, oy + s * 0.33),
-      Offset(ox + s * 0.5, oy + s * 0.17),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.5, oy + s * 0.17),
-      Offset(ox + s * 0.33, oy + s * 0.17),
-      p,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _AiRobotPainter oldDelegate) =>
-      oldDelegate.color != color;
-}

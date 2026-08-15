@@ -4,8 +4,8 @@ import 'dart:math' as math;
 abstract final class MapCameraMath {
   /// Regional frame for a search radius. 10 km → ~9.1.
   static double zoomForRadiusKm(int km) {
-    final z = 12.4 - math.log(math.max(km, 1)) / math.ln2;
-    return z.clamp(7.2, 13.2);
+    final z = 14.0 - math.log(math.max(km, 1)) / math.ln2;
+    return z.clamp(7.2, 15.0);
   }
 
   /// High drone altitude the open glide starts from.
@@ -14,17 +14,17 @@ abstract final class MapCameraMath {
   /// Airplane bank on open, unwinds as we dive in (widget tilt, not tiles).
   static const openBankDegrees = 18.0;
 
-  /// Steep dive pitch at altitude (radians, ~48°).
-  static const openPitch = 0.84;
+  /// Steep dive pitch at altitude (radians, ~65°).
+  static const openPitch = 1.15;
 
-  /// Cruise pitch after the fly-in so the map stays 3D (~32°).
-  static const cruisePitch = 0.56;
+  /// Cruise pitch after the fly-in so the map stays 3D (~55°).
+  static const cruisePitch = 0.98;
 
   /// Perspective strength for the Matrix4 flying view.
-  static const perspective = 0.00118;
+  static const perspective = 0.0018;
 
   /// Scale after perspective so the tilted trapezoid still fills the screen.
-  static const stageScale = 1.16;
+  static const stageScale = 1.45;
 
   static const openGlideMs = 2000;
 

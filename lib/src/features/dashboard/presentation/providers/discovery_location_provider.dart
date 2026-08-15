@@ -9,7 +9,7 @@ class DiscoveryLocation {
     required this.longitude,
     this.guests = 2,
     this.dateLabel = 'Any date',
-    this.radiusKm = 10,
+    this.radiusKm = 5,
   });
 
   final String city;

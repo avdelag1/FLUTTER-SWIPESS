@@ -1,3 +1,5 @@
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -408,18 +410,21 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                         milliseconds: chrome.chromeVisible ? 360 : 340,
                       ),
                       curve: const Cubic(0.25, 0.1, 0.25, 1),
-                      child: AppBottomNav(
-                        activeTab: NavTab.dashboard, // Swipe deck is part of dashboard map flow
-                        onTabSelected: (tab) {
-                          if (tab == NavTab.dashboard) {
+                      child: DashboardDock(
+                        items: defaultDashboardNavItems,
+                        selectedTab: NavTab.dashboard,
+                        onTabSelected: (id) {
+                          if (id == NavTab.dashboard) {
                             _goDashboard();
-                          } else if (tab == NavTab.messages) {
+                          } else if (id == NavTab.messages) {
                             _goMessages();
-                          } else if (tab == NavTab.add) {
+                          } else if (id == NavTab.add) {
                             showCreateListingChooser(context);
+                          } else if (id == NavTab.ai) {
+                            ref.read(overlayModalsProvider.notifier).openConcierge();
                           } else {
                             context.pop();
-                            ref.read(navTabProvider.notifier).set(tab);
+                            ref.read(navTabProvider.notifier).set(id);
                           }
                         },
                       ),

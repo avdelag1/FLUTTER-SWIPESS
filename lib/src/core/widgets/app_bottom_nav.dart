@@ -36,7 +36,7 @@ class AppBottomNav extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _DockIcon(
-                      icon: Icons.space_dashboard_rounded,
+                      icon: Icons.dashboard_rounded,
                       active: activeTab == NavTab.dashboard,
                       onTap: () => onTabSelected(NavTab.dashboard),
                     ),
@@ -44,6 +44,11 @@ class AppBottomNav extends StatelessWidget {
                       icon: Icons.local_fire_department_rounded,
                       active: activeTab == NavTab.likes,
                       onTap: () => onTabSelected(NavTab.likes),
+                    ),
+                    _DockIcon(
+                      icon: Icons.smart_toy_rounded,
+                      active: activeTab == NavTab.ai,
+                      onTap: () => onTabSelected(NavTab.ai),
                     ),
                     _DockIcon(
                       icon: Icons.add_rounded,
@@ -58,12 +63,7 @@ class AppBottomNav extends StatelessWidget {
                       onTap: () => onTabSelected(NavTab.messages),
                     ),
                     _DockIcon(
-                      icon: Icons.celebration_rounded,
-                      active: activeTab == NavTab.events,
-                      onTap: () => onTabSelected(NavTab.events),
-                    ),
-                    _DockIcon(
-                      icon: Icons.person_rounded,
+                      icon: Icons.badge_rounded,
                       active: activeTab == NavTab.idCard,
                       onTap: () => onTabSelected(NavTab.idCard),
                     ),
