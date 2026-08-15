@@ -129,7 +129,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final asyncProfiles = ref.watch(mapProfilesProvider);
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
-    final isLight = ref.watch(visualThemeProvider);
+    final isLight = ref.watch(isLightThemeProvider);
 
     final listingsRaw = asyncListings.value ?? [];
     final profiles = asyncProfiles.value ?? [];
