@@ -54,7 +54,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
     await ref.read(swipeRepositoryProvider).reportListing(
           reporterId: user?.id,
           listingId: widget.listing.id,
-          ownerId: widget.listing.ownerId,
+          ownerId: widget.listing.ownerId ?? '',
           type: _type!,
           details: _details.text.trim(),
         );

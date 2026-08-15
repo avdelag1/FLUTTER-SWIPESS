@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:latlong2/latlong.dart';
@@ -15,7 +16,7 @@ class MapClusterGroup {
 /// Cluster passport pins. Nearby-but-distinct listings stay separate so a
 /// 50 km zoom never collapses a city into a single bubble.
 
-import 'dart:math' as math;
+
 
 List<MapPin> _scatterOverlaps(List<MapPin> raw) {
   final exact = <String, List<MapPin>>{};
