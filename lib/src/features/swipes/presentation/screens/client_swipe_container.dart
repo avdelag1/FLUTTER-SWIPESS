@@ -1,7 +1,4 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -37,7 +34,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ex
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap listing swipe deck — no like/dislike buttons; chrome auto-hides ~5s.
+/// Cap listing swipe deck — chrome auto-hides after seven seconds and the
+/// full-bleed photo grows smoothly into the released space.
 class ClientSwipeContainer extends ConsumerStatefulWidget {
   const ClientSwipeContainer({
     super.key,
@@ -144,6 +142,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final nav = Navigator.of(context, rootNavigator: true);
     if (nav.canPop()) nav.pop();
     context.go(AppPaths.clientDashboard);
+  }
+
+  void _goMessages() {
+    ref.read(navTabProvider.notifier).set(NavTab.messages);
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) nav.pop();
+    context.go(AppPaths.messages);
   }
 
   void _undo() {
@@ -402,8 +407,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                       ),
                       curve: const Cubic(0.25, 0.1, 0.25, 1),
                       child: SafeArea(
-                  child: _SwipeDeckDock(
+                  child: SwipeDeckDock(
                     onDashboard: _goDashboard,
+                    onMessages: _goMessages,
                     onAi: () => showIntelCoreSheet(context),
                     onAdd: () => showCreateListingChooser(context),
                     onTokens: () => showGlassModal(
@@ -432,15 +438,18 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 }
 
-class _SwipeDeckDock extends StatelessWidget {
-  const _SwipeDeckDock({
+class SwipeDeckDock extends StatelessWidget {
+  const SwipeDeckDock({
+    super.key,
     required this.onDashboard,
+    required this.onMessages,
     required this.onAi,
     required this.onAdd,
     required this.onTokens,
   });
 
   final VoidCallback onDashboard;
+  final VoidCallback onMessages;
   final VoidCallback onAi;
   final VoidCallback onAdd;
   final VoidCallback onTokens;
@@ -460,51 +469,41 @@ class _SwipeDeckDock extends StatelessWidget {
             border: Border.all(color: Colors.white.withAlpha(36), width: 1),
           ),
           clipBehavior: Clip.antiAlias,
-          child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(
-              scrollbars: false,
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.trackpad,
-                PointerDeviceKind.stylus,
-              },
-            ),
-            child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DockIcon(
+                semanticLabel: 'Dashboard',
                 icon: Icons.dashboard_rounded,
                 onTap: onDashboard,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'Tokens',
                 icon: Icons.diamond_rounded,
                 onTap: onTokens,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'AI concierge',
                 icon: Icons.smart_toy_rounded,
                 onTap: onAi,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'Create listing',
                 icon: Icons.add_rounded,
                 onTap: onAdd,
                 accent: true,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'Messages',
                 icon: Icons.chat_bubble_rounded,
-                onTap: onAi,
+                onTap: onMessages,
                 idleColor: iconIdle,
               ),
             ],
-          ),
           ),
         ),
       ),
@@ -517,35 +516,41 @@ class _DockIcon extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.idleColor,
+    required this.semanticLabel,
     this.accent = false,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final Color idleColor;
+  final String semanticLabel;
   final bool accent;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: accent ? const Color(0x33FF4D6A) : Colors.transparent,
-          border: accent
-              ? Border.all(color: const Color(0xFFFF4D6A), width: 1.4)
-              : null,
-        ),
-        child: Icon(
-          icon,
-          size: accent ? 22 : 18,
-          color: accent ? const Color(0xFFFF4D6A) : idleColor,
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: () {
+          AppHaptics.light();
+          onTap();
+        },
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: accent ? const Color(0xFFFF4D00) : const Color(0x1FFFFFFF),
+            border: accent
+                ? null
+                : Border.all(color: const Color(0x2EFFFFFF), width: 1),
+          ),
+          child: Icon(
+            icon,
+            size: accent ? 24 : 21,
+            color: accent ? Colors.white : idleColor,
+          ),
         ),
       ),
     );

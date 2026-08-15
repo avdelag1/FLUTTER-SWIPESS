@@ -32,10 +32,17 @@ class DashboardShell extends ConsumerStatefulWidget {
 
 class _DashboardShellState extends ConsumerState<DashboardShell> {
   bool _eventsMounted = false;
+  String? _lastLocation;
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    if (_lastLocation != location) {
+      _lastLocation = location;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
+      });
+    }
     final isDashboard = location == AppPaths.clientDashboard ||
         location == AppPaths.legacyDashboard;
     final isProfile = location == AppPaths.clientProfile;

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 void main() {
   Future<void> pumpListingControl(WidgetTester tester) async {
@@ -47,6 +48,7 @@ void main() {
     expect(find.text('PROPERTIES'), findsOneWidget);
     expect(find.text('MOTORCYCLES'), findsOneWidget);
     expect(find.byKey(const Key('listing-control-spark')), findsOneWidget);
+    expect(find.byType(CapBackButton), findsOneWidget);
   });
 
   testWidgets('spark opens the create-listing multi-option sheet', (tester) async {

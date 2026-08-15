@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -19,6 +20,7 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_sh
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_gps_dot.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_layer_rail.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_perspective_stage.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_preview_card.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_results_rail.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
@@ -47,9 +49,7 @@ class LiveMapScreen extends ConsumerStatefulWidget {
 class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     with SingleTickerProviderStateMixin {
   String _layer = 'all'; // all | listings | people
-  String _category = 'all';
   MapPin? _selected;
-  bool _menuOpen = false;
   bool _radiusOpen = false;
   bool _citiesOpen = false;
   final _mapController = MapController();
@@ -57,15 +57,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   late final AnimationController _fly;
   bool _didFly = false;
   bool _mapReady = false;
-
-  static const _categories = [
-    ('all', 'All', Icons.public_rounded),
-    ('property', 'Homes', Icons.apartment_rounded),
-    ('motorcycle', 'Motos', Icons.two_wheeler_rounded),
-    ('bicycle', 'Bikes', Icons.pedal_bike_rounded),
-    ('yacht', 'Yachts', Icons.sailing_rounded),
-    ('worker', 'Workers', Icons.people_alt_rounded),
-  ];
+  bool _hudVisible = true;
+  Timer? _hudTimer;
 
   static const _radiusOptions = [5, 10, 25, 50, 100, 200];
 
@@ -81,6 +74,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
 
   @override
   void dispose() {
+    _hudTimer?.cancel();
     _fly.stop();
     _fly.dispose();
     _mapController.dispose();
@@ -88,6 +82,22 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
   }
 
   double _zoomForRadius(int km) => MapCameraMath.zoomForRadiusKm(km);
+
+  void _revealHud() {
+    _hudTimer?.cancel();
+    if (!_hudVisible && mounted) setState(() => _hudVisible = true);
+    _hudTimer = Timer(const Duration(seconds: 6), () {
+      if (!mounted) return;
+      if (_citiesOpen || _selected != null) {
+        _revealHud();
+        return;
+      }
+      setState(() {
+        _hudVisible = false;
+        _radiusOpen = false;
+      });
+    });
+  }
 
   void _safeMove(LatLng dest, double zoom) {
     if (!_mapReady) return;
@@ -153,12 +163,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             .map(MapPin.profile),
     ];
     final allPins = [...listingPins, ...profilePins];
-    final filtered = _category == 'all' || _layer == 'people'
-        ? allPins
-        : allPins
-            .where((p) =>
-                !p.isListing || (p.listing?.category ?? '') == _category)
-            .toList();
+    final filtered = allPins;
     final clusters = clusterMapPins(filtered, _zoom);
     final pad = MediaQuery.paddingOf(context);
 
@@ -167,7 +172,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       child: Stack(
         children: [
           Positioned.fill(
-            child: FlutterMap(
+            child: AnimatedBuilder(
+              animation: _fly,
+              builder: (context, map) => MapPerspectiveStage(
+                progress: _didFly ? _fly.value : 0,
+                child: map!,
+              ),
+              child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
@@ -177,11 +188,25 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   backgroundColor: MapBasemap.canvas,
                   onMapReady: () {
                     _mapReady = true;
-                    _safeMove(center, _zoomForRadius(radiusKm));
+                    _didFly = true;
+                    _safeMove(center, MapCameraMath.openAltitudeZoom);
+                    void flyCamera() {
+                      if (!_mapReady) return;
+                      final eased = Curves.easeOutCubic.transform(_fly.value);
+                      final target = _zoomForRadius(radiusKm);
+                      _safeMove(
+                        center,
+                        MapCameraMath.openAltitudeZoom +
+                            (target - MapCameraMath.openAltitudeZoom) * eased,
+                      );
+                      if (_fly.isCompleted) _fly.removeListener(flyCamera);
+                    }
+                    _fly.addListener(flyCamera);
+                    _fly.forward(from: 0);
+                    _revealHud();
                   },
                   onTap: (_, _) => setState(() {
                     _selected = null;
-                    _menuOpen = false;
                     _radiusOpen = false;
                   }),
                   onPositionChanged: (pos, _) {
@@ -204,6 +229,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     tileDimension: 256,
                     maxNativeZoom: 19,
                   ),
+                  if (MapBasemap.labelsUrl case final labels?)
+                    TileLayer(
+                      urlTemplate: labels,
+                      subdomains: MapBasemap.subdomains,
+                      userAgentPackageName: MapBasemap.userAgentPackageName,
+                      tileDimension: 256,
+                      maxNativeZoom: 20,
+                    ),
                   CircleLayer(
                     circles: [
                       CircleMarker(
@@ -252,6 +285,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   ),
                 ],
               ),
+              ),
             ),
           if (isLoading)
             const Positioned(
@@ -266,7 +300,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             ),
 
           SafeArea(
-            child: Padding(
+            child: _MapHudVisibility(
+              visible: _hudVisible,
+              child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,47 +322,12 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     icon: Icons.search_rounded,
                     onTap: () => setState(() {
                       _citiesOpen = !_citiesOpen;
-                      _menuOpen = false;
                       _radiusOpen = false;
                     }),
                   ),
                   const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      MapHudCircle(
-                        icon: _menuOpen
-                            ? Icons.close_rounded
-                            : Icons.menu_rounded,
-                        onTap: () => setState(() {
-                          _menuOpen = !_menuOpen;
-                          if (_menuOpen) _radiusOpen = false;
-                        }),
-                      ),
-                      if (_menuOpen) ...[
-                        const SizedBox(height: 8),
-                        MapHudCircle(
-                          icon: Icons.navigation_rounded,
-                          onTap: () => _locateGps(),
-                          accent: true,
-                        ),
-                        const SizedBox(height: 8),
-                        for (final c in _categories.take(3))
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: MapHudCircle(
-                              icon: c.$3,
-                              selected: _category == c.$1,
-                              onTap: () => setState(() {
-                                _category = c.$1;
-                                _selected = null;
-                              }),
-                            ),
-                          ),
-                      ],
-                    ],
-                  ),
                 ],
+              ),
               ),
             ),
           ),
@@ -335,7 +336,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             top: pad.top + 56,
             left: 0,
             right: 64,
-            child: MapCityChips(
+            child: _MapHudVisibility(
+              visible: _hudVisible,
+              child: MapCityChips(
               activeCity: location.city,
               onSelect: (city) {
                 ref.read(discoveryLocationProvider.notifier).setCoordinates(
@@ -354,13 +357,16 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   _selected = null;
                 });
               },
+              ),
             ),
           ),
 
           Positioned(
             right: 12,
-            top: pad.top + 108,
-            child: MapLayerRail(
+            top: pad.top + 60,
+            child: _MapHudVisibility(
+              visible: _hudVisible,
+              child: MapLayerRail(
               layer: _layer,
               listingCount: listingPins.length,
               peopleCount: profilePins.length,
@@ -368,6 +374,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 _layer = layer;
                 _selected = null;
               }),
+              ),
             ),
           ),
 
@@ -375,7 +382,9 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
             left: 12,
             right: 12,
             bottom: pad.bottom + 12,
-            child: MapBottomDock(
+            child: _MapHudVisibility(
+              visible: _hudVisible,
+              child: MapBottomDock(
               preview: _selected == null
                   ? null
                   : MapPreviewCard(
@@ -394,12 +403,11 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
               hud: MapGpsHud(
                 locateButton: GestureDetector(
                   onTap: () {
-                    AppHaptics.medium();
-                    _safeMove(center, _zoomForRadius(radiusKm));
+                    _locateGps();
                   },
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
@@ -415,7 +423,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     child: const Icon(
                       Icons.navigation_rounded,
                       color: Colors.black,
-                      size: 20,
+                      size: 18,
                     ),
                   ),
                 ),
@@ -430,7 +438,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFF0A0A0D),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(color: Colors.white30),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,7 +475,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     GestureDetector(
                       onTap: () => setState(() {
                         _radiusOpen = !_radiusOpen;
-                        if (_radiusOpen) _menuOpen = false;
                       }),
                       child: Container(
                         height: 40,
@@ -476,8 +483,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           color: const Color(0xF2161B27),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: const Color(0xFFFF4D00),
-                            width: 1.5,
+                            color: Colors.white38,
+                            width: 1,
                           ),
                         ),
                         child: Row(
@@ -485,14 +492,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           children: [
                             const Icon(
                               Icons.location_on_rounded,
-                              color: Color(0xFFFF6B35),
+                              color: Colors.white,
                               size: 16,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '$radiusKm km',
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFFFF4D00),
+                                color: Colors.white,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
                               ),
@@ -517,7 +524,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xF2161B27),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0xFF34D399), width: 1.5),
+                    border: Border.all(color: Colors.white38),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -528,12 +535,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFF34D399),
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF34D399).withAlpha(180),
-                              blurRadius: 8,
-                            ),
-                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -550,8 +551,45 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   ),
                 ),
               ),
+              ),
             ),
           ),
+
+          if (!_hudVisible)
+            Positioned(
+              top: pad.top + 12,
+              right: 12,
+              child: BreathingWidget(
+                minOpacity: 0.55,
+                child: Semantics(
+                  button: true,
+                  label: 'Show map controls',
+                  child: GestureDetector(
+                    onTap: () {
+                      AppHaptics.light();
+                      _revealHud();
+                    },
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xEFFFFFFF),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black45, blurRadius: 8),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: Color(0xFF111318),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           if (_citiesOpen)
             Positioned(
@@ -685,6 +723,31 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
         child: MapProfilePinMarker(
           imageUrl: pin.profile?.avatarUrl,
           selected: selected,
+        ),
+      ),
+    );
+  }
+}
+
+class _MapHudVisibility extends StatelessWidget {
+  const _MapHudVisibility({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+        child: AnimatedScale(
+          scale: visible ? 1 : 0.96,
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeOutCubic,
+          child: child,
         ),
       ),
     );

@@ -111,7 +111,7 @@ void main() {
     expect(find.text('PROFILE PAGE'), findsOneWidget);
   });
 
-  testWidgets('header icon washes are brighter than a faint glow',
+  testWidgets('header icons do not paint radial color glows',
       (tester) async {
     await tester.pumpWidget(
       host(
@@ -124,16 +124,16 @@ void main() {
     );
     await tester.pump();
 
-    final brightWashes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((box) {
+    final radialWashes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((box) {
       final decoration = box.decoration;
       if (decoration is! BoxDecoration) return false;
       final gradient = decoration.gradient;
       if (gradient is! RadialGradient || gradient.colors.isEmpty) {
         return false;
       }
-      return gradient.colors.first.a >= 200 / 255;
+      return true;
     });
-    expect(brightWashes.length, greaterThanOrEqualTo(4));
+    expect(radialWashes, isEmpty);
   });
 
   testWidgets('header HUD buttons are thick nexus 48px controls', (tester) async {
