@@ -113,48 +113,15 @@ class AppTheme {
   /// Smooth floating quick-filter card — no white ink frame.
   static final BorderRadius qfNeoFrameRadius = BorderRadius.circular(22);
 
-  static Color qfGlowFor(String id) {
-    switch (id) {
-      case 'property':
-        return const Color(0xFFFF8C42);
-      case 'pros':
-        return const Color(0xFFA78BFA);
-      case 'motorcycle':
-        return const Color(0xFFFF4D6A);
-      case 'bicycle':
-        return const Color(0xFF4ADE80);
-      case 'buyers':
-        return const Color(0xFF60A5FA);
-      case 'renters':
-        return const Color(0xFFFBBF24);
-      case 'leads':
-        return const Color(0xFF22D3EE);
-      case 'events':
-        return const Color(0xFFE4007C);
-      default:
-        return brandPrimary;
-    }
-  }
-
-  static BoxDecoration qfNeoFrame({
-    required bool isLight,
-    Color? glow,
-  }) {
-    final tint = glow ?? brandPrimary;
+  static BoxDecoration qfNeoFrame({required bool isLight}) {
     return BoxDecoration(
       color: elevatedFor(isLight: isLight),
       borderRadius: qfNeoFrameRadius,
       boxShadow: [
         BoxShadow(
-          color: tint.withAlpha(isLight ? 70 : 110),
-          blurRadius: 28,
-          spreadRadius: -2,
-          offset: const Offset(0, 14),
-        ),
-        BoxShadow(
-          color: Colors.black.withAlpha(isLight ? 28 : 120),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
+          color: Colors.black.withAlpha(isLight ? 24 : 105),
+          blurRadius: 14,
+          offset: const Offset(0, 6),
         ),
       ],
     );

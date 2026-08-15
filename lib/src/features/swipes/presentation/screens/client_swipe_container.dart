@@ -1,7 +1,4 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -461,22 +458,8 @@ class _SwipeDeckDock extends StatelessWidget {
             border: Border.all(color: Colors.white.withAlpha(36), width: 1),
           ),
           clipBehavior: Clip.antiAlias,
-          child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(
-              scrollbars: false,
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.trackpad,
-                PointerDeviceKind.stylus,
-              },
-            ),
-            child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DockIcon(
                 icon: Icons.dashboard_rounded,
@@ -505,7 +488,6 @@ class _SwipeDeckDock extends StatelessWidget {
                 idleColor: iconIdle,
               ),
             ],
-          ),
           ),
         ),
       ),
@@ -538,10 +520,10 @@ class _DockIcon extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: accent ? const Color(0x33FF4D6A) : Colors.transparent,
+          color: accent ? const Color(0xFFFF4D00) : const Color(0x1FFFFFFF),
           border: accent
-              ? Border.all(color: const Color(0xFFFF4D6A), width: 1.4)
-              : null,
+              ? null
+              : Border.all(color: const Color(0x2EFFFFFF), width: 1),
         ),
         child: Icon(
           icon,

@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
@@ -96,7 +97,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final muted = MatteSurface.muted(context);
 
     return NeoNaiveScaffold(
-      body: async.when(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: async.when(
             loading: () => Center(
               child: CircularProgressIndicator(color: ink, strokeWidth: 2),
             ),
@@ -129,7 +133,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 },
                 child: ListView(
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(20, top + 80, 20, 140),
+                padding: EdgeInsets.fromLTRB(20, top + 132, 20, 140),
                 children: [
                   // Identity core
                   Center(
@@ -708,6 +712,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               );
             },
           ),
+          ),
+          Positioned(
+            top: top + 76,
+            left: 16,
+            child: const CapBackButton(),
+          ),
+        ],
+      ),
     );
   }
 

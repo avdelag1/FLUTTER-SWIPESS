@@ -81,25 +81,20 @@ class _LayerOrb extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: selected
-                    ? colors
-                    : [
-                        const Color(0xF2161B27),
-                        const Color(0xF210141C),
-                      ],
-              ),
+              color: selected ? colors.first : const Color(0xEFFFFFFF),
               border: Border.all(
-                color: selected ? Colors.white : colors.first,
-                width: selected ? 2 : 1.4,
+                color: Colors.white,
+                width: 1,
               ),
               boxShadow: const [
                 BoxShadow(color: Colors.black54, blurRadius: 8),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(
+              icon,
+              color: selected ? Colors.white : const Color(0xFF111318),
+              size: 21,
+            ),
           ),
           if (badge > 0)
             Positioned(
@@ -130,7 +125,7 @@ class _LayerOrb extends StatelessWidget {
   }
 }
 
-/// Circular HUD control with a colored ring so it stays readable on satellite.
+/// Neutral circular HUD control that stays readable on satellite imagery.
 class MapHudCircle extends StatelessWidget {
   const MapHudCircle({
     super.key,

@@ -103,7 +103,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     showCreateListingChooser(context);
                   },
                   child: _WashIcon(
-                    wash: addWash,
                     child: const Icon(
                       Icons.add_rounded,
                       size: 22,
@@ -127,7 +126,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     );
                   },
                   child: _WashIcon(
-                    wash: tokenWash,
                     badge: tokens > 0,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -161,7 +159,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
                   child: _WashIcon(
-                    wash: mapWash,
                     child: const Icon(
                       Icons.public_rounded,
                       size: 20,
@@ -178,7 +175,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ref.read(visualThemeProvider.notifier).toggle();
                   },
                   child: _WashIcon(
-                    wash: themeWash,
                     child: Icon(
                       isLight
                           ? Icons.light_mode_rounded
@@ -203,7 +199,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     clipBehavior: Clip.none,
                     children: [
                       _WashIcon(
-                        wash: bellWash,
                         child: const Icon(
                           Icons.notifications_rounded,
                           size: 20,
@@ -346,12 +341,10 @@ class _HudButton extends StatelessWidget {
 class _WashIcon extends StatelessWidget {
   const _WashIcon({
     required this.child,
-    required this.wash,
     this.badge = false,
   });
 
   final Widget child;
-  final Color wash;
   final bool badge;
 
   @override
@@ -360,18 +353,6 @@ class _WashIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                wash.withAlpha(220),
-                wash.withAlpha(0),
-              ],
-            ),
-          ),
-          child: const SizedBox(width: 28, height: 28),
-        ),
         child,
         if (badge)
           Positioned(
