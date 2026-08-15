@@ -156,7 +156,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
-                SizedBox(width: chromeGap),
+              ),
+              SizedBox(width: chromeGap),
                 _HudButton(
                   fill: pillFill,
                   border: pillBorder,
