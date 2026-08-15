@@ -10,6 +10,7 @@ grep -Fq 'VITE_MAPBOX_TOKEN' "$build_script"
 grep -Fq 'add_public_define GOOGLE_SERVER_CLIENT_ID' "$build_script"
 grep -Fq 'flutter build "${build_args[@]}"' "$build_script"
 grep -Fq -- '--no-wasm-dry-run' "$build_script"
+grep -Fq 'flutter analyze --no-pub' "$build_script"
 
 if grep -Eq 'pk\.[A-Za-z0-9._-]{20,}|ghp_[A-Za-z0-9]{20,}' \
   "$build_script" lib/src/core/config/app_config.dart; then

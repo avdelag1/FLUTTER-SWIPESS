@@ -34,6 +34,8 @@ add_public_define MAPBOX_ACCESS_TOKEN
 add_public_define GOOGLE_SERVER_CLIENT_ID
 add_public_define GOOGLE_IOS_CLIENT_ID
 
+# Fail on Dart syntax/type errors before spending minutes compiling dart2js.
+flutter analyze --no-pub
 flutter build "${build_args[@]}"
 
 # Flutter may skip dotfolders. Host Apple / Android association files
