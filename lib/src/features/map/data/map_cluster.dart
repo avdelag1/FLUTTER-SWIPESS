@@ -30,11 +30,14 @@ List<MapPin> _scatterOverlaps(List<MapPin> raw) {
     if (group.length == 1) {
       scattered.add(group.first);
     } else {
-      final radius = 0.00015 + (0.00005 * group.length); 
+      final baseRadius = 0.002; // ~200 meters
       for (var i = 0; i < group.length; i++) {
-        final angle = (2 * math.pi / group.length) * i;
-        final dLat = radius * math.cos(angle);
-        final dLng = radius * math.sin(angle);
+        final rand = math.Random(group[i].hashCode);
+        final r = baseRadius + (rand.nextDouble() * 0.008); // up to ~1km
+        final angle = rand.nextDouble() * 2 * math.pi;
+        
+        final dLat = r * math.cos(angle);
+        final dLng = r * math.sin(angle);
         scattered.add(MapPin.scattered(group[i], group[i].lat + dLat, group[i].lng + dLng));
       }
     }
