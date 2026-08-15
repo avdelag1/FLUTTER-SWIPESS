@@ -4,8 +4,9 @@ import 'dart:math' as math;
 abstract final class MapCameraMath {
   /// Regional frame for a search radius.
   static double zoomForRadiusKm(int km) {
-    final z = 14.0 - math.log(math.max(km, 1)) / math.ln2;
-    return z.clamp(7.2, 15.0);
+    // Increased base zoom to zoom in much closer to the user!
+    final z = 16.0 - math.log(math.max(km, 1)) / math.ln2;
+    return z.clamp(9.0, 18.0);
   }
 
   /// Initial zoom level when the map opens (start high to see fly-in).
@@ -13,23 +14,22 @@ abstract final class MapCameraMath {
   static const globeAltitudeZoom = 4.0;
   
   /// Fly-in duration needs to be long enough to see the zoom!
-  static const flyInDurationMs = 2400;
+  static const flyInDurationMs = 3000;
 
   /// Airplane bank (tilt side-to-side)
   static const openBankDegrees = 12.0;
 
-  /// Pitch in radians.
-  /// Used in MapPerspectiveStage.
-  static const openPitch = 0.85;
-  static const cruisePitch = 0.65;
+  /// Pitch in radians. Make this extremely steep for a true "fly" horizon view!
+  static const openPitch = 1.25;
+  static const cruisePitch = 1.05;
 
-  /// Perspective factor.
-  static const perspective = 0.001;
+  /// Perspective factor. 
+  static const perspective = 0.0008;
 
-  /// Scale after perspective to prevent clipping black void.
-  static const stageScale = 1.35;
+  /// Scale after perspective to prevent clipping black void. Increase since pitch is steep.
+  static const stageScale = 1.8;
 
-  static const openGlideMs = 2400;
+  static const openGlideMs = 3000;
 
   static double clusterCellDegrees(double zoom) {
     final degPerPx = 360.0 / (256.0 * math.pow(2, zoom.clamp(3, 18)));
