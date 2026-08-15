@@ -29,7 +29,7 @@ class MapPerspectiveStage extends StatelessWidget {
         filterQuality: FilterQuality.medium,
         transform: Matrix4.identity()
           ..setEntry(3, 2, MapCameraMath.perspective)
-          ..rotateX(pitch)
+          ..rotateX(-pitch)
           ..rotateZ(bank)
           ..scaleByDouble(
             MapCameraMath.stageScale,

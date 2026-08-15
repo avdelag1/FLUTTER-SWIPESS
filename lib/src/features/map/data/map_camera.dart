@@ -8,19 +8,20 @@ abstract final class MapCameraMath {
     return z.clamp(7.2, 15.0);
   }
 
-  /// Initial zoom level when the map opens (start very high to see fly-in).
+  /// Initial zoom level when the map opens (start high to see fly-in).
   static const openAltitudeZoom = 4.0;
   static const globeAltitudeZoom = 4.0;
   
   /// Fly-in duration needs to be long enough to see the zoom!
-  static const flyInDurationMs = 2000;
+  static const flyInDurationMs = 2400;
 
-  /// Airplane bank
+  /// Airplane bank (tilt side-to-side)
   static const openBankDegrees = 12.0;
 
-  /// Pitch in radians. 0.75 is ~43 degrees. Perfect angled flying view.
-  static const openPitch = 0.9;
-  static const cruisePitch = 0.75;
+  /// Pitch in radians.
+  /// Used in MapPerspectiveStage.
+  static const openPitch = 0.85;
+  static const cruisePitch = 0.65;
 
   /// Perspective factor.
   static const perspective = 0.001;
@@ -28,7 +29,7 @@ abstract final class MapCameraMath {
   /// Scale after perspective to prevent clipping black void.
   static const stageScale = 1.35;
 
-  static const openGlideMs = 2000;
+  static const openGlideMs = 2400;
 
   static double clusterCellDegrees(double zoom) {
     final degPerPx = 360.0 / (256.0 * math.pow(2, zoom.clamp(3, 18)));
