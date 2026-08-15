@@ -42,7 +42,7 @@ class PremiumLikedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
         boxShadow: const [
           BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 12)),
         ],
@@ -88,7 +88,7 @@ class PremiumLikedCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
                     ),
                     child: Text(
                       category.toUpperCase(),
@@ -115,7 +115,7 @@ class PremiumLikedCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.black.withAlpha(102),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
                       ),
                       child: const Icon(
                         Icons.delete_outline_rounded,
@@ -352,7 +352,7 @@ class _SpecChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withAlpha(15), width: 1.0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

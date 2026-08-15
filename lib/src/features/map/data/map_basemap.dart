@@ -36,6 +36,6 @@ abstract final class MapBasemap {
   static const listingDeep = Color(0xFFE4007C);
   static const people = Color(0xFFEC4899);
   static const peopleDeep = Color(0xFFBE185D);
-  static const radiusFill = Color(0x10FFFFFF);
-  static const radiusStroke = Color(0x33FFFFFF);
+  static const radiusFill = Color(0x203B82F6);
+  static const radiusStroke = Color(0xFF3B82F6);
 }
