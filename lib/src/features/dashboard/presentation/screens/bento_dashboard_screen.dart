@@ -23,7 +23,12 @@ class _ChipSpec {
 }
 
 const _chips = [
-  _ChipSpec('property', 'Properties', Color(0xFFFF4D4D), Icons.apartment_rounded),
+  _ChipSpec(
+    'property',
+    'Properties',
+    Color(0xFFFF4D4D),
+    Icons.apartment_rounded,
+  ),
   _ChipSpec('events', 'Events', Color(0xFF3B82F6), Icons.celebration_rounded),
   _ChipSpec('worker', 'Pros', Color(0xFFEAB308), Icons.auto_awesome),
 ];
@@ -32,7 +37,8 @@ class BentoDashboardScreen extends ConsumerStatefulWidget {
   const BentoDashboardScreen({super.key});
 
   @override
-  ConsumerState<BentoDashboardScreen> createState() => _BentoDashboardScreenState();
+  ConsumerState<BentoDashboardScreen> createState() =>
+      _BentoDashboardScreenState();
 }
 
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
@@ -49,7 +55,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
-    
+
     // Split into left and right columns
     final leftItems = _bentoItems.where((i) => i.index.isEven).toList();
     final rightItems = _bentoItems.where((i) => i.index.isOdd).toList();
@@ -59,14 +65,18 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       child: SafeArea(
         bottom: false,
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
                 child: Column(
                   children: [
-                    GlowSearchBar(onTap: () => _openCategory('property', 'PROPERTIES')),
+                    GlowSearchBar(
+                      onTap: () => _openCategory('property', 'PROPERTIES'),
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -95,7 +105,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
               sliver: SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isLight ? const Color(0xFFE8E8EE) : const Color(0xFF101014),
+                    color: isLight
+                        ? const Color(0xFFE8E8EE)
+                        : const Color(0xFF101014),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   padding: const EdgeInsets.all(8),
@@ -238,9 +250,7 @@ class _BentoTile extends StatelessWidget {
           decoration: AppTheme.qfNeoFrame(isLight: isLight),
           child: ClipRRect(
             borderRadius: AppTheme.qfNeoFrameRadius,
-            child: EventsTeaserCard(
-              onTap: () => onOpen(item.id, item.title),
-            ),
+            child: EventsTeaserCard(onTap: () => onOpen(item.id, item.title)),
           ),
         ),
       );
