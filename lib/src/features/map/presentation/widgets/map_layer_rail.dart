@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap right-side layer buttons with colorful fills + count badges.
+/// High-contrast layer controls without neon bloom around their frames.
 class MapLayerRail extends StatelessWidget {
   const MapLayerRail({
     super.key,
@@ -77,40 +77,32 @@ class _LayerOrb extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: selected
-                    ? colors
-                    : [
-                        const Color(0xF2161B27),
-                        const Color(0xF210141C),
-                      ],
-              ),
+              color: selected ? colors.first : const Color(0xEFFFFFFF),
               border: Border.all(
-                color: selected ? Colors.white : colors.first,
-                width: selected ? 2 : 1.4,
+                color: Colors.white,
+                width: 1,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.first.withAlpha(selected ? 140 : 70),
-                  blurRadius: 12,
-                ),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 8),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(
+              icon,
+              color: selected ? Colors.white : const Color(0xFF111318),
+              size: 18,
+            ),
           ),
           if (badge > 0)
             Positioned(
               right: -4,
               top: -4,
               child: Container(
-                constraints: const BoxConstraints(minWidth: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
                   color: colors.first,
                   borderRadius: BorderRadius.circular(999),
@@ -122,7 +114,7 @@ class _LayerOrb extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 10,
+                    fontSize: 9,
                   ),
                 ),
               ),
@@ -133,7 +125,7 @@ class _LayerOrb extends StatelessWidget {
   }
 }
 
-/// Circular HUD control with a colored ring so it stays readable on satellite.
+/// Neutral circular HUD control that stays readable on satellite imagery.
 class MapHudCircle extends StatelessWidget {
   const MapHudCircle({
     super.key,
@@ -153,8 +145,8 @@ class MapHudCircle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: (selected || accent) ? Colors.white : const Color(0xFF0A0A0D),
@@ -169,7 +161,11 @@ class MapHudCircle extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(icon, color: (selected || accent) ? Colors.black : Colors.white, size: 18),
+        child: Icon(
+          icon,
+          color: (selected || accent) ? Colors.black : Colors.white,
+          size: 16,
+        ),
       ),
     );
   }

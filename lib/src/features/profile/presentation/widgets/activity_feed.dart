@@ -12,9 +12,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `ActivityFeed` — top 5 match/message/like cards on profile.
 class ActivityFeed extends ConsumerWidget {
-  ActivityFeed({super.key});
+  const ActivityFeed({super.key});
 
-  static _relevant = {'match', 'message', 'like', 'super_like'};
+  static const _relevant = {'match', 'message', 'like', 'super_like'};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

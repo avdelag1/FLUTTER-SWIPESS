@@ -29,9 +29,30 @@ class ChromeSummonZones extends StatelessWidget {
           height: top + 56,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
+            onVerticalDragEnd: (details) {
+              if ((details.primaryVelocity ?? 0) > 120) {
+                AppHaptics.light();
+                onSummon();
+              }
+            },
             onTap: () {
               AppHaptics.light();
               onSummon();
+            },
+          ),
+        ),
+        Positioned(
+          top: top + 56,
+          bottom: bottom + 78,
+          left: MediaQuery.sizeOf(context).width * 0.24,
+          right: MediaQuery.sizeOf(context).width * 0.24,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onVerticalDragEnd: (details) {
+              if ((details.primaryVelocity ?? 0) > 120) {
+                AppHaptics.light();
+                onSummon();
+              }
             },
           ),
         ),
