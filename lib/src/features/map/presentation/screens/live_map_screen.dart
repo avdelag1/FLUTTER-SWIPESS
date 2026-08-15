@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
-import 'package:flutter_swipes/src/core/theme/visual_theme_provider.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
 import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
