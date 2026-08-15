@@ -208,12 +208,3 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 }
 
 
-  final NavTab id;
-  final Color wash;
-  final IconData? icon;
-  final bool accent;
-  final bool useAiIcon;
-}
-
-
-/// Cap `AIIcon` — robot head for Intel Core dock button.

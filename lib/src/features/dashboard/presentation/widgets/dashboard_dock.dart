@@ -29,7 +29,7 @@ class DashboardDock extends StatelessWidget {
   });
 
   final List<BottomNavItem> items;
-  final NavTab selectedTab;
+  final NavTab? selectedTab;
   final ValueChanged<NavTab> onTabSelected;
 
   @override
