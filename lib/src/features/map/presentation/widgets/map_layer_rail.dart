@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap right-side layer buttons with colorful fills + count badges.
+/// High-contrast layer controls without neon bloom around their frames.
 class MapLayerRail extends StatelessWidget {
   const MapLayerRail({
     super.key,
@@ -95,11 +95,8 @@ class _LayerOrb extends StatelessWidget {
                 color: selected ? Colors.white : colors.first,
                 width: selected ? 2 : 1.4,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.first.withAlpha(selected ? 140 : 70),
-                  blurRadius: 12,
-                ),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 8),
               ],
             ),
             child: Icon(icon, color: Colors.white, size: 20),
