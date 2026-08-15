@@ -136,11 +136,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.stars_rounded, // Changed from diamond to ensure rendering
+                          Icons.monetization_on, // Fixed Web Canvas rendering issue
                           size: 20,
-                          color: Color(
-                            0xFFFFD54F,
-                          ), // Amber to be highly visible
+                          color: Color(0xFFFFC107), // Bright Gold/Amber
                         ),
                         const SizedBox(width: 5),
                         Text(
