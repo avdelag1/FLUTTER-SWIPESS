@@ -218,10 +218,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           const SizedBox(height: 16),
 
                           if (_isLogin)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     SizedBox(
                                       width: 24,
