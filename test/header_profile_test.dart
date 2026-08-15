@@ -111,7 +111,7 @@ void main() {
     expect(find.text('PROFILE PAGE'), findsOneWidget);
   });
 
-  testWidgets('header icon washes are brighter than a faint glow',
+  testWidgets('header icons do not paint radial color glows',
       (tester) async {
     await tester.pumpWidget(
       host(
@@ -124,16 +124,55 @@ void main() {
     );
     await tester.pump();
 
-    final brightWashes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((box) {
+    final radialWashes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((box) {
       final decoration = box.decoration;
       if (decoration is! BoxDecoration) return false;
       final gradient = decoration.gradient;
       if (gradient is! RadialGradient || gradient.colors.isEmpty) {
         return false;
       }
-      return gradient.colors.first.a >= 200 / 255;
+      return true;
     });
-    expect(brightWashes.length, greaterThanOrEqualTo(4));
+    expect(radialWashes, isEmpty);
+  });
+
+  testWidgets('create and token controls remain explicit and readable',
+      (tester) async {
+    await tester.pumpWidget(
+      host(
+        child: const MaterialApp(
+          home: Scaffold(
+            body: AppTopBar(firstName: 'Maya'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('header-create')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('header-create')),
+        matching: find.byIcon(Icons.auto_awesome_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('header-create')),
+        matching: find.byIcon(Icons.add_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('header-tokens')),
+        matching: find.byIcon(Icons.diamond_rounded),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('4'), findsOneWidget);
   });
 
   testWidgets('header HUD buttons are thick nexus 48px controls', (tester) async {
@@ -151,5 +190,32 @@ void main() {
     final profile = tester.getSize(find.byKey(const ValueKey('header-profile')));
     expect(profile.height, 42);
     expect(profile.width, 42);
+  });
+
+  testWidgets('all header controls fit a compact phone without overflow',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      host(
+        child: const MaterialApp(
+          home: Scaffold(
+            body: AppTopBar(firstName: 'Maya'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-create')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
+    expect(find.byIcon(Icons.public_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.dark_mode_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.notifications_rounded), findsOneWidget);
   });
 }

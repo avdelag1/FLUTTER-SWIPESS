@@ -43,7 +43,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
   static const _hudSize = 42.0;
 
-  void _openProfile(BuildContext context) { AppHaptics.medium();
+  void _openProfile(BuildContext context) {
     AppHaptics.medium();
     if (onProfileTap != null) {
       onProfileTap!();
@@ -68,8 +68,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
-    final pillFill = isLight ? Colors.white.withAlpha(50) : Colors.black.withAlpha(150);
+    final pillFill =
+        isLight ? Colors.white.withAlpha(50) : Colors.black.withAlpha(150);
     final pillBorder = ink.withAlpha(90);
+    final chromeGap = MediaQuery.sizeOf(context).width < 360 ? 4.0 : 8.0;
 
     return Material(
       type: MaterialType.transparency,
@@ -94,20 +96,32 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   semanticLabel: 'Open profile, $_label',
                   onTap: () => _openProfile(context),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-create'),
+                  semanticLabel: 'Create a listing',
                   fill: pillFill,
                   border: pillBorder,
                   onTap: () {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
                   },
-                  child: _WashIcon(
-                    wash: addWash,
-                    child: const Icon(
-                      Icons.add_rounded,
-                      size: 22,
-                      color: addWash,
+                  child: const _WashIcon(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 17,
+                          color: addWash,
+                        ),
+                        SizedBox(width: 1),
+                        Icon(
+                          Icons.add_rounded,
+                          size: 15,
+                          color: Colors.white,
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -116,9 +130,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             Row(
               children: [
                 _HudButton(
+                  key: const ValueKey('header-tokens'),
+                  semanticLabel: 'Open tokens, balance $tokens',
                   fill: pillFill,
                   border: pillBorder,
-                  wide: tokens > 0,
+                  wide: true,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -126,33 +142,35 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       builder: (_) => const TokensModal(),
                     );
                   },
-                  child: _WashIcon(
-                    wash: tokenWash,
-                    badge: tokens > 0,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.diamond_rounded,
-                          size: 20,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 25,
+                        height: 25,
+                        decoration: const BoxDecoration(
                           color: tokenWash,
+                          shape: BoxShape.circle,
                         ),
-                        if (tokens > 0) ...[
-                          const SizedBox(width: 5),
-                          Text(
-                            '$tokens',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: tokenWash,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                        child: const Icon(
+                          Icons.diamond_rounded,
+                          size: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '$tokens',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: chromeGap),
                 _HudButton(
                   fill: pillFill,
                   border: pillBorder,
@@ -161,7 +179,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
                   child: _WashIcon(
-                    wash: mapWash,
                     child: const Icon(
                       Icons.public_rounded,
                       size: 20,
@@ -169,7 +186,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: chromeGap),
                 _HudButton(
                   fill: pillFill,
                   border: pillBorder,
@@ -178,7 +195,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ref.read(visualThemeProvider.notifier).toggle();
                   },
                   child: _WashIcon(
-                    wash: themeWash,
                     child: Icon(
                       isLight
                           ? Icons.light_mode_rounded
@@ -188,7 +204,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: chromeGap),
                 _HudButton(
                   fill: pillFill,
                   border: pillBorder,
@@ -203,7 +219,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     clipBehavior: Clip.none,
                     children: [
                       _WashIcon(
-                        wash: bellWash,
                         child: const Icon(
                           Icons.notifications_rounded,
                           size: 20,
@@ -294,11 +309,13 @@ class _ProfileAvatarButton extends StatelessWidget {
 
 class _HudButton extends StatelessWidget {
   const _HudButton({
+    super.key,
     required this.child,
     required this.onTap,
     required this.fill,
     required this.border,
     this.wide = false,
+    this.semanticLabel,
   });
 
   final Widget child;
@@ -306,11 +323,13 @@ class _HudButton extends StatelessWidget {
   final Color fill;
   final Color border;
   final bool wide;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
+      label: semanticLabel,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Material(
@@ -346,12 +365,10 @@ class _HudButton extends StatelessWidget {
 class _WashIcon extends StatelessWidget {
   const _WashIcon({
     required this.child,
-    required this.wash,
     this.badge = false,
   });
 
   final Widget child;
-  final Color wash;
   final bool badge;
 
   @override
@@ -360,18 +377,6 @@ class _WashIcon extends StatelessWidget {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                wash.withAlpha(220),
-                wash.withAlpha(0),
-              ],
-            ),
-          ),
-          child: const SizedBox(width: 28, height: 28),
-        ),
         child,
         if (badge)
           Positioned(

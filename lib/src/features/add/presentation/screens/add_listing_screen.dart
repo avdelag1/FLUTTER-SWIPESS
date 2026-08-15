@@ -133,12 +133,14 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 56, 20, 12),
+            padding: EdgeInsets.fromLTRB(20, top + 12, 20, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
+                    const CapBackButton(),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +165,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                         ],
                       ),
                     ),
-                    const CapBackButton(),
                   ],
                 ),
                 const SizedBox(height: 14),
