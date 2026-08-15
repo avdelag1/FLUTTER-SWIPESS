@@ -43,6 +43,9 @@ class DashboardDock extends StatelessWidget {
             color: const Color(0xCC000000),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: Colors.white.withAlpha(36), width: 1),
+            boxShadow: const [
+              BoxShadow(color: Color(0x26FF4D6A), blurRadius: 20),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: ScrollConfiguration(

@@ -1,457 +1,193 @@
 import 'package:flutter/material.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
-import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
-import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/ai_search_bar.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/listing_spotlight_rail.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/qf_well_glow.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `BentoCategoryDashboard` — dash-well search block + two-column bento.
+class _ChipSpec {
+  const _ChipSpec(this.id, this.label, this.color, this.icon);
+  final String id;
+  final String label;
+  final Color color;
+  final IconData icon;
+}
+
+const _chips = [
+  _ChipSpec('property', 'Properties', Color(0xFFFF4D4D), Icons.apartment_rounded),
+  _ChipSpec('events', 'Events', Color(0xFF3B82F6), Icons.celebration_rounded),
+  _ChipSpec('worker', 'Pros', Color(0xFFEAB308), Icons.auto_awesome),
+];
+
 class BentoDashboardScreen extends ConsumerStatefulWidget {
   const BentoDashboardScreen({super.key});
 
   @override
-  ConsumerState<BentoDashboardScreen> createState() =>
-      _BentoDashboardScreenState();
+  ConsumerState<BentoDashboardScreen> createState() => _BentoDashboardScreenState();
 }
 
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
-  final _scroll = ScrollController();
+  int _chipIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chromeVisibilityProvider.notifier).reset();
-    });
-  }
-
-  @override
-  void dispose() {
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  bool _onScroll(ScrollNotification notification) {
-    if (notification is ScrollUpdateNotification) {
-      ref
-          .read(chromeVisibilityProvider.notifier)
-          .onScroll(
-            pixels: notification.metrics.pixels,
-            delta: notification.scrollDelta ?? 0,
-          );
+  void _openCategory(String id, String title) {
+    if (id == 'events') {
+      context.go(AppPaths.exploreEvents);
+      return;
     }
-    return false;
+    openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
   }
 
   @override
   Widget build(BuildContext context) {
-    final location = ref.watch(discoveryLocationProvider);
     final isLight = ref.watch(isLightThemeProvider);
-    final searchVisible = ref.watch(chromeVisibilityProvider);
-    final canvas = AppTheme.canvasFor(isLight: isLight);
+    
+    // Split into left and right columns
+    final leftItems = _bentoItems.where((i) => i.index.isEven).toList();
+    final rightItems = _bentoItems.where((i) => i.index.isOdd).toList();
 
-    final leftColumn = _bentoItems.where((item) => item.index.isEven).toList();
-    final rightColumn = _bentoItems.where((item) => item.index.isOdd).toList();
-
-    return Scaffold(
-      backgroundColor: canvas,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _onScroll,
-        child: LiquidPullToRefresh(
-          onRefresh: () async {
-            await AppHaptics.success();
-            await Future.delayed(const Duration(milliseconds: 1200));
-          },
-          color: const Color(0xFFFF4D00),
-          backgroundColor: Colors.white,
-          springAnimationDurationInMilliseconds: 400,
-          showChildOpacityTransition: false,
-          child: ListView(
-            controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(12, 72, 12, 120),
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            children: [
-              _SearchChromeWell(
-                visible: searchVisible,
-                isLight: isLight,
-                location: location,
-                onPickCity: () => _pickCity(context, ref),
-                onPickDates: () => _pickDates(context, ref),
-                onPickGuests: () => _pickGuests(context, ref),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                width: double.infinity,
-                constraints: const BoxConstraints(maxWidth: 768),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+    return Container(
+      color: AppTheme.dashBg,
+      child: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                child: Column(
+                  children: [
+                    GlowSearchBar(onTap: () => _openCategory('property', 'PROPERTIES')),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        for (var i = 0; i < _chips.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          Expanded(
+                            child: _CategoryChip(
+                              spec: _chips[i],
+                              selected: _chipIndex == i,
+                              onTap: () {
+                                AppHaptics.selection();
+                                setState(() => _chipIndex = i);
+                                _openCategory(_chips[i].id, _chips[i].label);
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
-                child: QfWellGlow(
-                  isLight: isLight,
-                  padding: const EdgeInsets.all(6),
-                  borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+              sliver: SliverToBoxAdapter(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isLight ? const Color(0xFFE8E8EE) : const Color(0xFF101014),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  padding: const EdgeInsets.all(8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _BentoColumn(
-                          items: leftColumn,
+                          items: leftItems,
                           isLight: isLight,
-                          onOpen: (id, title) =>
-                              _openBento(context, ref, id, title),
+                          onOpen: _openCategory,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _BentoColumn(
-                          items: rightColumn,
+                          items: rightItems,
                           isLight: isLight,
-                          onOpen: (id, title) =>
-                              _openBento(context, ref, id, title),
+                          onOpen: _openCategory,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 18),
-              ListingSpotlightRail(isLight: isLight),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openBento(
-    BuildContext context,
-    WidgetRef ref,
-    String id,
-    String title,
-  ) {
-    AppHaptics.medium();
-    switch (id) {
-      case 'legal':
-        context.go(AppPaths.clientLegal);
-        return;
-      case 'seekers':
-        context.go(AppPaths.exploreSeekers);
-        return;
-      case 'premium':
-        context.push(AppPaths.subscriptionPackages);
-        return;
-      case 'recommended':
-      case 'popular':
-        openClientSwipeDeck(
-          context,
-          categoryId: 'property',
-          categoryTitle: title,
-        );
-        return;
-      default:
-        openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
-    }
-  }
-
-  void _pickCity(BuildContext context, WidgetRef ref) {
-    AppHaptics.medium();
-    context.push(AppPaths.map);
-  }
-
-  Future<void> _pickDates(BuildContext context, WidgetRef ref) async {
-    const options = [
-      'Any date',
-      'This weekend',
-      'Next week',
-      'This month',
-      'Flexible',
-    ];
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppTheme.dashElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-            shrinkWrap: true,
-            children: [
-              Text(
-                'WHEN',
-                style: AppTheme.displayItalic.copyWith(fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              for (final option in options)
-                ListTile(
-                  title: Text(
-                    option,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  onTap: () => Navigator.pop(context, option),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-    if (picked != null) {
-      ref.read(discoveryLocationProvider.notifier).setDateLabel(picked);
-    }
-  }
-
-  Future<void> _pickGuests(BuildContext context, WidgetRef ref) async {
-    var guests = ref.read(discoveryLocationProvider).guests;
-    final confirmed = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: AppTheme.dashElevated,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'GUESTS',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            if (guests > 1) setModalState(() => guests -= 1);
-                          },
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Text(
-                            '$guests',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 40,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            if (guests < 16) setModalState(() => guests += 1);
-                          },
-                          icon: const Icon(
-                            Icons.add_circle_outline,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () => Navigator.pop(context, guests),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppTheme.brandPrimary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text('Done'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-    if (confirmed != null) {
-      ref.read(discoveryLocationProvider.notifier).setGuests(confirmed);
-    }
-  }
-}
-
-class _SearchChromeWell extends StatelessWidget {
-  const _SearchChromeWell({
-    required this.visible,
-    required this.isLight,
-    required this.location,
-    required this.onPickCity,
-    required this.onPickDates,
-    required this.onPickGuests,
-  });
-
-  final bool visible;
-  final bool isLight;
-  final DiscoveryLocation location;
-  final VoidCallback onPickCity;
-  final VoidCallback onPickDates;
-  final VoidCallback onPickGuests;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: visible ? 1 : 0,
-      duration: Duration(milliseconds: visible ? 360 : 340),
-      curve: const Cubic(0.25, 0.1, 0.25, 1),
-      child: AnimatedSlide(
-        offset: visible ? Offset.zero : const Offset(0, -0.03),
-        duration: Duration(milliseconds: visible ? 360 : 340),
-        curve: const Cubic(0.25, 0.1, 0.25, 1),
-        child: IgnorePointer(
-          ignoring: !visible,
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(maxWidth: 768),
-            padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
-            margin: const EdgeInsets.only(bottom: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const AiSearchBar(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                  child: Text(
-                    '✨ AI-powered · Answers are generated by AI. AI can make mistakes. Consider verifying important information.',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: isLight
-                          ? Colors.black.withAlpha(110)
-                          : Colors.white38,
-                      fontSize: 10,
-                      height: 1.3,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _DashboardFilterPill(
-                        isLight: isLight,
-                        icon: Icons.location_on_rounded,
-                        wash: const Color(0xFFFF4D00),
-                        text: location.label,
-                        onTap: onPickCity,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _DashboardFilterPill(
-                        isLight: isLight,
-                        icon: Icons.calendar_today_rounded,
-                        wash: const Color(0xFF3B82F6),
-                        text: location.dateLabel,
-                        onTap: onPickDates,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _DashboardFilterPill(
-                        isLight: isLight,
-                        icon: Icons.people_alt_rounded,
-                        wash: const Color(0xFF8B5CF6),
-                        text:
-                            '${location.guests} guest${location.guests == 1 ? '' : 's'}',
-                        onTap: onPickGuests,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _DashboardFilterPill extends StatelessWidget {
-  const _DashboardFilterPill({
-    required this.isLight,
-    required this.icon,
-    required this.wash,
-    required this.text,
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.spec,
+    required this.selected,
     required this.onTap,
   });
 
-  final bool isLight;
-  final IconData icon;
-  final Color wash;
-  final String text;
+  final _ChipSpec spec;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ink = isLight ? const Color(0xFF111111) : Colors.white;
-    final fill = isLight ? const Color(0xFFF4F4F6) : const Color(0xFF1A1A20);
-    return Material(
-      color: fill,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () {
-          AppHaptics.medium();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 40,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 15, color: wash),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    text,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: ink,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 40,
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.black,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? Colors.white : const Color(0x33FFFFFF),
+          ),
+          boxShadow: selected
+              ? const [BoxShadow(color: Colors.black54, blurRadius: 12)]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? Colors.black.withAlpha(20) : Colors.white12,
+              ),
+              child: Icon(
+                spec.icon,
+                size: 10,
+                color: selected ? Colors.black : Colors.white,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  spec.label,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: selected ? Colors.black : Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -474,7 +210,7 @@ class _BentoColumn extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) const SizedBox(height: 6),
+          if (i > 0) const SizedBox(height: 8),
           _BentoTile(item: items[i], isLight: isLight, onOpen: onOpen),
         ],
       ],
@@ -503,7 +239,7 @@ class _BentoTile extends StatelessWidget {
           child: ClipRRect(
             borderRadius: AppTheme.qfNeoFrameRadius,
             child: EventsTeaserCard(
-              onTap: () => context.go(AppPaths.exploreEvents),
+              onTap: () => onOpen(item.id, item.title),
             ),
           ),
         ),
@@ -517,7 +253,7 @@ class _BentoTile extends StatelessWidget {
       media: BentoMediaPools.forId(item.id),
       stagger: Duration(seconds: int.parse(item.delaySeconds)),
       isLight: isLight,
-      enableVideo: item.index < 2,
+      enableVideo: item.index < 2, // only top few use videos for perf
       onTap: () => onOpen(item.id, item.title),
     );
   }
@@ -645,7 +381,6 @@ class _BentoItemData {
   final String delaySeconds;
 }
 
-/// Cap `BENTO_ITEMS` order, sizes, and animation delays.
 const _bentoItems = [
   _BentoItemData(
     index: 0,
