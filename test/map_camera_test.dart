@@ -29,7 +29,7 @@ void main() {
   });
 
   test('basemap uses photographic imagery with readable labels', () {
-    expect(MapBasemap.streetsUrl.contains('World_Imagery'), isTrue);
+    expect(MapBasemap.fallbackDarkUrl.contains('World_Imagery'), isTrue);
     expect(MapBasemap.labelsUrl, contains('light_only_labels'));
     expect(MapBasemap.canvas, const Color(0xFF0A0A0D));
   });

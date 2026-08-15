@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/config/app_config.dart';
 
-/// A photographic, high-information map with a clean label overlay.
+/// The official custom Mapbox styles for Swipess.
 abstract final class MapBasemap {
   static bool get _mapbox => AppConfig.mapboxAccessToken.trim().isNotEmpty;
 
-  static const satelliteUrl =
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-  static const streetsUrl = satelliteUrl;
-  static const labelOverlayUrl =
-      'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png';
+  // Custom Swipess Mapbox styles provided by user.
+  static const darkStyle = 'cmshydgsr00xz01s65m0x6u4n';
+  static const lightStyle = 'cmshyf3kh00gw01s9gu3yelwz';
+
+  // Standard fallback map tiles
+  static const fallbackDarkUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png';
+  static const fallbackLightUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png';
 
   static const subdomains = ['a', 'b', 'c', 'd'];
 
-  static String get urlTemplate {
+  static String urlTemplate(bool isLight) {
     if (_mapbox) {
-      return 'https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/256/{z}/{x}/{y}?access_token={accessToken}';
+      final styleId = isLight ? lightStyle : darkStyle;
+      return 'https://api.mapbox.com/styles/v1/avdelag123/$styleId/tiles/256/{z}/{x}/{y}?access_token={accessToken}';
     }
-    return streetsUrl;
+    return isLight ? fallbackLightUrl : fallbackDarkUrl;
   }
 
-  static String? get labelsUrl => _mapbox ? null : labelOverlayUrl;
+  static String? get labelsUrl => null;
 
   static Map<String, String> get additionalOptions => _mapbox
       ? {'accessToken': AppConfig.mapboxAccessToken.trim()}

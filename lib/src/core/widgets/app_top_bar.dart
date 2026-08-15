@@ -108,7 +108,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   },
                   child: _WashIcon(
                     child: const Icon(
-                      Icons.add_rounded,
+                      Icons.auto_awesome_rounded,
                       size: 22,
                       color: addWash,
                     ),
@@ -137,7 +137,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.stars_rounded, // Changed from diamond to ensure rendering
+                          Icons.generating_tokens_rounded, // Changed from diamond to ensure rendering
                           size: 20,
                           color: Color(0xFFFFB300), // Amber to be highly visible
                         ),
@@ -145,7 +145,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       Text(
                         '$tokens',
                         style: GoogleFonts.plusJakartaSans(
-                          color: ink,
+                          color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
                         ),
@@ -281,7 +281,7 @@ class _ProfileAvatarButton extends StatelessWidget {
                     : null,
               ),
               child: avatarUrl == null
-                  ? Icon(Icons.person_rounded, size: 20, color: ink)
+                  ? Icon(Icons.person_rounded, size: 20, color: Colors.white)
                   : null,
             ),
           ),

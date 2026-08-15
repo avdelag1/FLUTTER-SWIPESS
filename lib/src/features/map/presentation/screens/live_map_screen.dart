@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
+import 'package:flutter_swipes/src/core/theme/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
 import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
@@ -128,6 +129,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
     final asyncProfiles = ref.watch(mapProfilesProvider);
     final center = LatLng(location.latitude, location.longitude);
     final radiusKm = location.radiusKm;
+    final isLight = ref.watch(visualThemeProvider);
 
     final listingsRaw = asyncListings.value ?? [];
     final profiles = asyncProfiles.value ?? [];
@@ -221,7 +223,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: MapBasemap.urlTemplate,
+                    urlTemplate: MapBasemap.urlTemplate(isLight),
                     subdomains: MapBasemap.subdomains,
                     additionalOptions: MapBasemap.additionalOptions,
                     userAgentPackageName: MapBasemap.userAgentPackageName,

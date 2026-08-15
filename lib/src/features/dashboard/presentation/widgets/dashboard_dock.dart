@@ -214,7 +214,7 @@ const defaultDashboardNavItems = [
   ),
   BottomNavItem(
     id: NavTab.add,
-    icon: Icons.add_rounded,
+    icon: Icons.auto_awesome_rounded,
     accent: true,
     wash: Color(0xFFFF4D00),
   ),
