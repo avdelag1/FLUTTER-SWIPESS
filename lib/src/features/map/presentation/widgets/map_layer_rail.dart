@@ -77,8 +77,8 @@ class _LayerOrb extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: selected ? colors.first : const Color(0xEFFFFFFF),
@@ -101,8 +101,8 @@ class _LayerOrb extends StatelessWidget {
               right: -4,
               top: -4,
               child: Container(
-                constraints: const BoxConstraints(minWidth: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
                   color: colors.first,
                   borderRadius: BorderRadius.circular(999),
@@ -114,7 +114,7 @@ class _LayerOrb extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 10,
+                    fontSize: 9,
                   ),
                 ),
               ),
@@ -145,8 +145,8 @@ class MapHudCircle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: (selected || accent) ? Colors.white : const Color(0xFF0A0A0D),
@@ -161,7 +161,11 @@ class MapHudCircle extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(icon, color: (selected || accent) ? Colors.black : Colors.white, size: 18),
+        child: Icon(
+          icon,
+          color: (selected || accent) ? Colors.black : Colors.white,
+          size: 16,
+        ),
       ),
     );
   }

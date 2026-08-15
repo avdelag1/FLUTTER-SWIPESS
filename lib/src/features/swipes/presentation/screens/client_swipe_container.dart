@@ -144,6 +144,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     context.go(AppPaths.clientDashboard);
   }
 
+  void _goMessages() {
+    ref.read(navTabProvider.notifier).set(NavTab.messages);
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) nav.pop();
+    context.go(AppPaths.messages);
+  }
+
   void _undo() {
     final last = _undoable;
     if (last == null || _deck == null) return;
@@ -400,8 +407,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                       ),
                       curve: const Cubic(0.25, 0.1, 0.25, 1),
                       child: SafeArea(
-                  child: _SwipeDeckDock(
+                  child: SwipeDeckDock(
                     onDashboard: _goDashboard,
+                    onMessages: _goMessages,
                     onAi: () => showIntelCoreSheet(context),
                     onAdd: () => showCreateListingChooser(context),
                     onTokens: () => showGlassModal(
@@ -430,15 +438,18 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 }
 
-class _SwipeDeckDock extends StatelessWidget {
-  const _SwipeDeckDock({
+class SwipeDeckDock extends StatelessWidget {
+  const SwipeDeckDock({
+    super.key,
     required this.onDashboard,
+    required this.onMessages,
     required this.onAi,
     required this.onAdd,
     required this.onTokens,
   });
 
   final VoidCallback onDashboard;
+  final VoidCallback onMessages;
   final VoidCallback onAi;
   final VoidCallback onAdd;
   final VoidCallback onTokens;
@@ -462,29 +473,34 @@ class _SwipeDeckDock extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _DockIcon(
+                semanticLabel: 'Dashboard',
                 icon: Icons.dashboard_rounded,
                 onTap: onDashboard,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'Tokens',
                 icon: Icons.diamond_rounded,
                 onTap: onTokens,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'AI concierge',
                 icon: Icons.smart_toy_rounded,
                 onTap: onAi,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'Create listing',
                 icon: Icons.add_rounded,
                 onTap: onAdd,
                 accent: true,
                 idleColor: iconIdle,
               ),
               _DockIcon(
+                semanticLabel: 'Messages',
                 icon: Icons.chat_bubble_rounded,
-                onTap: onAi,
+                onTap: onMessages,
                 idleColor: iconIdle,
               ),
             ],
@@ -500,12 +516,14 @@ class _DockIcon extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.idleColor,
+    required this.semanticLabel,
     this.accent = false,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final Color idleColor;
+  final String semanticLabel;
   final bool accent;
 
   @override

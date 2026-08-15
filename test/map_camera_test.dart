@@ -103,6 +103,8 @@ void main() {
     );
     expect(find.text('Tranquil Oasis'), findsOneWidget);
     expect(find.byType(MapListingPinMarker), findsOneWidget);
+    expect(MapListingPinMarker.width, lessThanOrEqualTo(160));
+    expect(MapListingPinMarker.height, lessThanOrEqualTo(48));
   });
 
   testWidgets('preview sits above the GPS HUD, not on top of it',
