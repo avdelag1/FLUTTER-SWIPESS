@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_bottom_dock.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_preview_card.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -27,10 +28,16 @@ void main() {
     expect(MapCameraMath.perspective, greaterThan(0));
   });
 
-  test('basemap is a single dark Swipess canvas, not stacked satellite', () {
-    expect(MapBasemap.streetsUrl.contains('dark_all'), isTrue);
-    expect(MapBasemap.labelsUrl, isNull);
+  test('basemap uses photographic imagery with readable labels', () {
+    expect(MapBasemap.streetsUrl.contains('World_Imagery'), isTrue);
+    expect(MapBasemap.labelsUrl, contains('light_only_labels'));
     expect(MapBasemap.canvas, const Color(0xFF0A0A0D));
+  });
+
+  test('quick-filter frames never use category-colored glow', () {
+    final decoration = AppTheme.qfNeoFrame(isLight: false);
+    expect(decoration.boxShadow, isNotEmpty);
+    expect(decoration.boxShadow!.single.color, Colors.black.withAlpha(105));
   });
 
   test('a single live listing is not padded with fake Tulum homes', () {

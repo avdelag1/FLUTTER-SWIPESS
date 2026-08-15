@@ -81,7 +81,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           showChildOpacityTransition: false,
           child: ListView(
             controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(12, 84, 12, 120),
+            padding: const EdgeInsets.fromLTRB(12, 72, 12, 120),
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
@@ -494,10 +494,7 @@ class _BentoTile extends StatelessWidget {
       return SizedBox(
         height: item.height,
         child: DecoratedBox(
-          decoration: AppTheme.qfNeoFrame(
-            isLight: isLight,
-            glow: AppTheme.qfGlowFor(item.id),
-          ),
+          decoration: AppTheme.qfNeoFrame(isLight: isLight),
           child: ClipRRect(
             borderRadius: AppTheme.qfNeoFrameRadius,
             child: EventsTeaserCard(
@@ -515,7 +512,6 @@ class _BentoTile extends StatelessWidget {
       media: BentoMediaPools.forId(item.id),
       stagger: Duration(seconds: int.parse(item.delaySeconds)),
       isLight: isLight,
-      glow: AppTheme.qfGlowFor(item.id),
       enableVideo: item.index < 2,
       onTap: () => onOpen(item.id, item.title),
     );
@@ -531,7 +527,6 @@ class _BentoCard extends StatefulWidget {
     required this.stagger,
     required this.isLight,
     required this.onTap,
-    required this.glow,
     this.enableVideo = true,
   });
 
@@ -542,7 +537,6 @@ class _BentoCard extends StatefulWidget {
   final Duration stagger;
   final bool isLight;
   final VoidCallback onTap;
-  final Color glow;
   final bool enableVideo;
 
   @override
@@ -564,10 +558,7 @@ class _BentoCardState extends State<_BentoCard> {
         duration: const Duration(milliseconds: 80),
         child: Container(
           height: widget.height,
-          decoration: AppTheme.qfNeoFrame(
-            isLight: widget.isLight,
-            glow: widget.glow,
-          ),
+          decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),
           child: ClipRRect(
             borderRadius: AppTheme.qfNeoFrameRadius,
             child: Stack(

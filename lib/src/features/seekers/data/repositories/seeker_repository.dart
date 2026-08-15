@@ -32,15 +32,19 @@ class SeekerRepository {
       data = await filter.order('created_at', ascending: false).limit(50) as List;
     } catch (_) {
       // Fallback if mode/listing_type columns differ — worker requests by title.
-      data = await _client
-          .from('listings')
-          .select(
-            'id, title, category, service_category, description, available_from, time_slots_available, minimum_booking_hours, days_available, price, pricing_unit, location, city, status, owner_id',
-          )
-          .eq('category', 'worker')
-          .eq('is_active', true)
-          .order('created_at', ascending: false)
-          .limit(50) as List;
+      try {
+        data = await _client
+            .from('listings')
+            .select(
+              'id, title, category, service_category, description, available_from, time_slots_available, minimum_booking_hours, days_available, price, pricing_unit, location, city, status, owner_id',
+            )
+            .eq('category', 'worker')
+            .eq('is_active', true)
+            .order('created_at', ascending: false)
+            .limit(50) as List;
+      } catch (_) {
+        rethrow;
+      }
     }
 
     if (data.isEmpty) return const [];

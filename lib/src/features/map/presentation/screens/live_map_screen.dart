@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_sh
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_gps_dot.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_layer_rail.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_perspective_stage.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_preview_card.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_results_rail.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
@@ -167,7 +168,13 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
       child: Stack(
         children: [
           Positioned.fill(
-            child: FlutterMap(
+            child: AnimatedBuilder(
+              animation: _fly,
+              builder: (context, map) => MapPerspectiveStage(
+                progress: _didFly ? _fly.value : 0,
+                child: map!,
+              ),
+              child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: center,
@@ -177,7 +184,21 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   backgroundColor: MapBasemap.canvas,
                   onMapReady: () {
                     _mapReady = true;
-                    _safeMove(center, _zoomForRadius(radiusKm));
+                    _didFly = true;
+                    _safeMove(center, MapCameraMath.openAltitudeZoom);
+                    void flyCamera() {
+                      if (!_mapReady) return;
+                      final eased = Curves.easeOutCubic.transform(_fly.value);
+                      final target = _zoomForRadius(radiusKm);
+                      _safeMove(
+                        center,
+                        MapCameraMath.openAltitudeZoom +
+                            (target - MapCameraMath.openAltitudeZoom) * eased,
+                      );
+                      if (_fly.isCompleted) _fly.removeListener(flyCamera);
+                    }
+                    _fly.addListener(flyCamera);
+                    _fly.forward(from: 0);
                   },
                   onTap: (_, _) => setState(() {
                     _selected = null;
@@ -204,6 +225,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     tileDimension: 256,
                     maxNativeZoom: 19,
                   ),
+                  if (MapBasemap.labelsUrl case final labels?)
+                    TileLayer(
+                      urlTemplate: labels,
+                      subdomains: MapBasemap.subdomains,
+                      userAgentPackageName: MapBasemap.userAgentPackageName,
+                      tileDimension: 256,
+                      maxNativeZoom: 20,
+                    ),
                   CircleLayer(
                     circles: [
                       CircleMarker(
@@ -251,6 +280,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     ],
                   ),
                 ],
+              ),
               ),
             ),
           if (isLoading)
@@ -430,7 +460,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFF0A0A0D),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(color: Colors.white30),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,8 +506,8 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           color: const Color(0xF2161B27),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: const Color(0xFFFF4D00),
-                            width: 1.5,
+                            color: Colors.white38,
+                            width: 1,
                           ),
                         ),
                         child: Row(
@@ -485,14 +515,14 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                           children: [
                             const Icon(
                               Icons.location_on_rounded,
-                              color: Color(0xFFFF6B35),
+                              color: Colors.white,
                               size: 16,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '$radiusKm km',
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFFFF4D00),
+                                color: Colors.white,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 13,
                               ),
@@ -517,7 +547,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xF2161B27),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0xFF34D399), width: 1.5),
+                    border: Border.all(color: Colors.white38),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -528,12 +558,6 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                         decoration: BoxDecoration(
                           color: const Color(0xFF34D399),
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF34D399).withAlpha(180),
-                              blurRadius: 8,
-                            ),
-                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
