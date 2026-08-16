@@ -443,27 +443,38 @@ class _PackageCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 18),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                AppHaptics.medium();
-                onRequest();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+          GestureDetector(
+            onTap: () {
+              AppHaptics.selection();
+              onRequest();
+            },
+            child: Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFFF4D00),
+                    Color(0xFFEB4898),
+                  ],
                 ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x59E11D48),
+                    blurRadius: 16,
+                    offset: Offset(0, 8),
+                  ),
+                ],
               ),
-              child: Text(
-                'REQUEST SERVICE',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                  fontSize: 11,
+              child: Center(
+                child: Text(
+                  'REQUEST SERVICE',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
                 ),
               ),
             ),

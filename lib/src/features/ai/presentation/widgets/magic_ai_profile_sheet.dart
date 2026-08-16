@@ -150,18 +150,44 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
               height: 120,
             ),
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _busy ? null : _run,
-              style: FilledButton.styleFrom(
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
+            GestureDetector(
+              onTap: _busy ? null : _run,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 48,
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
+                  gradient: _busy ? null : const LinearGradient(
+                    colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                  ),
+                  color: _busy ? Colors.white24 : null,
+                  boxShadow: _busy ? null : const [
+                    BoxShadow(
+                      color: Color(0x59E11D48),
+                      blurRadius: 16,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
                 ),
-              ),
-              child: Text(
-                _busy ? 'GENERATING…' : 'GENERATE & SAVE',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900),
+                child: Center(
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'GENERATE PROFILE',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                ),
               ),
             ),
           ],

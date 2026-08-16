@@ -34,6 +34,10 @@ Future<void> main() async {
     await SupabaseService.initialize().timeout(const Duration(seconds: 6));
   } catch (e, st) {
     debugPrint('Supabase bootstrap failed/timed out: $e\n$st');
+    // If backend fails, we should not proceed to runApp normally as it will crash internally.
+    // Instead, we could show an offline/error screen, but for now we rethrow to explicitly
+    // crash rather than silent failure.
+    rethrow;
   }
 
   final container = ProviderContainer();

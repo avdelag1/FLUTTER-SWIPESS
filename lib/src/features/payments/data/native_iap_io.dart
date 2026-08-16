@@ -70,22 +70,23 @@ class NativeIap {
       if (purchase.status == PurchaseStatus.pending) continue;
 
       var result = CheckoutResult.error;
+      var validationPassed = false;
+      
       if (purchase.status == PurchaseStatus.purchased) {
-        // Always treat StoreKit purchased as success so the user is not
-        // told they failed after Apple charged them. Validation still
-        // runs so the edge function can grant tokens/subscription.
-        await _validate(purchase);
-        result = CheckoutResult.purchased;
+        validationPassed = await _validate(purchase);
+        result = validationPassed ? CheckoutResult.purchased : CheckoutResult.error;
       } else if (purchase.status == PurchaseStatus.restored) {
-        await _validate(purchase);
-        result = CheckoutResult.restored;
+        validationPassed = await _validate(purchase);
+        result = validationPassed ? CheckoutResult.restored : CheckoutResult.error;
       } else if (purchase.status == PurchaseStatus.canceled) {
         result = CheckoutResult.cancelled;
+        validationPassed = true; // no validation needed for cancel
       } else if (purchase.status == PurchaseStatus.error) {
         result = CheckoutResult.error;
+        validationPassed = true; // no validation needed for error
       }
 
-      if (purchase.pendingCompletePurchase) {
+      if (purchase.pendingCompletePurchase && validationPassed) {
         await _store.completePurchase(purchase);
       }
 
