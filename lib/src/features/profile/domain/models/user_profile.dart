@@ -10,6 +10,10 @@ class UserProfile {
     this.interests = const [],
     this.imageCount = 0,
     this.email,
+    this.subscriptionTier = 'free',
+    this.trialEndsAt,
+    this.tokensBalance = 0,
+    this.lastActiveAt,
   });
 
   final String userId;
@@ -22,6 +26,10 @@ class UserProfile {
   final List<String> interests;
   final int imageCount;
   final String? email;
+  final String subscriptionTier;
+  final DateTime? trialEndsAt;
+  final int tokensBalance;
+  final DateTime? lastActiveAt;
 
   /// Capacitor ClientProfile completeness: name, age, bio, images, interests.
   int get completionPercent {

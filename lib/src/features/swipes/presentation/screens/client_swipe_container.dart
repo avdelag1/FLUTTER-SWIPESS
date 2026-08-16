@@ -220,7 +220,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       } else {
         await ref
             .read(swipeRepositoryProvider)
-            .registerSwipeLeft(authUser, listing.id);
+            .registerSwipeLeft(authUser, listing.id, listing.price);
       }
       ref.read(dailyQuestsProvider.notifier).increment('swipe');
     }

@@ -14,24 +14,29 @@ class SwipeRepository {
   final SupabaseClient _supabase;
   final cap.SwipeRepository _swipes;
 
-  /// Fetch listings for a specific category
+  /// Fetch listings for a specific category using the Smart Feed algorithm
   Future<List<Listing>> fetchListings({
     required String category,
     int limit = 10,
   }) async {
     try {
-      var query = _supabase.from('listings').select('*').eq('is_active', true);
-
-      // Filter by category unless 'all' or specific bento items like 'recommended'
-      if (category != 'all' &&
-          category != 'recommended' &&
-          category != 'popular') {
-        query = query.eq('category', category);
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        // Fallback for unauthenticated
+        var query = _supabase.from('listings').select('*').eq('is_active', true);
+        if (category != 'all' && category != 'recommended' && category != 'popular') {
+          query = query.eq('category', category);
+        }
+        final response = await query.order('created_at', ascending: false).limit(limit);
+        return (response as List).map((row) => Listing.fromJson(row)).toList();
       }
 
-      final response = await query
-          .order('created_at', ascending: false)
-          .limit(limit);
+      // Use the smart algorithm RPC
+      final response = await _supabase.rpc('get_smart_feed', params: {
+        'p_user_id': user.id,
+        'p_category': category,
+        'p_limit': limit,
+      });
 
       return (response as List).map((row) => Listing.fromJson(row)).toList();
     } catch (_) {
@@ -46,10 +51,23 @@ class SwipeRepository {
     await _swipes.likeListing(listingId);
   }
 
-  /// Register a left swipe (pass) — Cap `likes` table + offline queue.
-  Future<void> registerSwipeLeft(String userId, String listingId) async {
+  /// Register a left swipe (pass) — Cap `likes` table + offline queue, and smart feed tracking.
+  Future<void> registerSwipeLeft(String userId, String listingId, [num? currentPrice]) async {
     assert(userId.isNotEmpty);
+    // Legacy offline cap tracking
     await _swipes.dislikeListing(listingId);
+
+    // New smart algorithm tracking
+    try {
+      await _supabase.from('user_dislikes').upsert({
+        'user_id': userId,
+        'listing_id': listingId,
+        'disliked_at': DateTime.now().toUtc().toIso8601String(),
+        'listing_price_at_dislike': currentPrice,
+      }, onConflict: 'user_id, listing_id');
+    } catch (_) {
+      // Ignore errors if offline
+    }
   }
 
   Future<({int synced, int failed})> flushOfflineQueue() =>

@@ -13,6 +13,9 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_thumbnail.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -210,7 +213,15 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => context.push(AppPaths.ownerListingsNew),
+                      onTap: () {
+                        final subscription = ref.read(subscriptionProvider).value;
+                        final currentCount = async.value?.length ?? 0;
+                        if (subscription != null && currentCount >= subscription.effectiveTier.maxListings) {
+                          showPaywall(context, featureName: 'More Listings');
+                          return;
+                        }
+                        context.push(AppPaths.ownerListingsNew);
+                      },
                       child: Container(
                         height: 48,
                         padding: const EdgeInsets.symmetric(horizontal: 16),

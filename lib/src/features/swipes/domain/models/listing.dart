@@ -47,6 +47,7 @@ class Listing {
   final String? serviceCategory;
   final int? experienceYears;
   final String? experienceLevel;
+  final String? reappearedReason;
 
   const Listing({
     required this.id,
@@ -89,6 +90,7 @@ class Listing {
     this.serviceCategory,
     this.experienceYears,
     this.experienceLevel,
+    this.reappearedReason,
   });
 
   /// Parse from Supabase JSON row.
@@ -141,6 +143,7 @@ class Listing {
       serviceCategory: json['service_category'] as String?,
       experienceYears: (json['experience_years'] as num?)?.toInt(),
       experienceLevel: json['experience_level'] as String?,
+      reappearedReason: json['reappeared_reason'] as String?,
     );
   }
 

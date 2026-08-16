@@ -19,7 +19,10 @@ import 'package:flutter_swipes/src/features/events/presentation/screens/events_s
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
+import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardShell extends ConsumerStatefulWidget {
@@ -34,6 +37,20 @@ class DashboardShell extends ConsumerStatefulWidget {
 class _DashboardShellState extends ConsumerState<DashboardShell> {
   bool _eventsMounted = false;
   String? _lastLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(sessionGamificationProvider).startTracking(context);
+    });
+  }
+
+  @override
+  void dispose() {
+    ref.read(sessionGamificationProvider).stopTracking();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,35 +179,52 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   duration: Duration(milliseconds: showChrome ? 360 : 340),
                   curve: const Cubic(0.25, 0.1, 0.25, 1),
                   child: SafeArea(
-                    child: DashboardDock(
-                      items: defaultDashboardNavItems,
-                      selectedTab: dockSelected,
-                      onTabSelected: (id) {
-                        if (id == NavTab.filter) {
-                          FilterBottomSheet.show(context);
-                          return;
-                        }
-                        if (id == NavTab.add) {
-                          context.push(AppPaths.ownerProperties);
-                          return;
-                        }
-                        if (id == NavTab.ai) {
-                          if (overlays.showConcierge) {
-                            ref.read(chromeVisibilityProvider.notifier).hide();
-                            return;
-                          }
-                          ref
-                              .read(overlayModalsProvider.notifier)
-                              .openConcierge();
-                          return;
-                        }
-                        if (id == NavTab.idCard) {
-                          ref.read(overlayModalsProvider.notifier).openVapId();
-                          return;
-                        }
-                        ref.read(navTabProvider.notifier).set(id);
-                        context.go(AppPaths.pathForTab(id));
-                      },
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final subscription = ref.watch(subscriptionProvider).value;
+                        return DashboardDock(
+                          items: defaultDashboardNavItems,
+                          selectedTab: dockSelected,
+                          onTabSelected: (id) {
+                            if (id == NavTab.filter) {
+                              FilterBottomSheet.show(context);
+                              return;
+                            }
+                            if (id == NavTab.add) {
+                              context.push(AppPaths.ownerProperties);
+                              return;
+                            }
+                            if (id == NavTab.ai) {
+                              if (subscription?.effectiveTier.canUseAI != true) {
+                                showPaywall(context, featureName: 'Swipess AI');
+                                return;
+                              }
+                              if (overlays.showConcierge) {
+                                ref.read(chromeVisibilityProvider.notifier).hide();
+                                return;
+                              }
+                              ref.read(overlayModalsProvider.notifier).openConcierge();
+                              return;
+                            }
+                            if (id == NavTab.idCard) {
+                              if (subscription?.effectiveTier.canUseVirtualCard != true) {
+                                showPaywall(context, featureName: 'Virtual ID Card');
+                                return;
+                              }
+                              ref.read(overlayModalsProvider.notifier).openVapId();
+                              return;
+                            }
+                            if (id == NavTab.events || id == NavTab.legal) {
+                              if (subscription?.effectiveTier.canViewEvents != true) {
+                                showPaywall(context, featureName: 'Events & Pros');
+                                return;
+                              }
+                            }
+                            ref.read(navTabProvider.notifier).set(id);
+                            context.go(AppPaths.pathForTab(id));
+                          },
+                        );
+                      }
                     ),
                   ),
                 ),

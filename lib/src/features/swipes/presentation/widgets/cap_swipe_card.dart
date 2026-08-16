@@ -379,7 +379,48 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
 
-              // Photo segments
+              if (!_zoomed && widget.listing.reappearedReason != null)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: widget.listing.reappearedReason == 'price_dropped'
+                          ? const Color(0xFF34D399).withAlpha(200)
+                          : Colors.white.withAlpha(50),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white.withAlpha(50)),
+                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          widget.listing.reappearedReason == 'price_dropped'
+                              ? Icons.arrow_downward_rounded
+                              : Icons.history_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          widget.listing.reappearedReason == 'price_dropped'
+                              ? 'PRICE DROPPED'
+                              : 'REAPPEARED',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 10,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // UI overlaysegments
               if (!_zoomed && media.length > 1)
                 Positioned(
                   top: 14,

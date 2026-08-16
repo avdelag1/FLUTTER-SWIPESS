@@ -7,6 +7,9 @@ import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -225,16 +228,25 @@ class _BentoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.id == 'events') {
-      return SizedBox(
-        height: item.height,
-        child: DecoratedBox(
-          decoration: AppTheme.qfNeoFrame(isLight: isLight),
-          child: ClipRRect(
-            borderRadius: AppTheme.qfNeoFrameRadius,
-            child: EventsTeaserCard(onTap: () => onOpen(item.id, item.title)),
+      return Consumer(builder: (context, ref, _) {
+        return SizedBox(
+          height: item.height,
+          child: DecoratedBox(
+            decoration: AppTheme.qfNeoFrame(isLight: isLight),
+            child: ClipRRect(
+              borderRadius: AppTheme.qfNeoFrameRadius,
+              child: EventsTeaserCard(onTap: () {
+                final sub = ref.read(subscriptionProvider).value;
+                if (sub?.effectiveTier.canViewEvents != true) {
+                  showPaywall(context, featureName: 'Events & Pros');
+                  return;
+                }
+                onOpen(item.id, item.title);
+              }),
+            ),
           ),
-        ),
-      );
+        );
+      });
     }
 
     return _BentoCard(

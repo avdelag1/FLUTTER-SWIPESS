@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_providers.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap Magic AI Profile — `ai-profile-extract` then save core fields.
@@ -45,6 +47,17 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
     }
     setState(() => _busy = true);
     AppHaptics.medium();
+    
+    final repo = ref.read(subscriptionRepositoryProvider);
+    final hasToken = await repo.decrementToken();
+    if (!hasToken) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showPaywall(context, featureName: 'AI Tokens');
+      return;
+    }
+    ref.read(subscriptionProvider.notifier).refresh();
+
     final ai = ref.read(aiEdgeRepositoryProvider);
     final draft = await ai.extractProfile(narrative: text);
     var bio = draft['bio']?.toString().trim();
