@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # Continues the shipped Capacitor line (1.2.33+490). Now that this build uses the
 # same com.swipess.mobile identifier, both stores reject a lower build number.
-version: 1.2.35+492
+version: 1.2.36+557
 
 environment:
   sdk: ^3.12.2
@@ -26,7 +26,7 @@ environment:
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
 # consider running `flutter pub upgrade --major-versions`. Alternatively,
-# dependencies can be manually updated by changing the version numbers below to
+# dependencies may be manually updated by changing the version numbers below to
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
@@ -82,7 +82,7 @@ dev_dependencies:
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
+  # activated in the `analysis_options.yaml` file located at the root of the
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
@@ -92,14 +92,14 @@ dev_dependencies:
   golden_toolkit: ^0.15.0
 
 # For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
+# following page: https://dart.dev/tools/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
 
   # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
+  # included with your application, so that you can use the icons
+  # in the material Icons class.
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
@@ -117,11 +117,7 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
+  # To add custom fonts to your application, add a fonts section, like this:
   # fonts:
   #   - family: Schyler
   #     fonts:
@@ -139,8 +135,10 @@ flutter:
 
 flutter_launcher_icons:
   image_path: "assets/app_icon.png"
+  image_path_ios: "assets/app_icon.png"
   android: true
   ios: true
+  remove_alpha_ios: true
   web:
     generate: true
     image_path: "assets/images/logo.png"
