@@ -4,7 +4,34 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashb
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('home, lawyers and events dock buttons all react to touch', (
+  testWidgets('every dock button responds to a 44pt touch target', (tester) async {
+    for (final item in defaultDashboardNavItems) {
+      NavTab? tapped;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: DockButton(
+                item: item,
+                wash: item.wash,
+                selected: false,
+                onTap: () => tapped = item.id,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.getSize(find.byType(DockButton)), const Size(44, 44));
+      await tester.tap(find.byType(DockButton));
+      await tester.pump();
+      expect(tapped, item.id, reason: '${item.id} did not react to touch');
+    }
+  });
+
+  testWidgets('lawyers and events remain tappable at the end of the dock', (
     tester,
   ) async {
     NavTab? tapped;
@@ -24,9 +51,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.home_rounded));
-    expect(tapped, NavTab.dashboard);
 
     final list = find.byType(ListView);
     await tester.drag(list, const Offset(-280, 0));
