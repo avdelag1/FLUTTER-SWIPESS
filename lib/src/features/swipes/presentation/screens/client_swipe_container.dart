@@ -287,9 +287,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     bottom: false,
                     child: AnimatedPadding(
                       duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                        milliseconds: chrome.chromeVisible ? 360 : 500,
                       ),
-                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      curve: Curves.easeOutCubic,
                       padding: EdgeInsets.fromLTRB(
                         8,
                         chrome.chromeVisible ? 76 : 8,
@@ -378,17 +378,17 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     child: AnimatedOpacity(
                       opacity: chrome.chromeVisible ? 1 : 0,
                       duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                        milliseconds: chrome.chromeVisible ? 360 : 500,
                       ),
-                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      curve: Curves.easeOutCubic,
                       child: AnimatedSlide(
                         offset: chrome.chromeVisible
                             ? Offset.zero
                             : const Offset(0, -0.12),
                         duration: Duration(
-                          milliseconds: chrome.chromeVisible ? 360 : 340,
+                          milliseconds: chrome.chromeVisible ? 360 : 500,
                         ),
-                        curve: const Cubic(0.25, 0.1, 0.25, 1),
+                        curve: Curves.easeOutCubic,
                         child: AppTopBar(
                           firstName: profile?.name.split(' ').first,
                           avatarUrl: profile?.avatarUrl,
@@ -414,17 +414,17 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     child: AnimatedOpacity(
                       opacity: chrome.chromeVisible ? 1 : 0,
                       duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 340,
+                        milliseconds: chrome.chromeVisible ? 360 : 500,
                       ),
-                      curve: const Cubic(0.25, 0.1, 0.25, 1),
+                      curve: Curves.easeOutCubic,
                       child: AnimatedSlide(
                         offset: chrome.chromeVisible
                             ? Offset.zero
                             : const Offset(0, 1.0),
                         duration: Duration(
-                          milliseconds: chrome.chromeVisible ? 360 : 340,
+                          milliseconds: chrome.chromeVisible ? 360 : 500,
                         ),
-                        curve: const Cubic(0.25, 0.1, 0.25, 1),
+                        curve: Curves.easeOutCubic,
                         child: DashboardDock(
                           items: defaultDashboardNavItems,
                           selectedTab: NavTab.dashboard,

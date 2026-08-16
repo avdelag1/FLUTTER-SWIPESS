@@ -143,12 +143,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             right: 0,
             child: AnimatedOpacity(
               opacity: showHeader ? 1 : 0,
-              duration: Duration(milliseconds: showChrome ? 360 : 340),
-              curve: const Cubic(0.25, 0.1, 0.25, 1),
+              duration: Duration(milliseconds: showChrome ? 360 : 500),
+              curve: Curves.easeOutCubic,
               child: AnimatedSlide(
                 offset: showHeader ? Offset.zero : const Offset(0, -0.12),
-                duration: Duration(milliseconds: showChrome ? 360 : 340),
-                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                duration: Duration(milliseconds: showChrome ? 360 : 500),
+                curve: Curves.easeOutCubic,
                 child: IgnorePointer(
                   ignoring: !showHeader,
                   child: AppTopBar(
@@ -172,12 +172,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ignoring: !showChrome,
               child: AnimatedOpacity(
                 opacity: showChrome ? 1 : 0,
-                duration: Duration(milliseconds: showChrome ? 360 : 340),
-                curve: const Cubic(0.25, 0.1, 0.25, 1),
+                duration: Duration(milliseconds: showChrome ? 360 : 500),
+                curve: Curves.easeOutCubic,
                 child: AnimatedSlide(
                   offset: showChrome ? Offset.zero : const Offset(0, 1.0),
-                  duration: Duration(milliseconds: showChrome ? 360 : 340),
-                  curve: const Cubic(0.25, 0.1, 0.25, 1),
+                  duration: Duration(milliseconds: showChrome ? 360 : 500),
+                  curve: Curves.easeOutCubic,
                   child: SafeArea(
                     child: Consumer(
                       builder: (context, ref, _) {

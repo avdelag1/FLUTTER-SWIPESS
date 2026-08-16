@@ -41,7 +41,10 @@ final currentUserProvider = NotifierProvider<CurrentUserNotifier, User?>(
 
 class AccessGrantedNotifier extends AsyncNotifier<bool> {
   @override
-  Future<bool> build() => AccessGrantService.isGranted();
+  FutureOr<bool> build() {
+    if (AccessGrantService.skipOnNative) return true;
+    return AccessGrantService.isGranted();
+  }
 
   Future<void> grant() async {
     await AccessGrantService.persist();

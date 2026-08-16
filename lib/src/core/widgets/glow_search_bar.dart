@@ -153,7 +153,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> with SingleTickerProvider
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Gemini, Powered by Gemini',
+                    'Powered by Gemini',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white.withAlpha(200),
                       fontWeight: FontWeight.w800,

@@ -77,8 +77,18 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 72, 16, 16),
                 child: Column(
                   children: [
-                    GlowSearchBar(
-                      onTap: () => _openCategory('property', 'PROPERTIES'),
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final showChrome = ref.watch(chromeVisibilityProvider);
+                        return AnimatedOpacity(
+                          opacity: showChrome ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                          child: GlowSearchBar(
+                            onTap: () => _openCategory('property', 'PROPERTIES'),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
