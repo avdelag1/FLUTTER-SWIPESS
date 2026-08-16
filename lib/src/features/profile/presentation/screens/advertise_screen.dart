@@ -304,6 +304,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   Future<void> _launchPayment() async {
     AppHaptics.medium();
+    if (IapCatalog.usesNativeStore) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Native event promotion checkout is coming soon.')),
+      );
+      return;
+    }
     final offer = IapCatalog.promoById(_selectedPackage);
     if (offer == null) return;
     final result = await ref.read(paymentServiceProvider).buy(offer);

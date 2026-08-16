@@ -124,13 +124,17 @@ async function verifyWithGooglePlay(
 
     if (isSubscription) {
       const isActive = result.subscriptionState === 'SUBSCRIPTION_STATE_ACTIVE' || result.subscriptionState === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD';
-      const lineItem = result.lineItems && result.lineItems[0];
-      const expiryTime = lineItem && lineItem.expiryTime;
+      const lineItem = result.lineItems && result.lineItems.find((item: any) => item.productId === productId);
+      if (!lineItem) {
+        console.error(`Google Play API verification failed: no line item matches productId ${productId}`);
+        return { verified: false };
+      }
+      const expiryTime = lineItem.expiryTime;
       const notExpired = expiryTime ? new Date(expiryTime).getTime() > Date.now() : true;
       
       return {
         verified: isActive && notExpired,
-        orderId: result.latestOrderId,
+        orderId: lineItem.latestSuccessfulOrderId || result.latestOrderId,
         startTimeMillis: result.startTime ? new Date(result.startTime).getTime().toString() : undefined,
         expiryTimeMillis: expiryTime ? new Date(expiryTime).getTime().toString() : undefined,
       };
@@ -225,11 +229,25 @@ Deno.serve(async (req) => {
 
     if (auditError) {
       if (auditError.code === '23505') {
-        // Idempotent success if it was already processed
-        return new Response(JSON.stringify({ ok: true, alreadyProcessed: true, productId }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        const { data: existing } = await adminClient
+          .from('purchase_audit_log')
+          .select('user_id, product_id, metadata')
+          .eq('purchase_token', purchaseToken)
+          .single();
+          
+        if (existing && existing.user_id === userId && existing.product_id === productId) {
+          if (existing.metadata?.status === 'granted') {
+            return new Response(JSON.stringify({ ok: true, alreadyProcessed: true, productId }), {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(JSON.stringify({ ok: false, error: 'Purchase is currently processing' }), {
+              status: 409,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        }
       }
       throw auditError;
     }
@@ -260,8 +278,8 @@ Deno.serve(async (req) => {
           .eq('user_id', userId)
           .eq('is_active', true);
 
-        // Insert new subscription
-        const { error: subError } = await adminClient.from('user_subscriptions').insert({
+        // Insert new subscription or update if it exists
+        const { error: subError } = await adminClient.from('user_subscriptions').upsert({
           user_id: userId,
           package_id: pkg.id,
           start_date: purchaseDate,
@@ -269,7 +287,7 @@ Deno.serve(async (req) => {
           is_active: expiresDate ? new Date(expiresDate) > new Date() : true,
           payment_status: 'paid',
           transaction_id: verification.orderId || clientOrderId || purchaseToken,
-        });
+        }, { onConflict: 'user_id, package_id' });
         if (subError) throw subError;
         
       } else if (isToken) {
@@ -292,7 +310,7 @@ Deno.serve(async (req) => {
         throw new Error('Event promotions storage is not yet implemented.');
       }
 
-      await adminClient.from('google_play_transactions').upsert({
+      const { error: txError } = await adminClient.from('google_play_transactions').upsert({
         user_id: userId,
         product_id: productId,
         purchase_token: purchaseToken,
@@ -301,6 +319,7 @@ Deno.serve(async (req) => {
         environment: 'Production',
         verified: true,
       }, { onConflict: 'purchase_token' });
+      if (txError) throw txError;
 
       await adminClient
         .from('purchase_audit_log')
