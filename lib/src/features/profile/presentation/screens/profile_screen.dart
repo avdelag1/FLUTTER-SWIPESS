@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
@@ -318,50 +319,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           AppHaptics.medium();
                           showMagicAiProfileSheet(context);
                         },
-                        child: Container(
-                          height: 62,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(22),
-                            gradient: NexusTheme.ai,
-                            boxShadow: [
-                              BoxShadow(
-                                color: NexusTheme.cyan.withAlpha(70),
-                                blurRadius: 22,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                        child: SwipessDashboardTile(
+                          title: 'MAGIC AI PROFILE',
+                          icon: Icons.auto_awesome_rounded,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Magic AI Profile',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontStyle: FontStyle.italic,
-                                  letterSpacing: 1.6,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
+                          isFullWidth: true,
+                          height: 64,
+                          onTap: () => showMagicAiProfileSheet(context),
                         ),
                       ),
                       const SizedBox(height: 12),
+
+                      // 2-Column Grid Row 1: Edit Profile | Promote Event
                       Row(
                         children: [
                           Expanded(
-                            child: _HeroAction(
-                              label: 'Edit Profile',
+                            child: SwipessDashboardTile(
+                              title: 'EDIT PROFILE',
                               icon: Icons.person_rounded,
-                              gradient: NexusTheme.warm,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF4E50), Color(0xFFF9D423)],
+                              ),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => const EditProfileScreen(),
@@ -371,8 +351,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: _HeroAction(
-                              label: 'Promote Event',
+                            child: SwipessDashboardTile(
+                              title: 'PROMOTE EVENT',
                               icon: Icons.campaign_rounded,
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
@@ -387,52 +367,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _Panel(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Column(
-                          children: [
-                            _NexusRow(
-                              label: 'Seekers',
-                              hint: 'Post what you need nearby',
+
+                      // 2-Column Grid Row 2: Seekers | Tokens
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SwipessDashboardTile(
+                              title: 'SEEKERS',
                               icon: Icons.people_rounded,
-                              tint: NexusTheme.indigo,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                              ),
                               onTap: () => context.go(AppPaths.exploreSeekers),
                             ),
-                            _NexusRow(
-                              label: 'Tokens',
-                              hint: 'Balance & packages',
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SwipessDashboardTile(
+                              title: 'TOKENS',
                               icon: Icons.toll_rounded,
-                              tint: NexusTheme.cyan,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+                              ),
                               onTap: () => showGlassModal(
                                 context: context,
                                 builder: (_) => const TokensModal(),
                               ),
                             ),
-                            _NexusRow(
-                              label: 'Verify Owner',
-                              hint: 'Trust badge',
-                              icon: Icons.verified_rounded,
-                              tint: NexusTheme.violet,
-                              onTap: () =>
-                                  showVerificationRequestSheet(context),
-                            ),
-                            _NexusRow(
-                              label: 'Premium',
-                              hint: 'Unlock the full deck',
-                              icon: Icons.workspace_premium_rounded,
-                              tint: const Color(0xFFF59E0B),
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SubscriptionPackagesScreen(),
-                                ),
-                              ),
-                            ),
-                            _NexusRow(
-                              label: 'Settings',
-                              hint: 'Account & privacy',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 2-Column Grid Row 3: Settings | Sign Out
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SwipessDashboardTile(
+                              title: 'SETTINGS',
                               icon: Icons.settings_rounded,
-                              tint: ink.withAlpha(160),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF475569), Color(0xFF334155)],
+                              ),
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => SettingsScreen(
@@ -443,7 +419,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 ),
                               ),
                             ),
-                          ],
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SwipessDashboardTile(
+                              title: 'SIGN OUT',
+                              icon: Icons.logout_rounded,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFDC2626), Color(0xFF991B1B)],
+                              ),
+                              onTap: () async {
+                                AppHaptics.medium();
+                                await ref.read(authRepositoryProvider).signOut();
+                                if (!context.mounted) return;
+                                context.go(AppPaths.welcome);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Premium Hero Tile (Full width, Gold/Orange)
+                      SwipessDashboardTile(
+                        title: 'PREMIUM',
+                        icon: Icons.workspace_premium_rounded,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        ),
+                        isFullWidth: true,
+                        height: 64,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SubscriptionPackagesScreen(),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 18),

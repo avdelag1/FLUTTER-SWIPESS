@@ -6,6 +6,8 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
@@ -279,22 +281,22 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: _HudStat(
-                              title: 'Total Listings',
+                            child: SwipessStatCard(
+                              title: 'TOTAL LISTINGS',
                               value: '${s.total}',
-                              detail: '${s.active} ACTIVE',
-                              icon: Icons.home_outlined,
-                              iconColor: const Color(0xFF3B82F6),
+                              subtitle: '${s.active} ACTIVE',
+                              icon: Icons.home_rounded,
+                              accentColor: const Color(0xFF3B82F6),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: _HudStat(
-                              title: 'Total Views',
+                            child: SwipessStatCard(
+                              title: 'TOTAL VIEWS',
                               value: '${s.views}',
-                              detail: 'ALL TIME',
-                              icon: Icons.visibility_outlined,
-                              iconColor: _pink,
+                              subtitle: 'ALL TIME',
+                              icon: Icons.visibility_rounded,
+                              accentColor: const Color(0xFFEC4899),
                             ),
                           ),
                         ],
@@ -303,24 +305,24 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: _HudStat(
-                              title: 'Avg. Price',
+                            child: SwipessStatCard(
+                              title: 'AVG. PRICE',
                               value: s.avgPrice <= 0
                                   ? '\$0'
                                   : '\$${s.avgPrice.toStringAsFixed(0)}',
-                              detail: 'PER LISTING',
+                              subtitle: 'PER LISTING',
                               icon: Icons.attach_money_rounded,
-                              iconColor: _pink,
+                              accentColor: const Color(0xFF22C55E),
                             ),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: _HudStat(
-                              title: 'Categories',
+                            child: SwipessStatCard(
+                              title: 'CATEGORIES',
                               value: '${s.categories}',
-                              detail: 'ACTIVE TYPES',
-                              icon: Icons.monitor_heart_outlined,
-                              iconColor: _pink,
+                              subtitle: 'ACTIVE TYPES',
+                              icon: Icons.grid_view_rounded,
+                              accentColor: const Color(0xFFF59E0B),
                             ),
                           ),
                         ],
