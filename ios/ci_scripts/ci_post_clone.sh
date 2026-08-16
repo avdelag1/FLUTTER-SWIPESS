@@ -13,6 +13,13 @@ export PATH="$PATH:$HOME/flutter/bin"
 flutter precache --ios
 flutter pub get
 
+# Always regenerate the iOS launcher icon from the single authoritative source
+# before Xcode archives the app. This prevents Xcode Cloud from shipping stale
+# AppIcon files left over from an older local build.
+dart run flutter_launcher_icons
+
+echo "Launcher icons regenerated from assets/app_icon.png"
+
 HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
 cd ios
 pod install
