@@ -100,17 +100,17 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-create'),
                   semanticLabel: 'Create a listing',
-                  fill: pillFill,
-                  border: pillBorder,
+                  fill: addWash.withAlpha(40),
+                  border: addWash,
                   onTap: () {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
                   },
-                  child: _WashIcon(
+                  child: const _WashIcon(
                     child: Icon(
-                      Icons.auto_awesome_rounded,
+                      Icons.add_rounded,
                       size: 22,
-                      color: ink,
+                      color: addWash,
                     ),
                   ),
                 ),
@@ -121,8 +121,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-tokens'),
                   semanticLabel: 'Open tokens, balance $tokens',
-                  fill: pillFill,
-                  border: pillBorder,
+                  fill: const Color(0xFFFFB300).withAlpha(40),
+                  border: const Color(0xFFFFB300),
                   wide: true,
                   onTap: () {
                     AppHaptics.medium();
@@ -155,14 +155,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
-                  fill: pillFill,
-                  border: pillBorder,
+                  fill: mapWash.withAlpha(40),
+                  border: mapWash,
                   onTap: () {
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
-                  child: _WashIcon(
-                    child: const Icon(
+                  child: const _WashIcon(
+                    child: Icon(
                       Icons.public_rounded,
                       size: 20,
                       color: mapWash,
@@ -171,8 +171,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
-                  fill: pillFill,
-                  border: pillBorder,
+                  fill: themeWash.withAlpha(40),
+                  border: themeWash,
                   onTap: () {
                     AppHaptics.medium();
                     ref.read(visualThemeProvider.notifier).toggle();
@@ -189,8 +189,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
-                  fill: pillFill,
-                  border: pillBorder,
+                  fill: bellWash.withAlpha(40),
+                  border: bellWash,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -201,8 +201,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      _WashIcon(
-                        child: const Icon(
+                      const _WashIcon(
+                        child: Icon(
                           Icons.notifications_rounded,
                           size: 20,
                           color: bellWash,
