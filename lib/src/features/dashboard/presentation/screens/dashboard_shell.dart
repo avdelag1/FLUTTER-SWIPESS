@@ -1,28 +1,28 @@
-import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
-import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
+import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
+import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
-import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardShell extends ConsumerStatefulWidget {
@@ -35,6 +35,9 @@ class DashboardShell extends ConsumerStatefulWidget {
 }
 
 class _DashboardShellState extends ConsumerState<DashboardShell> {
+  static const _headerInset = 72.0;
+  static const _dockInset = 82.0;
+
   bool _eventsMounted = false;
   String? _lastLocation;
 
@@ -52,6 +55,20 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     super.dispose();
   }
 
+  Widget _withPersistentChromeInsets(BuildContext context, Widget child) {
+    final media = MediaQuery.of(context);
+    final padding = media.padding;
+    return MediaQuery(
+      data: media.copyWith(
+        padding: padding.copyWith(
+          top: padding.top + _headerInset,
+          bottom: padding.bottom + _dockInset,
+        ),
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
@@ -61,17 +78,18 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
       });
     }
+
     final isDashboard =
         location == AppPaths.clientDashboard ||
         location == AppPaths.legacyDashboard;
     final isProfile = location == AppPaths.clientProfile;
     final isEvents = location == AppPaths.exploreEvents;
     if (isEvents) _eventsMounted = true;
+
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
     final user = ref.watch(currentUserProvider);
 
-    // Keep provider in sync for any legacy listeners.
     if (routeTab != null && ref.read(navTabProvider) != routeTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (ref.read(navTabProvider) != routeTab) {
@@ -81,13 +99,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     }
 
     final profile = ref.watch(currentProfileProvider).value;
-
-    // Cap BottomNavigation order (scrollable dock).
-
     final isLight = ref.watch(isLightThemeProvider);
-    final chromeVisible = ref.watch(chromeVisibilityProvider);
-    final showChrome = chromeVisible;
-    final showHeader = showChrome && (isDashboard || isProfile);
+    final showChrome = ref.watch(chromeVisibilityProvider);
+
+    // The shared header is a primary navigation surface, not decoration.
+    // Keep it available on every route rendered by this shell.
+    final showHeader = showChrome;
+
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
         ? NavTab.idCard
@@ -104,14 +122,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (notification is ScrollUpdateNotification) {
-                ref
-                    .read(chromeVisibilityProvider.notifier)
-                    .onScroll(
+                ref.read(chromeVisibilityProvider.notifier).onScroll(
                       pixels: notification.metrics.pixels,
                       delta: notification.scrollDelta ?? 0,
                     );
               }
-              return false; // let the notification bubble up if needed
+              return false;
             },
             child: Stack(
               fit: StackFit.expand,
@@ -128,26 +144,30 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     offstage: !isEvents,
                     child: TickerMode(
                       enabled: isEvents,
-                      child: const EventsScreen(),
+                      child: _withPersistentChromeInsets(
+                        context,
+                        const EventsScreen(),
+                      ),
                     ),
                   ),
-                if (!isDashboard && !isEvents) widget.child,
+                if (!isDashboard && !isEvents)
+                  isProfile
+                      ? widget.child
+                      : _withPersistentChromeInsets(context, widget.child),
               ],
             ),
           ),
-          // Overlay (not Scaffold.appBar) so nested page Scaffolds cannot
-          // steal taps from the HUD — Cap `TopBar` is `fixed` + z-index 100.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: AnimatedOpacity(
               opacity: showHeader ? 1 : 0,
-              duration: Duration(milliseconds: showChrome ? 360 : 500),
+              duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutCubic,
               child: AnimatedSlide(
                 offset: showHeader ? Offset.zero : const Offset(0, -0.12),
-                duration: Duration(milliseconds: showChrome ? 360 : 500),
+                duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
                 child: IgnorePointer(
                   ignoring: !showHeader,
@@ -172,11 +192,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ignoring: !showChrome,
               child: AnimatedOpacity(
                 opacity: showChrome ? 1 : 0,
-                duration: Duration(milliseconds: showChrome ? 360 : 500),
+                duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
                 child: AnimatedSlide(
                   offset: showChrome ? Offset.zero : const Offset(0, 1.0),
-                  duration: Duration(milliseconds: showChrome ? 360 : 500),
+                  duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
                   child: SafeArea(
                     child: Consumer(
@@ -186,6 +206,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           items: defaultDashboardNavItems,
                           selectedTab: dockSelected,
                           onTabSelected: (id) {
+                            ref.read(chromeVisibilityProvider.notifier).show();
+
                             if (id == NavTab.filter) {
                               FilterBottomSheet.show(context);
                               return;
@@ -203,28 +225,39 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 ref.read(chromeVisibilityProvider.notifier).hide();
                                 return;
                               }
-                              ref.read(overlayModalsProvider.notifier).openConcierge();
+                              ref
+                                  .read(overlayModalsProvider.notifier)
+                                  .openConcierge();
                               return;
                             }
                             if (id == NavTab.idCard) {
-                              if (subscription?.effectiveTier.canUseVirtualCard != true) {
-                                showPaywall(context, featureName: 'Virtual ID Card');
+                              if (subscription?.effectiveTier.canUseVirtualCard !=
+                                  true) {
+                                showPaywall(
+                                  context,
+                                  featureName: 'Virtual ID Card',
+                                );
                                 return;
                               }
                               ref.read(overlayModalsProvider.notifier).openVapId();
                               return;
                             }
-                            if (id == NavTab.events || id == NavTab.legal) {
-                              if (subscription?.effectiveTier.canViewEvents != true) {
-                                showPaywall(context, featureName: 'Events & Pros');
-                                return;
-                              }
+                            if (id == NavTab.events &&
+                                subscription?.effectiveTier.canViewEvents != true) {
+                              showPaywall(context, featureName: 'Events');
+                              return;
                             }
+                            if (id == NavTab.legal &&
+                                subscription?.effectiveTier.canViewEvents != true) {
+                              showPaywall(context, featureName: 'Legal services');
+                              return;
+                            }
+
                             ref.read(navTabProvider.notifier).set(id);
                             context.go(AppPaths.pathForTab(id));
                           },
                         );
-                      }
+                      },
                     ),
                   ),
                 ),
@@ -235,8 +268,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             visible: showChrome,
             onSummon: () => ref.read(chromeVisibilityProvider.notifier).show(),
           ),
-          // Hidden until remote push is wired. Showing a prompt that
-          // then says "not wired" is an App Store 2.1 reject.
           const PushNotificationPrompt(enabled: false),
           GuidedTourOverlay(enabled: user != null),
         ],
