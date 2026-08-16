@@ -1,48 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Cap `useScrollDirection` shared chrome — hide header/dock while scrolling down.
+/// Shared visibility state for the persistent app chrome.
+///
+/// Header and dock must not disappear just because a user scrolls. That
+/// behavior made controls feel unreliable and could leave users on a page with
+/// no obvious navigation. Explicit immersive surfaces (for example the AI
+/// overlay) may still call [hide] and [show] deliberately.
 class ChromeVisibilityNotifier extends Notifier<bool> {
-  static const threshold = 28.0;
-
-  double _accum = 0;
-
   @override
   bool build() => true;
 
   void show() {
     if (!state) state = true;
-    _accum = 0;
   }
 
   void hide() {
     if (state) state = false;
-    _accum = 0;
   }
 
-  void onScroll({required double pixels, required double delta}) {
-    if (pixels <= 40) {
-      show();
-      return;
-    }
+  /// Retained for callers that report scroll position, but scrolling no longer
+  /// changes navigation visibility. Persistent navigation is intentional.
+  void onScroll({required double pixels, required double delta}) {}
 
-    // Ignore tiny jitter.
-    if (delta.abs() < 0.5) return;
-
-    if ((delta > 0 && _accum < 0) || (delta < 0 && _accum > 0)) {
-      _accum = 0;
-    }
-    _accum += delta;
-
-    if (_accum > threshold) {
-      hide();
-    } else if (_accum < -threshold) {
-      show();
-    }
-  }
-
-  void reset() {
-    show();
-  }
+  void reset() => show();
 }
 
 final chromeVisibilityProvider =
