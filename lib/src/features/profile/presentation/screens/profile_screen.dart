@@ -34,7 +34,6 @@ import 'package:flutter_swipes/src/features/notifications/presentation/providers
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/profile_activity_feed.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/verification_request_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_dialog.dart';
@@ -803,120 +802,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-class _HeroAction extends StatelessWidget {
-  const _HeroAction({
-    required this.label,
-    required this.icon,
-    required this.gradient,
-    required this.onTap,
-  });
 
-  final String label;
-  final IconData icon;
-  final Gradient gradient;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.medium();
-        onTap();
-      },
-      child: Container(
-        height: 108,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: gradient,
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white, size: 26),
-            const Spacer(),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 15,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NexusRow extends StatelessWidget {
-  const _NexusRow({
-    required this.label,
-    required this.hint,
-    required this.icon,
-    required this.tint,
-    required this.onTap,
-  });
-
-  final String label;
-  final String hint;
-  final IconData icon;
-  final Color tint;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
-    return InkWell(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: tint.withAlpha(40),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: tint, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: ink,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    hint,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: muted,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: muted),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _Panel extends StatelessWidget {
   const _Panel({required this.child, this.padding});

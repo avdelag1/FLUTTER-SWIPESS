@@ -322,7 +322,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    pkg.description,
+                    pkg.description ?? '',
                     style: SwipessTokens.bodyClean(
                       color: ink.withAlpha(160),
                       fontSize: 13,
@@ -382,7 +382,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                           height: 40,
                           onTap: () {
                             AppHaptics.medium();
-                            showLegalPackageRequestModal(context, pkg);
+                            showLegalPackageRequestModal(context, pkg: pkg);
                           },
                         ),
                       ),

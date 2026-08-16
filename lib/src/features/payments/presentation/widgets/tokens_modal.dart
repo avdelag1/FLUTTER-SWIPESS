@@ -125,19 +125,23 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   controller: _scrollController,
                   physics: const ClampingScrollPhysics(),
                   itemCount: IapCatalog.tokens.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_, _) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final offer = IapCatalog.tokens[index];
                     final color = _colorForIndex(index);
                     final icon = _iconForIndex(index);
                     final badge = _badgeForIndex(index, IapCatalog.tokens.length);
 
-                    // Compute per-token price
-                    final pricePerToken = (offer.tokens > 0)
-                        ? (offer.priceAmount / offer.tokens)
-                        : 0.0;
-                    final pricePerTokenStr =
-                        '\$${pricePerToken.toStringAsFixed(2)}/tk';
+                    final count = offer.tokens ?? 0;
+                    final parsedPrice = double.tryParse(
+                          offer.priceLabel.replaceAll(RegExp(r'[^0-9.]'), ''),
+                        ) ??
+                        0.0;
+                    final pricePerToken =
+                        (count > 0 && parsedPrice > 0) ? (parsedPrice / count) : 0.0;
+                    final pricePerTokenStr = pricePerToken > 0
+                        ? '\$${pricePerToken.toStringAsFixed(2)}/tk'
+                        : '';
 
                     return SwipessTierCard(
                       accentColor: color,
@@ -176,7 +180,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                                 Row(
                                   children: [
                                     Text(
-                                      offer.title.toUpperCase(),
+                                      (offer.label ?? offer.name).toUpperCase(),
                                       style: SwipessTokens.displayItalic(
                                         color: color,
                                         fontSize: 14,
@@ -192,7 +196,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                                             SwipessTokens.radiusPill),
                                       ),
                                       child: Text(
-                                        '${offer.tokens} TOKENS',
+                                        '$count TOKENS',
                                         style: GoogleFonts.plusJakartaSans(
                                           color: color,
                                           fontSize: 10,

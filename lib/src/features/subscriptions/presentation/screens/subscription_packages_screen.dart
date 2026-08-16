@@ -6,7 +6,6 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
-import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/screens/payment_result_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
