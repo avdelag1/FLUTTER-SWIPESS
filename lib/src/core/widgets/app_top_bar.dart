@@ -163,7 +163,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   },
                   child: _WashIcon(
                     child: const Icon(
-                      CupertinoIcons.globe,
+                      Icons.public_rounded,
                       size: 20,
                       color: mapWash,
                     ),
@@ -180,8 +180,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: _WashIcon(
                     child: Icon(
                       isLight
-                          ? CupertinoIcons.sun_max_fill
-                          : CupertinoIcons.moon_stars_fill,
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
                       size: 20,
                       color: themeWash,
                     ),
@@ -203,7 +203,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     children: [
                       _WashIcon(
                         child: const Icon(
-                          CupertinoIcons.bell_fill,
+                          Icons.notifications_rounded,
                           size: 20,
                           color: bellWash,
                         ),
@@ -284,7 +284,7 @@ class _ProfileAvatarButton extends StatelessWidget {
                     : null,
               ),
               child: avatarUrl == null
-                  ? Icon(CupertinoIcons.person_solid, size: 20, color: Colors.white)
+                  ? const Icon(Icons.person_rounded, size: 20, color: Colors.white)
                   : null,
             ),
           ),
