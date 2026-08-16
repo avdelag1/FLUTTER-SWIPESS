@@ -12,6 +12,7 @@ abstract final class IapCatalog {
       name: 'Monthly',
       label: 'STARTER',
       appleProductId: 'Swipess.plus.monthly.v3',
+      googleProductId: 'swipess.plus.monthly.v2',
       priceLabel: '\$39.99',
       durationLabel: '/month',
       paypalPath: 'QSRXCJYYQ2UGY',
@@ -28,6 +29,7 @@ abstract final class IapCatalog {
       name: 'Semi-Annual',
       label: 'POPULAR',
       appleProductId: 'Swipess.plus.semestral.v3',
+      googleProductId: 'swipess.plus.semestral.v2',
       priceLabel: '\$119.99',
       durationLabel: '/6 months',
       paypalPath: 'HUESWJ68BRUSY',
@@ -46,6 +48,7 @@ abstract final class IapCatalog {
       name: 'Yearly',
       label: 'BEST VALUE',
       appleProductId: 'Swipess.plus.annual.v3',
+      googleProductId: 'swipess.plus.annual.v2',
       priceLabel: '\$299.99',
       durationLabel: '/year',
       paypalPath: '7E6R38L33LYUJ',
@@ -65,6 +68,7 @@ abstract final class IapCatalog {
       id: 'starter',
       name: 'Starter',
       appleProductId: 'Swipess.tokens.20.v2',
+      googleProductId: 'swipess.tokens.20.v1',
       priceLabel: '\$9.99',
       tokens: 20,
       paypalPath: 'VNM2QVBFG6TA4',
@@ -74,6 +78,7 @@ abstract final class IapCatalog {
       id: 'plus',
       name: 'Plus',
       appleProductId: 'Swipess.tokens.50.v2',
+      googleProductId: 'swipess.tokens.50.v1',
       priceLabel: '\$19.99',
       tokens: 50,
       paypalPath: 'VG2C7QMAC8N6A',
@@ -84,6 +89,7 @@ abstract final class IapCatalog {
       id: 'power',
       name: 'Power',
       appleProductId: 'Swipess.tokens.100.v2',
+      googleProductId: 'swipess.tokens.100.v1',
       priceLabel: '\$39.99',
       tokens: 100,
       paypalPath: '9NBGA9X3BJ5UA',
@@ -93,6 +99,7 @@ abstract final class IapCatalog {
       id: 'mega',
       name: 'Mega',
       appleProductId: 'Swipess.tokens.150.v2',
+      googleProductId: 'swipess.tokens.150.v1',
       priceLabel: '\$49.99',
       tokens: 150,
       paypalPath: 'KP9WHGEN23MYA',
@@ -105,6 +112,7 @@ abstract final class IapCatalog {
       id: 'starter',
       name: 'Starter',
       appleProductId: 'Swipess.promo.event.week.v3',
+      googleProductId: 'swipess.promo.event.week.v2',
       priceLabel: '\$4.99',
       durationLabel: '/ week',
       paypalPath: 'ZXQC96VYV7JLL',
@@ -114,6 +122,7 @@ abstract final class IapCatalog {
       id: 'growth',
       name: 'Growth',
       appleProductId: 'Swipess.promo.event.month.v3',
+      googleProductId: 'swipess.promo.event.month.v2',
       priceLabel: '\$49.99',
       durationLabel: '/ 3 months',
       paypalPath: 'ATKD4TR7KFTJU',
@@ -124,6 +133,7 @@ abstract final class IapCatalog {
       id: 'premium',
       name: 'Wave',
       appleProductId: 'Swipess.promo.event.quarter.v3',
+      googleProductId: 'swipess.promo.event.quarter.v2',
       priceLabel: '\$99.99',
       durationLabel: '/ 6 months',
       paypalPath: 'LK7XWSMDHH8AW',
@@ -135,6 +145,9 @@ abstract final class IapCatalog {
     'Swipess.plus.monthly.v3',
     'Swipess.plus.semestral.v3',
     'Swipess.plus.annual.v3',
+    'swipess.plus.monthly.v2',
+    'swipess.plus.semestral.v2',
+    'swipess.plus.annual.v2',
   };
 
   static const tokenIds = {
@@ -142,12 +155,19 @@ abstract final class IapCatalog {
     'Swipess.tokens.50.v2',
     'Swipess.tokens.100.v2',
     'Swipess.tokens.150.v2',
+    'swipess.tokens.20.v1',
+    'swipess.tokens.50.v1',
+    'swipess.tokens.100.v1',
+    'swipess.tokens.150.v1',
   };
 
   static const promoIds = {
     'Swipess.promo.event.week.v3',
     'Swipess.promo.event.month.v3',
     'Swipess.promo.event.quarter.v3',
+    'swipess.promo.event.week.v2',
+    'swipess.promo.event.month.v2',
+    'swipess.promo.event.quarter.v2',
   };
 
   static bool get usesNativeStore =>
@@ -164,14 +184,14 @@ abstract final class IapCatalog {
 
   static IapOffer? tokenById(String id) {
     for (final offer in tokens) {
-      if (offer.id == id || offer.appleProductId == id) return offer;
+      if (offer.id == id || offer.appleProductId == id || offer.googleProductId == id) return offer;
     }
     return null;
   }
 
   static IapOffer? promoById(String id) {
     for (final offer in eventPromos) {
-      if (offer.id == id || offer.appleProductId == id) return offer;
+      if (offer.id == id || offer.appleProductId == id || offer.googleProductId == id) return offer;
     }
     return null;
   }
@@ -182,6 +202,7 @@ class IapOffer {
     required this.id,
     required this.name,
     required this.appleProductId,
+    this.googleProductId,
     required this.priceLabel,
     this.label,
     this.durationLabel,
@@ -195,6 +216,7 @@ class IapOffer {
   final String id;
   final String name;
   final String appleProductId;
+  final String? googleProductId;
   final String priceLabel;
   final String? label;
   final String? durationLabel;
@@ -203,7 +225,13 @@ class IapOffer {
   final int? tokens;
   final List<String> benefits;
   final bool popular;
+  
+  String get storeProductId => 
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android 
+          ? (googleProductId ?? appleProductId) 
+          : appleProductId;
 
   bool get isSubscription =>
-      IapCatalog.subscriptionIds.contains(appleProductId);
+      IapCatalog.subscriptionIds.contains(appleProductId) || 
+      (googleProductId != null && IapCatalog.subscriptionIds.contains(googleProductId));
 }

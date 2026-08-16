@@ -61,3 +61,4 @@ dart_defines.json
 # One-off migration/codegen scratch
 /scratch/
 scratch_*.py
+/supabase/.temp/
