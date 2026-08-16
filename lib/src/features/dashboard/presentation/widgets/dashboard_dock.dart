@@ -115,7 +115,6 @@ class _DashboardDockState extends State<DashboardDock> {
               child: ListView.separated(
                 controller: _controller,
                 scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 itemCount: widget.items.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 4),
