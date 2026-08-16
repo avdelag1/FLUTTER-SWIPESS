@@ -66,11 +66,22 @@ class _SubscriptionPackagesScreenState
     return SwipessTokens.tierPower;
   }
 
-  String? _badgeForOffer(IapOffer offer, int index, int total) {
+  String _badgeForOffer(IapOffer offer, int index, int total) {
+    final catalogLabel = offer.label?.trim();
+    if (catalogLabel != null && catalogLabel.isNotEmpty) {
+      return catalogLabel.toUpperCase();
+    }
     if (offer.popular) return 'POPULAR';
     if (index == total - 1) return 'BEST VALUE';
-    if (index == 0) return 'STARTER';
-    return null;
+    return 'STARTER';
+  }
+
+  String _durationText(String? raw) {
+    return (raw ?? '')
+        .trim()
+        .replaceFirst(RegExp(r'^/\s*'), '')
+        .trim()
+        .toUpperCase();
   }
 
   @override
@@ -84,7 +95,6 @@ class _SubscriptionPackagesScreenState
         child: SafeArea(
           child: Column(
             children: [
-              // Top Bar Header
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -127,8 +137,6 @@ class _SubscriptionPackagesScreenState
                   ],
                 ),
               ),
-
-              // Main List
               Expanded(
                 child: ListView(
                   controller: _scrollController,
@@ -148,7 +156,7 @@ class _SubscriptionPackagesScreenState
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Unlock the full Swipess experience. Priority placement, unlimited AI, and no messaging limits.',
+                      'Compare the exact AI limits and member benefits included with each plan.',
                       textAlign: TextAlign.center,
                       style: SwipessTokens.bodyClean(
                         color: ink.withAlpha(160),
@@ -156,8 +164,6 @@ class _SubscriptionPackagesScreenState
                       ),
                     ),
                     const SizedBox(height: 28),
-
-                    // Subscription Tiers
                     for (var i = 0; i < IapCatalog.subscriptions.length; i++) ...[
                       () {
                         final offer = IapCatalog.subscriptions[i];
@@ -167,6 +173,7 @@ class _SubscriptionPackagesScreenState
                           i,
                           IapCatalog.subscriptions.length,
                         );
+                        final duration = _durationText(offer.durationLabel);
 
                         return SwipessTierCard(
                           accentColor: accent,
@@ -176,17 +183,14 @@ class _SubscriptionPackagesScreenState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Period Kicker
                               Text(
-                                (offer.durationLabel ?? offer.name).toUpperCase(),
+                                offer.name.toUpperCase(),
                                 style: SwipessTokens.kickerUppercase(
                                   color: accent,
                                   fontSize: 12,
                                 ),
                               ),
                               const SizedBox(height: 8),
-
-                              // Price Row
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
@@ -199,16 +203,17 @@ class _SubscriptionPackagesScreenState
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    'USD ${offer.durationLabel != null ? '/ ${offer.durationLabel!.toUpperCase()}' : ''}',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: isLight
-                                          ? Colors.black54
-                                          : Colors.white54,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                  if (duration.isNotEmpty)
+                                    Text(
+                                      'USD / $duration',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: isLight
+                                            ? Colors.black54
+                                            : Colors.white54,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -219,8 +224,6 @@ class _SubscriptionPackagesScreenState
                                 height: 1,
                               ),
                               const SizedBox(height: 16),
-
-                              // Benefits Checklist
                               for (final benefit in offer.benefits) ...[
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 10),
@@ -253,8 +256,6 @@ class _SubscriptionPackagesScreenState
                                 ),
                               ],
                               const SizedBox(height: 20),
-
-                              // Full-width CTA
                               SwipessPrimaryCTA(
                                 label: 'CHOOSE PLAN',
                                 accentColor: accent,
@@ -267,8 +268,6 @@ class _SubscriptionPackagesScreenState
                       }(),
                       const SizedBox(height: 24),
                     ],
-
-                    // Basic Free Tier
                     SwipessTierCard(
                       accentColor: Colors.grey,
                       isLight: isLight,
@@ -276,7 +275,7 @@ class _SubscriptionPackagesScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'BASIC',
+                            'CURRENT FREE ACCESS',
                             style: SwipessTokens.kickerUppercase(
                               color: isLight ? Colors.black54 : Colors.white60,
                             ),
@@ -293,9 +292,9 @@ class _SubscriptionPackagesScreenState
                           const Divider(height: 1),
                           const SizedBox(height: 14),
                           for (final f in const [
-                            'Unlimited Swipes',
                             '1 Active Listing',
-                            'Standard Support',
+                            '30-day messaging trial for new accounts',
+                            'Message Tokens can unlock new conversations',
                           ]) ...[
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8),
@@ -307,12 +306,14 @@ class _SubscriptionPackagesScreenState
                                     size: 16,
                                   ),
                                   const SizedBox(width: 10),
-                                  Text(
-                                    f,
-                                    style: SwipessTokens.bodyClean(
-                                      color: isLight
-                                          ? Colors.black54
-                                          : Colors.white60,
+                                  Expanded(
+                                    child: Text(
+                                      f,
+                                      style: SwipessTokens.bodyClean(
+                                        color: isLight
+                                            ? Colors.black54
+                                            : Colors.white60,
+                                      ),
                                     ),
                                   ),
                                 ],
