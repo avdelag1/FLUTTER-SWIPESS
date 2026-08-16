@@ -2,6 +2,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 
 /// Capacitor `App.tsx` path parity for Flutter GoRouter.
 abstract final class AppPaths {
+  static const splash = '/splash';
   static const gate = '/gate';
   static const welcome = '/welcome';
   static const onboarding = '/onboarding';

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 
@@ -46,30 +47,33 @@ abstract final class AppRedirect {
     required bool signedIn,
     required PendingDeepLink pending,
   }) {
-    // While grant status is still loading, don't bounce the user.
-    if (grantLoading) return null;
+    // While grant status is still loading, stay on splash screen.
+    if (grantLoading) {
+      if (location == AppPaths.splash) return null;
+      return AppPaths.splash;
+    }
 
     if (isPublic(location)) return null;
 
-    // Gate always wins over a persisted session. A signed-in user who has not
-    // passed the code (bookmark to /client/dashboard, stale localStorage)
-    // used to bounce dashboard → gate → dashboard until GoRouter threw.
-    if (!granted) {
+    // Native apps bypass the access-code gate completely.
+    final effectiveGranted = !kIsWeb || granted;
+
+    if (!effectiveGranted) {
       if (location == AppPaths.gate) return null;
       pending.remember(uri);
       return AppPaths.gate;
     }
 
     if (!signedIn) {
-      if (location == AppPaths.gate) return AppPaths.welcome;
       if (_authScreens.contains(location)) return null;
       pending.remember(uri);
       return AppPaths.welcome;
     }
 
-    if (location == AppPaths.gate || _authScreens.contains(location)) {
-      // A share link followed before signing in wins over the default landing
-      // spot; `take` clears it so it only resumes once.
+    if (location == AppPaths.splash ||
+        location == AppPaths.gate ||
+        _authScreens.contains(location)) {
+      // A share link followed before signing in wins over default landing.
       return pending.take() ?? AppPaths.clientDashboard;
     }
 

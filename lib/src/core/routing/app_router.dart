@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/access_code_gate_screen.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/screens/app_splash_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/auth_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_onboarding_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/not_found_screen.dart';
@@ -66,7 +67,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   final router = GoRouter(
-    initialLocation: AppPaths.gate,
+    initialLocation: AppPaths.splash,
     refreshListenable: refresh,
     redirect: (context, state) {
       final grantedAsync = ref.read(accessGrantedProvider);
@@ -80,6 +81,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
     },
     routes: [
+      GoRoute(
+        path: AppPaths.splash,
+        builder: (ctx, _) => const AppSplashScreen(),
+      ),
       GoRoute(
         path: AppPaths.gate,
         builder: (ctx, _) => const AccessCodeGateScreen(),

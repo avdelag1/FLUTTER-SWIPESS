@@ -30,35 +30,56 @@
       position: absolute;
       inset: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 13px;
-      letter-spacing: 0.28em;
-      font-weight: 700;
-      z-index: 9999;
       background: #0A0A0D;
+      z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .boot-logo {
+      font-size: 36px;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -0.04em;
+      color: #FFFFFF;
+      margin-bottom: 24px;
+      user-select: none;
+    }
+    .boot-loader {
+      width: 140px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .boot-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, #FF4D00, #E4007C);
+      border-radius: 999px;
+      animation: bootProgress 1.5s ease-in-out infinite;
+    }
+    @keyframes bootProgress {
+      0% { left: -40%; width: 40%; }
+      50% { left: 30%; width: 60%; }
+      100% { left: 100%; width: 40%; }
     }
   </style>
   <script>
     function removeSplashFromWeb() {
       document.getElementById('boot')?.remove();
-      // Keep canvas color — never flash pure black before Flutter paints.
       document.body.style.background = '#0A0A0D';
     }
-    // Keep splash until Flutter paints — never leave a blank load forever.
     window.addEventListener('flutter-first-frame', function () {
       removeSplashFromWeb();
     });
-    // If compile/load is slow, show a hint instead of infinite silent wait.
-    setTimeout(function () {
-      var el = document.getElementById('boot');
-      if (el) el.textContent = 'LOADING…';
-    }, 5000);
-    // Failsafe: never trap the user on SWIPESS forever if the engine stalls.
-    setTimeout(removeSplashFromWeb, 20000);
-    // Local/dev: kill stale Flutter service workers that cache a broken build.
+    // Failsafe: never trap user if engine stalls
+    setTimeout(removeSplashFromWeb, 15000);
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -75,7 +96,12 @@
   <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
 </head>
 <body>
-  <div id="boot">SWIPESS</div>
+  <div id="boot">
+    <div class="boot-logo">SWIPESS</div>
+    <div class="boot-loader">
+      <div class="boot-bar"></div>
+    </div>
+  </div>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
