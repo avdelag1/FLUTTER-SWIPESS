@@ -1,5 +1,5 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/subscriptions/domain/subscription_tier.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SubscriptionData {
   final SubscriptionTier tier;
@@ -12,73 +12,102 @@ class SubscriptionData {
     this.tokensBalance = 0,
   });
 
-  bool get isTrialActive {
-    if (trialEndsAt == null) return false;
-    return DateTime.now().isBefore(trialEndsAt!);
-  }
+  bool get isTrialActive =>
+      trialEndsAt != null && DateTime.now().isBefore(trialEndsAt!);
 
-  /// If trial is active, they have package2 benefits (everything except maybe unlimited).
-  /// The user requested 3 months free where they can use ALL tools (AI, virtual card, events).
-  /// So effectively, if trial is active, they have package2 or premium capabilities.
-  SubscriptionTier get effectiveTier => isTrialActive ? SubscriptionTier.package2 : tier;
+  SubscriptionTier get effectiveTier =>
+      isTrialActive ? SubscriptionTier.package2 : tier;
 }
 
 class SubscriptionRepository {
-  SubscriptionRepository({SupabaseClient? client}) : _client = client ?? Supabase.instance.client;
+  SubscriptionRepository({SupabaseClient? client})
+      : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
   Future<SubscriptionData> fetchCurrent() async {
     final user = _client.auth.currentUser;
-    if (user == null) {
-      return SubscriptionData(tier: SubscriptionTier.free);
-    }
+    if (user == null) return SubscriptionData(tier: SubscriptionTier.free);
 
     try {
-      final data = await _client
+      final subscription = await _client
           .from('user_subscriptions')
-          .select()
+          .select('is_active,end_date,subscription_packages(tier)')
           .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('created_at', ascending: false)
+          .limit(1)
           .maybeSingle();
 
-      if (data != null) {
-        return SubscriptionData(
-          tier: SubscriptionTier.fromString(data['subscription_tier'] as String? ?? 'free'),
-          trialEndsAt: data['trial_ends_at'] != null ? DateTime.parse(data['trial_ends_at']) : null,
-          tokensBalance: (data['tokens_balance'] as num?)?.toInt() ?? 0,
-        );
-      } else {
-        // Create the record if it doesn't exist
-        final trialEndsAt = DateTime.now().add(const Duration(days: 90));
-        await _client.from('user_subscriptions').insert({
-          'user_id': user.id,
-          'subscription_tier': 'free',
-          'trial_ends_at': trialEndsAt.toIso8601String(),
-          'tokens_balance': 0,
-        });
-        return SubscriptionData(
-          tier: SubscriptionTier.free,
-          trialEndsAt: trialEndsAt,
-        );
+      var tier = SubscriptionTier.free;
+      if (subscription != null) {
+        final endRaw = subscription['end_date'] as String?;
+        final end = endRaw == null ? null : DateTime.tryParse(endRaw);
+        final stillActive = end == null || end.isAfter(DateTime.now());
+        if (stillActive) {
+          final package = subscription['subscription_packages'];
+          final dbTier = package is Map ? package['tier']?.toString() : null;
+          tier = _mapDatabaseTier(dbTier);
+        }
       }
-    } catch (e) {
+
+      int tokens = 0;
+      try {
+        final rows = await _client.rpc('rpc_get_user_tokens');
+        if (rows is List && rows.isNotEmpty && rows.first is Map) {
+          tokens = ((rows.first as Map)['total_messages'] as num?)?.toInt() ?? 0;
+        }
+      } catch (_) {
+        // Subscription access must not fail just because token accounting is down.
+      }
+
+      return SubscriptionData(tier: tier, tokensBalance: tokens);
+    } catch (_) {
       return SubscriptionData(tier: SubscriptionTier.free);
+    }
+  }
+
+  SubscriptionTier _mapDatabaseTier(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'basic':
+        return SubscriptionTier.package1;
+      case 'premium':
+      case 'premium_plus':
+        return SubscriptionTier.package2;
+      case 'unlimited':
+        return SubscriptionTier.premium;
+      case 'free':
+      default:
+        return SubscriptionTier.free;
     }
   }
 
   Future<void> updateTokens(int newBalance) async {
-    final user = _client.auth.currentUser;
-    if (user == null) return;
-    await _client.from('user_subscriptions').update({'tokens_balance': newBalance}).eq('user_id', user.id);
+    // Token balances are ledger-backed in `tokens`; never overwrite them from
+    // the client. This method is retained for API compatibility only.
+    final current = await fetchCurrent();
+    if (newBalance >= current.tokensBalance) return;
+    final difference = current.tokensBalance - newBalance;
+    if (difference > 0) {
+      await _client.rpc(
+        'rpc_deduct_token',
+        params: {'p_amount': difference, 'p_token_type': 'message'},
+      );
+    }
   }
 
   Future<bool> decrementToken() async {
     final data = await fetchCurrent();
-    if (data.tier == SubscriptionTier.premium) return true; // unlimited
-    if (data.tokensBalance > 0) {
-      await updateTokens(data.tokensBalance - 1);
-      return true;
-    }
-    return false; // not enough tokens
+    if (data.tier == SubscriptionTier.premium) return true;
+    try {
+      final rows = await _client.rpc(
+        'rpc_deduct_token',
+        params: {'p_amount': 1, 'p_token_type': 'message'},
+      );
+      if (rows is List && rows.isNotEmpty && rows.first is Map) {
+        return (rows.first as Map)['success'] == true;
+      }
+    } catch (_) {}
+    return false;
   }
 }
