@@ -35,7 +35,7 @@ class _HolographicIDCardState extends State<HolographicIDCard>
     super.initState();
     _shimmerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 6),
     )..repeat();
   }
 
@@ -115,7 +115,7 @@ class _HolographicIDCardState extends State<HolographicIDCard>
                   ),
                 ),
 
-                // Shimmer Overlay
+                // Shimmer Overlay (subtle, soft sheen)
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: _shimmerController,
@@ -128,9 +128,9 @@ class _HolographicIDCardState extends State<HolographicIDCard>
                             stops: const [0.0, 0.45, 0.5, 0.55, 1.0],
                             colors: [
                               Colors.transparent,
-                              Colors.white.withAlpha(12),
-                              Colors.white.withAlpha(50),
-                              Colors.white.withAlpha(12),
+                              Colors.white.withAlpha(4),
+                              Colors.white.withAlpha(15),
+                              Colors.white.withAlpha(4),
                               Colors.transparent,
                             ],
                             transform: GradientRotation(
