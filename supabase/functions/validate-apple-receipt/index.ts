@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
           is_active: expiresDate ? new Date(expiresDate) > new Date() : true,
           payment_status: 'paid',
           transaction_id: tx.transaction_id ?? transactionId ?? txKey,
-        }, { onConflict: 'user_id, package_id' })
+        }, { onConflict: 'user_id,package_id' })
         if (subError) throw subError
       } else if (productId in TOKENS) {
         const amount = TOKENS[productId]

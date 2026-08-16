@@ -123,7 +123,9 @@ async function verifyWithGooglePlay(
     const result = await verifyRes.json();
 
     if (isSubscription) {
-      const isActive = result.subscriptionState === 'SUBSCRIPTION_STATE_ACTIVE' || result.subscriptionState === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD';
+      const isActive = result.subscriptionState === 'SUBSCRIPTION_STATE_ACTIVE' || 
+                       result.subscriptionState === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD' ||
+                       result.subscriptionState === 'SUBSCRIPTION_STATE_CANCELED';
       const lineItem = result.lineItems && result.lineItems.find((item: any) => item.productId === productId);
       if (!lineItem) {
         console.error(`Google Play API verification failed: no line item matches productId ${productId}`);
@@ -252,6 +254,20 @@ Deno.serve(async (req) => {
       throw auditError;
     }
 
+    const { error: txError } = await adminClient.from('google_play_transactions').upsert({
+      user_id: userId,
+      product_id: productId,
+      purchase_token: purchaseToken,
+      order_id: verification.orderId || clientOrderId || null,
+      purchase_time: new Date().toISOString(),
+      environment: 'Production',
+      verified: true,
+    }, { onConflict: 'purchase_token' });
+    if (txError) {
+      await adminClient.from('purchase_audit_log').delete().eq('id', audit.id);
+      throw txError;
+    }
+
     try {
       if (isSubscription) {
         const packageName = SUBSCRIPTIONS[productId];
@@ -287,7 +303,7 @@ Deno.serve(async (req) => {
           is_active: expiresDate ? new Date(expiresDate) > new Date() : true,
           payment_status: 'paid',
           transaction_id: verification.orderId || clientOrderId || purchaseToken,
-        }, { onConflict: 'user_id, package_id' });
+        }, { onConflict: 'user_id,package_id' });
         if (subError) throw subError;
         
       } else if (isToken) {
@@ -310,17 +326,6 @@ Deno.serve(async (req) => {
         throw new Error('Event promotions storage is not yet implemented.');
       }
 
-      const { error: txError } = await adminClient.from('google_play_transactions').upsert({
-        user_id: userId,
-        product_id: productId,
-        purchase_token: purchaseToken,
-        order_id: verification.orderId || clientOrderId || null,
-        purchase_time: new Date().toISOString(),
-        environment: 'Production',
-        verified: true,
-      }, { onConflict: 'purchase_token' });
-      if (txError) throw txError;
-
       await adminClient
         .from('purchase_audit_log')
         .update({
@@ -338,6 +343,7 @@ Deno.serve(async (req) => {
       
     } catch (grantError) {
       // Allow a legitimate retry if the entitlement write itself failed
+      await adminClient.from('google_play_transactions').delete().eq('purchase_token', purchaseToken);
       await adminClient.from('purchase_audit_log').delete().eq('id', audit.id);
       throw grantError;
     }
