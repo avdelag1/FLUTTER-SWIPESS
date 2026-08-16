@@ -130,7 +130,7 @@ void main() {
     expect(radialWashes, isEmpty);
   });
 
-  testWidgets('header HUD buttons are thick nexus 48px controls', (
+  testWidgets('header HUD buttons keep native 44pt minimum targets', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -145,8 +145,10 @@ void main() {
     final profile = tester.getSize(
       find.byKey(const ValueKey('header-profile')),
     );
-    expect(profile.height, 42);
-    expect(profile.width, 42);
+    expect(profile.height, 44);
+    expect(profile.width, 44);
+    expect(find.bySemanticsLabel('Open map'), findsOneWidget);
+    expect(find.bySemanticsLabel('Open notifications'), findsOneWidget);
   });
 
   testWidgets('all header controls fit a compact phone without overflow', (
@@ -170,8 +172,8 @@ void main() {
     expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-create')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
-    expect(find.byIcon(Icons.public_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.dark_mode_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.notifications_rounded), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-map')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-theme')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-notifications')), findsOneWidget);
   });
 }

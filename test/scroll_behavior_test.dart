@@ -1,10 +1,15 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_scroll_behavior.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  tearDown(() {
+    debugDefaultTargetPlatformOverride = null;
+  });
+
   testWidgets('supports touch, mouse, trackpad and stylus without glow', (
     tester,
   ) async {
@@ -27,7 +32,6 @@ void main() {
     expect(behavior.dragDevices, contains(PointerDeviceKind.mouse));
     expect(behavior.dragDevices, contains(PointerDeviceKind.trackpad));
     expect(behavior.dragDevices, contains(PointerDeviceKind.stylus));
-    expect(behavior.getScrollPhysics(context), isA<ScrollPhysics>());
 
     const child = SizedBox(key: ValueKey('scroll-child'));
     final wrapped = behavior.buildOverscrollIndicator(
@@ -36,5 +40,29 @@ void main() {
       const ScrollableDetails(direction: AxisDirection.down),
     );
     expect(identical(wrapped, child), isTrue);
+  });
+
+  testWidgets('uses native bounce on iOS and clamping on Android', (
+    tester,
+  ) async {
+    const behavior = SwipessScrollBehavior();
+    late BuildContext context;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (ctx) {
+            context = ctx;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    expect(behavior.getScrollPhysics(context), isA<BouncingScrollPhysics>());
+
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    expect(behavior.getScrollPhysics(context), isA<ClampingScrollPhysics>());
   });
 }

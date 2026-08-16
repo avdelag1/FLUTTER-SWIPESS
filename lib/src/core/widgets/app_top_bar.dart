@@ -1,19 +1,18 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
-import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -35,14 +34,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(72);
 
-  // Same palette as the bottom dock / profile CTAs.
   static const addWash = Color(0xFFFF4D00);
-  static const tokenWash = Color(0xFFFF8C42);
   static const mapWash = Color(0xFF3B82F6);
   static const themeWash = Color(0xFF8B5CF6);
   static const bellWash = Color(0xFFE4007C);
+  static const tokenWash = Color(0xFFFFB300);
 
-  static const _hudSize = 42.0;
+  // Native-feeling iOS controls should not fall below a 44pt hit target.
+  static const _hudSize = 44.0;
 
   void _openProfile(BuildContext context) {
     AppHaptics.medium();
@@ -67,10 +66,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
-    final pillFill = isLight
-        ? Colors.white.withAlpha(50)
-        : Colors.black.withAlpha(150);
-    final pillBorder = ink.withAlpha(90);
     final chromeGap = MediaQuery.sizeOf(context).width < 360 ? 4.0 : 8.0;
 
     return Material(
@@ -121,8 +116,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-tokens'),
                   semanticLabel: 'Open tokens, balance $tokens',
-                  fill: const Color(0xFFFFB300).withAlpha(40),
-                  border: const Color(0xFFFFB300),
+                  fill: tokenWash.withAlpha(40),
+                  border: tokenWash,
                   wide: true,
                   onTap: () {
                     AppHaptics.medium();
@@ -136,15 +131,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          '👑',
-                          style: TextStyle(fontSize: 18),
-                        ),
+                        const Text('👑', style: TextStyle(fontSize: 18)),
                         const SizedBox(width: 5),
                         Text(
                           '$tokens',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: ink,
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
                           ),
@@ -155,6 +147,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-map'),
+                  semanticLabel: 'Open map',
                   fill: mapWash.withAlpha(40),
                   border: mapWash,
                   onTap: () {
@@ -171,6 +165,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-theme'),
+                  semanticLabel: isLight
+                      ? 'Switch to dark appearance'
+                      : 'Switch to light appearance',
                   fill: themeWash.withAlpha(40),
                   border: themeWash,
                   onTap: () {
@@ -189,6 +187,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-notifications'),
+                  semanticLabel: 'Open notifications',
                   fill: bellWash.withAlpha(40),
                   border: bellWash,
                   onTap: () {
@@ -208,9 +208,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                           color: bellWash,
                         ),
                       ),
-                      ref
-                          .watch(unreadNotificationsProvider)
-                          .when(
+                      ref.watch(unreadNotificationsProvider).when(
                             data: (count) {
                               if (count <= 0) return const SizedBox.shrink();
                               return Positioned(
@@ -241,7 +239,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-/// Circular photo only — no name, no stadium frame.
 class _ProfileAvatarButton extends StatelessWidget {
   const _ProfileAvatarButton({
     super.key,
@@ -266,6 +263,7 @@ class _ProfileAvatarButton extends StatelessWidget {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: onTap,
           child: SizedBox(
             width: AppTopBar._hudSize,
@@ -284,7 +282,7 @@ class _ProfileAvatarButton extends StatelessWidget {
                     : null,
               ),
               child: avatarUrl == null
-                  ? const Icon(Icons.person_rounded, size: 20, color: Colors.white)
+                  ? Icon(Icons.person_rounded, size: 20, color: ink)
                   : null,
             ),
           ),
@@ -314,6 +312,7 @@ class _HudButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -331,12 +330,17 @@ class _HudButton extends StatelessWidget {
                 child: Container(
                   height: AppTopBar._hudSize,
                   width: wide ? null : AppTopBar._hudSize,
-                  padding: wide ? const EdgeInsets.fromLTRB(8, 0, 14, 0) : null,
+                  padding: wide
+                      ? EdgeInsets.fromLTRB(
+                          compact ? 6 : 8,
+                          0,
+                          compact ? 10 : 14,
+                          0,
+                        )
+                      : null,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: fill.withAlpha(
-                      fill.alpha ~/ 2,
-                    ), // Make it more translucent to see blur
+                    color: fill.withAlpha(fill.alpha ~/ 2),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: border.withAlpha(90),

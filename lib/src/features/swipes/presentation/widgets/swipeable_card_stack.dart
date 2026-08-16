@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 
@@ -57,7 +56,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   final _topCardKey = GlobalKey<CapSwipeCardState>();
 
-  static const _swipeThreshold = 50.0;
+  static const _swipeThreshold = 72.0;
+  static const _velocityThreshold = 900.0;
   static const _maxVisibleCards = 3;
 
   @override
@@ -65,7 +65,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     super.initState();
     _snapController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
+      duration: const Duration(milliseconds: 300),
     );
   }
 
@@ -84,8 +84,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final dx = _dragOffset.dx;
     if (dx <= 0) return 0;
     if (dx >= _swipeThreshold) return 1;
-    if (dx < 25) return (dx / 25) * 0.5;
-    return 0.5 + ((dx - 25) / 25) * 0.5;
+    final halfway = _swipeThreshold / 2;
+    if (dx < halfway) return (dx / halfway) * 0.5;
+    return 0.5 + ((dx - halfway) / halfway) * 0.5;
   }
 
   double get _nopeOpacity {
@@ -93,12 +94,15 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (dx >= 0) return 0;
     final a = -dx;
     if (a >= _swipeThreshold) return 1;
-    if (a < 25) return (a / 25) * 0.5;
-    return 0.5 + ((a - 25) / 25) * 0.5;
+    final halfway = _swipeThreshold / 2;
+    if (a < halfway) return (a / halfway) * 0.5;
+    return 0.5 + ((a - halfway) / halfway) * 0.5;
   }
 
   void _onPanStart(DragStartDetails details) {
-    if (_zoomLocksDrag || (_topCardKey.currentState?.interceptsDrag ?? false)) {
+    if (_snapController.isAnimating ||
+        _zoomLocksDrag ||
+        (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
     }
     _snapController.stop();
@@ -106,7 +110,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
-    if (_zoomLocksDrag || (_topCardKey.currentState?.interceptsDrag ?? false)) {
+    if (!_isDragging ||
+        _zoomLocksDrag ||
+        (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
     }
     setState(() => _dragOffset += details.delta);
@@ -115,11 +121,14 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _onPanEnd(DragEndDetails details) {
     if (!_isDragging) return;
     final velocity = details.velocity.pixelsPerSecond.dx;
-    final shouldSwipe =
-        _dragOffset.dx.abs() > _swipeThreshold || velocity.abs() > 800;
+    final fling = velocity.abs() > _velocityThreshold;
+    final shouldSwipe = _dragOffset.dx.abs() > _swipeThreshold || fling;
 
     if (shouldSwipe && widget.listings.isNotEmpty) {
-      final direction = _dragOffset.dx > 0
+      // A fast release should follow the finger velocity even if the card was a
+      // few pixels on the opposite side when the gesture ended.
+      final directionalDx = fling ? velocity : _dragOffset.dx;
+      final direction = directionalDx >= 0
           ? SwipeDirection.right
           : SwipeDirection.left;
       _animateOffScreen(direction);
@@ -129,6 +138,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _animateOffScreen(SwipeDirection direction) {
+    if (_snapController.isAnimating || widget.listings.isEmpty) return;
+    _isDragging = false;
     final screenWidth = MediaQuery.of(context).size.width;
     final endX = direction == SwipeDirection.right
         ? screenWidth * 1.5
@@ -139,11 +150,12 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           begin: _dragOffset,
           end: Offset(endX, _dragOffset.dy),
         ).animate(
-          CurvedAnimation(parent: _snapController, curve: Curves.easeOutCubic),
+          CurvedAnimation(parent: _snapController, curve: Curves.easeOutQuart),
         );
 
     _snapController.addListener(_updateFromAnimation);
     _snapController.forward(from: 0).then((_) {
+      if (!mounted) return;
       if (direction == SwipeDirection.right) {
         AppHaptics.heavy();
       } else {
@@ -161,12 +173,15 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _animateSnapBack() {
+    if (_snapController.isAnimating) return;
+    _isDragging = false;
     _snapAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero)
         .animate(
-          CurvedAnimation(parent: _snapController, curve: Curves.easeOutBack),
+          CurvedAnimation(parent: _snapController, curve: Curves.easeOutCubic),
         );
     _snapController.addListener(_updateFromAnimation);
     _snapController.forward(from: 0).then((_) {
+      if (!mounted) return;
       setState(() {
         _isDragging = false;
         _dragOffset = Offset.zero;
@@ -177,13 +192,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _updateFromAnimation() {
-    if (_snapController.isAnimating) {
+    if (_snapController.isAnimating && mounted) {
       setState(() => _dragOffset = _snapAnimation.value);
     }
   }
 
   void triggerSwipe(SwipeDirection direction) {
-    if (widget.listings.isEmpty) return;
+    if (widget.listings.isEmpty || _snapController.isAnimating) return;
     _animateOffScreen(direction);
   }
 
@@ -281,7 +296,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
               onOpenMap: widget.onOpenMap,
               onSummonChrome: widget.onSummonChrome,
               onZoomChanged: (active) {
-                setState(() => _zoomLocksDrag = active);
+                if (mounted) setState(() => _zoomLocksDrag = active);
               },
             ),
           ),

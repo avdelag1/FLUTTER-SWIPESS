@@ -1,41 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-class _ChipSpec {
-  const _ChipSpec(this.id, this.label, this.color, this.icon);
-  final String id;
-  final String label;
-  final Color color;
-  final IconData icon;
-}
-
-const _chips = [
-  _ChipSpec(
-    'property',
-    'Properties',
-    Color(0xFFFF6B6B),
-    Icons.apartment_rounded,
-  ),
-  _ChipSpec('events', 'Events', Color(0xFF60A5FA), Icons.celebration_rounded),
-  _ChipSpec('worker', 'Pros', Color(0xFFEAB308), Icons.auto_awesome),
-];
 
 class BentoDashboardScreen extends ConsumerStatefulWidget {
   const BentoDashboardScreen({super.key});
@@ -46,8 +23,6 @@ class BentoDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
-  int _chipIndex = 0;
-
   void _openCategory(String id, String title) {
     if (id == 'events') {
       context.go(AppPaths.exploreEvents);
@@ -60,7 +35,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
 
-    // Split into left and right columns
     final leftItems = _bentoItems.where((i) => i.index.isEven).toList();
     final rightItems = _bentoItems.where((i) => i.index.isOdd).toList();
 
@@ -72,23 +46,28 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 72, 16, 16),
-                child: Column(
-                  children: [
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final showChrome = ref.watch(chromeVisibilityProvider);
-                        return AnimatedOpacity(
-                          opacity: showChrome ? 1.0 : 0.0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                          child: GlowSearchBar(
-                            onTap: () => _openCategory('property', 'PROPERTIES'),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.paddingOf(context).top + 72,
+                  16,
+                  16,
+                ),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final showChrome = ref.watch(chromeVisibilityProvider);
+                    return IgnorePointer(
+                      ignoring: !showChrome,
+                      child: AnimatedOpacity(
+                        opacity: showChrome ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                        child: GlowSearchBar(
+                          onTap: () =>
+                              _openCategory('property', 'PROPERTIES'),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -122,71 +101,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.spec,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _ChipSpec spec;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 40,
-        decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.black,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? Colors.white : const Color(0x33FFFFFF),
-          ),
-          boxShadow: selected
-              ? const [BoxShadow(color: Colors.black54, blurRadius: 12)]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected ? Colors.black.withAlpha(20) : spec.color.withOpacity(0.2),
-              ),
-              child: Icon(
-                spec.icon,
-                size: 14,
-                color: selected ? Colors.black : spec.color,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  spec.label,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: selected ? Colors.black : spec.color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
                   ),
                 ),
               ),
@@ -236,25 +150,29 @@ class _BentoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.id == 'events') {
-      return Consumer(builder: (context, ref, _) {
-        return SizedBox(
-          height: item.height,
-          child: DecoratedBox(
-            decoration: AppTheme.qfNeoFrame(isLight: isLight),
-            child: ClipRRect(
-              borderRadius: AppTheme.qfNeoFrameRadius,
-              child: EventsTeaserCard(onTap: () {
-                final sub = ref.read(subscriptionProvider).value;
-                if (sub?.effectiveTier.canViewEvents != true) {
-                  showPaywall(context, featureName: 'Events & Pros');
-                  return;
-                }
-                onOpen(item.id, item.title);
-              }),
+      return Consumer(
+        builder: (context, ref, _) {
+          return SizedBox(
+            height: item.height,
+            child: DecoratedBox(
+              decoration: AppTheme.qfNeoFrame(isLight: isLight),
+              child: ClipRRect(
+                borderRadius: AppTheme.qfNeoFrameRadius,
+                child: EventsTeaserCard(
+                  onTap: () {
+                    final sub = ref.read(subscriptionProvider).value;
+                    if (sub?.effectiveTier.canViewEvents != true) {
+                      showPaywall(context, featureName: 'Events & Pros');
+                      return;
+                    }
+                    onOpen(item.id, item.title);
+                  },
+                ),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
     }
 
     return _BentoCard(
@@ -264,7 +182,7 @@ class _BentoTile extends StatelessWidget {
       media: BentoMediaPools.forId(item.id),
       stagger: Duration(seconds: int.parse(item.delaySeconds)),
       isLight: isLight,
-      enableVideo: item.index < 2, // only top few use videos for perf
+      enableVideo: item.index < 2,
       onTap: () => onOpen(item.id, item.title),
     );
   }
@@ -301,13 +219,15 @@ class _BentoCardState extends State<_BentoCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onTap,
       child: AnimatedScale(
-        scale: _pressed ? 0.98 : 1,
-        duration: const Duration(milliseconds: 80),
+        scale: _pressed ? 0.985 : 1,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOutCubic,
         child: Container(
           height: widget.height,
           decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),

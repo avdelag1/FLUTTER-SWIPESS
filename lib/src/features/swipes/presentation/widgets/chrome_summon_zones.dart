@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
-/// Cap `ChromeSummonZones` — invisible edge taps that bring HUD chrome back.
+/// Invisible edge taps that bring the dashboard/deck chrome back.
+///
+/// Keep these zones at the physical edges only. A previous full-height
+/// vertical-drag detector sat above the content while chrome was hidden and
+/// could win the gesture arena against the page scroll, making scrolling feel
+/// sticky or intermittently broken.
 class ChromeSummonZones extends StatelessWidget {
   const ChromeSummonZones({
     super.key,
@@ -13,6 +17,11 @@ class ChromeSummonZones extends StatelessWidget {
   /// When chrome is already visible the strips must not intercept header taps.
   final bool visible;
   final VoidCallback onSummon;
+
+  void _summon() {
+    AppHaptics.light();
+    onSummon();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,44 +38,20 @@ class ChromeSummonZones extends StatelessWidget {
           height: top + 56,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
+            onTap: _summon,
             onVerticalDragEnd: (details) {
-              if ((details.primaryVelocity ?? 0) > 120) {
-                AppHaptics.light();
-                onSummon();
-              }
-            },
-            onTap: () {
-              AppHaptics.light();
-              onSummon();
-            },
-          ),
-        ),
-        Positioned(
-          top: top + 56,
-          bottom: bottom + 78,
-          left: MediaQuery.sizeOf(context).width * 0.24,
-          right: MediaQuery.sizeOf(context).width * 0.24,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onVerticalDragEnd: (details) {
-              if ((details.primaryVelocity ?? 0) > 120) {
-                AppHaptics.light();
-                onSummon();
-              }
+              if ((details.primaryVelocity ?? 0) > 120) _summon();
             },
           ),
         ),
         Positioned(
           left: MediaQuery.sizeOf(context).width * 0.08,
           right: MediaQuery.sizeOf(context).width * 0.08,
-          bottom: bottom + 50,
-          height: 28,
+          bottom: bottom + 42,
+          height: 36,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
-              AppHaptics.light();
-              onSummon();
-            },
+            onTap: _summon,
           ),
         ),
       ],
