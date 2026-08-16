@@ -69,9 +69,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       child: SafeArea(
         bottom: false,
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
           slivers: [
             SliverToBoxAdapter(
               child: Padding(

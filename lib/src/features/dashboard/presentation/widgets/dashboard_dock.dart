@@ -60,9 +60,6 @@ class DashboardDock extends StatelessWidget {
             ),
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(width: 4),
