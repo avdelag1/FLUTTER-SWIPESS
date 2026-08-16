@@ -6,8 +6,8 @@ set -e
 cd $CI_PRIMARY_REPOSITORY_PATH
 
 # Clone Flutter
-git clone https://github.com/flutter/flutter.git --depth 1 -b stable $WORKSPACE/flutter
-export PATH="$PATH:$WORKSPACE/flutter/bin"
+git clone https://github.com/flutter/flutter.git --depth 1 -b stable $CI_WORKSPACE/flutter
+export PATH="$PATH:$CI_WORKSPACE/flutter/bin"
 
 # Install Flutter dependencies and build iOS
 flutter precache --ios
