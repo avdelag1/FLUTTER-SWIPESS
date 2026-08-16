@@ -4,6 +4,8 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 
+import 'package:flutter/cupertino.dart';
+
 // Re-export so any old imports still work
 export 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart'
     show NavTab;
@@ -37,38 +39,38 @@ class AppBottomNav extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _DockIcon(
-                      icon: Icons.dashboard_rounded,
+                      icon: activeTab == NavTab.dashboard ? CupertinoIcons.square_grid_2x2_fill : CupertinoIcons.square_grid_2x2,
                       active: activeTab == NavTab.dashboard,
                       onTap: () => onTabSelected(NavTab.dashboard),
                       iconColor: const Color(0xFFFF4D00), // Vibrant Orange/Red
                     ),
                     _DockIcon(
-                      icon: Icons.local_fire_department_rounded,
+                      icon: activeTab == NavTab.likes ? CupertinoIcons.flame_fill : CupertinoIcons.flame,
                       active: activeTab == NavTab.likes,
                       onTap: () => onTabSelected(NavTab.likes),
                       iconColor: const Color(0xFFFF007F), // Neon Pink
                     ),
                     _DockIcon(
-                      icon: Icons.smart_toy_rounded, // AI/Events icon
+                      icon: activeTab == NavTab.ai ? CupertinoIcons.sparkles : CupertinoIcons.sparkles, // No fill variant
                       active: activeTab == NavTab.ai,
                       onTap: () => onTabSelected(NavTab.ai),
                       iconColor: const Color(0xFF9D4EDD), // Bright Purple
                     ),
                     _DockIcon(
-                      icon: Icons.add_rounded,
+                      icon: CupertinoIcons.plus,
                       active: false,
                       emphasized: true,
                       onTap: () => onTabSelected(NavTab.add),
                     ),
                     _DockIcon(
-                      icon: Icons.chat_bubble_rounded,
+                      icon: activeTab == NavTab.messages ? CupertinoIcons.chat_bubble_2_fill : CupertinoIcons.chat_bubble_2,
                       active: activeTab == NavTab.messages,
                       badge: unreadMessages,
                       onTap: () => onTabSelected(NavTab.messages),
                       iconColor: const Color(0xFF3B82F6), // Bright Blue
                     ),
                     _DockIcon(
-                      icon: Icons.badge_rounded,
+                      icon: activeTab == NavTab.idCard ? CupertinoIcons.person_crop_circle_fill : CupertinoIcons.person_crop_circle,
                       active: activeTab == NavTab.idCard,
                       onTap: () => onTabSelected(NavTab.idCard),
                       iconColor: const Color(0xFFE4007C), // Magenta

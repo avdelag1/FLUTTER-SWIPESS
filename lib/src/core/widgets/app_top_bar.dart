@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -107,7 +108,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   },
                   child: _WashIcon(
                     child: const Icon(
-                      Icons.auto_awesome_rounded,
+                      CupertinoIcons.wand_rays,
                       size: 22,
                       color: addWash,
                     ),
@@ -162,7 +163,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   },
                   child: _WashIcon(
                     child: const Icon(
-                      Icons.public_rounded,
+                      CupertinoIcons.globe,
                       size: 20,
                       color: mapWash,
                     ),
@@ -179,8 +180,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: _WashIcon(
                     child: Icon(
                       isLight
-                          ? Icons.light_mode_rounded
-                          : Icons.dark_mode_rounded,
+                          ? CupertinoIcons.sun_max_fill
+                          : CupertinoIcons.moon_stars_fill,
                       size: 20,
                       color: themeWash,
                     ),
@@ -202,7 +203,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     children: [
                       _WashIcon(
                         child: const Icon(
-                          Icons.notifications_rounded,
+                          CupertinoIcons.bell_fill,
                           size: 20,
                           color: bellWash,
                         ),
@@ -283,7 +284,7 @@ class _ProfileAvatarButton extends StatelessWidget {
                     : null,
               ),
               child: avatarUrl == null
-                  ? Icon(Icons.person_rounded, size: 20, color: Colors.white)
+                  ? Icon(CupertinoIcons.person_solid, size: 20, color: Colors.white)
                   : null,
             ),
           ),
