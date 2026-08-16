@@ -132,11 +132,11 @@ async function verifyWithGooglePlay(
         return { verified: false };
       }
       const expiryTime = lineItem.expiryTime;
-      const notExpired = expiryTime ? new Date(expiryTime).getTime() > Date.now() : true;
+      const notExpired = !!expiryTime && new Date(expiryTime).getTime() > Date.now();
       
       return {
         verified: isActive && notExpired,
-        orderId: lineItem.latestSuccessfulOrderId || result.latestOrderId,
+        orderId: lineItem.latestSuccessfulOrderId,
         startTimeMillis: result.startTime ? new Date(result.startTime).getTime().toString() : undefined,
         expiryTimeMillis: expiryTime ? new Date(expiryTime).getTime().toString() : undefined,
       };
