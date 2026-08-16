@@ -90,10 +90,10 @@ class PaywallScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            const Center(
+                            Center(
                               child: ConstrainedBox(
-                                constraints: BoxConstraints(maxWidth: 360),
-                                child: _PromoBanner(
+                                constraints: const BoxConstraints(maxWidth: 360),
+                                child: const _PromoBanner(
                                   key: ValueKey('three-month-promo'),
                                 ),
                               ),
