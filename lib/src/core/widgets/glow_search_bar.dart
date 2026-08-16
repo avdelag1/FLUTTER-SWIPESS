@@ -137,11 +137,11 @@ class _GlowSearchBarState extends State<GlowSearchBar> with SingleTickerProvider
           ),
         ),
         const SizedBox(height: 8),
-        // AI Warning text right aligned
+        // AI Warning text left aligned
         Align(
-          alignment: Alignment.centerRight,
+          alignment: Alignment.centerLeft,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,

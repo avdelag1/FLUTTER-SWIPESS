@@ -17,8 +17,8 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
-    // Always use BouncingScrollPhysics to make scrolling feel kinetic, fast, and sensible, especially on Web.
-    return const BouncingScrollPhysics(parent: RangeMaintainingScrollPhysics());
+    // Avoid RangeMaintainingScrollPhysics on Web as it can cause wheel scrolling to stall.
+    return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
   }
 
   @override
