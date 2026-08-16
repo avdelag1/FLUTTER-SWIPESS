@@ -77,25 +77,6 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                     GlowSearchBar(
                       onTap: () => _openCategory('property', 'PROPERTIES'),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        for (var i = 0; i < _chips.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 8),
-                          Expanded(
-                            child: _CategoryChip(
-                              spec: _chips[i],
-                              selected: _chipIndex == i,
-                              onTap: () {
-                                AppHaptics.selection();
-                                setState(() => _chipIndex = i);
-                                _openCategory(_chips[i].id, _chips[i].label);
-                              },
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
                   ],
                 ),
               ),

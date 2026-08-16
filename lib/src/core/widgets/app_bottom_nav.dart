@@ -40,16 +40,19 @@ class AppBottomNav extends StatelessWidget {
                       icon: Icons.dashboard_rounded,
                       active: activeTab == NavTab.dashboard,
                       onTap: () => onTabSelected(NavTab.dashboard),
+                      iconColor: const Color(0xFFFF4D00), // Vibrant Orange/Red
                     ),
                     _DockIcon(
                       icon: Icons.local_fire_department_rounded,
                       active: activeTab == NavTab.likes,
                       onTap: () => onTabSelected(NavTab.likes),
+                      iconColor: const Color(0xFFFF007F), // Neon Pink
                     ),
                     _DockIcon(
-                      icon: Icons.smart_toy_rounded,
+                      icon: Icons.smart_toy_rounded, // AI/Events icon
                       active: activeTab == NavTab.ai,
                       onTap: () => onTabSelected(NavTab.ai),
+                      iconColor: const Color(0xFF9D4EDD), // Bright Purple
                     ),
                     _DockIcon(
                       icon: Icons.add_rounded,
@@ -62,11 +65,13 @@ class AppBottomNav extends StatelessWidget {
                       active: activeTab == NavTab.messages,
                       badge: unreadMessages,
                       onTap: () => onTabSelected(NavTab.messages),
+                      iconColor: const Color(0xFF3B82F6), // Bright Blue
                     ),
                     _DockIcon(
                       icon: Icons.badge_rounded,
                       active: activeTab == NavTab.idCard,
                       onTap: () => onTabSelected(NavTab.idCard),
+                      iconColor: const Color(0xFFE4007C), // Magenta
                     ),
                   ],
                 ),
@@ -86,6 +91,7 @@ class _DockIcon extends StatelessWidget {
     required this.onTap,
     this.badge = 0,
     this.emphasized = false,
+    this.iconColor,
   });
 
   final IconData icon;
@@ -93,6 +99,7 @@ class _DockIcon extends StatelessWidget {
   final VoidCallback onTap;
   final int badge;
   final bool emphasized;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -114,19 +121,19 @@ class _DockIcon extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: emphasized
-                    ? AppTheme.brandPrimary.withValues(alpha: 0.2)
+                    ? const Color(0xFFFF4D00) // Solid CTA red/orange
                     : active
-                    ? Colors.white.withValues(alpha: 0.12)
+                    ? (iconColor?.withValues(alpha: 0.2) ?? Colors.white.withValues(alpha: 0.12))
                     : Colors.transparent,
               ),
               child: Icon(
                 icon,
                 size: 20,
                 color: emphasized
-                    ? const Color(0xFFFF4D6A)
-                    : active
                     ? Colors.white
-                    : Colors.white.withValues(alpha: 0.82),
+                    : active
+                    ? (iconColor ?? Colors.white)
+                    : (iconColor?.withValues(alpha: 0.8) ?? Colors.white.withValues(alpha: 0.82)),
               ),
             ),
             if (badge > 0)
