@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -42,9 +43,9 @@ class PaywallScreen extends ConsumerWidget {
                       .clamp(280.0, 520.0)
                       .toDouble();
 
-                  // The paywall is intentionally non-scrollable. FittedBox only
-                  // scales down on very short devices so every package, the
-                  // centered 3-month banner and the CTA remain on-screen.
+                  // Keep the complete comparison visible. FittedBox only scales
+                  // down on very short devices so the promo, plans, and CTA stay
+                  // on-screen without changing payment or navigation behavior.
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                     child: FittedBox(
@@ -78,7 +79,7 @@ class PaywallScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Choose the access level that fits you. Your primary navigation stays available when you return.',
+                              'Compare the exact AI limits and member benefits included with each paid plan.',
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               style: GoogleFonts.plusJakartaSans(
@@ -89,48 +90,25 @@ class PaywallScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Center(
+                            const Center(
                               child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 360),
+                                constraints: BoxConstraints(maxWidth: 360),
                                 child: _PromoBanner(
-                                  key: const ValueKey('three-month-promo'),
+                                  key: ValueKey('three-month-promo'),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 12),
-                            _PackageTile(
-                              title: 'Package 1',
-                              benefits: const [
-                                '5 listings/topic',
-                                'Virtual Card',
-                                'Events',
-                                '15 Message Tokens',
-                              ],
-                              color: const Color(0xFF60A5FA),
-                            ),
-                            const SizedBox(height: 8),
-                            _PackageTile(
-                              title: 'Package 2',
-                              benefits: const [
-                                '10 listings/topic',
-                                'Swipess AI',
-                                'Events + Virtual Card',
-                                '25 Message Tokens',
-                              ],
-                              color: const Color(0xFFB46CFF),
-                              isRecommended: true,
-                            ),
-                            const SizedBox(height: 8),
-                            _PackageTile(
-                              title: 'Premium',
-                              benefits: const [
-                                'Unlimited listings',
-                                'Unlimited AI',
-                                'Promote listings',
-                                'Unlimited Tokens',
-                              ],
-                              color: const Color(0xFFFFC107),
-                            ),
+                            for (var i = 0;
+                                i < IapCatalog.subscriptions.length;
+                                i++) ...[
+                              _PaidPlanTile(
+                                offer: IapCatalog.subscriptions[i],
+                                color: _colorForPlan(i),
+                              ),
+                              if (i != IapCatalog.subscriptions.length - 1)
+                                const SizedBox(height: 8),
+                            ],
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 52,
@@ -160,7 +138,7 @@ class PaywallScreen extends ConsumerWidget {
                                     const SizedBox(width: 8),
                                     Flexible(
                                       child: Text(
-                                        'VIEW PACKAGES & BENEFITS',
+                                        'VIEW PLANS & BENEFITS',
                                         maxLines: 1,
                                         overflow: TextOverflow.fade,
                                         softWrap: false,
@@ -190,6 +168,25 @@ class PaywallScreen extends ConsumerWidget {
   }
 }
 
+Color _colorForPlan(int index) {
+  switch (index) {
+    case 0:
+      return const Color(0xFF6D7CFF);
+    case 1:
+      return const Color(0xFFFF3B8D);
+    default:
+      return const Color(0xFFFFB300);
+  }
+}
+
+String _durationText(String? raw) {
+  return (raw ?? '')
+      .trim()
+      .replaceFirst(RegExp(r'^/\s*'), '')
+      .trim()
+      .toUpperCase();
+}
+
 class _PromoBanner extends StatelessWidget {
   const _PromoBanner({super.key});
 
@@ -205,8 +202,11 @@ class _PromoBanner extends StatelessWidget {
             const Color(0xFF9D4EDD).withAlpha(48),
           ],
         ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.brandPrimary, width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.brandPrimary.withAlpha(190),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.brandPrimary.withAlpha(42),
@@ -236,7 +236,7 @@ class _PromoBanner extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            'Promo: Package 2 access for eligible free users.',
+            'Eligible free accounts may receive 3 months of Package 2 access. Separate from the paid plans below.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
@@ -251,30 +251,42 @@ class _PromoBanner extends StatelessWidget {
   }
 }
 
-class _PackageTile extends StatelessWidget {
-  const _PackageTile({
-    required this.title,
-    required this.benefits,
-    required this.color,
-    this.isRecommended = false,
-  });
+class _PaidPlanTile extends StatelessWidget {
+  const _PaidPlanTile({required this.offer, required this.color});
 
-  final String title;
-  final List<String> benefits;
+  final IapOffer offer;
   final Color color;
-  final bool isRecommended;
 
   @override
   Widget build(BuildContext context) {
+    final focusBenefits = offer.benefits
+        .where(
+          (benefit) =>
+              benefit.contains('AI ') ||
+              benefit.contains('Local Expert') ||
+              benefit.contains('Priority AI'),
+        )
+        .take(3)
+        .toList();
+    final badge = (offer.label ?? offer.name).toUpperCase();
+    final duration = _durationText(offer.durationLabel);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 11),
+      padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
       decoration: BoxDecoration(
-        color: isRecommended ? color.withAlpha(25) : Colors.white.withAlpha(9),
-        borderRadius: BorderRadius.circular(16),
+        color: offer.popular ? color.withAlpha(28) : Colors.white.withAlpha(9),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isRecommended ? color.withAlpha(220) : Colors.white.withAlpha(30),
-          width: isRecommended ? 1.5 : 1,
+          color: offer.popular ? color.withAlpha(210) : color.withAlpha(90),
+          width: offer.popular ? 1.5 : 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(offer.popular ? 32 : 16),
+            blurRadius: 18,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,58 +294,102 @@ class _PackageTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                title,
-                style: GoogleFonts.plusJakartaSans(
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withAlpha(30),
+                  border: Border.all(color: color.withAlpha(120)),
+                ),
+                child: Icon(
+                  offer.popular
+                      ? Icons.bolt_rounded
+                      : offer.name.toLowerCase().contains('year')
+                          ? Icons.workspace_premium_rounded
+                          : Icons.chat_bubble_outline_rounded,
                   color: color,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 14,
+                  size: 19,
                 ),
               ),
-              if (isRecommended) ...[
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: color.withAlpha(45),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    'RECOMMENDED',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: color,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 8.5,
-                      letterSpacing: 0.7,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              for (final benefit in benefits)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.check_circle_rounded, color: color, size: 13),
-                    const SizedBox(width: 4),
                     Text(
-                      benefit,
+                      offer.name.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(225),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10.5,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      badge,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 9,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ],
                 ),
+              ),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: offer.priceLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                      ),
+                    ),
+                    TextSpan(
+                      text: duration.isEmpty ? '' : ' / $duration',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withAlpha(145),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
+          if (focusBenefits.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 9,
+              runSpacing: 5,
+              children: [
+                for (final benefit in focusBenefits)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: color, size: 13),
+                      const SizedBox(width: 4),
+                      Text(
+                        benefit,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white.withAlpha(225),
+                          fontWeight: benefit.toLowerCase().contains('unlimited')
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
