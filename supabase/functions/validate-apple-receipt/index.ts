@@ -1,90 +1,233 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
-const APPLE_SECRET = Deno.env.get('APPLE_SHARED_SECRET')
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
+const PROD_URL = 'https://buy.itunes.apple.com/verifyReceipt'
+const SANDBOX_URL = 'https://sandbox.itunes.apple.com/verifyReceipt'
 
-serve(async (req) => {
-  const { productId, transactionId, receipt } = await req.json()
+const SUBSCRIPTIONS: Record<string, string> = {
+  'Swipess.plus.monthly.v3': 'Basic Client',
+  'Swipess.plus.semestral.v3': 'Premium Client',
+  'Swipess.plus.annual.v3': 'Unlimited Client',
+}
 
-  // Prepare Apple API request
-  const requestBody = JSON.stringify({
+const TOKENS: Record<string, number> = {
+  'Swipess.tokens.20.v2': 20,
+  'Swipess.tokens.50.v2': 50,
+  'Swipess.tokens.100.v2': 100,
+  'Swipess.tokens.150.v2': 150,
+}
+
+const EVENT_PROMOS = new Set([
+  'Swipess.promo.event.week.v3',
+  'Swipess.promo.event.month.v3',
+  'Swipess.promo.event.quarter.v3',
+])
+
+const headers = { 'Content-Type': 'application/json' }
+
+async function verifyReceipt(receipt: string, sharedSecret: string) {
+  const body = JSON.stringify({
     'receipt-data': receipt,
-    password: APPLE_SECRET,
+    password: sharedSecret,
+    'exclude-old-transactions': true,
   })
 
-  // 1. Try production first
-  let appleResponse = await fetch('https://buy.itunes.apple.com/verifyReceipt', {
-    method: 'POST',
-    body: requestBody,
-  })
-  let appleData = await appleResponse.json()
-
-  // 2. If it's a sandbox receipt (21007), try sandbox
-  if (appleData.status === 21007) {
-    appleResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
-      method: 'POST',
-      body: requestBody,
-    })
-    appleData = await appleResponse.json()
+  let response = await fetch(PROD_URL, { method: 'POST', body })
+  let data = await response.json()
+  if (data.status === 21007) {
+    response = await fetch(SANDBOX_URL, { method: 'POST', body })
+    data = await response.json()
+    data.environment = 'Sandbox'
   }
+  return data
+}
 
-  // 3. Verify success
-  if (appleData.status !== 0) {
-    return new Response(JSON.stringify({ ok: false, error: 'Invalid receipt' }), {
-      headers: { 'Content-Type': 'application/json' },
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ ok: false, error: 'Method not allowed' }), {
+      status: 405,
+      headers,
     })
   }
 
-  // 4. Update the user's subscription in Supabase
-  const authHeader = req.headers.get('Authorization')!
-  const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: authHeader } },
+  const auth = req.headers.get('Authorization') ?? ''
+  const url = Deno.env.get('SUPABASE_URL')!
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const sharedSecret = Deno.env.get('APPLE_SHARED_SECRET')
+
+  if (!sharedSecret) {
+    return new Response(JSON.stringify({ ok: false, error: 'Apple validation is not configured' }), {
+      status: 500,
+      headers,
+    })
+  }
+
+  const userClient = createClient(url, anonKey, {
+    global: { headers: { Authorization: auth } },
   })
-  
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
+  const { data: userData, error: userError } = await userClient.auth.getUser()
+  if (userError || !userData.user) {
     return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
-      headers: { 'Content-Type': 'application/json' },
+      status: 401,
+      headers,
     })
   }
 
-  // Define your products here
-  let newTier = 'free'
-  let addTokens = 0
+  try {
+    const { receipt, productId, transactionId } = await req.json()
+    if (!receipt || !productId) {
+      return new Response(JSON.stringify({ ok: false, error: 'Missing receipt or productId' }), {
+        status: 400,
+        headers,
+      })
+    }
 
-  if (productId === 'swipess_package_1') {
-    newTier = 'package1'
-    addTokens = 15
-  } else if (productId === 'swipess_package_2') {
-    newTier = 'package2'
-    addTokens = 25
-  } else if (productId === 'swipess_premium') {
-    newTier = 'premium'
-    addTokens = 9999
-  } else if (productId === 'swipess_tokens_5') {
-    addTokens = 5
+    const knownProduct =
+      productId in SUBSCRIPTIONS || productId in TOKENS || EVENT_PROMOS.has(productId)
+    if (!knownProduct) {
+      return new Response(JSON.stringify({ ok: false, error: 'Unknown product' }), {
+        status: 400,
+        headers,
+      })
+    }
+
+    const verified = await verifyReceipt(receipt, sharedSecret)
+    if (verified.status !== 0) {
+      return new Response(JSON.stringify({ ok: false, error: `Apple status ${verified.status}` }), {
+        status: 400,
+        headers,
+      })
+    }
+
+    const transactions = [
+      ...(verified.latest_receipt_info ?? []),
+      ...(verified.receipt?.in_app ?? []),
+    ]
+    const tx = transactions
+      .filter((item: any) => item.product_id === productId)
+      .sort((a: any, b: any) => Number(b.purchase_date_ms ?? 0) - Number(a.purchase_date_ms ?? 0))[0]
+
+    if (!tx) {
+      return new Response(JSON.stringify({ ok: false, error: 'Transaction not found in receipt' }), {
+        status: 400,
+        headers,
+      })
+    }
+
+    const txKey = tx.transaction_id ?? transactionId ?? tx.original_transaction_id
+    if (!txKey) {
+      return new Response(JSON.stringify({ ok: false, error: 'Missing transaction identifier' }), {
+        status: 400,
+        headers,
+      })
+    }
+
+    const admin = createClient(url, serviceKey)
+    const userId = userData.user.id
+
+    // Reserve the Apple transaction before granting anything. The database has
+    // a unique replay guard on (source, action, purchase_token), so two retries
+    // cannot grant the same transaction twice.
+    const { data: audit, error: auditError } = await admin
+      .from('purchase_audit_log')
+      .insert({
+        user_id: userId,
+        product_id: productId,
+        purchase_token: txKey,
+        order_id: tx.transaction_id ?? transactionId ?? null,
+        action: 'apple_iap_grant',
+        source: 'apple',
+        verified: true,
+        metadata: {
+          status: 'processing',
+          environment: verified.environment ?? 'Production',
+        },
+      })
+      .select('id')
+      .single()
+
+    if (auditError) {
+      if (auditError.code === '23505') {
+        return new Response(JSON.stringify({ ok: true, alreadyProcessed: true, productId }), {
+          status: 200,
+          headers,
+        })
+      }
+      throw auditError
+    }
+
+    try {
+      if (productId in SUBSCRIPTIONS) {
+        const packageName = SUBSCRIPTIONS[productId]
+        const { data: pkg, error: pkgError } = await admin
+          .from('subscription_packages')
+          .select('id')
+          .eq('name', packageName)
+          .eq('is_active', true)
+          .maybeSingle()
+        if (pkgError || !pkg) throw new Error(`Subscription package unavailable: ${packageName}`)
+
+        const purchaseDate = tx.purchase_date_ms
+          ? new Date(Number(tx.purchase_date_ms)).toISOString()
+          : new Date().toISOString()
+        const expiresDate = tx.expires_date_ms
+          ? new Date(Number(tx.expires_date_ms)).toISOString()
+          : null
+
+        await admin
+          .from('user_subscriptions')
+          .update({ is_active: false, end_date: new Date().toISOString() })
+          .eq('user_id', userId)
+          .eq('is_active', true)
+
+        const { error: subError } = await admin.from('user_subscriptions').insert({
+          user_id: userId,
+          package_id: pkg.id,
+          start_date: purchaseDate,
+          end_date: expiresDate,
+          is_active: expiresDate ? new Date(expiresDate) > new Date() : true,
+          payment_status: 'paid',
+          transaction_id: tx.transaction_id ?? transactionId ?? txKey,
+        })
+        if (subError) throw subError
+      } else if (productId in TOKENS) {
+        const amount = TOKENS[productId]
+        const { error: tokenError } = await admin.from('tokens').insert({
+          user_id: userId,
+          token_type: 'messages',
+          amount,
+          total_activations: amount,
+          remaining_activations: amount,
+          used_activations: 0,
+          activation_type: 'purchase',
+          source: 'apple_iap',
+          notes: `Apple IAP: ${productId}`,
+        })
+        if (tokenError) throw tokenError
+      }
+
+      await admin
+        .from('purchase_audit_log')
+        .update({
+          metadata: {
+            status: 'granted',
+            environment: verified.environment ?? 'Production',
+            productId,
+          },
+        })
+        .eq('id', audit.id)
+
+      return new Response(JSON.stringify({ ok: true, productId }), { status: 200, headers })
+    } catch (grantError) {
+      // Allow a legitimate retry if the entitlement write itself failed.
+      await admin.from('purchase_audit_log').delete().eq('id', audit.id)
+      throw grantError
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers,
+    })
   }
-
-  // Fetch current user subscriptions
-  const { data: currentSub } = await supabase
-    .from('user_subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
-
-  const currentTokens = currentSub?.tokens_balance ?? 0
-
-  // Upsert subscription logic
-  await supabase.from('user_subscriptions').upsert({
-    user_id: user.id,
-    subscription_tier: newTier !== 'free' ? newTier : (currentSub?.subscription_tier ?? 'free'),
-    tokens_balance: currentTokens + addTokens,
-    updated_at: new Date().toISOString(),
-  })
-
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
 })
