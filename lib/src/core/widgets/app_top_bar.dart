@@ -107,10 +107,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     showCreateListingChooser(context);
                   },
                   child: _WashIcon(
-                    child: const Icon(
-                      CupertinoIcons.wand_rays,
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
                       size: 22,
-                      color: addWash,
+                      color: ink,
                     ),
                   ),
                 ),
