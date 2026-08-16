@@ -38,7 +38,9 @@ class PaywallScreen extends ConsumerWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final width = (constraints.maxWidth - 32).clamp(280.0, 520.0);
+                  final width = (constraints.maxWidth - 32)
+                      .clamp(280.0, 520.0)
+                      .toDouble();
 
                   // The paywall is intentionally non-scrollable. FittedBox only
                   // scales down on very short devices so every package, the
