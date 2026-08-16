@@ -604,8 +604,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             gradient: _controller.text.trim().isNotEmpty
                                 ? const LinearGradient(
                                     begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [_orange, Color(0xFFFF4D00)],
+                                    colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
                                   )
                                 : null,
                             color: _controller.text.trim().isEmpty

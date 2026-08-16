@@ -32,3 +32,19 @@ jobs:
         run: flutter test
       - name: Web release build
         run: flutter build web --release
+
+  ios-build:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Flutter version
+        run: flutter --version
+      - name: Dependencies
+        run: flutter pub get
+      - name: iOS release build (no sign)
+        run: flutter build ios --release --no-codesign
