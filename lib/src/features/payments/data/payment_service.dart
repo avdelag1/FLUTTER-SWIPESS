@@ -30,17 +30,17 @@ class PaymentService {
 
   Future<CheckoutResult> buy(IapOffer offer) {
     return _orchestrator.purchase(
-      appleProductId: offer.appleProductId,
+      storeProductId: offer.storeProductId,
       paypalPath: offer.paypalPath,
     );
   }
 
   Future<CheckoutResult> buyProduct({
-    required String appleProductId,
+    required String storeProductId,
     String? paypalPath,
   }) {
     return _orchestrator.purchase(
-      appleProductId: appleProductId,
+      storeProductId: storeProductId,
       paypalPath: paypalPath,
     );
   }

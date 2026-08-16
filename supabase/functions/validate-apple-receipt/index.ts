@@ -90,6 +90,10 @@ Deno.serve(async (req) => {
         headers,
       })
     }
+    
+    if (EVENT_PROMOS.has(productId)) {
+      throw new Error('Event promotions storage is not yet implemented.');
+    }
 
     const verified = await verifyReceipt(receipt, sharedSecret)
     if (verified.status !== 0) {
@@ -180,7 +184,7 @@ Deno.serve(async (req) => {
           .eq('user_id', userId)
           .eq('is_active', true)
 
-        const { error: subError } = await admin.from('user_subscriptions').insert({
+        const { error: subError } = await admin.from('user_subscriptions').upsert({
           user_id: userId,
           package_id: pkg.id,
           start_date: purchaseDate,
@@ -188,7 +192,7 @@ Deno.serve(async (req) => {
           is_active: expiresDate ? new Date(expiresDate) > new Date() : true,
           payment_status: 'paid',
           transaction_id: tx.transaction_id ?? transactionId ?? txKey,
-        })
+        }, { onConflict: 'user_id,package_id' })
         if (subError) throw subError
       } else if (productId in TOKENS) {
         const amount = TOKENS[productId]
