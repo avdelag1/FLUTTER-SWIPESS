@@ -67,15 +67,15 @@ class _DashboardDockState extends State<DashboardDock> {
     final index = widget.items.indexWhere((item) => item.id == widget.selectedTab);
     if (index < 0) return;
 
-    const itemStride = 48.0;
+    const itemStride = 36.0;
     final viewport = _controller.position.viewportDimension;
-    final target = (10 + index * itemStride - (viewport - 44) / 2)
+    final target = (6 + index * itemStride - (viewport - 34) / 2)
         .clamp(0.0, _controller.position.maxScrollExtent)
         .toDouble();
     if ((_controller.offset - target).abs() < 2) return;
     _controller.animateTo(
       target,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
     );
   }
@@ -83,25 +83,26 @@ class _DashboardDockState extends State<DashboardDock> {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final width = (MediaQuery.sizeOf(context).width - 16).clamp(300.0, 410.0);
 
     return Center(
       child: Semantics(
         container: true,
         label: 'Primary navigation',
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 340),
+        child: SizedBox(
+          width: width,
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isLight ? 28 : 90),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withAlpha(isLight ? 24 : 80),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: Colors.white.withAlpha(isLight ? 34 : 16),
-                  blurRadius: 12,
+                  color: Colors.white.withAlpha(isLight ? 32 : 14),
+                  blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
               ],
@@ -111,15 +112,15 @@ class _DashboardDockState extends State<DashboardDock> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                 child: Container(
-                  height: 64,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: isLight
-                        ? Colors.white.withAlpha(178)
-                        : const Color(0xFF0E1117).withAlpha(190),
+                        ? Colors.white.withAlpha(184)
+                        : const Color(0xFF10141B).withAlpha(205),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: Colors.white.withAlpha(isLight ? 145 : 76),
-                      width: 1,
+                      color: Colors.white.withAlpha(isLight ? 145 : 82),
+                      width: .9,
                     ),
                   ),
                   child: ScrollConfiguration(
@@ -135,9 +136,9 @@ class _DashboardDockState extends State<DashboardDock> {
                     child: ListView.separated(
                       controller: _controller,
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                       itemCount: widget.items.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 4),
+                      separatorBuilder: (_, __) => const SizedBox(width: 2),
                       itemBuilder: (context, i) {
                         final item = widget.items[i];
                         return DockButton(
@@ -192,7 +193,7 @@ class DockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final emphasized = selected || item.accent;
-    final iconColor = wash.withAlpha(emphasized ? 255 : 205);
+    final iconColor = wash.withAlpha(emphasized ? 255 : 225);
 
     return Semantics(
       button: true,
@@ -206,15 +207,15 @@ class DockButton extends StatelessWidget {
             onTap: onTap,
             containedInkWell: true,
             highlightShape: BoxShape.circle,
-            radius: 24,
-            splashColor: wash.withAlpha(48),
+            radius: 20,
+            splashColor: wash.withAlpha(52),
             child: SizedBox(
-              width: 44,
-              height: 48,
+              width: 34,
+              height: 46,
               child: Center(
                 child: AnimatedScale(
-                  scale: emphasized ? 1.08 : 1,
-                  duration: const Duration(milliseconds: 150),
+                  scale: emphasized ? 1.07 : 1,
+                  duration: const Duration(milliseconds: 140),
                   curve: Curves.easeOutCubic,
                   child: Stack(
                     alignment: Alignment.center,
@@ -222,15 +223,15 @@ class DockButton extends StatelessWidget {
                     children: [
                       if (selected)
                         Positioned(
-                          bottom: 0,
+                          bottom: 1,
                           child: Container(
-                            width: 5,
-                            height: 5,
+                            width: 4,
+                            height: 4,
                             decoration: BoxDecoration(
                               color: wash,
                               shape: BoxShape.circle,
                               boxShadow: [
-                                BoxShadow(color: wash.withAlpha(160), blurRadius: 8),
+                                BoxShadow(color: wash.withAlpha(170), blurRadius: 7),
                               ],
                             ),
                           ),
@@ -238,16 +239,16 @@ class DockButton extends StatelessWidget {
                       item.useAiIcon
                           ? CustomPaint(
                               painter: AiRobotPainter(color: iconColor),
-                              size: const Size(23, 23),
+                              size: const Size(21, 21),
                             )
                           : Icon(
                               item.icon,
-                              size: item.accent ? 29 : 27,
+                              size: item.accent ? 25 : 23,
                               color: iconColor,
                               shadows: [
                                 Shadow(
-                                  color: wash.withAlpha(emphasized ? 105 : 46),
-                                  blurRadius: emphasized ? 8 : 4,
+                                  color: wash.withAlpha(emphasized ? 110 : 54),
+                                  blurRadius: emphasized ? 7 : 4,
                                 ),
                               ],
                             ),
