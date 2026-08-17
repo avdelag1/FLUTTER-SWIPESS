@@ -1,0 +1,191 @@
+name: Final native map and events audit
+
+on:
+  push:
+    branches:
+      - fix/final-native-map-events-audit
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Apply audited fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          map_path = Path('lib/src/features/map/presentation/screens/real_mapbox_screen.dart')
+          s = map_path.read_text()
+          s = s.replace(
+              '  CircleAnnotationManager? _listingManager;\n  CircleAnnotationManager? _peopleManager;\n',
+              '  CircleAnnotationManager? _listingManager;\n  CircleAnnotationManager? _peopleManager;\n  CircleAnnotationManager? _locationManager;\n'
+          )
+          s = s.replace(
+              '    _listingManager = await map.annotations.createCircleAnnotationManager();\n    _peopleManager = await map.annotations.createCircleAnnotationManager();\n',
+              '    _listingManager = await map.annotations.createCircleAnnotationManager();\n    _peopleManager = await map.annotations.createCircleAnnotationManager();\n    _locationManager = await map.annotations.createCircleAnnotationManager();\n'
+          )
+          marker = '  void _selectNearest(\n'
+          if 'Future<void> _renderLocationIndicator()' not in s:
+              insert = '''  Future<void> _renderLocationIndicator() async {
+    final manager = _locationManager;
+    if (!_mapLoaded || manager == null) return;
+    final loc = ref.read(discoveryLocationProvider);
+    await manager.deleteAll();
+    if (!mounted) return;
+    await manager.createMulti([
+      CircleAnnotationOptions(
+        geometry: _point(loc.latitude, loc.longitude),
+        circleRadius: 30,
+        circleColor: const Color(0xFF3B82F6).withAlpha(38).toARGB32(),
+        circleStrokeColor: const Color(0xFF60A5FA).withAlpha(105).toARGB32(),
+        circleStrokeWidth: 1.2,
+        circleOpacity: 0.72,
+      ),
+      CircleAnnotationOptions(
+        geometry: _point(loc.latitude, loc.longitude),
+        circleRadius: 7.5,
+        circleColor: const Color(0xFF1687FF).toARGB32(),
+        circleStrokeColor: Colors.white.toARGB32(),
+        circleStrokeWidth: 2.8,
+        circleOpacity: 1,
+      ),
+    ]);
+  }
+
+'''
+              s = s.replace(marker, insert + marker)
+
+          s = s.replace(
+              '    if (peopleOptions.isNotEmpty) {\n      await _peopleManager!.createMulti(peopleOptions);\n    }\n  }\n',
+              '    if (peopleOptions.isNotEmpty) {\n      await _peopleManager!.createMulti(peopleOptions);\n    }\n    await _renderLocationIndicator();\n  }\n'
+          )
+          s = s.replace(
+              '        _flyTo(next);\n        _renderAnnotations();\n',
+              '        _flyTo(next);\n        _renderAnnotations();\n        _renderLocationIndicator();\n'
+          )
+          s = s.replace(
+              '              await _prepareAnnotationManagers();\n              await _renderAnnotations();\n',
+              '              await _prepareAnnotationManagers();\n              await _renderAnnotations();\n              await _renderLocationIndicator();\n'
+          )
+          progress = '''          if (loading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFFFF5A52),
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+'''
+          s = s.replace(progress, '')
+          # Keep data loading silent: counts update in-place without drawing a line over the map.
+          s = s.replace('    final loading = listingsAsync.isLoading || profilesAsync.isLoading;\n', '')
+          map_path.write_text(s)
+
+          events_path = Path('lib/src/features/events/presentation/screens/events_screen.dart')
+          e = events_path.read_text()
+          e = e.replace(
+              '  bool _didApplyInitialPosition = false;\n',
+              '  bool _didApplyInitialPosition = false;\n  int _videoGeneration = 0;\n'
+          )
+          e = e.replace(
+              '''    if (!widget.shouldLoadVideo && _player != null) {
+      _player?.dispose();
+      _player = null;
+    }
+''',
+              '''    if (!widget.shouldLoadVideo && _player != null) {
+      _videoGeneration++;
+      final old = _player;
+      _player = null;
+      old?.setVolume(0);
+      old?.pause();
+      old?.dispose();
+    }
+'''
+          )
+          e = e.replace(
+              '''    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    _player = next;
+    try {
+      await next.initialize();
+''',
+              '''    final generation = ++_videoGeneration;
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _player = next;
+    try {
+      await next.initialize();
+      if (!mounted || generation != _videoGeneration || !widget.shouldLoadVideo) {
+        await next.setVolume(0);
+        await next.dispose();
+        if (identical(_player, next)) _player = null;
+        return;
+      }
+'''
+          )
+          e = e.replace(
+              '''  void dispose() {
+    _player?.dispose();
+    super.dispose();
+  }
+''',
+              '''  void dispose() {
+    _videoGeneration++;
+    _player?.setVolume(0);
+    _player?.pause();
+    _player?.dispose();
+    super.dispose();
+  }
+'''
+          )
+          e = e.replace(
+              '''            Image.network(
+              image,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  const ColoredBox(color: Color(0xFF16161C)),
+            )
+''',
+              '''            Image.network(
+              image,
+              fit: BoxFit.cover,
+              cacheWidth: (MediaQuery.sizeOf(context).width *
+                      MediaQuery.devicePixelRatioOf(context))
+                  .round()
+                  .clamp(480, 1440),
+              filterQuality: FilterQuality.medium,
+              gaplessPlayback: true,
+              errorBuilder: (_, _, _) =>
+                  const ColoredBox(color: Color(0xFF16161C)),
+            )
+'''
+          )
+          events_path.write_text(e)
+          PY
+          dart format lib/src/features/map/presentation/screens/real_mapbox_screen.dart lib/src/features/events/presentation/screens/events_screen.dart
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/map/presentation/screens/real_mapbox_screen.dart lib/src/features/events/presentation/screens/events_screen.dart
+          if ! git diff --cached --quiet; then
+            git commit -m "perf: polish live map and events interactions"
+            git push
+          fi
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Build web release
+        run: flutter build web --release
