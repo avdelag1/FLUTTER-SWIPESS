@@ -9,6 +9,7 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final userId = ref.watch(currentUserProvider)?.id;
   final client = Supabase.instance.client;
+  final limit = loc.radiusKm >= 5000 ? 1000 : loc.radiusKm >= 500 ? 600 : 300;
 
   try {
     final data = await client.rpc(
@@ -17,10 +18,10 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
         'p_user_lat': loc.latitude,
         'p_user_lon': loc.longitude,
         'p_radius_km': loc.radiusKm,
-        'p_limit': 120,
+        'p_limit': limit,
         'p_exclude_user_id': userId,
       },
-    );
+    ).timeout(const Duration(seconds: 8));
     return _inCityRadius(
       (data as List)
           .map((row) => Profile.fromJson(row as Map<String, dynamic>))
@@ -36,7 +37,7 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
           )
           .not('latitude', 'is', null)
           .not('longitude', 'is', null)
-          .limit(200)
+          .limit(limit)
           .timeout(const Duration(seconds: 8));
       return _inCityRadius(
         (data as List)
