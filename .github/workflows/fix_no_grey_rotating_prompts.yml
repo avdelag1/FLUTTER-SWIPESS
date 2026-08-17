@@ -1,0 +1,135 @@
+name: Verify no-grey events and rotating AI prompts
+
+on:
+  push:
+    branches:
+      - fix/no-grey-rotating-ai-prompts
+
+permissions:
+  contents: write
+
+concurrency:
+  group: no-grey-rotating-prompts
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Remove full-screen opacity compositor from Events
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/src/features/events/presentation/screens/events_screen.dart')
+          s = p.read_text()
+
+          top_start = '''              IgnorePointer(
+                ignoring: !_eventChromeVisible,
+                child: AnimatedOpacity(
+                  opacity: _eventChromeVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedSlide(
+                    offset: _eventChromeVisible
+                        ? Offset.zero
+                        : const Offset(0, -0.08),
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: Positioned.fill(
+                      child: Stack(
+'''
+          top_replacement = '''              if (_eventChromeVisible)
+                Positioned.fill(
+                  child: Stack(
+'''
+          if top_start not in s:
+              raise SystemExit('Events top chrome compositor anchor not found')
+          s = s.replace(top_start, top_replacement, 1)
+
+          top_end = '''                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 14,
+'''
+          top_end_replacement = '''                    ],
+                  ),
+                ),
+              Positioned(
+                right: 14,
+'''
+          if top_end not in s:
+              raise SystemExit('Events top chrome compositor closing anchor not found')
+          s = s.replace(top_end, top_end_replacement, 1)
+
+          story_start = '''          IgnorePointer(
+            ignoring: !widget.chromeVisible,
+            child: AnimatedOpacity(
+              opacity: widget.chromeVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: Stack(
+                fit: StackFit.expand,
+'''
+          story_replacement = '''          if (widget.chromeVisible)
+            Stack(
+              fit: StackFit.expand,
+'''
+          if story_start not in s:
+              raise SystemExit('Event story compositor anchor not found')
+          s = s.replace(story_start, story_replacement, 1)
+
+          story_end = '''                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+'''
+          story_end_replacement = '''              ],
+            ),
+        ],
+      ),
+'''
+          if story_end not in s:
+              raise SystemExit('Event story compositor closing anchor not found')
+          s = s.replace(story_end, story_end_replacement, 1)
+
+          # The focus eye is the only visibility switch; no fade/scrim layer remains.
+          if 'AnimatedOpacity(' in s[s.find('class EventsScreen'):s.find('class _RailBtn')]:
+              raise SystemExit('Unexpected AnimatedOpacity remains in Events chrome path')
+
+          p.write_text(s)
+          PY
+      - name: Format
+        run: dart format lib/src/features/events/presentation/screens/events_screen.dart lib/src/core/widgets/glow_search_bar.dart
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Web release build
+        run: flutter build web --release
+      - name: Commit verified fix to branch
+        shell: bash
+        run: |
+          rm -f .github/workflows/fix_no_grey_rotating_prompts.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(events): remove grey compositor and polish AI prompts"
+          git push origin HEAD:fix/no-grey-rotating-ai-prompts
