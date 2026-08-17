@@ -54,7 +54,9 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
               : requests.where((r) => r.category == _category).toList();
 
           return ListView(
-            padding: EdgeInsets.fromLTRB(20, top + 16, 20, 140),
+            // The app shell owns a shared back button directly below the
+            // header. Reserve a full row for it so it can never cover SEEKERS.
+            padding: EdgeInsets.fromLTRB(20, top + 64, 20, 140),
             children: [
               Text(
                 'SEEKERS',
