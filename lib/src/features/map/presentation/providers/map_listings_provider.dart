@@ -7,20 +7,26 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final client = Supabase.instance.client;
-  final limit = loc.radiusKm >= 5000 ? 1000 : loc.radiusKm >= 500 ? 600 : 300;
+  final limit = loc.radiusKm >= 5000
+      ? 1000
+      : loc.radiusKm >= 500
+      ? 600
+      : 300;
 
   final merged = <String, Listing>{};
 
   try {
-    final data = await client.rpc(
-      'get_passport_map_listings',
-      params: {
-        'p_user_lat': loc.latitude,
-        'p_user_lon': loc.longitude,
-        'p_radius_km': loc.radiusKm,
-        'p_limit': limit,
-      },
-    ).timeout(const Duration(seconds: 8));
+    final data = await client
+        .rpc(
+          'get_passport_map_listings',
+          params: {
+            'p_user_lat': loc.latitude,
+            'p_user_lon': loc.longitude,
+            'p_radius_km': loc.radiusKm,
+            'p_limit': limit,
+          },
+        )
+        .timeout(const Duration(seconds: 8));
     for (final row in data as List) {
       final listing = Listing.fromJson(row as Map<String, dynamic>);
       merged[listing.id] = listing;
@@ -29,7 +35,11 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
     // City/table fallback below still keeps the map usable when the RPC fails.
   }
 
-  for (final listing in await _fetchRegisteredCityListings(client, loc, limit)) {
+  for (final listing in await _fetchRegisteredCityListings(
+    client,
+    loc,
+    limit,
+  )) {
     merged[listing.id] = listing;
   }
 
@@ -71,9 +81,11 @@ Future<List<Listing>> _fetchRegisteredCityListings(
   if (city.isEmpty || city.toLowerCase() == 'near you') return const [];
 
   Future<List<Listing>> fetch({required bool withStatus}) async {
-    var query = client.from('listings').select(
-      'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
-    );
+    var query = client
+        .from('listings')
+        .select(
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
+        );
     query = query.eq('is_active', true).ilike('city', '%$city%');
     if (withStatus) query = query.eq('status', 'active');
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
@@ -99,9 +111,11 @@ Future<List<Listing>> _fallbackListings(
   int limit,
 ) async {
   Future<List<Listing>> fetch({required bool withStatus}) async {
-    var query = client.from('listings').select(
-      'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
-    );
+    var query = client
+        .from('listings')
+        .select(
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
+        );
     query = query.eq('is_active', true);
     if (withStatus) query = query.eq('status', 'active');
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
@@ -121,8 +135,11 @@ Future<List<Listing>> _fallbackListings(
   }
 }
 
-String _normalizeCity(String? value) =>
-    (value ?? '').trim().toLowerCase().replaceAll('ú', 'u').replaceAll('í', 'i');
+String _normalizeCity(String? value) => (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('ú', 'u')
+    .replaceAll('í', 'i');
 
 bool _sameCity(String? value, String normalizedCity) {
   if (normalizedCity.isEmpty || normalizedCity == 'near you') return false;

@@ -9,21 +9,27 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final userId = ref.watch(currentUserProvider)?.id;
   final client = Supabase.instance.client;
-  final limit = loc.radiusKm >= 5000 ? 1000 : loc.radiusKm >= 500 ? 600 : 300;
+  final limit = loc.radiusKm >= 5000
+      ? 1000
+      : loc.radiusKm >= 500
+      ? 600
+      : 300;
 
   final merged = <String, Profile>{};
 
   try {
-    final data = await client.rpc(
-      'get_passport_map_profiles',
-      params: {
-        'p_user_lat': loc.latitude,
-        'p_user_lon': loc.longitude,
-        'p_radius_km': loc.radiusKm,
-        'p_limit': limit,
-        'p_exclude_user_id': userId,
-      },
-    ).timeout(const Duration(seconds: 8));
+    final data = await client
+        .rpc(
+          'get_passport_map_profiles',
+          params: {
+            'p_user_lat': loc.latitude,
+            'p_user_lon': loc.longitude,
+            'p_radius_km': loc.radiusKm,
+            'p_limit': limit,
+            'p_exclude_user_id': userId,
+          },
+        )
+        .timeout(const Duration(seconds: 8));
     for (final row in data as List) {
       final profile = Profile.fromJson(row as Map<String, dynamic>);
       if (profile.id != userId) merged[profile.id] = profile;
@@ -80,9 +86,11 @@ Future<List<Profile>> _fetchRegisteredCityProfiles(
   if (city.isEmpty || city.toLowerCase() == 'near you') return const [];
 
   try {
-    var query = client.from('client_profiles').select(
-      'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
-    );
+    var query = client
+        .from('client_profiles')
+        .select(
+          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
+        );
     query = query.ilike('city', '%$city%');
     if (userId != null) query = query.neq('user_id', userId);
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
@@ -101,9 +109,11 @@ Future<List<Profile>> _fallbackProfiles(
   String? userId,
 ) async {
   try {
-    var query = client.from('client_profiles').select(
-      'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
-    );
+    var query = client
+        .from('client_profiles')
+        .select(
+          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
+        );
     if (userId != null) query = query.neq('user_id', userId);
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
     return (data as List)
@@ -114,8 +124,11 @@ Future<List<Profile>> _fallbackProfiles(
   }
 }
 
-String _normalizeCity(String? value) =>
-    (value ?? '').trim().toLowerCase().replaceAll('ú', 'u').replaceAll('í', 'i');
+String _normalizeCity(String? value) => (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('ú', 'u')
+    .replaceAll('í', 'i');
 
 bool _sameCity(String? value, String normalizedCity) {
   if (normalizedCity.isEmpty || normalizedCity == 'near you') return false;
