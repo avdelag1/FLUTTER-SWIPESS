@@ -161,7 +161,8 @@ class _BentoTile extends StatelessWidget {
                 child: EventsTeaserCard(
                   onTap: () {
                     final sub = ref.read(subscriptionProvider).value;
-                    if (sub?.effectiveTier.canViewEvents != true) {
+                    if (sub != null &&
+                        sub.effectiveTier.canViewEvents != true) {
                       showPaywall(context, featureName: 'Events & Pros');
                       return;
                     }
