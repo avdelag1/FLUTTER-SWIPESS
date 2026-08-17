@@ -74,8 +74,10 @@ class DiscoveryLocationNotifier extends Notifier<DiscoveryLocation> {
     state = state.copyWith(dateLabel: label);
   }
 
+  // Mapbox can zoom from local street level to a globe view. Keep the same
+  // discovery state usable for nearby, regional and worldwide map queries.
   void setRadiusKm(int km) {
-    state = state.copyWith(radiusKm: km.clamp(1, 500));
+    state = state.copyWith(radiusKm: km.clamp(1, 20000));
   }
 
   void setCoordinates({
