@@ -62,7 +62,8 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   @override
   void didUpdateWidget(covariant GlowSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_isTapOnly != (oldWidget.onTap != null && oldWidget.onChanged == null)) {
+    if (_isTapOnly !=
+        (oldWidget.onTap != null && oldWidget.onChanged == null)) {
       _startPromptRotation();
     }
   }
@@ -93,163 +94,172 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
         ? _rotatingPrompts[_promptIndex]
         : widget.hint;
 
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: isLight
-                    ? Colors.white.withAlpha(178)
-                    : Colors.black.withAlpha(18),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: const Color(0xFF60A5FA).withAlpha(
-                    isLight ? 160 : 180,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? Colors.white.withAlpha(178)
+                      : Colors.black.withAlpha(18),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: const Color(
+                      0xFF60A5FA,
+                    ).withAlpha(isLight ? 160 : 180),
+                    width: 1.05,
                   ),
-                  width: 1.05,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF60A5FA).withAlpha(
-                      isLight ? 22 : 16,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(
+                        0xFF60A5FA,
+                      ).withAlpha(isLight ? 22 : 16),
+                      blurRadius: 10,
+                      spreadRadius: -3,
                     ),
-                    blurRadius: 10,
-                    spreadRadius: -3,
-                  ),
-                ],
-              ),
-              child: Row(children: [
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _isTapOnly
-                      ? Align(
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 360),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            transitionBuilder: (child, animation) {
-                              final slide = Tween<Offset>(
-                                begin: const Offset(0, .12),
-                                end: Offset.zero,
-                              ).animate(animation);
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: slide,
-                                  child: child,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: _isTapOnly
+                          ? Align(
+                              alignment: Alignment.centerLeft,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 360),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                transitionBuilder: (child, animation) {
+                                  final slide = Tween<Offset>(
+                                    begin: const Offset(0, .12),
+                                    end: Offset.zero,
+                                  ).animate(animation);
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: SlideTransition(
+                                      position: slide,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  displayHint,
+                                  key: ValueKey(_promptIndex),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: ink.withAlpha(145),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Text(
-                              displayHint,
-                              key: ValueKey(_promptIndex),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              ),
+                            )
+                          : TextField(
+                              controller: widget.controller,
+                              onChanged: widget.onChanged,
                               style: GoogleFonts.plusJakartaSans(
-                                color: ink.withAlpha(145),
+                                color: ink,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
                               ),
+                              cursorColor: const Color(0xFF60A5FA),
+                              decoration: InputDecoration(
+                                hintText: widget.hint,
+                                hintStyle: GoogleFonts.plusJakartaSans(
+                                  color: ink.withAlpha(130),
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 15,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                filled: false,
+                                fillColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
+                                focusColor: Colors.transparent,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
-                          ),
-                        )
-                      : TextField(
-                          controller: widget.controller,
-                          onChanged: widget.onChanged,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: ink,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                          cursorColor: const Color(0xFF60A5FA),
-                          decoration: InputDecoration(
-                            hintText: widget.hint,
-                            hintStyle: GoogleFonts.plusJakartaSans(
-                              color: ink.withAlpha(130),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 15,
-                            ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            filled: false,
-                            fillColor: Colors.transparent,
-                            hoverColor: Colors.transparent,
-                            focusColor: Colors.transparent,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                 ),
-                const SizedBox(width: 16),
-              ]),
+              ),
             ),
           ),
         ),
-      ),
-      const SizedBox(height: 5),
-      Row(children: [
-        const Icon(
-          Icons.auto_awesome_rounded,
-          color: Color(0xFF60A5FA),
-          size: 11,
-        ),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            'Powered by Gemini · AI may make mistakes.',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
-              color: muted,
-              fontWeight: FontWeight.w600,
-              fontSize: 10.5,
-              letterSpacing: .15,
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xFF60A5FA),
+              size: 11,
             ),
-          ),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Powered by Gemini · AI may make mistakes.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  color: muted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10.5,
+                  letterSpacing: .15,
+                ),
+              ),
+            ),
+          ],
         ),
-      ]),
-      const SizedBox(height: 7),
-      Row(children: [
-        Expanded(
-          child: _outerPill(
-            Icons.location_on_rounded,
-            widget.locationLabel,
-            ink,
-            isLight,
-            widget.onLocationTap,
-          ),
+        const SizedBox(height: 7),
+        Row(
+          children: [
+            Expanded(
+              child: _outerPill(
+                Icons.location_on_rounded,
+                widget.locationLabel,
+                ink,
+                isLight,
+                widget.onLocationTap,
+              ),
+            ),
+            const SizedBox(width: 7),
+            Expanded(
+              child: _outerPill(
+                Icons.calendar_month_rounded,
+                widget.dateLabel,
+                ink,
+                isLight,
+                widget.onDatesTap,
+              ),
+            ),
+            const SizedBox(width: 7),
+            Expanded(
+              child: _outerPill(
+                Icons.person_rounded,
+                widget.guestLabel,
+                ink,
+                isLight,
+                widget.onGuestsTap,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 7),
-        Expanded(
-          child: _outerPill(
-            Icons.calendar_month_rounded,
-            widget.dateLabel,
-            ink,
-            isLight,
-            widget.onDatesTap,
-          ),
-        ),
-        const SizedBox(width: 7),
-        Expanded(
-          child: _outerPill(
-            Icons.person_rounded,
-            widget.guestLabel,
-            ink,
-            isLight,
-            widget.onGuestsTap,
-          ),
-        ),
-      ]),
-    ]);
+      ],
+    );
   }
 
   Widget _outerPill(
