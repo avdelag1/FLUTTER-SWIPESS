@@ -30,7 +30,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   static const mapWash = Color(0xFF5B9CF6);
   static const themeWash = Color(0xFF9B7BFF);
   static const bellWash = Color(0xFFE95B9B);
-  static const tokenWash = Color(0xFFE7A454);
+  static const tokenWash = Color(0xFFD7A83E);
+  static const tokenGold = Color(0xFFF2C14E);
+  static const tokenGoldDeep = Color(0xFFB87916);
   static const _hudSize = 38.0;
 
   void _openProfile(BuildContext context) {
@@ -72,9 +74,26 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               semanticLabel: 'Open tokens, balance $tokens', accent: tokenWash, wide: true,
               onTap: () { AppHaptics.medium(); showGlassModal(context: context, builder: (_) => const TokensModal()); },
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.workspace_premium_outlined, size: 18, color: ink),
-                const SizedBox(width: 4),
-                Text('$tokens', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 12, fontWeight: FontWeight.w800)),
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFE08A), tokenGold, tokenGoldDeep],
+                    ),
+                    border: Border.all(color: const Color(0xFFFFE6A6), width: .8),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x55F2C14E), blurRadius: 9, spreadRadius: 1),
+                    ],
+                  ),
+                  child: const Icon(Icons.workspace_premium_rounded, size: 15, color: Color(0xFF3A2608)),
+                ),
+                const SizedBox(width: 5),
+                Text('$tokens', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 12, fontWeight: FontWeight.w900)),
               ]),
             ),
             SizedBox(width: chromeGap),
