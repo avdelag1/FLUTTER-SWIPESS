@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -80,56 +82,90 @@ class _DashboardDockState extends State<DashboardDock> {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return Center(
       child: Semantics(
         container: true,
         label: 'Primary navigation',
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 300),
-          child: Container(
-            height: 60,
+          child: DecoratedBox(
             decoration: BoxDecoration(
-              color: const Color(0xE6000000),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withAlpha(58), width: 1.2),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x66000000),
-                  blurRadius: 24,
-                  offset: Offset(0, 10),
+                  color: Colors.black.withAlpha(isLight ? 34 : 125),
+                  blurRadius: 26,
+                  offset: const Offset(0, 11),
                 ),
-                BoxShadow(color: Color(0x30FF4D6A), blurRadius: 22),
+                BoxShadow(
+                  color: Colors.white.withAlpha(isLight ? 28 : 10),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
               ],
             ),
-            clipBehavior: Clip.antiAlias,
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                scrollbars: false,
-                dragDevices: {
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.trackpad,
-                  PointerDeviceKind.stylus,
-                },
-              ),
-              child: ListView.separated(
-                controller: _controller,
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                itemCount: widget.items.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 4),
-                itemBuilder: (context, i) {
-                  final item = widget.items[i];
-                  return DockButton(
-                    item: item,
-                    wash: item.wash,
-                    selected: widget.selectedTab == item.id,
-                    onTap: () {
-                      AppHaptics.light();
-                      widget.onTabSelected(item.id);
-                    },
-                  );
-                },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isLight
+                          ? [
+                              Colors.white.withAlpha(205),
+                              Colors.white.withAlpha(135),
+                            ]
+                          : [
+                              Colors.white.withAlpha(28),
+                              const Color(0xFF050507).withAlpha(205),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: Colors.white.withAlpha(isLight ? 135 : 66),
+                      width: 0.9,
+                    ),
+                  ),
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(
+                      scrollbars: false,
+                      dragDevices: {
+                        PointerDeviceKind.touch,
+                        PointerDeviceKind.mouse,
+                        PointerDeviceKind.trackpad,
+                        PointerDeviceKind.stylus,
+                      },
+                    ),
+                    child: ListView.separated(
+                      controller: _controller,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      itemCount: widget.items.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 4),
+                      itemBuilder: (context, i) {
+                        final item = widget.items[i];
+                        return DockButton(
+                          item: item,
+                          wash: item.wash,
+                          selected: widget.selectedTab == item.id,
+                          onTap: () {
+                            AppHaptics.light();
+                            widget.onTabSelected(item.id);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -169,7 +205,17 @@ class DockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final emphasized = selected || item.accent;
-    final iconColor = Colors.white.withAlpha(emphasized ? 255 : 242);
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final iconColor = isLight
+        ? const Color(0xFF101014).withAlpha(emphasized ? 255 : 220)
+        : Colors.white.withAlpha(emphasized ? 255 : 235);
+    final glassBorder = emphasized
+        ? wash.withAlpha(isLight ? 190 : 185)
+        : Colors.white.withAlpha(isLight ? 125 : 72);
+    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
+    final lowlight = isLight
+        ? Colors.white.withAlpha(120)
+        : const Color(0xFF07070A).withAlpha(145);
 
     return Semantics(
       button: true,
@@ -184,71 +230,74 @@ class DockButton extends StatelessWidget {
             containedInkWell: true,
             highlightShape: BoxShape.circle,
             radius: 24,
-            splashColor: wash.withAlpha(90),
+            splashColor: wash.withAlpha(65),
             child: SizedBox(
               width: 44,
               height: 44,
               child: Center(
                 child: AnimatedScale(
-                  scale: emphasized ? 1 : 0.98,
+                  scale: emphasized ? 1.03 : 1,
                   duration: const Duration(milliseconds: 140),
                   curve: Curves.easeOutCubic,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 160),
-                        curve: Curves.easeOutCubic,
-                        width: emphasized ? 36 : 34,
-                        height: emphasized ? 36 : 34,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: emphasized
-                              ? LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    wash,
-                                    Color.lerp(
-                                          wash,
-                                          const Color(0xFFEB4898),
-                                          0.40,
-                                        ) ??
-                                        wash,
-                                  ],
-                                )
-                              : RadialGradient(
-                                  colors: [
-                                    wash.withAlpha(165),
-                                    wash.withAlpha(70),
-                                  ],
-                                ),
-                          border: Border.all(
-                            color: emphasized
-                                ? Colors.white.withAlpha(105)
-                                : wash.withAlpha(210),
-                            width: 1,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOutCubic,
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(isLight ? 20 : 88),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                        if (emphasized)
+                          BoxShadow(
+                            color: wash.withAlpha(isLight ? 70 : 105),
+                            blurRadius: 13,
+                            spreadRadius: 0.5,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: wash.withAlpha(emphasized ? 155 : 95),
-                              blurRadius: emphasized ? 13 : 9,
-                              spreadRadius: emphasized ? 1 : 0,
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                emphasized
+                                    ? Color.lerp(highlight, wash, 0.18) ?? highlight
+                                    : highlight,
+                                lowlight,
+                              ],
                             ),
-                          ],
+                            border: Border.all(
+                              color: glassBorder,
+                              width: emphasized ? 1.15 : 0.9,
+                            ),
+                          ),
+                          child: Center(
+                            child: item.useAiIcon
+                                ? CustomPaint(
+                                    painter: AiRobotPainter(color: iconColor),
+                                    size: const Size(20, 20),
+                                  )
+                                : Icon(
+                                    item.icon,
+                                    size: item.accent ? 24 : 22,
+                                    color: item.accent
+                                        ? wash.withAlpha(255)
+                                        : iconColor,
+                                  ),
+                          ),
                         ),
                       ),
-                      item.useAiIcon
-                          ? CustomPaint(
-                              painter: AiRobotPainter(color: iconColor),
-                              size: const Size(20, 20),
-                            )
-                          : Icon(
-                              item.icon,
-                              size: item.accent ? 24 : 22,
-                              color: iconColor,
-                            ),
-                    ],
+                    ),
                   ),
                 ),
               ),
