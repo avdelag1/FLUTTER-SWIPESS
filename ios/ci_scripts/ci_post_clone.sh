@@ -13,12 +13,15 @@ export PATH="$PATH:$HOME/flutter/bin"
 flutter precache --ios
 flutter pub get
 
-# Always regenerate the iOS launcher icon from the single authoritative source
-# before Xcode archives the app. This prevents Xcode Cloud from shipping stale
-# AppIcon files left over from an older local build.
+# Regenerate the iOS launcher icon from the single authoritative source
+# (assets/app_icon.png, configured in pubspec.yaml) before Xcode archives the
+# app, so the archive never ships stale AppIcon files from an older build.
 dart run flutter_launcher_icons
 
-echo "Launcher icons regenerated from assets/app_icon.png"
+# App Store Connect rejects app icons that carry an alpha channel, which is how
+# "Prepare Build for App Store Connect" fails after a successful archive.
+# Flatten any residual transparency and fail fast if an icon is still invalid.
+sh ios/ci_scripts/validate_app_icons.sh
 
 HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
 cd ios
