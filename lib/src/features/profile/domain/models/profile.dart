@@ -54,4 +54,7 @@ class Profile {
   }
 
   String get displayName => fullName ?? username ?? 'User';
+
+  /// Backward-compatible alias for older map/UI call sites.
+  String get name => displayName;
 }
