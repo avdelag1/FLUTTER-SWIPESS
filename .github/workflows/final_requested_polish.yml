@@ -29,147 +29,73 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
+          import re
 
-          def replace_required(text, old, new, label):
-              if old not in text:
+          def sub_required(pattern, repl, text, label):
+              out, count = re.subn(pattern, repl, text, count=1, flags=re.S)
+              if count != 1:
                   raise SystemExit(f'{label} anchor not found')
-              return text.replace(old, new, 1)
+              return out
 
-          # EVENTS: the eye is a true on/off control. No timer puts the chrome back on top.
+          # EVENTS — eye becomes a persistent manual ON/OFF switch.
           p = Path('lib/src/features/events/presentation/screens/events_screen.dart')
           s = p.read_text()
           s = s.replace("import 'dart:async';\n", '')
           s = s.replace('  Timer? _chromeTimer;\n', '')
           s = s.replace('\n  static const _chromeVisibleFor = Duration(milliseconds: 2800);\n', '')
           s = s.replace('    _chromeTimer?.cancel();\n    _pages.dispose();', '    _pages.dispose();')
-          old = '''  void _scheduleHide() {
-            _chromeTimer?.cancel();
-            _chromeTimer = Timer(_chromeVisibleFor, _hideChrome);
-          }
-
-          void _revealChrome({bool autoHide = true}) {
-            if (!mounted) return;
-            if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
-            ref.read(chromeVisibilityProvider.notifier).show();
-            _chromeTimer?.cancel();
-            if (autoHide) _scheduleHide();
-          }
-          '''
-          new = '''  void _revealChrome({bool autoHide = true}) {
-            if (!mounted) return;
-            if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
-            ref.read(chromeVisibilityProvider.notifier).show();
-          }
-          '''
-          if old in s:
-              s = s.replace(old, new, 1)
-          old = '''              if (!_eventChromeVisible)
-                            Positioned(
-                              right: 14,
-                              bottom: bottomSafe + 18,
-                              child: _FocusOrb(onTap: _revealChrome),
-                            ),
-          '''
-          new = '''              Positioned(
-                            right: 14,
-                            bottom: bottomSafe + 18,
-                            child: _FocusOrb(
-                              controlsVisible: _eventChromeVisible,
-                              onTap: _toggleChrome,
-                            ),
-                          ),
-          '''
-          if old in s:
-              s = s.replace(old, new, 1)
-          s = s.replace(
-              '''class _FocusOrb extends StatelessWidget {
-            const _FocusOrb({required this.onTap});
-            final VoidCallback onTap;
-          ''',
-              '''class _FocusOrb extends StatelessWidget {
-            const _FocusOrb({required this.controlsVisible, required this.onTap});
-            final bool controlsVisible;
-            final VoidCallback onTap;
-          ''',
-          )
+          if 'void _scheduleHide()' in s:
+              s = sub_required(
+                  r'\n\s*void _scheduleHide\(\) \{.*?\n\s*\}\n\s*\n\s*void _revealChrome\(\{bool autoHide = true\}\) \{.*?\n\s*\}\n',
+                  "\n  void _revealChrome({bool autoHide = true}) {\n    if (!mounted) return;\n    if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);\n    ref.read(chromeVisibilityProvider.notifier).show();\n  }\n",
+                  s,
+                  'event chrome timer',
+              )
+          if '_FocusOrb(onTap: _revealChrome)' in s:
+              s = sub_required(
+                  r'\s*if \(!_eventChromeVisible\)\s*Positioned\(\s*right: 14,\s*bottom: bottomSafe \+ 18,\s*child: _FocusOrb\(onTap: _revealChrome\),\s*\),',
+                  "\n              Positioned(\n                right: 14,\n                bottom: bottomSafe + 18,\n                child: _FocusOrb(\n                  controlsVisible: _eventChromeVisible,\n                  onTap: _toggleChrome,\n                ),\n              ),",
+                  s,
+                  'event focus orb position',
+              )
+          if 'const _FocusOrb({required this.onTap});' in s:
+              s = sub_required(
+                  r'class _FocusOrb extends StatelessWidget \{\s*const _FocusOrb\(\{required this\.onTap\}\);\s*final VoidCallback onTap;',
+                  "class _FocusOrb extends StatelessWidget {\n  const _FocusOrb({required this.controlsVisible, required this.onTap});\n  final bool controlsVisible;\n  final VoidCallback onTap;",
+                  s,
+                  'event focus orb class',
+              )
           s = s.replace(
               "      label: 'Show event controls and navigation',",
               "      label: controlsVisible ? 'Hide event controls and navigation' : 'Show event controls and navigation',",
           )
-          s = s.replace(
-              '''        child: GestureDetector(
-                    onTap: () {
-                      AppHaptics.light();
-                      onTap();
-                    },
-          ''',
-              '''        child: GestureDetector(
-                    onTap: onTap,
-          ''',
+          s = re.sub(
+              r'onTap: \(\) \{\s*AppHaptics\.light\(\);\s*onTap\(\);\s*\},',
+              'onTap: onTap,',
+              s,
+              count=1,
           )
           s = s.replace(
-              '                child: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),',
-              '''                child: Icon(
-                            controlsVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            color: Colors.white,
-                            size: 18,
-                          ),''',
+              'child: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),',
+              'child: Icon(controlsVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.white, size: 18),',
           )
           p.write_text(s)
 
-          # NAV: shorter pill, fixed-width buttons, horizontal left/right swipe.
+          # BOTTOM NAV — shorter pill and horizontal swipe left/right.
           p = Path('lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart')
           s = p.read_text()
           s = s.replace('constraints: const BoxConstraints(maxWidth: 340),', 'constraints: const BoxConstraints(maxWidth: 292),')
           s = s.replace('                  height: 50,', '                  height: 48,')
-          old = '''                  child: Row(
-                    children: [
-                      for (final item in items)
-                        Expanded(
-                          child: DockButton(
-                            item: item,
-                            wash: item.wash,
-                            selected: selectedTab == item.id,
-                            onTap: () {
-                              AppHaptics.light();
-                              onTabSelected(item.id);
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-          '''
-          new = '''                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    child: Row(
-                      children: [
-                        for (final item in items)
-                          SizedBox(
-                            width: 40,
-                            child: DockButton(
-                              item: item,
-                              wash: item.wash,
-                              selected: selectedTab == item.id,
-                              onTap: () {
-                                AppHaptics.light();
-                                onTabSelected(item.id);
-                              },
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-          '''
-          if old in s:
-              s = s.replace(old, new, 1)
-          elif 'AlwaysScrollableScrollPhysics' not in s:
-              raise SystemExit('dock scroll anchor not found')
+          if 'AlwaysScrollableScrollPhysics' not in s:
+              s = sub_required(
+                  r'child:\s*Row\(\s*children:\s*\[\s*for \(final item in items\)\s*Expanded\(\s*child:\s*DockButton\(\s*item: item,\s*wash: item\.wash,\s*selected: selectedTab == item\.id,\s*onTap: \(\) \{\s*AppHaptics\.light\(\);\s*onTabSelected\(item\.id\);\s*\},\s*\),\s*\),\s*\],\s*\),',
+                  "child: SingleChildScrollView(\n                    scrollDirection: Axis.horizontal,\n                    physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),\n                    child: Row(\n                      children: [\n                        for (final item in items)\n                          SizedBox(\n                            width: 40,\n                            child: DockButton(\n                              item: item,\n                              wash: item.wash,\n                              selected: selectedTab == item.id,\n                              onTap: () {\n                                AppHaptics.light();\n                                onTabSelected(item.id);\n                              },\n                            ),\n                          ),\n                      ],\n                    ),\n                  ),",
+                  s,
+                  'dock scroll',
+              )
           p.write_text(s)
 
-          # CITY CHIPS: smaller and full-width when opened, no vertical rail clipping them.
+          # CITY CHIPS — compact and no artificial right-side cut.
           p = Path('lib/src/features/map/presentation/widgets/map_city_chips.dart')
           s = p.read_text()
           s = s.replace('      height: 38,', '      height: 36,')
@@ -178,16 +104,13 @@ jobs:
           s = s.replace('                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),', '                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),')
           p.write_text(s)
 
-          # MAP LAYER CONTROL: horizontal ALL / LISTINGS / USERS pill instead of a vertical frame.
-          p = Path('lib/src/features/map/presentation/widgets/map_layer_rail.dart')
-          p.write_text('''import 'dart:ui';
+          # MAP FILTER — horizontal ALL / LISTINGS / USERS liquid-glass pill.
+          Path('lib/src/features/map/presentation/widgets/map_layer_rail.dart').write_text("""import 'dart:ui';
 
           import 'package:flutter/material.dart';
           import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
           import 'package:google_fonts/google_fonts.dart';
 
-          /// Horizontal liquid-glass map filter. It remains readable on a phone and
-          /// never covers the city scroller.
           class MapLayerRail extends StatelessWidget {
             const MapLayerRail({
               super.key,
@@ -215,37 +138,13 @@ jobs:
                       color: Colors.black.withAlpha(86),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: Colors.white.withAlpha(52), width: .8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(54),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _LayerChoice(
-                          icon: Icons.public_rounded,
-                          label: 'ALL',
-                          selected: layer == 'all',
-                          onTap: () => onLayer('all'),
-                        ),
-                        _LayerChoice(
-                          icon: Icons.apartment_rounded,
-                          label: 'LISTINGS',
-                          count: listingCount,
-                          selected: layer == 'listings',
-                          onTap: () => onLayer('listings'),
-                        ),
-                        _LayerChoice(
-                          icon: Icons.people_alt_rounded,
-                          label: 'USERS',
-                          count: peopleCount,
-                          selected: layer == 'people',
-                          onTap: () => onLayer('people'),
-                        ),
+                        _LayerChoice(icon: Icons.public_rounded, label: 'ALL', selected: layer == 'all', onTap: () => onLayer('all')),
+                        _LayerChoice(icon: Icons.apartment_rounded, label: 'LISTINGS', count: listingCount, selected: layer == 'listings', onTap: () => onLayer('listings')),
+                        _LayerChoice(icon: Icons.people_alt_rounded, label: 'USERS', count: peopleCount, selected: layer == 'people', onTap: () => onLayer('people')),
                       ],
                     ),
                   ),
@@ -255,14 +154,7 @@ jobs:
           }
 
           class _LayerChoice extends StatelessWidget {
-            const _LayerChoice({
-              required this.icon,
-              required this.label,
-              required this.selected,
-              required this.onTap,
-              this.count,
-            });
-
+            const _LayerChoice({required this.icon, required this.label, required this.selected, required this.onTap, this.count});
             final IconData icon;
             final String label;
             final bool selected;
@@ -277,10 +169,7 @@ jobs:
                 label: count == null ? label : '$label, $count results',
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    AppHaptics.selection();
-                    onTap();
-                  },
+                  onTap: () { AppHaptics.selection(); onTap(); },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     height: 34,
@@ -288,38 +177,17 @@ jobs:
                     decoration: BoxDecoration(
                       color: selected ? Colors.white.withAlpha(36) : Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
-                      border: selected
-                          ? Border.all(color: Colors.white.withAlpha(52), width: .7)
-                          : null,
+                      border: selected ? Border.all(color: Colors.white.withAlpha(52), width: .7) : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          icon,
-                          color: selected ? const Color(0xFFFF6B35) : Colors.white.withAlpha(220),
-                          size: 15,
-                        ),
+                        Icon(icon, color: selected ? const Color(0xFFFF6B35) : Colors.white.withAlpha(220), size: 15),
                         const SizedBox(width: 5),
-                        Text(
-                          label,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .55,
-                          ),
-                        ),
+                        Text(label, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900, letterSpacing: .55)),
                         if (count != null) ...[
                           const SizedBox(width: 4),
-                          Text(
-                            '$count',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          Text('$count', style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.w800)),
                         ],
                       ],
                     ),
@@ -329,17 +197,8 @@ jobs:
             }
           }
 
-          /// Neutral liquid-glass HUD control that stays readable on satellite imagery.
           class MapHudCircle extends StatelessWidget {
-            const MapHudCircle({
-              super.key,
-              required this.icon,
-              required this.onTap,
-              this.selected = false,
-              this.accent = false,
-              this.semanticLabel,
-            });
-
+            const MapHudCircle({super.key, required this.icon, required this.onTap, this.selected = false, this.accent = false, this.semanticLabel});
             final IconData icon;
             final VoidCallback onTap;
             final bool selected;
@@ -364,127 +223,45 @@ jobs:
                           height: 38,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: (selected || accent)
-                                ? Colors.white.withAlpha(220)
-                                : Colors.black.withAlpha(92),
-                            border: Border.all(
-                              color: (selected || accent)
-                                  ? Colors.white.withAlpha(230)
-                                  : Colors.white.withAlpha(62),
-                              width: .9,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(58),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                            color: (selected || accent) ? Colors.white.withAlpha(220) : Colors.black.withAlpha(92),
+                            border: Border.all(color: (selected || accent) ? Colors.white.withAlpha(230) : Colors.white.withAlpha(62), width: .9),
                           ),
-                          child: Icon(
-                            icon,
-                            color: (selected || accent)
-                                ? const Color(0xFF111318)
-                                : Colors.white.withAlpha(238),
-                            size: 18,
-                          ),
+                          child: Icon(icon, color: (selected || accent) ? const Color(0xFF111318) : Colors.white.withAlpha(238), size: 18),
                         ),
                       ),
                     ),
                   ),
                 ),
               );
-
               if (semanticLabel == null) return control;
-              return Semantics(
-                button: true,
-                selected: selected,
-                label: semanticLabel,
-                child: Tooltip(message: semanticLabel!, child: control),
-              );
+              return Semantics(button: true, selected: selected, label: semanticLabel, child: Tooltip(message: semanticLabel!, child: control));
             }
           }
-          ''')
+          """)
 
-          # LIVE MAP: layer choices live in the top row; city chips only open when requested.
+          # LIVE MAP — filters join the top row; city scroller opens full width underneath.
           p = Path('lib/src/features/map/presentation/screens/live_map_screen.dart')
           s = p.read_text()
-          old = '''                    MapHudCircle(
-                                icon: Icons.search_rounded,
-                                onTap: () => setState(() {
-                                  _citiesOpen = !_citiesOpen;
-                                  _radiusOpen = false;
-                                }),
-                              ),
-                              const Spacer(),
-          '''
-          new = '''                    MapHudCircle(
-                                icon: Icons.location_city_rounded,
-                                selected: _citiesOpen,
-                                semanticLabel: 'Cities',
-                                onTap: () => setState(() {
-                                  _citiesOpen = !_citiesOpen;
-                                  _radiusOpen = false;
-                                }),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  physics: const BouncingScrollPhysics(
-                                    parent: AlwaysScrollableScrollPhysics(),
-                                  ),
-                                  child: MapLayerRail(
-                                    layer: _layer,
-                                    listingCount: listingPins.length,
-                                    peopleCount: profilePins.length,
-                                    onLayer: (layer) => setState(() {
-                                      _layer = layer;
-                                      _selected = null;
-                                    }),
-                                  ),
-                                ),
-                              ),
-          '''
-          s = replace_required(s, old, new, 'live map top row')
-          old = '''          Positioned(
-                      top: pad.top + 56,
-                      left: 0,
-                      right: 64,
-                      child: _MapHudVisibility(
-                        visible: _hudVisible,
-                        child: MapCityChips(
-          '''
-          new = '''          if (_citiesOpen)
-                      Positioned(
-                        top: pad.top + 56,
-                        left: 12,
-                        right: 12,
-                        child: _MapHudVisibility(
-                          visible: _hudVisible,
-                          child: MapCityChips(
-          '''
-          s = replace_required(s, old, new, 'live map city row')
-          old = '''          Positioned(
-                      right: 12,
-                      top: pad.top + 60,
-                      child: _MapHudVisibility(
-                        visible: _hudVisible,
-                        child: MapLayerRail(
-                          layer: _layer,
-                          listingCount: listingPins.length,
-                          peopleCount: profilePins.length,
-                          onLayer: (layer) => setState(() {
-                            _layer = layer;
-                            _selected = null;
-                          }),
-                        ),
-                      ),
-                    ),
-
-          '''
-          if old in s:
-              s = s.replace(old, '', 1)
+          if "semanticLabel: 'Cities'" not in s:
+              s = sub_required(
+                  r'MapHudCircle\(\s*icon: Icons\.search_rounded,\s*onTap: \(\) => setState\(\(\) \{\s*_citiesOpen = !_citiesOpen;\s*_radiusOpen = false;\s*\}\),\s*\),\s*const Spacer\(\),',
+                  "MapHudCircle(\n                      icon: Icons.location_city_rounded,\n                      selected: _citiesOpen,\n                      semanticLabel: 'Cities',\n                      onTap: () => setState(() {\n                        _citiesOpen = !_citiesOpen;\n                        _radiusOpen = false;\n                      }),\n                    ),\n                    const SizedBox(width: 8),\n                    Expanded(\n                      child: SingleChildScrollView(\n                        scrollDirection: Axis.horizontal,\n                        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),\n                        child: MapLayerRail(\n                          layer: _layer,\n                          listingCount: listingPins.length,\n                          peopleCount: profilePins.length,\n                          onLayer: (layer) => setState(() {\n                            _layer = layer;\n                            _selected = null;\n                          }),\n                        ),\n                      ),\n                    ),",
+                  s,
+                  'live map top controls',
+              )
+          if 'right: 64,' in s:
+              s = sub_required(
+                  r'Positioned\(\s*top: pad\.top \+ 56,\s*left: 0,\s*right: 64,\s*child: _MapHudVisibility\(\s*visible: _hudVisible,\s*child: MapCityChips\(',
+                  "if (_citiesOpen)\n            Positioned(\n              top: pad.top + 56,\n              left: 12,\n              right: 12,\n              child: _MapHudVisibility(\n                visible: _hudVisible,\n                child: MapCityChips(",
+                  s,
+                  'live map city scroller',
+              )
+          layer_start = '          Positioned(\n            right: 12,\n            top: pad.top + 60,'
+          next_block = '\n\n          Positioned(\n            left: 12,\n            right: 12,\n            bottom: pad.bottom + 12,'
+          if layer_start in s:
+              a = s.index(layer_start)
+              b = s.index(next_block, a)
+              s = s[:a] + s[b + 2:]
           p.write_text(s)
           PY
       - name: Format changed Dart files
