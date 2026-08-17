@@ -180,7 +180,7 @@ class _BentoTile extends StatelessWidget {
       media: BentoMediaPools.forId(item.id),
       stagger: Duration(seconds: int.parse(item.delaySeconds)),
       isLight: isLight,
-      enableVideo: item.index < 2,
+      enableVideo: true,
       onTap: () => onOpen(item.id, item.title),
     );
   }
