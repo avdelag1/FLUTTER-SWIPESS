@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -59,17 +59,12 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 ),
                 actions: [
                   IconButton(
-                    onPressed: () async {
-                      final url =
-                          'https://www.swipess.com/listing/${listing.id}';
-                      await Clipboard.setData(ClipboardData(text: url));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Link copied')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.share_rounded),
+                    tooltip: 'Share listing',
+                    onPressed: () => AppShare.listing(
+                      id: listing.id,
+                      title: listing.title,
+                    ),
+                    icon: const Icon(Icons.ios_share_rounded),
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
