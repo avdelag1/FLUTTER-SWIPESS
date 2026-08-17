@@ -5,20 +5,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'src/app.dart';
 
 Future<void> main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
 
-  // WEB BLACK SCREEN FIX:
-  // FlutterNativeSplash.preserve() defers the first frame. Our HTML splash can
-  // disappear first → pure black until Dart reaches remove(). Never preserve on web.
   if (!kIsWeb) {
     FlutterNativeSplash.preserve(widgetsBinding: binding);
+  }
+
+  // The map must use the official Mapbox renderer, not only Mapbox raster tiles.
+  // The public token stays outside source control and is supplied by --dart-define.
+  final mapboxToken = AppConfig.mapboxAccessToken.trim();
+  if (mapboxToken.isNotEmpty) {
+    MapboxOptions.setAccessToken(mapboxToken);
   }
 
   await SystemChromeService.initialize();
@@ -29,14 +35,10 @@ Future<void> main() async {
     ]),
   );
 
-  // Router/auth touch Supabase.instance — must init before runApp.
   try {
     await SupabaseService.initialize().timeout(const Duration(seconds: 6));
   } catch (e, st) {
     debugPrint('Supabase bootstrap failed/timed out: $e\n$st');
-    // If backend fails, we should not proceed to runApp normally as it will crash internally.
-    // Instead, we could show an offline/error screen, but for now we rethrow to explicitly
-    // crash rather than silent failure.
     rethrow;
   }
 
