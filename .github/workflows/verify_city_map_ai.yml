@@ -1,0 +1,27 @@
+name: Verify city map and AI timing
+
+on:
+  push:
+    branches:
+      - fix/city-map-and-ai-timing
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed lib/src/core/widgets/glow_search_bar.dart lib/src/features/map/domain/map_pin.dart lib/src/features/map/presentation/providers/map_listings_provider.dart lib/src/features/map/presentation/providers/map_profiles_provider.dart lib/src/features/map/presentation/screens/real_mapbox_screen.dart
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Build web release
+        run: flutter build web --release
