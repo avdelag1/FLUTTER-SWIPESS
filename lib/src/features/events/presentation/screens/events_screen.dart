@@ -152,8 +152,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 onPageChanged: (i) {
                   AppHaptics.selection();
                   setState(() => _index = i);
-                  // Briefly restore context/action controls for each new event,
-                  // then return to clean immersive playback automatically.
                   _revealChrome();
                 },
                 itemBuilder: (context, i) {
@@ -183,7 +181,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   );
                 },
               ),
-
               IgnorePointer(
                 ignoring: !_eventChromeVisible,
                 child: AnimatedOpacity(
@@ -298,9 +295,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                 ),
               ),
-
-              // When everything is hidden, leave one tiny discoverable control.
-              // It restores both the persistent app header/dock and the event UI.
               if (!_eventChromeVisible)
                 Positioned(
                   right: 14,
@@ -557,9 +551,10 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       final initial = widget.initialPosition;
       if (!_didApplyInitialPosition && initial != null && initial > Duration.zero) {
         final duration = next.value.duration;
-        final safePosition = duration > Duration.zero && initial >= duration
-            ? duration - const Duration(milliseconds: 120)
-            : initial;
+        var safePosition = initial;
+        if (duration > const Duration(milliseconds: 120) && initial >= duration) {
+          safePosition = duration - const Duration(milliseconds: 120);
+        }
         if (safePosition > Duration.zero) {
           await next.seekTo(safePosition);
         }
@@ -668,7 +663,6 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
             )
           else
             const ColoredBox(color: Color(0xFF16161C)),
-
           const IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -685,7 +679,6 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
               ),
             ),
           ),
-
           IgnorePointer(
             ignoring: !widget.chromeVisible,
             child: AnimatedOpacity(
