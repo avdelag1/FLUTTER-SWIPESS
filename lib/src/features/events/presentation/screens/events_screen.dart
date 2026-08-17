@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/utils/event_connect.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
+import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mute_button.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/promote_cta_card.dart';
@@ -36,12 +37,18 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   int _index = 0;
   String _category = 'All';
   bool _eventChromeVisible = true;
+  String? _handoffEventId;
+  Duration? _handoffPosition;
+  bool _handoffPageApplied = false;
 
   static const _chromeVisibleFor = Duration(milliseconds: 2800);
 
   @override
   void initState() {
     super.initState();
+    final handoff = EventPreviewHandoff.take();
+    _handoffEventId = handoff?.eventId;
+    _handoffPosition = handoff?.position;
     WidgetsBinding.instance.addPostFrameCallback((_) => _revealChrome());
   }
 
@@ -119,6 +126,19 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ),
             );
           }
+
+          if (!_handoffPageApplied && _handoffEventId != null) {
+            final targetIndex = events.indexWhere((e) => e.id == _handoffEventId);
+            _handoffPageApplied = true;
+            if (targetIndex >= 0) {
+              _index = targetIndex;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || !_pages.hasClients) return;
+                _pages.jumpToPage(targetIndex);
+              });
+            }
+          }
+
           final topSafe = MediaQuery.paddingOf(context).top;
           final bottomSafe = MediaQuery.paddingOf(context).bottom;
           return Stack(
@@ -132,8 +152,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 onPageChanged: (i) {
                   AppHaptics.selection();
                   setState(() => _index = i);
-                  // Briefly restore context/action controls for each new event,
-                  // then return to clean immersive playback automatically.
                   _revealChrome();
                 },
                 itemBuilder: (context, i) {
@@ -151,6 +169,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     shouldLoadVideo: near,
                     siblings: events,
                     chromeVisible: _eventChromeVisible,
+                    initialPosition: event.id == _handoffEventId
+                        ? _handoffPosition
+                        : null,
                     onToggleChrome: _toggleChrome,
                     onChromeInteraction: _revealChrome,
                     onOpen: () {
@@ -160,7 +181,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   );
                 },
               ),
-
               IgnorePointer(
                 ignoring: !_eventChromeVisible,
                 child: AnimatedOpacity(
@@ -275,9 +295,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                 ),
               ),
-
-              // When everything is hidden, leave one tiny discoverable control.
-              // It restores both the persistent app header/dock and the event UI.
               if (!_eventChromeVisible)
                 Positioned(
                   right: 14,
@@ -469,6 +486,7 @@ class _EventStoryPage extends ConsumerStatefulWidget {
     required this.onToggleChrome,
     required this.onChromeInteraction,
     required this.onOpen,
+    this.initialPosition,
   });
 
   final Event event;
@@ -476,6 +494,7 @@ class _EventStoryPage extends ConsumerStatefulWidget {
   final bool shouldLoadVideo;
   final List<Event> siblings;
   final bool chromeVisible;
+  final Duration? initialPosition;
   final VoidCallback onToggleChrome;
   final VoidCallback onChromeInteraction;
   final VoidCallback onOpen;
@@ -487,6 +506,7 @@ class _EventStoryPage extends ConsumerStatefulWidget {
 class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   VideoPlayerController? _player;
   bool? _favoritedOverride;
+  bool _didApplyInitialPosition = false;
 
   Event get event => widget.event;
 
@@ -528,6 +548,18 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
     try {
       await next.initialize();
       await next.setLooping(true);
+      final initial = widget.initialPosition;
+      if (!_didApplyInitialPosition && initial != null && initial > Duration.zero) {
+        final duration = next.value.duration;
+        var safePosition = initial;
+        if (duration > const Duration(milliseconds: 120) && initial >= duration) {
+          safePosition = duration - const Duration(milliseconds: 120);
+        }
+        if (safePosition > Duration.zero) {
+          await next.seekTo(safePosition);
+        }
+        _didApplyInitialPosition = true;
+      }
       final soundOn = ref.read(deckSoundOnProvider);
       await next.setVolume(soundOn ? 1 : 0);
       if (widget.active) await next.play();
@@ -631,7 +663,6 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
             )
           else
             const ColoredBox(color: Color(0xFF16161C)),
-
           const IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -648,7 +679,6 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
               ),
             ),
           ),
-
           IgnorePointer(
             ignoring: !widget.chromeVisible,
             child: AnimatedOpacity(

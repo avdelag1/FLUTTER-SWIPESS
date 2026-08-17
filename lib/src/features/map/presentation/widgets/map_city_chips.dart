@@ -1,10 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Horizontal city pills with cover photos — always readable on satellite.
+/// Compact liquid-glass city pills that stay clear of the map control rail.
 class MapCityChips extends StatelessWidget {
   const MapCityChips({
     super.key,
@@ -18,12 +19,13 @@ class MapCityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        clipBehavior: Clip.hardEdge,
+        padding: const EdgeInsets.fromLTRB(12, 0, 28, 0),
         itemCount: PassportCities.all.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, i) {
           final city = PassportCities.all[i];
           final active =
@@ -34,25 +36,35 @@ class MapCityChips extends StatelessWidget {
               AppHaptics.selection();
               onSelect(city);
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: active ? Colors.white : Colors.black.withAlpha(180),
-                border: Border.all(
-                  color: active ? Colors.white : Colors.white24,
-                  width: 1.0,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  city.name.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: active ? Colors.black : Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                    letterSpacing: 0.8,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: active
+                        ? Colors.white.withAlpha(222)
+                        : Colors.black.withAlpha(104),
+                    border: Border.all(
+                      color: active
+                          ? Colors.white.withAlpha(230)
+                          : Colors.white.withAlpha(52),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      city.name.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: active ? const Color(0xFF111318) : Colors.white.withAlpha(238),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10,
+                        letterSpacing: 0.65,
+                      ),
+                    ),
                   ),
                 ),
               ),

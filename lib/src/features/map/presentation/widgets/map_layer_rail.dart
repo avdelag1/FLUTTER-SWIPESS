@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
-/// Minimal, glassmorphic layer controls without glowing neon colors.
+/// Compact liquid-glass layer controls with restrained active treatment.
 class MapLayerRail extends StatelessWidget {
   const MapLayerRail({
     super.key,
@@ -23,14 +23,21 @@ class MapLayerRail extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
         child: Container(
-          width: 52,
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          width: 48,
+          padding: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withAlpha(120),
+            color: Colors.black.withAlpha(86),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withAlpha(60), width: 1.25),
+            border: Border.all(color: Colors.white.withAlpha(52), width: 0.8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(54),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -41,14 +48,12 @@ class MapLayerRail extends StatelessWidget {
                 selected: layer == 'all',
                 onTap: () => onLayer('all'),
               ),
-              const SizedBox(height: 4),
               _LayerOrb(
                 icon: Icons.apartment_rounded,
                 label: 'Show listings, $listingCount results',
                 selected: layer == 'listings',
                 onTap: () => onLayer('listings'),
               ),
-              const SizedBox(height: 4),
               _LayerOrb(
                 icon: Icons.people_alt_rounded,
                 label: 'Show people, $peopleCount results',
@@ -97,18 +102,23 @@ class _LayerOrb extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOutCubic,
-                width: 34,
-                height: 34,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: selected
-                      ? const Color(0xFFFF4D00)
+                      ? Colors.white.withAlpha(26)
                       : Colors.transparent,
+                  border: selected
+                      ? Border.all(color: Colors.white.withAlpha(52), width: 0.7)
+                      : null,
                 ),
                 child: Icon(
                   icon,
-                  color: selected ? Colors.white : Colors.white70,
-                  size: 18,
+                  color: selected
+                      ? const Color(0xFFFF6B35)
+                      : Colors.white.withAlpha(190),
+                  size: 16,
                 ),
               ),
             ),
@@ -119,7 +129,7 @@ class _LayerOrb extends StatelessWidget {
   }
 }
 
-/// Neutral circular HUD control that stays readable on satellite imagery.
+/// Neutral liquid-glass HUD control that stays readable on satellite imagery.
 class MapHudCircle extends StatelessWidget {
   const MapHudCircle({
     super.key,
@@ -145,21 +155,40 @@ class MapHudCircle extends StatelessWidget {
         width: 44,
         height: 44,
         child: Center(
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: (selected || accent)
-                  ? Colors.white
-                  : const Color(0xFF0A0A0D),
-              border: Border.all(color: Colors.white, width: 1.5),
-              boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 10)],
-            ),
-            child: Icon(
-              icon,
-              color: (selected || accent) ? Colors.black : Colors.white,
-              size: 18,
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (selected || accent)
+                      ? Colors.white.withAlpha(220)
+                      : Colors.black.withAlpha(92),
+                  border: Border.all(
+                    color: (selected || accent)
+                        ? Colors.white.withAlpha(230)
+                        : Colors.white.withAlpha(62),
+                    width: 0.9,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(58),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  icon,
+                  color: (selected || accent)
+                      ? const Color(0xFF111318)
+                      : Colors.white.withAlpha(238),
+                  size: 18,
+                ),
+              ),
             ),
           ),
         ),

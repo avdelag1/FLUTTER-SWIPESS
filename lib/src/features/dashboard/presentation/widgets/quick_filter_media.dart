@@ -21,8 +21,6 @@ bool isQuickFilterVideoUrl(String url) {
       lower.contains('/videos/');
 }
 
-/// Keep only a tiny number of decoded videos alive. Two lets us preload the next
-/// card while guaranteeing only one card actually plays at a time.
 class _VideoBudget {
   static const int maxActive = 2;
   static int _active = 0;
@@ -38,7 +36,6 @@ class _VideoBudget {
   }
 }
 
-/// Instagram/Reels-style playback ownership: only one dashboard card can play.
 class _VideoPlaybackCoordinator {
   static _QuickFilterMediaState? _active;
 
@@ -53,12 +50,6 @@ class _VideoPlaybackCoordinator {
   }
 }
 
-/// Media used by the dashboard bento cards.
-///
-/// Videos are pre-initialized when a card approaches the viewport, begin playing
-/// only after at least 50% of that card is visible, and pause immediately when
-/// the user scrolls past it. This prevents the whole dashboard from playing at
-/// once while making the next visible card feel instant.
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
     super.key,
@@ -87,6 +78,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   double _dragDx = 0;
   bool _holdsBudgetSlot = false;
   bool _binding = false;
+  bool _routeActive = true;
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
@@ -110,6 +102,17 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final nextRouteActive = TickerMode.of(context);
+    if (_routeActive != nextRouteActive) {
+      _routeActive = nextRouteActive;
+      if (!_routeActive) {
+        _visibleFraction = 0;
+        _video?.setVolume(0);
+        _pauseForCoordinator();
+      } else {
+        _scheduleVisibilityCheck();
+      }
+    }
     final next = Scrollable.maybeOf(context)?.position;
     if (!identical(next, _scrollPosition)) {
       _scrollPosition?.removeListener(_scheduleVisibilityCheck);
@@ -151,16 +154,22 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   void _scheduleVisibilityCheck() {
-    if (!mounted || _visibilityCheckScheduled) return;
+    if (!mounted || !_routeActive || _visibilityCheckScheduled) return;
     _visibilityCheckScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _visibilityCheckScheduled = false;
-      if (!mounted) return;
+      if (!mounted || !_routeActive) return;
       _updateVisibilityAndPlayback();
     });
   }
 
   void _updateVisibilityAndPlayback() {
+    if (!_routeActive) {
+      _visibleFraction = 0;
+      _video?.setVolume(0);
+      _pauseForCoordinator();
+      return;
+    }
     final render = context.findRenderObject();
     if (render is! RenderBox || !render.hasSize) return;
 
@@ -184,13 +193,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       return;
     }
 
-    // Warm the next/current video before it becomes the dominant card.
     if (fraction >= 0.15 && _video == null && !_binding) {
       _syncVideo(autoPlay: false);
     }
 
-    // The 50% rule: whichever card crosses this threshold becomes the one
-    // active dashboard video. The previous owner pauses immediately.
     if (fraction >= 0.50) {
       _VideoPlaybackCoordinator.activate(this);
       _playIfReady();
@@ -198,7 +204,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       _pauseForCoordinator();
     }
 
-    // Free decoder/network resources once the card is fully gone.
     if (fraction <= 0.02 && _video != null) {
       _disposeVideo();
     }
@@ -206,13 +211,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
   void _pauseForCoordinator() {
     final player = _video;
-    if (player != null && player.value.isInitialized && player.value.isPlaying) {
-      player.pause();
+    if (player != null && player.value.isInitialized) {
+      player.setVolume(0);
+      if (player.value.isPlaying) player.pause();
     }
     _VideoPlaybackCoordinator.release(this);
   }
 
   Future<void> _playIfReady() async {
+    if (!_routeActive) return;
     final player = _video;
     if (player == null || !player.value.isInitialized) {
       await _syncVideo(autoPlay: true);
@@ -239,7 +246,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   void _advance(int delta) {
-    if (_sources.isEmpty || !mounted) return;
+    if (_sources.length <= 1 || !mounted || !_routeActive) return;
     setState(() {
       _index = (_index + delta) % _sources.length;
       if (_index < 0) _index += _sources.length;
@@ -249,7 +256,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   Future<void> _syncVideo({required bool autoPlay}) async {
-    if (_binding || _sources.isEmpty) return;
+    if (!_routeActive || _binding || _sources.isEmpty) return;
     final url = _sources[_index % _sources.length];
     if (!widget.enableVideo || !isQuickFilterVideoUrl(url)) {
       _disposeVideo();
@@ -276,7 +283,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
     try {
       await next.initialize();
-      if (!mounted || _boundVideoUrl != url) {
+      if (!mounted || !_routeActive || _boundVideoUrl != url) {
+        await next.setVolume(0);
         await next.dispose();
         return;
       }
@@ -306,11 +314,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_visibleFraction >= 0.50) {
+    if (_routeActive && _visibleFraction >= 0.50) {
       final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
       player.setVolume(soundOn && (unlocked || !kIsWeb) ? 1 : 0);
     } else {
       player.setVolume(0);
+      player.pause();
     }
   }
 
@@ -367,8 +376,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
 
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
-      // Do not swap media on a card while the user is actively looking at it.
-      if (_visibleFraction >= 0.50) return;
+      if (!_routeActive || _visibleFraction >= 0.50) return;
       final slots = widget.slotCount.clamp(1, 64);
       if (next % slots == widget.rotateSlot % slots) {
         _advance(1);
@@ -379,11 +387,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _dragDx = 0,
       onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
-      onHorizontalDragEnd: (_) {
-        if (_dragDx.abs() > 20) {
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
+        if (_sources.length > 1 &&
+            (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
           AppHaptics.selection();
-          _advance(_dragDx < 0 ? 1 : -1);
+          _advance(gesture < 0 ? 1 : -1);
         }
         _dragDx = 0;
       },
@@ -431,7 +443,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
                   _onSoundChanged(ref.read(deckSoundOnProvider));
-                  if (ref.read(deckSoundOnProvider) && _visibleFraction >= 0.50) {
+                  if (_routeActive && ref.read(deckSoundOnProvider) && _visibleFraction >= 0.50) {
                     _playIfReady();
                   }
                 },

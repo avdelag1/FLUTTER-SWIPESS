@@ -39,7 +39,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   static const _dockInset = 82.0;
   static const _backRowInset = 44.0;
 
-  bool _eventsMounted = false;
   String? _lastLocation;
 
   @override
@@ -96,7 +95,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isSeekers = location == AppPaths.exploreSeekers;
 
     final showShellBack = isLikes || isSeekers;
-    if (isEvents) _eventsMounted = true;
 
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
@@ -122,6 +120,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         ? NavTab.ai
         : currentTab;
     final canvas = AppTheme.canvasFor(isLight: isLight);
+    final safe = MediaQuery.paddingOf(context);
 
     return Scaffold(
       backgroundColor: canvas,
@@ -130,9 +129,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              // The event deck owns its immersive chrome timing. Treating each
-              // vertical page swipe as a regular scroll made the app header/dock
-              // flash back on during Reels-style browsing.
               if (!isEvents && notification is ScrollUpdateNotification) {
                 ref.read(chromeVisibilityProvider.notifier).onScroll(
                       pixels: notification.metrics.pixels,
@@ -151,13 +147,24 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     child: const BentoDashboardScreen(),
                   ),
                 ),
-                if (_eventsMounted)
-                  Offstage(
-                    offstage: !isEvents,
-                    child: const TickerMode(
-                      enabled: true,
-                      child: EventsScreen(),
+                if (isEvents)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    margin: showChrome
+                        ? EdgeInsets.fromLTRB(
+                            8,
+                            safe.top + 58,
+                            8,
+                            safe.bottom + 70,
+                          )
+                        : EdgeInsets.zero,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(showChrome ? 24 : 0),
                     ),
+                    child: const EventsScreen(),
                   ),
                 if (!isDashboard && !isEvents)
                   isProfile
