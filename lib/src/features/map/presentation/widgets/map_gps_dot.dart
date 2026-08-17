@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Pulsing cyan GPS dot — Cap `syncUserGpsDotOnMap`.
+/// Pulsing blue GPS dot used at the center of the active discovery radius.
 class MapGpsDot extends StatefulWidget {
   const MapGpsDot({super.key});
 
@@ -33,10 +33,10 @@ class _MapGpsDotState extends State<MapGpsDot>
       animation: _pulse,
       builder: (context, _) {
         final t = _pulse.value;
-        final ring = 10.0 + 18.0 * t;
+        final ring = 18.0 + 24.0 * t;
         return SizedBox(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -45,18 +45,22 @@ class _MapGpsDotState extends State<MapGpsDot>
                 height: ring,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color.fromRGBO(255, 255, 255, 0.35 * (1 - t)),
+                  color: Color.fromRGBO(59, 130, 246, 0.28 * (1 - t)),
                 ),
               ),
               Container(
-                width: 16,
-                height: 16,
+                width: 17,
+                height: 17,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFF2563EB),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 2.5),
+                  border: Border.all(color: Colors.white, width: 3),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black54, blurRadius: 10),
+                    BoxShadow(
+                      color: Color(0x663B82F6),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
                   ],
                 ),
               ),
