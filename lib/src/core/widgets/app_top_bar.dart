@@ -16,7 +16,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Bright, restrained liquid-glass header inspired by native social-app chrome.
+/// Compact liquid-glass header. Controls stay crisp without dominating content.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
   final String? avatarUrl;
@@ -32,15 +32,15 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(64);
 
-  static const addWash = Color(0xFFFF4D00);
-  static const mapWash = Color(0xFF3B82F6);
-  static const themeWash = Color(0xFF8B5CF6);
-  static const bellWash = Color(0xFFE4007C);
-  static const tokenWash = Color(0xFFFFB300);
+  static const addWash = Color(0xFFFF6F45);
+  static const mapWash = Color(0xFF5B9CF6);
+  static const themeWash = Color(0xFF9B7BFF);
+  static const bellWash = Color(0xFFE95B9B);
+  static const tokenWash = Color(0xFFE7A454);
 
-  static const _hudSize = 44.0;
+  static const _hudSize = 38.0;
 
   void _openProfile(BuildContext context) {
     AppHaptics.medium();
@@ -63,16 +63,17 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
-    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final ink = isLight ? const Color(0xFF0D1117) : Colors.white;
     final tokens = ref.watch(tokenBalanceProvider);
-    final chromeGap = MediaQuery.sizeOf(context).width < 360 ? 4.0 : 8.0;
+    final compact = MediaQuery.sizeOf(context).width < 370;
+    final chromeGap = compact ? 4.0 : 7.0;
 
     return Material(
       type: MaterialType.transparency,
       child: Container(
         height: preferredSize.height + MediaQuery.of(context).padding.top,
         padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 10,
+          top: MediaQuery.of(context).padding.top + 8,
           left: 12,
           right: 12,
         ),
@@ -99,7 +100,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
                   },
-                  child: Icon(Icons.add_rounded, size: 25, color: ink),
+                  child: Icon(Icons.add_rounded, size: 23, color: ink),
                 ),
               ],
             ),
@@ -120,13 +121,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('👑', style: TextStyle(fontSize: 17)),
-                      const SizedBox(width: 4),
+                      const Text('👑', style: TextStyle(fontSize: 15)),
+                      const SizedBox(width: 3),
                       Text(
                         '$tokens',
                         style: GoogleFonts.plusJakartaSans(
                           color: ink,
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -142,7 +143,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
-                  child: Icon(Icons.public_rounded, size: 22, color: ink),
+                  child: Icon(Icons.public_rounded, size: 20, color: ink),
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
@@ -157,7 +158,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   },
                   child: Icon(
                     isLight ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    size: 22,
+                    size: 20,
                     color: ink,
                   ),
                 ),
@@ -176,7 +177,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      Icon(Icons.notifications_none_rounded, size: 23, color: ink),
+                      Icon(Icons.notifications_none_rounded, size: 21, color: ink),
                       ref.watch(unreadNotificationsProvider).when(
                             data: (count) {
                               if (count <= 0) return const SizedBox.shrink();
@@ -184,8 +185,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                                 right: -1,
                                 top: -1,
                                 child: Container(
-                                  width: 8,
-                                  height: 8,
+                                  width: 7,
+                                  height: 7,
                                   decoration: const BoxDecoration(
                                     color: AppTheme.brandPrimary,
                                     shape: BoxShape.circle,
@@ -237,23 +238,26 @@ class _ProfileAvatarButton extends StatelessWidget {
           height: AppTopBar._hudSize,
           child: ClipOval(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: isLight
-                      ? Colors.white.withAlpha(185)
-                      : Colors.white.withAlpha(24),
+                      ? Colors.white.withAlpha(190)
+                      : Colors.white.withAlpha(26),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withAlpha(isLight ? 150 : 90),
-                    width: 1,
+                    color: Colors.white.withAlpha(isLight ? 150 : 92),
+                    width: .9,
                   ),
                   image: avatarUrl != null
-                      ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
+                      ? DecorationImage(
+                          image: NetworkImage(avatarUrl!),
+                          fit: BoxFit.cover,
+                        )
                       : null,
                 ),
                 child: avatarUrl == null
-                    ? Icon(Icons.person_rounded, size: 21, color: ink)
+                    ? Icon(Icons.person_rounded, size: 19, color: ink)
                     : null,
               ),
             ),
@@ -283,7 +287,7 @@ class _HudButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final compact = MediaQuery.sizeOf(context).width < 360;
+    final compact = MediaQuery.sizeOf(context).width < 370;
 
     return Semantics(
       button: true,
@@ -293,45 +297,35 @@ class _HudButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           customBorder: const StadiumBorder(),
-          splashColor: accent.withAlpha(45),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(isLight ? 20 : 70),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: accent.withAlpha(isLight ? 18 : 26),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  height: AppTopBar._hudSize,
-                  width: wide ? null : AppTopBar._hudSize,
-                  padding: wide
-                      ? EdgeInsets.symmetric(horizontal: compact ? 9 : 12)
-                      : null,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: isLight
-                        ? Colors.white.withAlpha(185)
-                        : Colors.white.withAlpha(24),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(isLight ? 150 : 90),
-                      width: 1,
-                    ),
+          splashColor: accent.withAlpha(48),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                height: AppTopBar._hudSize,
+                width: wide ? null : AppTopBar._hudSize,
+                padding: wide
+                    ? EdgeInsets.symmetric(horizontal: compact ? 8 : 10)
+                    : null,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? Colors.white.withAlpha(190)
+                      : Colors.white.withAlpha(26),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(isLight ? 150 : 92),
+                    width: .9,
                   ),
-                  child: child,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withAlpha(isLight ? 18 : 34),
+                      blurRadius: 9,
+                    ),
+                  ],
                 ),
+                child: child,
               ),
             ),
           ),
