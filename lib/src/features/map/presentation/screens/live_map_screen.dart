@@ -309,66 +309,69 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                     ),
                     const SizedBox(width: 8),
                     MapHudCircle(
-                      icon: Icons.search_rounded,
+                      icon: Icons.location_city_rounded,
+                      selected: _citiesOpen,
+                      semanticLabel: 'Cities',
                       onTap: () => setState(() {
                         _citiesOpen = !_citiesOpen;
                         _radiusOpen = false;
                       }),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
+                        child: MapLayerRail(
+                          layer: _layer,
+                          listingCount: listingPins.length,
+                          peopleCount: profilePins.length,
+                          onLayer: (layer) => setState(() {
+                            _layer = layer;
+                            _selected = null;
+                          }),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
 
-          Positioned(
-            top: pad.top + 56,
-            left: 0,
-            right: 64,
-            child: _MapHudVisibility(
-              visible: _hudVisible,
-              child: MapCityChips(
-                activeCity: location.city,
-                onSelect: (city) {
-                  ref
-                      .read(discoveryLocationProvider.notifier)
-                      .setCoordinates(
-                        city: city.name,
-                        country: city.country,
-                        latitude: city.lat,
-                        longitude: city.lng,
-                      );
-                  _didFly = false;
-                  _safeMove(
-                    LatLng(city.lat, city.lng),
-                    _zoomForRadius(radiusKm),
-                  );
-                  setState(() {
-                    _citiesOpen = false;
-                    _selected = null;
-                  });
-                },
+          if (_citiesOpen)
+            Positioned(
+              top: pad.top + 56,
+              left: 12,
+              right: 12,
+              child: _MapHudVisibility(
+                visible: _hudVisible,
+                child: MapCityChips(
+                  activeCity: location.city,
+                  onSelect: (city) {
+                    ref
+                        .read(discoveryLocationProvider.notifier)
+                        .setCoordinates(
+                          city: city.name,
+                          country: city.country,
+                          latitude: city.lat,
+                          longitude: city.lng,
+                        );
+                    _didFly = false;
+                    _safeMove(
+                      LatLng(city.lat, city.lng),
+                      _zoomForRadius(radiusKm),
+                    );
+                    setState(() {
+                      _citiesOpen = false;
+                      _selected = null;
+                    });
+                  },
+                ),
               ),
             ),
-          ),
-
-          Positioned(
-            right: 12,
-            top: pad.top + 60,
-            child: _MapHudVisibility(
-              visible: _hudVisible,
-              child: MapLayerRail(
-                layer: _layer,
-                listingCount: listingPins.length,
-                peopleCount: profilePins.length,
-                onLayer: (layer) => setState(() {
-                  _layer = layer;
-                  _selected = null;
-                }),
-              ),
-            ),
-          ),
 
           Positioned(
             left: 12,
@@ -583,7 +586,7 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen>
                 ),
               ),
             ),
-            
+
           // Add a hide button when HUD is visible
           if (_hudVisible)
             Positioned(

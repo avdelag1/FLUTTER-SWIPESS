@@ -42,7 +42,7 @@ class DashboardDock extends StatelessWidget {
         container: true,
         label: 'Primary navigation',
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 340),
+          constraints: const BoxConstraints(maxWidth: 292),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
@@ -59,8 +59,11 @@ class DashboardDock extends StatelessWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
                 child: Container(
-                  height: 50,
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isLight
                         ? Colors.white.withAlpha(132)
@@ -73,21 +76,28 @@ class DashboardDock extends StatelessWidget {
                       width: .7,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      for (final item in items)
-                        Expanded(
-                          child: DockButton(
-                            item: item,
-                            wash: item.wash,
-                            selected: selectedTab == item.id,
-                            onTap: () {
-                              AppHaptics.light();
-                              onTabSelected(item.id);
-                            },
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    child: Row(
+                      children: [
+                        for (final item in items)
+                          SizedBox(
+                            width: 40,
+                            child: DockButton(
+                              item: item,
+                              wash: item.wash,
+                              selected: selectedTab == item.id,
+                              onTap: () {
+                                AppHaptics.light();
+                                onTabSelected(item.id);
+                              },
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -113,18 +123,20 @@ class DockButton extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  String get _label => item.label ?? switch (item.id) {
-    NavTab.dashboard => 'Home',
-    NavTab.likes => 'Likes',
-    NavTab.ai => 'Swipess AI',
-    NavTab.add => 'Add listing',
-    NavTab.messages => 'Messages',
-    NavTab.idCard => 'Virtual ID card',
-    NavTab.seekers => 'Seekers',
-    NavTab.filter => 'Filters',
-    NavTab.legal => 'Lawyers and legal services',
-    NavTab.events => 'Events',
-  };
+  String get _label =>
+      item.label ??
+      switch (item.id) {
+        NavTab.dashboard => 'Home',
+        NavTab.likes => 'Likes',
+        NavTab.ai => 'Swipess AI',
+        NavTab.add => 'Add listing',
+        NavTab.messages => 'Messages',
+        NavTab.idCard => 'Virtual ID card',
+        NavTab.seekers => 'Seekers',
+        NavTab.filter => 'Filters',
+        NavTab.legal => 'Lawyers and legal services',
+        NavTab.events => 'Events',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -214,12 +226,36 @@ class AiRobotPainter extends CustomPainter {
       Radius.circular(s * .08),
     );
     canvas.drawRRect(r, p);
-    canvas.drawLine(Offset(ox + s * .08, oy + s * .58), Offset(ox + s * .17, oy + s * .58), p);
-    canvas.drawLine(Offset(ox + s * .83, oy + s * .58), Offset(ox + s * .92, oy + s * .58), p);
-    canvas.drawLine(Offset(ox + s * .38, oy + s * .54), Offset(ox + s * .38, oy + s * .62), p);
-    canvas.drawLine(Offset(ox + s * .62, oy + s * .54), Offset(ox + s * .62, oy + s * .62), p);
-    canvas.drawLine(Offset(ox + s * .5, oy + s * .33), Offset(ox + s * .5, oy + s * .17), p);
-    canvas.drawLine(Offset(ox + s * .5, oy + s * .17), Offset(ox + s * .33, oy + s * .17), p);
+    canvas.drawLine(
+      Offset(ox + s * .08, oy + s * .58),
+      Offset(ox + s * .17, oy + s * .58),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * .83, oy + s * .58),
+      Offset(ox + s * .92, oy + s * .58),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * .38, oy + s * .54),
+      Offset(ox + s * .38, oy + s * .62),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * .62, oy + s * .54),
+      Offset(ox + s * .62, oy + s * .62),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * .5, oy + s * .33),
+      Offset(ox + s * .5, oy + s * .17),
+      p,
+    );
+    canvas.drawLine(
+      Offset(ox + s * .5, oy + s * .17),
+      Offset(ox + s * .33, oy + s * .17),
+      p,
+    );
   }
 
   @override
@@ -238,11 +274,7 @@ const defaultDashboardNavItems = [
     icon: Icons.local_fire_department_rounded,
     wash: Color(0xFFE64A8A),
   ),
-  BottomNavItem(
-    id: NavTab.ai,
-    useAiIcon: true,
-    wash: Color(0xFF9B7BFF),
-  ),
+  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B7BFF)),
   BottomNavItem(
     id: NavTab.add,
     icon: Icons.add_rounded,

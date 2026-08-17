@@ -19,11 +19,11 @@ class MapCityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 38,
+      height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.hardEdge,
-        padding: const EdgeInsets.fromLTRB(12, 0, 28, 0),
+        clipBehavior: Clip.antiAlias,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         itemCount: PassportCities.all.length,
         separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, i) {
@@ -42,7 +42,10 @@ class MapCityChips extends StatelessWidget {
                 filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
                     color: active
@@ -59,7 +62,9 @@ class MapCityChips extends StatelessWidget {
                     child: Text(
                       city.name.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: active ? const Color(0xFF111318) : Colors.white.withAlpha(238),
+                        color: active
+                            ? const Color(0xFF111318)
+                            : Colors.white.withAlpha(238),
                         fontWeight: FontWeight.w800,
                         fontSize: 10,
                         letterSpacing: 0.65,

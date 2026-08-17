@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -33,15 +32,12 @@ class EventsScreen extends ConsumerStatefulWidget {
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
   final _pages = PageController();
-  Timer? _chromeTimer;
   int _index = 0;
   String _category = 'All';
   bool _eventChromeVisible = true;
   String? _handoffEventId;
   Duration? _handoffPosition;
   bool _handoffPageApplied = false;
-
-  static const _chromeVisibleFor = Duration(milliseconds: 2800);
 
   @override
   void initState() {
@@ -54,22 +50,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   @override
   void dispose() {
-    _chromeTimer?.cancel();
     _pages.dispose();
     super.dispose();
-  }
-
-  void _scheduleHide() {
-    _chromeTimer?.cancel();
-    _chromeTimer = Timer(_chromeVisibleFor, _hideChrome);
   }
 
   void _revealChrome({bool autoHide = true}) {
     if (!mounted) return;
     if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
     ref.read(chromeVisibilityProvider.notifier).show();
-    _chromeTimer?.cancel();
-    if (autoHide) _scheduleHide();
   }
 
   void _hideChrome() {
@@ -128,7 +116,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
           }
 
           if (!_handoffPageApplied && _handoffEventId != null) {
-            final targetIndex = events.indexWhere((e) => e.id == _handoffEventId);
+            final targetIndex = events.indexWhere(
+              (e) => e.id == _handoffEventId,
+            );
             _handoffPageApplied = true;
             if (targetIndex >= 0) {
               _index = targetIndex;
@@ -188,7 +178,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
                   child: AnimatedSlide(
-                    offset: _eventChromeVisible ? Offset.zero : const Offset(0, -0.08),
+                    offset: _eventChromeVisible
+                        ? Offset.zero
+                        : const Offset(0, -0.08),
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     child: Positioned.fill(
@@ -220,9 +212,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                     child: ListView(
                                       scrollDirection: Axis.horizontal,
                                       children: [
-                                        for (final c in ref.watch(eventCategoriesProvider))
+                                        for (final c in ref.watch(
+                                          eventCategoriesProvider,
+                                        ))
                                           Padding(
-                                            padding: const EdgeInsets.only(right: 10),
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                            ),
                                             child: _EventCategoryRing(
                                               category: c,
                                               active: _category == c.key,
@@ -234,7 +230,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                                   _index = 0;
                                                 });
                                                 ref
-                                                    .read(selectedCategoryProvider.notifier)
+                                                    .read(
+                                                      selectedCategoryProvider
+                                                          .notifier,
+                                                    )
                                                     .setCategory(c.key);
                                                 if (_pages.hasClients) {
                                                   _pages.jumpToPage(0);
@@ -243,20 +242,25 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                             ),
                                           ),
                                         Padding(
-                                          padding: const EdgeInsets.only(right: 4),
+                                          padding: const EdgeInsets.only(
+                                            right: 4,
+                                          ),
                                           child: _EventCategoryRing(
                                             category: const EventFeedCategory(
                                               key: 'likes',
                                               label: 'My Likes',
                                               icon: Icons.favorite_rounded,
-                                              image: 'assets/filters/events.jpg',
+                                              image:
+                                                  'assets/filters/events.jpg',
                                               color: Color(0xFFEC4899),
                                             ),
                                             active: false,
                                             onTap: () {
                                               AppHaptics.light();
                                               _revealChrome(autoHide: false);
-                                              context.push(AppPaths.exploreEventsLikes);
+                                              context.push(
+                                                AppPaths.exploreEventsLikes,
+                                              );
                                             },
                                           ),
                                         ),
@@ -273,11 +277,17 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             right: 16,
                             child: Row(
                               children: [
-                                for (var i = 0; i < events.length.clamp(0, 12); i++)
+                                for (
+                                  var i = 0;
+                                  i < events.length.clamp(0, 12);
+                                  i++
+                                )
                                   Expanded(
                                     child: Container(
                                       height: 2,
-                                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 1.5,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: i <= _index
                                             ? Colors.white
@@ -295,12 +305,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   ),
                 ),
               ),
-              if (!_eventChromeVisible)
-                Positioned(
-                  right: 14,
-                  bottom: bottomSafe + 18,
-                  child: _FocusOrb(onTap: _revealChrome),
+              Positioned(
+                right: 14,
+                bottom: bottomSafe + 18,
+                child: _FocusOrb(
+                  controlsVisible: _eventChromeVisible,
+                  onTap: _toggleChrome,
                 ),
+              ),
             ],
           );
         },
@@ -310,23 +322,23 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 }
 
 class _FocusOrb extends StatelessWidget {
-  const _FocusOrb({required this.onTap});
+  const _FocusOrb({required this.controlsVisible, required this.onTap});
+  final bool controlsVisible;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Show event controls and navigation',
+      label: controlsVisible
+          ? 'Hide event controls and navigation'
+          : 'Show event controls and navigation',
       child: BreathingWidget(
         duration: const Duration(milliseconds: 1800),
         minOpacity: .48,
         maxOpacity: .92,
         child: GestureDetector(
-          onTap: () {
-            AppHaptics.light();
-            onTap();
-          },
+          onTap: onTap,
           child: ClipOval(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
@@ -336,9 +348,18 @@ class _FocusOrb extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(54),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withAlpha(72), width: .7),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(72),
+                    width: .7,
+                  ),
                 ),
-                child: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),
+                child: Icon(
+                  controlsVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -549,10 +570,13 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       await next.initialize();
       await next.setLooping(true);
       final initial = widget.initialPosition;
-      if (!_didApplyInitialPosition && initial != null && initial > Duration.zero) {
+      if (!_didApplyInitialPosition &&
+          initial != null &&
+          initial > Duration.zero) {
         final duration = next.value.duration;
         var safePosition = initial;
-        if (duration > const Duration(milliseconds: 120) && initial >= duration) {
+        if (duration > const Duration(milliseconds: 120) &&
+            initial >= duration) {
           safePosition = duration - const Duration(milliseconds: 120);
         }
         if (safePosition > Duration.zero) {
@@ -603,9 +627,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       ),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Event link copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Event link copied')));
   }
 
   Future<void> _whatsApp() async {
@@ -697,7 +720,9 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                           icon: favorited
                               ? Icons.favorite_rounded
                               : Icons.favorite_border_rounded,
-                          color: favorited ? const Color(0xFFF43F5E) : Colors.white,
+                          color: favorited
+                              ? const Color(0xFFF43F5E)
+                              : Colors.white,
                           onTap: _toggleFavorite,
                         ),
                         const SizedBox(height: 10),
@@ -706,24 +731,44 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                           onToggle: () {
                             widget.onChromeInteraction();
                             final next = !ref.read(deckSoundOnProvider);
-                            ref.read(deckSoundOnProvider.notifier).setSoundOn(next);
+                            ref
+                                .read(deckSoundOnProvider.notifier)
+                                .setSoundOn(next);
                             _player?.setVolume(next ? 1 : 0);
                             if (next) _player?.play();
                           },
                         ),
                         const SizedBox(height: 10),
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black.withAlpha(86),
                             borderRadius: BorderRadius.circular(22),
-                            border: Border.all(color: Colors.white.withAlpha(44), width: .7),
+                            border: Border.all(
+                              color: Colors.white.withAlpha(44),
+                              width: .7,
+                            ),
                           ),
                           child: Column(
                             children: [
-                              _RailBtn(icon: Icons.info_outline_rounded, size: 42, onTap: widget.onOpen),
-                              _RailBtn(icon: Icons.chat_rounded, size: 42, onTap: _whatsApp),
-                              _RailBtn(icon: Icons.share_rounded, size: 42, onTap: _share),
+                              _RailBtn(
+                                icon: Icons.info_outline_rounded,
+                                size: 42,
+                                onTap: widget.onOpen,
+                              ),
+                              _RailBtn(
+                                icon: Icons.chat_rounded,
+                                size: 42,
+                                onTap: _whatsApp,
+                              ),
+                              _RailBtn(
+                                icon: Icons.share_rounded,
+                                size: 42,
+                                onTap: _share,
+                              ),
                             ],
                           ),
                         ),
@@ -739,18 +784,30 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                       children: [
                         Row(
                           children: [
-                            _Pill(label: event.category.toUpperCase(), color: AppTheme.brandPrimary),
+                            _Pill(
+                              label: event.category.toUpperCase(),
+                              color: AppTheme.brandPrimary,
+                            ),
                             if (event.isFree) ...[
                               const SizedBox(width: 6),
-                              const _Pill(label: 'FREE', color: Color(0xFF34D399)),
+                              const _Pill(
+                                label: 'FREE',
+                                color: Color(0xFF34D399),
+                              ),
                             ],
                             if (_hasVideo) ...[
                               const SizedBox(width: 6),
-                              const _Pill(label: 'VIDEO', color: Color(0xFF38BDF8)),
+                              const _Pill(
+                                label: 'VIDEO',
+                                color: Color(0xFF38BDF8),
+                              ),
                             ],
                             if (event.discountTag != null) ...[
                               const SizedBox(width: 6),
-                              _Pill(label: event.discountTag!.toUpperCase(), color: const Color(0xFFFBBF24)),
+                              _Pill(
+                                label: event.discountTag!.toUpperCase(),
+                                color: const Color(0xFFFBBF24),
+                              ),
                             ],
                           ],
                         ),
@@ -765,14 +822,19 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                             fontSize: 26,
                             height: 1.05,
                             letterSpacing: -0.6,
-                            shadows: const [Shadow(blurRadius: 12, color: Colors.black)],
+                            shadows: const [
+                              Shadow(blurRadius: 12, color: Colors.black),
+                            ],
                           ),
                         ),
                         if (event.organizerName != null) ...[
                           const SizedBox(height: 6),
                           Text(
                             'by ${event.organizerName}',
-                            style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontWeight: FontWeight.w700),
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                         if (event.promoText != null) ...[
@@ -781,7 +843,10 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                             event.promoText!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(color: Colors.white.withAlpha(220), height: 1.3),
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white.withAlpha(220),
+                              height: 1.3,
+                            ),
                           ),
                         ],
                         const SizedBox(height: 10),
@@ -792,12 +857,19 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                             if (event.eventDate != null)
                               _MetaChip(
                                 icon: Icons.calendar_today_rounded,
-                                label: DateFormat('MMM d · h:mm a').format(event.eventDate!.toLocal()),
+                                label: DateFormat('MMM d · h:mm a')
+                                    .format(event.eventDate!.toLocal()),
                               ),
                             if (event.location != null)
-                              _MetaChip(icon: Icons.location_on_rounded, label: event.location!),
+                              _MetaChip(
+                                icon: Icons.location_on_rounded,
+                                label: event.location!,
+                              ),
                             if (!event.isFree && event.priceText != null)
-                              _MetaChip(icon: Icons.confirmation_number_rounded, label: event.priceText!),
+                              _MetaChip(
+                                icon: Icons.confirmation_number_rounded,
+                                label: event.priceText!,
+                              ),
                           ],
                         ),
                         const SizedBox(height: 8),

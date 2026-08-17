@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Compact liquid-glass layer controls with restrained active treatment.
 class MapLayerRail extends StatelessWidget {
   const MapLayerRail({
     super.key,
@@ -25,38 +25,33 @@ class MapLayerRail extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
         child: Container(
-          width: 48,
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          height: 40,
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(86),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withAlpha(52), width: 0.8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(54),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: Colors.white.withAlpha(52), width: .8),
           ),
-          child: Column(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _LayerOrb(
+              _LayerChoice(
                 icon: Icons.public_rounded,
-                label: 'Show all map results',
+                label: 'ALL',
                 selected: layer == 'all',
                 onTap: () => onLayer('all'),
               ),
-              _LayerOrb(
+              _LayerChoice(
                 icon: Icons.apartment_rounded,
-                label: 'Show listings, $listingCount results',
+                label: 'LISTINGS',
+                count: listingCount,
                 selected: layer == 'listings',
                 onTap: () => onLayer('listings'),
               ),
-              _LayerOrb(
+              _LayerChoice(
                 icon: Icons.people_alt_rounded,
-                label: 'Show people, $peopleCount results',
+                label: 'USERS',
+                count: peopleCount,
                 selected: layer == 'people',
                 onTap: () => onLayer('people'),
               ),
@@ -68,60 +63,75 @@ class MapLayerRail extends StatelessWidget {
   }
 }
 
-class _LayerOrb extends StatelessWidget {
-  const _LayerOrb({
+class _LayerChoice extends StatelessWidget {
+  const _LayerChoice({
     required this.icon,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.count,
   });
-
   final IconData icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
       selected: selected,
-      label: label,
-      child: Tooltip(
-        message: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            AppHaptics.selection();
-            onTap();
-          },
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                curve: Curves.easeOutCubic,
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected
-                      ? Colors.white.withAlpha(26)
-                      : Colors.transparent,
-                  border: selected
-                      ? Border.all(color: Colors.white.withAlpha(52), width: 0.7)
-                      : null,
-                ),
-                child: Icon(
-                  icon,
-                  color: selected
-                      ? const Color(0xFFFF6B35)
-                      : Colors.white.withAlpha(190),
-                  size: 16,
+      label: count == null ? label : '$label, $count results',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          AppHaptics.selection();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white.withAlpha(36) : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            border: selected
+                ? Border.all(color: Colors.white.withAlpha(52), width: .7)
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: selected
+                    ? const Color(0xFFFF6B35)
+                    : Colors.white.withAlpha(220),
+                size: 15,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .55,
                 ),
               ),
-            ),
+              if (count != null) ...[
+                const SizedBox(width: 4),
+                Text(
+                  '$count',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white70,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -129,7 +139,6 @@ class _LayerOrb extends StatelessWidget {
   }
 }
 
-/// Neutral liquid-glass HUD control that stays readable on satellite imagery.
 class MapHudCircle extends StatelessWidget {
   const MapHudCircle({
     super.key,
@@ -139,7 +148,6 @@ class MapHudCircle extends StatelessWidget {
     this.accent = false,
     this.semanticLabel,
   });
-
   final IconData icon;
   final VoidCallback onTap;
   final bool selected;
@@ -171,15 +179,8 @@ class MapHudCircle extends StatelessWidget {
                     color: (selected || accent)
                         ? Colors.white.withAlpha(230)
                         : Colors.white.withAlpha(62),
-                    width: 0.9,
+                    width: .9,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(58),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   icon,
@@ -194,7 +195,6 @@ class MapHudCircle extends StatelessWidget {
         ),
       ),
     );
-
     if (semanticLabel == null) return control;
     return Semantics(
       button: true,
