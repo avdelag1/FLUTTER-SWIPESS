@@ -269,7 +269,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             onSummon: () => ref.read(chromeVisibilityProvider.notifier).show(),
           ),
           const PushNotificationPrompt(enabled: false),
-          GuidedTourOverlay(enabled: user != null),
+          GuidedTourOverlay(
+            enabled: user != null,
+            userId: user?.id,
+            userCreatedAt: user?.createdAt,
+          ),
         ],
       ),
     );
