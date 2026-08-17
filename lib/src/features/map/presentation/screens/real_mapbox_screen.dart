@@ -73,7 +73,11 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       CameraOptions(
         center: _point(loc.latitude, loc.longitude),
         zoom: targetZoom,
-        pitch: targetZoom >= 8 ? 58 : targetZoom >= 3 ? 34 : 8,
+        pitch: targetZoom >= 8
+            ? 58
+            : targetZoom >= 3
+            ? 34
+            : 8,
         bearing: targetZoom >= 8 ? 18 : 0,
       ),
       MapAnimationOptions(duration: 850, startDelay: 0),
@@ -82,19 +86,30 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
 
   Future<void> _setupMap(MapboxMap map) async {
     _map = map;
+    await _flyTo(ref.read(discoveryLocationProvider));
+  }
+
+  Future<void> _prepareAnnotationManagers() async {
+    final map = _map;
+    if (map == null) return;
+
+    // Creating annotation managers before the Mapbox style finishes loading
+    // can leave them attached to the old style on web. Build them here instead.
     _listingManager = await map.annotations.createCircleAnnotationManager();
     _peopleManager = await map.annotations.createCircleAnnotationManager();
 
-    _listingManager?.tapEvents(onTap: (annotation) {
-      final p = annotation.geometry.coordinates;
-      _selectNearest(p.lat.toDouble(), p.lng.toDouble(), listingOnly: true);
-    });
-    _peopleManager?.tapEvents(onTap: (annotation) {
-      final p = annotation.geometry.coordinates;
-      _selectNearest(p.lat.toDouble(), p.lng.toDouble(), peopleOnly: true);
-    });
-
-    await _flyTo(ref.read(discoveryLocationProvider));
+    _listingManager?.tapEvents(
+      onTap: (annotation) {
+        final p = annotation.geometry.coordinates;
+        _selectNearest(p.lat.toDouble(), p.lng.toDouble(), listingOnly: true);
+      },
+    );
+    _peopleManager?.tapEvents(
+      onTap: (annotation) {
+        final p = annotation.geometry.coordinates;
+        _selectNearest(p.lat.toDouble(), p.lng.toDouble(), peopleOnly: true);
+      },
+    );
   }
 
   void _selectNearest(
@@ -148,7 +163,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
   }
 
   Future<void> _renderAnnotations() async {
-    if (!_mapLoaded || _listingManager == null || _peopleManager == null) return;
+    if (!_mapLoaded || _listingManager == null || _peopleManager == null)
+      return;
     final generation = ++_annotationGeneration;
     final listings = ref.read(mapListingsProvider).value ?? const [];
     final profiles = ref.read(mapProfilesProvider).value ?? const [];
@@ -163,10 +179,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           if (listing.latitude != null && listing.longitude != null)
             CircleAnnotationOptions(
               geometry: _point(listing.latitude!, listing.longitude!),
-              circleRadius: 7.0,
+              circleRadius: 10.0,
               circleColor: const Color(0xFFFF6338).toARGB32(),
               circleStrokeColor: Colors.white.toARGB32(),
-              circleStrokeWidth: 1.5,
+              circleStrokeWidth: 2.4,
               circleOpacity: 0.96,
             ),
       ];
@@ -179,10 +195,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           if (profile.latitude != null && profile.longitude != null)
             CircleAnnotationOptions(
               geometry: _point(profile.latitude!, profile.longitude!),
-              circleRadius: 6.5,
+              circleRadius: 9.0,
               circleColor: const Color(0xFFE95B9B).toARGB32(),
               circleStrokeColor: Colors.white.toARGB32(),
-              circleStrokeWidth: 1.4,
+              circleStrokeWidth: 2.2,
               circleOpacity: 0.94,
             ),
       ];
@@ -232,7 +248,11 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.public_rounded, color: Colors.white, size: 42),
+                  const Icon(
+                    Icons.public_rounded,
+                    color: Colors.white,
+                    size: 42,
+                  ),
                   const SizedBox(height: 14),
                   Text(
                     'MAPBOX IS NOT CONFIGURED',
@@ -253,7 +273,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                   ),
                   const SizedBox(height: 18),
                   TextButton(
-                    onPressed: widget.onClose ??
+                    onPressed:
+                        widget.onClose ??
                         () => context.go(AppPaths.clientDashboard),
                     child: const Text('Close'),
                   ),
@@ -280,6 +301,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
             onMapCreated: _setupMap,
             onMapLoadedListener: (_) async {
               _mapLoaded = true;
+              await _prepareAnnotationManagers();
               await _renderAnnotations();
             },
           ),
@@ -304,12 +326,15 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                   children: [
                     _GlassMapButton(
                       icon: Icons.close_rounded,
-                      onTap: widget.onClose ??
+                      onTap:
+                          widget.onClose ??
                           () => context.go(AppPaths.clientDashboard),
                     ),
                     const SizedBox(width: 8),
-                    _GlassMapButton(
-                      icon: Icons.search_rounded,
+                    _GlassMapLabelButton(
+                      icon: Icons.location_city_rounded,
+                      label: 'CITIES',
+                      selected: _citiesOpen,
                       onTap: () => setState(() => _citiesOpen = !_citiesOpen),
                     ),
                     const Spacer(),
@@ -349,7 +374,9 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
               child: MapCityChips(
                 activeCity: loc.city,
                 onSelect: (city) {
-                  ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                  ref
+                      .read(discoveryLocationProvider.notifier)
+                      .setCoordinates(
                         city: city.name,
                         country: city.country,
                         latitude: city.lat,
@@ -459,6 +486,69 @@ class _GlassMapButton extends StatelessWidget {
   }
 }
 
+class _GlassMapLabelButton extends StatelessWidget {
+  const _GlassMapLabelButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Material(
+          color: selected
+              ? Colors.white.withAlpha(210)
+              : Colors.black.withAlpha(72),
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: Colors.white.withAlpha(selected ? 220 : 62),
+                  width: .7,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    color: selected ? const Color(0xFF111318) : Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: selected ? const Color(0xFF111318) : Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .65,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RangePill extends StatelessWidget {
   const _RangePill({
     required this.radiusKm,
@@ -484,10 +574,7 @@ class _RangePill extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(58),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: Colors.white.withAlpha(46),
-              width: .7,
-            ),
+            border: Border.all(color: Colors.white.withAlpha(46), width: .7),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -577,27 +664,24 @@ class _LayerPill extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(60),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: Colors.white.withAlpha(52),
-              width: .7,
-            ),
+            border: Border.all(color: Colors.white.withAlpha(52), width: .7),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               _LayerChoice(
-                icon: Icons.layers_rounded,
+                label: 'ALL',
                 active: value == 'all',
                 onTap: () => onChanged('all'),
               ),
               _LayerChoice(
-                icon: Icons.home_rounded,
+                label: 'LISTINGS',
                 active: value == 'listings',
                 badge: listingCount,
                 onTap: () => onChanged('listings'),
               ),
               _LayerChoice(
-                icon: Icons.people_alt_rounded,
+                label: 'USERS',
                 active: value == 'people',
                 badge: peopleCount,
                 onTap: () => onChanged('people'),
@@ -612,13 +696,13 @@ class _LayerPill extends StatelessWidget {
 
 class _LayerChoice extends StatelessWidget {
   const _LayerChoice({
-    required this.icon,
+    required this.label,
     required this.active,
     required this.onTap,
     this.badge,
   });
 
-  final IconData icon;
+  final String label;
   final bool active;
   final VoidCallback onTap;
   final int? badge;
@@ -641,7 +725,15 @@ class _LayerChoice extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: Colors.white, size: 17),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .55,
+                  ),
+                ),
                 if (badge != null) ...[
                   const SizedBox(width: 4),
                   Text(
@@ -691,10 +783,7 @@ class _SelectedPinCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(112),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: Colors.white.withAlpha(48),
-              width: .7,
-            ),
+            border: Border.all(color: Colors.white.withAlpha(48), width: .7),
           ),
           child: Row(
             children: [
@@ -702,10 +791,11 @@ class _SelectedPinCard extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: (pin.isListing
-                          ? const Color(0xFFFF6338)
-                          : const Color(0xFFE95B9B))
-                      .withAlpha(46),
+                  color:
+                      (pin.isListing
+                              ? const Color(0xFFFF6338)
+                              : const Color(0xFFE95B9B))
+                          .withAlpha(46),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
