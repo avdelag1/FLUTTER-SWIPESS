@@ -191,14 +191,8 @@ class DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
     final emphasized = selected || item.accent;
-    final neutral = isLight ? const Color(0xFF101318) : Colors.white;
-    final iconColor = item.accent
-        ? wash
-        : emphasized
-            ? neutral
-            : neutral.withAlpha(220);
+    final iconColor = wash.withAlpha(emphasized ? 255 : 205);
 
     return Semantics(
       button: true,
@@ -250,9 +244,12 @@ class DockButton extends StatelessWidget {
                               item.icon,
                               size: item.accent ? 29 : 27,
                               color: iconColor,
-                              shadows: emphasized
-                                  ? [Shadow(color: wash.withAlpha(95), blurRadius: 8)]
-                                  : null,
+                              shadows: [
+                                Shadow(
+                                  color: wash.withAlpha(emphasized ? 105 : 46),
+                                  blurRadius: emphasized ? 8 : 4,
+                                ),
+                              ],
                             ),
                     ],
                   ),
@@ -300,14 +297,14 @@ class AiRobotPainter extends CustomPainter {
 }
 
 const defaultDashboardNavItems = [
-  BottomNavItem(id: NavTab.dashboard, icon: Icons.home_rounded, wash: Color(0xFFFF4D00)),
-  BottomNavItem(id: NavTab.likes, icon: Icons.local_fire_department_rounded, wash: Color(0xFFE4007C)),
-  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B6DFF)),
-  BottomNavItem(id: NavTab.add, icon: Icons.add_circle_outline_rounded, accent: true, wash: Color(0xFFFF4D00)),
-  BottomNavItem(id: NavTab.messages, icon: Icons.chat_bubble_outline_rounded, wash: Color(0xFF3B82F6)),
-  BottomNavItem(id: NavTab.idCard, icon: Icons.shield_outlined, wash: Color(0xFF8B5CF6)),
-  BottomNavItem(id: NavTab.seekers, icon: Icons.groups_2_outlined, wash: Color(0xFFFF4DA6)),
-  BottomNavItem(id: NavTab.filter, icon: Icons.tune_rounded, wash: Color(0xFFFF9F43)),
-  BottomNavItem(id: NavTab.legal, icon: Icons.balance_rounded, wash: Color(0xFF7C7CFF), label: 'Lawyers'),
-  BottomNavItem(id: NavTab.events, icon: Icons.event_outlined, wash: Color(0xFFFF2D8D), label: 'Events'),
+  BottomNavItem(id: NavTab.dashboard, icon: Icons.home_rounded, wash: Color(0xFFFF7A45)),
+  BottomNavItem(id: NavTab.likes, icon: Icons.local_fire_department_rounded, wash: Color(0xFFE64A8A)),
+  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B7BFF)),
+  BottomNavItem(id: NavTab.add, icon: Icons.add_circle_outline_rounded, accent: true, wash: Color(0xFFFF5A52)),
+  BottomNavItem(id: NavTab.messages, icon: Icons.chat_bubble_outline_rounded, wash: Color(0xFF5B9CF6)),
+  BottomNavItem(id: NavTab.idCard, icon: Icons.shield_outlined, wash: Color(0xFF8B7CF6)),
+  BottomNavItem(id: NavTab.seekers, icon: Icons.groups_2_outlined, wash: Color(0xFFD96FA8)),
+  BottomNavItem(id: NavTab.filter, icon: Icons.tune_rounded, wash: Color(0xFFE7A454)),
+  BottomNavItem(id: NavTab.legal, icon: Icons.balance_rounded, wash: Color(0xFF7E88E8), label: 'Lawyers'),
+  BottomNavItem(id: NavTab.events, icon: Icons.celebration_rounded, wash: Color(0xFFE95B9B), label: 'Events'),
 ];
