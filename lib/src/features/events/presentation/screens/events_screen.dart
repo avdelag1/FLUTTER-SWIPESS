@@ -171,140 +171,119 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   );
                 },
               ),
-              IgnorePointer(
-                ignoring: !_eventChromeVisible,
-                child: AnimatedOpacity(
-                  opacity: _eventChromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  child: AnimatedSlide(
-                    offset: _eventChromeVisible
-                        ? Offset.zero
-                        : const Offset(0, -0.08),
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    child: Positioned.fill(
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            top: topSafe + 8,
-                            left: 12,
-                            right: 12,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _TopIcon(
-                                  icon: Icons.arrow_back_rounded,
-                                  color: Colors.white,
-                                  onTap: () {
-                                    _revealChrome(autoHide: false);
-                                    if (context.canPop()) {
-                                      context.pop();
-                                    } else {
-                                      context.go(AppPaths.clientDashboard);
-                                    }
-                                  },
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: SizedBox(
-                                    height: 62,
-                                    child: ListView(
-                                      scrollDirection: Axis.horizontal,
-                                      children: [
-                                        for (final c in ref.watch(
-                                          eventCategoriesProvider,
-                                        ))
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 10,
-                                            ),
-                                            child: _EventCategoryRing(
-                                              category: c,
-                                              active: _category == c.key,
-                                              onTap: () {
-                                                AppHaptics.light();
-                                                _revealChrome();
-                                                setState(() {
-                                                  _category = c.key;
-                                                  _index = 0;
-                                                });
-                                                ref
-                                                    .read(
-                                                      selectedCategoryProvider
-                                                          .notifier,
-                                                    )
-                                                    .setCategory(c.key);
-                                                if (_pages.hasClients) {
-                                                  _pages.jumpToPage(0);
-                                                }
-                                              },
-                                            ),
-                                          ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 4,
-                                          ),
-                                          child: _EventCategoryRing(
-                                            category: const EventFeedCategory(
-                                              key: 'likes',
-                                              label: 'My Likes',
-                                              icon: Icons.favorite_rounded,
-                                              image:
-                                                  'assets/filters/events.jpg',
-                                              color: Color(0xFFEC4899),
-                                            ),
-                                            active: false,
-                                            onTap: () {
-                                              AppHaptics.light();
-                                              _revealChrome(autoHide: false);
-                                              context.push(
-                                                AppPaths.exploreEventsLikes,
-                                              );
-                                            },
-                                          ),
+              if (_eventChromeVisible)
+                Positioned.fill(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: topSafe + 8,
+                        left: 12,
+                        right: 12,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _TopIcon(
+                              icon: Icons.arrow_back_rounded,
+                              color: Colors.white,
+                              onTap: () {
+                                _revealChrome(autoHide: false);
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.go(AppPaths.clientDashboard);
+                                }
+                              },
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: SizedBox(
+                                height: 62,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  children: [
+                                    for (final c in ref.watch(
+                                      eventCategoriesProvider,
+                                    ))
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 10,
                                         ),
-                                      ],
+                                        child: _EventCategoryRing(
+                                          category: c,
+                                          active: _category == c.key,
+                                          onTap: () {
+                                            AppHaptics.light();
+                                            _revealChrome();
+                                            setState(() {
+                                              _category = c.key;
+                                              _index = 0;
+                                            });
+                                            ref
+                                                .read(
+                                                  selectedCategoryProvider
+                                                      .notifier,
+                                                )
+                                                .setCategory(c.key);
+                                            if (_pages.hasClients) {
+                                              _pages.jumpToPage(0);
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: _EventCategoryRing(
+                                        category: const EventFeedCategory(
+                                          key: 'likes',
+                                          label: 'My Likes',
+                                          icon: Icons.favorite_rounded,
+                                          image: 'assets/filters/events.jpg',
+                                          color: Color(0xFFEC4899),
+                                        ),
+                                        active: false,
+                                        onTap: () {
+                                          AppHaptics.light();
+                                          _revealChrome(autoHide: false);
+                                          context.push(
+                                            AppPaths.exploreEventsLikes,
+                                          );
+                                        },
+                                      ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: topSafe + 78,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          children: [
+                            for (var i = 0; i < events.length.clamp(0, 12); i++)
+                              Expanded(
+                                child: Container(
+                                  height: 2,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: i <= _index
+                                        ? Colors.white
+                                        : Colors.white.withAlpha(60),
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            top: topSafe + 78,
-                            left: 16,
-                            right: 16,
-                            child: Row(
-                              children: [
-                                for (
-                                  var i = 0;
-                                  i < events.length.clamp(0, 12);
-                                  i++
-                                )
-                                  Expanded(
-                                    child: Container(
-                                      height: 2,
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 1.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: i <= _index
-                                            ? Colors.white
-                                            : Colors.white.withAlpha(60),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ),
               Positioned(
                 right: 14,
                 bottom: bottomSafe + 18,
@@ -627,8 +606,9 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       ),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Event link copied')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Event link copied')));
   }
 
   Future<void> _whatsApp() async {
@@ -702,192 +682,186 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
               ),
             ),
           ),
-          IgnorePointer(
-            ignoring: !widget.chromeVisible,
-            child: AnimatedOpacity(
-              opacity: widget.chromeVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Positioned(
-                    right: 12,
-                    bottom: bottom + 110,
-                    child: Column(
-                      children: [
-                        _RailBtn(
-                          icon: favorited
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          color: favorited
-                              ? const Color(0xFFF43F5E)
-                              : Colors.white,
-                          onTap: _toggleFavorite,
+          if (widget.chromeVisible)
+            Stack(
+              fit: StackFit.expand,
+              children: [
+                Positioned(
+                  right: 12,
+                  bottom: bottom + 110,
+                  child: Column(
+                    children: [
+                      _RailBtn(
+                        icon: favorited
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: favorited
+                            ? const Color(0xFFF43F5E)
+                            : Colors.white,
+                        onTap: _toggleFavorite,
+                      ),
+                      const SizedBox(height: 10),
+                      EventMuteButton(
+                        soundOn: ref.watch(deckSoundOnProvider),
+                        onToggle: () {
+                          widget.onChromeInteraction();
+                          final next = !ref.read(deckSoundOnProvider);
+                          ref
+                              .read(deckSoundOnProvider.notifier)
+                              .setSoundOn(next);
+                          _player?.setVolume(next ? 1 : 0);
+                          if (next) _player?.play();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 4,
                         ),
-                        const SizedBox(height: 10),
-                        EventMuteButton(
-                          soundOn: ref.watch(deckSoundOnProvider),
-                          onToggle: () {
-                            widget.onChromeInteraction();
-                            final next = !ref.read(deckSoundOnProvider);
-                            ref
-                                .read(deckSoundOnProvider.notifier)
-                                .setSoundOn(next);
-                            _player?.setVolume(next ? 1 : 0);
-                            if (next) _player?.play();
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(86),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withAlpha(44),
+                            width: .7,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(86),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: Colors.white.withAlpha(44),
-                              width: .7,
+                        ),
+                        child: Column(
+                          children: [
+                            _RailBtn(
+                              icon: Icons.info_outline_rounded,
+                              size: 42,
+                              onTap: widget.onOpen,
                             ),
-                          ),
-                          child: Column(
-                            children: [
-                              _RailBtn(
-                                icon: Icons.info_outline_rounded,
-                                size: 42,
-                                onTap: widget.onOpen,
-                              ),
-                              _RailBtn(
-                                icon: Icons.chat_rounded,
-                                size: 42,
-                                onTap: _whatsApp,
-                              ),
-                              _RailBtn(
-                                icon: Icons.share_rounded,
-                                size: 42,
-                                onTap: _share,
-                              ),
-                            ],
-                          ),
+                            _RailBtn(
+                              icon: Icons.chat_rounded,
+                              size: 42,
+                              onTap: _whatsApp,
+                            ),
+                            _RailBtn(
+                              icon: Icons.share_rounded,
+                              size: 42,
+                              onTap: _share,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Positioned(
-                    left: 20,
-                    right: 88,
-                    bottom: bottom + 28,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
+                ),
+                Positioned(
+                  left: 20,
+                  right: 88,
+                  bottom: bottom + 28,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _Pill(
+                            label: event.category.toUpperCase(),
+                            color: AppTheme.brandPrimary,
+                          ),
+                          if (event.isFree) ...[
+                            const SizedBox(width: 6),
+                            const _Pill(
+                              label: 'FREE',
+                              color: Color(0xFF34D399),
+                            ),
+                          ],
+                          if (_hasVideo) ...[
+                            const SizedBox(width: 6),
+                            const _Pill(
+                              label: 'VIDEO',
+                              color: Color(0xFF38BDF8),
+                            ),
+                          ],
+                          if (event.discountTag != null) ...[
+                            const SizedBox(width: 6),
                             _Pill(
-                              label: event.category.toUpperCase(),
-                              color: AppTheme.brandPrimary,
+                              label: event.discountTag!.toUpperCase(),
+                              color: const Color(0xFFFBBF24),
                             ),
-                            if (event.isFree) ...[
-                              const SizedBox(width: 6),
-                              const _Pill(
-                                label: 'FREE',
-                                color: Color(0xFF34D399),
-                              ),
-                            ],
-                            if (_hasVideo) ...[
-                              const SizedBox(width: 6),
-                              const _Pill(
-                                label: 'VIDEO',
-                                color: Color(0xFF38BDF8),
-                              ),
-                            ],
-                            if (event.discountTag != null) ...[
-                              const SizedBox(width: 6),
-                              _Pill(
-                                label: event.discountTag!.toUpperCase(),
-                                color: const Color(0xFFFBBF24),
-                              ),
-                            ],
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        event.title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 26,
+                          height: 1.05,
+                          letterSpacing: -0.6,
+                          shadows: const [
+                            Shadow(blurRadius: 12, color: Colors.black),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                      ),
+                      if (event.organizerName != null) ...[
+                        const SizedBox(height: 6),
                         Text(
-                          event.title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                          'by ${event.organizerName}',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 26,
-                            height: 1.05,
-                            letterSpacing: -0.6,
-                            shadows: const [
-                              Shadow(blurRadius: 12, color: Colors.black),
-                            ],
-                          ),
-                        ),
-                        if (event.organizerName != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            'by ${event.organizerName}',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                        if (event.promoText != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            event.promoText!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white.withAlpha(220),
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (event.eventDate != null)
-                              _MetaChip(
-                                icon: Icons.calendar_today_rounded,
-                                label: DateFormat('MMM d · h:mm a')
-                                    .format(event.eventDate!.toLocal()),
-                              ),
-                            if (event.location != null)
-                              _MetaChip(
-                                icon: Icons.location_on_rounded,
-                                label: event.location!,
-                              ),
-                            if (!event.isFree && event.priceText != null)
-                              _MetaChip(
-                                icon: Icons.confirmation_number_rounded,
-                                label: event.priceText!,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Swipe up for next · tap video for focus controls',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white38,
-                            fontSize: 10,
+                            color: Colors.white70,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
-                    ),
+                      if (event.promoText != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          event.promoText!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withAlpha(220),
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (event.eventDate != null)
+                            _MetaChip(
+                              icon: Icons.calendar_today_rounded,
+                              label: DateFormat(
+                                'MMM d · h:mm a',
+                              ).format(event.eventDate!.toLocal()),
+                            ),
+                          if (event.location != null)
+                            _MetaChip(
+                              icon: Icons.location_on_rounded,
+                              label: event.location!,
+                            ),
+                          if (!event.isFree && event.priceText != null)
+                            _MetaChip(
+                              icon: Icons.confirmation_number_rounded,
+                              label: event.priceText!,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Swipe up for next · tap video for focus controls',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white38,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
         ],
       ),
     );
