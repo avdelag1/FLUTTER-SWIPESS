@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -34,12 +35,63 @@ class GlowSearchBar extends StatefulWidget {
 }
 
 class _GlowSearchBarState extends State<GlowSearchBar> {
+  static const _rotatingPrompts = <String>[
+    'Ask anything',
+    'Want to find the best properties?',
+    'Looking to make a reservation?',
+    'Need a massage expert nearby?',
+    'Find a private chef for tonight',
+    'Looking for a yacht in Tulum?',
+    'Need a trusted local lawyer?',
+    'What’s happening in Tulum tonight?',
+    'Find a cleaner or maintenance expert',
+    'Want AI to create your listing?',
+  ];
+
+  Timer? _promptTimer;
+  int _promptIndex = 0;
+
+  bool get _isTapOnly => widget.onTap != null && widget.onChanged == null;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPromptRotation();
+  }
+
+  @override
+  void didUpdateWidget(covariant GlowSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isTapOnly != (oldWidget.onTap != null && oldWidget.onChanged == null)) {
+      _startPromptRotation();
+    }
+  }
+
+  void _startPromptRotation() {
+    _promptTimer?.cancel();
+    if (!_isTapOnly) return;
+    _promptTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      setState(() {
+        _promptIndex = (_promptIndex + 1) % _rotatingPrompts.length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _promptTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
     final muted = ink.withAlpha(150);
-    final isTapOnly = widget.onTap != null && widget.onChanged == null;
+    final displayHint = _isTapOnly
+        ? _rotatingPrompts[_promptIndex]
+        : widget.hint;
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
       GestureDetector(
@@ -73,25 +125,38 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                 ],
               ),
               child: Row(children: [
-                const SizedBox(width: 17),
-                const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Color(0xFF60A5FA),
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 18),
                 Expanded(
-                  child: isTapOnly
+                  child: _isTapOnly
                       ? Align(
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            widget.hint,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: ink.withAlpha(130),
-                              fontWeight: FontWeight.w500,
-                              fontSize: 15,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 360),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) {
+                              final slide = Tween<Offset>(
+                                begin: const Offset(0, .12),
+                                end: Offset.zero,
+                              ).animate(animation);
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: slide,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Text(
+                              displayHint,
+                              key: ValueKey(_promptIndex),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: ink.withAlpha(145),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                              ),
                             ),
                           ),
                         )
@@ -124,6 +189,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                           ),
                         ),
                 ),
+                const SizedBox(width: 16),
               ]),
             ),
           ),
