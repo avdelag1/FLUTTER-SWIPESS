@@ -23,9 +23,9 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              color: isLight ? Colors.white.withAlpha(205) : Colors.white.withAlpha(10),
+              color: isLight ? Colors.white.withAlpha(202) : Colors.white.withAlpha(10),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFF60A5FA).withAlpha(isLight ? 170 : 190), width: 1.15),
+              border: Border.all(color: const Color(0xFF60A5FA).withAlpha(isLight ? 160 : 180), width: 1.05),
             ),
             child: Row(children: [
               const SizedBox(width: 17),
@@ -59,17 +59,17 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
 
   Widget _outerPill(IconData icon, String label, Color ink, bool isLight) {
     return ClipRRect(borderRadius: BorderRadius.circular(999), child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
       child: Container(
-        height: 34,
+        height: 33,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: isLight ? Colors.white.withAlpha(180) : Colors.white.withAlpha(16),
+          color: isLight ? Colors.white.withAlpha(145) : Colors.white.withAlpha(11),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withAlpha(isLight ? 105 : 48), width: .65),
+          border: Border.all(color: isLight ? Colors.black.withAlpha(22) : Colors.white.withAlpha(38), width: .6),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: ink.withAlpha(235), size: 13), const SizedBox(width: 5),
+          Icon(icon, color: ink.withAlpha(240), size: 13), const SizedBox(width: 5),
           Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: ink, fontWeight: FontWeight.w700, fontSize: 11.5))),
         ]),
       ),
