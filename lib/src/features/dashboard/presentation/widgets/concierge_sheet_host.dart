@@ -5,8 +5,8 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 
 /// Bottom-card frame for Swipess AI.
 ///
-/// The app header and bottom dock remain visible. AI enters as one card from
-/// the bottom instead of replacing the page or impersonating a second screen.
+/// The app header and bottom dock remain visible. AI enters as one large,
+/// centered card from the bottom instead of replacing the page.
 class ConciergeSheetHost extends ConsumerStatefulWidget {
   const ConciergeSheetHost({
     super.key,
@@ -66,14 +66,14 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final topSafe = media.padding.top + ConciergeSheetHost.appBarBody + 10;
+    final topSafe = media.padding.top + ConciergeSheetHost.appBarBody + 8;
     final bottomInset =
         media.padding.bottom +
         ConciergeSheetHost.dockOffset +
         ConciergeSheetHost.dockBody +
-        10;
+        8;
     final available = media.size.height - topSafe - bottomInset;
-    final sheetHeight = (available * 0.86).clamp(360.0, 680.0);
+    final sheetHeight = (available * 0.94).clamp(320.0, 780.0).toDouble();
 
     return Stack(
       fit: StackFit.expand,
@@ -90,9 +90,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
           height: sheetHeight,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
+              constraints: const BoxConstraints(maxWidth: 980),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: SlideTransition(
                   position: Tween<Offset>(
                     begin: const Offset(0, 1.0),
@@ -105,12 +105,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                     ),
                   ),
                   child: FadeTransition(
-                    // Hold the content invisible for the first part of the
-                    // entrance. This masks the legacy async privacy state so
-                    // users see one clean card rather than page A → page B.
                     opacity: CurvedAnimation(
                       parent: _slide,
-                      curve: const Interval(0.38, 1, curve: Curves.easeOut),
+                      curve: const Interval(0.30, 1, curve: Curves.easeOut),
                     ),
                     child: Transform.translate(
                       offset: Offset(0, _drag),
@@ -190,11 +187,11 @@ class _CardShell extends StatelessWidget {
               onVerticalDragEnd: (_) => onDragEnd(),
               onDoubleTap: onClose,
               child: SizedBox(
-                height: 22,
+                height: 20,
                 width: double.infinity,
                 child: Center(
                   child: Container(
-                    width: 38,
+                    width: 40,
                     height: 4,
                     decoration: BoxDecoration(
                       color: handle,
