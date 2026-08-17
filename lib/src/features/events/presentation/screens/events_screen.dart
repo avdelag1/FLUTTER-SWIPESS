@@ -1,10 +1,15 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
@@ -15,7 +20,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
-/// Cap EventosFeed — Instagram-stories vertical snap deck with preload.
+/// Full-screen, Reels-style event deck.
+/// App chrome and event controls reveal briefly, then fade away so the media
+/// owns the screen. A small breathing eye restores every control on demand.
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
 
@@ -25,13 +32,52 @@ class EventsScreen extends ConsumerStatefulWidget {
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
   final _pages = PageController();
+  Timer? _chromeTimer;
   int _index = 0;
   String _category = 'All';
+  bool _eventChromeVisible = true;
+
+  static const _chromeVisibleFor = Duration(milliseconds: 2800);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revealChrome());
+  }
 
   @override
   void dispose() {
+    _chromeTimer?.cancel();
     _pages.dispose();
     super.dispose();
+  }
+
+  void _scheduleHide() {
+    _chromeTimer?.cancel();
+    _chromeTimer = Timer(_chromeVisibleFor, _hideChrome);
+  }
+
+  void _revealChrome({bool autoHide = true}) {
+    if (!mounted) return;
+    if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
+    ref.read(chromeVisibilityProvider.notifier).show();
+    _chromeTimer?.cancel();
+    if (autoHide) _scheduleHide();
+  }
+
+  void _hideChrome() {
+    if (!mounted) return;
+    if (_eventChromeVisible) setState(() => _eventChromeVisible = false);
+    ref.read(chromeVisibilityProvider.notifier).hide();
+  }
+
+  void _toggleChrome() {
+    AppHaptics.light();
+    if (_eventChromeVisible) {
+      _hideChrome();
+    } else {
+      _revealChrome();
+    }
   }
 
   @override
@@ -73,6 +119,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ),
             );
           }
+          final topSafe = MediaQuery.paddingOf(context).top;
+          final bottomSafe = MediaQuery.paddingOf(context).bottom;
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -80,11 +128,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 controller: _pages,
                 scrollDirection: Axis.vertical,
                 allowImplicitScrolling: true,
-                // Cap: one extra virtual row — PromoteCTACard at end of feed.
                 itemCount: events.length + 1,
                 onPageChanged: (i) {
                   AppHaptics.selection();
                   setState(() => _index = i);
+                  // Briefly restore context/action controls for each new event,
+                  // then return to clean immersive playback automatically.
+                  _revealChrome();
                 },
                 itemBuilder: (context, i) {
                   if (i == events.length) {
@@ -100,108 +150,182 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     active: active,
                     shouldLoadVideo: near,
                     siblings: events,
+                    chromeVisible: _eventChromeVisible,
+                    onToggleChrome: _toggleChrome,
+                    onChromeInteraction: _revealChrome,
                     onOpen: () {
+                      _revealChrome(autoHide: false);
                       context.push(AppPaths.exploreEvent(event.id));
                     },
                   );
                 },
               ),
-              Positioned(
-                top: MediaQuery.paddingOf(context).top + 8,
-                left: 12,
-                right: 12,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TopIcon(
-                      icon: Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      onTap: () {
-                        if (context.canPop()) {
-                          context.pop();
-                        } else {
-                          context.go(AppPaths.clientDashboard);
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: SizedBox(
-                        height: 62,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            for (final c in ref.watch(eventCategoriesProvider))
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: _EventCategoryRing(
-                                  category: c,
-                                  active: _category == c.key,
+
+              IgnorePointer(
+                ignoring: !_eventChromeVisible,
+                child: AnimatedOpacity(
+                  opacity: _eventChromeVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedSlide(
+                    offset: _eventChromeVisible ? Offset.zero : const Offset(0, -0.08),
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: Positioned.fill(
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: topSafe + 8,
+                            left: 12,
+                            right: 12,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _TopIcon(
+                                  icon: Icons.arrow_back_rounded,
+                                  color: Colors.white,
                                   onTap: () {
-                                    AppHaptics.light();
-                                    setState(() {
-                                      _category = c.key;
-                                      _index = 0;
-                                    });
-                                    ref
-                                        .read(selectedCategoryProvider.notifier)
-                                        .setCategory(c.key);
-                                    if (_pages.hasClients) {
-                                      _pages.jumpToPage(0);
+                                    _revealChrome(autoHide: false);
+                                    if (context.canPop()) {
+                                      context.pop();
+                                    } else {
+                                      context.go(AppPaths.clientDashboard);
                                     }
                                   },
                                 ),
-                              ),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: _EventCategoryRing(
-                                category: const EventFeedCategory(
-                                  key: 'likes',
-                                  label: 'My Likes',
-                                  icon: Icons.favorite_rounded,
-                                  image: 'assets/filters/events.jpg',
-                                  color: Color(0xFFEC4899),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 62,
+                                    child: ListView(
+                                      scrollDirection: Axis.horizontal,
+                                      children: [
+                                        for (final c in ref.watch(eventCategoriesProvider))
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 10),
+                                            child: _EventCategoryRing(
+                                              category: c,
+                                              active: _category == c.key,
+                                              onTap: () {
+                                                AppHaptics.light();
+                                                _revealChrome();
+                                                setState(() {
+                                                  _category = c.key;
+                                                  _index = 0;
+                                                });
+                                                ref
+                                                    .read(selectedCategoryProvider.notifier)
+                                                    .setCategory(c.key);
+                                                if (_pages.hasClients) {
+                                                  _pages.jumpToPage(0);
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 4),
+                                          child: _EventCategoryRing(
+                                            category: const EventFeedCategory(
+                                              key: 'likes',
+                                              label: 'My Likes',
+                                              icon: Icons.favorite_rounded,
+                                              image: 'assets/filters/events.jpg',
+                                              color: Color(0xFFEC4899),
+                                            ),
+                                            active: false,
+                                            onTap: () {
+                                              AppHaptics.light();
+                                              _revealChrome(autoHide: false);
+                                              context.push(AppPaths.exploreEventsLikes);
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                                active: false,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  context.push(AppPaths.exploreEventsLikes);
-                                },
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Positioned(
+                            top: topSafe + 78,
+                            left: 16,
+                            right: 16,
+                            child: Row(
+                              children: [
+                                for (var i = 0; i < events.length.clamp(0, 12); i++)
+                                  Expanded(
+                                    child: Container(
+                                      height: 2,
+                                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: i <= _index
+                                            ? Colors.white
+                                            : Colors.white.withAlpha(60),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-              // Progress ticks like stories
-              Positioned(
-                top: MediaQuery.paddingOf(context).top + 78,
-                left: 16,
-                right: 16,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < events.length.clamp(0, 12); i++)
-                      Expanded(
-                        child: Container(
-                          height: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                          decoration: BoxDecoration(
-                            color: i <= _index
-                                ? Colors.white
-                                : Colors.white.withAlpha(60),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                  ],
+
+              // When everything is hidden, leave one tiny discoverable control.
+              // It restores both the persistent app header/dock and the event UI.
+              if (!_eventChromeVisible)
+                Positioned(
+                  right: 14,
+                  bottom: bottomSafe + 18,
+                  child: _FocusOrb(onTap: _revealChrome),
                 ),
-              ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _FocusOrb extends StatelessWidget {
+  const _FocusOrb({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Show event controls and navigation',
+      child: BreathingWidget(
+        duration: const Duration(milliseconds: 1800),
+        minOpacity: .48,
+        maxOpacity: .92,
+        child: GestureDetector(
+          onTap: () {
+            AppHaptics.light();
+            onTap();
+          },
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(54),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withAlpha(72), width: .7),
+                ),
+                child: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -221,28 +345,25 @@ class _TopIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.black.withAlpha(150),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(40)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(80),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(62),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withAlpha(58), width: .7),
             ),
-          ],
+            child: Icon(icon, color: color, size: 19),
+          ),
         ),
-        child: Icon(icon, color: color, size: 20),
       ),
     );
   }
 }
 
-/// Cap `EventCategoryCircle` — gradient ring when active + photo + label.
 class _EventCategoryRing extends StatelessWidget {
   const _EventCategoryRing({
     required this.category,
@@ -344,6 +465,9 @@ class _EventStoryPage extends ConsumerStatefulWidget {
     required this.active,
     required this.shouldLoadVideo,
     required this.siblings,
+    required this.chromeVisible,
+    required this.onToggleChrome,
+    required this.onChromeInteraction,
     required this.onOpen,
   });
 
@@ -351,6 +475,9 @@ class _EventStoryPage extends ConsumerStatefulWidget {
   final bool active;
   final bool shouldLoadVideo;
   final List<Event> siblings;
+  final bool chromeVisible;
+  final VoidCallback onToggleChrome;
+  final VoidCallback onChromeInteraction;
   final VoidCallback onOpen;
 
   @override
@@ -360,7 +487,6 @@ class _EventStoryPage extends ConsumerStatefulWidget {
 class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   VideoPlayerController? _player;
   bool? _favoritedOverride;
-  bool _showChrome = true;
 
   Event get event => widget.event;
 
@@ -419,6 +545,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _toggleFavorite() async {
+    widget.onChromeInteraction();
     final current =
         _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
@@ -436,6 +563,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _share() async {
+    widget.onChromeInteraction();
     AppHaptics.light();
     await Clipboard.setData(
       ClipboardData(
@@ -449,6 +577,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _whatsApp() async {
+    widget.onChromeInteraction();
     if (!event.hasWhatsApp) {
       widget.onOpen();
       return;
@@ -478,7 +607,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
         : (event.imageUrl ?? '');
 
     return GestureDetector(
-      onTap: () => setState(() => _showChrome = !_showChrome),
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onToggleChrome,
       onDoubleTap: _toggleFavorite,
       child: Stack(
         fit: StackFit.expand,
@@ -509,67 +639,145 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0x66000000),
+                    Color(0x22000000),
                     Color(0x00000000),
-                    Color(0xCC000000),
+                    Color(0x72000000),
                   ],
-                  stops: [0, 0.45, 1],
+                  stops: [0, 0.58, 1],
                 ),
               ),
             ),
           ),
 
-          // Side action rail (Cap EventCard)
-          if (_showChrome)
-            Positioned(
-              right: 12,
-              bottom: bottom + 110,
-              child: Column(
+          IgnorePointer(
+            ignoring: !widget.chromeVisible,
+            child: AnimatedOpacity(
+              opacity: widget.chromeVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  _RailBtn(
-                    icon: favorited
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: favorited ? const Color(0xFFF43F5E) : Colors.white,
-                    onTap: _toggleFavorite,
-                  ),
-                  const SizedBox(height: 10),
-                  EventMuteButton(
-                    soundOn: ref.watch(deckSoundOnProvider),
-                    onToggle: () {
-                      final next = !ref.read(deckSoundOnProvider);
-                      ref.read(deckSoundOnProvider.notifier).setSoundOn(next);
-                      _player?.setVolume(next ? 1 : 0);
-                      if (next) _player?.play();
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(150),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: Colors.white30),
-                    ),
+                  Positioned(
+                    right: 12,
+                    bottom: bottom + 110,
                     child: Column(
                       children: [
                         _RailBtn(
-                          icon: Icons.info_outline_rounded,
-                          size: 44,
-                          onTap: widget.onOpen,
+                          icon: favorited
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          color: favorited ? const Color(0xFFF43F5E) : Colors.white,
+                          onTap: _toggleFavorite,
                         ),
-                        _RailBtn(
-                          icon: Icons.chat_rounded,
-                          size: 44,
-                          onTap: _whatsApp,
+                        const SizedBox(height: 10),
+                        EventMuteButton(
+                          soundOn: ref.watch(deckSoundOnProvider),
+                          onToggle: () {
+                            widget.onChromeInteraction();
+                            final next = !ref.read(deckSoundOnProvider);
+                            ref.read(deckSoundOnProvider.notifier).setSoundOn(next);
+                            _player?.setVolume(next ? 1 : 0);
+                            if (next) _player?.play();
+                          },
                         ),
-                        _RailBtn(
-                          icon: Icons.share_rounded,
-                          size: 44,
-                          onTap: _share,
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(86),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: Colors.white.withAlpha(44), width: .7),
+                          ),
+                          child: Column(
+                            children: [
+                              _RailBtn(icon: Icons.info_outline_rounded, size: 42, onTap: widget.onOpen),
+                              _RailBtn(icon: Icons.chat_rounded, size: 42, onTap: _whatsApp),
+                              _RailBtn(icon: Icons.share_rounded, size: 42, onTap: _share),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: 20,
+                    right: 88,
+                    bottom: bottom + 28,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _Pill(label: event.category.toUpperCase(), color: AppTheme.brandPrimary),
+                            if (event.isFree) ...[
+                              const SizedBox(width: 6),
+                              const _Pill(label: 'FREE', color: Color(0xFF34D399)),
+                            ],
+                            if (_hasVideo) ...[
+                              const SizedBox(width: 6),
+                              const _Pill(label: 'VIDEO', color: Color(0xFF38BDF8)),
+                            ],
+                            if (event.discountTag != null) ...[
+                              const SizedBox(width: 6),
+                              _Pill(label: event.discountTag!.toUpperCase(), color: const Color(0xFFFBBF24)),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          event.title,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 26,
+                            height: 1.05,
+                            letterSpacing: -0.6,
+                            shadows: const [Shadow(blurRadius: 12, color: Colors.black)],
+                          ),
+                        ),
+                        if (event.organizerName != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'by ${event.organizerName}',
+                            style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                        if (event.promoText != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            event.promoText!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(color: Colors.white.withAlpha(220), height: 1.3),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (event.eventDate != null)
+                              _MetaChip(
+                                icon: Icons.calendar_today_rounded,
+                                label: DateFormat('MMM d · h:mm a').format(event.eventDate!.toLocal()),
+                              ),
+                            if (event.location != null)
+                              _MetaChip(icon: Icons.location_on_rounded, label: event.location!),
+                            if (!event.isFree && event.priceText != null)
+                              _MetaChip(icon: Icons.confirmation_number_rounded, label: event.priceText!),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Swipe up for next · tap video for focus controls',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white38,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -577,112 +785,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                 ],
               ),
             ),
-
-          if (_showChrome)
-            Positioned(
-              left: 20,
-              right: 88,
-              bottom: bottom + 28,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _Pill(
-                        label: event.category.toUpperCase(),
-                        color: AppTheme.brandPrimary,
-                      ),
-                      if (event.isFree) ...[
-                        const SizedBox(width: 6),
-                        const _Pill(label: 'FREE', color: Color(0xFF34D399)),
-                      ],
-                      if (_hasVideo) ...[
-                        const SizedBox(width: 6),
-                        const _Pill(label: 'VIDEO', color: Color(0xFF38BDF8)),
-                      ],
-                      if (event.discountTag != null) ...[
-                        const SizedBox(width: 6),
-                        _Pill(
-                          label: event.discountTag!.toUpperCase(),
-                          color: const Color(0xFFFBBF24),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    event.title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 26,
-                      height: 1.05,
-                      letterSpacing: -0.6,
-                      shadows: const [
-                        Shadow(blurRadius: 12, color: Colors.black),
-                      ],
-                    ),
-                  ),
-                  if (event.organizerName != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'by ${event.organizerName}',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                  if (event.promoText != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      event.promoText!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(220),
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (event.eventDate != null)
-                        _MetaChip(
-                          icon: Icons.calendar_today_rounded,
-                          label: DateFormat(
-                            'MMM d · h:mm a',
-                          ).format(event.eventDate!.toLocal()),
-                        ),
-                      if (event.location != null)
-                        _MetaChip(
-                          icon: Icons.location_on_rounded,
-                          label: event.location!,
-                        ),
-                      if (!event.isFree && event.priceText != null)
-                        _MetaChip(
-                          icon: Icons.confirmation_number_rounded,
-                          label: event.priceText!,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Swipe up for next · tap for chrome · open for details',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          ),
         ],
       ),
     );
@@ -694,7 +797,7 @@ class _RailBtn extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.color = Colors.white,
-    this.size = 52,
+    this.size = 48,
   });
   final IconData icon;
   final VoidCallback onTap;
@@ -710,11 +813,11 @@ class _RailBtn extends StatelessWidget {
         height: size,
         margin: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
-          color: Colors.black.withAlpha(140),
+          color: Colors.black.withAlpha(76),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white30),
+          border: Border.all(color: Colors.white.withAlpha(44), width: .7),
         ),
-        child: Icon(icon, color: color, size: size > 48 ? 22 : 18),
+        child: Icon(icon, color: color, size: size > 44 ? 21 : 18),
       ),
     );
   }
@@ -757,9 +860,9 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withAlpha(120),
+        color: Colors.black.withAlpha(88),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: Colors.white.withAlpha(42), width: .7),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
