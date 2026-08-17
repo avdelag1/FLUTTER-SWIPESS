@@ -20,7 +20,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 /// This intentionally uses Mapbox's vector renderer rather than `flutter_map`
 /// raster tiles so pitch, bearing, 3D buildings/terrain in the Studio style,
 /// fluid camera animation, Mapbox attribution and Mapbox logo all come from the
-/// official renderer on Android, iOS and the PWA/web preview.
+/// official renderer on Android, iOS and web/PWA.
 class RealMapboxScreen extends ConsumerStatefulWidget {
   const RealMapboxScreen({
     super.key,
@@ -68,18 +68,19 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     if (km <= 250) return 8.0;
     if (km <= 1000) return 5.8;
     if (km <= 5000) return 3.2;
-    return 1.6;
+    return 1.45;
   }
 
   Future<void> _flyTo(DiscoveryLocation loc, {double? zoom}) async {
     final map = _map;
     if (map == null) return;
+    final targetZoom = zoom ?? _zoomForRadius(loc.radiusKm);
     await map.flyTo(
       CameraOptions(
         center: _point(loc.latitude, loc.longitude),
-        zoom: zoom ?? _zoomForRadius(loc.radiusKm),
-        pitch: (zoom ?? _zoomForRadius(loc.radiusKm)) >= 8 ? 58 : 34,
-        bearing: (zoom ?? _zoomForRadius(loc.radiusKm)) >= 8 ? 18 : 0,
+        zoom: targetZoom,
+        pitch: targetZoom >= 8 ? 58 : targetZoom >= 3 ? 34 : 8,
+        bearing: targetZoom >= 8 ? 18 : 0,
       ),
       MapAnimationOptions(duration: 850, startDelay: 0),
     );
@@ -205,6 +206,11 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     }
   }
 
+  void _setRange(int km) {
+    AppHaptics.selection();
+    ref.read(discoveryLocationProvider.notifier).setRadiusKm(km);
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = ref.watch(discoveryLocationProvider);
@@ -265,8 +271,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
             cameraOptions: CameraOptions(
               center: _point(loc.latitude, loc.longitude),
               zoom: _zoomForRadius(loc.radiusKm),
-              pitch: 58,
-              bearing: 18,
+              pitch: loc.radiusKm >= 5000 ? 8 : 58,
+              bearing: loc.radiusKm >= 5000 ? 0 : 18,
             ),
             onMapCreated: _setupMap,
             onMapLoadedListener: (_) async {
@@ -312,15 +318,29 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
             ),
           ),
 
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 58,
+            left: 12,
+            child: _RangePill(
+              radiusKm: loc.radiusKm,
+              onLocal: () => _setRange(5),
+              onRegion: () => _setRange(100),
+              onWorld: () => _setRange(20000),
+            ),
+          ),
+
           if (_citiesOpen)
             Positioned(
               left: 0,
               right: 0,
-              top: MediaQuery.paddingOf(context).top + 64,
+              top: MediaQuery.paddingOf(context).top + 106,
               child: MapCityChips(
                 activeCity: loc.city,
                 onSelect: (city) {
                   ref.read(discoveryLocationProvider.notifier).setCoordinates(city: city.name, country: city.country, latitude: city.lat, longitude: city.lng);
+                  if (loc.radiusKm > 500) {
+                    ref.read(discoveryLocationProvider.notifier).setRadiusKm(25);
+                  }
                   setState(() => _citiesOpen = false);
                 },
               ),
@@ -387,6 +407,52 @@ class _GlassMapButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RangePill extends StatelessWidget {
+  const _RangePill({required this.radiusKm, required this.onLocal, required this.onRegion, required this.onWorld});
+  final int radiusKm;
+  final VoidCallback onLocal;
+  final VoidCallback onRegion;
+  final VoidCallback onWorld;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(color: Colors.black.withAlpha(58), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.white.withAlpha(46), width: .7)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            _RangeChoice(label: 'LOCAL', active: radiusKm <= 25, onTap: onLocal),
+            _RangeChoice(label: 'REGION', active: radiusKm > 25 && radiusKm < 5000, onTap: onRegion),
+            _RangeChoice(label: 'WORLD', active: radiusKm >= 5000, onTap: onWorld),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _RangeChoice extends StatelessWidget {
+  const _RangeChoice({required this.label, required this.active, required this.onTap});
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: active ? Colors.white.withAlpha(42) : Colors.transparent, borderRadius: BorderRadius.circular(999)),
+      child: Text(label, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
+    ),
+  );
 }
 
 class _LayerPill extends StatelessWidget {
