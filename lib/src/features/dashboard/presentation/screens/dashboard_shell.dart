@@ -330,10 +330,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ),
             ),
           ),
-          ChromeSummonZones(
-            visible: showChrome,
-            onSummon: () => ref.read(chromeVisibilityProvider.notifier).show(),
-          ),
+          if (!isEvents)
+            ChromeSummonZones(
+              visible: showChrome,
+              onSummon: () => ref.read(chromeVisibilityProvider.notifier).show(),
+            ),
           const PushNotificationPrompt(enabled: false),
           GuidedTourOverlay(
             enabled: user != null,

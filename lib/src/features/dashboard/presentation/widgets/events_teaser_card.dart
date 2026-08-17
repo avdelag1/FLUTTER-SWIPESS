@@ -356,6 +356,24 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     widget.onTap?.call();
   }
 
+  Widget _fallbackMedia(Event? current) {
+    final imageUrl = current?.imageUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return imageUrl.startsWith('assets/')
+          ? Image.asset(imageUrl, fit: BoxFit.cover)
+          : Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              errorBuilder: (_, _, _) => Image.asset(
+                AppAssets.filterEvents,
+                fit: BoxFit.cover,
+              ),
+            );
+    }
+    return Image.asset(AppAssets.filterEvents, fit: BoxFit.cover);
+  }
+
   @override
   Widget build(BuildContext context) {
     final apiVideos = ref.watch(videoEventsProvider);
@@ -388,33 +406,22 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final ready = _player != null && _player!.value.isInitialized;
     final segmentCount = videos.isEmpty ? 1 : videos.length.clamp(1, 8);
 
-    Widget media;
-    if (ready) {
-      media = Positioned.fill(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          clipBehavior: Clip.hardEdge,
-          child: SizedBox(
-            width: _player!.value.size.width,
-            height: _player!.value.size.height,
-            child: VideoPlayer(_player!),
+    final media = Stack(
+      fit: StackFit.expand,
+      children: [
+        _fallbackMedia(current),
+        if (ready)
+          FittedBox(
+            fit: BoxFit.cover,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: _player!.value.size.width,
+              height: _player!.value.size.height,
+              child: VideoPlayer(_player!),
+            ),
           ),
-        ),
-      );
-    } else if (current?.imageUrl != null) {
-      media = current!.imageUrl!.startsWith('assets/')
-          ? Image.asset(current.imageUrl!, fit: BoxFit.cover)
-          : Image.network(
-              current.imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Image.asset(
-                AppAssets.filterEvents,
-                fit: BoxFit.cover,
-              ),
-            );
-    } else {
-      media = Image.asset(AppAssets.filterEvents, fit: BoxFit.cover);
-    }
+      ],
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
