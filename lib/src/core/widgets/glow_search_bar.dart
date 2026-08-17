@@ -145,7 +145,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
           ),
         ),
         const SizedBox(height: 5),
-        // Keep provider attribution + warning on one quiet line.
         Row(
           children: [
             const Icon(
@@ -161,7 +160,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
                   color: muted,
-                  fontWeight: FontWeight.w650,
+                  fontWeight: FontWeight.w600,
                   fontSize: 10.5,
                   letterSpacing: 0.15,
                 ),
