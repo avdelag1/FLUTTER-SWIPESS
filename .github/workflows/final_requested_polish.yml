@@ -15,7 +15,7 @@ jobs:
   polish:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,7 +24,481 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Apply Events, access, map and dock polish
+      - name: Apply requested UI fixes
         shell: bash
         run: |
-          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpkZWYgcmVwbGFjZV9vbmNlKHRleHQsIG9sZCwgbmV3LCBsYWJlbCwgYWxyZWFkeT1Ob25lKToKICAgIGlmIG9sZCBpbiB0ZXh0OgogICAgICAgIHJldHVybiB0ZXh0LnJlcGxhY2Uob2xkLCBuZXcsIDEpCiAgICBpZiBhbHJlYWR5IGFuZCBhbHJlYWR5IGluIHRleHQ6CiAgICAgICAgcmV0dXJuIHRleHQKICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJ7bGFiZWx9IGFuY2hvciBub3QgZm91bmQiKQoKIyAxKSBFdmVudHM6IHBlcnNpc3RlbnQgbWFudWFsIGV5ZSB0b2dnbGUsIG5vIGF1dG8taGlkZSB0aW1lcgpldmVudHNfcGF0aCA9IFBhdGgoImxpYi9zcmMvZmVhdHVyZXMvZXZlbnRzL3ByZXNlbnRhdGlvbi9zY3JlZW5zL2V2ZW50c19zY3JlZW4uZGFydCIpCmV2ZW50cyA9IGV2ZW50c19wYXRoLnJlYWRfdGV4dCgpCgpldmVudHMgPSByZXBsYWNlX29uY2UoZXZlbnRzLCAiaW1wb3J0ICdkYXJ0OmFzeW5jJztcbiIsICIiLCAiZXZlbnRzIGFzeW5jIGltcG9ydCIsIGFscmVhZHk9ImNsYXNzIEV2ZW50c1NjcmVlbiIpCmV2ZW50cyA9IGV2ZW50cy5yZXBsYWNlKCIgIFRpbWVyPyBfY2hyb21lVGltZXI7XG4iLCAiIikKZXZlbnRzID0gZXZlbnRzLnJlcGxhY2UoIlxuICBzdGF0aWMgY29uc3QgX2Nocm9tZVZpc2libGVGb3IgPSBEdXJhdGlvbihtaWxsaXNlY29uZHM6IDI4MDApO1xuIiwgIiIpCmV2ZW50cyA9IGV2ZW50cy5yZXBsYWNlKCIgICAgX2Nocm9tZVRpbWVyPy5jYW5jZWwoKTtcbiAgICBfcGFnZXMuZGlzcG9zZSgpOyIsICIgICAgX3BhZ2VzLmRpc3Bvc2UoKTsiKQoKb2xkX2Jsb2NrID0gIiIiICB2b2lkIF9zY2hlZHVsZUhpZGUoKSB7CiAgICBfY2hyb21lVGltZXI/LmNhbmNlbCgpOwogICAgX2Nocm9tZVRpbWVyID0gVGltZXIoX2Nocm9tZVZpc2libGVGb3IsIF9oaWRlQ2hyb21lKTsKICB9CgogIHZvaWQgX3JldmVhbENocm9tZSh7Ym9vbCBhdXRvSGlkZSA9IHRydWV9KSB7CiAgICBpZiAoIW1vdW50ZWQpIHJldHVybjsKICAgIGlmICghX2V2ZW50Q2hyb21lVmlzaWJsZSkgc2V0U3RhdGUoKCkgPT4gX2V2ZW50Q2hyb21lVmlzaWJsZSA9IHRydWUpOwogICAgcmVmLnJlYWQoY2hyb21lVmlzaWJpbGl0eVByb3ZpZGVyLm5vdGlmaWVyKS5zaG93KCk7CiAgICBfY2hyb21lVGltZXI/LmNhbmNlbCgpOwogICAgaWYgKGF1dG9IaWRlKSBfc2NoZWR1bGVIaWRlKCk7CiAgfQoiIiIKbmV3X2Jsb2NrID0gIiIiICB2b2lkIF9yZXZlYWxDaHJvbWUoe2Jvb2wgYXV0b0hpZGUgPSB0cnVlfSkgewogICAgaWYgKCFtb3VudGVkKSByZXR1cm47CiAgICBpZiAoIV9ldmVudENocm9tZVZpc2libGUpIHNldFN0YXRlKCgpID0+IF9ldmVudENocm9tZVZpc2libGUgPSB0cnVlKTsKICAgIHJlZi5yZWFkKGNocm9tZVZpc2liaWxpdHlQcm92aWRlci5ub3RpZmllcikuc2hvdygpOwogIH0KIiIiCmlmIG9sZF9ibG9jayBpbiBldmVudHM6CiAgICBldmVudHMgPSBldmVudHMucmVwbGFjZShvbGRfYmxvY2ssIG5ld19ibG9jaywgMSkKCm9sZF9mb2N1cyA9ICIiIiAgICAgICAgICAgICAgaWYgKCFfZXZlbnRDaHJvbWVWaXNpYmxlKQogICAgICAgICAgICAgICAgUG9zaXRpb25lZCgKICAgICAgICAgICAgICAgICAgcmlnaHQ6IDE0LAogICAgICAgICAgICAgICAgICBib3R0b206IGJvdHRvbVNhZmUgKyAxOCwKICAgICAgICAgICAgICAgICAgY2hpbGQ6IF9Gb2N1c09yYihvblRhcDogX3JldmVhbENocm9tZSksCiAgICAgICAgICAgICAgICApLAoiIiIKbmV3X2ZvY3VzID0gIiIiICAgICAgICAgICAgICBQb3NpdGlvbmVkKAogICAgICAgICAgICAgICAgcmlnaHQ6IDE0LAogICAgICAgICAgICAgICAgYm90dG9tOiBib3R0b21TYWZlICsgMTgsCiAgICAgICAgICAgICAgICBjaGlsZDogX0ZvY3VzT3JiKAogICAgICAgICAgICAgICAgICBjb250cm9sc1Zpc2libGU6IF9ldmVudENocm9tZVZpc2libGUsCiAgICAgICAgICAgICAgICAgIG9uVGFwOiBfdG9nZ2xlQ2hyb21lLAogICAgICAgICAgICAgICAgKSwKICAgICAgICAgICAgICApLAoiIiIKCm...
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_required(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'{label} anchor not found')
+              return text.replace(old, new, 1)
+
+          # EVENTS: the eye is a true on/off control. No timer puts the chrome back on top.
+          p = Path('lib/src/features/events/presentation/screens/events_screen.dart')
+          s = p.read_text()
+          s = s.replace("import 'dart:async';\n", '')
+          s = s.replace('  Timer? _chromeTimer;\n', '')
+          s = s.replace('\n  static const _chromeVisibleFor = Duration(milliseconds: 2800);\n', '')
+          s = s.replace('    _chromeTimer?.cancel();\n    _pages.dispose();', '    _pages.dispose();')
+          old = '''  void _scheduleHide() {
+            _chromeTimer?.cancel();
+            _chromeTimer = Timer(_chromeVisibleFor, _hideChrome);
+          }
+
+          void _revealChrome({bool autoHide = true}) {
+            if (!mounted) return;
+            if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
+            ref.read(chromeVisibilityProvider.notifier).show();
+            _chromeTimer?.cancel();
+            if (autoHide) _scheduleHide();
+          }
+          '''
+          new = '''  void _revealChrome({bool autoHide = true}) {
+            if (!mounted) return;
+            if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
+            ref.read(chromeVisibilityProvider.notifier).show();
+          }
+          '''
+          if old in s:
+              s = s.replace(old, new, 1)
+          old = '''              if (!_eventChromeVisible)
+                            Positioned(
+                              right: 14,
+                              bottom: bottomSafe + 18,
+                              child: _FocusOrb(onTap: _revealChrome),
+                            ),
+          '''
+          new = '''              Positioned(
+                            right: 14,
+                            bottom: bottomSafe + 18,
+                            child: _FocusOrb(
+                              controlsVisible: _eventChromeVisible,
+                              onTap: _toggleChrome,
+                            ),
+                          ),
+          '''
+          if old in s:
+              s = s.replace(old, new, 1)
+          s = s.replace(
+              '''class _FocusOrb extends StatelessWidget {
+            const _FocusOrb({required this.onTap});
+            final VoidCallback onTap;
+          ''',
+              '''class _FocusOrb extends StatelessWidget {
+            const _FocusOrb({required this.controlsVisible, required this.onTap});
+            final bool controlsVisible;
+            final VoidCallback onTap;
+          ''',
+          )
+          s = s.replace(
+              "      label: 'Show event controls and navigation',",
+              "      label: controlsVisible ? 'Hide event controls and navigation' : 'Show event controls and navigation',",
+          )
+          s = s.replace(
+              '''        child: GestureDetector(
+                    onTap: () {
+                      AppHaptics.light();
+                      onTap();
+                    },
+          ''',
+              '''        child: GestureDetector(
+                    onTap: onTap,
+          ''',
+          )
+          s = s.replace(
+              '                child: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),',
+              '''                child: Icon(
+                            controlsVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            color: Colors.white,
+                            size: 18,
+                          ),''',
+          )
+          p.write_text(s)
+
+          # NAV: shorter pill, fixed-width buttons, horizontal left/right swipe.
+          p = Path('lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart')
+          s = p.read_text()
+          s = s.replace('constraints: const BoxConstraints(maxWidth: 340),', 'constraints: const BoxConstraints(maxWidth: 292),')
+          s = s.replace('                  height: 50,', '                  height: 48,')
+          old = '''                  child: Row(
+                    children: [
+                      for (final item in items)
+                        Expanded(
+                          child: DockButton(
+                            item: item,
+                            wash: item.wash,
+                            selected: selectedTab == item.id,
+                            onTap: () {
+                              AppHaptics.light();
+                              onTabSelected(item.id);
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+          '''
+          new = '''                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    child: Row(
+                      children: [
+                        for (final item in items)
+                          SizedBox(
+                            width: 40,
+                            child: DockButton(
+                              item: item,
+                              wash: item.wash,
+                              selected: selectedTab == item.id,
+                              onTap: () {
+                                AppHaptics.light();
+                                onTabSelected(item.id);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+          '''
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif 'AlwaysScrollableScrollPhysics' not in s:
+              raise SystemExit('dock scroll anchor not found')
+          p.write_text(s)
+
+          # CITY CHIPS: smaller and full-width when opened, no vertical rail clipping them.
+          p = Path('lib/src/features/map/presentation/widgets/map_city_chips.dart')
+          s = p.read_text()
+          s = s.replace('      height: 38,', '      height: 36,')
+          s = s.replace('        clipBehavior: Clip.hardEdge,', '        clipBehavior: Clip.antiAlias,')
+          s = s.replace('        padding: const EdgeInsets.fromLTRB(12, 0, 28, 0),', '        padding: const EdgeInsets.symmetric(horizontal: 4),')
+          s = s.replace('                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),', '                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),')
+          p.write_text(s)
+
+          # MAP LAYER CONTROL: horizontal ALL / LISTINGS / USERS pill instead of a vertical frame.
+          p = Path('lib/src/features/map/presentation/widgets/map_layer_rail.dart')
+          p.write_text('''import 'dart:ui';
+
+          import 'package:flutter/material.dart';
+          import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+          import 'package:google_fonts/google_fonts.dart';
+
+          /// Horizontal liquid-glass map filter. It remains readable on a phone and
+          /// never covers the city scroller.
+          class MapLayerRail extends StatelessWidget {
+            const MapLayerRail({
+              super.key,
+              required this.layer,
+              required this.listingCount,
+              required this.peopleCount,
+              required this.onLayer,
+            });
+
+            final String layer;
+            final int listingCount;
+            final int peopleCount;
+            final ValueChanged<String> onLayer;
+
+            @override
+            Widget build(BuildContext context) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                  child: Container(
+                    height: 40,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(86),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white.withAlpha(52), width: .8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(54),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LayerChoice(
+                          icon: Icons.public_rounded,
+                          label: 'ALL',
+                          selected: layer == 'all',
+                          onTap: () => onLayer('all'),
+                        ),
+                        _LayerChoice(
+                          icon: Icons.apartment_rounded,
+                          label: 'LISTINGS',
+                          count: listingCount,
+                          selected: layer == 'listings',
+                          onTap: () => onLayer('listings'),
+                        ),
+                        _LayerChoice(
+                          icon: Icons.people_alt_rounded,
+                          label: 'USERS',
+                          count: peopleCount,
+                          selected: layer == 'people',
+                          onTap: () => onLayer('people'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
+          class _LayerChoice extends StatelessWidget {
+            const _LayerChoice({
+              required this.icon,
+              required this.label,
+              required this.selected,
+              required this.onTap,
+              this.count,
+            });
+
+            final IconData icon;
+            final String label;
+            final bool selected;
+            final VoidCallback onTap;
+            final int? count;
+
+            @override
+            Widget build(BuildContext context) {
+              return Semantics(
+                button: true,
+                selected: selected,
+                label: count == null ? label : '$label, $count results',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    AppHaptics.selection();
+                    onTap();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    height: 34,
+                    padding: const EdgeInsets.symmetric(horizontal: 9),
+                    decoration: BoxDecoration(
+                      color: selected ? Colors.white.withAlpha(36) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(999),
+                      border: selected
+                          ? Border.all(color: Colors.white.withAlpha(52), width: .7)
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icon,
+                          color: selected ? const Color(0xFFFF6B35) : Colors.white.withAlpha(220),
+                          size: 15,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          label,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .55,
+                          ),
+                        ),
+                        if (count != null) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            '$count',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white70,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
+          /// Neutral liquid-glass HUD control that stays readable on satellite imagery.
+          class MapHudCircle extends StatelessWidget {
+            const MapHudCircle({
+              super.key,
+              required this.icon,
+              required this.onTap,
+              this.selected = false,
+              this.accent = false,
+              this.semanticLabel,
+            });
+
+            final IconData icon;
+            final VoidCallback onTap;
+            final bool selected;
+            final bool accent;
+            final String? semanticLabel;
+
+            @override
+            Widget build(BuildContext context) {
+              final control = GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onTap,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: (selected || accent)
+                                ? Colors.white.withAlpha(220)
+                                : Colors.black.withAlpha(92),
+                            border: Border.all(
+                              color: (selected || accent)
+                                  ? Colors.white.withAlpha(230)
+                                  : Colors.white.withAlpha(62),
+                              width: .9,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(58),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            icon,
+                            color: (selected || accent)
+                                ? const Color(0xFF111318)
+                                : Colors.white.withAlpha(238),
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+
+              if (semanticLabel == null) return control;
+              return Semantics(
+                button: true,
+                selected: selected,
+                label: semanticLabel,
+                child: Tooltip(message: semanticLabel!, child: control),
+              );
+            }
+          }
+          ''')
+
+          # LIVE MAP: layer choices live in the top row; city chips only open when requested.
+          p = Path('lib/src/features/map/presentation/screens/live_map_screen.dart')
+          s = p.read_text()
+          old = '''                    MapHudCircle(
+                                icon: Icons.search_rounded,
+                                onTap: () => setState(() {
+                                  _citiesOpen = !_citiesOpen;
+                                  _radiusOpen = false;
+                                }),
+                              ),
+                              const Spacer(),
+          '''
+          new = '''                    MapHudCircle(
+                                icon: Icons.location_city_rounded,
+                                selected: _citiesOpen,
+                                semanticLabel: 'Cities',
+                                onTap: () => setState(() {
+                                  _citiesOpen = !_citiesOpen;
+                                  _radiusOpen = false;
+                                }),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(
+                                    parent: AlwaysScrollableScrollPhysics(),
+                                  ),
+                                  child: MapLayerRail(
+                                    layer: _layer,
+                                    listingCount: listingPins.length,
+                                    peopleCount: profilePins.length,
+                                    onLayer: (layer) => setState(() {
+                                      _layer = layer;
+                                      _selected = null;
+                                    }),
+                                  ),
+                                ),
+                              ),
+          '''
+          s = replace_required(s, old, new, 'live map top row')
+          old = '''          Positioned(
+                      top: pad.top + 56,
+                      left: 0,
+                      right: 64,
+                      child: _MapHudVisibility(
+                        visible: _hudVisible,
+                        child: MapCityChips(
+          '''
+          new = '''          if (_citiesOpen)
+                      Positioned(
+                        top: pad.top + 56,
+                        left: 12,
+                        right: 12,
+                        child: _MapHudVisibility(
+                          visible: _hudVisible,
+                          child: MapCityChips(
+          '''
+          s = replace_required(s, old, new, 'live map city row')
+          old = '''          Positioned(
+                      right: 12,
+                      top: pad.top + 60,
+                      child: _MapHudVisibility(
+                        visible: _hudVisible,
+                        child: MapLayerRail(
+                          layer: _layer,
+                          listingCount: listingPins.length,
+                          peopleCount: profilePins.length,
+                          onLayer: (layer) => setState(() {
+                            _layer = layer;
+                            _selected = null;
+                          }),
+                        ),
+                      ),
+                    ),
+
+          '''
+          if old in s:
+              s = s.replace(old, '', 1)
+          p.write_text(s)
+          PY
+      - name: Format changed Dart files
+        run: dart format lib/src/features/events/presentation/screens/events_screen.dart lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart lib/src/features/map/presentation/widgets/map_city_chips.dart lib/src/features/map/presentation/widgets/map_layer_rail.dart lib/src/features/map/presentation/screens/live_map_screen.dart
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+      - name: Commit verified fixes to main
+        shell: bash
+        run: |
+          rm .github/workflows/final_requested_polish.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/events/presentation/screens/events_screen.dart lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart lib/src/features/map/presentation/widgets/map_city_chips.dart lib/src/features/map/presentation/widgets/map_layer_rail.dart lib/src/features/map/presentation/screens/live_map_screen.dart .github/workflows/final_requested_polish.yml
+          git commit -m 'fix: keep event eye manual and make map controls readable'
+          git push origin HEAD:main
