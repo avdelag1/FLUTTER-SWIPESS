@@ -84,6 +84,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         location == AppPaths.legacyDashboard;
     final isProfile = location == AppPaths.clientProfile;
     final isEvents = location == AppPaths.exploreEvents;
+    final isLikes = location == AppPaths.clientLikedProperties;
     if (isEvents) _eventsMounted = true;
 
     final routeTab = AppPaths.tabForLocation(location);
@@ -184,6 +185,44 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ),
             ),
           ),
+          if (isLikes)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + _headerInset,
+              left: 16,
+              child: IgnorePointer(
+                ignoring: !showChrome,
+                child: AnimatedOpacity(
+                  opacity: showChrome ? 1 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: Material(
+                    color: isLight ? Colors.white : const Color(0xFF111111),
+                    shape: CircleBorder(
+                      side: BorderSide(
+                        color: isLight
+                            ? Colors.black.withAlpha(22)
+                            : Colors.white.withAlpha(32),
+                      ),
+                    ),
+                    child: IconButton(
+                      tooltip: 'Back',
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      iconSize: 18,
+                      color: isLight ? Colors.black : Colors.white,
+                      onPressed: () {
+                        AppHaptics.light();
+                        ref.read(chromeVisibilityProvider.notifier).show();
+                        final navigator = Navigator.of(context);
+                        if (navigator.canPop()) {
+                          navigator.pop();
+                          return;
+                        }
+                        context.go(AppPaths.clientDashboard);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             bottom: 16,
             left: 0,
