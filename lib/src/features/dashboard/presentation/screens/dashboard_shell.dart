@@ -261,8 +261,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 showPaywall(context, featureName: 'Swipess AI');
                                 return;
                               }
+
+                              // AI is an overlay, not a replacement page. Keep
+                              // the shared navigation visible and make the dock
+                              // button a clean open/close toggle.
+                              ref.read(chromeVisibilityProvider.notifier).show();
                               if (overlays.showConcierge) {
-                                ref.read(chromeVisibilityProvider.notifier).hide();
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .closeConcierge();
                                 return;
                               }
                               ref
