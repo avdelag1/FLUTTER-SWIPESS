@@ -50,6 +50,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   ];
 
   Timer? _promptTimer;
+  Timer? _shineTimer;
   int _promptIndex = 0;
   late final AnimationController _shineController;
 
@@ -60,24 +61,26 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     super.initState();
     _shineController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat();
+      duration: const Duration(milliseconds: 1500),
+    );
     _startPromptRotation();
+    _startShinePulse();
   }
 
   @override
   void didUpdateWidget(covariant GlowSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_isTapOnly !=
-        (oldWidget.onTap != null && oldWidget.onChanged == null)) {
+    final wasTapOnly = oldWidget.onTap != null && oldWidget.onChanged == null;
+    if (_isTapOnly != wasTapOnly) {
       _startPromptRotation();
+      _startShinePulse();
     }
   }
 
   void _startPromptRotation() {
     _promptTimer?.cancel();
     if (!_isTapOnly) return;
-    _promptTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _promptTimer = Timer.periodic(const Duration(seconds: 6), (_) {
       if (!mounted) return;
       setState(() {
         _promptIndex = (_promptIndex + 1) % _rotatingPrompts.length;
@@ -85,9 +88,29 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     });
   }
 
+  void _startShinePulse() {
+    _shineTimer?.cancel();
+    _shineController.reset();
+    if (!_isTapOnly) return;
+
+    Future<void>.delayed(const Duration(milliseconds: 900), () {
+      if (mounted && _isTapOnly) _runShine();
+    });
+    _shineTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (mounted && _isTapOnly) _runShine();
+    });
+  }
+
+  Future<void> _runShine() async {
+    if (_shineController.isAnimating) return;
+    await _shineController.forward(from: 0);
+    if (mounted) _shineController.reset();
+  }
+
   @override
   void dispose() {
     _promptTimer?.cancel();
+    _shineTimer?.cancel();
     _shineController.dispose();
     super.dispose();
   }
@@ -188,18 +211,18 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                                     return ShaderMask(
                                       blendMode: BlendMode.srcIn,
                                       shaderCallback: (bounds) {
-                                        final x = -1.8 + (sweep * 3.6);
+                                        final x = -2.4 + (sweep * 4.8);
                                         return LinearGradient(
-                                          begin: Alignment(x - .8, 0),
-                                          end: Alignment(x + .8, 0),
+                                          begin: Alignment(x - .75, 0),
+                                          end: Alignment(x + .75, 0),
                                           colors: [
-                                            ink.withAlpha(135),
+                                            ink.withAlpha(145),
                                             const Color(0xFF93C5FD),
                                             Colors.white,
                                             const Color(0xFF60A5FA),
-                                            ink.withAlpha(135),
+                                            ink.withAlpha(145),
                                           ],
-                                          stops: const [0, .32, .5, .68, 1],
+                                          stops: const [0, .34, .5, .66, 1],
                                         ).createShader(bounds);
                                       },
                                       child: child,
