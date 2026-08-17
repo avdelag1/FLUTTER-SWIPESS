@@ -34,12 +34,11 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
-
     final leftItems = _bentoItems.where((i) => i.index.isEven).toList();
     final rightItems = _bentoItems.where((i) => i.index.isOdd).toList();
 
     return Container(
-      color: AppTheme.dashBg,
+      color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
       child: SafeArea(
         bottom: false,
         child: CustomScrollView(
@@ -62,8 +61,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                         child: GlowSearchBar(
-                          onTap: () =>
-                              _openCategory('property', 'PROPERTIES'),
+                          onTap: () => _openCategory('property', 'PROPERTIES'),
                         ),
                       ),
                     );
@@ -77,8 +75,8 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isLight
-                        ? const Color(0xFFE8E8EE)
-                        : const Color(0xFF101014),
+                        ? const Color(0xFFEDEDF2)
+                        : const Color(0xFF141820),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   padding: const EdgeInsets.all(8),
@@ -161,8 +159,7 @@ class _BentoTile extends StatelessWidget {
                 child: EventsTeaserCard(
                   onTap: () {
                     final sub = ref.read(subscriptionProvider).value;
-                    if (sub != null &&
-                        sub.effectiveTier.canViewEvents != true) {
+                    if (sub != null && sub.effectiveTier.canViewEvents != true) {
                       showPaywall(context, featureName: 'Events & Pros');
                       return;
                     }
@@ -217,6 +214,13 @@ class _BentoCard extends StatefulWidget {
 class _BentoCardState extends State<_BentoCard> {
   bool _pressed = false;
 
+  static const _brightnessMatrix = <double>[
+    1.08, 0, 0, 0, 5,
+    0, 1.08, 0, 0, 5,
+    0, 0, 1.08, 0, 5,
+    0, 0, 0, 1, 0,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -237,9 +241,12 @@ class _BentoCardState extends State<_BentoCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                QuickFilterMedia(
-                  sources: widget.media,
-                  enableVideo: widget.enableVideo,
+                ColorFiltered(
+                  colorFilter: const ColorFilter.matrix(_brightnessMatrix),
+                  child: QuickFilterMedia(
+                    sources: widget.media,
+                    enableVideo: widget.enableVideo,
+                  ),
                 ),
                 const DecoratedBox(
                   decoration: BoxDecoration(
@@ -249,9 +256,9 @@ class _BentoCardState extends State<_BentoCard> {
                       colors: [
                         Colors.transparent,
                         Colors.transparent,
-                        Color(0xAA000000),
+                        Color(0x88000000),
                       ],
-                      stops: [0, 0.65, 1],
+                      stops: [0, 0.72, 1],
                     ),
                   ),
                 ),
@@ -274,7 +281,7 @@ class _BentoCardState extends State<_BentoCard> {
                       Text(
                         widget.subtitle,
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xCCFFFFFF),
+                          color: Colors.white.withAlpha(225),
                           fontWeight: FontWeight.w700,
                           fontSize: 11,
                           letterSpacing: 0.4,
@@ -314,92 +321,15 @@ class _BentoItemData {
 }
 
 const _bentoItems = [
-  _BentoItemData(
-    index: 0,
-    id: 'property',
-    title: 'PROPERTIES',
-    subtitle: 'Find properties to buy or rent',
-    height: 300,
-    delaySeconds: '0',
-  ),
-  _BentoItemData(
-    index: 1,
-    id: 'events',
-    title: 'EVENTS LIVE',
-    subtitle: 'Swipe event videos · tap to open',
-    height: 380,
-    delaySeconds: '4',
-  ),
-  _BentoItemData(
-    index: 2,
-    id: 'recommended',
-    title: 'RECOMMENDED FOR YOU',
-    subtitle: 'Curated listings',
-    height: 300,
-    delaySeconds: '8',
-  ),
-  _BentoItemData(
-    index: 3,
-    id: 'services',
-    title: 'WORKERS',
-    subtitle: 'Find people offering services',
-    height: 380,
-    delaySeconds: '12',
-  ),
-  _BentoItemData(
-    index: 4,
-    id: 'popular',
-    title: 'POPULAR',
-    subtitle: 'Trending now',
-    height: 300,
-    delaySeconds: '16',
-  ),
-  _BentoItemData(
-    index: 5,
-    id: 'yacht',
-    title: 'YACHTS',
-    subtitle: 'Yachts & boats to charter or buy',
-    height: 380,
-    delaySeconds: '20',
-  ),
-  _BentoItemData(
-    index: 6,
-    id: 'motorcycle',
-    title: 'MOTORCYCLES',
-    subtitle: 'Motorcycles for sale or rent',
-    height: 380,
-    delaySeconds: '24',
-  ),
-  _BentoItemData(
-    index: 7,
-    id: 'bicycle',
-    title: 'BICYCLES',
-    subtitle: 'Bicycles for sale or rent',
-    height: 300,
-    delaySeconds: '28',
-  ),
-  _BentoItemData(
-    index: 8,
-    id: 'seekers',
-    title: 'SEEKERS',
-    subtitle: 'People looking for workers',
-    height: 300,
-    delaySeconds: '32',
-  ),
-  _BentoItemData(
-    index: 9,
-    id: 'legal',
-    title: 'LEGAL SERVICES',
-    subtitle: 'Hire a top tier lawyer',
-    height: 380,
-    delaySeconds: '36',
-  ),
-  _BentoItemData(
-    index: 10,
-    id: 'premium',
-    title: 'PREMIUM',
-    subtitle: 'Buy a package & get benefits',
-    height: 300,
-    delaySeconds: '40',
-  ),
+  _BentoItemData(index: 0, id: 'property', title: 'PROPERTIES', subtitle: 'Find properties to buy or rent', height: 300, delaySeconds: '0'),
+  _BentoItemData(index: 1, id: 'events', title: 'EVENTS LIVE', subtitle: 'Swipe event videos · tap to open', height: 380, delaySeconds: '4'),
+  _BentoItemData(index: 2, id: 'recommended', title: 'RECOMMENDED FOR YOU', subtitle: 'Curated listings', height: 300, delaySeconds: '8'),
+  _BentoItemData(index: 3, id: 'services', title: 'WORKERS', subtitle: 'Find people offering services', height: 380, delaySeconds: '12'),
+  _BentoItemData(index: 4, id: 'popular', title: 'POPULAR', subtitle: 'Trending now', height: 300, delaySeconds: '16'),
+  _BentoItemData(index: 5, id: 'yacht', title: 'YACHTS', subtitle: 'Yachts & boats to charter or buy', height: 380, delaySeconds: '20'),
+  _BentoItemData(index: 6, id: 'motorcycle', title: 'MOTORCYCLES', subtitle: 'Motorcycles for sale or rent', height: 380, delaySeconds: '24'),
+  _BentoItemData(index: 7, id: 'bicycle', title: 'BICYCLES', subtitle: 'Bicycles for sale or rent', height: 300, delaySeconds: '28'),
+  _BentoItemData(index: 8, id: 'seekers', title: 'SEEKERS', subtitle: 'People looking for workers', height: 300, delaySeconds: '32'),
+  _BentoItemData(index: 9, id: 'legal', title: 'LEGAL SERVICES', subtitle: 'Hire a top tier lawyer', height: 380, delaySeconds: '36'),
+  _BentoItemData(index: 10, id: 'premium', title: 'PREMIUM', subtitle: 'Buy a package & get benefits', height: 300, delaySeconds: '40'),
 ];
