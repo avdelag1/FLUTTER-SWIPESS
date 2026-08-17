@@ -84,7 +84,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       await SupabaseService.initialize();
       if (!mounted) return;
       setState(() => _ready = true);
-      _startBackgroundWarmup();
+      _scheduleBackgroundWarmup();
     } catch (e, st) {
       debugPrint('Supabase bootstrap failed: $e\n$st');
       _booting = false;
@@ -102,9 +102,17 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     _booting = false;
   }
 
-  void _startBackgroundWarmup() {
-    unawaited(flushOfflineSwipeQueue());
-    unawaited(_initializePayments());
+  void _scheduleBackgroundWarmup() {
+    // Do not let StoreKit/Play billing setup or offline network reconciliation
+    // compete with the first usable app frame. The UI becomes interactive
+    // first, then non-critical work starts quietly just after it settles.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        unawaited(flushOfflineSwipeQueue());
+        unawaited(_initializePayments());
+      });
+    });
   }
 
   Future<void> _initializePayments() async {
