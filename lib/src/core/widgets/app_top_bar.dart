@@ -16,7 +16,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Dashboard HUD using the same liquid-glass language as the bottom dock.
+/// Bright, restrained liquid-glass header inspired by native social-app chrome.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
   final String? avatarUrl;
@@ -94,19 +94,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-create'),
                   semanticLabel: 'Create a listing',
-                  fill: addWash.withAlpha(40),
-                  border: addWash,
+                  accent: addWash,
                   onTap: () {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
                   },
-                  child: const _WashIcon(
-                    child: Icon(
-                      Icons.add_rounded,
-                      size: 23,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Icon(Icons.add_rounded, size: 25, color: ink),
                 ),
               ],
             ),
@@ -115,8 +108,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-tokens'),
                   semanticLabel: 'Open tokens, balance $tokens',
-                  fill: tokenWash.withAlpha(40),
-                  border: tokenWash,
+                  accent: tokenWash,
                   wide: true,
                   onTap: () {
                     AppHaptics.medium();
@@ -125,42 +117,32 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       builder: (_) => const TokensModal(),
                     );
                   },
-                  child: _WashIcon(
-                    badge: tokens > 0,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('👑', style: TextStyle(fontSize: 18)),
-                        const SizedBox(width: 5),
-                        Text(
-                          '$tokens',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                          ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('👑', style: TextStyle(fontSize: 17)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$tokens',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
                   key: const ValueKey('header-map'),
                   semanticLabel: 'Open map',
-                  fill: mapWash.withAlpha(40),
-                  border: mapWash,
+                  accent: mapWash,
                   onTap: () {
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
-                  child: const _WashIcon(
-                    child: Icon(
-                      Icons.public_rounded,
-                      size: 21,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Icon(Icons.public_rounded, size: 22, color: ink),
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
@@ -168,28 +150,22 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   semanticLabel: isLight
                       ? 'Switch to dark appearance'
                       : 'Switch to light appearance',
-                  fill: themeWash.withAlpha(40),
-                  border: themeWash,
+                  accent: themeWash,
                   onTap: () {
                     AppHaptics.medium();
                     ref.read(visualThemeProvider.notifier).toggle();
                   },
-                  child: _WashIcon(
-                    child: Icon(
-                      isLight
-                          ? Icons.light_mode_rounded
-                          : Icons.dark_mode_rounded,
-                      size: 21,
-                      color: Colors.white,
-                    ),
+                  child: Icon(
+                    isLight ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                    size: 22,
+                    color: ink,
                   ),
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
                   key: const ValueKey('header-notifications'),
                   semanticLabel: 'Open notifications',
-                  fill: bellWash.withAlpha(40),
-                  border: bellWash,
+                  accent: bellWash,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -200,22 +176,16 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const _WashIcon(
-                        child: Icon(
-                          Icons.notifications_rounded,
-                          size: 21,
-                          color: Colors.white,
-                        ),
-                      ),
+                      Icon(Icons.notifications_none_rounded, size: 23, color: ink),
                       ref.watch(unreadNotificationsProvider).when(
                             data: (count) {
                               if (count <= 0) return const SizedBox.shrink();
                               return Positioned(
-                                right: -2,
-                                top: -2,
+                                right: -1,
+                                top: -1,
                                 child: Container(
-                                  width: 9,
-                                  height: 9,
+                                  width: 8,
+                                  height: 8,
                                   decoration: const BoxDecoration(
                                     color: AppTheme.brandPrimary,
                                     shape: BoxShape.circle,
@@ -256,58 +226,35 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = Colors.white.withAlpha(isLight ? 125 : 72);
-    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
-    final lowlight = isLight
-        ? Colors.white.withAlpha(120)
-        : const Color(0xFF07070A).withAlpha(145);
-
     return Semantics(
       button: true,
       label: semanticLabel,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(isLight ? 24 : 100),
-                  blurRadius: 16,
-                  offset: const Offset(0, 7),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  width: AppTopBar._hudSize,
-                  height: AppTopBar._hudSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: avatarUrl == null
-                        ? LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [highlight, lowlight],
-                          )
-                        : null,
-                    border: Border.all(color: border, width: 0.9),
-                    image: avatarUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(avatarUrl!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: AppTopBar._hudSize,
+          height: AppTopBar._hudSize,
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? Colors.white.withAlpha(185)
+                      : Colors.white.withAlpha(24),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withAlpha(isLight ? 150 : 90),
+                    width: 1,
                   ),
-                  child: avatarUrl == null
-                      ? Icon(Icons.person_rounded, size: 20, color: ink)
+                  image: avatarUrl != null
+                      ? DecorationImage(image: NetworkImage(avatarUrl!), fit: BoxFit.cover)
                       : null,
                 ),
+                child: avatarUrl == null
+                    ? Icon(Icons.person_rounded, size: 21, color: ink)
+                    : null,
               ),
             ),
           ),
@@ -322,121 +269,74 @@ class _HudButton extends StatelessWidget {
     super.key,
     required this.child,
     required this.onTap,
-    required this.fill,
-    required this.border,
+    required this.accent,
     this.wide = false,
     this.semanticLabel,
   });
 
   final Widget child;
   final VoidCallback onTap;
-  final Color fill;
-  final Color border;
+  final Color accent;
   final bool wide;
   final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 360;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final glassBorder = Colors.white.withAlpha(isLight ? 125 : 72);
-    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
-    final lowlight = isLight
-        ? Colors.white.withAlpha(120)
-        : const Color(0xFF07070A).withAlpha(145);
-    final accent = Color.lerp(fill, border, 0.72) ?? border;
+    final compact = MediaQuery.sizeOf(context).width < 360;
 
     return Semantics(
       button: true,
       label: semanticLabel,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const StadiumBorder(),
-            splashColor: accent.withAlpha(55),
-            highlightColor: Colors.white.withAlpha(14),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isLight ? 24 : 100),
-                    blurRadius: 16,
-                    offset: const Offset(0, 7),
-                  ),
-                  BoxShadow(
-                    color: accent.withAlpha(isLight ? 32 : 46),
-                    blurRadius: 12,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    height: AppTopBar._hudSize,
-                    width: wide ? null : AppTopBar._hudSize,
-                    padding: wide
-                        ? EdgeInsets.fromLTRB(
-                            compact ? 8 : 10,
-                            0,
-                            compact ? 10 : 14,
-                            0,
-                          )
-                        : null,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [highlight, lowlight],
-                      ),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: glassBorder, width: 0.9),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const StadiumBorder(),
+          splashColor: accent.withAlpha(45),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(isLight ? 20 : 70),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: accent.withAlpha(isLight ? 18 : 26),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  height: AppTopBar._hudSize,
+                  width: wide ? null : AppTopBar._hudSize,
+                  padding: wide
+                      ? EdgeInsets.symmetric(horizontal: compact ? 9 : 12)
+                      : null,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isLight
+                        ? Colors.white.withAlpha(185)
+                        : Colors.white.withAlpha(24),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: Colors.white.withAlpha(isLight ? 150 : 90),
+                      width: 1,
                     ),
-                    child: child,
                   ),
+                  child: child,
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _WashIcon extends StatelessWidget {
-  const _WashIcon({required this.child, this.badge = false});
-
-  final Widget child;
-  final bool badge;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        child,
-        if (badge)
-          Positioned(
-            right: -2,
-            top: -2,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppTheme.brandPrimary,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
