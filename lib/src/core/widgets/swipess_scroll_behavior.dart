@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// Consistent, glow-free scrolling for touch, mouse, trackpad and stylus.
+/// Shared high-quality scrolling for touch, mouse, trackpad and stylus.
 ///
-/// Keep iOS/macOS elastic scrolling native while avoiding the rubber-band feel
-/// on web/Android/desktop platforms where it makes the app feel like an iOS
-/// surface embedded inside another platform.
+/// RangeMaintainingScrollPhysics prevents small media/layout changes from
+/// kicking the viewport while the user is moving quickly back through a feed.
+/// We keep native iOS elasticity, while Android/web stay crisp and clamped.
 class SwipessScrollBehavior extends MaterialScrollBehavior {
   const SwipessScrollBehavior();
 
@@ -21,13 +21,22 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {
-    if (kIsWeb) return const ClampingScrollPhysics();
+    if (kIsWeb) {
+      return const RangeMaintainingScrollPhysics(
+        parent: ClampingScrollPhysics(),
+      );
+    }
 
     return switch (defaultTargetPlatform) {
-      TargetPlatform.iOS || TargetPlatform.macOS => const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
+      TargetPlatform.iOS || TargetPlatform.macOS =>
+        const RangeMaintainingScrollPhysics(
+          parent: BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+        ),
+      _ => const RangeMaintainingScrollPhysics(
+        parent: ClampingScrollPhysics(),
       ),
-      _ => const ClampingScrollPhysics(),
     };
   }
 
