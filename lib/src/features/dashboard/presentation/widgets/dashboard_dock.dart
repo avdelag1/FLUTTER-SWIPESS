@@ -67,15 +67,15 @@ class _DashboardDockState extends State<DashboardDock> {
     final index = widget.items.indexWhere((item) => item.id == widget.selectedTab);
     if (index < 0) return;
 
-    const itemStride = 36.0;
+    const itemStride = 44.0;
     final viewport = _controller.position.viewportDimension;
-    final target = (6 + index * itemStride - (viewport - 34) / 2)
+    final target = (8 + index * itemStride - (viewport - 40) / 2)
         .clamp(0.0, _controller.position.maxScrollExtent)
         .toDouble();
     if ((_controller.offset - target).abs() < 2) return;
     _controller.animateTo(
       target,
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
     );
   }
@@ -83,27 +83,21 @@ class _DashboardDockState extends State<DashboardDock> {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final width = (MediaQuery.sizeOf(context).width - 16).clamp(300.0, 410.0);
 
     return Center(
       child: Semantics(
         container: true,
         label: 'Primary navigation',
-        child: SizedBox(
-          width: width,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 340),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isLight ? 24 : 80),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: Colors.white.withAlpha(isLight ? 32 : 14),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
+                  color: Colors.black.withAlpha(isLight ? 22 : 64),
+                  blurRadius: 18,
+                  offset: const Offset(0, 7),
                 ),
               ],
             ),
@@ -112,20 +106,21 @@ class _DashboardDockState extends State<DashboardDock> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                 child: Container(
-                  height: 56,
+                  height: 58,
                   decoration: BoxDecoration(
                     color: isLight
-                        ? Colors.white.withAlpha(184)
-                        : const Color(0xFF10141B).withAlpha(205),
+                        ? Colors.white.withAlpha(166)
+                        : Colors.white.withAlpha(24),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: Colors.white.withAlpha(isLight ? 145 : 82),
-                      width: .9,
+                      color: Colors.white.withAlpha(isLight ? 120 : 54),
+                      width: .8,
                     ),
                   ),
                   child: ScrollConfiguration(
                     behavior: ScrollConfiguration.of(context).copyWith(
                       scrollbars: false,
+                      overscroll: false,
                       dragDevices: {
                         PointerDeviceKind.touch,
                         PointerDeviceKind.mouse,
@@ -135,8 +130,11 @@ class _DashboardDockState extends State<DashboardDock> {
                     ),
                     child: ListView.separated(
                       controller: _controller,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                       itemCount: widget.items.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 2),
                       itemBuilder: (context, i) {
@@ -193,7 +191,9 @@ class DockButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final emphasized = selected || item.accent;
-    final iconColor = wash.withAlpha(emphasized ? 255 : 225);
+    // Keep every glyph bright and legible. Color is used as a restrained glow,
+    // not as the glyph itself, so no nav action can disappear on dark glass.
+    final iconColor = Colors.white.withAlpha(emphasized ? 255 : 238);
 
     return Semantics(
       button: true,
@@ -207,15 +207,15 @@ class DockButton extends StatelessWidget {
             onTap: onTap,
             containedInkWell: true,
             highlightShape: BoxShape.circle,
-            radius: 20,
+            radius: 22,
             splashColor: wash.withAlpha(52),
             child: SizedBox(
-              width: 34,
-              height: 46,
+              width: 40,
+              height: 48,
               child: Center(
                 child: AnimatedScale(
-                  scale: emphasized ? 1.07 : 1,
-                  duration: const Duration(milliseconds: 140),
+                  scale: emphasized ? 1.06 : 1,
+                  duration: const Duration(milliseconds: 150),
                   curve: Curves.easeOutCubic,
                   child: Stack(
                     alignment: Alignment.center,
@@ -223,7 +223,7 @@ class DockButton extends StatelessWidget {
                     children: [
                       if (selected)
                         Positioned(
-                          bottom: 1,
+                          bottom: 0,
                           child: Container(
                             width: 4,
                             height: 4,
@@ -231,7 +231,7 @@ class DockButton extends StatelessWidget {
                               color: wash,
                               shape: BoxShape.circle,
                               boxShadow: [
-                                BoxShadow(color: wash.withAlpha(170), blurRadius: 7),
+                                BoxShadow(color: wash.withAlpha(150), blurRadius: 7),
                               ],
                             ),
                           ),
@@ -239,16 +239,16 @@ class DockButton extends StatelessWidget {
                       item.useAiIcon
                           ? CustomPaint(
                               painter: AiRobotPainter(color: iconColor),
-                              size: const Size(21, 21),
+                              size: const Size(22, 22),
                             )
                           : Icon(
-                              item.icon,
-                              size: item.accent ? 25 : 23,
+                              item.icon ?? Icons.circle_outlined,
+                              size: item.accent ? 27 : 25,
                               color: iconColor,
                               shadows: [
                                 Shadow(
-                                  color: wash.withAlpha(emphasized ? 110 : 54),
-                                  blurRadius: emphasized ? 7 : 4,
+                                  color: wash.withAlpha(emphasized ? 125 : 70),
+                                  blurRadius: emphasized ? 8 : 5,
                                 ),
                               ],
                             ),
@@ -301,10 +301,12 @@ const defaultDashboardNavItems = [
   BottomNavItem(id: NavTab.dashboard, icon: Icons.home_rounded, wash: Color(0xFFFF7A45)),
   BottomNavItem(id: NavTab.likes, icon: Icons.local_fire_department_rounded, wash: Color(0xFFE64A8A)),
   BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B7BFF)),
-  BottomNavItem(id: NavTab.add, icon: Icons.add_circle_outline_rounded, accent: true, wash: Color(0xFFFF5A52)),
+  // Use simple, widely-supported glyphs so these controls never render blank
+  // in Flutter web/PWA builds.
+  BottomNavItem(id: NavTab.add, icon: Icons.add_rounded, accent: true, wash: Color(0xFFFF5A52)),
   BottomNavItem(id: NavTab.messages, icon: Icons.chat_bubble_outline_rounded, wash: Color(0xFF5B9CF6)),
   BottomNavItem(id: NavTab.idCard, icon: Icons.shield_outlined, wash: Color(0xFF8B7CF6)),
-  BottomNavItem(id: NavTab.seekers, icon: Icons.groups_2_outlined, wash: Color(0xFFD96FA8)),
+  BottomNavItem(id: NavTab.seekers, icon: Icons.people_alt_rounded, wash: Color(0xFFD96FA8)),
   BottomNavItem(id: NavTab.filter, icon: Icons.tune_rounded, wash: Color(0xFFE7A454)),
   BottomNavItem(id: NavTab.legal, icon: Icons.balance_rounded, wash: Color(0xFF7E88E8), label: 'Lawyers'),
   BottomNavItem(id: NavTab.events, icon: Icons.celebration_rounded, wash: Color(0xFFE95B9B), label: 'Events'),
