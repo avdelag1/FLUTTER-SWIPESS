@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final client = Supabase.instance.client;
+  final limit = loc.radiusKm >= 5000 ? 1000 : loc.radiusKm >= 500 ? 600 : 300;
 
   try {
     final data = await client.rpc(
@@ -15,9 +16,9 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
         'p_user_lat': loc.latitude,
         'p_user_lon': loc.longitude,
         'p_radius_km': loc.radiusKm,
-        'p_limit': 120,
+        'p_limit': limit,
       },
-    );
+    ).timeout(const Duration(seconds: 8));
     return _inCityRadius(
       (data as List)
           .map((row) => Listing.fromJson(row as Map<String, dynamic>))
@@ -25,7 +26,7 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
       loc,
     );
   } catch (_) {
-    return _fallbackListings(client, loc);
+    return _fallbackListings(client, loc, limit);
   }
 });
 
@@ -52,6 +53,7 @@ List<Listing> _inCityRadius(List<Listing> rows, DiscoveryLocation loc) {
 Future<List<Listing>> _fallbackListings(
   SupabaseClient client,
   DiscoveryLocation loc,
+  int limit,
 ) async {
   Future<List<Listing>> fetch({required bool withStatus}) async {
     var query = client
@@ -66,7 +68,8 @@ Future<List<Listing>> _fallbackListings(
     final data = await query
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
-        .limit(200);
+        .limit(limit)
+        .timeout(const Duration(seconds: 8));
     return _inCityRadius(
       (data as List)
           .map((row) => Listing.fromJson(row as Map<String, dynamic>))
@@ -76,10 +79,10 @@ Future<List<Listing>> _fallbackListings(
   }
 
   try {
-    return await fetch(withStatus: true).timeout(const Duration(seconds: 8));
+    return await fetch(withStatus: true);
   } catch (_) {
     try {
-      return await fetch(withStatus: false).timeout(const Duration(seconds: 8));
+      return await fetch(withStatus: false);
     } catch (_) {
       return const [];
     }
