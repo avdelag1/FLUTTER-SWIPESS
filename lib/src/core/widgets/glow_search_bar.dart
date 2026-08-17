@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -52,8 +53,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
     final muted = ink.withAlpha(145);
     final surface = isLight ? const Color(0xFFF7F7FA) : const Color(0xFF08080B);
-    final pill = isLight ? Colors.black.withAlpha(7) : Colors.white.withAlpha(12);
-    final hairline = isLight ? Colors.black.withAlpha(24) : Colors.white.withAlpha(34);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -171,11 +170,32 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _outerPill(Icons.location_on_rounded, 'Tulum', ink, pill, hairline)),
+            Expanded(
+              child: _outerPill(
+                Icons.location_on_rounded,
+                'Tulum',
+                ink,
+                isLight,
+              ),
+            ),
             const SizedBox(width: 7),
-            Expanded(child: _outerPill(Icons.calendar_month_rounded, 'Dates', ink, pill, hairline)),
+            Expanded(
+              child: _outerPill(
+                Icons.calendar_month_rounded,
+                'Dates',
+                ink,
+                isLight,
+              ),
+            ),
             const SizedBox(width: 7),
-            Expanded(child: _outerPill(Icons.person_rounded, '1 guest', ink, pill, hairline)),
+            Expanded(
+              child: _outerPill(
+                Icons.person_rounded,
+                '1 guest',
+                ink,
+                isLight,
+              ),
+            ),
           ],
         ),
       ],
@@ -186,36 +206,68 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     IconData icon,
     String label,
     Color ink,
-    Color fill,
-    Color border,
+    bool isLight,
   ) {
-    return Container(
-      height: 36,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+    final border = Colors.white.withAlpha(isLight ? 125 : 72);
+    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
+    final lowlight = isLight
+        ? Colors.white.withAlpha(120)
+        : const Color(0xFF07070A).withAlpha(145);
+
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: fill,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: ink.withAlpha(175), size: 13),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: ink,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isLight ? 24 : 100),
+            blurRadius: 16,
+            offset: const Offset(0, 7),
+          ),
+          BoxShadow(
+            color: Colors.white.withAlpha(isLight ? 32 : 12),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [highlight, lowlight],
+              ),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: border, width: 0.9),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: ink.withAlpha(205), size: 14),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
