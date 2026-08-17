@@ -179,6 +179,37 @@ class MessageRepository {
         .eq('id', conversationId);
   }
 
+  Future<void> unsendMessage({
+    required String conversationId,
+    required String messageId,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in required');
+
+    await _client
+        .from('conversation_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('conversation_id', conversationId)
+        .eq('sender_id', userId);
+
+    try {
+      final latest = await _client
+          .from('conversation_messages')
+          .select('created_at')
+          .eq('conversation_id', conversationId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      await _client
+          .from('conversations')
+          .update({
+            'last_message_at': latest?['created_at'] ?? DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', conversationId);
+    } catch (_) {}
+  }
+
   Future<void> sendDocumentMessage({
     required String conversationId,
     required docs.DocumentAttachment attachment,
