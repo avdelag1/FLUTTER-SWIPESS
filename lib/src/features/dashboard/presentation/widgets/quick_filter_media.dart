@@ -323,6 +323,45 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     }
   }
 
+  String? _fallbackStillUrl() {
+    final sources = _sources;
+    if (sources.isEmpty) return null;
+
+    for (var distance = 1; distance < sources.length; distance++) {
+      final before = sources[(_index - distance) % sources.length];
+      if (!isQuickFilterVideoUrl(before)) return before;
+
+      final after = sources[(_index + distance) % sources.length];
+      if (!isQuickFilterVideoUrl(after)) return after;
+    }
+    return null;
+  }
+
+  Widget _buildStill(String url) {
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
+      );
+    }
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final logicalW = MediaQuery.sizeOf(context).width;
+    final cacheW = (logicalW * dpr * 0.55).round().clamp(320, 900);
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      cacheWidth: cacheW,
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
+    );
+  }
+
   Widget _buildMedia(String url) {
     if (isQuickFilterVideoUrl(url)) {
       final player = _video;
@@ -339,37 +378,19 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
           ),
         );
       }
-      return const ColoredBox(color: Color(0xFF16161C));
+
+      final fallback = _fallbackStillUrl();
+      if (fallback != null) return _buildStill(fallback);
+      return const ColoredBox(color: Colors.black);
     }
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF16161C)),
-      );
-    }
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final logicalW = MediaQuery.sizeOf(context).width;
-    final cacheW = (logicalW * dpr * 0.55).round().clamp(320, 900);
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      cacheWidth: cacheW,
-      filterQuality: FilterQuality.medium,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF16161C)),
-    );
+    return _buildStill(url);
   }
 
   @override
   Widget build(BuildContext context) {
     final sources = _sources;
     if (sources.isEmpty) {
-      return const ColoredBox(color: Color(0xFF16161C));
+      return const ColoredBox(color: Colors.black);
     }
     final current = sources[_index % sources.length];
     final soundOn = ref.watch(deckSoundOnProvider);
@@ -443,7 +464,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
                   _onSoundChanged(ref.read(deckSoundOnProvider));
-                  if (_routeActive && ref.read(deckSoundOnProvider) && _visibleFraction >= 0.50) {
+                  if (_routeActive &&
+                      ref.read(deckSoundOnProvider) &&
+                      _visibleFraction >= 0.50) {
                     _playIfReady();
                   }
                 },
