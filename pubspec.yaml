@@ -29,7 +29,7 @@ dependencies:
   url_launcher: ^6.3.2
   cross_file: ^0.3.4
   flutter_map: ^8.3.1
-  mapbox_maps_flutter: ^3.0.0-alpha.27
+  mapbox_maps_flutter: 3.0.0-alpha.27
   latlong2: ^0.10.1
   intl: ^0.20.2
   record: ^6.1.2
