@@ -37,6 +37,7 @@ class DashboardShell extends ConsumerStatefulWidget {
 class _DashboardShellState extends ConsumerState<DashboardShell> {
   static const _headerInset = 72.0;
   static const _dockInset = 82.0;
+  static const _backRowInset = 44.0;
 
   bool _eventsMounted = false;
   String? _lastLocation;
@@ -55,13 +56,20 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     super.dispose();
   }
 
-  Widget _withPersistentChromeInsets(BuildContext context, Widget child) {
+  Widget _withPersistentChromeInsets(
+    BuildContext context,
+    Widget child, {
+    bool reserveBackRow = false,
+  }) {
     final media = MediaQuery.of(context);
     final padding = media.padding;
     return MediaQuery(
       data: media.copyWith(
         padding: padding.copyWith(
-          top: padding.top + _headerInset,
+          top:
+              padding.top +
+              _headerInset +
+              (reserveBackRow ? _backRowInset : 0),
           bottom: padding.bottom + _dockInset,
         ),
       ),
@@ -84,7 +92,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         location == AppPaths.legacyDashboard;
     final isProfile = location == AppPaths.clientProfile;
     final isEvents = location == AppPaths.exploreEvents;
-    final showShellBack = !isDashboard;
+    final isLikes = location == AppPaths.clientLikedProperties;
+    final isSeekers = location == AppPaths.exploreSeekers;
+
+    // Only these two shell pages do not own a back control themselves.
+    // Messages, Events, Legal Hub, Legal Services, VAP ID and Profile already
+    // render their own back/close control; adding another one duplicates UI.
+    final showShellBack = isLikes || isSeekers;
     if (isEvents) _eventsMounted = true;
 
     final routeTab = AppPaths.tabForLocation(location);
@@ -154,7 +168,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 if (!isDashboard && !isEvents)
                   isProfile
                       ? widget.child
-                      : _withPersistentChromeInsets(context, widget.child),
+                      : _withPersistentChromeInsets(
+                          context,
+                          widget.child,
+                          reserveBackRow: showShellBack,
+                        ),
               ],
             ),
           ),
