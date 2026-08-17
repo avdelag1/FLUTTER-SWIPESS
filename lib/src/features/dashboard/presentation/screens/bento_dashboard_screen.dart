@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
@@ -13,6 +16,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class BentoDashboardScreen extends ConsumerStatefulWidget {
   const BentoDashboardScreen({super.key});
@@ -31,9 +35,260 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
   }
 
+  void _openAiSearch() {
+    final subscription = ref.read(subscriptionProvider).value;
+    if (subscription != null && subscription.effectiveTier.canUseAI != true) {
+      showPaywall(context, featureName: 'Swipess AI');
+      return;
+    }
+    ref.read(overlayModalsProvider.notifier).openConcierge();
+  }
+
+  Future<void> _pickCity() async {
+    final discovery = ref.read(discoveryLocationProvider);
+    final cities = ListingLocations.cities.keys
+        .where((city) => city != 'Cancun' && city != 'Merida')
+        .toList(growable: false);
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final isLight = Theme.of(sheetContext).brightness == Brightness.light;
+        final ink = isLight ? const Color(0xFF101014) : Colors.white;
+        final surface = isLight
+            ? Colors.white.withAlpha(245)
+            : const Color(0xFF12161D).withAlpha(248);
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * .72,
+            ),
+            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: isLight
+                    ? Colors.black.withAlpha(18)
+                    : Colors.white.withAlpha(30),
+              ),
+            ),
+            child: Column(children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ink.withAlpha(55),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(
+                      'Choose location',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: Icon(Icons.close_rounded, color: ink),
+                  ),
+                ]),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
+                  itemCount: cities.length,
+                  itemBuilder: (context, index) {
+                    final city = cities[index];
+                    final info = ListingLocations.cities[city]!;
+                    final selected = city == discovery.city;
+                    return ListTile(
+                      dense: true,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      leading: Icon(
+                        Icons.location_on_outlined,
+                        color: selected ? const Color(0xFF60A5FA) : ink,
+                      ),
+                      title: Text(
+                        city,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontWeight: selected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        info.country,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink.withAlpha(125),
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: selected
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFF60A5FA),
+                              size: 20,
+                            )
+                          : null,
+                      onTap: () => Navigator.pop(sheetContext, city),
+                    );
+                  },
+                ),
+              ),
+            ]),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) return;
+    ref.read(discoveryLocationProvider.notifier).setCity(selected);
+  }
+
+  Future<void> _pickDates() async {
+    final now = DateUtils.dateOnly(DateTime.now());
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: now,
+      lastDate: DateTime(now.year + 2, now.month, now.day),
+      helpText: 'Choose dates',
+      saveText: 'Apply',
+    );
+    if (!mounted || range == null) return;
+
+    final start = DateFormat('MMM d').format(range.start);
+    final end = DateFormat('MMM d').format(range.end);
+    final label = DateUtils.isSameDay(range.start, range.end)
+        ? start
+        : '$start–$end';
+    ref.read(discoveryLocationProvider.notifier).setDateLabel(label);
+  }
+
+  Future<void> _pickGuests() async {
+    var guests = ref.read(discoveryLocationProvider).guests;
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final isLight = Theme.of(sheetContext).brightness == Brightness.light;
+        final ink = isLight ? const Color(0xFF101014) : Colors.white;
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                decoration: BoxDecoration(
+                  color: isLight
+                      ? Colors.white.withAlpha(245)
+                      : const Color(0xFF12161D).withAlpha(248),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: isLight
+                        ? Colors.black.withAlpha(18)
+                        : Colors.white.withAlpha(30),
+                  ),
+                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: ink.withAlpha(55),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Guests',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'How many people?',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: ink.withAlpha(130),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      tooltip: 'Remove guest',
+                      onPressed: guests > 1
+                          ? () => setSheetState(() => guests--)
+                          : null,
+                      icon: const Icon(Icons.remove_rounded),
+                    ),
+                    SizedBox(
+                      width: 42,
+                      child: Text(
+                        '$guests',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      tooltip: 'Add guest',
+                      onPressed: guests < 16
+                          ? () => setSheetState(() => guests++)
+                          : null,
+                      icon: const Icon(Icons.add_rounded),
+                    ),
+                  ]),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(sheetContext, guests),
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ]),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || selected == null) return;
+    ref.read(discoveryLocationProvider.notifier).setGuests(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
+    final discovery = ref.watch(discoveryLocationProvider);
     final leftItems = _bentoItems.where((i) => i.index.isEven).toList();
     final rightItems = _bentoItems.where((i) => i.index.isOdd).toList();
 
@@ -61,7 +316,15 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                         child: GlowSearchBar(
-                          onTap: () => _openCategory('property', 'PROPERTIES'),
+                          hint: 'Ask Swipess AI',
+                          onTap: _openAiSearch,
+                          locationLabel: discovery.city,
+                          dateLabel: discovery.dateLabel,
+                          guestLabel:
+                              '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
+                          onLocationTap: _pickCity,
+                          onDatesTap: _pickDates,
+                          onGuestsTap: _pickGuests,
                         ),
                       ),
                     );
@@ -72,13 +335,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               sliver: SliverToBoxAdapter(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isLight
-                        ? const Color(0xFFEDEDF2)
-                        : const Color(0xFF12161D),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+                child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +471,6 @@ class _BentoCard extends StatefulWidget {
 class _BentoCardState extends State<_BentoCard> {
   bool _pressed = false;
 
-  // Lift the actual media instead of putting a fake shine layer on top.
   static const _clarityMatrix = <double>[
     1.14, 0, 0, 0, 4,
     0, 1.14, 0, 0, 4,
@@ -249,8 +505,6 @@ class _BentoCardState extends State<_BentoCard> {
                     enableVideo: widget.enableVideo,
                   ),
                 ),
-                // Only protect the small caption area. The old overlay covered
-                // too much of the photo/video and made every card look shaded.
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
