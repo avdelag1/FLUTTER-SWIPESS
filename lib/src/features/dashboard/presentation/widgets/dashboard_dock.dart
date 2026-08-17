@@ -24,22 +24,22 @@ class _DashboardDockState extends State<DashboardDock> {
   void _revealSelected(){
     if(!mounted||!_controller.hasClients||widget.selectedTab==null)return;
     final index=widget.items.indexWhere((item)=>item.id==widget.selectedTab);if(index<0)return;
-    const itemStride=42.0;final viewport=_controller.position.viewportDimension;
-    final target=(8+index*itemStride-(viewport-38)/2).clamp(0.0,_controller.position.maxScrollExtent).toDouble();
+    const itemStride=40.0;final viewport=_controller.position.viewportDimension;
+    final target=(8+index*itemStride-(viewport-36)/2).clamp(0.0,_controller.position.maxScrollExtent).toDouble();
     if((_controller.offset-target).abs()<2)return;
     _controller.animateTo(target,duration:const Duration(milliseconds:260),curve:Curves.easeOutCubic);
   }
   @override Widget build(BuildContext context){
     final isLight=Theme.of(context).brightness==Brightness.light;
     return Center(child:Semantics(container:true,label:'Primary navigation',child:ConstrainedBox(
-      constraints:const BoxConstraints(maxWidth:324),
-      child:DecoratedBox(decoration:BoxDecoration(borderRadius:BorderRadius.circular(999),boxShadow:[BoxShadow(color:Colors.black.withAlpha(isLight?16:48),blurRadius:14,offset:const Offset(0,5))]),
+      constraints:const BoxConstraints(maxWidth:312),
+      child:DecoratedBox(decoration:BoxDecoration(borderRadius:BorderRadius.circular(999),boxShadow:[BoxShadow(color:Colors.black.withAlpha(isLight?14:44),blurRadius:13,offset:const Offset(0,5))]),
         child:ClipRRect(borderRadius:BorderRadius.circular(999),child:BackdropFilter(filter:ImageFilter.blur(sigmaX:24,sigmaY:24),child:Container(
-          height:50,
+          height:48,
           decoration:BoxDecoration(
-            color:isLight?Colors.white.withAlpha(136):Colors.black.withAlpha(62),
+            color:isLight?Colors.white.withAlpha(132):Colors.black.withAlpha(54),
             borderRadius:BorderRadius.circular(999),
-            border:Border.all(color:isLight?Colors.black.withAlpha(24):Colors.white.withAlpha(50),width:.7),
+            border:Border.all(color:isLight?Colors.black.withAlpha(22):Colors.white.withAlpha(48),width:.7),
           ),
           child:ScrollConfiguration(behavior:ScrollConfiguration.of(context).copyWith(scrollbars:false,overscroll:false,dragDevices:{PointerDeviceKind.touch,PointerDeviceKind.mouse,PointerDeviceKind.trackpad,PointerDeviceKind.stylus}),child:ListView.separated(
             controller:_controller,physics:const BouncingScrollPhysics(parent:AlwaysScrollableScrollPhysics()),scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:8,vertical:3),itemCount:widget.items.length,separatorBuilder:(_,__)=>const SizedBox(width:2),itemBuilder:(context,i){
@@ -61,10 +61,10 @@ class DockButton extends StatelessWidget {
     final isLight=Theme.of(context).brightness==Brightness.light;
     final iconColor=isLight?Colors.black.withAlpha(emphasized?255:220):Colors.white.withAlpha(emphasized?255:232);
     return Semantics(button:true,selected:selected,label:_label,child:Tooltip(message:_label,child:Material(color:Colors.transparent,child:InkResponse(
-      onTap:onTap,containedInkWell:true,highlightShape:BoxShape.circle,radius:21,splashColor:Colors.white.withAlpha(24),child:SizedBox(width:38,height:42,child:Center(child:AnimatedScale(
+      onTap:onTap,containedInkWell:true,highlightShape:BoxShape.circle,radius:20,splashColor:Colors.white.withAlpha(22),child:SizedBox(width:36,height:40,child:Center(child:AnimatedScale(
         scale:emphasized?1.04:1,duration:const Duration(milliseconds:150),curve:Curves.easeOutCubic,child:Stack(alignment:Alignment.center,clipBehavior:Clip.none,children:[
-          if(selected)Positioned(bottom:0,child:Container(width:4,height:4,decoration:BoxDecoration(color:isLight?Colors.black.withAlpha(210):Colors.white.withAlpha(220),shape:BoxShape.circle))),
-          item.useAiIcon?CustomPaint(painter:AiRobotPainter(color:iconColor),size:const Size(20,20)):Icon(item.icon??Icons.circle_outlined,size:item.accent?25:23,color:iconColor),
+          if(selected)Positioned(bottom:0,child:Container(width:3.5,height:3.5,decoration:BoxDecoration(color:isLight?Colors.black.withAlpha(205):Colors.white.withAlpha(215),shape:BoxShape.circle))),
+          item.useAiIcon?CustomPaint(painter:AiRobotPainter(color:iconColor),size:const Size(19,19)):Icon(item.icon??Icons.circle_outlined,size:item.accent?24:22,color:iconColor),
         ]),
       ))),
     ))));
