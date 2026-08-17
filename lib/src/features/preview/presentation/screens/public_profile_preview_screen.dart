@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -78,20 +78,13 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                           ),
                           const Spacer(),
                           IconButton(
-                            onPressed: () async {
-                              final url =
-                                  'https://www.swipess.com/u/${profile.userId}';
-                              await Clipboard.setData(ClipboardData(text: url));
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Profile link copied'),
-                                  ),
-                                );
-                              }
-                            },
+                            tooltip: 'Share profile',
+                            onPressed: () => AppShare.profile(
+                              id: profile.userId,
+                              name: profile.name,
+                            ),
                             icon: Icon(
-                              Icons.share_rounded,
+                              Icons.ios_share_rounded,
                               color: MatteSurface.ink(context),
                             ),
                           ),
