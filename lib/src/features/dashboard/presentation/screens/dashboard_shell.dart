@@ -84,7 +84,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         location == AppPaths.legacyDashboard;
     final isProfile = location == AppPaths.clientProfile;
     final isEvents = location == AppPaths.exploreEvents;
-    final isLikes = location == AppPaths.clientLikedProperties;
+    final showShellBack = !isDashboard;
     if (isEvents) _eventsMounted = true;
 
     final routeTab = AppPaths.tabForLocation(location);
@@ -185,7 +185,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ),
             ),
           ),
-          if (isLikes)
+          if (showShellBack)
             Positioned(
               top: MediaQuery.paddingOf(context).top + _headerInset,
               left: 16,
