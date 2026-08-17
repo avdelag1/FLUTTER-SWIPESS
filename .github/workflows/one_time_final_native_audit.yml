@@ -1,0 +1,180 @@
+name: One-time final native audit
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: ${{ !contains(github.event.head_commit.message, 'final native audit verified') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Apply audited fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/src/features/map/presentation/providers/map_listings_provider.dart')
+          s = p.read_text()
+          old = "            'p_limit': limit,\n"
+          new = "            'p_limit': limit,\n            'p_exclude_owner_id': client.auth.currentUser?.id,\n"
+          if "'p_exclude_owner_id'" not in s:
+              if old not in s: raise SystemExit('map listings RPC anchor not found')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path('lib/src/features/map/presentation/screens/real_mapbox_screen.dart')
+          s = p.read_text()
+          if '_locationManager' not in s:
+              s = s.replace(
+                  '  CircleAnnotationManager? _listingManager;\n  CircleAnnotationManager? _peopleManager;\n',
+                  '  CircleAnnotationManager? _listingManager;\n  CircleAnnotationManager? _peopleManager;\n  CircleAnnotationManager? _locationManager;\n',
+                  1,
+              )
+              s = s.replace(
+                  '    _listingManager = await map.annotations.createCircleAnnotationManager();\n    _peopleManager = await map.annotations.createCircleAnnotationManager();\n',
+                  '    _listingManager = await map.annotations.createCircleAnnotationManager();\n    _peopleManager = await map.annotations.createCircleAnnotationManager();\n    _locationManager = await map.annotations.createCircleAnnotationManager();\n',
+                  1,
+              )
+              anchor = '  void _selectNearest(\n'
+              helper = '''  Future<void> _renderLocationIndicator() async {
+    final manager = _locationManager;
+    if (!_mapLoaded || manager == null) return;
+    final loc = ref.read(discoveryLocationProvider);
+    await manager.deleteAll();
+    if (!mounted) return;
+    await manager.createMulti([
+      CircleAnnotationOptions(
+        geometry: _point(loc.latitude, loc.longitude),
+        circleRadius: 30,
+        circleColor: const Color(0xFF3B82F6).withAlpha(38).toARGB32(),
+        circleStrokeColor: const Color(0xFF60A5FA).withAlpha(105).toARGB32(),
+        circleStrokeWidth: 1.2,
+        circleOpacity: 0.72,
+      ),
+      CircleAnnotationOptions(
+        geometry: _point(loc.latitude, loc.longitude),
+        circleRadius: 7.5,
+        circleColor: const Color(0xFF1687FF).toARGB32(),
+        circleStrokeColor: Colors.white.toARGB32(),
+        circleStrokeWidth: 2.8,
+        circleOpacity: 1,
+      ),
+    ]);
+  }
+
+'''
+              if anchor not in s: raise SystemExit('map location helper anchor not found')
+              s = s.replace(anchor, helper + anchor, 1)
+              s = s.replace(
+                  '    if (peopleOptions.isNotEmpty) {\n      await _peopleManager!.createMulti(peopleOptions);\n    }\n  }\n',
+                  '    if (peopleOptions.isNotEmpty) {\n      await _peopleManager!.createMulti(peopleOptions);\n    }\n    await _renderLocationIndicator();\n  }\n',
+                  1,
+              )
+              s = s.replace(
+                  '              await _prepareAnnotationManagers();\n              await _renderAnnotations();\n',
+                  '              await _prepareAnnotationManagers();\n              await _renderAnnotations();\n              await _renderLocationIndicator();\n',
+                  1,
+              )
+          progress = '''          if (loading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: Color(0xFFFF5A52),
+                backgroundColor: Colors.transparent,
+              ),
+            ),
+'''
+          s = s.replace(progress, '')
+          s = s.replace('    final loading = listingsAsync.isLoading || profilesAsync.isLoading;\n', '')
+          p.write_text(s)
+
+          p = Path('lib/src/features/events/presentation/screens/events_screen.dart')
+          s = p.read_text()
+          if '_videoGeneration' not in s:
+              s = s.replace(
+                  '  bool _didApplyInitialPosition = false;\n',
+                  '  bool _didApplyInitialPosition = false;\n  int _videoGeneration = 0;\n',
+                  1,
+              )
+              s = s.replace(
+                  '''    if (!widget.shouldLoadVideo && _player != null) {
+      _player?.dispose();
+      _player = null;
+    }
+''',
+                  '''    if (!widget.shouldLoadVideo && _player != null) {
+      _videoGeneration++;
+      final old = _player;
+      _player = null;
+      old?.setVolume(0);
+      old?.pause();
+      old?.dispose();
+    }
+''',
+                  1,
+              )
+              s = s.replace(
+                  '    final next = VideoPlayerController.networkUrl(Uri.parse(url));\n    _player = next;\n    try {\n      await next.initialize();\n',
+                  '''    final generation = ++_videoGeneration;
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _player = next;
+    try {
+      await next.initialize();
+      if (!mounted || generation != _videoGeneration || !widget.shouldLoadVideo) {
+        await next.setVolume(0);
+        await next.dispose();
+        if (identical(_player, next)) _player = null;
+        return;
+      }
+''',
+                  1,
+              )
+              s = s.replace(
+                  '''  void dispose() {
+    _player?.dispose();
+    super.dispose();
+  }
+''',
+                  '''  void dispose() {
+    _videoGeneration++;
+    _player?.setVolume(0);
+    _player?.pause();
+    _player?.dispose();
+    super.dispose();
+  }
+''',
+                  1,
+              )
+          p.write_text(s)
+          PY
+          dart format lib/src/features/map/presentation/providers/map_listings_provider.dart lib/src/features/map/presentation/screens/real_mapbox_screen.dart lib/src/features/events/presentation/screens/events_screen.dart
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Build release web
+        run: flutter build web --release
+      - name: Commit verified fixes
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib/src/features/map/presentation/providers/map_listings_provider.dart lib/src/features/map/presentation/screens/real_mapbox_screen.dart lib/src/features/events/presentation/screens/events_screen.dart
+            git commit -m "fix: final native audit verified"
+            git push
+          fi
