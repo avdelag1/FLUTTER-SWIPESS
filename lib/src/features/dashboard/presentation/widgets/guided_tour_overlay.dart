@@ -6,24 +6,32 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One-time post-login welcome for the complimentary Swipess access period.
-///
-/// The existing preference key is intentionally preserved so members who have
-/// already completed onboarding are not interrupted again.
 class GuidedTourOverlay extends StatefulWidget {
-  const GuidedTourOverlay({super.key, required this.enabled});
+  const GuidedTourOverlay({
+    super.key,
+    required this.enabled,
+    this.userId,
+    this.userCreatedAt,
+  });
 
   final bool enabled;
+  final String? userId;
+  final String? userCreatedAt;
 
   static const prefsKey = 'guidedTourCompleted';
+  static final DateTime campaignStartedAt = DateTime.utc(2026, 8, 17, 3, 23);
 
-  static Future<bool> hasCompleted() async {
+  static String preferenceKeyFor(String? userId) =>
+      userId == null || userId.isEmpty ? prefsKey : '${prefsKey}_$userId';
+
+  static Future<bool> hasCompleted({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(prefsKey) ?? false;
+    return prefs.getBool(preferenceKeyFor(userId)) ?? false;
   }
 
-  static Future<void> markCompleted() async {
+  static Future<void> markCompleted({String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(prefsKey, true);
+    await prefs.setBool(preferenceKeyFor(userId), true);
   }
 
   @override
@@ -65,6 +73,14 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
     ),
   ];
 
+  bool get _isNewAccount {
+    final raw = widget.userCreatedAt;
+    if (raw == null || raw.isEmpty) return false;
+    final createdAt = DateTime.tryParse(raw)?.toUtc();
+    if (createdAt == null) return false;
+    return !createdAt.isBefore(GuidedTourOverlay.campaignStartedAt);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -74,13 +90,16 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
   @override
   void didUpdateWidget(covariant GuidedTourOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.enabled && !oldWidget.enabled) _maybeStart();
+    if (widget.enabled &&
+        (!oldWidget.enabled || oldWidget.userId != widget.userId)) {
+      _maybeStart();
+    }
   }
 
   Future<void> _maybeStart() async {
-    if (_starting || _active) return;
+    if (_starting || _active || !_isNewAccount) return;
     _starting = true;
-    final done = await GuidedTourOverlay.hasCompleted();
+    final done = await GuidedTourOverlay.hasCompleted(userId: widget.userId);
     if (!mounted || done) {
       _starting = false;
       return;
@@ -95,7 +114,7 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
 
   Future<void> _finish() async {
     AppHaptics.medium();
-    await GuidedTourOverlay.markCompleted();
+    await GuidedTourOverlay.markCompleted(userId: widget.userId);
     if (!mounted) return;
     setState(() => _active = false);
   }
