@@ -36,7 +36,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
     super.initState();
     _slide = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 340),
       reverseDuration: const Duration(milliseconds: 220),
     )..forward();
 
@@ -78,51 +78,63 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // A very light scrim gives depth without making the app feel replaced.
         const Positioned.fill(
           child: IgnorePointer(
             child: ColoredBox(color: Color.fromARGB(16, 0, 0, 0)),
           ),
         ),
         Positioned(
-          left: 10,
-          right: 10,
+          left: 0,
+          right: 0,
           bottom: bottomInset,
           height: sheetHeight,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 1.0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(
-                parent: _slide,
-                curve: Curves.easeOutCubic,
-                reverseCurve: Curves.easeInCubic,
-              ),
-            ),
-            child: FadeTransition(
-              opacity: CurvedAnimation(
-                parent: _slide,
-                curve: const Interval(0.18, 1, curve: Curves.easeOut),
-              ),
-              child: Transform.translate(
-                offset: Offset(0, _drag),
-                child: Material(
-                  color: Colors.transparent,
-                  child: _CardShell(
-                    onClose: _close,
-                    onDragUpdate: (dy) {
-                      if (dy <= 0) return;
-                      setState(() => _drag = (_drag + dy).clamp(0, 220));
-                    },
-                    onDragEnd: () {
-                      if (_drag > 72) {
-                        _close();
-                      } else {
-                        setState(() => _drag = 0);
-                      }
-                    },
-                    child: widget.child,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1.0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: _slide,
+                      curve: Curves.easeOutCubic,
+                      reverseCurve: Curves.easeInCubic,
+                    ),
+                  ),
+                  child: FadeTransition(
+                    // Hold the content invisible for the first part of the
+                    // entrance. This masks the legacy async privacy state so
+                    // users see one clean card rather than page A → page B.
+                    opacity: CurvedAnimation(
+                      parent: _slide,
+                      curve: const Interval(0.38, 1, curve: Curves.easeOut),
+                    ),
+                    child: Transform.translate(
+                      offset: Offset(0, _drag),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: _CardShell(
+                          onClose: _close,
+                          onDragUpdate: (dy) {
+                            if (dy <= 0) return;
+                            setState(
+                              () => _drag = (_drag + dy).clamp(0, 220),
+                            );
+                          },
+                          onDragEnd: () {
+                            if (_drag > 72) {
+                              _close();
+                            } else {
+                              setState(() => _drag = 0);
+                            }
+                          },
+                          child: widget.child,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
