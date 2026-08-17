@@ -217,7 +217,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               return;
                             }
                             if (id == NavTab.ai) {
-                              if (subscription?.effectiveTier.canUseAI != true) {
+                              if (subscription != null &&
+                                  subscription.effectiveTier.canUseAI != true) {
                                 showPaywall(context, featureName: 'Swipess AI');
                                 return;
                               }
@@ -231,8 +232,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               return;
                             }
                             if (id == NavTab.idCard) {
-                              if (subscription?.effectiveTier.canUseVirtualCard !=
-                                  true) {
+                              if (subscription != null &&
+                                  subscription.effectiveTier.canUseVirtualCard !=
+                                      true) {
                                 showPaywall(
                                   context,
                                   featureName: 'Virtual ID Card',
@@ -243,12 +245,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               return;
                             }
                             if (id == NavTab.events &&
-                                subscription?.effectiveTier.canViewEvents != true) {
+                                subscription != null &&
+                                subscription.effectiveTier.canViewEvents != true) {
                               showPaywall(context, featureName: 'Events');
                               return;
                             }
                             if (id == NavTab.legal &&
-                                subscription?.effectiveTier.canViewEvents != true) {
+                                subscription != null &&
+                                subscription.effectiveTier.canViewEvents != true) {
                               showPaywall(context, featureName: 'Legal services');
                               return;
                             }
