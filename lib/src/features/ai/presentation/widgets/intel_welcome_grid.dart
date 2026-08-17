@@ -1,189 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `filterData.FILTERS` — category → prompt chips for Intel Core welcome.
-class IntelFilterOption {
-  const IntelFilterOption({required this.label, required this.prompt});
-  final String label;
-  final String prompt;
-}
-
-class IntelFilterCategory {
-  const IntelFilterCategory({
-    required this.label,
-    required this.glowColor,
-    required this.options,
-  });
-  final String label;
-  final Color glowColor;
-  final List<IntelFilterOption> options;
-}
-
-const intelFilterCategories = <IntelFilterCategory>[
-  IntelFilterCategory(
-    label: 'Properties',
-    glowColor: Color(0xFFF97316),
-    options: [
-      IntelFilterOption(
-        label: 'All Rentals',
-        prompt: 'Show me all rental properties',
-      ),
-      IntelFilterOption(label: 'Houses', prompt: 'Show me available houses'),
-      IntelFilterOption(
-        label: 'Apartments',
-        prompt: 'Find apartments for rent',
-      ),
-      IntelFilterOption(label: 'Studios', prompt: 'Show me studios'),
-      IntelFilterOption(label: 'Penthouse', prompt: 'Find penthouses'),
-      IntelFilterOption(label: 'Loft', prompt: 'Show me lofts'),
-      IntelFilterOption(label: 'Cabin', prompt: 'Find cabins'),
-      IntelFilterOption(label: 'Land', prompt: 'Find land for sale'),
-      IntelFilterOption(
-        label: 'Commercial',
-        prompt: 'Show me commercial properties',
-      ),
-      IntelFilterOption(label: 'Vacation', prompt: 'Find vacation rentals'),
-      IntelFilterOption(label: 'Luxury', prompt: 'Show luxury properties'),
-      IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest properties'),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Workers',
-    glowColor: Color(0xFF3B82F6),
-    options: [
-      IntelFilterOption(label: 'Cleaning', prompt: 'Find me cleaning workers'),
-      IntelFilterOption(
-        label: 'Maintenance',
-        prompt: 'Find maintenance workers',
-      ),
-      IntelFilterOption(
-        label: 'Construction',
-        prompt: 'Find construction workers',
-      ),
-      IntelFilterOption(label: 'Electrician', prompt: 'Find an electrician'),
-      IntelFilterOption(label: 'Plumber', prompt: 'Find a plumber'),
-      IntelFilterOption(label: 'Driver', prompt: 'Find a private driver'),
-      IntelFilterOption(label: 'Nanny', prompt: 'Find a nanny or babysitter'),
-      IntelFilterOption(label: 'Gardener', prompt: 'Find a gardener'),
-      IntelFilterOption(label: 'Cook', prompt: 'Find a cook or chef'),
-      IntelFilterOption(label: 'Tutor', prompt: 'Find a tutor'),
-      IntelFilterOption(label: 'Wellness', prompt: 'Find massage and wellness'),
-      IntelFilterOption(
-        label: 'All Workers',
-        prompt: 'Show me all workers and services',
-      ),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Motorcycles',
-    glowColor: Color(0xFFEF4444),
-    options: [
-      IntelFilterOption(label: 'For Sale', prompt: 'Find motorcycles for sale'),
-      IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest motorcycles'),
-      IntelFilterOption(
-        label: 'New Listings',
-        prompt: 'Show newest motorcycle listings',
-      ),
-      IntelFilterOption(label: 'Near Me', prompt: 'Find motorcycles near me'),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Bicycles',
-    glowColor: Color(0xFF10B981),
-    options: [
-      IntelFilterOption(label: 'For Sale', prompt: 'Find bicycles for sale'),
-      IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest bicycles'),
-      IntelFilterOption(
-        label: 'New Listings',
-        prompt: 'Show new bicycle listings',
-      ),
-      IntelFilterOption(label: 'Near Me', prompt: 'Find bicycles near me'),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Yachts',
-    glowColor: Color(0xFF14B8A6),
-    options: [
-      IntelFilterOption(
-        label: 'For Charter',
-        prompt: 'Find yachts for charter',
-      ),
-      IntelFilterOption(label: 'For Sale', prompt: 'Find yachts for sale'),
-      IntelFilterOption(label: 'Catamarans', prompt: 'Show me catamarans'),
-      IntelFilterOption(label: 'Cheapest', prompt: 'Show cheapest yachts'),
-      IntelFilterOption(label: 'Near Me', prompt: 'Find yachts near me'),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Buyers',
-    glowColor: Color(0xFFA855F7),
-    options: [
-      IntelFilterOption(
-        label: 'Looking for Houses',
-        prompt: 'Find people looking to buy houses',
-      ),
-      IntelFilterOption(
-        label: 'Looking for Land',
-        prompt: 'Find people looking to buy land',
-      ),
-      IntelFilterOption(
-        label: 'Looking for Vehicles',
-        prompt: 'Find people looking to buy vehicles',
-      ),
-      IntelFilterOption(label: 'All Buyers', prompt: 'Show me all buyers'),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Renters',
-    glowColor: Color(0xFFD946EF),
-    options: [
-      IntelFilterOption(
-        label: 'Looking for Apartments',
-        prompt: 'Find people looking to rent apartments',
-      ),
-      IntelFilterOption(
-        label: 'Looking for Houses',
-        prompt: 'Find people looking to rent houses',
-      ),
-      IntelFilterOption(
-        label: 'Looking for Rooms',
-        prompt: 'Find people looking for rooms',
-      ),
-      IntelFilterOption(label: 'All Renters', prompt: 'Show me all renters'),
-    ],
-  ),
-  IntelFilterCategory(
-    label: 'Seekers',
-    glowColor: Color(0xFF06B6D4),
-    options: [
-      IntelFilterOption(
-        label: 'Find Services',
-        prompt: 'Find people looking for services',
-      ),
-      IntelFilterOption(
-        label: 'Find Workers',
-        prompt: 'Find people looking to hire workers',
-      ),
-      IntelFilterOption(
-        label: 'Find Roommates',
-        prompt: 'Find people looking for roommates',
-      ),
-      IntelFilterOption(
-        label: 'Find Friends',
-        prompt: 'Find people looking for friends',
-      ),
-      IntelFilterOption(
-        label: 'All Seekers',
-        prompt: 'Show me everyone looking for something',
-      ),
-    ],
-  ),
-];
-
-/// Cap `WelcomeState` — INTEL CORE category grid, then prompt chips.
-class IntelWelcomeGrid extends StatefulWidget {
+/// Quiet, ChatGPT-style empty state for Intel Core.
+///
+/// Keep discovery suggestions compact. The previous two-column category grid
+/// expanded into giant pills on wide screens and made the AI feel like a
+/// separate page instead of a conversation.
+class IntelWelcomeGrid extends StatelessWidget {
   const IntelWelcomeGrid({
     super.key,
     required this.isLight,
@@ -193,163 +17,134 @@ class IntelWelcomeGrid extends StatefulWidget {
   final bool isLight;
   final ValueChanged<String> onPick;
 
-  @override
-  State<IntelWelcomeGrid> createState() => _IntelWelcomeGridState();
-}
-
-class _IntelWelcomeGridState extends State<IntelWelcomeGrid> {
-  IntelFilterCategory? _active;
-
-  Color get _ink => widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
+  static const _suggestions = <(IconData, String, String)>[
+    (
+      Icons.home_outlined,
+      'Find a place',
+      'Help me find a property that matches what I need',
+    ),
+    (
+      Icons.handyman_outlined,
+      'Find a worker',
+      'Help me find a worker or local service',
+    ),
+    (
+      Icons.groups_2_outlined,
+      'People nearby',
+      'Show me seekers and people looking for something nearby',
+    ),
+    (
+      Icons.celebration_outlined,
+      'What’s happening?',
+      'Show me interesting events happening nearby',
+    ),
+    (
+      Icons.sailing_outlined,
+      'Yachts',
+      'Help me find yachts available near me',
+    ),
+    (
+      Icons.two_wheeler_outlined,
+      'Motorcycles',
+      'Help me find motorcycles available near me',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final ink = isLight ? const Color(0xFF111114) : Colors.white;
+    final muted = ink.withAlpha(120);
+    final chipFill = isLight
+        ? const Color(0xFFF5F5F7)
+        : Colors.white.withAlpha(10);
+    final border = isLight
+        ? Colors.black.withAlpha(22)
+        : Colors.white.withAlpha(28);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      padding: const EdgeInsets.fromLTRB(22, 28, 22, 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            (_active?.label ?? 'Intel Core').toUpperCase(),
-            style: GoogleFonts.plusJakartaSans(
-              color: _ink,
-              fontWeight: FontWeight.w900,
-              fontStyle: FontStyle.italic,
-              fontSize: 28,
-              letterSpacing: -1.2,
-              height: 1,
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: isLight
+                  ? Colors.black.withAlpha(6)
+                  : Colors.white.withAlpha(10),
+              shape: BoxShape.circle,
+              border: Border.all(color: border),
             ),
+            child: Icon(Icons.auto_awesome_rounded, color: ink, size: 21),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Text(
-            _active == null ? 'CHOOSE A CATEGORY' : 'PICK A PROMPT',
+            'How can I help?',
+            textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              color: _ink.withAlpha(120),
+              color: ink,
               fontWeight: FontWeight.w800,
-              fontSize: 11,
-              letterSpacing: 2.4,
+              fontSize: 22,
+              letterSpacing: -0.6,
             ),
           ),
-          const SizedBox(height: 20),
-          if (_active != null) ...[
-            GestureDetector(
-              onTap: () {
-                AppHaptics.selection();
-                setState(() => _active = null);
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.arrow_back_rounded,
-                      size: 14,
-                      color: _ink.withAlpha(140),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Back to categories',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _ink.withAlpha(140),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
+          const SizedBox(height: 6),
+          Text(
+            'Ask anything, or start with one of these.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: muted,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final item in _suggestions)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () {
+                      AppHaptics.selection();
+                      onPick(item.$3);
+                    },
+                    child: Ink(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: chipFill,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: border),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(item.$1, size: 16, color: muted),
+                          const SizedBox(width: 7),
+                          Text(
+                            item.$2,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: ink,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                for (final opt in _active!.options)
-                  _IntelPill(
-                    label: opt.label,
-                    isLight: widget.isLight,
-                    centered: false,
-                    onTap: () => widget.onPick(opt.prompt),
                   ),
-              ],
-            ),
-          ] else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: intelFilterCategories.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 2.55,
-              ),
-              itemBuilder: (context, i) {
-                final cat = intelFilterCategories[i];
-                return _IntelPill(
-                  label: cat.label.toUpperCase(),
-                  isLight: widget.isLight,
-                  centered: true,
-                  onTap: () {
-                    AppHaptics.selection();
-                    setState(() => _active = cat);
-                  },
-                );
-              },
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IntelPill extends StatelessWidget {
-  const _IntelPill({
-    required this.label,
-    required this.isLight,
-    required this.onTap,
-    this.centered = true,
-  });
-
-  final String label;
-  final bool isLight;
-  final VoidCallback onTap;
-  final bool centered;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: isLight ? Colors.white : Colors.white.withAlpha(8),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: ink, width: 1.4),
-          ),
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: centered ? 8 : 16,
-                vertical: centered ? 0 : 14,
-              ),
-              child: Text(
-                label,
-                textAlign: centered ? TextAlign.center : TextAlign.left,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
-                  color: ink,
-                  fontWeight: FontWeight.w900,
-                  fontSize: centered ? 13 : 13,
-                  letterSpacing: centered ? 1.4 : 0.2,
                 ),
-              ),
-            ),
+            ],
           ),
-        ),
+        ],
       ),
     );
   }
