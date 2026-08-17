@@ -139,7 +139,7 @@ class SubscriptionRepository {
 
   Future<bool> decrementToken() async {
     final data = await fetchCurrent();
-    if (data.tier == SubscriptionTier.premium) return true;
+    if (data.effectiveTier == SubscriptionTier.premium) return true;
     try {
       final rows = await _client.rpc(
         'rpc_deduct_token',
