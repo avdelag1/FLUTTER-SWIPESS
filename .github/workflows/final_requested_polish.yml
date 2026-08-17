@@ -1,0 +1,297 @@
+name: Final requested polish
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  polish:
+    if: github.event.head_commit.message == 'chore: run final requested polish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply requested Events and secret-code polish
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          events_path = Path('lib/src/features/events/presentation/screens/events_screen.dart')
+          events = events_path.read_text()
+
+          replacements = [
+              ("import 'dart:async';\n", ""),
+              ("  Timer? _chromeTimer;\n", ""),
+              ("\n  static const _chromeVisibleFor = Duration(milliseconds: 2800);\n", ""),
+              ("    _chromeTimer?.cancel();\n    _pages.dispose();", "    _pages.dispose();"),
+              ("""  void _scheduleHide() {
+    _chromeTimer?.cancel();
+    _chromeTimer = Timer(_chromeVisibleFor, _hideChrome);
+  }
+
+  void _revealChrome({bool autoHide = true}) {
+    if (!mounted) return;
+    if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
+    ref.read(chromeVisibilityProvider.notifier).show();
+    _chromeTimer?.cancel();
+    if (autoHide) _scheduleHide();
+  }
+""", """  void _revealChrome({bool autoHide = true}) {
+    if (!mounted) return;
+    if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
+    ref.read(chromeVisibilityProvider.notifier).show();
+  }
+"""),
+              ("""              if (!_eventChromeVisible)
+                Positioned(
+                  right: 14,
+                  bottom: bottomSafe + 18,
+                  child: _FocusOrb(onTap: _revealChrome),
+                ),
+""", """              Positioned(
+                right: 14,
+                bottom: bottomSafe + 18,
+                child: _FocusOrb(
+                  controlsVisible: _eventChromeVisible,
+                  onTap: _toggleChrome,
+                ),
+              ),
+"""),
+              ("""class _FocusOrb extends StatelessWidget {
+  const _FocusOrb({required this.onTap});
+  final VoidCallback onTap;
+""", """class _FocusOrb extends StatelessWidget {
+  const _FocusOrb({required this.controlsVisible, required this.onTap});
+  final bool controlsVisible;
+  final VoidCallback onTap;
+"""),
+              ("      label: 'Show event controls and navigation',", "      label: controlsVisible\n          ? 'Hide event controls and navigation'\n          : 'Show event controls and navigation',"),
+              ("""          child: GestureDetector(
+          onTap: () {
+            AppHaptics.light();
+            onTap();
+          },
+""", """          child: GestureDetector(
+          onTap: onTap,
+"""),
+              ("                child: const Icon(Icons.visibility_outlined, color: Colors.white, size: 18),", "                child: Icon(\n                  controlsVisible\n                      ? Icons.visibility_off_outlined\n                      : Icons.visibility_outlined,\n                  color: Colors.white,\n                  size: 18,\n                ),"),
+          ]
+
+          for old, new in replacements:
+              if old not in events:
+                  raise SystemExit(f'Events patch anchor not found:\n{old[:180]}')
+              events = events.replace(old, new, 1)
+
+          events_path.write_text(events)
+
+          gate_path = Path('lib/src/features/auth/presentation/screens/access_code_gate_screen.dart')
+          gate = gate_path.read_text()
+
+          old_store = """        Wrap(
+          alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
+          children: [
+            Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                'Download on the App Store',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+"""
+          new_store = """        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
+          children: [
+            _buildStoreBadge(
+              icon: Icons.apple,
+              eyebrow: 'Download on the',
+              store: 'App Store',
+            ),
+            _buildStoreBadge(
+              icon: Icons.play_arrow_rounded,
+              eyebrow: 'GET IT ON',
+              store: 'Google Play',
+            ),
+          ],
+        ),
+"""
+          if old_store not in gate:
+              raise SystemExit('Access-code store badge anchor not found')
+          gate = gate.replace(old_store, new_store, 1)
+
+          anchor = """  Widget _buildGateCard() {
+"""
+          helper = """  Future<void> _showStoreAccessMessage(String store) async {
+    try {
+      AppHaptics.light();
+    } catch (_) {}
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0B0D11),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: Colors.white.withAlpha(42), width: 0.8),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.lock_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Secret code required',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Swipess is private access. Before using the $store download option, please request your secret code first. Once your access is approved, you can continue into the app.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white.withAlpha(205),
+            fontSize: 14,
+            height: 1.45,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStoreBadge({
+    required IconData icon,
+    required String eyebrow,
+    required String store,
+  }) {
+    return Semantics(
+      button: true,
+      label: '$store download information',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showStoreAccessMessage(store),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            width: 190,
+            height: 58,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(120),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withAlpha(185), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(70),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: Colors.white, size: 29),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        eyebrow,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.25,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        store,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          height: 1.05,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+"""
+          if anchor not in gate:
+              raise SystemExit('Gate helper insertion anchor not found')
+          gate = gate.replace(anchor, helper + anchor, 1)
+          gate_path.write_text(gate)
+          PY
+
+      - name: Format changed Dart files
+        run: dart format lib/src/features/events/presentation/screens/events_screen.dart lib/src/features/auth/presentation/screens/access_code_gate_screen.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Tests
+        run: flutter test
+
+      - name: Web release build
+        run: flutter build web --release
+
+      - name: Commit verified polish to main
+        shell: bash
+        run: |
+          rm .github/workflows/final_requested_polish.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/events/presentation/screens/events_screen.dart \
+                  lib/src/features/auth/presentation/screens/access_code_gate_screen.dart \
+                  .github/workflows/final_requested_polish.yml
+          git commit -m 'fix: finalize event visibility and access download prompts'
+          git push origin HEAD:main
