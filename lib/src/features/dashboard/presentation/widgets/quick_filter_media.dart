@@ -379,11 +379,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _dragDx = 0,
       onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
-      onHorizontalDragEnd: (_) {
-        if (_dragDx.abs() > 20) {
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+        final gesture = velocity.abs() >= 120 ? velocity : _dragDx;
+        if (gesture.abs() >= 10 || _dragDx.abs() >= 10) {
           AppHaptics.selection();
-          _advance(_dragDx < 0 ? 1 : -1);
+          _advance(gesture < 0 ? 1 : -1);
         }
         _dragDx = 0;
       },
