@@ -3,23 +3,10 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 
-/// Bottom-card frame for Swipess AI.
-///
-/// The app header and bottom dock remain available, but the same scroll-down /
-/// scroll-up chrome behavior used by the dashboard also applies inside chat.
 class ConciergeSheetHost extends ConsumerStatefulWidget {
-  const ConciergeSheetHost({
-    super.key,
-    required this.onClose,
-    required this.child,
-  });
-
+  const ConciergeSheetHost({super.key, required this.onClose, required this.child});
   final VoidCallback onClose;
   final Widget child;
-
-  static const appBarBody = 60.0;
-  static const dockBody = 52.0;
-  static const dockOffset = 18.0;
 
   @override
   ConsumerState<ConciergeSheetHost> createState() => _ConciergeSheetHostState();
@@ -36,14 +23,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
     super.initState();
     _slide = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 340),
-      reverseDuration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 360),
+      reverseDuration: const Duration(milliseconds: 230),
     )..forward();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(chromeVisibilityProvider.notifier).show();
-    });
   }
 
   @override
@@ -56,7 +38,6 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
     if (_closing) return;
     _closing = true;
     AppHaptics.light();
-    ref.read(chromeVisibilityProvider.notifier).show();
     await _slide.reverse();
     if (!mounted) return;
     ref.read(chromeVisibilityProvider.notifier).show();
@@ -65,85 +46,79 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final topSafe = media.padding.top + ConciergeSheetHost.appBarBody + 8;
-    final bottomInset =
-        media.padding.bottom +
-        ConciergeSheetHost.dockOffset +
-        ConciergeSheetHost.dockBody +
-        8;
-    final available = media.size.height - topSafe - bottomInset;
-    final sheetHeight = (available * 0.94).clamp(320.0, 780.0).toDouble();
-
+    final m = MediaQuery.of(context);
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Stack(
       fit: StackFit.expand,
       children: [
-        const Positioned.fill(
-          child: IgnorePointer(
-            child: ColoredBox(color: Color.fromARGB(16, 0, 0, 0)),
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: _close,
+            child: ColoredBox(color: Colors.black.withAlpha(110)),
           ),
         ),
         Positioned(
-          left: 0,
-          right: 0,
-          bottom: bottomInset,
-          height: sheetHeight,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 980),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1.0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: _slide,
-                      curve: Curves.easeOutCubic,
-                      reverseCurve: Curves.easeInCubic,
+          left: 6,
+          right: 6,
+          top: m.padding.top + 4,
+          bottom: m.padding.bottom + 4,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 1.08), end: Offset.zero)
+                .animate(CurvedAnimation(parent: _slide, curve: Curves.easeOutCubic)),
+            child: FadeTransition(
+              opacity: _slide,
+              child: Transform.translate(
+                offset: Offset(0, _drag),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isLight ? const Color(0xFFF7F8FA) : const Color(0xFF10141B),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(
+                        color: isLight ? Colors.black.withAlpha(22) : Colors.white.withAlpha(36),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(isLight ? 44 : 130),
+                          blurRadius: 40,
+                          offset: const Offset(0, -10),
+                        ),
+                      ],
                     ),
-                  ),
-                  child: FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: _slide,
-                      curve: const Interval(0.30, 1, curve: Curves.easeOut),
-                    ),
-                    child: Transform.translate(
-                      offset: Offset(0, _drag),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: _CardShell(
-                          onClose: _close,
-                          onDragUpdate: (dy) {
-                            if (dy <= 0) return;
-                            setState(
-                              () => _drag = (_drag + dy).clamp(0, 220),
-                            );
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onVerticalDragUpdate: (d) {
+                            if (d.delta.dy <= 0) return;
+                            setState(() => _drag = (_drag + d.delta.dy).clamp(0, 260));
                           },
-                          onDragEnd: () {
-                            if (_drag > 72) {
+                          onVerticalDragEnd: (_) {
+                            if (_drag > 82) {
                               _close();
                             } else {
                               setState(() => _drag = 0);
                             }
                           },
-                          child: NotificationListener<ScrollNotification>(
-                            onNotification: (notification) {
-                              if (notification is ScrollUpdateNotification) {
-                                ref
-                                    .read(chromeVisibilityProvider.notifier)
-                                    .onScroll(
-                                      pixels: notification.metrics.pixels,
-                                      delta: notification.scrollDelta ?? 0,
-                                    );
-                              }
-                              return false;
-                            },
-                            child: widget.child,
+                          onDoubleTap: _close,
+                          child: SizedBox(
+                            height: 24,
+                            child: Center(
+                              child: Container(
+                                width: 42,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: isLight ? Colors.black.withAlpha(80) : Colors.white.withAlpha(115),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        Expanded(child: widget.child),
+                      ],
                     ),
                   ),
                 ),
@@ -152,72 +127,6 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CardShell extends StatelessWidget {
-  const _CardShell({
-    required this.onClose,
-    required this.onDragUpdate,
-    required this.onDragEnd,
-    required this.child,
-  });
-
-  final VoidCallback onClose;
-  final ValueChanged<double> onDragUpdate;
-  final VoidCallback onDragEnd;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final isLight = Theme.of(context).brightness == Brightness.light;
-    final border = isLight
-        ? Colors.black.withAlpha(20)
-        : Colors.white.withAlpha(24);
-    final handle = isLight
-        ? Colors.black.withAlpha(70)
-        : Colors.white.withAlpha(90);
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(isLight ? 40 : 105),
-              blurRadius: 34,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onVerticalDragUpdate: (d) => onDragUpdate(d.delta.dy),
-              onVerticalDragEnd: (_) => onDragEnd(),
-              onDoubleTap: onClose,
-              child: SizedBox(
-                height: 20,
-                width: double.infinity,
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: handle,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(child: child),
-          ],
-        ),
-      ),
     );
   }
 }
