@@ -26,60 +26,82 @@
       overflow: hidden;
       -webkit-tap-highlight-color: transparent;
     }
+
     #boot {
-      position: absolute;
+      position: fixed;
       inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 18px;
       background: #0A0A0D;
       z-index: 9999;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: opacity 120ms ease-out;
     }
-    .boot-logo {
-      font-size: 36px;
-      font-weight: 900;
-      font-style: italic;
-      letter-spacing: -0.04em;
-      color: #FFFFFF;
-      margin-bottom: 24px;
+
+    .boot-wordmark {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: 0.42em;
+      padding-left: 0.42em;
+      line-height: 1;
+      white-space: nowrap;
       user-select: none;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
-    .boot-loader {
-      width: 140px;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
+
+    .boot-dots {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 16px;
     }
-    .boot-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      width: 40%;
-      background: linear-gradient(90deg, #FF4D00, #E4007C);
-      border-radius: 999px;
-      animation: bootProgress 1.5s ease-in-out infinite;
+
+    .boot-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.88);
+      animation: dotJump 900ms ease-in-out infinite;
+      will-change: transform, opacity;
     }
-    @keyframes bootProgress {
-      0% { left: -40%; width: 40%; }
-      50% { left: 30%; width: 60%; }
-      100% { left: 100%; width: 40%; }
+
+    .boot-dot:nth-child(2) { animation-delay: 120ms; }
+    .boot-dot:nth-child(3) { animation-delay: 240ms; }
+
+    @keyframes dotJump {
+      0%, 60%, 100% { transform: translateY(0); opacity: .38; }
+      30% { transform: translateY(-5px); opacity: 1; }
     }
   </style>
   <script>
     function removeSplashFromWeb() {
-      document.getElementById('boot')?.remove();
+      var boot = document.getElementById('boot');
+      if (!boot) return;
+      boot.style.opacity = '0';
+      setTimeout(function () { boot.remove(); }, 120);
       document.body.style.background = '#0A0A0D';
     }
-    window.addEventListener('flutter-first-frame', function () {
-      removeSplashFromWeb();
+
+    window.addEventListener('flutter-first-frame', removeSplashFromWeb, { once: true });
+
+    // Never leave a second branded loading state sitting over Flutter.
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        if (document.querySelector('flt-glass-pane, flutter-view')) {
+          removeSplashFromWeb();
+        }
+      }, 250);
     });
-    // Failsafe: never trap user if engine stalls
-    setTimeout(removeSplashFromWeb, 15000);
+
+    // Failsafe only; normal removal happens on the first Flutter frame.
+    setTimeout(removeSplashFromWeb, 10000);
+
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -96,10 +118,12 @@
   <script src="https://unpkg.com/@zxing/library@0.19.1"></script>
 </head>
 <body>
-  <div id="boot">
-    <div class="boot-logo">SWIPESS</div>
-    <div class="boot-loader">
-      <div class="boot-bar"></div>
+  <div id="boot" aria-label="Loading Swipess">
+    <div class="boot-wordmark">S W I P E S S</div>
+    <div class="boot-dots" aria-hidden="true">
+      <span class="boot-dot"></span>
+      <span class="boot-dot"></span>
+      <span class="boot-dot"></span>
     </div>
   </div>
   <script src="flutter_bootstrap.js" async></script>
