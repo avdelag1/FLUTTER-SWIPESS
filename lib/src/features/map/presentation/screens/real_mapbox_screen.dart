@@ -93,8 +93,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     final map = _map;
     if (map == null) return;
 
-    // Creating annotation managers before the Mapbox style finishes loading
-    // can leave them attached to the old style on web. Build them here instead.
     _listingManager = await map.annotations.createCircleAnnotationManager();
     _peopleManager = await map.annotations.createCircleAnnotationManager();
 
@@ -147,62 +145,93 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     );
   }
 
+  ({double lat, double lng}) _cityLevelPoint(
+    String key,
+    DiscoveryLocation loc, {
+    required bool listing,
+  }) {
+    var hash = listing ? 97 : 193;
+    for (final unit in key.codeUnits) {
+      hash = 0x1fffffff & (hash * 31 + unit);
+    }
+    final angle = (hash % 360) * math.pi / 180;
+    final ring = 0.008 + ((hash ~/ 360) % 7) * 0.0024;
+    final lat = loc.latitude + math.sin(angle) * ring;
+    final cosLat = math.cos(loc.latitude * math.pi / 180).abs();
+    final lngScale = cosLat < .25 ? .25 : cosLat;
+    final lng = loc.longitude + (math.cos(angle) * ring / lngScale);
+    return (lat: lat, lng: lng);
+  }
+
+  MapPin _listingPin(dynamic listing, DiscoveryLocation loc) {
+    if (listing.latitude != null && listing.longitude != null) {
+      return MapPin.listing(listing);
+    }
+    final point = _cityLevelPoint(listing.id, loc, listing: true);
+    return MapPin.listingAt(listing, point.lat, point.lng);
+  }
+
+  MapPin _profilePin(dynamic profile, DiscoveryLocation loc) {
+    if (profile.latitude != null && profile.longitude != null) {
+      return MapPin.profile(profile);
+    }
+    final point = _cityLevelPoint(profile.id, loc, listing: false);
+    return MapPin.profileAt(profile, point.lat, point.lng);
+  }
+
   List<MapPin> _visiblePins() {
+    final loc = ref.read(discoveryLocationProvider);
     final listings = ref.read(mapListingsProvider).value ?? const [];
     final profiles = ref.read(mapProfilesProvider).value ?? const [];
     return [
       if (_layer != 'people')
-        for (final listing in listings)
-          if (listing.latitude != null && listing.longitude != null)
-            MapPin.listing(listing),
+        for (final listing in listings) _listingPin(listing, loc),
       if (_layer != 'listings')
-        for (final profile in profiles)
-          if (profile.latitude != null && profile.longitude != null)
-            MapPin.profile(profile),
+        for (final profile in profiles) _profilePin(profile, loc),
     ];
   }
 
   Future<void> _renderAnnotations() async {
-    if (!_mapLoaded || _listingManager == null || _peopleManager == null)
+    if (!_mapLoaded || _listingManager == null || _peopleManager == null) {
       return;
+    }
     final generation = ++_annotationGeneration;
-    final listings = ref.read(mapListingsProvider).value ?? const [];
-    final profiles = ref.read(mapProfilesProvider).value ?? const [];
+    final pins = _visiblePins();
 
     await _listingManager!.deleteAll();
     await _peopleManager!.deleteAll();
     if (!mounted || generation != _annotationGeneration) return;
 
-    if (_layer != 'people') {
-      final options = <CircleAnnotationOptions>[
-        for (final listing in listings)
-          if (listing.latitude != null && listing.longitude != null)
-            CircleAnnotationOptions(
-              geometry: _point(listing.latitude!, listing.longitude!),
-              circleRadius: 10.0,
-              circleColor: const Color(0xFFFF6338).toARGB32(),
-              circleStrokeColor: Colors.white.toARGB32(),
-              circleStrokeWidth: 2.4,
-              circleOpacity: 0.96,
-            ),
-      ];
-      if (options.isNotEmpty) await _listingManager!.createMulti(options);
+    final listingOptions = <CircleAnnotationOptions>[
+      for (final pin in pins)
+        if (pin.isListing)
+          CircleAnnotationOptions(
+            geometry: _point(pin.lat, pin.lng),
+            circleRadius: 10.0,
+            circleColor: const Color(0xFFFF6338).toARGB32(),
+            circleStrokeColor: Colors.white.toARGB32(),
+            circleStrokeWidth: 2.4,
+            circleOpacity: 0.96,
+          ),
+    ];
+    if (listingOptions.isNotEmpty) {
+      await _listingManager!.createMulti(listingOptions);
     }
 
-    if (_layer != 'listings') {
-      final options = <CircleAnnotationOptions>[
-        for (final profile in profiles)
-          if (profile.latitude != null && profile.longitude != null)
-            CircleAnnotationOptions(
-              geometry: _point(profile.latitude!, profile.longitude!),
-              circleRadius: 9.0,
-              circleColor: const Color(0xFFE95B9B).toARGB32(),
-              circleStrokeColor: Colors.white.toARGB32(),
-              circleStrokeWidth: 2.2,
-              circleOpacity: 0.94,
-            ),
-      ];
-      if (options.isNotEmpty) await _peopleManager!.createMulti(options);
+    final peopleOptions = <CircleAnnotationOptions>[
+      for (final pin in pins)
+        if (!pin.isListing)
+          CircleAnnotationOptions(
+            geometry: _point(pin.lat, pin.lng),
+            circleRadius: 9.0,
+            circleColor: const Color(0xFFE95B9B).toARGB32(),
+            circleStrokeColor: Colors.white.toARGB32(),
+            circleStrokeWidth: 2.2,
+            circleOpacity: 0.94,
+          ),
+    ];
+    if (peopleOptions.isNotEmpty) {
+      await _peopleManager!.createMulti(peopleOptions);
     }
   }
 
@@ -230,9 +259,11 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       if (previous == null ||
           previous.latitude != next.latitude ||
           previous.longitude != next.longitude ||
-          previous.radiusKm != next.radiusKm) {
+          previous.radiusKm != next.radiusKm ||
+          previous.city != next.city) {
         _selected = null;
         _flyTo(next);
+        _renderAnnotations();
       }
     });
     ref.listen(mapListingsProvider, (_, __) => _renderAnnotations());

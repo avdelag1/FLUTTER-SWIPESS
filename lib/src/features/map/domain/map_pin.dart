@@ -20,6 +20,13 @@ class MapPin {
       lat = profile!.latitude!,
       lng = profile.longitude!;
 
+  MapPin.listingAt(this.listing, this.lat, this.lng)
+    : isListing = true,
+      profile = null;
+
+  MapPin.profileAt(this.profile, this.lat, this.lng)
+    : isListing = false,
+      listing = null;
 
   MapPin.scattered(MapPin original, this.lat, this.lng)
     : isListing = original.isListing,
