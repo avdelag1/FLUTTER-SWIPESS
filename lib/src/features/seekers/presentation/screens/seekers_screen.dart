@@ -14,10 +14,8 @@ import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Browse open seeker requests — theme-aware feed, not a dark leftover deck.
 class SeekersScreen extends ConsumerStatefulWidget {
   const SeekersScreen({super.key});
-
   @override
   ConsumerState<SeekersScreen> createState() => _SeekersScreenState();
 }
@@ -34,117 +32,52 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
 
     return NeoNaiveScaffold(
       body: async.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: ink, strokeWidth: 2),
-        ),
-        error: (_, _) => Center(
-          child: TextButton(
-            onPressed: () => ref.read(seekersProvider.notifier).refresh(),
-            child: Text(
-              'Could not load seekers — retry',
-              style: GoogleFonts.plusJakartaSans(color: ink),
-            ),
-          ),
-        ),
+        loading: () => Center(child: CircularProgressIndicator(color: ink, strokeWidth: 2)),
+        error: (_, _) => Center(child: TextButton(
+          onPressed: () => ref.read(seekersProvider.notifier).refresh(),
+          child: Text('Could not load seekers — retry', style: GoogleFonts.plusJakartaSans(color: ink)),
+        )),
         data: (requests) {
-          final cats = <String>{for (final r in requests) r.category}
-            ..removeWhere((id) => id.isEmpty);
-          final filtered = _category == null
-              ? requests
-              : requests.where((r) => r.category == _category).toList();
-
+          final cats = <String>{for (final r in requests) r.category}..removeWhere((id) => id.isEmpty);
+          final filtered = _category == null ? requests : requests.where((r) => r.category == _category).toList();
           return ListView(
-            // The app shell owns a shared back button directly below the
-            // header. Reserve a full row for it so it can never cover SEEKERS.
-            padding: EdgeInsets.fromLTRB(20, top + 64, 20, 140),
+            padding: EdgeInsets.fromLTRB(20, top + 50, 20, 130),
             children: [
-              Text(
-                'SEEKERS',
-                style: AppTheme.displayItalic.copyWith(
-                  fontSize: 32,
-                  height: 1.05,
-                  color: ink,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'People looking for workers & help nearby',
-                style: GoogleFonts.plusJakartaSans(
-                  color: muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 16),
+              Text('SEEKERS', style: AppTheme.displayItalic.copyWith(fontSize: 27, height: 1, color: ink)),
+              const SizedBox(height: 4),
+              Text('People looking for workers & help nearby', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 13),
               GestureDetector(
-                onTap: () {
-                  AppHaptics.medium();
-                  showSeekerRequestSheet(context, ref);
-                },
+                onTap: () { AppHaptics.medium(); showSeekerRequestSheet(context, ref); },
                 child: Container(
-                  height: 56,
+                  height: 44,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF4D00).withAlpha(70),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(15),
+                    gradient: const LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)]),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Post a request',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.add_rounded, color: Colors.white, size: 19),
+                    const SizedBox(width: 7),
+                    Text('Post a request', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+                  ]),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 13),
               SizedBox(
-                height: 40,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _CatChip(
-                      label: 'All',
-                      color: const Color(0xFFE4007C),
-                      selected: _category == null,
-                      onTap: () => setState(() => _category = null),
-                    ),
-                    for (final id in cats)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: _CatChip(
-                          label: _labelFor(id),
-                          color: seekerCategoryColor(id),
-                          selected: _category == id,
-                          onTap: () => setState(
-                            () => _category = _category == id ? null : id,
-                          ),
-                        ),
+                height: 34,
+                child: ListView(scrollDirection: Axis.horizontal, children: [
+                  _CatChip(label: 'All', color: const Color(0xFFE4007C), selected: _category == null, onTap: () => setState(() => _category = null)),
+                  for (final id in cats)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 7),
+                      child: _CatChip(
+                        label: _labelFor(id), color: seekerCategoryColor(id), selected: _category == id,
+                        onTap: () => setState(() => _category = _category == id ? null : id),
                       ),
-                  ],
-                ),
+                    ),
+                ]),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               if (filtered.isEmpty)
                 CapEmptyState(
                   title: 'No open requests',
@@ -159,13 +92,10 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                 for (final req in filtered) ...[
                   _SeekerCard(
                     request: req,
-                    onPass: () {
-                      AppHaptics.light();
-                      ref.read(seekersProvider.notifier).dismiss(req.id);
-                    },
+                    onPass: () { AppHaptics.light(); ref.read(seekersProvider.notifier).dismiss(req.id); },
                     onInterested: () => _interested(req),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                 ],
             ],
           );
@@ -175,9 +105,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
   }
 
   String _labelFor(String id) {
-    for (final c in seekerWorkerCategories) {
-      if (c.id == id) return c.label;
-    }
+    for (final c in seekerWorkerCategories) { if (c.id == id) return c.label; }
     return id[0].toUpperCase() + id.substring(1);
   }
 
@@ -185,22 +113,13 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
     AppHaptics.medium();
     final ownerId = req.ownerId;
     if (ownerId != null) {
-      final convoId = await SwipeRepository().startConversation(
-        ownerId: ownerId,
-        listingId: req.id,
-      );
+      final convoId = await SwipeRepository().startConversation(ownerId: ownerId, listingId: req.id);
       if (mounted && convoId != null) {
         await showChatPopup(
           context,
           isNewConversation: true,
           conversation: ChatConversation(
-            id: convoId,
-            otherUserId: ownerId,
-            name: req.seekerName,
-            lastMessage: '',
-            timestamp: 'now',
-            avatarUrl: req.seekerAvatar,
-            listingTag: req.title,
+            id: convoId, otherUserId: ownerId, name: req.seekerName, lastMessage: '', timestamp: 'now', avatarUrl: req.seekerAvatar, listingTag: req.title,
           ),
         );
       }
@@ -210,230 +129,78 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
 }
 
 class _CatChip extends StatelessWidget {
-  const _CatChip({
-    required this.label,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-
+  const _CatChip({required this.label, required this.color, required this.selected, required this.onTap});
+  final String label; final Color color; final bool selected; final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     return GestureDetector(
-      onTap: () {
-        AppHaptics.selection();
-        onTap();
-      },
+      onTap: () { AppHaptics.selection(); onTap(); },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? color : MatteSurface.hairline(context),
-            width: 1.4,
-          ),
+          border: Border.all(color: selected ? color : MatteSurface.hairline(context), width: 1),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            color: selected ? Colors.white : ink,
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
-          ),
-        ),
+        child: Text(label, style: GoogleFonts.plusJakartaSans(color: selected ? Colors.white : ink, fontWeight: FontWeight.w700, fontSize: 11)),
       ),
     );
   }
 }
 
 class _SeekerCard extends StatelessWidget {
-  const _SeekerCard({
-    required this.request,
-    required this.onPass,
-    required this.onInterested,
-  });
-
-  final SeekerRequest request;
-  final VoidCallback onPass;
-  final VoidCallback onInterested;
-
+  const _SeekerCard({required this.request, required this.onPass, required this.onInterested});
+  final SeekerRequest request; final VoidCallback onPass; final VoidCallback onInterested;
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final accent = seekerCategoryColor(request.category);
-    final label = () {
-      for (final c in seekerWorkerCategories) {
-        if (c.id == request.category) return c.label;
-      }
-      return request.category;
-    }();
-
+    final label = () { for (final c in seekerWorkerCategories) { if (c.id == request.category) return c.label; } return request.category; }();
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: MatteSurface.cardFill(context),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: MatteSurface.hairline(context)),
+        color: MatteSurface.cardFill(context), borderRadius: BorderRadius.circular(18), border: Border.all(color: MatteSurface.hairline(context)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: accent.withAlpha(40),
-                backgroundImage: request.seekerAvatar != null
-                    ? NetworkImage(request.seekerAvatar!)
-                    : null,
-                child: request.seekerAvatar == null
-                    ? Text(
-                        request.initials,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: accent,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      request.seekerName,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: ink,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      request.location,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: muted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: accent.withAlpha(32),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  label.toUpperCase(),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: accent,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ],
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          CircleAvatar(
+            radius: 22, backgroundColor: accent.withAlpha(40),
+            backgroundImage: request.seekerAvatar != null ? NetworkImage(request.seekerAvatar!) : null,
+            child: request.seekerAvatar == null ? Text(request.initials, style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.w900, fontSize: 12)) : null,
           ),
-          const SizedBox(height: 14),
-          Text(
-            request.title,
-            style: GoogleFonts.plusJakartaSans(
-              color: ink,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              height: 1.2,
-            ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(request.seekerName, style: GoogleFonts.plusJakartaSans(color: ink, fontWeight: FontWeight.w800, fontSize: 14)),
+            const SizedBox(height: 1),
+            Text(request.location, style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 11, fontWeight: FontWeight.w600)),
+          ])),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(color: accent.withAlpha(28), borderRadius: BorderRadius.circular(999)),
+            child: Text(label.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.w800, fontSize: 9, letterSpacing: .6)),
           ),
-          if (request.description != null &&
-              request.description!.trim().isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              request.description!,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: muted,
-                height: 1.4,
-                fontSize: 13,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Text(
-            request.priceLabel,
-            style: GoogleFonts.plusJakartaSans(
-              color: accent,
-              fontWeight: FontWeight.w900,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onPass,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ink,
-                    side: BorderSide(color: MatteSurface.hairline(context)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text('SKIP'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    gradient: LinearGradient(
-                      colors: [
-                        accent,
-                        Color.lerp(accent, const Color(0xFFEB4898), 0.55) ??
-                            accent,
-                      ],
-                    ),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: onInterested,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text('INTERESTED'),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        ]),
+        const SizedBox(height: 11),
+        Text(request.title, style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 16, fontWeight: FontWeight.w800, height: 1.2)),
+        if (request.description != null && request.description!.trim().isNotEmpty) ...[
+          const SizedBox(height: 5),
+          Text(request.description!, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: muted, height: 1.35, fontSize: 12)),
         ],
-      ),
+        const SizedBox(height: 8),
+        Text(request.priceLabel, style: GoogleFonts.plusJakartaSans(color: accent, fontWeight: FontWeight.w800, fontSize: 14)),
+        const SizedBox(height: 11),
+        Row(children: [
+          Expanded(child: OutlinedButton(onPressed: onPass, style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40), foregroundColor: ink, side: BorderSide(color: MatteSurface.hairline(context)), padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text('SKIP'))),
+          const SizedBox(width: 9),
+          Expanded(flex: 2, child: DecoratedBox(
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), gradient: LinearGradient(colors: [accent, Color.lerp(accent, const Color(0xFFEB4898), .55) ?? accent])),
+            child: ElevatedButton(onPressed: onInterested, style: ElevatedButton.styleFrom(minimumSize: const Size(0, 40), backgroundColor: Colors.transparent, shadowColor: Colors.transparent, foregroundColor: Colors.white, padding: EdgeInsets.zero, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text('INTERESTED')),
+          )),
+        ]),
+      ]),
     );
   }
 }
