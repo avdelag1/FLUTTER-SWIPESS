@@ -16,7 +16,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Dashboard HUD using the same circular glow language as the bottom dock.
+/// Dashboard HUD using the same liquid-glass language as the bottom dock.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
   final String? avatarUrl;
@@ -256,6 +256,12 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final border = Colors.white.withAlpha(isLight ? 125 : 72);
+    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
+    final lowlight = isLight
+        ? Colors.white.withAlpha(120)
+        : const Color(0xFF07070A).withAlpha(145);
+
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -264,35 +270,45 @@ class _ProfileAvatarButton extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: SizedBox(
-            width: AppTopBar._hudSize,
-            height: AppTopBar._hudSize,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isLight
-                    ? const Color(0x14000000)
-                    : const Color(0xDD000000),
-                border: Border.all(
-                  color: Colors.white.withAlpha(isLight ? 90 : 105),
-                  width: 1,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(isLight ? 24 : 100),
+                  blurRadius: 16,
+                  offset: const Offset(0, 7),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8B5CF6).withAlpha(95),
-                    blurRadius: 11,
+              ],
+            ),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  width: AppTopBar._hudSize,
+                  height: AppTopBar._hudSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: avatarUrl == null
+                        ? LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [highlight, lowlight],
+                          )
+                        : null,
+                    border: Border.all(color: border, width: 0.9),
+                    image: avatarUrl != null
+                        ? DecorationImage(
+                            image: NetworkImage(avatarUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
-                ],
-                image: avatarUrl != null
-                    ? DecorationImage(
-                        image: NetworkImage(avatarUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
+                  child: avatarUrl == null
+                      ? Icon(Icons.person_rounded, size: 20, color: ink)
+                      : null,
+                ),
               ),
-              child: avatarUrl == null
-                  ? Icon(Icons.person_rounded, size: 20, color: ink)
-                  : null,
             ),
           ),
         ),
@@ -322,7 +338,13 @@ class _HudButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
-    final secondary = Color.lerp(border, const Color(0xFFEB4898), 0.40) ?? border;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final glassBorder = Colors.white.withAlpha(isLight ? 125 : 72);
+    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
+    final lowlight = isLight
+        ? Colors.white.withAlpha(120)
+        : const Color(0xFF07070A).withAlpha(145);
+    final accent = Color.lerp(fill, border, 0.72) ?? border;
 
     return Semantics(
       button: true,
@@ -334,47 +356,50 @@ class _HudButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             customBorder: const StadiumBorder(),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  height: AppTopBar._hudSize,
-                  width: wide ? null : AppTopBar._hudSize,
-                  padding: wide
-                      ? EdgeInsets.fromLTRB(
-                          compact ? 8 : 10,
-                          0,
-                          compact ? 10 : 14,
-                          0,
-                        )
-                      : null,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: wide
-                          ? [
-                              border.withAlpha(205),
-                              secondary.withAlpha(185),
-                            ]
-                          : [border.withAlpha(225), secondary.withAlpha(205)],
-                    ),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(100),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: border.withAlpha(125),
-                        blurRadius: 12,
-                        spreadRadius: 0.5,
-                      ),
-                    ],
+            splashColor: accent.withAlpha(55),
+            highlightColor: Colors.white.withAlpha(14),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isLight ? 24 : 100),
+                    blurRadius: 16,
+                    offset: const Offset(0, 7),
                   ),
-                  child: child,
+                  BoxShadow(
+                    color: accent.withAlpha(isLight ? 32 : 46),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                  child: Container(
+                    height: AppTopBar._hudSize,
+                    width: wide ? null : AppTopBar._hudSize,
+                    padding: wide
+                        ? EdgeInsets.fromLTRB(
+                            compact ? 8 : 10,
+                            0,
+                            compact ? 10 : 14,
+                            0,
+                          )
+                        : null,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [highlight, lowlight],
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: glassBorder, width: 0.9),
+                    ),
+                    child: child,
+                  ),
                 ),
               ),
             ),
