@@ -5,8 +5,8 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 
 /// Bottom-card frame for Swipess AI.
 ///
-/// The app header and bottom dock remain visible. AI enters as one large,
-/// centered card from the bottom instead of replacing the page.
+/// The app header and bottom dock remain available, but the same scroll-down /
+/// scroll-up chrome behavior used by the dashboard also applies inside chat.
 class ConciergeSheetHost extends ConsumerStatefulWidget {
   const ConciergeSheetHost({
     super.key,
@@ -128,7 +128,20 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                               setState(() => _drag = 0);
                             }
                           },
-                          child: widget.child,
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              if (notification is ScrollUpdateNotification) {
+                                ref
+                                    .read(chromeVisibilityProvider.notifier)
+                                    .onScroll(
+                                      pixels: notification.metrics.pixels,
+                                      delta: notification.scrollDelta ?? 0,
+                                    );
+                              }
+                              return false;
+                            },
+                            child: widget.child,
+                          ),
                         ),
                       ),
                     ),
