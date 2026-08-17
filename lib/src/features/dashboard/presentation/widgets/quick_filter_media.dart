@@ -21,10 +21,10 @@ bool isQuickFilterVideoUrl(String url) {
       lower.contains('/videos/');
 }
 
-/// Global cap so the bento grid cannot spawn N simultaneous HTML5 videos.
+/// Keep only a tiny number of decoded videos alive. Two lets us preload the next
+/// card while guaranteeing only one card actually plays at a time.
 class _VideoBudget {
-  /// Web: keep stills on regular tiles — EventsTeaser owns the one video slot.
-  static int get maxActive => kIsWeb ? 0 : 2;
+  static const int maxActive = 2;
   static int _active = 0;
 
   static bool tryAcquire() {
@@ -38,7 +38,27 @@ class _VideoBudget {
   }
 }
 
-/// Cap `QuickFilterImage` — unique shuffled pool + staggered round-robin rotate.
+/// Instagram/Reels-style playback ownership: only one dashboard card can play.
+class _VideoPlaybackCoordinator {
+  static _QuickFilterMediaState? _active;
+
+  static void activate(_QuickFilterMediaState state) {
+    if (identical(_active, state)) return;
+    _active?._pauseForCoordinator();
+    _active = state;
+  }
+
+  static void release(_QuickFilterMediaState state) {
+    if (identical(_active, state)) _active = null;
+  }
+}
+
+/// Media used by the dashboard bento cards.
+///
+/// Videos are pre-initialized when a card approaches the viewport, begin playing
+/// only after at least 50% of that card is visible, and pause immediately when
+/// the user scrolls past it. This prevents the whole dashboard from playing at
+/// once while making the next visible card feel instant.
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
     super.key,
@@ -50,13 +70,8 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   });
 
   final List<String> sources;
-
-  /// Index in the round-robin (0 = first card to advance).
   final int rotateSlot;
-
-  /// Total participating quick-filter slots on the dashboard.
   final int slotCount;
-
   final bool showMute;
   final bool enableVideo;
 
@@ -71,6 +86,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   String? _boundVideoUrl;
   double _dragDx = 0;
   bool _holdsBudgetSlot = false;
+  bool _binding = false;
+  double _visibleFraction = 0;
+  ScrollPosition? _scrollPosition;
+  bool _visibilityCheckScheduled = false;
 
   List<String> get _sources {
     if (_pool.isEmpty) return const <String>[];
@@ -85,6 +104,19 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   void initState() {
     super.initState();
     _reshuffle(widget.sources);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleVisibilityCheck());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = Scrollable.maybeOf(context)?.position;
+    if (!identical(next, _scrollPosition)) {
+      _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+      _scrollPosition = next;
+      _scrollPosition?.addListener(_scheduleVisibilityCheck);
+    }
+    _scheduleVisibilityCheck();
   }
 
   @override
@@ -93,12 +125,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     if (!listEquals(oldWidget.sources, widget.sources) ||
         oldWidget.enableVideo != widget.enableVideo) {
       _reshuffle(widget.sources);
-      _syncVideo();
+      _disposeVideo();
+      _scheduleVisibilityCheck();
     }
   }
 
   @override
   void dispose() {
+    _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+    _VideoPlaybackCoordinator.release(this);
     _disposeVideo();
     super.dispose();
   }
@@ -115,7 +150,84 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     _index = 0;
   }
 
+  void _scheduleVisibilityCheck() {
+    if (!mounted || _visibilityCheckScheduled) return;
+    _visibilityCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibilityCheckScheduled = false;
+      if (!mounted) return;
+      _updateVisibilityAndPlayback();
+    });
+  }
+
+  void _updateVisibilityAndPlayback() {
+    final render = context.findRenderObject();
+    if (render is! RenderBox || !render.hasSize) return;
+
+    final top = render.localToGlobal(Offset.zero).dy;
+    final bottom = top + render.size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final visibleHeight =
+        (math.min(bottom, screenHeight) - math.max(top, 0.0)).clamp(
+          0.0,
+          render.size.height,
+        );
+    final fraction = render.size.height <= 0
+        ? 0.0
+        : visibleHeight / render.size.height;
+    _visibleFraction = fraction;
+
+    if (_sources.isEmpty) return;
+    final current = _sources[_index % _sources.length];
+    if (!widget.enableVideo || !isQuickFilterVideoUrl(current)) {
+      _pauseForCoordinator();
+      return;
+    }
+
+    // Warm the next/current video before it becomes the dominant card.
+    if (fraction >= 0.15 && _video == null && !_binding) {
+      _syncVideo(autoPlay: false);
+    }
+
+    // The 50% rule: whichever card crosses this threshold becomes the one
+    // active dashboard video. The previous owner pauses immediately.
+    if (fraction >= 0.50) {
+      _VideoPlaybackCoordinator.activate(this);
+      _playIfReady();
+    } else {
+      _pauseForCoordinator();
+    }
+
+    // Free decoder/network resources once the card is fully gone.
+    if (fraction <= 0.02 && _video != null) {
+      _disposeVideo();
+    }
+  }
+
+  void _pauseForCoordinator() {
+    final player = _video;
+    if (player != null && player.value.isInitialized && player.value.isPlaying) {
+      player.pause();
+    }
+    _VideoPlaybackCoordinator.release(this);
+  }
+
+  Future<void> _playIfReady() async {
+    final player = _video;
+    if (player == null || !player.value.isInitialized) {
+      await _syncVideo(autoPlay: true);
+      return;
+    }
+    if (_visibleFraction < 0.50) return;
+    final soundOn = ref.read(deckSoundOnProvider);
+    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+    final wantSound = soundOn && (unlocked || !kIsWeb);
+    await player.setVolume(wantSound ? 1 : 0);
+    await player.play();
+  }
+
   void _disposeVideo() {
+    _VideoPlaybackCoordinator.release(this);
     if (_holdsBudgetSlot) {
       _VideoBudget.release();
       _holdsBudgetSlot = false;
@@ -123,6 +235,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     _video?.dispose();
     _video = null;
     _boundVideoUrl = null;
+    _binding = false;
   }
 
   void _advance(int delta) {
@@ -131,61 +244,74 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       _index = (_index + delta) % _sources.length;
       if (_index < 0) _index += _sources.length;
     });
-    _syncVideo();
+    _disposeVideo();
+    _scheduleVisibilityCheck();
   }
 
-  Future<void> _syncVideo() async {
-    if (_sources.isEmpty) return;
+  Future<void> _syncVideo({required bool autoPlay}) async {
+    if (_binding || _sources.isEmpty) return;
     final url = _sources[_index % _sources.length];
     if (!widget.enableVideo || !isQuickFilterVideoUrl(url)) {
       _disposeVideo();
       if (mounted) setState(() {});
       return;
     }
+
     if (url == _boundVideoUrl && _video != null) {
-      final soundOn = ref.read(deckSoundOnProvider);
-      await _video!.setVolume(soundOn ? 1 : 0);
+      if (autoPlay && _visibleFraction >= 0.50) await _playIfReady();
       return;
     }
 
-    if (!_holdsBudgetSlot && !_VideoBudget.tryAcquire()) {
-      _disposeVideo();
-      if (mounted) setState(() {});
-      return;
-    }
+    if (!_holdsBudgetSlot && !_VideoBudget.tryAcquire()) return;
     _holdsBudgetSlot = true;
-
+    _binding = true;
     _boundVideoUrl = url;
+
     final previous = _video;
-    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
     _video = next;
+
     try {
       await next.initialize();
       if (!mounted || _boundVideoUrl != url) {
         await next.dispose();
-        if (identical(_video, next)) {
-          _video = null;
-          _boundVideoUrl = null;
-        }
         return;
       }
-      final soundOn = ref.read(deckSoundOnProvider);
-      final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
-      final wantSound = soundOn && (unlocked || !kIsWeb);
       await next.setLooping(true);
-      await next.setVolume(wantSound ? 1 : 0);
-      await next.play();
-      if (wantSound) await next.setVolume(1);
+      await next.setVolume(0);
+      if (autoPlay && _visibleFraction >= 0.50) {
+        _VideoPlaybackCoordinator.activate(this);
+        await _playIfReady();
+      }
       if (mounted) setState(() {});
     } catch (_) {
+      if (identical(_video, next)) {
+        _video = null;
+        _boundVideoUrl = null;
+      }
+      if (_holdsBudgetSlot) {
+        _VideoBudget.release();
+        _holdsBudgetSlot = false;
+      }
       if (mounted) setState(() {});
     } finally {
+      _binding = false;
       await previous?.dispose();
     }
   }
 
   void _onSoundChanged(bool soundOn) {
-    _video?.setVolume(soundOn ? 1 : 0);
+    final player = _video;
+    if (player == null || !player.value.isInitialized) return;
+    if (_visibleFraction >= 0.50) {
+      final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+      player.setVolume(soundOn && (unlocked || !kIsWeb) ? 1 : 0);
+    } else {
+      player.setVolume(0);
+    }
   }
 
   Widget _buildMedia(String url) {
@@ -240,13 +366,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     final soundOn = ref.watch(deckSoundOnProvider);
     ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
 
-    // Round-robin: only this card advances when the global tick lands on its slot.
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      // Do not swap media on a card while the user is actively looking at it.
+      if (_visibleFraction >= 0.50) return;
       final slots = widget.slotCount.clamp(1, 64);
       if (next % slots == widget.rotateSlot % slots) {
         _advance(1);
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleVisibilityCheck());
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -262,7 +391,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
         fit: StackFit.expand,
         children: [
           AnimatedSwitcher(
-            duration: Duration(milliseconds: kIsWeb ? 220 : 420),
+            duration: Duration(milliseconds: kIsWeb ? 120 : 180),
             child: KeyedSubtree(
               key: ValueKey(current),
               child: _buildMedia(current),
@@ -278,7 +407,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   for (var i = 0; i < sources.length; i++) ...[
                     if (i > 0) const SizedBox(width: 3),
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
+                      duration: const Duration(milliseconds: 150),
                       width: i == _index ? 14 : 6,
                       height: 3,
                       decoration: BoxDecoration(
@@ -301,9 +430,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   AppHaptics.selection();
                   unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
-                  _video?.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-                  if (ref.read(deckSoundOnProvider)) {
-                    _video?.play();
+                  _onSoundChanged(ref.read(deckSoundOnProvider));
+                  if (ref.read(deckSoundOnProvider) && _visibleFraction >= 0.50) {
+                    _playIfReady();
                   }
                 },
                 child: BreathingWidget(
@@ -311,7 +440,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                     width: 28,
                     height: 28,
                     alignment: Alignment.center,
-                    // No white ring — icon + soft dark chip only.
                     decoration: BoxDecoration(
                       color: Colors.black.withAlpha(110),
                       shape: BoxShape.circle,
