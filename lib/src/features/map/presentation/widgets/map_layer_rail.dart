@@ -25,8 +25,8 @@ class MapLayerRail extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
         child: Container(
-          width: 46,
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          width: 48,
+          padding: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(86),
             borderRadius: BorderRadius.circular(999),
@@ -48,14 +48,12 @@ class MapLayerRail extends StatelessWidget {
                 selected: layer == 'all',
                 onTap: () => onLayer('all'),
               ),
-              const SizedBox(height: 2),
               _LayerOrb(
                 icon: Icons.apartment_rounded,
                 label: 'Show listings, $listingCount results',
                 selected: layer == 'listings',
                 onTap: () => onLayer('listings'),
               ),
-              const SizedBox(height: 2),
               _LayerOrb(
                 icon: Icons.people_alt_rounded,
                 label: 'Show people, $peopleCount results',
@@ -98,8 +96,8 @@ class _LayerOrb extends StatelessWidget {
             onTap();
           },
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             child: Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
