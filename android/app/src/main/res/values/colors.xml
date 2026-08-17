@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#000000</color>
-    <!-- Swipess canvas. Keeps the window black behind the Flutter UI so a cold
-         start or a task-switcher thumbnail never flashes the platform white. -->
-    <color name="swipess_canvas">#000000</color>
+    <!-- Exact startup canvas used by the native and Flutter splash. Keeping
+         the window on the same color prevents a one-frame edge/status flash. -->
+    <color name="swipess_canvas">#0A0A0D</color>
 </resources>
