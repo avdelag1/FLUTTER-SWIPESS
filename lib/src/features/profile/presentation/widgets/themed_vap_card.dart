@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
@@ -9,7 +7,6 @@ import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart'
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-/// Full-bleed Cap PEARL card — photo, vault specimens, real validation QR.
 class ThemedVapCard extends StatelessWidget {
   const ThemedVapCard({
     super.key,
@@ -32,316 +29,108 @@ class ThemedVapCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = theme;
     return Container(
-      width: double.infinity,
-      height: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(36),
-          topRight: Radius.circular(40),
-          bottomLeft: Radius.circular(38),
-          bottomRight: Radius.circular(34),
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: t.gradient,
-        ),
-        border: Border.all(color: t.tagBorder, width: 1.4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(90),
-            blurRadius: 36,
-            offset: const Offset(0, 18),
-          ),
-        ],
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: t.gradient),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: t.tagBorder, width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withAlpha(75), blurRadius: 28, offset: const Offset(0, 12))],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(36),
-          topRight: Radius.circular(40),
-          bottomLeft: Radius.circular(38),
-          bottomRight: Radius.circular(34),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 22, 18, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _IdentityHeader(theme: t, data: data, idNumber: idNumber),
-                    if (data.bio?.isNotEmpty == true) ...[
-                      const SizedBox(height: 18),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: t.tagBg,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: t.tagBorder),
-                        ),
-                        child: Text(
-                          data.bio!,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: t.textSecondary,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                            height: 1.45,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (data.languages.isNotEmpty) ...[
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.translate_rounded,
-                            size: 16,
-                            color: t.textSecondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              data.languages.join(' · ').toUpperCase(),
-                              style: GoogleFonts.plusJakartaSans(
-                                color: t.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (data.interests.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final tag in data.interests.take(8))
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: t.tagBg,
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: t.tagBorder),
-                              ),
-                              child: Text(
-                                tag.toUpperCase(),
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: t.tagText,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  fontStyle: FontStyle.italic,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: 18),
-                    _AuthorizedVault(
-                      theme: t,
-                      docsAsync: docsAsync,
-                      onPreview: onPreview,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _QrFooter(theme: t, validationUrl: validationUrl),
-          ],
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _IdentitySection(theme: t, data: data, idNumber: idNumber, validationUrl: validationUrl),
+          const SizedBox(height: 18),
+          Divider(color: t.tagBorder, height: 1),
+          const SizedBox(height: 18),
+          _DocumentsSection(theme: t, docsAsync: docsAsync, onPreview: onPreview),
+        ]),
       ),
     );
   }
 }
 
-class _IdentityHeader extends StatelessWidget {
-  const _IdentityHeader({
-    required this.theme,
-    required this.data,
-    required this.idNumber,
-  });
-
+class _IdentitySection extends StatelessWidget {
+  const _IdentitySection({required this.theme, required this.data, required this.idNumber, required this.validationUrl});
   final VapCardTheme theme;
   final VapIdCard data;
   final String idNumber;
+  final String validationUrl;
 
   @override
   Widget build(BuildContext context) {
     final t = theme;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final photoW = (constraints.maxWidth * 0.40).clamp(132.0, 168.0);
-        final photoH = photoW * (200 / 160);
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: photoW,
-              height: photoH,
-              decoration: BoxDecoration(
-                color: t.tagBg,
-                border: Border.all(color: t.tagBorder),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(28),
-                  bottomLeft: Radius.circular(22),
-                  bottomRight: Radius.circular(26),
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: data.avatarUrl != null
-                  ? Image.network(
-                      data.avatarUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          _Initials(data: data, theme: t),
-                    )
-                  : _Initials(data: data, theme: t),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.verified_user_rounded,
-                          size: 20,
-                          color: t.badge,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            'AUTHORIZED RESIDENT',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: t.badge,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              fontStyle: FontStyle.italic,
-                              letterSpacing: 1.8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      data.displayName.toUpperCase(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: t.textPrimary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        letterSpacing: -1,
-                        height: 0.95,
-                      ),
-                    ),
-                    if (data.occupation?.isNotEmpty == true) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        data.occupation!.toUpperCase(),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: t.accent,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          fontStyle: FontStyle.italic,
-                          letterSpacing: 1.4,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 15,
-                          color: t.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            data.locationLabel.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: t.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'TXID: $idNumber',
-                      style: GoogleFonts.robotoMono(
-                        color: t.textTertiary,
-                        fontSize: 11,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _Initials extends StatelessWidget {
-  const _Initials({required this.data, required this.theme});
-  final VapIdCard data;
-  final VapCardTheme theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: theme.tagBg,
-      child: Center(
-        child: Text(
-          data.displayName.isNotEmpty ? data.displayName[0].toUpperCase() : '?',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 52,
-            fontWeight: FontWeight.w900,
-            color: theme.accent,
-          ),
+    final memberSince = data.createdAt?.year.toString() ?? '—';
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(Icons.verified_user_outlined, color: t.badge, size: 17),
+        const SizedBox(width: 6),
+        Text('SWIPESS LOCAL ID', style: GoogleFonts.plusJakartaSans(color: t.badge, fontWeight: FontWeight.w900, fontSize: 9.5, letterSpacing: 1.5)),
+      ]),
+      const SizedBox(height: 13),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 112,
+          height: 142,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(color: t.tagBg, borderRadius: BorderRadius.circular(20), border: Border.all(color: t.tagBorder)),
+          child: data.avatarUrl != null
+              ? Image.network(data.avatarUrl!, fit: BoxFit.cover, errorBuilder: (_, _, _) => _Initials(data: data, theme: t))
+              : _Initials(data: data, theme: t),
         ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(data.displayName.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: t.textPrimary, fontWeight: FontWeight.w900, fontSize: 24, height: .98, letterSpacing: -.7)),
+          if (data.occupation?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 7),
+            Text(data.occupation!.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: t.accent, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1)),
+          ],
+          const SizedBox(height: 10),
+          _MiniLine(icon: Icons.location_on_outlined, text: data.locationLabel, color: t.textSecondary),
+          const SizedBox(height: 6),
+          Text('ID $idNumber', style: GoogleFonts.robotoMono(color: t.textTertiary, fontSize: 9.5, letterSpacing: .8)),
+        ])),
+      ]),
+      const SizedBox(height: 16),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(color: t.tagBg, borderRadius: BorderRadius.circular(18), border: Border.all(color: t.tagBorder)),
+        child: Wrap(runSpacing: 12, spacing: 10, children: [
+          _Field(label: 'NATIONALITY', value: data.nationality ?? data.country ?? '—', theme: t),
+          _Field(label: 'AGE', value: data.age?.toString() ?? '—', theme: t),
+          _Field(label: 'CITY', value: data.city ?? '—', theme: t),
+          _Field(label: 'COUNTRY', value: data.country ?? '—', theme: t),
+          _Field(label: 'LOCAL SINCE', value: data.yearsInCity == null ? '—' : '${data.yearsInCity} years', theme: t),
+          _Field(label: 'MEMBER SINCE', value: memberSince, theme: t),
+        ]),
       ),
-    );
+      if (data.bio?.trim().isNotEmpty == true) ...[
+        const SizedBox(height: 12),
+        Text(data.bio!, style: GoogleFonts.plusJakartaSans(color: t.textSecondary, fontSize: 11.5, height: 1.4)),
+      ],
+      const SizedBox(height: 14),
+      Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('SCAN TO VALIDATE', style: GoogleFonts.plusJakartaSans(color: t.textPrimary, fontWeight: FontWeight.w900, fontSize: 9.5, letterSpacing: 1.2)),
+          const SizedBox(height: 3),
+          Text('Identity first · documents below', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 9.5)),
+        ])),
+        Container(
+          width: 72,
+          height: 72,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+          child: QrImageView(data: validationUrl, padding: EdgeInsets.zero),
+        ),
+      ]),
+    ]);
   }
 }
 
-class _AuthorizedVault extends StatelessWidget {
-  const _AuthorizedVault({
-    required this.theme,
-    required this.docsAsync,
-    required this.onPreview,
-  });
-
+class _DocumentsSection extends StatelessWidget {
+  const _DocumentsSection({required this.theme, required this.docsAsync, required this.onPreview});
   final VapCardTheme theme;
   final AsyncValue<List<LegalDocument>> docsAsync;
   final ValueChanged<LegalDocument> onPreview;
@@ -349,110 +138,31 @@ class _AuthorizedVault extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = theme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-      decoration: BoxDecoration(
-        color: t.tagBg,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: t.tagBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'AUTHORIZED VAULT',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: t.accent,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2.4,
-                      ),
-                    ),
-                    Text(
-                      'Verification documents',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: t.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              docsAsync.maybeWhen(
-                data: (items) {
-                  final verified = items
-                      .where((d) => d.status == 'verified')
-                      .length;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: t.isDark
-                          ? Colors.white.withAlpha(28)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '$verified✓',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                      ),
-                    ),
-                  );
-                },
-                orElse: () => const SizedBox.shrink(),
-              ),
-            ],
+    final docs = docsAsync.value ?? const <LegalDocument>[];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('DOCUMENTS', style: GoogleFonts.plusJakartaSans(color: t.textPrimary, fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -.2)),
+      const SizedBox(height: 3),
+      Text('Verification files · tap any uploaded document to open it', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 10.5)),
+      const SizedBox(height: 12),
+      if (docsAsync.isLoading && docsAsync.value == null)
+        LinearProgressIndicator(color: t.accent, minHeight: 2)
+      else
+        for (final entry in vapVaultDocTypes) ...[
+          _DocumentRow(
+            theme: t,
+            label: entry.$2,
+            doc: docs.where((d) => d.documentType == entry.$1).firstOrNull,
+            onPreview: onPreview,
           ),
-          const SizedBox(height: 12),
-          if (docsAsync.isLoading && docsAsync.value == null)
-            LinearProgressIndicator(color: t.accent, minHeight: 2)
-          else
-            Column(
-              children: [
-                for (final entry in vapVaultDocTypes) ...[
-                  _VaultDocRow(
-                    theme: t,
-                    typeKey: entry.$1,
-                    label: entry.$2,
-                    doc: (docsAsync.value ?? const <LegalDocument>[])
-                        .where((d) => d.documentType == entry.$1)
-                        .firstOrNull,
-                    onPreview: onPreview,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ],
-            ),
+          const SizedBox(height: 8),
         ],
-      ),
-    );
+    ]);
   }
 }
 
-class _VaultDocRow extends StatelessWidget {
-  const _VaultDocRow({
-    required this.theme,
-    required this.typeKey,
-    required this.label,
-    required this.doc,
-    required this.onPreview,
-  });
-
+class _DocumentRow extends StatelessWidget {
+  const _DocumentRow({required this.theme, required this.label, required this.doc, required this.onPreview});
   final VapCardTheme theme;
-  final String typeKey;
   final String label;
   final LegalDocument? doc;
   final ValueChanged<LegalDocument> onPreview;
@@ -460,81 +170,34 @@ class _VaultDocRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = theme;
-    final hasFile = doc != null && doc!.fileName.isNotEmpty;
-    final verified = doc?.status == 'verified';
-    final pending = doc?.status == 'pending';
-
-    return Opacity(
-      opacity: hasFile ? 1 : 0.72,
-      child: Material(
-        color: t.isDark
-            ? Colors.white.withAlpha(22)
-            : Colors.white.withAlpha(200),
+    final uploaded = doc != null && doc!.fileName.isNotEmpty;
+    return Material(
+      color: t.isDark ? Colors.white.withAlpha(18) : Colors.white.withAlpha(210),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: uploaded ? () => onPreview(doc!) : null,
         borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: hasFile ? () => onPreview(doc!) : null,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
-            child: Row(
-              children: [
-                _VaultThumb(theme: t, typeKey: typeKey, doc: doc),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                          letterSpacing: 0.9,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        hasFile ? 'Tap for authorized preview' : 'Not uploaded',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: t.textTertiary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  verified
-                      ? Icons.check_circle_rounded
-                      : pending
-                      ? Icons.schedule_rounded
-                      : Icons.description_outlined,
-                  size: 18,
-                  color: verified
-                      ? const Color(0xFF16A34A)
-                      : pending
-                      ? t.textSecondary
-                      : t.textTertiary,
-                ),
-              ],
-            ),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(children: [
+            _DocThumb(theme: t, doc: doc),
+            const SizedBox(width: 11),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 11.5, letterSpacing: .5)),
+              const SizedBox(height: 2),
+              Text(uploaded ? 'Tap to preview' : 'Not uploaded', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 9.5)),
+            ])),
+            Icon(uploaded ? Icons.open_in_new_rounded : Icons.description_outlined, color: uploaded ? t.accent : t.textTertiary, size: 17),
+          ]),
         ),
       ),
     );
   }
 }
 
-class _VaultThumb extends ConsumerWidget {
-  const _VaultThumb({
-    required this.theme,
-    required this.typeKey,
-    required this.doc,
-  });
-
+class _DocThumb extends ConsumerWidget {
+  const _DocThumb({required this.theme, required this.doc});
   final VapCardTheme theme;
-  final String typeKey;
   final LegalDocument? doc;
 
   @override
@@ -543,141 +206,60 @@ class _VaultThumb extends ConsumerWidget {
     final urlAsync = (doc != null && doc!.isImage && doc!.filePath.isNotEmpty)
         ? ref.watch(documentSignedUrlProvider(doc!.filePath))
         : null;
-
     return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: t.tagBorder, width: 1.0),
-        color: t.isDark
-            ? Colors.black.withAlpha(50)
-            : Colors.white.withAlpha(100),
-      ),
+      width: 42,
+      height: 42,
       clipBehavior: Clip.antiAlias,
-      child: urlAsync != null
-          ? urlAsync.maybeWhen(
-              data: (url) {
-                if (url == null)
-                  return Icon(
-                    Icons.description_outlined,
-                    color: t.textSecondary,
-                    size: 20,
-                  );
-                return ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-                  child: Transform.scale(
-                    scale: 1.15,
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Icon(
-                        Icons.description_outlined,
-                        color: t.textSecondary,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              orElse: () => Icon(
-                Icons.description_outlined,
-                color: t.textSecondary,
-                size: 20,
-              ),
-            )
-          : Icon(
-              Icons.insert_drive_file_outlined,
-              color: t.textTertiary,
-              size: 20,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: t.tagBg, border: Border.all(color: t.tagBorder)),
+      child: urlAsync == null
+          ? Icon(Icons.description_outlined, color: t.textTertiary, size: 17)
+          : urlAsync.when(
+              data: (url) => url == null || url.isEmpty
+                  ? Icon(Icons.description_outlined, color: t.textTertiary, size: 17)
+                  : Image.network(url, fit: BoxFit.cover, errorBuilder: (_, _, _) => Icon(Icons.description_outlined, color: t.textTertiary, size: 17)),
+              loading: () => const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 1.5)),
+              error: (_, _) => Icon(Icons.description_outlined, color: t.textTertiary, size: 17),
             ),
     );
   }
 }
 
-class _QrFooter extends StatelessWidget {
-  const _QrFooter({required this.theme, required this.validationUrl});
-
+class _Initials extends StatelessWidget {
+  const _Initials({required this.data, required this.theme});
+  final VapIdCard data;
   final VapCardTheme theme;
-  final String validationUrl;
-
   @override
-  Widget build(BuildContext context) {
-    final t = theme;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 16, 16),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: t.tagBorder)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SWIPESS',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.8,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  'VIRTUAL ID CARD',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: t.textTertiary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 9,
-                    letterSpacing: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'SCAN TO VALIDATE',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: t.accent,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 9,
-                    letterSpacing: 1.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(40),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: QrImageView(
-              data: validationUrl,
-              version: QrVersions.auto,
-              size: 104,
-              gapless: true,
-              padding: EdgeInsets.zero,
-              eyeStyle: const QrEyeStyle(
-                eyeShape: QrEyeShape.square,
-                color: Colors.black,
-              ),
-              dataModuleStyle: const QrDataModuleStyle(
-                dataModuleShape: QrDataModuleShape.square,
-                color: Colors.black,
-              ),
-              errorCorrectionLevel: QrErrorCorrectLevel.H,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ColoredBox(
+        color: theme.tagBg,
+        child: Center(child: Text(data.displayName.isNotEmpty ? data.displayName[0].toUpperCase() : '?', style: GoogleFonts.plusJakartaSans(fontSize: 44, fontWeight: FontWeight.w900, color: theme.accent))),
+      );
+}
+
+class _Field extends StatelessWidget {
+  const _Field({required this.label, required this.value, required this.theme});
+  final String label;
+  final String value;
+  final VapCardTheme theme;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 132,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: GoogleFonts.plusJakartaSans(color: theme.textTertiary, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: .8)),
+          const SizedBox(height: 2),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: theme.textPrimary, fontSize: 11, fontWeight: FontWeight.w700)),
+        ]),
+      );
+}
+
+class _MiniLine extends StatelessWidget {
+  const _MiniLine({required this.icon, required this.text, required this.color});
+  final IconData icon;
+  final String text;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Icon(icon, color: color, size: 13),
+        const SizedBox(width: 4),
+        Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: color, fontSize: 10.5, fontWeight: FontWeight.w600))),
+      ]);
 }
