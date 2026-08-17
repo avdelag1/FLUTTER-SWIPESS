@@ -4,7 +4,7 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/widgets/app_notification_bar.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_modal.dart';
 
 /// Root overlay stack matching Cap `AppLayout` modals (VAP, map, concierge).
@@ -26,8 +26,7 @@ class OverlayModalsHost extends ConsumerWidget {
             onDismissed: () =>
                 ref.read(overlayModalsProvider.notifier).closePassportMap(),
             builder: (context, dismiss) {
-              return LiveMapScreen(
-                asOverlay: true,
+              return RealMapboxScreen(
                 onClose: dismiss,
                 showCitiesOnOpen: modals.mapShowCities,
               );
@@ -39,7 +38,6 @@ class OverlayModalsHost extends ConsumerWidget {
             onClose: () =>
                 ref.read(overlayModalsProvider.notifier).closeConcierge(),
           ),
-        // Cap keeps the banner above every sheet and map (z-index 2147483000).
         const AppNotificationBar(),
       ],
     );
