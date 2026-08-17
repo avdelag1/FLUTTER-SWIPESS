@@ -16,8 +16,6 @@ import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mu
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Events quick filter with viewport-aware Reels-style playback.
-/// It preloads when approaching the screen and only plays once 50%+ is visible.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -37,6 +35,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   bool _binding = false;
   bool _advancing = false;
   bool _leavingForEvents = false;
+  bool _routeActive = true;
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
@@ -57,6 +56,17 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final nextRouteActive = TickerMode.of(context);
+    if (_routeActive != nextRouteActive) {
+      _routeActive = nextRouteActive;
+      if (!_routeActive) {
+        _visibleFraction = 0;
+        _pauseInvisible();
+      } else {
+        _leavingForEvents = false;
+        _scheduleVisibilityCheck();
+      }
+    }
     final next = Scrollable.maybeOf(context)?.position;
     if (!identical(next, _scrollPosition)) {
       _scrollPosition?.removeListener(_scheduleVisibilityCheck);
@@ -88,17 +98,18 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   void _scheduleVisibilityCheck() {
-    if (!mounted || _visibilityCheckScheduled || _leavingForEvents) return;
+    if (!mounted || !_routeActive || _visibilityCheckScheduled || _leavingForEvents) return;
     _visibilityCheckScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _visibilityCheckScheduled = false;
-      if (!mounted || _leavingForEvents) return;
+      if (!mounted || !_routeActive || _leavingForEvents) return;
       _updateVisibility();
     });
   }
 
   void _updateVisibility() {
-    if (_leavingForEvents) {
+    if (!_routeActive || _leavingForEvents) {
+      _visibleFraction = 0;
       _pauseInvisible();
       return;
     }
@@ -112,9 +123,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
           0.0,
           render.size.height,
         );
-    _visibleFraction = render.size.height <= 0
-        ? 0
-        : visibleHeight / render.size.height;
+    _visibleFraction = render.size.height <= 0 ? 0 : visibleHeight / render.size.height;
 
     final videos = _videos(ref.read(videoEventsProvider));
     if (_visibleFraction >= 0.15 && _player == null && !_binding) {
@@ -134,7 +143,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   Future<void> _resumeVisible() async {
     final player = _player;
-    if (_leavingForEvents ||
+    if (!_routeActive ||
+        _leavingForEvents ||
         player == null ||
         !player.value.isInitialized ||
         _visibleFraction < 0.50) {
@@ -147,12 +157,14 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   void _pauseInvisible() {
+    _player?.setVolume(0);
+    _music?.setVolume(0);
     _player?.pause();
     _music?.pause();
   }
 
   void _onTick() {
-    if (_leavingForEvents || _binding || _advancing || _visibleFraction < 0.50) {
+    if (!_routeActive || _leavingForEvents || _binding || _advancing || _visibleFraction < 0.50) {
       return;
     }
     final player = _player;
@@ -172,7 +184,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   Future<void> _bind(List<Event> videos, {required bool autoPlay}) async {
-    if (_leavingForEvents || _binding || videos.isEmpty) return;
+    if (!_routeActive || _leavingForEvents || _binding || videos.isEmpty) return;
     if (_index >= videos.length) _index = 0;
     final event = videos[_index];
     final url = event.videoUrl?.trim();
@@ -196,7 +208,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
     try {
       await next.initialize();
-      if (!mounted || _boundUrl != url || _leavingForEvents) {
+      if (!mounted || !_routeActive || _boundUrl != url || _leavingForEvents) {
+        await next.setVolume(0);
         await next.dispose();
         return;
       }
@@ -218,6 +231,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       _advancing = false;
       await previous?.dispose();
       if (mounted &&
+          _routeActive &&
           !_leavingForEvents &&
           _visibleFraction >= 0.50 &&
           _player == null) {
@@ -228,11 +242,12 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   Future<void> _applySound(VideoPlayerController? player) async {
     if (player == null) return;
-    await player.setVolume(_leavingForEvents ? 0 : (_wantSound ? 1 : 0));
+    await player.setVolume(!_routeActive || _leavingForEvents ? 0 : (_wantSound ? 1 : 0));
   }
 
   Future<void> _syncMusic(Event event) async {
-    if (_leavingForEvents || _visibleFraction < 0.50) {
+    if (!_routeActive || _leavingForEvents || _visibleFraction < 0.50) {
+      await _music?.setVolume(0);
       await _music?.pause();
       return;
     }
@@ -257,9 +272,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     try {
       await next.initialize();
       if (!mounted ||
+          !_routeActive ||
           _musicUrl != url ||
           _visibleFraction < 0.50 ||
           _leavingForEvents) {
+        await next.setVolume(0);
         await next.dispose();
         return;
       }
@@ -278,7 +295,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   void _advance(List<Event> videos, int delta) {
-    if (videos.isEmpty || _binding || _leavingForEvents) return;
+    if (videos.isEmpty || _binding || _leavingForEvents || !_routeActive) return;
     _index = (_index + delta) % videos.length;
     if (_index < 0) _index += videos.length;
     _boundUrl = null;
@@ -286,6 +303,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   void _toggleSound() {
+    if (!_routeActive || _leavingForEvents) return;
     AppHaptics.selection();
     unlockDeckMedia();
     final nextOn = !ref.read(deckSoundOnProvider);
@@ -301,9 +319,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   Future<void> _openEvents(List<Event> videos) async {
-    if (_leavingForEvents) return;
+    if (_leavingForEvents || !_routeActive) return;
     final current = _currentOf(videos);
     final player = _player;
+    final music = _music;
     final position = player != null && player.value.isInitialized
         ? player.value.position
         : Duration.zero;
@@ -317,13 +336,20 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _leavingForEvents = true;
     _visibleFraction = 0;
     player?.removeListener(_onTick);
+    _player = null;
+    _music = null;
+    _boundUrl = null;
+    _musicUrl = null;
+
     try {
       await player?.setVolume(0);
-      await _music?.setVolume(0);
+      await music?.setVolume(0);
       await player?.pause();
-      await _music?.pause();
+      await music?.pause();
+      await player?.dispose();
+      await music?.dispose();
     } catch (_) {
-      // Navigation must still proceed if the native player is already tearing down.
+      // The route change is more important than a native player already closing.
     }
     if (!mounted) return;
     AppHaptics.medium();
@@ -337,7 +363,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final soundOn = ref.watch(deckSoundOnProvider);
 
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
-      if (!_leavingForEvents && _visibleFraction >= 0.50) {
+      if (_routeActive && !_leavingForEvents && _visibleFraction >= 0.50) {
         _applySound(_player);
         final event = _currentOf(videos);
         if (on && event != null) {
@@ -345,11 +371,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         } else {
           _music?.pause();
         }
+      } else {
+        _pauseInvisible();
       }
     });
 
     ref.listen<List<Event>>(videoEventsProvider, (_, next) {
-      if (!_leavingForEvents && _visibleFraction >= 0.15) {
+      if (_routeActive && !_leavingForEvents && _visibleFraction >= 0.15) {
         _bind(_videos(next), autoPlay: _visibleFraction >= 0.50);
       }
     });
@@ -395,8 +423,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
-        final gesture = velocity.abs() >= 120 ? velocity : _dragDx;
-        if ((gesture.abs() >= 10 || _dragDx.abs() >= 10) && videos.length > 1) {
+        final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
+        if ((gesture.abs() >= 8 || _dragDx.abs() >= 8) && videos.length > 1) {
           AppHaptics.selection();
           _advance(videos, gesture < 0 ? 1 : -1);
         }
@@ -411,8 +439,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               colorFilter: const ColorFilter.matrix(_clarityMatrix),
               child: media,
             ),
-            // Keep just enough darkening behind the caption. Do not put a gray
-            // veil over the whole video/photo.
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
