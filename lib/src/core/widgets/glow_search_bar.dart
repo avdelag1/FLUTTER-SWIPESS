@@ -34,7 +34,8 @@ class GlowSearchBar extends StatefulWidget {
   State<GlowSearchBar> createState() => _GlowSearchBarState();
 }
 
-class _GlowSearchBarState extends State<GlowSearchBar> {
+class _GlowSearchBarState extends State<GlowSearchBar>
+    with SingleTickerProviderStateMixin {
   static const _rotatingPrompts = <String>[
     'Ask anything',
     'Want to find the best properties?',
@@ -50,12 +51,17 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
 
   Timer? _promptTimer;
   int _promptIndex = 0;
+  late final AnimationController _shineController;
 
   bool get _isTapOnly => widget.onTap != null && widget.onChanged == null;
 
   @override
   void initState() {
     super.initState();
+    _shineController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
     _startPromptRotation();
   }
 
@@ -82,6 +88,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   @override
   void dispose() {
     _promptTimer?.cancel();
+    _shineController.dispose();
     super.dispose();
   }
 
@@ -135,32 +142,69 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                           ? Align(
                               alignment: Alignment.centerLeft,
                               child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 360),
+                                duration: const Duration(milliseconds: 650),
+                                reverseDuration: const Duration(
+                                  milliseconds: 420,
+                                ),
                                 switchInCurve: Curves.easeOutCubic,
                                 switchOutCurve: Curves.easeInCubic,
                                 transitionBuilder: (child, animation) {
                                   final slide = Tween<Offset>(
-                                    begin: const Offset(0, .12),
+                                    begin: const Offset(0, .18),
                                     end: Offset.zero,
+                                  ).animate(animation);
+                                  final scale = Tween<double>(
+                                    begin: .985,
+                                    end: 1,
                                   ).animate(animation);
                                   return FadeTransition(
                                     opacity: animation,
                                     child: SlideTransition(
                                       position: slide,
-                                      child: child,
+                                      child: ScaleTransition(
+                                        scale: scale,
+                                        alignment: Alignment.centerLeft,
+                                        child: child,
+                                      ),
                                     ),
                                   );
                                 },
-                                child: Text(
-                                  displayHint,
+                                child: AnimatedBuilder(
                                   key: ValueKey(_promptIndex),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: ink.withAlpha(145),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
+                                  animation: _shineController,
+                                  child: Text(
+                                    displayHint,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                      letterSpacing: .05,
+                                    ),
                                   ),
+                                  builder: (context, child) {
+                                    final sweep = _shineController.value;
+                                    return ShaderMask(
+                                      blendMode: BlendMode.srcIn,
+                                      shaderCallback: (bounds) {
+                                        final x = -1.8 + (sweep * 3.6);
+                                        return LinearGradient(
+                                          begin: Alignment(x - .8, 0),
+                                          end: Alignment(x + .8, 0),
+                                          colors: [
+                                            ink.withAlpha(135),
+                                            const Color(0xFF93C5FD),
+                                            Colors.white,
+                                            const Color(0xFF60A5FA),
+                                            ink.withAlpha(135),
+                                          ],
+                                          stops: const [0, .32, .5, .68, 1],
+                                        ).createShader(bounds);
+                                      },
+                                      child: child,
+                                    );
+                                  },
                                 ),
                               ),
                             )
