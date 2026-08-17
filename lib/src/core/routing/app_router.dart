@@ -58,7 +58,7 @@ import 'package:flutter_swipes/src/features/roommates/presentation/screens/roomm
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/screens/safe_listing_detail_route.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 
@@ -123,8 +123,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state) =>
             PublicProfilePreviewScreen(userId: state.pathParameters['id']!),
       ),
-      // Public member link the share sheets hand out as
-      // `https://www.swipess.com/u/<id>`.
       GoRoute(
         path: '/u/:id',
         redirect: (ctx, state) =>
@@ -177,15 +175,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/listing/:id',
-        builder: (ctx, state) =>
-            ListingDetailScreen(listingId: state.pathParameters['id']),
+        builder: (ctx, state) => SafeListingDetailRoute(
+          listingId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: '/profile/:id',
         builder: (ctx, state) =>
             ProfileDetailScreen(userId: state.pathParameters['id']!),
       ),
-      // Legacy event_card push target
       GoRoute(
         path: '/event',
         redirect: (ctx, state) {
@@ -231,7 +229,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const LegalHubScreen(),
           ),
           GoRoute(
-            // Cap dock legal → LawyerServicesPage (chrome stays).
             path: AppPaths.clientLegalServices,
             builder: (ctx, _) => const LawyerServicesScreen(),
           ),
@@ -246,7 +243,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Full-screen authenticated Cap routes (no bottom dock)
       GoRoute(
         path: AppPaths.clientSettings,
         builder: (ctx, _) => const SettingsScreen(audience: 'client'),
@@ -421,9 +417,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  // Recovery mail points at https://www.swipess.com/reset-password. On device
-  // that arrives as a Universal Link / App Link: supabase_flutter consumes the
-  // token and emits `passwordRecovery`, and we send the user to the form.
   ref.listen<AsyncValue<AuthState>>(authStateProvider, (_, next) {
     if (next.value?.event == AuthChangeEvent.passwordRecovery) {
       router.go(AppPaths.resetPassword);
