@@ -95,9 +95,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isLikes = location == AppPaths.clientLikedProperties;
     final isSeekers = location == AppPaths.exploreSeekers;
 
-    // Only these two shell pages do not own a back control themselves.
-    // Messages, Events, Legal Hub, Legal Services, VAP ID and Profile already
-    // render their own back/close control; adding another one duplicates UI.
     final showShellBack = isLikes || isSeekers;
     if (isEvents) _eventsMounted = true;
 
@@ -116,9 +113,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final profile = ref.watch(currentProfileProvider).value;
     final isLight = ref.watch(isLightThemeProvider);
     final showChrome = ref.watch(chromeVisibilityProvider);
-
-    // The shared header is a primary navigation surface, not decoration.
-    // Keep it available on every route rendered by this shell.
     final showHeader = showChrome;
 
     final overlays = ref.watch(overlayModalsProvider);
@@ -136,7 +130,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              if (notification is ScrollUpdateNotification) {
+              // The event deck owns its immersive chrome timing. Treating each
+              // vertical page swipe as a regular scroll made the app header/dock
+              // flash back on during Reels-style browsing.
+              if (!isEvents && notification is ScrollUpdateNotification) {
                 ref.read(chromeVisibilityProvider.notifier).onScroll(
                       pixels: notification.metrics.pixels,
                       delta: notification.scrollDelta ?? 0,
@@ -157,12 +154,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 if (_eventsMounted)
                   Offstage(
                     offstage: !isEvents,
-                    child: TickerMode(
-                      enabled: isEvents,
-                      child: _withPersistentChromeInsets(
-                        context,
-                        const EventsScreen(),
-                      ),
+                    child: const TickerMode(
+                      enabled: true,
+                      child: EventsScreen(),
                     ),
                   ),
                 if (!isDashboard && !isEvents)
@@ -280,9 +274,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 return;
                               }
 
-                              // AI is an overlay, not a replacement page. Keep
-                              // the shared navigation visible and make the dock
-                              // button a clean open/close toggle.
                               ref.read(chromeVisibilityProvider.notifier).show();
                               if (overlays.showConcierge) {
                                 ref
