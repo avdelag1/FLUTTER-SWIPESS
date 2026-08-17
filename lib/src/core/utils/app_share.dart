@@ -7,8 +7,8 @@ abstract final class AppShare {
   static String profileUrl(String id) => '$_origin/u/$id';
   static String eventUrl(String id) => '$_origin/s/event/$id';
 
-  static Future<void> text(String text, {String? subject}) {
-    return SharePlus.instance.share(
+  static Future<void> text(String text, {String? subject}) async {
+    await SharePlus.instance.share(
       ShareParams(text: text, subject: subject),
     );
   }
