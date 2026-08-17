@@ -24,6 +24,7 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
             'p_user_lon': loc.longitude,
             'p_radius_km': loc.radiusKm,
             'p_limit': limit,
+            'p_exclude_owner_id': client.auth.currentUser?.id,
           },
         )
         .timeout(const Duration(seconds: 8));
