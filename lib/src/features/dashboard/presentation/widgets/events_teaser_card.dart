@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,11 +15,8 @@ import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mu
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Cap `EventsVideoQuickFilter` — segments + shared mute + advance on end.
-///
-/// Sound stays on for the whole deck after one unmute (Cap: do not auto-mute
-/// on event change). Background music uses its own looping player so clip
-/// swaps don't kill audio.
+/// Events quick filter with viewport-aware Reels-style playback.
+/// It preloads when approaching the screen and only plays once 50%+ is visible.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -36,9 +35,31 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   double _dragDx = 0;
   bool _binding = false;
   bool _advancing = false;
+  double _visibleFraction = 0;
+  ScrollPosition? _scrollPosition;
+  bool _visibilityCheckScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleVisibilityCheck());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final next = Scrollable.maybeOf(context)?.position;
+    if (!identical(next, _scrollPosition)) {
+      _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+      _scrollPosition = next;
+      _scrollPosition?.addListener(_scheduleVisibilityCheck);
+    }
+    _scheduleVisibilityCheck();
+  }
 
   @override
   void dispose() {
+    _scrollPosition?.removeListener(_scheduleVisibilityCheck);
     _player?.removeListener(_onTick);
     _player?.dispose();
     _music?.dispose();
@@ -57,8 +78,65 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     return ref.read(deckSoundOnProvider) && (notifier.mediaUnlocked || !kIsWeb);
   }
 
+  void _scheduleVisibilityCheck() {
+    if (!mounted || _visibilityCheckScheduled) return;
+    _visibilityCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _visibilityCheckScheduled = false;
+      if (!mounted) return;
+      _updateVisibility();
+    });
+  }
+
+  void _updateVisibility() {
+    final render = context.findRenderObject();
+    if (render is! RenderBox || !render.hasSize) return;
+    final top = render.localToGlobal(Offset.zero).dy;
+    final bottom = top + render.size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final visibleHeight =
+        (math.min(bottom, screenHeight) - math.max(top, 0.0)).clamp(
+          0.0,
+          render.size.height,
+        );
+    _visibleFraction = render.size.height <= 0
+        ? 0
+        : visibleHeight / render.size.height;
+
+    final videos = _videos(ref.read(videoEventsProvider));
+    if (_visibleFraction >= 0.15 && _player == null && !_binding) {
+      _bind(videos, autoPlay: false);
+    }
+
+    if (_visibleFraction >= 0.50) {
+      if (_player == null) {
+        _bind(videos, autoPlay: true);
+      } else {
+        _resumeVisible();
+      }
+    } else {
+      _pauseInvisible();
+    }
+  }
+
+  Future<void> _resumeVisible() async {
+    final player = _player;
+    if (player == null || !player.value.isInitialized || _visibleFraction < 0.50) {
+      return;
+    }
+    await _applySound(player);
+    await player.play();
+    final current = _currentOf(_videos(ref.read(videoEventsProvider)));
+    if (current != null) await _syncMusic(current);
+  }
+
+  void _pauseInvisible() {
+    _player?.pause();
+    _music?.pause();
+  }
+
   void _onTick() {
-    if (_binding || _advancing) return;
+    if (_binding || _advancing || _visibleFraction < 0.50) return;
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
     final videos = _videos(ref.read(videoEventsProvider));
@@ -72,19 +150,18 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _advancing = true;
     player.removeListener(_onTick);
     _index = (_index + 1) % videos.length;
-    _bind(videos);
+    _bind(videos, autoPlay: true);
   }
 
-  Future<void> _bind(List<Event> videos) async {
-    if (_binding) return;
-    if (videos.isEmpty) return;
+  Future<void> _bind(List<Event> videos, {required bool autoPlay}) async {
+    if (_binding || videos.isEmpty) return;
     if (_index >= videos.length) _index = 0;
     final event = videos[_index];
     final url = event.videoUrl?.trim();
     if (url == null || url.isEmpty) return;
+
     if (url == _boundUrl && _player != null && _player!.value.isInitialized) {
-      await _applySound(_player);
-      await _syncMusic(event);
+      if (autoPlay && _visibleFraction >= 0.50) await _resumeVisible();
       _advancing = false;
       return;
     }
@@ -98,69 +175,48 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _player = next;
+
     try {
       await next.initialize();
       if (!mounted || _boundUrl != url) {
         await next.dispose();
-        if (identical(_player, next)) {
-          _player = null;
-          _boundUrl = null;
-        }
         return;
       }
       await next.setLooping(videos.length == 1);
-      // Keep previous clip playing (unmuted) until the next one is actually
-      // playing — browsers treat that as continued media engagement.
-      await _playWithDeckSound(next, event);
+      await next.setVolume(0);
       next.addListener(_onTick);
-      await _syncMusic(event);
+      if (autoPlay && _visibleFraction >= 0.50) {
+        await _resumeVisible();
+      }
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted && videos.length > 1) {
         _index = (_index + 1) % videos.length;
         _boundUrl = null;
-        _binding = false;
-        _advancing = false;
-        await previous?.dispose();
-        await _bind(videos);
-        return;
       }
       if (mounted) setState(() {});
     } finally {
       _binding = false;
       _advancing = false;
       await previous?.dispose();
-    }
-  }
-
-  Future<void> _playWithDeckSound(VideoPlayerController next, Event _) async {
-    final videoSound = _wantSound;
-    try {
-      await next.setVolume(videoSound ? 1 : 0);
-      await next.play();
-      if (videoSound) await next.setVolume(1);
-    } catch (_) {
-      await next.setVolume(0);
-      await next.play();
-      if (videoSound) {
-        try {
-          await next.setVolume(1);
-        } catch (_) {}
+      if (mounted && _visibleFraction >= 0.50 && _player == null) {
+        _scheduleVisibilityCheck();
       }
     }
   }
 
   Future<void> _applySound(VideoPlayerController? player) async {
     if (player == null) return;
-    final videoSound = _wantSound;
-    await player.setVolume(videoSound ? 1 : 0);
-    if (videoSound) await player.play();
+    await player.setVolume(_wantSound ? 1 : 0);
   }
 
   Future<void> _syncMusic(Event event) async {
+    if (_visibleFraction < 0.50) {
+      await _music?.pause();
+      return;
+    }
     final url = event.backgroundMusicUrl?.trim();
-    final soundOn = _wantSound;
-    if (url == null || url.isEmpty || !soundOn) {
+    if (url == null || url.isEmpty || !_wantSound) {
       await _music?.setVolume(0);
       await _music?.pause();
       return;
@@ -179,7 +235,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _music = next;
     try {
       await next.initialize();
-      if (!mounted || _musicUrl != url) {
+      if (!mounted || _musicUrl != url || _visibleFraction < 0.50) {
         await next.dispose();
         return;
       }
@@ -202,7 +258,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _index = (_index + delta) % videos.length;
     if (_index < 0) _index += videos.length;
     _boundUrl = null;
-    _bind(videos);
+    _bind(videos, autoPlay: _visibleFraction >= 0.50);
   }
 
   void _toggleSound() {
@@ -211,14 +267,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final nextOn = !ref.read(deckSoundOnProvider);
     ref.read(deckSoundOnProvider.notifier).setSoundOn(nextOn);
     final event = _currentOf(_videos(ref.read(videoEventsProvider)));
-    // Cap: unmute the clip itself whenever sound is on.
-    _player?.setVolume(nextOn ? 1 : 0);
-    if (nextOn) {
-      unlockDeckMedia();
+    _player?.setVolume(nextOn && _visibleFraction >= 0.50 ? 1 : 0);
+    if (nextOn && _visibleFraction >= 0.50) {
       _player?.play();
       if (event != null) _syncMusic(event);
     } else {
-      _music?.setVolume(0);
       _music?.pause();
     }
   }
@@ -228,23 +281,27 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final apiVideos = ref.watch(videoEventsProvider);
     final videos = _videos(apiVideos);
     final soundOn = ref.watch(deckSoundOnProvider);
+
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
-      final event = _currentOf(videos);
-      _applySound(_player);
-      if (on && event != null) {
-        _syncMusic(event);
-      } else {
-        _music?.pause();
+      if (_visibleFraction >= 0.50) {
+        _applySound(_player);
+        final event = _currentOf(videos);
+        if (on && event != null) {
+          _syncMusic(event);
+        } else {
+          _music?.pause();
+        }
       }
     });
+
     ref.listen<List<Event>>(videoEventsProvider, (_, next) {
-      _bind(_videos(next));
+      if (_visibleFraction >= 0.15) {
+        _bind(_videos(next), autoPlay: _visibleFraction >= 0.50);
+      }
     });
-    if (videos.isNotEmpty && _player == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _bind(videos);
-      });
-    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleVisibilityCheck());
+
     final current = _currentOf(videos);
     final ready = _player != null && _player!.value.isInitialized;
     final segmentCount = videos.isEmpty ? 1 : videos.length.clamp(1, 8);
@@ -297,7 +354,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0x33000000), Color(0xCC000000)],
+                  colors: [Color(0x22000000), Color(0xAA000000)],
                 ),
               ),
             ),
@@ -318,7 +375,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                   for (var i = 0; i < segmentCount; i++) ...[
                     if (i > 0) const SizedBox(width: 3),
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
+                      duration: const Duration(milliseconds: 150),
                       width: i == (_index % segmentCount) ? 14 : 6,
                       height: 3,
                       decoration: BoxDecoration(
