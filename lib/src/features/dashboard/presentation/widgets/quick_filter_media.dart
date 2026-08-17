@@ -184,13 +184,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       return;
     }
 
-    // Warm the next/current video before it becomes the dominant card.
     if (fraction >= 0.15 && _video == null && !_binding) {
       _syncVideo(autoPlay: false);
     }
 
-    // The 50% rule: whichever card crosses this threshold becomes the one
-    // active dashboard video. The previous owner pauses immediately.
     if (fraction >= 0.50) {
       _VideoPlaybackCoordinator.activate(this);
       _playIfReady();
@@ -198,7 +195,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       _pauseForCoordinator();
     }
 
-    // Free decoder/network resources once the card is fully gone.
     if (fraction <= 0.02 && _video != null) {
       _disposeVideo();
     }
@@ -239,7 +235,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   void _advance(int delta) {
-    if (_sources.isEmpty || !mounted) return;
+    if (_sources.length <= 1 || !mounted) return;
     setState(() {
       _index = (_index + delta) % _sources.length;
       if (_index < 0) _index += _sources.length;
@@ -367,7 +363,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
 
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
-      // Do not swap media on a card while the user is actively looking at it.
       if (_visibleFraction >= 0.50) return;
       final slots = widget.slotCount.clamp(1, 64);
       if (next % slots == widget.rotateSlot % slots) {
@@ -384,7 +379,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
         final gesture = velocity.abs() >= 120 ? velocity : _dragDx;
-        if (gesture.abs() >= 10 || _dragDx.abs() >= 10) {
+        if (_sources.length > 1 &&
+            (gesture.abs() >= 10 || _dragDx.abs() >= 10)) {
           AppHaptics.selection();
           _advance(gesture < 0 ? 1 : -1);
         }
