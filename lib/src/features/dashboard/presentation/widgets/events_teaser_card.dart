@@ -39,6 +39,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
 
+  static const _clarityMatrix = <double>[
+    1.12, 0, 0, 0, 3,
+    0, 1.12, 0, 0, 3,
+    0, 0, 1.12, 0, 3,
+    0, 0, 0, 1, 0,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -306,6 +313,34 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final ready = _player != null && _player!.value.isInitialized;
     final segmentCount = videos.isEmpty ? 1 : videos.length.clamp(1, 8);
 
+    Widget media;
+    if (ready) {
+      media = Positioned.fill(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(
+            width: _player!.value.size.width,
+            height: _player!.value.size.height,
+            child: VideoPlayer(_player!),
+          ),
+        ),
+      );
+    } else if (current?.imageUrl != null) {
+      media = current!.imageUrl!.startsWith('assets/')
+          ? Image.asset(current.imageUrl!, fit: BoxFit.cover)
+          : Image.network(
+              current.imageUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Image.asset(
+                AppAssets.filterEvents,
+                fit: BoxFit.cover,
+              ),
+            );
+    } else {
+      media = Image.asset(AppAssets.filterEvents, fit: BoxFit.cover);
+    }
+
     return GestureDetector(
       onTap: () {
         AppHaptics.medium();
@@ -324,37 +359,23 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (ready)
-              Positioned.fill(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  clipBehavior: Clip.hardEdge,
-                  child: SizedBox(
-                    width: _player!.value.size.width,
-                    height: _player!.value.size.height,
-                    child: VideoPlayer(_player!),
-                  ),
-                ),
-              )
-            else if (current?.imageUrl != null)
-              current!.imageUrl!.startsWith('assets/')
-                  ? Image.asset(current.imageUrl!, fit: BoxFit.cover)
-                  : Image.network(
-                      current.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Image.asset(
-                        AppAssets.filterEvents,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-            else
-              Image.asset(AppAssets.filterEvents, fit: BoxFit.cover),
+            ColorFiltered(
+              colorFilter: const ColorFilter.matrix(_clarityMatrix),
+              child: media,
+            ),
+            // Keep just enough darkening behind the caption. Do not put a gray
+            // veil over the whole video/photo.
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0x22000000), Color(0xAA000000)],
+                  colors: [
+                    Color(0x05000000),
+                    Colors.transparent,
+                    Color(0x52000000),
+                  ],
+                  stops: [0, 0.72, 1],
                 ),
               ),
             ),
@@ -362,7 +383,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               Center(
                 child: Icon(
                   Icons.celebration_outlined,
-                  color: const Color(0xB3FFFFFF),
+                  color: const Color(0xA6FFFFFF),
                   size: kIsWeb ? 36 : 40,
                 ),
               ),
@@ -414,7 +435,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xCCFFFFFF),
+                      color: const Color(0xE6FFFFFF),
                       fontWeight: FontWeight.w600,
                       fontSize: 10,
                       letterSpacing: 0.4,
