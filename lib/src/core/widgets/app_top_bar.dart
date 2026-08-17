@@ -16,7 +16,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Dashboard HUD — thick nexus glass, not tiny ink-stamp chips.
+/// Dashboard HUD using the same circular glow language as the bottom dock.
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
   final String? avatarUrl;
@@ -40,7 +40,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   static const bellWash = Color(0xFFE4007C);
   static const tokenWash = Color(0xFFFFB300);
 
-  // Native-feeling iOS controls should not fall below a 44pt hit target.
   static const _hudSize = 44.0;
 
   void _openProfile(BuildContext context) {
@@ -104,8 +103,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: const _WashIcon(
                     child: Icon(
                       Icons.add_rounded,
-                      size: 22,
-                      color: addWash,
+                      size: 23,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -136,7 +135,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         Text(
                           '$tokens',
                           style: GoogleFonts.plusJakartaSans(
-                            color: ink,
+                            color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
                           ),
@@ -158,8 +157,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   child: const _WashIcon(
                     child: Icon(
                       Icons.public_rounded,
-                      size: 20,
-                      color: mapWash,
+                      size: 21,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -180,8 +179,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       isLight
                           ? Icons.light_mode_rounded
                           : Icons.dark_mode_rounded,
-                      size: 20,
-                      color: themeWash,
+                      size: 21,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -204,8 +203,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       const _WashIcon(
                         child: Icon(
                           Icons.notifications_rounded,
-                          size: 20,
-                          color: bellWash,
+                          size: 21,
+                          color: Colors.white,
                         ),
                       ),
                       ref.watch(unreadNotificationsProvider).when(
@@ -273,7 +272,17 @@ class _ProfileAvatarButton extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isLight
                     ? const Color(0x14000000)
-                    : const Color(0x22FFFFFF),
+                    : const Color(0xDD000000),
+                border: Border.all(
+                  color: Colors.white.withAlpha(isLight ? 90 : 105),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B5CF6).withAlpha(95),
+                    blurRadius: 11,
+                  ),
+                ],
                 image: avatarUrl != null
                     ? DecorationImage(
                         image: NetworkImage(avatarUrl!),
@@ -313,6 +322,8 @@ class _HudButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 360;
+    final secondary = Color.lerp(border, const Color(0xFFEB4898), 0.40) ?? border;
+
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -332,7 +343,7 @@ class _HudButton extends StatelessWidget {
                   width: wide ? null : AppTopBar._hudSize,
                   padding: wide
                       ? EdgeInsets.fromLTRB(
-                          compact ? 6 : 8,
+                          compact ? 8 : 10,
                           0,
                           compact ? 10 : 14,
                           0,
@@ -340,12 +351,28 @@ class _HudButton extends StatelessWidget {
                       : null,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: fill.withAlpha(fill.alpha ~/ 2),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: wide
+                          ? [
+                              border.withAlpha(205),
+                              secondary.withAlpha(185),
+                            ]
+                          : [border.withAlpha(225), secondary.withAlpha(205)],
+                    ),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: border.withAlpha(90),
-                      width: 1.25,
+                      color: Colors.white.withAlpha(100),
+                      width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: border.withAlpha(125),
+                        blurRadius: 12,
+                        spreadRadius: 0.5,
+                      ),
+                    ],
                   ),
                   child: child,
                 ),
