@@ -7,8 +7,8 @@ class EventRepository {
   EventRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
 
-  static const _social =
-      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, organizer_name, organizer_photo_url, organizer_whatsapp, organizer_instagram, organizer_website, organizer_facebook, promo_text, discount_tag, is_free, price_text, created_at';
+  // Keep the current production schema first so opening Events does not waste
+  // a network round-trip on columns that are not present in the live table.
   static const _full =
       'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, organizer_name, organizer_photo_url, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _withAudio =
@@ -19,7 +19,6 @@ class EventRepository {
       'id, title, description, category, image_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, is_free, price_text, promo_text, discount_tag';
 
   final eventRepositoryProviderFallbackSelects = const [
-    _social,
     _full,
     _withAudio,
     _base,
