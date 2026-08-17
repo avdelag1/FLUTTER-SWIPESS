@@ -18,7 +18,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # Continues the shipped Capacitor line (1.2.33+490). Now that this build uses the
 # same com.swipess.mobile identifier, both stores reject a lower build number.
-version: 1.2.34+559
+version: 1.2.34+562
 
 environment:
   sdk: ^3.12.2
@@ -92,7 +92,7 @@ dev_dependencies:
   golden_toolkit: ^0.15.0
 
 # For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pubspec
+# following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
