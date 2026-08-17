@@ -76,7 +76,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                   decoration: BoxDecoration(
                     color: isLight
                         ? const Color(0xFFEDEDF2)
-                        : const Color(0xFF141820),
+                        : const Color(0xFF12161D),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   padding: const EdgeInsets.all(8),
@@ -214,10 +214,11 @@ class _BentoCard extends StatefulWidget {
 class _BentoCardState extends State<_BentoCard> {
   bool _pressed = false;
 
-  static const _brightnessMatrix = <double>[
-    1.08, 0, 0, 0, 5,
-    0, 1.08, 0, 0, 5,
-    0, 0, 1.08, 0, 5,
+  // Lift the actual media instead of putting a fake shine layer on top.
+  static const _clarityMatrix = <double>[
+    1.14, 0, 0, 0, 4,
+    0, 1.14, 0, 0, 4,
+    0, 0, 1.14, 0, 4,
     0, 0, 0, 1, 0,
   ];
 
@@ -242,12 +243,14 @@ class _BentoCardState extends State<_BentoCard> {
               fit: StackFit.expand,
               children: [
                 ColorFiltered(
-                  colorFilter: const ColorFilter.matrix(_brightnessMatrix),
+                  colorFilter: const ColorFilter.matrix(_clarityMatrix),
                   child: QuickFilterMedia(
                     sources: widget.media,
                     enableVideo: widget.enableVideo,
                   ),
                 ),
+                // Only protect the small caption area. The old overlay covered
+                // too much of the photo/video and made every card look shaded.
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -256,9 +259,9 @@ class _BentoCardState extends State<_BentoCard> {
                       colors: [
                         Colors.transparent,
                         Colors.transparent,
-                        Color(0x88000000),
+                        Color(0x4D000000),
                       ],
-                      stops: [0, 0.72, 1],
+                      stops: [0, 0.82, 1],
                     ),
                   ),
                 ),
@@ -281,7 +284,7 @@ class _BentoCardState extends State<_BentoCard> {
                       Text(
                         widget.subtitle,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white.withAlpha(225),
+                          color: Colors.white.withAlpha(238),
                           fontWeight: FontWeight.w700,
                           fontSize: 11,
                           letterSpacing: 0.4,
