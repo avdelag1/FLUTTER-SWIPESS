@@ -89,19 +89,19 @@ class _DashboardDockState extends State<DashboardDock> {
         container: true,
         label: 'Primary navigation',
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 300),
+          constraints: const BoxConstraints(maxWidth: 340),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isLight ? 34 : 125),
-                  blurRadius: 26,
-                  offset: const Offset(0, 11),
+                  color: Colors.black.withAlpha(isLight ? 28 : 90),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
                 ),
                 BoxShadow(
-                  color: Colors.white.withAlpha(isLight ? 28 : 10),
-                  blurRadius: 10,
+                  color: Colors.white.withAlpha(isLight ? 34 : 16),
+                  blurRadius: 12,
                   offset: const Offset(0, -2),
                 ),
               ],
@@ -109,27 +109,17 @@ class _DashboardDockState extends State<DashboardDock> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                 child: Container(
-                  height: 60,
+                  height: 64,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isLight
-                          ? [
-                              Colors.white.withAlpha(205),
-                              Colors.white.withAlpha(135),
-                            ]
-                          : [
-                              Colors.white.withAlpha(28),
-                              const Color(0xFF050507).withAlpha(205),
-                            ],
-                    ),
+                    color: isLight
+                        ? Colors.white.withAlpha(178)
+                        : const Color(0xFF0E1117).withAlpha(190),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: Colors.white.withAlpha(isLight ? 135 : 66),
-                      width: 0.9,
+                      color: Colors.white.withAlpha(isLight ? 145 : 76),
+                      width: 1,
                     ),
                   ),
                   child: ScrollConfiguration(
@@ -145,10 +135,7 @@ class _DashboardDockState extends State<DashboardDock> {
                     child: ListView.separated(
                       controller: _controller,
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       itemCount: widget.items.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 4),
                       itemBuilder: (context, i) {
@@ -204,18 +191,14 @@ class DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emphasized = selected || item.accent;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final iconColor = isLight
-        ? const Color(0xFF101014).withAlpha(emphasized ? 255 : 220)
-        : Colors.white.withAlpha(emphasized ? 255 : 235);
-    final glassBorder = emphasized
-        ? wash.withAlpha(isLight ? 190 : 185)
-        : Colors.white.withAlpha(isLight ? 125 : 72);
-    final highlight = Colors.white.withAlpha(isLight ? 150 : 42);
-    final lowlight = isLight
-        ? Colors.white.withAlpha(120)
-        : const Color(0xFF07070A).withAlpha(145);
+    final emphasized = selected || item.accent;
+    final neutral = isLight ? const Color(0xFF101318) : Colors.white;
+    final iconColor = item.accent
+        ? wash
+        : emphasized
+            ? neutral
+            : neutral.withAlpha(220);
 
     return Semantics(
       button: true,
@@ -230,74 +213,48 @@ class DockButton extends StatelessWidget {
             containedInkWell: true,
             highlightShape: BoxShape.circle,
             radius: 24,
-            splashColor: wash.withAlpha(65),
+            splashColor: wash.withAlpha(48),
             child: SizedBox(
               width: 44,
-              height: 44,
+              height: 48,
               child: Center(
                 child: AnimatedScale(
-                  scale: emphasized ? 1.03 : 1,
-                  duration: const Duration(milliseconds: 140),
+                  scale: emphasized ? 1.08 : 1,
+                  duration: const Duration(milliseconds: 150),
                   curve: Curves.easeOutCubic,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    curve: Curves.easeOutCubic,
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isLight ? 20 : 88),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
-                        ),
-                        if (emphasized)
-                          BoxShadow(
-                            color: wash.withAlpha(isLight ? 70 : 105),
-                            blurRadius: 13,
-                            spreadRadius: 0.5,
-                          ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                emphasized
-                                    ? Color.lerp(highlight, wash, 0.18) ?? highlight
-                                    : highlight,
-                                lowlight,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      if (selected)
+                        Positioned(
+                          bottom: 0,
+                          child: Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: wash,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(color: wash.withAlpha(160), blurRadius: 8),
                               ],
                             ),
-                            border: Border.all(
-                              color: glassBorder,
-                              width: emphasized ? 1.15 : 0.9,
-                            ),
-                          ),
-                          child: Center(
-                            child: item.useAiIcon
-                                ? CustomPaint(
-                                    painter: AiRobotPainter(color: iconColor),
-                                    size: const Size(20, 20),
-                                  )
-                                : Icon(
-                                    item.icon,
-                                    size: item.accent ? 24 : 22,
-                                    color: item.accent
-                                        ? wash.withAlpha(255)
-                                        : iconColor,
-                                  ),
                           ),
                         ),
-                      ),
-                    ),
+                      item.useAiIcon
+                          ? CustomPaint(
+                              painter: AiRobotPainter(color: iconColor),
+                              size: const Size(23, 23),
+                            )
+                          : Icon(
+                              item.icon,
+                              size: item.accent ? 29 : 27,
+                              color: iconColor,
+                              shadows: emphasized
+                                  ? [Shadow(color: wash.withAlpha(95), blurRadius: 8)]
+                                  : null,
+                            ),
+                    ],
                   ),
                 ),
               ),
@@ -330,91 +287,27 @@ class AiRobotPainter extends CustomPainter {
       Radius.circular(s * 0.08),
     );
     canvas.drawRRect(r, p);
-    canvas.drawLine(
-      Offset(ox + s * 0.08, oy + s * 0.58),
-      Offset(ox + s * 0.17, oy + s * 0.58),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.83, oy + s * 0.58),
-      Offset(ox + s * 0.92, oy + s * 0.58),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.38, oy + s * 0.54),
-      Offset(ox + s * 0.38, oy + s * 0.62),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.62, oy + s * 0.54),
-      Offset(ox + s * 0.62, oy + s * 0.62),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.5, oy + s * 0.33),
-      Offset(ox + s * 0.5, oy + s * 0.17),
-      p,
-    );
-    canvas.drawLine(
-      Offset(ox + s * 0.5, oy + s * 0.17),
-      Offset(ox + s * 0.33, oy + s * 0.17),
-      p,
-    );
+    canvas.drawLine(Offset(ox + s * 0.08, oy + s * 0.58), Offset(ox + s * 0.17, oy + s * 0.58), p);
+    canvas.drawLine(Offset(ox + s * 0.83, oy + s * 0.58), Offset(ox + s * 0.92, oy + s * 0.58), p);
+    canvas.drawLine(Offset(ox + s * 0.38, oy + s * 0.54), Offset(ox + s * 0.38, oy + s * 0.62), p);
+    canvas.drawLine(Offset(ox + s * 0.62, oy + s * 0.54), Offset(ox + s * 0.62, oy + s * 0.62), p);
+    canvas.drawLine(Offset(ox + s * 0.5, oy + s * 0.33), Offset(ox + s * 0.5, oy + s * 0.17), p);
+    canvas.drawLine(Offset(ox + s * 0.5, oy + s * 0.17), Offset(ox + s * 0.33, oy + s * 0.17), p);
   }
 
   @override
-  bool shouldRepaint(covariant AiRobotPainter oldDelegate) =>
-      oldDelegate.color != color;
+  bool shouldRepaint(covariant AiRobotPainter oldDelegate) => oldDelegate.color != color;
 }
 
 const defaultDashboardNavItems = [
-  BottomNavItem(
-    id: NavTab.dashboard,
-    icon: Icons.home_rounded,
-    wash: Color(0xFFFF4D00),
-  ),
-  BottomNavItem(
-    id: NavTab.likes,
-    icon: Icons.local_fire_department_rounded,
-    wash: Color(0xFFE4007C),
-  ),
+  BottomNavItem(id: NavTab.dashboard, icon: Icons.home_rounded, wash: Color(0xFFFF4D00)),
+  BottomNavItem(id: NavTab.likes, icon: Icons.local_fire_department_rounded, wash: Color(0xFFE4007C)),
   BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B6DFF)),
-  BottomNavItem(
-    id: NavTab.add,
-    icon: Icons.add_rounded,
-    accent: true,
-    wash: Color(0xFFFF4D00),
-  ),
-  BottomNavItem(
-    id: NavTab.messages,
-    icon: Icons.chat_bubble_rounded,
-    wash: Color(0xFF3B82F6),
-  ),
-  BottomNavItem(
-    id: NavTab.idCard,
-    icon: Icons.badge_rounded,
-    wash: Color(0xFF8B5CF6),
-  ),
-  BottomNavItem(
-    id: NavTab.seekers,
-    icon: Icons.groups_rounded,
-    wash: Color(0xFFFF4DA6),
-  ),
-  BottomNavItem(
-    id: NavTab.filter,
-    icon: Icons.tune_rounded,
-    wash: Color(0xFFFF9F43),
-  ),
-  BottomNavItem(
-    id: NavTab.legal,
-    icon: Icons.balance_rounded,
-    wash: Color(0xFF7C7CFF),
-    label: 'Lawyers',
-  ),
-  BottomNavItem(
-    id: NavTab.events,
-    icon: Icons.event_rounded,
-    wash: Color(0xFFFF2D8D),
-    label: 'Events',
-  ),
+  BottomNavItem(id: NavTab.add, icon: Icons.add_circle_outline_rounded, accent: true, wash: Color(0xFFFF4D00)),
+  BottomNavItem(id: NavTab.messages, icon: Icons.chat_bubble_outline_rounded, wash: Color(0xFF3B82F6)),
+  BottomNavItem(id: NavTab.idCard, icon: Icons.shield_outlined, wash: Color(0xFF8B5CF6)),
+  BottomNavItem(id: NavTab.seekers, icon: Icons.groups_2_outlined, wash: Color(0xFFFF4DA6)),
+  BottomNavItem(id: NavTab.filter, icon: Icons.tune_rounded, wash: Color(0xFFFF9F43)),
+  BottomNavItem(id: NavTab.legal, icon: Icons.balance_rounded, wash: Color(0xFF7C7CFF), label: 'Lawyers'),
+  BottomNavItem(id: NavTab.events, icon: Icons.event_outlined, wash: Color(0xFFFF2D8D), label: 'Events'),
 ];
