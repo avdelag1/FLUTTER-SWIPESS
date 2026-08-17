@@ -120,7 +120,7 @@ class AiDisclosure extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 color: _muted,
                 fontSize: 9.5,
-                fontWeight: FontWeight.w650,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0.05,
               ),
             ),
