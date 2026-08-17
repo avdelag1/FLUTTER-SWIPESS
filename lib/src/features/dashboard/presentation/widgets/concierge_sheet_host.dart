@@ -3,11 +3,10 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 
-/// Bottom-sheet frame for Swipess AI.
+/// Bottom-card frame for Swipess AI.
 ///
-/// The app header and bottom dock are primary navigation and must stay visible
-/// while AI is open. The AI therefore lives between those two surfaces instead
-/// of switching the app into an immersive/full-screen mode.
+/// The app header and bottom dock remain visible. AI enters as one card from
+/// the bottom instead of replacing the page or impersonating a second screen.
 class ConciergeSheetHost extends ConsumerStatefulWidget {
   const ConciergeSheetHost({
     super.key,
@@ -37,12 +36,10 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
     super.initState();
     _slide = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 260),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 320),
+      reverseDuration: const Duration(milliseconds: 220),
     )..forward();
 
-    // Defensive reset: older AI implementations hid the shared chrome and
-    // could leave that state behind after dismissal.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(chromeVisibilityProvider.notifier).show();
@@ -69,31 +66,32 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final topInset =
-        media.padding.top + ConciergeSheetHost.appBarBody + 8;
+    final topSafe = media.padding.top + ConciergeSheetHost.appBarBody + 10;
     final bottomInset =
         media.padding.bottom +
         ConciergeSheetHost.dockOffset +
         ConciergeSheetHost.dockBody +
-        8;
+        10;
+    final available = media.size.height - topSafe - bottomInset;
+    final sheetHeight = (available * 0.86).clamp(360.0, 680.0);
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Keep the areas occupied by the real app header/dock interactive.
+        // A very light scrim gives depth without making the app feel replaced.
         const Positioned.fill(
           child: IgnorePointer(
-            child: ColoredBox(color: Color.fromARGB(18, 0, 0, 0)),
+            child: ColoredBox(color: Color.fromARGB(16, 0, 0, 0)),
           ),
         ),
         Positioned(
-          top: topInset,
           left: 10,
           right: 10,
           bottom: bottomInset,
+          height: sheetHeight,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 0.08),
+              begin: const Offset(0, 1.0),
               end: Offset.zero,
             ).animate(
               CurvedAnimation(
@@ -105,7 +103,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
             child: FadeTransition(
               opacity: CurvedAnimation(
                 parent: _slide,
-                curve: Curves.easeOut,
+                curve: const Interval(0.18, 1, curve: Curves.easeOut),
               ),
               child: Transform.translate(
                 offset: Offset(0, _drag),
@@ -115,7 +113,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                     onClose: _close,
                     onDragUpdate: (dy) {
                       if (dy <= 0) return;
-                      setState(() => _drag = (_drag + dy).clamp(0, 180));
+                      setState(() => _drag = (_drag + dy).clamp(0, 220));
                     },
                     onDragEnd: () {
                       if (_drag > 72) {
@@ -151,15 +149,24 @@ class _CardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final border = isLight
+        ? Colors.black.withAlpha(20)
+        : Colors.white.withAlpha(24);
+    final handle = isLight
+        ? Colors.black.withAlpha(70)
+        : Colors.white.withAlpha(90);
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
+      borderRadius: BorderRadius.circular(26),
       child: DecoratedBox(
         decoration: BoxDecoration(
+          border: Border.all(color: border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(90),
-              blurRadius: 28,
-              offset: const Offset(0, -6),
+              color: Colors.black.withAlpha(isLight ? 40 : 105),
+              blurRadius: 34,
+              offset: const Offset(0, -8),
             ),
           ],
         ),
@@ -175,10 +182,10 @@ class _CardShell extends StatelessWidget {
                 width: double.infinity,
                 child: Center(
                   child: Container(
-                    width: 42,
+                    width: 38,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(70),
+                      color: handle,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
