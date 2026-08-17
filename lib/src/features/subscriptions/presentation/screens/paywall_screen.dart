@@ -43,9 +43,6 @@ class PaywallScreen extends ConsumerWidget {
                       .clamp(280.0, 520.0)
                       .toDouble();
 
-                  // Keep the complete comparison visible. FittedBox only scales
-                  // down on very short devices so the promo, plans, and CTA stay
-                  // on-screen without changing payment or navigation behavior.
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                     child: FittedBox(
@@ -65,8 +62,8 @@ class PaywallScreen extends ConsumerWidget {
                             const SizedBox(height: 8),
                             Text(
                               featureName != null
-                                  ? 'Unlock $featureName'
-                                  : 'Unlock Swipess',
+                                  ? 'Continue with $featureName'
+                                  : 'Continue with Swipess',
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               style: GoogleFonts.plusJakartaSans(
@@ -79,9 +76,9 @@ class PaywallScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Compare the exact AI limits and member benefits included with each paid plan.',
+                              'Your complimentary access has ended. Choose the membership that fits you to keep using premium Swipess tools.',
                               textAlign: TextAlign.center,
-                              maxLines: 2,
+                              maxLines: 3,
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white.withAlpha(165),
                                 fontWeight: FontWeight.w500,
@@ -89,16 +86,7 @@ class PaywallScreen extends ConsumerWidget {
                                 height: 1.3,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 360),
-                                child: const _PromoBanner(
-                                  key: ValueKey('three-month-promo'),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
                             for (var i = 0;
                                 i < IapCatalog.subscriptions.length;
                                 i++) ...[
@@ -138,7 +126,7 @@ class PaywallScreen extends ConsumerWidget {
                                     const SizedBox(width: 8),
                                     Flexible(
                                       child: Text(
-                                        'VIEW PLANS & BENEFITS',
+                                        'VIEW MEMBERSHIP OPTIONS',
                                         maxLines: 1,
                                         overflow: TextOverflow.fade,
                                         softWrap: false,
@@ -185,70 +173,6 @@ String _durationText(String? raw) {
       .replaceFirst(RegExp(r'^/\s*'), '')
       .trim()
       .toUpperCase();
-}
-
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.brandPrimary.withAlpha(48),
-            const Color(0xFF9D4EDD).withAlpha(48),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.brandPrimary.withAlpha(190),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.brandPrimary.withAlpha(42),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.celebration_rounded,
-            color: AppTheme.brandPrimary,
-            size: 25,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '3 MONTHS FREE ACCESS',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: AppTheme.brandPrimary,
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-              letterSpacing: 0.9,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            'Eligible free accounts may receive 3 months of Package 2 access. Separate from the paid plans below.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 11.5,
-              height: 1.25,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _PaidPlanTile extends StatelessWidget {
