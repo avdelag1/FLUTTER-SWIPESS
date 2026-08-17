@@ -13,10 +13,10 @@ class SubscriptionData {
   });
 
   bool get isTrialActive =>
-      trialEndsAt != null && DateTime.now().isBefore(trialEndsAt!);
+      trialEndsAt != null && DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
   SubscriptionTier get effectiveTier =>
-      isTrialActive ? SubscriptionTier.package2 : tier;
+      isTrialActive ? SubscriptionTier.premium : tier;
 }
 
 class SubscriptionRepository {
@@ -24,6 +24,11 @@ class SubscriptionRepository {
       : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
+
+  // Existing free accounts receive a fresh complimentary window from this
+  // campaign launch. New accounts receive three months from account creation.
+  static final DateTime _complimentaryAccessResetAt =
+      DateTime.utc(2026, 8, 17, 3, 23);
 
   Future<SubscriptionData> fetchCurrent() async {
     final user = _client.auth.currentUser;
@@ -61,10 +66,46 @@ class SubscriptionRepository {
         // Subscription access must not fail just because token accounting is down.
       }
 
-      return SubscriptionData(tier: tier, tokensBalance: tokens);
+      return SubscriptionData(
+        tier: tier,
+        trialEndsAt:
+            tier == SubscriptionTier.free ? _complimentaryTrialEndsAt(user) : null,
+        tokensBalance: tokens,
+      );
     } catch (_) {
-      return SubscriptionData(tier: SubscriptionTier.free);
+      return SubscriptionData(
+        tier: SubscriptionTier.free,
+        trialEndsAt: _complimentaryTrialEndsAt(user),
+      );
     }
+  }
+
+  DateTime _complimentaryTrialEndsAt(User user) {
+    final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
+    final startsAt = createdAt == null || createdAt.isBefore(_complimentaryAccessResetAt)
+        ? _complimentaryAccessResetAt
+        : createdAt;
+    return _addCalendarMonths(startsAt, 3);
+  }
+
+  DateTime _addCalendarMonths(DateTime value, int months) {
+    final utc = value.toUtc();
+    final monthIndex = utc.month - 1 + months;
+    final year = utc.year + (monthIndex ~/ 12);
+    final month = (monthIndex % 12) + 1;
+    final lastDay = DateTime.utc(year, month + 1, 0).day;
+    final day = utc.day > lastDay ? lastDay : utc.day;
+
+    return DateTime.utc(
+      year,
+      month,
+      day,
+      utc.hour,
+      utc.minute,
+      utc.second,
+      utc.millisecond,
+      utc.microsecond,
+    );
   }
 
   SubscriptionTier _mapDatabaseTier(String? value) {
