@@ -15,13 +15,16 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+      - uses: android-actions/setup-android@v3
+      - name: Android 16 SDK
+        run: sdkmanager "platforms;android-36"
       - name: Flutter version
         run: flutter --version
       - name: Dependencies
@@ -32,6 +35,8 @@ jobs:
         run: flutter test
       - name: Web release build
         run: flutter build web --release
+      - name: Android release bundle (unsigned CI artifact)
+        run: flutter build appbundle --release
 
   ios-build:
     runs-on: macos-latest
@@ -48,3 +53,5 @@ jobs:
         run: flutter pub get
       - name: iOS release build (no sign)
         run: flutter build ios --release --no-codesign
+      - name: Verify TestFlight bundle is not Flutter debug/JIT
+        run: sh ios/ci_scripts/verify_release_bundle.sh build/ios/iphoneos/Runner.app
