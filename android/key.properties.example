@@ -1,0 +1,7 @@
+# Copy this file to android/key.properties and replace every placeholder with
+# the REAL Google Play upload-key values for com.swipess.mobile.
+# Never commit android/key.properties or the .jks/.keystore file.
+storePassword=REPLACE_ME
+keyPassword=REPLACE_ME
+keyAlias=REPLACE_ME
+storeFile=/absolute/path/to/swipess-upload-key.jks
