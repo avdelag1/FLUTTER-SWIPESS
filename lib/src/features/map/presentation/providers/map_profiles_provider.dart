@@ -17,8 +17,6 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
 
   final merged = <String, Profile>{};
 
-  // Start the city/table lookup immediately instead of waiting for the RPC.
-  // This keeps the same coverage while reducing the time until map users appear.
   final cityProfilesFuture = _fetchRegisteredCityProfiles(
     client,
     loc,
@@ -39,26 +37,46 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
           },
         )
         .timeout(const Duration(seconds: 8));
-    for (final row in data as List) {
-      final profile = Profile.fromJson(row as Map<String, dynamic>);
-      if (profile.id != userId) merged[profile.id] = profile;
+    for (final profile in _parseRows(data)) {
+      if (profile.id != userId && profile.id.isNotEmpty) {
+        merged[profile.id] = profile;
+      }
     }
   } catch (_) {
     // City/table fallback below still keeps registered users discoverable.
   }
 
   for (final profile in await cityProfilesFuture) {
-    merged[profile.id] = profile;
+    if (profile.id != userId && profile.id.isNotEmpty) {
+      merged[profile.id] = profile;
+    }
   }
 
   if (merged.isEmpty) {
-    for (final profile in await _fallbackProfiles(client, loc, limit, userId)) {
-      merged[profile.id] = profile;
+    for (final profile in await _fallbackProfiles(client, limit, userId)) {
+      if (profile.id != userId && profile.id.isNotEmpty) {
+        merged[profile.id] = profile;
+      }
     }
   }
 
   return _forMap(merged.values.toList(growable: false), loc);
 });
+
+List<Profile> _parseRows(dynamic data) {
+  if (data is! List) return const [];
+  final parsed = <Profile>[];
+  for (final raw in data) {
+    if (raw is! Map) continue;
+    try {
+      final profile = Profile.fromJson(Map<String, dynamic>.from(raw));
+      if (profile.id.isNotEmpty) parsed.add(profile);
+    } catch (_) {
+      // Skip only the malformed row. One bad profile must not blank the map.
+    }
+  }
+  return parsed;
+}
 
 List<Profile> _forMap(List<Profile> rows, DiscoveryLocation loc) {
   const haversine = Distance();
@@ -98,9 +116,7 @@ Future<List<Profile>> _fetchRegisteredCityProfiles(
     query = query.ilike('city', '%$city%');
     if (userId != null) query = query.neq('user_id', userId);
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
-    return (data as List)
-        .map((row) => Profile.fromJson(row as Map<String, dynamic>))
-        .toList(growable: false);
+    return _parseRows(data);
   } catch (_) {
     return const [];
   }
@@ -108,7 +124,6 @@ Future<List<Profile>> _fetchRegisteredCityProfiles(
 
 Future<List<Profile>> _fallbackProfiles(
   SupabaseClient client,
-  DiscoveryLocation loc,
   int limit,
   String? userId,
 ) async {
@@ -120,9 +135,7 @@ Future<List<Profile>> _fallbackProfiles(
         );
     if (userId != null) query = query.neq('user_id', userId);
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
-    return (data as List)
-        .map((row) => Profile.fromJson(row as Map<String, dynamic>))
-        .toList(growable: false);
+    return _parseRows(data);
   } catch (_) {
     return const [];
   }
@@ -132,11 +145,15 @@ String _normalizeCity(String? value) => (value ?? '')
     .trim()
     .toLowerCase()
     .replaceAll('ú', 'u')
-    .replaceAll('í', 'i');
+    .replaceAll('í', 'i')
+    .replaceAll('é', 'e')
+    .replaceAll('á', 'a')
+    .replaceAll('ó', 'o');
 
 bool _sameCity(String? value, String normalizedCity) {
   if (normalizedCity.isEmpty || normalizedCity == 'near you') return false;
   final normalizedValue = _normalizeCity(value);
+  if (normalizedValue.isEmpty) return false;
   return normalizedValue == normalizedCity ||
       normalizedValue.contains(normalizedCity) ||
       normalizedCity.contains(normalizedValue);
