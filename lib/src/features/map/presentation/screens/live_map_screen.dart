@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/fresh_mapbox_screen.dart';
 import 'package:go_router/go_router.dart';
 
 /// Compatibility entry point for the discovery map.
 ///
-/// Swipess previously maintained two separate map engines: this route used a
-/// Flutter-rendered map while the dashboard overlay used the native Mapbox
-/// experience. Keeping both active caused visual drift, duplicate marker logic,
-/// different interaction behavior, and extra performance work.
-///
-/// All entry points now resolve to the same Mapbox implementation so the map
-/// feels identical regardless of where the user opens it from.
+/// Swipess previously maintained two separate map engines. All entry points now
+/// resolve to the same native Mapbox experience and refresh discovery data when
+/// opened so a stale empty provider cannot make the map look dead.
 class LiveMapScreen extends StatelessWidget {
   const LiveMapScreen({
     super.key,
@@ -27,7 +23,7 @@ class LiveMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RealMapboxScreen(
+    return FreshMapboxScreen(
       showCitiesOnOpen: showCitiesOnOpen,
       onClose: onClose ??
           () {
