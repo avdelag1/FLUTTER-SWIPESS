@@ -31,10 +31,19 @@ cd ..
 # Flutter 3.35+ can leave the generated Xcode settings in debug mode after a
 # debug run. Xcode Cloud archives the Xcode project directly, so regenerate the
 # iOS configuration explicitly for RELEASE immediately before Xcode takes over.
-# This is the Flutter-recommended workaround for the "configured for debug mode"
-# regression and prevents a TestFlight archive from embedding the JIT/debug app.
-flutter build ios --config-only --release --no-codesign
+# If a public Mapbox token is configured in Xcode Cloud, forward it as a Dart
+# define. Disable shell tracing around the command so the token never appears in
+# build logs. Store builds without the variable still work because the app can
+# recover the public token from swipess.com at runtime and has a tile fallback.
+if [ -n "${MAPBOX_ACCESS_TOKEN:-}" ]; then
+    set +x
+    flutter build ios --config-only --release --no-codesign \
+        --dart-define="MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN"
+    set -x
+else
+    flutter build ios --config-only --release --no-codesign
+fi
 
 # Keep the generated mode visible in Xcode Cloud logs so a bad archive cannot be
-# mistaken for a release build again.
+# mistaken for a release build again. Never print DART_DEFINES here.
 grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig || true
