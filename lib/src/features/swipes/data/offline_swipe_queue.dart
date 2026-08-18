@@ -6,10 +6,9 @@ import 'package:http/http.dart' show ClientException;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap parity: `utils/offlineSwipeQueue.ts`
-///
-/// Persists failed swipe writes to SharedPreferences and syncs them when
-/// the device is back online / on app start / after a successful swipe path.
+/// Persists failed discovery decisions and syncs them when connectivity returns.
+/// Replays always use the server-side decision RPC so offline swipes obey the
+/// same 7-day / improvement / permanent-pass state machine as online swipes.
 class OfflineSwipeQueue {
   OfflineSwipeQueue({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
@@ -20,8 +19,6 @@ class OfflineSwipeQueue {
   final SupabaseClient _client;
   Future<({int synced, int failed})>? _flushInFlight;
 
-  /// Whether [error] looks like a network / connectivity failure.
-  /// Avoids `dart:io` types so this stays web-safe.
   static bool isNetworkFailure(Object error) {
     if (error is TimeoutException || error is ClientException) return true;
     final text = error.toString().toLowerCase();
@@ -54,7 +51,6 @@ class OfflineSwipeQueue {
 
   Future<int> getQueueSize() async => (await getQueuedSwipes()).length;
 
-  /// Queue a swipe for later sync. Duplicates (same target + direction) ignored.
   Future<void> enqueue({
     required String targetId,
     required String direction,
@@ -64,11 +60,10 @@ class OfflineSwipeQueue {
     assert(targetType == 'listing' || targetType == 'profile');
     try {
       final queue = await getQueuedSwipes();
-      final exists = queue.any(
-        (q) => q.targetId == targetId && q.direction == direction,
+      // Keep only the latest queued decision for a target.
+      queue.removeWhere(
+        (q) => q.targetId == targetId && q.targetType == targetType,
       );
-      if (exists) return;
-
       queue.add(
         QueuedSwipe(
           id: '$targetId-${DateTime.now().millisecondsSinceEpoch}',
@@ -80,13 +75,12 @@ class OfflineSwipeQueue {
         ),
       );
       await _persist(queue);
-      debugPrint('[OfflineQueue] Swipe queued for sync: $targetId');
+      debugPrint('[OfflineQueue] Decision queued for sync: $targetId');
     } catch (e) {
-      debugPrint('[OfflineQueue] Failed to queue swipe: $e');
+      debugPrint('[OfflineQueue] Failed to queue decision: $e');
     }
   }
 
-  /// Sync all queued swipes. Safe to call concurrently — coalesces in-flight.
   Future<({int synced, int failed})> flush() {
     return _flushInFlight ??= _flushInternal().whenComplete(() {
       _flushInFlight = null;
@@ -97,11 +91,8 @@ class OfflineSwipeQueue {
     final queue = await getQueuedSwipes();
     if (queue.isEmpty) return (synced: 0, failed: 0);
 
-    debugPrint('[OfflineQueue] Syncing ${queue.length} queued swipes');
-
     var synced = 0;
     var failed = 0;
-
     for (final swipe in List<QueuedSwipe>.from(queue)) {
       final ok = await _syncSwipe(swipe);
       if (ok) {
@@ -112,32 +103,19 @@ class OfflineSwipeQueue {
         failed++;
       }
     }
-
-    if (synced > 0) {
-      debugPrint(
-        '[OfflineQueue] Sync complete: $synced synced, $failed failed',
-      );
-    }
     return (synced: synced, failed: failed);
   }
 
   Future<bool> _syncSwipe(QueuedSwipe swipe) async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) {
-        debugPrint('[OfflineQueue] No user for sync');
-        return false;
-      }
-
-      await _client.from('likes').upsert({
-        'user_id': userId,
-        'target_id': swipe.targetId,
-        'target_type': swipe.targetType,
-        'direction': swipe.direction,
-      }, onConflict: 'user_id,target_id,target_type');
-
-      debugPrint(
-        '[OfflineQueue] Synced swipe: ${swipe.targetId} ${swipe.direction}',
+      if (_client.auth.currentUser == null) return false;
+      await _client.rpc(
+        'rpc_record_discovery_decision',
+        params: {
+          'p_target_id': swipe.targetId,
+          'p_target_type': swipe.targetType,
+          'p_direction': swipe.direction,
+        },
       );
       return true;
     } catch (e) {
@@ -156,10 +134,7 @@ class OfflineSwipeQueue {
   Future<void> _markFailed(String id) async {
     try {
       final updated = (await getQueuedSwipes())
-          .map((q) {
-            if (q.id != id) return q;
-            return q.copyWith(retryCount: q.retryCount + 1);
-          })
+          .map((q) => q.id == id ? q.copyWith(retryCount: q.retryCount + 1) : q)
           .where((q) => q.retryCount < maxRetries)
           .toList();
       await _persist(updated);
@@ -196,27 +171,23 @@ class QueuedSwipe {
   final int timestamp;
   final int retryCount;
 
-  QueuedSwipe copyWith({int? retryCount}) {
-    return QueuedSwipe(
-      id: id,
-      targetId: targetId,
-      direction: direction,
-      targetType: targetType,
-      timestamp: timestamp,
-      retryCount: retryCount ?? this.retryCount,
-    );
-  }
+  QueuedSwipe copyWith({int? retryCount}) => QueuedSwipe(
+    id: id,
+    targetId: targetId,
+    direction: direction,
+    targetType: targetType,
+    timestamp: timestamp,
+    retryCount: retryCount ?? this.retryCount,
+  );
 
-  factory QueuedSwipe.fromJson(Map<String, dynamic> json) {
-    return QueuedSwipe(
-      id: json['id'] as String? ?? '',
-      targetId: json['targetId'] as String? ?? '',
-      direction: json['direction'] as String? ?? 'right',
-      targetType: json['targetType'] as String? ?? 'listing',
-      timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
-      retryCount: (json['retryCount'] as num?)?.toInt() ?? 0,
-    );
-  }
+  factory QueuedSwipe.fromJson(Map<String, dynamic> json) => QueuedSwipe(
+    id: json['id'] as String? ?? '',
+    targetId: json['targetId'] as String? ?? '',
+    direction: json['direction'] as String? ?? 'right',
+    targetType: json['targetType'] as String? ?? 'listing',
+    timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
+    retryCount: (json['retryCount'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,
