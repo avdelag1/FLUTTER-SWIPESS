@@ -6,8 +6,9 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Release keystore lives outside version control. Without it we fall back to the
-// debug keys so `flutter build apk --release` still works for local smoke tests.
+// The Play upload keystore lives outside version control. Release builds are
+// deliberately left unsigned when the upload key is unavailable; they must
+// never silently fall back to the debug signing key.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("key.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -16,7 +17,11 @@ val hasReleaseKeystore = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "com.swipess.mobile"
-    compileSdk = flutter.compileSdkVersion
+
+    // Google Play requires new apps and updates to target Android 16 / API 36
+    // from August 31, 2026. Pin both values so a local Flutter SDK default cannot
+    // accidentally produce a store build below the policy floor.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -31,7 +36,7 @@ android {
         // Matches the shipped Capacitor app so this build installs as an update.
         applicationId = "com.swipess.mobile"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         // Used by the App Links intent filters in AndroidManifest.xml.
@@ -53,10 +58,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (hasReleaseKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            // A production upload must use the real Play upload key. When the
+            // key is absent the release stays unsigned, which is safe for CI and
+            // impossible to mistake for a valid Play upload artifact.
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
             }
             // Shrinking is left to the Flutter Gradle plugin, which pairs
             // minify and resource shrinking. Setting either here desyncs them
