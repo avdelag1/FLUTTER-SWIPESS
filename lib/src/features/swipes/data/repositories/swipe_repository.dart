@@ -11,8 +11,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// - first left = hidden for 7 days, then one retry
 /// - second left = hidden until an objective target improvement
 /// - third left = permanent pass
-///
-/// Network failures are queued locally and replayed through the same RPC.
 class SwipeRepository {
   final SupabaseClient _client;
   final OfflineSwipeQueue _offlineQueue;
@@ -21,8 +19,7 @@ class SwipeRepository {
     : _client = client ?? Supabase.instance.client,
       _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
 
-  Future<({int synced, int failed})> flushOfflineQueue() =>
-      _offlineQueue.flush();
+  Future<({int synced, int failed})> flushOfflineQueue() => _offlineQueue.flush();
 
   Future<void> _afterSuccessfulWrite() async {
     unawaited(_offlineQueue.flush());
@@ -33,9 +30,7 @@ class SwipeRepository {
     required String targetType,
     required String direction,
   }) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
-
+    if (_client.auth.currentUser == null) return;
     try {
       await _client.rpc(
         'rpc_record_discovery_decision',
@@ -68,7 +63,6 @@ class SwipeRepository {
     direction: 'left',
   );
 
-  /// Undo intentionally removes the latest decision entirely.
   Future<void> undoSwipe(String targetId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
@@ -80,11 +74,9 @@ class SwipeRepository {
         .eq('target_type', 'listing');
   }
 
-  /// Check if a mutual match exists after liking.
   Future<bool> checkForMatch(String targetId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return false;
-
     final match = await _client
         .from('matches')
         .select('id')
@@ -118,7 +110,10 @@ class SwipeRepository {
         .eq('target_type', 'profile');
   }
 
-  /// Open or create a conversation with a listing owner/profile.
+  /// Starts a conversation through the authoritative backend gate.
+  /// A brand-new conversation costs one message token unless the account has
+  /// unlimited messaging. Never fall back to a direct insert: that would bypass
+  /// the product's token/subscription rule.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -127,42 +122,18 @@ class SwipeRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
 
-    try {
-      final data = await _client.rpc(
-        'start_conversation_with_message',
-        params: {
-          'p_other_user_id': ownerId,
-          'p_initial_message': initialMessage,
-          'p_listing_id': listingId,
-        },
-      );
-      final row = data is List && data.isNotEmpty ? data.first : data;
-      if (row is Map && row['conversation_id'] != null) {
-        return row['conversation_id'] as String;
-      }
-    } catch (_) {
-      // Fall through to direct upsert.
+    final data = await _client.rpc(
+      'start_conversation_with_message',
+      params: {
+        'p_other_user_id': ownerId,
+        'p_initial_message': initialMessage,
+        'p_listing_id': listingId,
+      },
+    );
+    final row = data is List && data.isNotEmpty ? data.first : data;
+    if (row is Map && row['conversation_id'] != null) {
+      return row['conversation_id'] as String;
     }
-
-    final existing = await _client
-        .from('conversations')
-        .select('id')
-        .eq('client_id', userId)
-        .eq('owner_id', ownerId)
-        .maybeSingle();
-    if (existing != null) return existing['id'] as String;
-
-    final inserted = await _client
-        .from('conversations')
-        .insert({
-          'client_id': userId,
-          'owner_id': ownerId,
-          'listing_id': listingId,
-          'status': 'active',
-          'free_messaging': true,
-        })
-        .select('id')
-        .single();
-    return inserted['id'] as String;
+    return null;
   }
 }
