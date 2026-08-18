@@ -41,7 +41,10 @@ class DailyQuestBoard {
   final List<DailyQuest> quests;
   final int points;
 
-  static const pointsNeeded = 10;
+  /// One shared reward meter: five steps unlock one spendable message token.
+  /// Active foreground time adds one step every 90 minutes; completed quests
+  /// can also contribute to this same progress meter.
+  static const pointsNeeded = 5;
 
   double get progressPercent => (points / pointsNeeded).clamp(0, 1).toDouble();
 }
