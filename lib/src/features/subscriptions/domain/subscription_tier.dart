@@ -18,10 +18,14 @@ enum SubscriptionTier {
     }
   }
 
-  bool get canUseAI => this == SubscriptionTier.package2 || this == SubscriptionTier.premium;
+  /// AI, Events and Legal are core membership benefits. The complimentary
+  /// campaign temporarily maps new users to premium; after it ends any paid
+  /// membership restores these areas.
+  bool get canUseAI => this != SubscriptionTier.free;
   bool get canViewEvents => this != SubscriptionTier.free;
+  bool get canUseLegal => this != SubscriptionTier.free;
   bool get canUseVirtualCard => this != SubscriptionTier.free;
-  bool get canPromote => this == SubscriptionTier.premium; // Not explicitly defined, assuming premium
+  bool get canPromote => this == SubscriptionTier.premium;
 
   int get maxListings {
     switch (this) {
@@ -32,7 +36,7 @@ enum SubscriptionTier {
       case SubscriptionTier.package2:
         return 10;
       case SubscriptionTier.premium:
-        return 999999; // unlimited
+        return 999999;
     }
   }
 
