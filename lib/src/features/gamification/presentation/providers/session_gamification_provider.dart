@@ -31,7 +31,11 @@ class SessionGamificationService {
 
   void startTracking(BuildContext context) {
     _trackingClients++;
-    _context ??= context;
+    // Prefer a context beneath MaterialApp so a floating reward toast can be
+    // shown when available. The durable Notifications entry is server-backed.
+    if (_context == null || ScaffoldMessenger.maybeOf(context) != null) {
+      _context = context;
+    }
     if (_lifecycleObserver == null) {
       _lifecycleObserver = _GamificationLifecycleObserver(
         onStateChanged: (state) {
@@ -101,8 +105,9 @@ class SessionGamificationService {
       await ref.read(subscriptionProvider.notifier).refresh();
 
       if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) return;
       final steps = (data['steps'] as num?)?.toInt() ?? 0;
-      final messenger = ScaffoldMessenger.of(context);
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
