@@ -16,8 +16,6 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final merged = <String, Listing>{};
   var rpcSucceeded = false;
 
-  // Start the city/table lookup immediately instead of waiting for the RPC.
-  // Both sources are merged, so map startup does not pay their latency serially.
   final cityListingsFuture = _fetchRegisteredCityListings(client, loc, limit);
 
   try {
@@ -45,17 +43,33 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
     if (listing.id.isNotEmpty) merged[listing.id] = listing;
   }
 
-  // If the radius RPC itself failed, also merge the lightweight active table
-  // fallback. This catches valid coordinate-based listings whose city text is
-  // missing or misspelled instead of silently dropping them from the map.
   if (!rpcSucceeded || merged.isEmpty) {
     for (final listing in await _fallbackListings(client, limit)) {
       if (listing.id.isNotEmpty) merged[listing.id] = listing;
     }
   }
 
-  return _forMap(merged.values.toList(growable: false), loc);
+  final inArea = _forMap(merged.values.toList(growable: false), loc);
+  return _filterDiscoverable(client, inArea);
 });
+
+Future<List<Listing>> _filterDiscoverable(
+  SupabaseClient client,
+  List<Listing> listings,
+) async {
+  if (listings.isEmpty || client.auth.currentUser == null) return listings;
+  try {
+    final data = await client.rpc(
+      'rpc_filter_discoverable_listing_ids',
+      params: {'p_ids': listings.map((e) => e.id).toList()},
+    );
+    if (data is! List) return const [];
+    final visible = data.map((e) => e.toString()).toSet();
+    return listings.where((listing) => visible.contains(listing.id)).toList();
+  } catch (_) {
+    return const [];
+  }
+}
 
 List<Listing> _parseRows(dynamic data) {
   if (data is! List) return const [];
@@ -105,7 +119,7 @@ Future<List<Listing>> _fetchRegisteredCityListings(
     var query = client
         .from('listings')
         .select(
-          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
+          'id, title, description, price, hourly_rate, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
         );
     query = query.eq('is_active', true).ilike('city', '%$city%');
     if (withStatus) query = query.eq('status', 'active');
@@ -132,7 +146,7 @@ Future<List<Listing>> _fallbackListings(
     var query = client
         .from('listings')
         .select(
-          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
+          'id, title, description, price, hourly_rate, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
         );
     query = query.eq('is_active', true);
     if (withStatus) query = query.eq('status', 'active');
