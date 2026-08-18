@@ -15,6 +15,9 @@ class SubscriptionData {
   bool get isTrialActive =>
       trialEndsAt != null && DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
+  bool get trialHasEnded =>
+      trialEndsAt != null && !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
+
   SubscriptionTier get effectiveTier =>
       isTrialActive ? SubscriptionTier.premium : tier;
 }
@@ -25,15 +28,11 @@ class SubscriptionRepository {
 
   final SupabaseClient _client;
 
-  // Existing free accounts receive a fresh complimentary window from this
-  // campaign launch. New accounts receive three months from account creation.
-  static final DateTime _complimentaryAccessResetAt =
-      DateTime.utc(2026, 8, 17, 3, 23);
-
   Future<SubscriptionData> fetchCurrent() async {
     final user = _client.auth.currentUser;
     if (user == null) return SubscriptionData(tier: SubscriptionTier.free);
 
+    var tier = SubscriptionTier.free;
     try {
       final subscription = await _client
           .from('user_subscriptions')
@@ -44,7 +43,6 @@ class SubscriptionRepository {
           .limit(1)
           .maybeSingle();
 
-      var tier = SubscriptionTier.free;
       if (subscription != null) {
         final endRaw = subscription['end_date'] as String?;
         final end = endRaw == null ? null : DateTime.tryParse(endRaw);
@@ -55,37 +53,73 @@ class SubscriptionRepository {
           tier = _mapDatabaseTier(dbTier);
         }
       }
-
-      int tokens = 0;
-      try {
-        final rows = await _client.rpc('rpc_get_user_tokens');
-        if (rows is List && rows.isNotEmpty && rows.first is Map) {
-          tokens = ((rows.first as Map)['total_messages'] as num?)?.toInt() ?? 0;
-        }
-      } catch (_) {
-        // Subscription access must not fail just because token accounting is down.
-      }
-
-      return SubscriptionData(
-        tier: tier,
-        trialEndsAt:
-            tier == SubscriptionTier.free ? _complimentaryTrialEndsAt(user) : null,
-        tokensBalance: tokens,
-      );
     } catch (_) {
-      return SubscriptionData(
-        tier: SubscriptionTier.free,
-        trialEndsAt: _complimentaryTrialEndsAt(user),
-      );
+      // Paid access lookup failure should not invent a paid entitlement.
     }
+
+    DateTime? trialEndsAt;
+    if (tier == SubscriptionTier.free) {
+      trialEndsAt = await _fetchCampaignTrialEnd(user);
+      if (trialEndsAt != null &&
+          !DateTime.now().toUtc().isBefore(trialEndsAt.toUtc())) {
+        try {
+          await _client.rpc(
+            'rpc_ensure_trial_expiry_notification',
+            params: {'p_trial_ends_at': trialEndsAt.toUtc().toIso8601String()},
+          );
+        } catch (_) {
+          // Notification is best-effort; access state remains authoritative.
+        }
+      }
+    }
+
+    int tokens = 0;
+    try {
+      final rows = await _client.rpc('rpc_get_user_tokens');
+      if (rows is List && rows.isNotEmpty && rows.first is Map) {
+        tokens = ((rows.first as Map)['total_messages'] as num?)?.toInt() ?? 0;
+      }
+    } catch (_) {
+      // Access must not fail just because token accounting is unavailable.
+    }
+
+    return SubscriptionData(
+      tier: tier,
+      trialEndsAt: trialEndsAt,
+      tokensBalance: tokens,
+    );
   }
 
-  DateTime _complimentaryTrialEndsAt(User user) {
-    final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
-    final startsAt = createdAt == null || createdAt.isBefore(_complimentaryAccessResetAt)
-        ? _complimentaryAccessResetAt
-        : createdAt;
-    return _addCalendarMonths(startsAt, 3);
+  Future<DateTime?> _fetchCampaignTrialEnd(User user) async {
+    try {
+      final row = await _client
+          .from('app_access_campaigns')
+          .select(
+            'signup_starts_at,signup_ends_at,trial_months,accepting_new_signups,updated_at',
+          )
+          .eq('campaign_key', 'new_user_premium_trial')
+          .maybeSingle();
+      if (row == null) return null;
+
+      final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
+      final startsAt = DateTime.tryParse(row['signup_starts_at']?.toString() ?? '')?.toUtc();
+      if (createdAt == null || startsAt == null || createdAt.isBefore(startsAt)) {
+        return null;
+      }
+
+      final explicitEnd = DateTime.tryParse(row['signup_ends_at']?.toString() ?? '')?.toUtc();
+      final accepting = row['accepting_new_signups'] == true;
+      final toggledAt = DateTime.tryParse(row['updated_at']?.toString() ?? '')?.toUtc();
+      final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
+      if (signupCutoff != null && !createdAt.isBefore(signupCutoff)) return null;
+
+      final months = ((row['trial_months'] as num?)?.toInt() ?? 3).clamp(1, 24);
+      return _addCalendarMonths(createdAt, months);
+    } catch (_) {
+      // Fail closed: if campaign configuration cannot be verified, do not
+      // manufacture complimentary premium access locally.
+      return null;
+    }
   }
 
   DateTime _addCalendarMonths(DateTime value, int months) {
@@ -95,7 +129,6 @@ class SubscriptionRepository {
     final month = (monthIndex % 12) + 1;
     final lastDay = DateTime.utc(year, month + 1, 0).day;
     final day = utc.day > lastDay ? lastDay : utc.day;
-
     return DateTime.utc(
       year,
       month,
@@ -124,8 +157,6 @@ class SubscriptionRepository {
   }
 
   Future<void> updateTokens(int newBalance) async {
-    // Token balances are ledger-backed in `tokens`; never overwrite them from
-    // the client. This method is retained for API compatibility only.
     final current = await fetchCurrent();
     if (newBalance >= current.tokensBalance) return;
     final difference = current.tokensBalance - newBalance;
