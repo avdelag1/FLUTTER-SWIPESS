@@ -12,8 +12,8 @@ fi
 
 # Vercel environment variables are shell variables, while Flutter's
 # String.fromEnvironment values are compile-time constants. Forward only the
-# supported public client configuration as dart-defines; never write it to a
-# generated file or echo its value into the build log.
+# supported public client configuration as dart-defines. Never echo token values
+# into build logs.
 build_args=(web --release)
 
 # Accept the legacy Capacitor/Vite variable names during the migration, while
@@ -36,6 +36,27 @@ add_public_define GOOGLE_SERVER_CLIENT_ID
 add_public_define GOOGLE_IOS_CLIENT_ID
 
 flutter build "${build_args[@]}"
+
+# Mapbox `pk.` access tokens are public client configuration. Publish the same
+# token already embedded in the web app as a tiny runtime config file so native
+# Xcode/TestFlight builds can configure Mapbox even when they were archived
+# without Flutter --dart-define arguments. Do not publish secret (`sk.`) tokens.
+if [[ -n "$MAPBOX_ACCESS_TOKEN" && "$MAPBOX_ACCESS_TOKEN" == pk.* ]]; then
+  MAPBOX_ACCESS_TOKEN="$MAPBOX_ACCESS_TOKEN" python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+Path('build/web/mapbox-config.json').write_text(
+    json.dumps({'mapboxAccessToken': os.environ['MAPBOX_ACCESS_TOKEN']}),
+    encoding='utf-8',
+)
+PY
+  echo "Flutter config: native Mapbox runtime config published"
+else
+  rm -f build/web/mapbox-config.json
+  echo "Flutter config: native Mapbox runtime config not published"
+fi
 
 # Flutter may skip dotfolders. Host Apple / Android association files
 # at /.well-known so Universal Links do not fall through to index.html.
