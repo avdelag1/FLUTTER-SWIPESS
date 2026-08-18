@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
@@ -56,48 +54,47 @@ class DashboardDock extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
+              child: Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  // Opaque-enough liquid glass keeps the same visual language
+                  // without forcing a backdrop blur over live video every frame.
+                  color: isLight
+                      ? const Color(0xE8F5F5F7)
+                      : const Color(0xE61A1E25),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
                     color: isLight
-                        ? Colors.white.withAlpha(140)
-                        : Colors.black.withAlpha(62),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: isLight
-                          ? Colors.black.withAlpha(34)
-                          : Colors.white.withAlpha(72),
-                      width: 1.15,
-                    ),
+                        ? Colors.black.withAlpha(34)
+                        : Colors.white.withAlpha(72),
+                    width: 1.15,
                   ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    child: Row(
-                      children: [
-                        for (final item in items)
-                          SizedBox(
-                            width: 40,
-                            child: DockButton(
-                              item: item,
-                              wash: item.wash,
-                              selected: selectedTab == item.id,
-                              onTap: () {
-                                AppHaptics.light();
-                                onTabSelected(item.id);
-                              },
-                            ),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  child: Row(
+                    children: [
+                      for (final item in items)
+                        SizedBox(
+                          width: 40,
+                          child: DockButton(
+                            item: item,
+                            wash: item.wash,
+                            selected: selectedTab == item.id,
+                            onTap: () {
+                              AppHaptics.light();
+                              onTabSelected(item.id);
+                            },
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               ),
