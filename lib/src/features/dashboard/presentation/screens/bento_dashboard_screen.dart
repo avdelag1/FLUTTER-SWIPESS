@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
+import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
-import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -46,118 +47,352 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
 
   Future<void> _pickCity() async {
     final discovery = ref.read(discoveryLocationProvider);
-    final cities = ListingLocations.cities.keys
-        .where((city) => city != 'Cancun' && city != 'Merida')
-        .toList(growable: false);
+    final searchController = TextEditingController();
+    var searchResults = <MapboxPlaceResult>[];
+    var searching = false;
+    var hasSearched = false;
+    String? searchError;
 
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        final isLight = Theme.of(sheetContext).brightness == Brightness.light;
-        final ink = isLight ? const Color(0xFF101014) : Colors.white;
-        final surface = isLight
-            ? Colors.white.withAlpha(245)
-            : const Color(0xFF12161D).withAlpha(248);
-        return SafeArea(
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(sheetContext).height * .72,
-            ),
-            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: isLight
-                    ? Colors.black.withAlpha(18)
-                    : Colors.white.withAlpha(30),
-              ),
-            ),
-            child: Column(children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: ink.withAlpha(55),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
-                child: Row(children: [
-                  Expanded(
-                    child: Text(
-                      'Choose location',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: ink,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) {
+          final isLight =
+              Theme.of(sheetContext).brightness == Brightness.light;
+          final ink = isLight ? const Color(0xFF101014) : Colors.white;
+          final surface = isLight
+              ? Colors.white.withAlpha(245)
+              : const Color(0xFF12161D).withAlpha(248);
+
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              Future<void> runSearch() async {
+                final query = searchController.text.trim();
+                if (query.length < 2) {
+                  setSheetState(() {
+                    hasSearched = true;
+                    searchResults = const [];
+                    searchError = 'Type at least 2 characters.';
+                  });
+                  return;
+                }
+
+                setSheetState(() {
+                  searching = true;
+                  hasSearched = true;
+                  searchError = null;
+                });
+
+                try {
+                  final results = await MapboxPlaceSearch.search(query);
+                  if (!sheetContext.mounted) return;
+                  setSheetState(() {
+                    searching = false;
+                    searchResults = results;
+                    searchError = results.isEmpty
+                        ? 'No place found. Try a city, state, region or country.'
+                        : null;
+                  });
+                } catch (_) {
+                  if (!sheetContext.mounted) return;
+                  setSheetState(() {
+                    searching = false;
+                    searchResults = const [];
+                    searchError = 'Could not search right now. Try again.';
+                  });
+                }
+              }
+
+              void selectLocation({
+                required String city,
+                required String country,
+                required double latitude,
+                required double longitude,
+                required int radiusKm,
+              }) {
+                final notifier =
+                    ref.read(discoveryLocationProvider.notifier);
+                notifier.setCoordinates(
+                  city: city,
+                  country: country,
+                  latitude: latitude,
+                  longitude: longitude,
+                );
+                notifier.setRadiusKm(radiusKm);
+                Navigator.pop(sheetContext);
+              }
+
+              return SafeArea(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(sheetContext).height * .82,
+                  ),
+                  margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  decoration: BoxDecoration(
+                    color: surface,
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: isLight
+                          ? Colors.black.withAlpha(18)
+                          : Colors.white.withAlpha(30),
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.pop(sheetContext),
-                    icon: Icon(Icons.close_rounded, color: ink),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 10),
+                      Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: ink.withAlpha(55),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 12, 10, 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Passport location',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: ink,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Choose a Swipess city or search anywhere.',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: ink.withAlpha(130),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Close',
+                              onPressed: () => Navigator.pop(sheetContext),
+                              icon: Icon(Icons.close_rounded, color: ink),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                        child: TextField(
+                          controller: searchController,
+                          textInputAction: TextInputAction.search,
+                          autocorrect: false,
+                          enableSuggestions: true,
+                          onSubmitted: (_) => runSearch(),
+                          decoration: InputDecoration(
+                            hintText: 'Search Texas, Nashville, Alaska…',
+                            prefixIcon: const Icon(Icons.travel_explore_rounded),
+                            suffixIcon: IconButton(
+                              tooltip: 'Search world',
+                              onPressed: searching ? null : runSearch,
+                              icon: const Icon(Icons.search_rounded),
+                            ),
+                            filled: true,
+                            fillColor: isLight
+                                ? Colors.black.withAlpha(7)
+                                : Colors.white.withAlpha(13),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: ink.withAlpha(28),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: ink.withAlpha(28),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              borderSide: BorderSide(
+                                color: const Color(0xFF60A5FA)
+                                    .withAlpha(180),
+                                width: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (searching)
+                        const LinearProgressIndicator(
+                          minHeight: 2,
+                          color: Color(0xFF60A5FA),
+                          backgroundColor: Colors.transparent,
+                        ),
+                      if (searchError != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              searchError!,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: ink.withAlpha(150),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
+                          children: [
+                            if (searchResults.isNotEmpty) ...[
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(8, 8, 8, 5),
+                                child: Text(
+                                  'SEARCH RESULTS',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: ink.withAlpha(125),
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: .8,
+                                  ),
+                                ),
+                              ),
+                              for (final result in searchResults)
+                                ListTile(
+                                  dense: true,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  leading: const Icon(
+                                    Icons.public_rounded,
+                                    color: Color(0xFF60A5FA),
+                                  ),
+                                  title: Text(
+                                    result.name,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: ink,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  subtitle: result.subtitle.isEmpty
+                                      ? null
+                                      : Text(
+                                          result.subtitle,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: ink.withAlpha(125),
+                                            fontSize: 11.5,
+                                          ),
+                                        ),
+                                  trailing: const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 13,
+                                    color: Color(0xFF60A5FA),
+                                  ),
+                                  onTap: () => selectLocation(
+                                    city: result.name,
+                                    country: result.country,
+                                    latitude: result.latitude,
+                                    longitude: result.longitude,
+                                    radiusKm: result.suggestedRadiusKm,
+                                  ),
+                                ),
+                              const Divider(height: 18),
+                            ] else if (hasSearched && !searching) ...[
+                              const SizedBox(height: 2),
+                            ],
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 8, 8, 5),
+                              child: Text(
+                                'PASSPORT DESTINATIONS',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink.withAlpha(125),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: .8,
+                                ),
+                              ),
+                            ),
+                            for (final city in PassportCities.all)
+                              Builder(
+                                builder: (context) {
+                                  final selected =
+                                      city.name.toLowerCase() ==
+                                      discovery.city.toLowerCase();
+                                  return ListTile(
+                                    dense: true,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    leading: Icon(
+                                      Icons.location_on_outlined,
+                                      color: selected
+                                          ? const Color(0xFF60A5FA)
+                                          : ink,
+                                    ),
+                                    title: Text(
+                                      city.name,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: ink,
+                                        fontWeight: selected
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      city.country,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: ink.withAlpha(125),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    trailing: selected
+                                        ? const Icon(
+                                            Icons.check_circle_rounded,
+                                            color: Color(0xFF60A5FA),
+                                            size: 20,
+                                          )
+                                        : null,
+                                    onTap: () => selectLocation(
+                                      city: city.name,
+                                      country: city.country,
+                                      latitude: city.lat,
+                                      longitude: city.lng,
+                                      radiusKm: 25,
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ]),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
-                  itemCount: cities.length,
-                  itemBuilder: (context, index) {
-                    final city = cities[index];
-                    final info = ListingLocations.cities[city]!;
-                    final selected = city == discovery.city;
-                    return ListTile(
-                      dense: true,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      leading: Icon(
-                        Icons.location_on_outlined,
-                        color: selected ? const Color(0xFF60A5FA) : ink,
-                      ),
-                      title: Text(
-                        city,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: ink,
-                          fontWeight: selected
-                              ? FontWeight.w800
-                              : FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        info.country,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: ink.withAlpha(125),
-                          fontSize: 12,
-                        ),
-                      ),
-                      trailing: selected
-                          ? const Icon(
-                              Icons.check_circle_rounded,
-                              color: Color(0xFF60A5FA),
-                              size: 20,
-                            )
-                          : null,
-                      onTap: () => Navigator.pop(sheetContext, city),
-                    );
-                  },
                 ),
-              ),
-            ]),
-          ),
-        );
-      },
-    );
-
-    if (!mounted || selected == null) return;
-    ref.read(discoveryLocationProvider.notifier).setCity(selected);
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      searchController.dispose();
+    }
   }
 
   Future<void> _pickDates() async {
