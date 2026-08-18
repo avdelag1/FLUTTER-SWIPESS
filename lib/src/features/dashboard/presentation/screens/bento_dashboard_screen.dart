@@ -535,12 +535,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  MediaQuery.paddingOf(context).top + 72,
-                  16,
-                  16,
-                ),
+                // SafeArea already accounts for the status bar. Keep the AI
+                // field tucked directly under the compact persistent header.
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 8),
                 child: Consumer(
                   builder: (context, ref, child) {
                     final showChrome = ref.watch(chromeVisibilityProvider);
@@ -551,7 +548,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                         child: GlowSearchBar(
-                          hint: 'Ask Swipess AI',
+                          hint: 'What are you looking for?',
                           onTap: _openAiSearch,
                           locationLabel: discovery.city,
                           dateLabel: discovery.dateLabel,
