@@ -14,6 +14,7 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
       : 300;
 
   final merged = <String, Listing>{};
+  var rpcSucceeded = false;
 
   // Start the city/table lookup immediately instead of waiting for the RPC.
   // Both sources are merged, so map startup does not pay their latency serially.
@@ -32,18 +33,22 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
           },
         )
         .timeout(const Duration(seconds: 8));
+    rpcSucceeded = true;
     for (final listing in _parseRows(data)) {
       if (listing.id.isNotEmpty) merged[listing.id] = listing;
     }
   } catch (_) {
-    // City/table fallback below still keeps the map usable when the RPC fails.
+    // City/table + coordinate fallbacks below keep the map usable.
   }
 
   for (final listing in await cityListingsFuture) {
     if (listing.id.isNotEmpty) merged[listing.id] = listing;
   }
 
-  if (merged.isEmpty) {
+  // If the radius RPC itself failed, also merge the lightweight active table
+  // fallback. This catches valid coordinate-based listings whose city text is
+  // missing or misspelled instead of silently dropping them from the map.
+  if (!rpcSucceeded || merged.isEmpty) {
     for (final listing in await _fallbackListings(client, limit)) {
       if (listing.id.isNotEmpty) merged[listing.id] = listing;
     }
