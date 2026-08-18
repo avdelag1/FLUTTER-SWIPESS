@@ -17,6 +17,15 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
 
   final merged = <String, Profile>{};
 
+  // Start the city/table lookup immediately instead of waiting for the RPC.
+  // This keeps the same coverage while reducing the time until map users appear.
+  final cityProfilesFuture = _fetchRegisteredCityProfiles(
+    client,
+    loc,
+    limit,
+    userId,
+  );
+
   try {
     final data = await client
         .rpc(
@@ -38,12 +47,7 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
     // City/table fallback below still keeps registered users discoverable.
   }
 
-  for (final profile in await _fetchRegisteredCityProfiles(
-    client,
-    loc,
-    limit,
-    userId,
-  )) {
+  for (final profile in await cityProfilesFuture) {
     merged[profile.id] = profile;
   }
 
