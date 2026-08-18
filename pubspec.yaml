@@ -1,7 +1,7 @@
 name: flutter_swipes
 description: "Swipess — swipe-first discovery for homes, events, and local services."
 publish_to: 'none'
-version: 1.2.36+612
+version: 1.2.36+613
 
 environment:
   sdk: ^3.12.2

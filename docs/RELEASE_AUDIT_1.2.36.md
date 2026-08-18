@@ -1,10 +1,21 @@
-# Swipess Release Audit — 1.2.36 (612)
+# Swipess Release Audit — 1.2.36 (613)
 
 Date: 2026-08-17/18
 
 ## Release candidate
 
-Swipess **1.2.36 (Build 612)** supersedes 1.2.35 (611) because this pass activates material production behavior in discovery, complimentary membership access, premium gating and engagement rewards.
+Swipess **1.2.36 (Build 613)** supersedes 1.2.36 (612) for store distribution. Build 612 reached TestFlight with Flutter debug/JIT runtime artifacts and cannot be treated as a production candidate. Build 613 keeps the 1.2.36 product behavior while hardening the Apple and Google Play release pipelines.
+
+## Store release pipeline hardening
+
+- The shared Xcode scheme already archives with the `Release` configuration.
+- `ios/Flutter/Release.xcconfig` now explicitly maps Xcode `Release` to Flutter `release` mode after `Generated.xcconfig` is loaded, preventing a stale local debug setting from overriding an archive.
+- The same xcconfig maps `Profile` to Flutter `profile`; `Debug.xcconfig` explicitly maps `Debug` to Flutter `debug`.
+- CI builds iOS with `flutter build ios --release --no-codesign` and rejects the app bundle if Flutter `kernel_blob.bin` debug/JIT output is present.
+- The shipping build number is now **613**, providing a new App Store Connect/TestFlight build for the corrected binary.
+- Android compile/target SDK is pinned to API 36 for the Google Play Android 16 submission requirement taking effect August 31, 2026.
+- Android release builds no longer fall back to the debug signing key when `android/key.properties` is missing. The output remains unsigned until the real Play upload key is supplied.
+- CI now builds an Android release app bundle in addition to analyzer/tests/web/iOS release checks.
 
 ## Discovery decisions
 
@@ -68,6 +79,24 @@ Swipess **1.2.36 (Build 612)** supersedes 1.2.35 (611) because this pass activat
 
 ## Apple handoff
 
-Use **Swipess 1.2.36 (612)** for the next Apple/TestFlight handoff. The App Store/Xcode Cloud account notification remains an external account-plan matter and is not treated as an application-code blocker in this audit.
+Use **Swipess 1.2.36 (613)** for the next Apple/TestFlight handoff. **Do not reuse build 612.** The App Store/Xcode Cloud account notification remains an external account-plan matter and is not treated as an application-code blocker in this audit.
 
-Before review, the normal device/account checks still apply: archive/upload 1.2.36 (612), run the core swipe flow, confirm liked/passed items disappear appropriately, test a new-conversation token deduction, verify complimentary/premium navigation with a test account, and complete the StoreKit/TestFlight checks already listed in the 1.2.35 audit.
+The correct Apple build path is:
+
+```bash
+flutter clean
+flutter pub get
+flutter build ipa --release
+```
+
+Before review, install build 613 from TestFlight on a real supported iPhone and confirm it launches normally from the home screen, then run the core swipe flow, confirm liked/passed items disappear appropriately, test a new-conversation token deduction, verify complimentary/premium navigation with a test account, and complete the StoreKit/TestFlight checks already listed in the 1.2.35 audit.
+
+## Google Play handoff
+
+Use the existing Play upload key for `com.swipess.mobile` through `android/key.properties` and build:
+
+```bash
+flutter build appbundle --release
+```
+
+The repository intentionally does not contain the private upload key. A release built without that key is left unsigned instead of being silently signed with Android debug credentials.

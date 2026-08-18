@@ -1,2 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+// Keep device/simulator development explicitly in Flutter debug mode while the
+// Release configuration below is independently locked to AOT/release output.
+FLUTTER_BUILD_MODE[config=Debug] = debug
