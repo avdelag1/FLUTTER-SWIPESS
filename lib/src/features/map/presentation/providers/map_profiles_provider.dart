@@ -16,13 +16,7 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
       : 300;
 
   final merged = <String, Profile>{};
-
-  final cityProfilesFuture = _fetchRegisteredCityProfiles(
-    client,
-    loc,
-    limit,
-    userId,
-  );
+  final cityProfilesFuture = _fetchRegisteredCityProfiles(client, loc, limit, userId);
 
   try {
     final data = await client
@@ -38,30 +32,41 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
         )
         .timeout(const Duration(seconds: 8));
     for (final profile in _parseRows(data)) {
-      if (profile.id != userId && profile.id.isNotEmpty) {
-        merged[profile.id] = profile;
-      }
+      if (profile.id != userId && profile.id.isNotEmpty) merged[profile.id] = profile;
     }
-  } catch (_) {
-    // City/table fallback below still keeps registered users discoverable.
-  }
+  } catch (_) {}
 
   for (final profile in await cityProfilesFuture) {
-    if (profile.id != userId && profile.id.isNotEmpty) {
-      merged[profile.id] = profile;
-    }
+    if (profile.id != userId && profile.id.isNotEmpty) merged[profile.id] = profile;
   }
 
   if (merged.isEmpty) {
     for (final profile in await _fallbackProfiles(client, limit, userId)) {
-      if (profile.id != userId && profile.id.isNotEmpty) {
-        merged[profile.id] = profile;
-      }
+      if (profile.id != userId && profile.id.isNotEmpty) merged[profile.id] = profile;
     }
   }
 
-  return _forMap(merged.values.toList(growable: false), loc);
+  final inArea = _forMap(merged.values.toList(growable: false), loc);
+  return _filterDiscoverable(client, inArea);
 });
+
+Future<List<Profile>> _filterDiscoverable(
+  SupabaseClient client,
+  List<Profile> profiles,
+) async {
+  if (profiles.isEmpty || client.auth.currentUser == null) return profiles;
+  try {
+    final data = await client.rpc(
+      'rpc_filter_discoverable_profile_ids',
+      params: {'p_ids': profiles.map((e) => e.id).toList()},
+    );
+    if (data is! List) return const [];
+    final visible = data.map((e) => e.toString()).toSet();
+    return profiles.where((profile) => visible.contains(profile.id)).toList();
+  } catch (_) {
+    return const [];
+  }
+}
 
 List<Profile> _parseRows(dynamic data) {
   if (data is! List) return const [];
@@ -71,9 +76,7 @@ List<Profile> _parseRows(dynamic data) {
     try {
       final profile = Profile.fromJson(Map<String, dynamic>.from(raw));
       if (profile.id.isNotEmpty) parsed.add(profile);
-    } catch (_) {
-      // Skip only the malformed row. One bad profile must not blank the map.
-    }
+    } catch (_) {}
   }
   return parsed;
 }
