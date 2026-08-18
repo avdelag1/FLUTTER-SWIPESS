@@ -15,20 +15,20 @@ class ListingRepository {
   ListingRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
 
-  /// Swipe card fields — matches web app's SWIPE_CARD_FIELDS.
   static const _swipeFields = '''
     id, title, description, price, previous_price, images, video_url,
     city, neighborhood, beds, baths, square_footage, category,
     listing_type, property_type, vehicle_brand, vehicle_model, year,
     mileage, amenities, pet_friendly, furnished, owner_id, created_at,
     updated_at, currency, pricing_unit, service_category, experience_years,
-    experience_level, latitude, longitude, status, is_active
+    experience_level, latitude, longitude, status, is_active, hourly_rate
   ''';
 
   /// Fetch the swipe feed for the current user.
   ///
-  /// Tries the RPC function first (which excludes already-swiped listings),
-  /// falls back to a direct query if the RPC doesn't exist yet.
+  /// A successful smart-feed response is authoritative even when it is empty.
+  /// This is important: an empty result can mean every matching item has already
+  /// been liked/passed, and must never trigger a direct-query resurrection.
   Future<List<Listing>> fetchSwipeFeed({
     String? category,
     String? interestType,
@@ -43,9 +43,9 @@ class ListingRepository {
     int limit = 20,
     int offset = 0,
   }) async {
-    try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId != null) {
+    final userId = _client.auth.currentUser?.id;
+    if (userId != null) {
+      try {
         final data = await _client.rpc(
           'get_smart_listings',
           params: {
@@ -55,9 +55,10 @@ class ListingRepository {
             'p_offset': offset,
           },
         );
-        if (data is List && data.isNotEmpty) {
+        if (data is List) {
           final listings = data
-              .map((row) => Listing.fromJson(row as Map<String, dynamic>))
+              .whereType<Map>()
+              .map((row) => Listing.fromJson(Map<String, dynamic>.from(row)))
               .toList();
           return _applyLocalFilters(
             listings,
@@ -72,12 +73,13 @@ class ListingRepository {
             city: city,
           );
         }
+      } catch (_) {
+        // RPC unavailable: direct fallback below is still passed through the
+        // server decision filter before anything reaches the UI.
       }
-    } catch (_) {
-      // RPC might not exist — fall through to direct query
     }
 
-    return _fetchDirect(
+    final direct = await _fetchDirect(
       category: category,
       interestType: interestType,
       minPrice: minPrice,
@@ -91,9 +93,26 @@ class ListingRepository {
       limit: limit,
       offset: offset,
     );
+    return _filterDiscoverable(direct);
   }
 
-  /// Direct table query fallback (no RPC).
+  Future<List<Listing>> _filterDiscoverable(List<Listing> listings) async {
+    if (listings.isEmpty || _client.auth.currentUser == null) return listings;
+    try {
+      final data = await _client.rpc(
+        'rpc_filter_discoverable_listing_ids',
+        params: {'p_ids': listings.map((e) => e.id).toList()},
+      );
+      if (data is! List) return const [];
+      final visible = data.map((e) => e.toString()).toSet();
+      return listings.where((listing) => visible.contains(listing.id)).toList();
+    } catch (_) {
+      // Respecting a user's explicit pass/save is more important than showing
+      // stale discovery content during a decision-service outage.
+      return const [];
+    }
+  }
+
   Future<List<Listing>> _fetchDirect({
     String? category,
     String? interestType,
@@ -126,30 +145,16 @@ class ListingRepository {
         interestType != 'both') {
       query = query.eq('listing_type', interestType);
     }
-    if (minPrice != null) {
-      query = query.gte('price', minPrice);
-    }
-    if (maxPrice != null) {
-      query = query.lte('price', maxPrice);
-    }
-    if (minBeds != null && minBeds > 0) {
-      query = query.gte('beds', minBeds);
-    }
-    if (minBaths != null && minBaths > 0) {
-      query = query.gte('baths', minBaths);
-    }
-    if (furnished != null) {
-      query = query.eq('furnished', furnished);
-    }
-    if (petFriendly != null) {
-      query = query.eq('pet_friendly', petFriendly);
-    }
+    if (minPrice != null) query = query.gte('price', minPrice);
+    if (maxPrice != null) query = query.lte('price', maxPrice);
+    if (minBeds != null && minBeds > 0) query = query.gte('beds', minBeds);
+    if (minBaths != null && minBaths > 0) query = query.gte('baths', minBaths);
+    if (furnished != null) query = query.eq('furnished', furnished);
+    if (petFriendly != null) query = query.eq('pet_friendly', petFriendly);
     if (city != null && city.trim().isNotEmpty) {
       query = query.ilike('city', '%${city.trim()}%');
     }
-    if (propertyTypes.isNotEmpty) {
-      query = query.inFilter('property_type', propertyTypes);
-    }
+    if (propertyTypes.isNotEmpty) query = query.inFilter('property_type', propertyTypes);
 
     final data = await query
         .order('created_at', ascending: false)
@@ -186,9 +191,7 @@ class ListingRepository {
       final baths = (listing.baths ?? listing.bathrooms ?? 0).ceil();
       if (minBaths != null && minBaths > 0 && baths < minBaths) return false;
       if (furnished != null && listing.furnished != furnished) return false;
-      if (petFriendly != null && listing.petFriendly != petFriendly) {
-        return false;
-      }
+      if (petFriendly != null && listing.petFriendly != petFriendly) return false;
       if (propertyTypes.isNotEmpty) {
         final pt = listing.propertyType;
         if (pt == null || !propertyTypes.contains(pt)) return false;
@@ -201,20 +204,16 @@ class ListingRepository {
     }).toList();
   }
 
-  /// Fetch a single listing by ID for the detail page.
   Future<Listing?> fetchById(String listingId) async {
     final data = await _client
         .from('listings')
         .select()
         .eq('id', listingId)
         .maybeSingle();
-
     if (data == null) return null;
     return Listing.fromJson(data);
   }
 
-  /// Upload listing photos to the `listing-images` bucket (Capacitor path).
-  /// Runs Cap `moderate-image` after each upload (fail-open on infra errors).
   Future<List<String>> uploadListingPhotos({
     required String userId,
     required List<XFile> files,
@@ -252,7 +251,6 @@ class ListingRepository {
     return urls;
   }
 
-  /// Cap `listing-videos` bucket — optional 10s loop for the swipe card.
   Future<String?> uploadListingVideo({
     required String userId,
     required XFile file,
@@ -283,13 +281,10 @@ class ListingRepository {
     return _client.storage.from('listing-videos').getPublicUrl(path);
   }
 
-  /// Insert a listing, stripping columns the live schema rejects — same
-  /// retry strategy as Capacitor `saveListingWithSchemaRetry`.
   Future<Listing> createListing(Map<String, dynamic> payload) async {
     return _saveWithSchemaRetry(payload, editingId: null);
   }
 
-  /// Cap UnifiedListingForm edit path — update + schema-retry.
   Future<Listing> updateListing(
     String listingId,
     Map<String, dynamic> payload,
@@ -331,7 +326,6 @@ class ListingRepository {
     throw Exception('Listing save failed after adapting to the live schema.');
   }
 
-  /// Cap PropertyManagement — change availability / status.
   Future<void> updateListingStatus({
     required String listingId,
     required String status,
@@ -365,9 +359,7 @@ class ListingRepository {
         .maybeSingle();
     final existing = <String>[];
     final raw = row?['images'];
-    if (raw is List) {
-      existing.addAll(raw.map((e) => e.toString()));
-    }
+    if (raw is List) existing.addAll(raw.map((e) => e.toString()));
     final merged = [...existing, ...imageUrls];
     await _client
         .from('listings')
