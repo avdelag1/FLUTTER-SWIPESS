@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/widgets/app_notification_bar.dart';
-import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_modal.dart';
 
-/// Root overlay stack matching Cap `AppLayout` modals (VAP, map, concierge).
+/// Root overlay stack for VAP, map, and concierge overlays.
 class OverlayModalsHost extends ConsumerWidget {
   const OverlayModalsHost({super.key, required this.child});
 
@@ -31,12 +30,11 @@ class OverlayModalsHost extends ConsumerWidget {
             ),
           ),
         if (modals.showConcierge)
-          GeniePanel(
-            onDismissed: () =>
-                ref.read(overlayModalsProvider.notifier).closeConcierge(),
-            builder: (context, dismiss) => ConciergeOverlay(
+          Positioned.fill(
+            child: ConciergeOverlay(
               initialQuery: modals.conciergeQuery,
-              onClose: dismiss,
+              onClose: () =>
+                  ref.read(overlayModalsProvider.notifier).closeConcierge(),
             ),
           ),
         const AppNotificationBar(),
