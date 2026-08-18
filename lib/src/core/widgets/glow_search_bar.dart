@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 class GlowSearchBar extends StatefulWidget {
   const GlowSearchBar({
     super.key,
-    this.hint = 'Search Swipess',
+    this.hint = 'What are you looking for?',
     this.onTap,
     this.controller,
     this.onChanged,
@@ -48,16 +47,17 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   List<String> get _rotatingPrompts {
     final place = _place;
     return <String>[
-      'Ask Swipess anything about $place',
-      'What’s happening in $place tonight?',
-      'Book a great table in $place',
-      'Find a private chef in $place',
+      'What are you looking for today?',
+      'Find something worth your time',
+      'Show me something nearby',
+      'What’s happening around $place tonight?',
+      'Find a great place to eat in $place',
       'Show me homes for rent in $place',
       'Find trusted workers in $place',
-      'Need a massage expert in $place?',
+      'Find a private chef in $place',
       'Need local legal help in $place?',
       'What’s popular around $place right now?',
-      'Create a listing in $place with AI',
+      'Create a listing in $place',
     ];
   }
 
@@ -71,13 +71,9 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   void didUpdateWidget(covariant GlowSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     final wasTapOnly = oldWidget.onTap != null && oldWidget.onChanged == null;
-
     if (oldWidget.locationLabel != widget.locationLabel) {
-      // A city change should be reflected immediately instead of waiting for
-      // the next timer tick. AnimatedSwitcher handles the visual transition.
       _promptIndex = 0;
     }
-
     if (_isTapOnly != wasTapOnly) {
       _startPromptRotation();
     }
@@ -86,15 +82,10 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   void _startPromptRotation() {
     _promptTimer?.cancel();
     if (!_isTapOnly) return;
-
-    // Keep this intentionally lightweight and slower than media rotations.
-    // Only this small text subtree changes; videos/maps/cards are unaffected.
-    _promptTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+    _promptTimer = Timer.periodic(const Duration(seconds: 9), (_) {
       if (!mounted) return;
       final prompts = _rotatingPrompts;
-      setState(() {
-        _promptIndex = (_promptIndex + 1) % prompts.length;
-      });
+      setState(() => _promptIndex = (_promptIndex + 1) % prompts.length);
     });
   }
 
@@ -108,7 +99,6 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
-    final muted = ink.withAlpha(150);
     final prompts = _rotatingPrompts;
     final safeIndex = _promptIndex % prompts.length;
     final displayHint = _isTapOnly ? prompts[safeIndex] : widget.hint;
@@ -119,166 +109,83 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: isLight
-                      ? Colors.white.withAlpha(178)
-                      : Colors.black.withAlpha(18),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: const Color(0xFF60A5FA)
-                        .withAlpha(isLight ? 160 : 180),
-                    width: 1.05,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF60A5FA)
-                          .withAlpha(isLight ? 22 : 16),
-                      blurRadius: 10,
-                      spreadRadius: -3,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 16),
-                    if (_isTapOnly) ...[
-                      const Icon(
-                        Icons.auto_awesome_rounded,
-                        color: Color(0xFF60A5FA),
-                        size: 16,
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: isLight
+                  ? Colors.white.withAlpha(205)
+                  : const Color(0xFF121822).withAlpha(230),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: const Color(0xFF60A5FA).withAlpha(isLight ? 125 : 145),
+                width: .9,
+              ),
+            ),
+            alignment: Alignment.centerLeft,
+            child: _isTapOnly
+                ? RepaintBoundary(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 520),
+                      reverseDuration: const Duration(milliseconds: 360),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      layoutBuilder: (currentChild, previousChildren) => Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
                       ),
-                      const SizedBox(width: 9),
-                    ],
-                    Expanded(
-                      child: _isTapOnly
-                          ? Align(
-                              alignment: Alignment.centerLeft,
-                              child: RepaintBoundary(
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 900),
-                                  reverseDuration:
-                                      const Duration(milliseconds: 700),
-                                  switchInCurve: Curves.easeOutCubic,
-                                  switchOutCurve: Curves.easeInCubic,
-                                  layoutBuilder: (currentChild, previousChildren) {
-                                    return Stack(
-                                      alignment: Alignment.centerLeft,
-                                      children: <Widget>[
-                                        ...previousChildren,
-                                        if (currentChild != null) currentChild,
-                                      ],
-                                    );
-                                  },
-                                  transitionBuilder: (child, animation) {
-                                    final fade = CurvedAnimation(
-                                      parent: animation,
-                                      curve: const Interval(
-                                        .08,
-                                        1,
-                                        curve: Curves.easeOutCubic,
-                                      ),
-                                      reverseCurve: Curves.easeInCubic,
-                                    );
-                                    final slide = Tween<Offset>(
-                                      begin: const Offset(0, .07),
-                                      end: Offset.zero,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutCubic,
-                                        reverseCurve: Curves.easeInCubic,
-                                      ),
-                                    );
-                                    return FadeTransition(
-                                      opacity: fade,
-                                      child: SlideTransition(
-                                        position: slide,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    displayHint,
-                                    key: ValueKey<String>(
-                                      '${widget.locationLabel}:$safeIndex:$displayHint',
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: ink.withAlpha(225),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                      letterSpacing: .05,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : TextField(
-                              controller: widget.controller,
-                              onChanged: widget.onChanged,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: ink,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                              ),
-                              cursorColor: const Color(0xFF60A5FA),
-                              decoration: InputDecoration(
-                                hintText: widget.hint,
-                                hintStyle: GoogleFonts.plusJakartaSans(
-                                  color: ink.withAlpha(130),
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 15,
-                                ),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                filled: false,
-                                fillColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                      child: Text(
+                        displayHint,
+                        key: ValueKey<String>(
+                          '${widget.locationLabel}:$safeIndex:$displayHint',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink.withAlpha(225),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                          letterSpacing: .02,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 16),
-                  ],
-                ),
-              ),
-            ),
+                  )
+                : TextField(
+                    controller: widget.controller,
+                    onChanged: widget.onChanged,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14.5,
+                    ),
+                    cursorColor: const Color(0xFF60A5FA),
+                    decoration: InputDecoration(
+                      hintText: widget.hint,
+                      hintStyle: GoogleFonts.plusJakartaSans(
+                        color: ink.withAlpha(130),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14.5,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      filled: false,
+                      fillColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      focusColor: Colors.transparent,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
           ),
-        ),
-        const SizedBox(height: 5),
-        Row(
-          children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              color: Color(0xFF60A5FA),
-              size: 11,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                'Powered by Gemini · AI may make mistakes.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
-                  color: muted,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 10.5,
-                  letterSpacing: .15,
-                ),
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 7),
         Row(
@@ -292,7 +199,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                 widget.onLocationTap,
               ),
             ),
-            const SizedBox(width: 7),
+            const SizedBox(width: 6),
             Expanded(
               child: _outerPill(
                 Icons.calendar_month_rounded,
@@ -302,7 +209,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                 widget.onDatesTap,
               ),
             ),
-            const SizedBox(width: 7),
+            const SizedBox(width: 6),
             Expanded(
               child: _outerPill(
                 Icons.person_rounded,
@@ -325,46 +232,40 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
     bool isLight,
     VoidCallback? onTap,
   ) {
-    final pill = ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-        child: Container(
-          height: 33,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: isLight
-                ? Colors.white.withAlpha(145)
-                : Colors.white.withAlpha(11),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: isLight
-                  ? Colors.black.withAlpha(22)
-                  : Colors.white.withAlpha(38),
-              width: .6,
+    final pill = Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: isLight
+            ? Colors.white.withAlpha(190)
+            : const Color(0xFF171C25).withAlpha(235),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: isLight
+              ? Colors.black.withAlpha(20)
+              : Colors.white.withAlpha(34),
+          width: .6,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: ink.withAlpha(235), size: 13),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 11.5,
+              ),
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: ink.withAlpha(240), size: 13),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: ink,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
 
