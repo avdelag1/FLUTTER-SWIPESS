@@ -25,9 +25,9 @@ class MapboxPlaceResult {
   int get suggestedRadiusKm {
     switch (featureType) {
       case 'country':
-        return 1000;
+        return 5000;
       case 'region':
-        return 250;
+        return 1000;
       case 'place':
       case 'locality':
       default:
