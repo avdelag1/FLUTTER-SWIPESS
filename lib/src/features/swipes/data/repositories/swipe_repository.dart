@@ -19,7 +19,7 @@ class SwipeRepository {
 
   SwipeRepository({SupabaseClient? client, OfflineSwipeQueue? offlineQueue})
     : _client = client ?? Supabase.instance.client,
-      _offlineQueue = offlineSwipeQueue ?? OfflineSwipeQueue(client: client);
+      _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
 
   Future<({int synced, int failed})> flushOfflineQueue() =>
       _offlineQueue.flush();
