@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Vercel build: emit static files to build/web (the Output Directory).
+# Production redeploy trigger for the latest main map interaction release.
 set -euo pipefail
 
 export PATH="$PWD/flutter/bin:$PATH"
