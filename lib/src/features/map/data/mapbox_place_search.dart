@@ -10,6 +10,7 @@ class MapboxPlaceResult {
     required this.latitude,
     required this.longitude,
     required this.subtitle,
+    required this.featureType,
   });
 
   final String name;
@@ -17,8 +18,22 @@ class MapboxPlaceResult {
   final double latitude;
   final double longitude;
   final String subtitle;
+  final String featureType;
 
   String get label => subtitle.isEmpty ? name : '$name, $subtitle';
+
+  int get suggestedRadiusKm {
+    switch (featureType) {
+      case 'country':
+        return 1000;
+      case 'region':
+        return 250;
+      case 'place':
+      case 'locality':
+      default:
+        return 25;
+    }
+  }
 }
 
 /// One-off worldwide place search backed by Mapbox Search Box `/forward`.
@@ -72,6 +87,8 @@ class MapboxPlaceSearch {
 
       final name = properties['name']?.toString().trim() ?? '';
       if (name.isEmpty) continue;
+      final featureType =
+          properties['feature_type']?.toString().trim().toLowerCase() ?? 'place';
 
       final context = properties['context'];
       String country = '';
@@ -94,6 +111,7 @@ class MapboxPlaceSearch {
           latitude: lat.toDouble(),
           longitude: lng.toDouble(),
           subtitle: subtitle,
+          featureType: featureType,
         ),
       );
     }
