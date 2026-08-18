@@ -9,35 +9,64 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
   final service = SessionGamificationService(ref);
-  ref.onDispose(service.stopTracking);
+  ref.onDispose(service.dispose);
   return service;
 });
 
 /// Foreground engagement heartbeat.
 ///
 /// The server is authoritative: one 90-minute block = one step and five steps
-/// grant one spendable message token. The client only sends small heartbeats,
-/// so closing/backgrounding the app never grants passive time.
+/// grant one spendable message token. Background/inactive time never counts.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
 
   final Ref ref;
   Timer? _timer;
   bool _syncing = false;
+  _GamificationLifecycleObserver? _lifecycleObserver;
+  BuildContext? _context;
 
   void startTracking(BuildContext context) {
-    if (_timer != null) return;
+    _context = context;
+    _lifecycleObserver ??= _GamificationLifecycleObserver(
+      onStateChanged: (state) {
+        if (state == AppLifecycleState.resumed) {
+          final ctx = _context;
+          if (ctx != null) _startForegroundTimer(ctx);
+        } else if (state == AppLifecycleState.inactive ||
+            state == AppLifecycleState.paused ||
+            state == AppLifecycleState.detached ||
+            state == AppLifecycleState.hidden) {
+          _pauseForegroundTimer();
+        }
+      },
+    );
+    WidgetsBinding.instance.addObserver(_lifecycleObserver!);
+    _startForegroundTimer(context);
+  }
 
-    // Establish a server-time baseline without claiming any seconds.
+  void _startForegroundTimer(BuildContext context) {
+    if (_timer != null) return;
+    // Establish a fresh server-time baseline after every foreground resume.
     unawaited(_heartbeat(context, 0));
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       unawaited(_heartbeat(context, 60));
     });
   }
 
-  void stopTracking() {
+  void _pauseForegroundTimer() {
     _timer?.cancel();
     _timer = null;
+  }
+
+  void stopTracking() => _pauseForegroundTimer();
+
+  void dispose() {
+    _pauseForegroundTimer();
+    final observer = _lifecycleObserver;
+    if (observer != null) WidgetsBinding.instance.removeObserver(observer);
+    _lifecycleObserver = null;
+    _context = null;
   }
 
   Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
@@ -92,5 +121,16 @@ class SessionGamificationService {
     } finally {
       _syncing = false;
     }
+  }
+}
+
+class _GamificationLifecycleObserver with WidgetsBindingObserver {
+  _GamificationLifecycleObserver({required this.onStateChanged});
+
+  final ValueChanged<AppLifecycleState> onStateChanged;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    onStateChanged(state);
   }
 }
