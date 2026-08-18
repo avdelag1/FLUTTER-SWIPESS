@@ -113,11 +113,9 @@ class SubscriptionRepository {
       final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
       if (signupCutoff != null && !createdAt.isBefore(signupCutoff)) return null;
 
-      final months = ((row['trial_months'] as num?)?.toInt() ?? 3).clamp(1, 24);
+      final months = (((row['trial_months'] as num?)?.toInt() ?? 3).clamp(1, 24)).toInt();
       return _addCalendarMonths(createdAt, months);
     } catch (_) {
-      // Fail closed: if campaign configuration cannot be verified, do not
-      // manufacture complimentary premium access locally.
       return null;
     }
   }
