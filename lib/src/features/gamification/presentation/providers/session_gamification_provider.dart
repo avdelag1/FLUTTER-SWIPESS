@@ -118,8 +118,8 @@ class SessionGamificationService {
               Expanded(
                 child: Text(
                   tokenAwarded
-                      ? 'Free token unlocked! You completed 5/5 reward steps.'
-                      : '90 active minutes complete — reward step $steps/5 unlocked.',
+                      ? 'Free token unlocked! You completed 5/5 steps.'
+                      : 'Step $steps/5 unlocked.',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
