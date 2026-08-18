@@ -17,6 +17,8 @@ final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
 ///
 /// The server is authoritative: one 90-minute block = one step and five steps
 /// grant one spendable message token. Background/inactive time never counts.
+/// Multiple UI shells may attach to this service, so tracking uses a small
+/// reference count and remains alive while the root app is active.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
 
@@ -25,9 +27,11 @@ class SessionGamificationService {
   bool _syncing = false;
   _GamificationLifecycleObserver? _lifecycleObserver;
   BuildContext? _context;
+  int _trackingClients = 0;
 
   void startTracking(BuildContext context) {
-    _context = context;
+    _trackingClients++;
+    _context ??= context;
     if (_lifecycleObserver == null) {
       _lifecycleObserver = _GamificationLifecycleObserver(
         onStateChanged: (state) {
@@ -44,7 +48,7 @@ class SessionGamificationService {
       );
       WidgetsBinding.instance.addObserver(_lifecycleObserver!);
     }
-    _startForegroundTimer(context);
+    _startForegroundTimer(_context ?? context);
   }
 
   void _startForegroundTimer(BuildContext context) {
@@ -61,6 +65,13 @@ class SessionGamificationService {
   }
 
   void stopTracking() {
+    if (_trackingClients > 0) _trackingClients--;
+    if (_trackingClients > 0) return;
+    _stopCompletely();
+  }
+
+  void _stopCompletely() {
+    _trackingClients = 0;
     _pauseForegroundTimer();
     final observer = _lifecycleObserver;
     if (observer != null) WidgetsBinding.instance.removeObserver(observer);
@@ -68,7 +79,7 @@ class SessionGamificationService {
     _context = null;
   }
 
-  void dispose() => stopTracking();
+  void dispose() => _stopCompletely();
 
   Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
     if (_syncing || Supabase.instance.client.auth.currentUser == null) return;
