@@ -19,8 +19,8 @@ import 'package:latlong2/latlong.dart';
 ///
 /// The browser never instantiates Mapbox's HTML platform view. It renders
 /// Mapbox style tiles through flutter_map, keeping the camera, radius, markers,
-/// cards and controls in Flutter's render tree so taps cannot be swallowed by
-/// an invisible platform layer.
+/// previews and controls in Flutter's render tree so taps cannot be swallowed
+/// by an invisible platform layer.
 class WebDiscoveryMapScreenV3 extends ConsumerStatefulWidget {
   const WebDiscoveryMapScreenV3({
     super.key,
@@ -42,6 +42,7 @@ class _WebDiscoveryMapScreenV3State
 
   bool _mapReady = false;
   bool _citiesOpen = false;
+  bool _chromeVisible = true;
   String _layer = 'all';
   MapPin? _selected;
   double _zoom = 11.2;
@@ -176,10 +177,23 @@ class _WebDiscoveryMapScreenV3State
     return MapPin.profileAt(profile, p.lat, p.lng);
   }
 
+  bool _isSelected(MapPin pin) =>
+      _selected?.id == pin.id && _selected?.isListing == pin.isListing;
+
   void _selectPin(MapPin pin) {
     AppHaptics.selection();
     setState(() => _selected = pin);
-    _move(pin.lat, pin.lng, math.max(_zoom, 14.0).toDouble());
+    // Center the marker so its preview has room above it without forcing a
+    // dramatic zoom change that makes browsing feel jumpy.
+    _move(pin.lat, pin.lng, math.max(_zoom, 13.0).toDouble());
+  }
+
+  void _tapPin(MapPin pin) {
+    if (_isSelected(pin)) {
+      _openPin(pin);
+      return;
+    }
+    _selectPin(pin);
   }
 
   void _openPin(MapPin pin) {
@@ -190,6 +204,14 @@ class _WebDiscoveryMapScreenV3State
   void _setRange(int km) {
     AppHaptics.selection();
     ref.read(discoveryLocationProvider.notifier).setRadiusKm(km);
+  }
+
+  void _toggleChrome() {
+    AppHaptics.selection();
+    setState(() {
+      _chromeVisible = !_chromeVisible;
+      if (!_chromeVisible) _citiesOpen = false;
+    });
   }
 
   @override
@@ -297,13 +319,17 @@ class _WebDiscoveryMapScreenV3State
                   for (final pin in pins)
                     Marker(
                       point: LatLng(pin.lat, pin.lng),
-                      width: 44,
-                      height: 44,
-                      child: _PinDot(
+                      width: _isSelected(pin) && _chromeVisible ? 238 : 44,
+                      height: _isSelected(pin) && _chromeVisible ? 132 : 44,
+                      alignment: _isSelected(pin) && _chromeVisible
+                          ? Alignment.bottomCenter
+                          : Alignment.center,
+                      child: _MapMarker(
                         pin: pin,
-                        selected: _selected?.id == pin.id &&
-                            _selected?.isListing == pin.isListing,
-                        onTap: () => _selectPin(pin),
+                        selected: _isSelected(pin),
+                        showPreview: _isSelected(pin) && _chromeVisible,
+                        onTap: () => _tapPin(pin),
+                        onOpen: () => _openPin(pin),
                       ),
                     ),
                 ],
@@ -321,123 +347,135 @@ class _WebDiscoveryMapScreenV3State
                 color: Color(0xFF60A5FA),
               ),
             ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _CircleButton(
-                      icon: Icons.close_rounded,
-                      onTap: widget.onClose ??
-                          () => context.go(AppPaths.clientDashboard),
-                    ),
-                    const SizedBox(width: 7),
-                    _LabelButton(
-                      label: 'CITIES',
-                      selected: _citiesOpen,
-                      onTap: () =>
-                          setState(() => _citiesOpen = !_citiesOpen),
-                    ),
-                    const Spacer(),
-                    _CountsPill(
-                      layer: _layer,
-                      listings: listingRows.length,
-                      users: profileRows.length,
-                      onLayer: (value) {
-                        AppHaptics.selection();
-                        setState(() {
-                          _layer = value;
-                          _selected = null;
-                        });
-                      },
-                    ),
-                  ],
+
+          // Map chrome is conditionally mounted instead of faded/covered.
+          // When the eye hides it there are no invisible hit targets left.
+          if (_chromeVisible) ...[
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CircleButton(
+                        icon: Icons.close_rounded,
+                        tooltip: 'Close map',
+                        onTap: widget.onClose ??
+                            () => context.go(AppPaths.clientDashboard),
+                      ),
+                      const SizedBox(width: 7),
+                      _LabelButton(
+                        label: 'CITIES',
+                        selected: _citiesOpen,
+                        onTap: () =>
+                            setState(() => _citiesOpen = !_citiesOpen),
+                      ),
+                      const Spacer(),
+                      _CountsPill(
+                        layer: _layer,
+                        listings: listingRows.length,
+                        users: profileRows.length,
+                        onLayer: (value) {
+                          AppHaptics.selection();
+                          setState(() {
+                            _layer = value;
+                            _selected = null;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            top: pad.top + 58,
-            left: 12,
-            child: _RangePill(
-              radiusKm: loc.radiusKm,
-              onLocal: () => _setRange(5),
-              onRegion: () => _setRange(100),
-              onWorld: () => _setRange(20000),
-            ),
-          ),
-          if (_citiesOpen)
             Positioned(
-              left: 0,
-              right: 0,
-              top: pad.top + 104,
-              child: MapCityChips(
-                activeCity: loc.city,
-                onSelect: (city) {
-                  final notifier = ref.read(discoveryLocationProvider.notifier);
-                  notifier.setCoordinates(
-                    city: city.name,
-                    country: city.country,
-                    latitude: city.lat,
-                    longitude: city.lng,
-                  );
-                  if (loc.radiusKm > 500) notifier.setRadiusKm(25);
-                  setState(() => _citiesOpen = false);
-                },
+              top: pad.top + 58,
+              left: 12,
+              child: _RangePill(
+                radiusKm: loc.radiusKm,
+                onLocal: () => _setRange(5),
+                onRegion: () => _setRange(100),
+                onWorld: () => _setRange(20000),
               ),
             ),
+            if (_citiesOpen)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: pad.top + 104,
+                child: MapCityChips(
+                  activeCity: loc.city,
+                  onSelect: (city) {
+                    final notifier =
+                        ref.read(discoveryLocationProvider.notifier);
+                    notifier.setCoordinates(
+                      city: city.name,
+                      country: city.country,
+                      latitude: city.lat,
+                      longitude: city.lng,
+                    );
+                    if (loc.radiusKm > 500) notifier.setRadiusKm(25);
+                    setState(() => _citiesOpen = false);
+                  },
+                ),
+              ),
+            if (failed)
+              Positioned(
+                left: 12,
+                bottom: pad.bottom + 18,
+                child: _RetryButton(
+                  onTap: () {
+                    ref.invalidate(mapListingsProvider);
+                    ref.invalidate(mapProfilesProvider);
+                  },
+                ),
+              ),
+          ],
+
+          // No shared rail/frame: every control is an independent floating
+          // target, so nothing can visually or physically cut through them.
           Positioned(
             right: 12,
-            bottom: pad.bottom + 88,
+            bottom: pad.bottom + 18,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _CircleButton(
-                  icon: Icons.add_rounded,
-                  onTap: () => _zoomBy(1),
-                ),
-                const SizedBox(height: 7),
-                _CircleButton(
-                  icon: Icons.remove_rounded,
-                  onTap: () => _zoomBy(-1),
-                ),
-                const SizedBox(height: 7),
-                _CircleButton(
-                  icon: Icons.my_location_rounded,
-                  onTap: () => _move(
-                    loc.latitude,
-                    loc.longitude,
-                    targetZoom,
+                if (_chromeVisible) ...[
+                  _CircleButton(
+                    icon: Icons.add_rounded,
+                    tooltip: 'Zoom in',
+                    onTap: () => _zoomBy(1),
                   ),
+                  const SizedBox(height: 8),
+                  _CircleButton(
+                    icon: Icons.remove_rounded,
+                    tooltip: 'Zoom out',
+                    onTap: () => _zoomBy(-1),
+                  ),
+                  const SizedBox(height: 8),
+                  _CircleButton(
+                    icon: Icons.my_location_rounded,
+                    tooltip: 'Recenter',
+                    onTap: () => _move(
+                      loc.latitude,
+                      loc.longitude,
+                      targetZoom,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _CircleButton(
+                  icon: _chromeVisible
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  tooltip: _chromeVisible ? 'Hide controls' : 'Show controls',
+                  onTap: _toggleChrome,
                 ),
               ],
             ),
           ),
-          if (pins.isNotEmpty)
-            Positioned(
-              left: 12,
-              right: 64,
-              bottom: pad.bottom + 18,
-              child: _ResultsRail(
-                pins: pins,
-                selected: _selected,
-                onSelect: _selectPin,
-                onOpen: _openPin,
-              ),
-            ),
-          if (failed)
-            Positioned(
-              left: 12,
-              bottom: pad.bottom + 82,
-              child: _RetryButton(
-                onTap: () {
-                  ref.invalidate(mapListingsProvider);
-                  ref.invalidate(mapProfilesProvider);
-                },
-              ),
-            ),
         ],
       ),
     );
@@ -466,6 +504,219 @@ class _CenterDot extends StatelessWidget {
   }
 }
 
+class _MapMarker extends StatelessWidget {
+  const _MapMarker({
+    required this.pin,
+    required this.selected,
+    required this.showPreview,
+    required this.onTap,
+    required this.onOpen,
+  });
+
+  final MapPin pin;
+  final bool selected;
+  final bool showPreview;
+  final VoidCallback onTap;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showPreview) {
+      return Center(
+        child: _PinDot(pin: pin, selected: selected, onTap: onTap),
+      );
+    }
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomCenter,
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 39,
+          child: _PinPreview(pin: pin, onOpen: onOpen),
+        ),
+        Positioned(
+          bottom: 0,
+          child: _PinDot(pin: pin, selected: true, onTap: onTap),
+        ),
+      ],
+    );
+  }
+}
+
+class _PinPreview extends StatelessWidget {
+  const _PinPreview({required this.pin, required this.onOpen});
+
+  final MapPin pin;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final listing = pin.listing;
+    final profile = pin.profile;
+    final image = pin.isListing ? listing?.primaryImage : profile?.avatarUrl;
+    final title = pin.isListing
+        ? (listing?.title ?? 'Listing')
+        : (profile?.displayName ?? 'Member');
+    final headline = pin.isListing
+        ? (listing?.formattedPrice ?? 'Price TBD')
+        : (profile?.role?.trim().isNotEmpty == true
+              ? profile!.role!
+              : 'Swipess member');
+    final detail = pin.isListing
+        ? _listingDetail(pin)
+        : _profileDetail(pin);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onOpen,
+        child: Container(
+          height: 82,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xF211141A),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withAlpha(92), width: .8),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x4D000000),
+                blurRadius: 15,
+                offset: Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _PreviewImage(url: image, listing: pin.isListing),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            headline,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: pin.isListing ? 13.2 : 10.2,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        if (!pin.isListing && profile?.verified == true)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Icon(
+                              Icons.verified_rounded,
+                              color: Color(0xFF60A5FA),
+                              size: 14,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withAlpha(232),
+                        fontSize: 10.2,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (detail.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white.withAlpha(158),
+                          fontSize: 8.7,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white.withAlpha(176),
+                size: 12,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _listingDetail(MapPin pin) {
+    final listing = pin.listing;
+    if (listing == null) return '';
+    final tags = listing.quickTags.take(2).toList();
+    if (tags.isNotEmpty) return tags.join(' · ');
+    return listing.formattedLocation;
+  }
+
+  static String _profileDetail(MapPin pin) {
+    final profile = pin.profile;
+    if (profile == null) return '';
+    final city = profile.city?.trim() ?? '';
+    final bio = profile.bio?.trim() ?? '';
+    if (city.isNotEmpty && bio.isNotEmpty) return '$city · $bio';
+    if (city.isNotEmpty) return city;
+    return bio;
+  }
+}
+
+class _PreviewImage extends StatelessWidget {
+  const _PreviewImage({required this.url, required this.listing});
+
+  final String? url;
+  final bool listing;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = Container(
+      color: const Color(0xFF252A33),
+      alignment: Alignment.center,
+      child: Icon(
+        listing ? Icons.home_work_rounded : Icons.person_rounded,
+        color: Colors.white.withAlpha(210),
+        size: 22,
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(11),
+      child: SizedBox(
+        width: 58,
+        height: 58,
+        child: url == null || url!.trim().isEmpty
+            ? fallback
+            : Image.network(
+                url!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => fallback,
+              ),
+      ),
+    );
+  }
+}
+
 class _PinDot extends StatelessWidget {
   const _PinDot({
     required this.pin,
@@ -479,32 +730,30 @@ class _PinDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            width: selected ? 32 : 27,
-            height: selected ? 32 : 27,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: pin.isListing ? const Color(0xFF111318) : Colors.white,
-              border: Border.all(
-                color: pin.isListing ? Colors.white : const Color(0xFF111318),
-                width: selected ? 3 : 2,
-              ),
-              boxShadow: const [
-                BoxShadow(color: Color(0x44000000), blurRadius: 8),
-              ],
-            ),
-            child: Icon(
-              pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
-              size: selected ? 16 : 14,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          width: selected ? 32 : 27,
+          height: selected ? 32 : 27,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: pin.isListing ? const Color(0xFF111318) : Colors.white,
+            border: Border.all(
               color: pin.isListing ? Colors.white : const Color(0xFF111318),
+              width: selected ? 3 : 2,
             ),
+            boxShadow: const [
+              BoxShadow(color: Color(0x44000000), blurRadius: 8),
+            ],
+          ),
+          child: Icon(
+            pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
+            size: selected ? 16 : 14,
+            color: pin.isListing ? Colors.white : const Color(0xFF111318),
           ),
         ),
       ),
@@ -513,14 +762,19 @@ class _PinDot extends StatelessWidget {
 }
 
 class _CircleButton extends StatelessWidget {
-  const _CircleButton({required this.icon, required this.onTap});
+  const _CircleButton({
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final button = Material(
       color: const Color(0xCC11141A),
       shape: CircleBorder(
         side: BorderSide(color: Colors.white.withAlpha(70), width: .7),
@@ -535,6 +789,7 @@ class _CircleButton extends StatelessWidget {
         ),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 
@@ -708,104 +963,6 @@ class _Choice extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ResultsRail extends StatelessWidget {
-  const _ResultsRail({
-    required this.pins,
-    required this.selected,
-    required this.onSelect,
-    required this.onOpen,
-  });
-
-  final List<MapPin> pins;
-  final MapPin? selected;
-  final ValueChanged<MapPin> onSelect;
-  final ValueChanged<MapPin> onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 58,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: pins.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          final pin = pins[index];
-          final title = pin.isListing
-              ? (pin.listing?.title ?? 'Listing')
-              : (pin.profile?.displayName ?? 'Member');
-          final meta = pin.isListing
-              ? (pin.listing?.formattedPrice ?? '')
-              : (pin.profile?.city ?? 'Nearby');
-          final active = selected?.id == pin.id &&
-              selected?.isListing == pin.isListing;
-
-          return Material(
-            color: const Color(0xE611141A),
-            borderRadius: BorderRadius.circular(15),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () => active ? onOpen(pin) : onSelect(pin),
-              child: Container(
-                width: 148,
-                padding: const EdgeInsets.symmetric(horizontal: 9),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(
-                    color: active ? Colors.white : Colors.white.withAlpha(58),
-                    width: active ? 1.4 : .7,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      pin.isListing
-                          ? Icons.home_work_rounded
-                          : Icons.person_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (meta.isNotEmpty)
-                            Text(
-                              meta,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white.withAlpha(165),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
