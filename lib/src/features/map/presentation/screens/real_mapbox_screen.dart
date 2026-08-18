@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -12,6 +11,7 @@ import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -41,6 +41,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
   Uint8List? _peopleIcon;
   Uint8List? _locationIcon;
 
+  double? _deviceLatitude;
+  double? _deviceLongitude;
+  bool _requestingDeviceLocation = false;
+
   MapPin? _selected;
   String _layer = 'all';
   bool _citiesOpen = false;
@@ -56,6 +60,9 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
   void initState() {
     super.initState();
     _citiesOpen = widget.showCitiesOnOpen;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _refreshDeviceLocation();
+    });
   }
 
   Point _point(double lat, double lng) =>
@@ -83,8 +90,67 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
         pitch: 0,
         bearing: 0,
       ),
-      MapAnimationOptions(duration: 1150, startDelay: 0),
+      MapAnimationOptions(duration: 900, startDelay: 0),
     );
+  }
+
+  Future<void> _flyToDevice() async {
+    if (_deviceLatitude == null || _deviceLongitude == null) {
+      await _refreshDeviceLocation();
+    }
+    final map = _map;
+    final lat = _deviceLatitude;
+    final lng = _deviceLongitude;
+    if (map == null || lat == null || lng == null) return;
+    await map.flyTo(
+      CameraOptions(
+        center: _point(lat, lng),
+        zoom: 14.5,
+        pitch: 0,
+        bearing: 0,
+      ),
+      MapAnimationOptions(duration: 650, startDelay: 0),
+    );
+  }
+
+  Future<void> _refreshDeviceLocation() async {
+    if (_requestingDeviceLocation) return;
+    _requestingDeviceLocation = true;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final cached = await Geolocator.getLastKnownPosition();
+      if (cached != null && mounted) {
+        _deviceLatitude = cached.latitude;
+        _deviceLongitude = cached.longitude;
+        await _renderAnnotations();
+      }
+
+      final current = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+      if (!mounted) return;
+      _deviceLatitude = current.latitude;
+      _deviceLongitude = current.longitude;
+      await _renderAnnotations();
+    } catch (_) {
+      // Location permission/service is optional. The map remains fully usable;
+      // we simply do not fake a blue "you are here" dot at a city centroid.
+    } finally {
+      _requestingDeviceLocation = false;
+    }
   }
 
   Future<void> _setupMap(MapboxMap map) async {
@@ -104,34 +170,45 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     required Color fill,
     bool location = false,
   }) async {
-    const size = 80.0;
+    const size = 88.0;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
     final center = const ui.Offset(size / 2, size / 2);
 
-    final shadow = ui.Paint()
-      ..color = Colors.black.withAlpha(70)
-      ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 7);
-    canvas.drawCircle(center.translate(0, 3), location ? 25 : 28, shadow);
-
-    final outer = ui.Paint()..color = Colors.white;
-    canvas.drawCircle(center, location ? 25 : 28, outer);
-
-    final inner = ui.Paint()..color = fill;
-    canvas.drawCircle(center, location ? 20 : 23, inner);
-
     if (location) {
-      final core = ui.Paint()..color = Colors.white;
-      canvas.drawCircle(center, 7.5, core);
-      final blueCore = ui.Paint()..color = const Color(0xFF147DFF);
-      canvas.drawCircle(center, 4.5, blueCore);
+      // Classic navigation puck: soft blue accuracy halo, crisp white ring and
+      // solid blue core. No glyph — the dot itself always means "you".
+      final halo = ui.Paint()..color = const Color(0x33147DFF);
+      canvas.drawCircle(center, 31, halo);
+
+      final shadow = ui.Paint()
+        ..color = Colors.black.withAlpha(60)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 6);
+      canvas.drawCircle(center.translate(0, 2), 21, shadow);
+
+      final whiteRing = ui.Paint()..color = Colors.white;
+      canvas.drawCircle(center, 19, whiteRing);
+
+      final blueDot = ui.Paint()..color = const Color(0xFF147DFF);
+      canvas.drawCircle(center, 14.5, blueDot);
     } else {
+      final shadow = ui.Paint()
+        ..color = Colors.black.withAlpha(72)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 7);
+      canvas.drawCircle(center.translate(0, 3), 31, shadow);
+
+      final outer = ui.Paint()..color = Colors.white;
+      canvas.drawCircle(center, 31, outer);
+
+      final inner = ui.Paint()..color = fill;
+      canvas.drawCircle(center, 25.5, inner);
+
       final painter = TextPainter(
         text: TextSpan(
           text: String.fromCharCode(icon.codePoint),
           style: TextStyle(
             color: Colors.white,
-            fontSize: 31,
+            fontSize: 34,
             fontFamily: icon.fontFamily,
             package: icon.fontPackage,
           ),
@@ -347,20 +424,24 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
         PolygonAnnotationOptions(
           geometry: _radiusPolygon(loc),
           fillColor: const Color(0xFF3B82F6).toARGB32(),
-          fillOpacity: 0.14,
+          fillOpacity: 0.12,
           fillOutlineColor: const Color(0xFF147DFF).toARGB32(),
         ),
       );
     }
 
-    await _locationManager!.create(
-      PointAnnotationOptions(
-        geometry: _point(loc.latitude, loc.longitude),
-        image: _locationIcon,
-        iconSize: 0.76,
-        symbolSortKey: 10000,
-      ),
-    );
+    final deviceLat = _deviceLatitude;
+    final deviceLng = _deviceLongitude;
+    if (deviceLat != null && deviceLng != null) {
+      await _locationManager!.create(
+        PointAnnotationOptions(
+          geometry: _point(deviceLat, deviceLng),
+          image: _locationIcon,
+          iconSize: 1.0,
+          symbolSortKey: 10000,
+        ),
+      );
+    }
 
     final listingOptions = <PointAnnotationOptions>[
       for (final pin in pins)
@@ -368,7 +449,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           PointAnnotationOptions(
             geometry: _point(pin.lat, pin.lng),
             image: _listingIcon,
-            iconSize: 0.68,
+            iconSize: 0.82,
             symbolSortKey: 5000,
           ),
     ];
@@ -382,7 +463,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           PointAnnotationOptions(
             geometry: _point(pin.lat, pin.lng),
             image: _peopleIcon,
-            iconSize: 0.64,
+            iconSize: 0.78,
             symbolSortKey: 6000,
           ),
     ];
@@ -409,7 +490,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     final listingsAsync = ref.watch(mapListingsProvider);
     final profilesAsync = ref.watch(mapProfilesProvider);
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final tokenReady = AppConfig.mapboxAccessToken.trim().isNotEmpty;
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null ||
@@ -424,45 +504,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     });
     ref.listen(mapListingsProvider, (_, __) => _renderAnnotations());
     ref.listen(mapProfilesProvider, (_, __) => _renderAnnotations());
-
-    if (!tokenReady) {
-      return Material(
-        color: const Color(0xFF0D1015),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.public_rounded, color: Colors.white, size: 42),
-                  const SizedBox(height: 14),
-                  Text(
-                    'MAPBOX IS NOT CONFIGURED',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 17,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Build Swipess with MAPBOX_ACCESS_TOKEN so the official map can load.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white70, height: 1.4),
-                  ),
-                  const SizedBox(height: 18),
-                  TextButton(
-                    onPressed: widget.onClose ?? () => context.go(AppPaths.clientDashboard),
-                    child: const Text('Close'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
 
     final listingCount = listingsAsync.value?.length ?? 0;
     final peopleCount = profilesAsync.value?.length ?? 0;
@@ -482,7 +523,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                   _mapLoaded = true;
                   await _prepareAnnotationManagers();
                   await _renderAnnotations();
-                  await Future<void>.delayed(const Duration(milliseconds: 180));
+                  _refreshDeviceLocation();
+                  await Future<void>.delayed(const Duration(milliseconds: 120));
                   if (mounted) await _flyTo(ref.read(discoveryLocationProvider));
                 },
               ),
@@ -593,7 +635,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                   _GlassMapButton(
                     icon: Icons.my_location_rounded,
                     tooltip: 'My location',
-                    onTap: () => _flyTo(loc, zoom: 13.5),
+                    onTap: _flyToDevice,
                   ),
                 ],
               ),
