@@ -15,13 +15,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Web discovery map with a pure-Flutter interaction layer.
+/// Browser discovery map.
 ///
-/// Marker taps never bubble into a background deselect handler. The first tap
-/// opens an anchored preview and a second tap opens the full listing/profile.
-/// A short world-to-destination camera move gives the map a cinematic arrival,
-/// while a subtle perspective transform produces a bird-flight feel without
-/// reintroducing a browser platform view over Flutter controls.
+/// This deliberately keeps the entire interactive map in Flutter's render tree.
+/// No browser platform-view is mounted over the controls, and map controls do
+/// not create hover Tooltips/OverlayEntries. That keeps Chrome hit-testing and
+/// compositing stable while still allowing a cinematic, angled arrival.
 class WebDiscoveryMapScreenV4 extends ConsumerStatefulWidget {
   const WebDiscoveryMapScreenV4({
     super.key,
@@ -55,7 +54,7 @@ class _WebDiscoveryMapScreenV4State
   double _fromLng = 0;
   double _toLat = 0;
   double _toLng = 0;
-  double _fromZoom = 2.15;
+  double _fromZoom = 2.05;
   double _toZoom = 11.2;
 
   @override
@@ -64,7 +63,7 @@ class _WebDiscoveryMapScreenV4State
     _citiesOpen = widget.showCitiesOnOpen;
     _flight = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2800),
+      duration: const Duration(milliseconds: 3400),
     )
       ..addListener(_onFlightTick)
       ..addStatusListener((status) {
@@ -73,11 +72,8 @@ class _WebDiscoveryMapScreenV4State
         }
       });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.invalidate(mapListingsProvider);
-      ref.invalidate(mapProfilesProvider);
-    });
+    // Do not invalidate map providers here. They are deliberately kept warm by
+    // the dashboard so opening the map can reuse already-fetched data.
   }
 
   @override
@@ -117,14 +113,23 @@ class _WebDiscoveryMapScreenV4State
 
   void _onFlightTick() {
     if (!_mapReady) return;
-    final t = Curves.easeInOutCubic.transform(_flight.value);
-    final lat = _fromLat + (_toLat - _fromLat) * t;
+
+    final raw = _flight.value;
+    final travelT = Curves.easeInOutCubic.transform(raw);
+    final zoomRaw = ((raw - .10) / .90).clamp(0.0, 1.0);
+    final zoomT = Curves.easeInOutCubic.transform(zoomRaw);
+
+    final lat = _fromLat + (_toLat - _fromLat) * travelT;
     final lng = _wrapLng(
-      _fromLng + _shortestLngDelta(_fromLng, _toLng) * t,
+      _fromLng + _shortestLngDelta(_fromLng, _toLng) * travelT,
     );
-    final zoomT = math.pow(t, .78).toDouble();
     final zoom = _fromZoom + (_toZoom - _fromZoom) * zoomT;
-    final rotation = -16.0 * (1 - t) + math.sin(math.pi * t) * 3.5;
+
+    // A gentle world turn at the beginning makes the arrival feel like travel,
+    // not a camera falling vertically onto a coordinate.
+    final rotation =
+        -24.0 * (1 - travelT) + math.sin(math.pi * raw) * 5.0;
+
     try {
       _mapController.moveAndRotate(LatLng(lat, lng), zoom, rotation);
       _zoom = zoom;
@@ -135,19 +140,25 @@ class _WebDiscoveryMapScreenV4State
     if (!_mapReady) return;
     _selected = null;
     _flight.stop();
-    _fromLat = (loc.latitude * .12).clamp(-18.0, 18.0).toDouble();
-    _fromLng = _wrapLng(loc.longitude - 48);
+
+    // Approach from behind and to the west/south of the destination so Tulum,
+    // Bali, China, Ibiza, etc. all feel like a diagonal flight rather than a
+    // straight-down bomb-drop.
+    _fromLat = (loc.latitude - 22).clamp(-58.0, 58.0).toDouble();
+    _fromLng = _wrapLng(loc.longitude - 74);
     _toLat = loc.latitude;
     _toLng = loc.longitude;
-    _fromZoom = 2.15;
+    _fromZoom = 2.05;
     _toZoom = _zoomForRadius(loc.radiusKm);
+
     try {
       _mapController.moveAndRotate(
         LatLng(_fromLat, _fromLng),
         _fromZoom,
-        -16,
+        -24,
       );
     } catch (_) {}
+
     if (mounted) setState(() => _flightRunning = true);
     _flight.forward(from: 0);
   }
@@ -269,8 +280,6 @@ class _WebDiscoveryMapScreenV4State
     }
     AppHaptics.selection();
     setState(() => _selected = pin);
-    // A small upward offset gives the preview breathing room while keeping the
-    // property/person visible beneath it.
     if (_mapReady) {
       try {
         _mapController.move(
@@ -348,23 +357,23 @@ class _WebDiscoveryMapScreenV4State
       mapController: _mapController,
       options: MapOptions(
         initialCenter: LatLng(
-          (loc.latitude * .12).clamp(-18.0, 18.0).toDouble(),
-          _wrapLng(loc.longitude - 48),
+          (loc.latitude - 22).clamp(-58.0, 58.0).toDouble(),
+          _wrapLng(loc.longitude - 74),
         ),
-        initialZoom: 2.15,
-        initialRotation: -16,
+        initialZoom: 2.05,
+        initialRotation: -24,
         minZoom: 2,
         maxZoom: 18,
         backgroundColor: MapBasemap.canvas,
         onMapReady: () {
           _mapReady = true;
-          _zoom = 2.15;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          _zoom = 2.05;
+          // Give the first world tiles a fraction of a second to paint before
+          // the flight begins. The user sees a composed world, not a blank zoom.
+          Future<void>.delayed(const Duration(milliseconds: 420), () {
             if (mounted) _startFlight(loc);
           });
         },
-        // Intentionally no map-level onTap deselect callback. Marker taps must
-        // never be immediately undone by the map gesture recognizer on web.
         onPositionChanged: (camera, hasGesture) {
           if (hasGesture) {
             _flight.stop();
@@ -383,8 +392,8 @@ class _WebDiscoveryMapScreenV4State
           userAgentPackageName: MapBasemap.userAgentPackageName,
           tileDimension: 256,
           maxNativeZoom: 19,
-          keepBuffer: 4,
-          panBuffer: 2,
+          keepBuffer: 5,
+          panBuffer: 3,
         ),
         if (loc.radiusKm <= 1000)
           CircleLayer(
@@ -436,17 +445,18 @@ class _WebDiscoveryMapScreenV4State
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Pure Flutter perspective. It keeps browser hit testing inside the
-          // same render tree and creates a restrained bird-flight angle.
+          // A noticeably stronger but still usable drone/bird angle. Tooltips
+          // are not allowed above this transformed layer, which prevents the
+          // gray Chrome compositor wash that the previous build showed.
           Transform.scale(
-            scale: 1.08,
+            scale: 1.14,
             child: Transform.translate(
-              offset: const Offset(0, -10),
+              offset: const Offset(0, -30),
               child: Transform(
                 alignment: Alignment.center,
                 transform: Matrix4.identity()
-                  ..setEntry(3, 2, .00085)
-                  ..rotateX(.20),
+                  ..setEntry(3, 2, .00105)
+                  ..rotateX(.43),
                 child: map,
               ),
             ),
@@ -459,7 +469,7 @@ class _WebDiscoveryMapScreenV4State
                     begin: Alignment.topCenter,
                     end: Alignment.center,
                     colors: [
-                      Colors.black.withAlpha(74),
+                      Colors.black.withAlpha(30),
                       Colors.transparent,
                     ],
                   ),
@@ -488,7 +498,7 @@ class _WebDiscoveryMapScreenV4State
                     children: [
                       _CircleButton(
                         icon: Icons.close_rounded,
-                        tooltip: 'Close map',
+                        semanticLabel: 'Close map',
                         onTap: widget.onClose ??
                             () => context.go(AppPaths.clientDashboard),
                       ),
@@ -569,19 +579,20 @@ class _WebDiscoveryMapScreenV4State
                 if (_chromeVisible) ...[
                   _CircleButton(
                     icon: Icons.add_rounded,
-                    tooltip: 'Zoom in',
+                    semanticLabel: 'Zoom in',
                     onTap: () => _zoomBy(1),
                   ),
                   const SizedBox(height: 8),
                   _CircleButton(
-                    icon: Icons.remove_rounded,
-                    tooltip: 'Zoom out',
+                    icon: Icons.remove,
+                    glyph: '−',
+                    semanticLabel: 'Zoom out',
                     onTap: () => _zoomBy(-1),
                   ),
                   const SizedBox(height: 8),
                   _CircleButton(
                     icon: Icons.my_location_rounded,
-                    tooltip: 'Recenter',
+                    semanticLabel: 'Recenter',
                     onTap: () => _move(
                       loc.latitude,
                       loc.longitude,
@@ -594,7 +605,8 @@ class _WebDiscoveryMapScreenV4State
                   icon: _chromeVisible
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
-                  tooltip: _chromeVisible ? 'Hide controls' : 'Show controls',
+                  semanticLabel:
+                      _chromeVisible ? 'Hide controls' : 'Show controls',
                   onTap: _toggleChrome,
                 ),
               ],
@@ -698,9 +710,8 @@ class _PinPreview extends StatelessWidget {
         : (profile?.role?.trim().isNotEmpty == true
               ? profile!.role!
               : 'Swipess member');
-    final detail = pin.isListing
-        ? _listingDetail(pin)
-        : _profileDetail(pin);
+    final detail =
+        pin.isListing ? _listingDetail(pin) : _profileDetail(pin);
 
     return Material(
       color: Colors.transparent,
@@ -723,6 +734,7 @@ class _PinPreview extends StatelessWidget {
             Positioned.fill(
               child: InkWell(
                 borderRadius: BorderRadius.circular(17),
+                hoverColor: Colors.transparent,
                 onTap: onOpen,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 8, 30, 8),
@@ -800,6 +812,7 @@ class _PinPreview extends StatelessWidget {
                 shape: const CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),
+                  hoverColor: Colors.transparent,
                   onTap: onClose,
                   child: const SizedBox(
                     width: 24,
@@ -890,6 +903,7 @@ class _PinDot extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         customBorder: const CircleBorder(),
+        hoverColor: Colors.transparent,
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
@@ -921,17 +935,33 @@ class _CircleButton extends StatelessWidget {
   const _CircleButton({
     required this.icon,
     required this.onTap,
-    required this.tooltip,
+    required this.semanticLabel,
+    this.glyph,
   });
 
   final IconData icon;
   final VoidCallback onTap;
-  final String tooltip;
+  final String semanticLabel;
+  final String? glyph;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
+    final visual = glyph == null
+        ? Icon(icon, color: Colors.white, size: 19)
+        : Text(
+            glyph!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 25,
+              height: .95,
+              fontWeight: FontWeight.w500,
+            ),
+          );
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
       child: Material(
         color: const Color(0xCC11141A),
         shape: CircleBorder(
@@ -940,10 +970,13 @@ class _CircleButton extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
+          hoverColor: Colors.transparent,
+          focusColor: Colors.white.withAlpha(12),
+          splashColor: Colors.white.withAlpha(24),
           child: SizedBox(
             width: 40,
             height: 40,
-            child: Icon(icon, color: Colors.white, size: 19),
+            child: Center(child: visual),
           ),
         ),
       ),
@@ -970,6 +1003,7 @@ class _LabelButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        hoverColor: Colors.transparent,
         onTap: onTap,
         child: Container(
           height: 40,
@@ -1104,6 +1138,7 @@ class _Choice extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
+        hoverColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
@@ -1134,6 +1169,7 @@ class _RetryButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        hoverColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
