@@ -57,23 +57,23 @@ class DashboardDock extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
-                  height: 48,
+                  height: 52,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 5,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: isLight
-                        ? Colors.white.withAlpha(132)
-                        : Colors.black.withAlpha(54),
+                        ? Colors.white.withAlpha(140)
+                        : Colors.black.withAlpha(62),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: isLight
-                          ? Colors.black.withAlpha(22)
-                          : Colors.white.withAlpha(48),
-                      width: .7,
+                          ? Colors.black.withAlpha(34)
+                          : Colors.white.withAlpha(72),
+                      width: 1.15,
                     ),
                   ),
                   child: SingleChildScrollView(
