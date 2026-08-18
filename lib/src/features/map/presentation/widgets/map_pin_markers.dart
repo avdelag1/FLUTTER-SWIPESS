@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Compact listing marker: photo and title share one physical pill.
+/// High-contrast listing marker designed to stay readable over every basemap.
 class MapListingPinMarker extends StatelessWidget {
   const MapListingPinMarker({
     super.key,
@@ -14,56 +14,82 @@ class MapListingPinMarker extends StatelessWidget {
   final String? imageUrl;
   final bool selected;
 
-  static const double width = 132;
-  static const double height = 40;
-
-  /// Geographic point sits on the bottom-center of the photo (not the pill).
-  static const Alignment anchor = Alignment(-0.72, 1);
+  static const double width = 146;
+  static const double height = 46;
+  static const Alignment anchor = Alignment(-0.70, 1);
 
   @override
   Widget build(BuildContext context) {
-    final label = title.length > 16 ? '${title.substring(0, 14)}…' : title;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: width,
-      height: height,
-      padding: const EdgeInsets.fromLTRB(4, 4, 9, 4),
-      decoration: BoxDecoration(
-        color: selected ? const Color(0xE6111318) : Colors.white.withAlpha(232),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: selected ? const Color(0xFFFF6B35) : Colors.white.withAlpha(235),
-          width: selected ? 1.4 : 0.8,
+    final label = title.length > 17 ? '${title.substring(0, 15)}…' : title;
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 150),
+      scale: selected ? 1.08 : 1,
+      child: Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF111318) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFFFFB24A) : const Color(0xFFFF6B35),
+            width: selected ? 2.2 : 1.8,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-        boxShadow: const [
-          BoxShadow(color: Colors.black38, blurRadius: 7, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          _PhotoDot(imageUrl: imageUrl, selected: selected),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: selected ? Colors.white : const Color(0xFF111318),
-                fontWeight: FontWeight.w800,
-                fontSize: 9.5,
-                letterSpacing: -0.05,
+        child: Row(
+          children: [
+            _ListingPhoto(imageUrl: imageUrl, selected: selected),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'LISTING',
+                    maxLines: 1,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: selected
+                          ? const Color(0xFFFFB24A)
+                          : const Color(0xFFFF5A2F),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 7.5,
+                      letterSpacing: .6,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: selected ? Colors.white : const Color(0xFF111318),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 9.5,
+                      letterSpacing: -.05,
+                      height: 1.05,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _PhotoDot extends StatelessWidget {
-  const _PhotoDot({required this.imageUrl, required this.selected});
+class _ListingPhoto extends StatelessWidget {
+  const _ListingPhoto({required this.imageUrl, required this.selected});
 
   final String? imageUrl;
   final bool selected;
@@ -71,30 +97,36 @@ class _PhotoDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 30,
-      height: 30,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFFE9EAED),
+        color: const Color(0xFFF0F1F3),
         border: Border.all(
-          color: selected ? const Color(0xFFFF6B35) : Colors.white,
-          width: 1.5,
+          color: selected ? const Color(0xFFFFB24A) : const Color(0xFFFF6B35),
+          width: 1.8,
         ),
         image: imageUrl == null || imageUrl!.isEmpty
             ? null
             : DecorationImage(
                 image: NetworkImage(imageUrl!),
                 fit: BoxFit.cover,
+                onError: (_, __) {},
               ),
       ),
       child: imageUrl == null || imageUrl!.isEmpty
-          ? const Icon(Icons.home_rounded, color: Color(0xFF111318), size: 14)
+          ? const Icon(
+              Icons.home_work_rounded,
+              color: Color(0xFF111318),
+              size: 17,
+            )
           : null,
     );
   }
 }
 
-/// People pin — circular avatar with restrained brand ring.
+/// Registered-user pin. The white outer halo prevents it disappearing into
+/// satellite/light map labels and keeps users visually distinct from listings.
 class MapProfilePinMarker extends StatelessWidget {
   const MapProfilePinMarker({super.key, this.imageUrl, this.selected = false});
 
@@ -103,32 +135,51 @@ class MapProfilePinMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = selected ? 38.0 : 32.0;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF1A0A12),
-        border: Border.all(
-          color: selected ? const Color(0xFFFF6B35) : Colors.white.withAlpha(180),
-          width: selected ? 2.2 : 1.6,
+    final size = selected ? 48.0 : 42.0;
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 150),
+      scale: selected ? 1.08 : 1,
+      child: Container(
+        width: size,
+        height: size,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          border: Border.all(
+            color: selected ? const Color(0xFF60A5FA) : Colors.white,
+            width: selected ? 2.4 : 1.8,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 10,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-        image: imageUrl == null || imageUrl!.isEmpty
-            ? null
-            : DecorationImage(
-                image: NetworkImage(imageUrl!),
-                fit: BoxFit.cover,
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF2463EB),
+            border: Border.all(color: const Color(0xFF60A5FA), width: 1.5),
+            image: imageUrl == null || imageUrl!.isEmpty
+                ? null
+                : DecorationImage(
+                    image: NetworkImage(imageUrl!),
+                    fit: BoxFit.cover,
+                    onError: (_, __) {},
+                  ),
+          ),
+          child: imageUrl == null || imageUrl!.isEmpty
+              ? const Icon(Icons.person_rounded, color: Colors.white, size: 19)
+              : null,
+        ),
       ),
-      child: imageUrl == null || imageUrl!.isEmpty
-          ? const Icon(Icons.person_rounded, color: Colors.white, size: 15)
-          : null,
     );
   }
 }
 
-/// Cluster count bubble.
 class MapClusterMarker extends StatelessWidget {
   const MapClusterMarker({super.key, required this.count});
 
@@ -136,7 +187,7 @@ class MapClusterMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = count >= 10 ? 42.0 : 36.0;
+    final size = count >= 10 ? 44.0 : 38.0;
     return Center(
       child: Container(
         width: size,
@@ -144,8 +195,11 @@ class MapClusterMarker extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xD9111318),
-          border: Border.all(color: Colors.white.withAlpha(200), width: 1.5),
+          color: const Color(0xE6111318),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: const [
+            BoxShadow(color: Colors.black38, blurRadius: 8),
+          ],
         ),
         child: Text(
           '$count',
