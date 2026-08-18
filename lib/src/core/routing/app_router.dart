@@ -57,6 +57,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_val
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/safe_listing_detail_route.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
@@ -71,14 +72,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final grantedAsync = ref.read(accessGrantedProvider);
-      return AppRedirect.resolve(
+      final signedIn = ref.read(currentUserProvider) != null;
+      final baseRedirect = AppRedirect.resolve(
         location: state.matchedLocation,
         uri: state.uri.toString(),
         grantLoading: grantedAsync.isLoading,
         granted: grantedAsync.value ?? false,
-        signedIn: ref.read(currentUserProvider) != null,
+        signedIn: signedIn,
         pending: ref.read(pendingDeepLinkProvider),
       );
+      if (baseRedirect != null) return baseRedirect;
+
+      if (signedIn && state.matchedLocation != AppPaths.subscriptionPackages) {
+        final subscription = ref.read(subscriptionProvider).value;
+        if (subscription != null) {
+          final tier = subscription.effectiveTier;
+          final location = state.matchedLocation;
+          if (_isPaidEventsLocation(location) && !tier.canViewEvents) {
+            return AppPaths.subscriptionPackages;
+          }
+          if (_isPaidLegalLocation(location) && !tier.canUseLegal) {
+            return AppPaths.subscriptionPackages;
+          }
+          if (location == AppPaths.clientVapId && !tier.canUseVirtualCard) {
+            return AppPaths.subscriptionPackages;
+          }
+        }
+      }
+      return null;
     },
     routes: [
       GoRoute(
@@ -422,9 +443,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       router.go(AppPaths.resetPassword);
     }
   });
+  ref.listen(subscriptionProvider, (_, _) => router.refresh());
 
   return router;
 });
+
+bool _isPaidEventsLocation(String location) =>
+    location == AppPaths.exploreEvents ||
+    location == AppPaths.exploreEventsLikes ||
+    location.startsWith('${AppPaths.exploreEvents}/');
+
+bool _isPaidLegalLocation(String location) =>
+    location == AppPaths.clientLegal ||
+    location == AppPaths.clientLegalServices ||
+    location == AppPaths.legalServices ||
+    location == AppPaths.ownerLegalServices;
 
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
