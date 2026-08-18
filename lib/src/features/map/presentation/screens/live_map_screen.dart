@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/stable_mapbox_screen.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/platform_discovery_map_screen.dart';
 import 'package:go_router/go_router.dart';
 
 /// Compatibility entry point for the discovery map.
 ///
-/// Every map entry now uses the same failure-proof Mapbox implementation so
-/// the dashboard overlay and the dedicated /map route cannot drift apart.
+/// Every map entry resolves through the same platform-aware renderer: Flutter
+/// rendering on web for reliable input/markers and Mapbox Maps SDK on native.
 class LiveMapScreen extends StatelessWidget {
   const LiveMapScreen({
     super.key,
@@ -22,7 +22,7 @@ class LiveMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StableMapboxScreen(
+    return PlatformDiscoveryMapScreen(
       showCitiesOnOpen: showCitiesOnOpen,
       onClose: onClose ??
           () {
