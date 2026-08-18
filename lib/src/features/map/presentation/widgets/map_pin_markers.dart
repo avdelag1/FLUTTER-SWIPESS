@@ -23,7 +23,7 @@ class MapListingPinMarker extends StatelessWidget {
     final label = title.length > 17 ? '${title.substring(0, 15)}…' : title;
     return AnimatedScale(
       duration: const Duration(milliseconds: 150),
-      scale: selected ? 1.08 : 1,
+      scale: selected ? 1.04 : 1,
       child: Container(
         width: width,
         height: height,
@@ -125,8 +125,8 @@ class _ListingPhoto extends StatelessWidget {
   }
 }
 
-/// Registered-user pin. The white outer halo prevents it disappearing into
-/// satellite/light map labels and keeps users visually distinct from listings.
+/// Registered-user pin. Fits the map marker hitbox and stays obvious on light
+/// and dark tiles with a white halo plus a strong blue center.
 class MapProfilePinMarker extends StatelessWidget {
   const MapProfilePinMarker({super.key, this.imageUrl, this.selected = false});
 
@@ -135,46 +135,42 @@ class MapProfilePinMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = selected ? 48.0 : 42.0;
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 150),
-      scale: selected ? 1.08 : 1,
+    final size = selected ? 42.0 : 38.0;
+    return Container(
+      width: size,
+      height: size,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(
+          color: selected ? const Color(0xFF60A5FA) : Colors.white,
+          width: selected ? 2.4 : 1.8,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
       child: Container(
-        width: size,
-        height: size,
-        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
-          border: Border.all(
-            color: selected ? const Color(0xFF60A5FA) : Colors.white,
-            width: selected ? 2.4 : 1.8,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 10,
-              offset: Offset(0, 3),
-            ),
-          ],
+          color: const Color(0xFF2463EB),
+          border: Border.all(color: const Color(0xFF60A5FA), width: 1.5),
+          image: imageUrl == null || imageUrl!.isEmpty
+              ? null
+              : DecorationImage(
+                  image: NetworkImage(imageUrl!),
+                  fit: BoxFit.cover,
+                  onError: (_, __) {},
+                ),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF2463EB),
-            border: Border.all(color: const Color(0xFF60A5FA), width: 1.5),
-            image: imageUrl == null || imageUrl!.isEmpty
-                ? null
-                : DecorationImage(
-                    image: NetworkImage(imageUrl!),
-                    fit: BoxFit.cover,
-                    onError: (_, __) {},
-                  ),
-          ),
-          child: imageUrl == null || imageUrl!.isEmpty
-              ? const Icon(Icons.person_rounded, color: Colors.white, size: 19)
-              : null,
-        ),
+        child: imageUrl == null || imageUrl!.isEmpty
+            ? const Icon(Icons.person_rounded, color: Colors.white, size: 18)
+            : null,
       ),
     );
   }
