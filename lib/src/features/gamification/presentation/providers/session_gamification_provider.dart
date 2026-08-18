@@ -1,29 +1,37 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
-  return SessionGamificationService(ref);
+  final service = SessionGamificationService(ref);
+  ref.onDispose(service.stopTracking);
+  return service;
 });
 
+/// Foreground engagement heartbeat.
+///
+/// The server is authoritative: one 90-minute block = one step and five steps
+/// grant one spendable message token. The client only sends small heartbeats,
+/// so closing/backgrounding the app never grants passive time.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
 
   final Ref ref;
   Timer? _timer;
-  int _secondsActive = 0;
+  bool _syncing = false;
 
   void startTracking(BuildContext context) {
     if (_timer != null) return;
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
-      _secondsActive++;
-      
-      // Every 10 minutes (600 seconds)
-      if (_secondsActive > 0 && _secondsActive % 600 == 0) {
-        _awardToken(context);
-      }
+    // Establish a server-time baseline without claiming any seconds.
+    unawaited(_heartbeat(context, 0));
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      unawaited(_heartbeat(context, 60));
     });
   }
 
@@ -32,38 +40,57 @@ class SessionGamificationService {
     _timer = null;
   }
 
-  Future<void> _awardToken(BuildContext context) async {
-    final subData = ref.read(subscriptionProvider).value;
-    if (subData == null) return;
+  Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
+    if (_syncing || Supabase.instance.client.auth.currentUser == null) return;
+    _syncing = true;
+    try {
+      final raw = await Supabase.instance.client.rpc(
+        'rpc_record_active_usage',
+        params: {'p_seconds': activeSeconds},
+      );
+      if (raw is! Map) return;
+      final data = Map<String, dynamic>.from(raw);
+      final stepAwarded = data['step_awarded'] == true;
+      final tokenAwarded = data['token_awarded'] == true;
+      if (!stepAwarded && !tokenAwarded) return;
 
-    final repo = ref.read(subscriptionRepositoryProvider);
-    final newBalance = subData.tokensBalance + 1;
-    await repo.updateTokens(newBalance);
-    
-    // Refresh the provider
-    ref.read(subscriptionProvider.notifier).refresh();
+      ref.invalidate(dailyQuestsProvider);
+      ref.invalidate(notificationsProvider);
+      ref.invalidate(unreadNotificationsProvider);
+      await ref.read(subscriptionProvider.notifier).refresh();
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!context.mounted) return;
+      final steps = (data['steps'] as num?)?.toInt() ?? 0;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
-          content: const Row(
+          content: Row(
             children: [
-              Text('👑', style: TextStyle(fontSize: 20)),
-              SizedBox(width: 12),
+              Text(tokenAwarded ? '🎉' : '⚡', style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'You earned a free token for exploring Swipess!',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                  tokenAwarded
+                      ? 'Free token unlocked! You completed 5/5 reward steps.'
+                      : '90 active minutes complete — reward step $steps/5 unlocked.',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF9D4EDD),
+          backgroundColor: tokenAwarded
+              ? const Color(0xFF7C3AED)
+              : const Color(0xFF2563EB),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           duration: const Duration(seconds: 4),
         ),
       );
+    } catch (_) {
+      // A missed minute is intentionally not backfilled from background time.
+    } finally {
+      _syncing = false;
     }
   }
 }
