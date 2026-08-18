@@ -5,6 +5,8 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/roommates/domain/roommate_profile.dart';
@@ -95,7 +97,13 @@ class _RoommateMatchingScreenState
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Center(
-                      child: Text(current.name, style: const TextStyle(color: Colors.white, fontSize: 24)),
+                      child: Text(
+                        current.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -174,6 +182,12 @@ class _RoommateMatchingScreenState
     );
   }
 
+  void _invalidateDecisionCaches() {
+    ref.invalidate(roommatesProvider);
+    ref.invalidate(mapProfilesProvider);
+    ref.invalidate(likedPeopleProvider);
+  }
+
   Future<void> _swipe(RoommateProfile profile, {required bool like}) async {
     setState(() => _busy = true);
     AppHaptics.selection();
@@ -185,8 +199,15 @@ class _RoommateMatchingScreenState
         await repo.dislikeProfile(profile.userId);
       }
     } catch (_) {
-      // Still advance deck if network fails.
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save that decision. Try again.')),
+      );
+      return;
     }
+
+    _invalidateDecisionCaches();
     if (!mounted) return;
     setState(() {
       _history.add(profile);
@@ -194,20 +215,28 @@ class _RoommateMatchingScreenState
       _showDetails = false;
       _busy = false;
     });
-    if (like && mounted) {
+    if (like) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Liked ${profile.name}')));
+      ).showSnackBar(SnackBar(content: Text('Saved ${profile.name}')));
     }
   }
 
   Future<void> _undo() async {
     if (_history.isEmpty || _index <= 0) return;
-    final last = _history.removeLast();
+    final last = _history.last;
     AppHaptics.light();
     try {
       await SwipeRepository().undoProfileSwipe(last.userId);
-    } catch (_) {}
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not undo that decision.')),
+      );
+      return;
+    }
+    _history.removeLast();
+    _invalidateDecisionCaches();
     if (!mounted) return;
     setState(() {
       _index = (_index - 1).clamp(0, 9999);
@@ -238,6 +267,13 @@ class _RoommateMatchingScreenState
           ),
         );
       }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You need a message token or membership to start this chat.'),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
