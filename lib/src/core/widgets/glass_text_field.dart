@@ -46,8 +46,10 @@ class GlassTextField extends StatelessWidget {
               color: AppTheme.inputFill,
               borderRadius: BorderRadius.circular(multi ? 16 : 999),
               border: Border.all(
-                color: hasError ? const Color(0xFFF87171) : Colors.white,
-                width: 1.5,
+                color: hasError
+                    ? const Color(0xFFF87171)
+                    : Colors.white.withAlpha(92),
+                width: 1.15,
               ),
             ),
             child: Row(
@@ -89,7 +91,15 @@ class GlassTextField extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
+                      // This widget already owns its glass surface. Explicitly
+                      // disable the global Material input fill so auth fields do
+                      // not render a second gray rectangle inside the pill.
+                      filled: false,
+                      fillColor: Colors.transparent,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 16,
