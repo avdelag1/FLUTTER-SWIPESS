@@ -90,9 +90,15 @@ Deno.serve(async (req) => {
         headers,
       })
     }
-    
+
+    // Native event promotion entitlements are intentionally not shipped yet.
+    // Reject them before contacting Apple or reserving an audit row so the
+    // client receives a deterministic validation error rather than a 500.
     if (EVENT_PROMOS.has(productId)) {
-      throw new Error('Event promotions storage is not yet implemented.');
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Event promo purchases are not supported yet' }),
+        { status: 400, headers },
+      )
     }
 
     const verified = await verifyReceipt(receipt, sharedSecret)
