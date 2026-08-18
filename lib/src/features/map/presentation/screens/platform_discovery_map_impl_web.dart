@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v3.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v4.dart';
 
 Widget buildPlatformDiscoveryMap({
   required VoidCallback? onClose,
   required bool showCitiesOnOpen,
 }) {
-  return WebDiscoveryMapScreenV3(
+  return WebDiscoveryMapScreenV4(
     onClose: onClose,
     showCitiesOnOpen: showCitiesOnOpen,
   );
