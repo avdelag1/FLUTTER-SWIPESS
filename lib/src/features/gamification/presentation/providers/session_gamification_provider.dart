@@ -28,26 +28,27 @@ class SessionGamificationService {
 
   void startTracking(BuildContext context) {
     _context = context;
-    _lifecycleObserver ??= _GamificationLifecycleObserver(
-      onStateChanged: (state) {
-        if (state == AppLifecycleState.resumed) {
-          final ctx = _context;
-          if (ctx != null) _startForegroundTimer(ctx);
-        } else if (state == AppLifecycleState.inactive ||
-            state == AppLifecycleState.paused ||
-            state == AppLifecycleState.detached ||
-            state == AppLifecycleState.hidden) {
-          _pauseForegroundTimer();
-        }
-      },
-    );
-    WidgetsBinding.instance.addObserver(_lifecycleObserver!);
+    if (_lifecycleObserver == null) {
+      _lifecycleObserver = _GamificationLifecycleObserver(
+        onStateChanged: (state) {
+          if (state == AppLifecycleState.resumed) {
+            final ctx = _context;
+            if (ctx != null) _startForegroundTimer(ctx);
+          } else if (state == AppLifecycleState.inactive ||
+              state == AppLifecycleState.paused ||
+              state == AppLifecycleState.detached ||
+              state == AppLifecycleState.hidden) {
+            _pauseForegroundTimer();
+          }
+        },
+      );
+      WidgetsBinding.instance.addObserver(_lifecycleObserver!);
+    }
     _startForegroundTimer(context);
   }
 
   void _startForegroundTimer(BuildContext context) {
     if (_timer != null) return;
-    // Establish a fresh server-time baseline after every foreground resume.
     unawaited(_heartbeat(context, 0));
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
       unawaited(_heartbeat(context, 60));
@@ -59,15 +60,15 @@ class SessionGamificationService {
     _timer = null;
   }
 
-  void stopTracking() => _pauseForegroundTimer();
-
-  void dispose() {
+  void stopTracking() {
     _pauseForegroundTimer();
     final observer = _lifecycleObserver;
     if (observer != null) WidgetsBinding.instance.removeObserver(observer);
     _lifecycleObserver = null;
     _context = null;
   }
+
+  void dispose() => stopTracking();
 
   Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
     if (_syncing || Supabase.instance.client.auth.currentUser == null) return;
