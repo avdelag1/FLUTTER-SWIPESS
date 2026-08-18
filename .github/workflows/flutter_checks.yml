@@ -51,6 +51,10 @@ jobs:
         run: flutter --version
       - name: Dependencies
         run: flutter pub get
+      - name: Force generated Xcode settings to release
+        run: flutter build ios --config-only --release --no-codesign
+      - name: Show generated Flutter build mode
+        run: grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig || true
       - name: iOS release build (no sign)
         run: flutter build ios --release --no-codesign
       - name: Verify TestFlight bundle is not Flutter debug/JIT

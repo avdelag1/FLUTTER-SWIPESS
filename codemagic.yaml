@@ -1,0 +1,67 @@
+workflows:
+  swipess-ios-testflight:
+    name: Swipess iOS Release -> TestFlight
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+
+    environment:
+      groups:
+        # Create this group in Codemagic with:
+        # APP_STORE_CONNECT_PRIVATE_KEY
+        # APP_STORE_CONNECT_KEY_IDENTIFIER
+        # APP_STORE_CONNECT_ISSUER_ID
+        - appstore_credentials
+      vars:
+        BUNDLE_ID: com.swipess.mobile
+        APP_STORE_APPLE_ID: 6779810584
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        script: find . -name "Podfile" -execdir pod install \;
+
+      - name: Force Flutter/Xcode release configuration
+        script: |
+          flutter build ios --config-only --release --no-codesign
+          grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig || true
+
+      - name: Fetch App Store signing files
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Build signed RELEASE IPA
+        script: |
+          flutter clean
+          flutter pub get
+          flutter build ios --config-only --release --no-codesign
+          flutter build ipa --release \
+            --build-name=1.2.36 \
+            --build-number=614 \
+            --export-options-plist=/Users/builder/export_options.plist
+
+      - name: Reject debug/JIT IPA
+        script: |
+          rm -rf /tmp/swipess_ipa
+          mkdir -p /tmp/swipess_ipa
+          unzip -q build/ios/ipa/*.ipa -d /tmp/swipess_ipa
+          sh ios/ci_scripts/verify_release_bundle.sh /tmp/swipess_ipa/Payload/Runner.app
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
