@@ -12,9 +12,7 @@ final roommateFiltersProvider =
 class RoommateFiltersNotifier extends Notifier<RoommateFilters> {
   @override
   RoommateFilters build() => const RoommateFilters();
-
   void set(RoommateFilters next) => state = next;
-
   void reset() => state = const RoommateFilters();
 }
 
@@ -31,20 +29,16 @@ final roommatesProvider = FutureProvider<List<RoommateProfile>>((ref) async {
         .select(
           'user_id, name, bio, vap_bio, city, vap_city, age, profile_images, vap_avatar, occupation, vap_occupation, budget, monthly_budget',
         );
-    if (userId != null) {
-      query = query.neq('user_id', userId);
-    }
+    if (userId != null) query = query.neq('user_id', userId);
     data = await query.order('updated_at', ascending: false).limit(60) as List;
   } catch (_) {
-    data =
-        await client
-                .from('client_profiles')
-                .select('user_id, name, bio, city, age, profile_images')
-                .limit(60)
-            as List;
+    data = await client
+        .from('client_profiles')
+        .select('user_id, name, bio, city, age, profile_images')
+        .limit(60) as List;
   }
 
-  final profiles = data
+  var profiles = data
       .map((row) => RoommateProfile.fromJson(row as Map<String, dynamic>))
       .where((p) {
         if (p.budget != null &&
@@ -64,6 +58,23 @@ final roommatesProvider = FutureProvider<List<RoommateProfile>>((ref) async {
         return true;
       })
       .toList();
+
+  if (userId != null && profiles.isNotEmpty) {
+    try {
+      final visibleData = await client.rpc(
+        'rpc_filter_discoverable_profile_ids',
+        params: {'p_ids': profiles.map((p) => p.userId).toList()},
+      );
+      if (visibleData is List) {
+        final visible = visibleData.map((e) => e.toString()).toSet();
+        profiles = profiles.where((p) => visible.contains(p.userId)).toList();
+      } else {
+        profiles = const [];
+      }
+    } catch (_) {
+      profiles = const [];
+    }
+  }
 
   return profiles;
 });
