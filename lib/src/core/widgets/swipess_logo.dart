@@ -3,11 +3,11 @@ import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Capacitor wordmark.
+/// Swipess wordmark.
 ///
-/// [SwipessLogoVariant.hero] paints a huge italic text plate — the PNG
-/// assets sit on a black padded canvas so they never read as big enough
-/// on welcome / auth. Other variants still use the brand PNGs.
+/// Welcome/auth branding must never depend on a padded raster image. The white
+/// and transparent variants are rendered directly by Flutter so they float on
+/// the page with no square, plate, bitmap canvas or background artifact.
 class SwipessLogo extends StatelessWidget {
   const SwipessLogo({
     super.key,
@@ -25,58 +25,63 @@ class SwipessLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (variant == SwipessLogoVariant.hero) {
-      return _HeroWordmark(
+      return _FloatingWordmark(
         width: width,
         height: height,
         color: color ?? AppTheme.mexicanRed,
+        glow: true,
       );
     }
 
-    final asset = switch (variant) {
-      SwipessLogoVariant.transparent => AppAssets.logoTransparent,
-      SwipessLogoVariant.outline => AppAssets.wordmarkOutline,
-      SwipessLogoVariant.white => AppAssets.wordmarkWhite,
-      SwipessLogoVariant.hero => AppAssets.logoTransparent,
-    };
+    // These two variants are used by welcome/auth/splash surfaces. Never use a
+    // raster asset here: the old PNGs contain padded canvases which can appear
+    // as a visible square against the black page.
+    if (variant == SwipessLogoVariant.white ||
+        variant == SwipessLogoVariant.transparent) {
+      return _FloatingWordmark(
+        width: width,
+        height: height,
+        color: color ?? Colors.white,
+        glow: false,
+      );
+    }
 
+    // The outline asset remains available for places that explicitly request
+    // the outline treatment; it is not used by the welcome/auth hero branding.
     return Image.asset(
-      asset,
+      AppAssets.wordmarkOutline,
       height: height,
       width: width,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
-      errorBuilder: (_, _, _) {
-        final px = height ?? ((width ?? 220) * 0.28);
-        return Text(
-          'SWIPESS',
-          style: GoogleFonts.plusJakartaSans(
-            color: color ?? Colors.white,
-            fontSize: px.clamp(36.0, 88.0),
-            fontWeight: FontWeight.w900,
-            fontStyle: FontStyle.italic,
-            letterSpacing: 3,
-            shadows: const [
-              Shadow(offset: Offset(2, 3), blurRadius: 0, color: Colors.black),
-            ],
-          ),
-        );
-      },
+      errorBuilder: (_, _, _) => _FloatingWordmark(
+        width: width,
+        height: height,
+        color: color ?? Colors.white,
+        glow: false,
+      ),
     );
   }
 }
 
-class _HeroWordmark extends StatelessWidget {
-  const _HeroWordmark({this.width, this.height, required this.color});
+class _FloatingWordmark extends StatelessWidget {
+  const _FloatingWordmark({
+    this.width,
+    this.height,
+    required this.color,
+    required this.glow,
+  });
 
   final double? width;
   final double? height;
   final Color color;
+  final bool glow;
 
   @override
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context).width;
-    final boxWidth = width ?? (screen * 0.94).clamp(280.0, 920.0);
-    final fontSize = height ?? (boxWidth * 0.28).clamp(72.0, 168.0);
+    final boxWidth = width ?? (screen * 0.78).clamp(240.0, 720.0);
+    final fontSize = height ?? (boxWidth * 0.25).clamp(58.0, 150.0);
 
     return SizedBox(
       width: boxWidth,
@@ -92,18 +97,15 @@ class _HeroWordmark extends StatelessWidget {
             fontStyle: FontStyle.italic,
             letterSpacing: -4,
             height: 0.88,
-            shadows: [
-              const Shadow(
-                offset: Offset(4, 5),
-                blurRadius: 0,
-                color: Colors.black,
-              ),
-              Shadow(
-                color: color.withValues(alpha: 0.55),
-                blurRadius: 36,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            shadows: glow
+                ? [
+                    Shadow(
+                      color: color.withValues(alpha: 0.38),
+                      blurRadius: 28,
+                      offset: const Offset(0, 7),
+                    ),
+                  ]
+                : const [],
           ),
         ),
       ),
