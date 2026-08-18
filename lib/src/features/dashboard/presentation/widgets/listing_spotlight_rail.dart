@@ -3,11 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Live listings in the selected city / radius — not demo Unsplash cards.
+///
+/// The dashboard also keeps the map-profile provider warm. That means the map
+/// can reuse listings and nearby users that were already fetched while the user
+/// was browsing the dashboard instead of starting those requests after Map is
+/// tapped.
 class ListingSpotlightRail extends ConsumerWidget {
   const ListingSpotlightRail({super.key, required this.isLight});
 
@@ -16,9 +22,13 @@ class ListingSpotlightRail extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+
+    // Warm both sides of map discovery while the dashboard is already alive.
+    ref.watch(mapProfilesProvider);
     final listings = (ref.watch(mapListingsProvider).value ?? const <Listing>[])
         .take(8)
         .toList();
+
     if (listings.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
