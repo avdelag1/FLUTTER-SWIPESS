@@ -15,6 +15,11 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
 
   final merged = <String, Listing>{};
 
+  // Start the city/table lookup immediately instead of waiting for the RPC.
+  // Both sources are still merged exactly as before, but map startup no longer
+  // pays their network latency serially.
+  final cityListingsFuture = _fetchRegisteredCityListings(client, loc, limit);
+
   try {
     final data = await client
         .rpc(
@@ -36,11 +41,7 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
     // City/table fallback below still keeps the map usable when the RPC fails.
   }
 
-  for (final listing in await _fetchRegisteredCityListings(
-    client,
-    loc,
-    limit,
-  )) {
+  for (final listing in await cityListingsFuture) {
     merged[listing.id] = listing;
   }
 
