@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,8 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_pro
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
@@ -68,8 +72,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   void initState() {
     super.initState();
     _categoryId = widget.categoryId;
-    // A provider can retain its hidden state between deck routes. Reset it before
-    // the first frame so the new deck never opens with an empty-looking dock.
     ref.read(chromeRevealProvider.notifier).reveal();
   }
 
@@ -122,23 +124,32 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       return;
     }
     AppHaptics.medium();
-    final convoId = await ref.read(swipeRepositoryProvider).startConversation(
-      ownerId: ownerId,
-      listingId: listing.id,
-    );
-    if (!mounted || convoId == null) return;
-    await showChatPopup(
-      context,
-      isNewConversation: true,
-      conversation: ChatConversation(
-        id: convoId,
-        otherUserId: ownerId,
-        name: listing.title ?? 'Owner',
-        lastMessage: '',
-        timestamp: 'now',
-        listingTag: listing.title,
-      ),
-    );
+    try {
+      final convoId = await ref.read(swipeRepositoryProvider).startConversation(
+        ownerId: ownerId,
+        listingId: listing.id,
+      );
+      if (!mounted || convoId == null) return;
+      await showChatPopup(
+        context,
+        isNewConversation: true,
+        conversation: ChatConversation(
+          id: convoId,
+          otherUserId: ownerId,
+          name: listing.title ?? 'Owner',
+          lastMessage: '',
+          timestamp: 'now',
+          listingTag: listing.title,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You need a message token or membership to start this chat.'),
+        ),
+      );
+    }
   }
 
   void _goDashboard() {
@@ -155,6 +166,12 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     context.go(AppPaths.messages);
   }
 
+  void _invalidateDecisionCaches() {
+    ref.invalidate(swipeListingsProvider(_categoryId));
+    ref.invalidate(mapListingsProvider);
+    ref.invalidate(likedListingsProvider);
+  }
+
   void _undo() {
     final last = _undoable;
     if (last == null || _deck == null) return;
@@ -164,6 +181,18 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       _deck = [last, ..._deck!];
     });
     ref.read(chromeRevealProvider.notifier).reveal();
+
+    unawaited(
+      ref.read(swipeRepositoryProvider).undoSwipe(last.id).then((_) {
+        _invalidateDecisionCaches();
+      }).catchError((_) {
+        if (!mounted) return;
+        setState(() => _deck?.removeWhere((l) => l.id == last.id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not undo that decision.')),
+        );
+      }),
+    );
   }
 
   Widget _exhausted() {
@@ -222,6 +251,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
             .read(swipeRepositoryProvider)
             .registerSwipeLeft(authUser, listing.id, listing.price);
       }
+      _invalidateDecisionCaches();
       ref.read(dailyQuestsProvider.notifier).increment('swipe');
     }
     if (direction == SwipeDirection.right && mounted) {
@@ -276,9 +306,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
             _ensureDeck(listings);
             final deck = _deck ?? listings;
 
-            // Must expand. ChromeSummonZones is a zero-size child when the
-            // header is up — a loose Stack then collapses to 0×0 and the
-            // cards never paint (black page until chrome used to hide).
             return Stack(
               fit: StackFit.expand,
               children: [
@@ -362,7 +389,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                                   _deck = List<Listing>.from(deck)
                                     ..removeWhere((l) => l.id == listing.id);
                                 });
-                                _afterSwipe(listing, direction);
+                                unawaited(_afterSwipe(listing, direction));
                               },
                             ),
                     ),
