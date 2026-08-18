@@ -1,2 +1,9 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+
+// Never allow a stale Generated.xcconfig or a previous local debug run to leak
+// JIT/debug Flutter artifacts into an Archive/TestFlight build. Runner's Profile
+// configuration also uses this file, so keep the mode conditional by Xcode
+// configuration instead of forcing every build that includes this file to release.
+FLUTTER_BUILD_MODE[config=Release] = release
+FLUTTER_BUILD_MODE[config=Profile] = profile
