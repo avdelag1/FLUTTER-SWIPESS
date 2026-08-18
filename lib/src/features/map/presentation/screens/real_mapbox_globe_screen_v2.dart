@@ -41,6 +41,9 @@ class _RealMapboxGlobeScreenV2State
     extends ConsumerState<RealMapboxGlobeScreenV2> {
   MapboxMap? _map;
   bool _mapLoaded = false;
+  bool _initialBaseIdle = false;
+  bool _initialFlightStarted = false;
+  Timer? _initialFlightTimer;
   bool _citiesOpen = false;
   bool _chromeVisible = true;
   bool _projectionScheduled = false;
@@ -61,6 +64,12 @@ class _RealMapboxGlobeScreenV2State
   void initState() {
     super.initState();
     _citiesOpen = widget.showCitiesOnOpen;
+  }
+
+  @override
+  void dispose() {
+    _initialFlightTimer?.cancel();
+    super.dispose();
   }
 
   Point _point(double lat, double lng) =>
@@ -111,6 +120,37 @@ class _RealMapboxGlobeScreenV2State
       // Camera movement must never be coupled to optional marker rendering.
     }
     _scheduleProjection();
+  }
+
+  void _queueInitialFlight() {
+    if (!_mapLoaded ||
+        !_initialBaseIdle ||
+        _initialFlightStarted ||
+        !mounted) {
+      return;
+    }
+
+    final listings = ref.read(mapListingsProvider);
+    final profiles = ref.read(mapProfilesProvider);
+    if (listings.isLoading || profiles.isLoading) return;
+
+    _initialFlightTimer?.cancel();
+    _initialFlightTimer = Timer(const Duration(milliseconds: 850), () async {
+      if (!mounted || _initialFlightStarted) return;
+      _initialFlightStarted = true;
+
+      // Let the real globe and the projected Flutter overlays settle before
+      // beginning the flight so the opening reads like Google Earth instead of
+      // an immediate camera jump.
+      await _refreshProjection();
+      if (!mounted) return;
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+      if (!mounted) return;
+      await _flyTo(
+        ref.read(discoveryLocationProvider),
+        duration: 2600,
+      );
+    });
   }
 
   ({double lat, double lng}) _spreadPoint(
@@ -340,14 +380,24 @@ class _RealMapboxGlobeScreenV2State
       if (!destinationChanged && !radiusChanged) return;
       _selected = null;
       if (destinationChanged) {
+        if (!_initialFlightStarted) {
+          _initialFlightTimer?.cancel();
+          _initialFlightStarted = true;
+        }
         _flyTo(next);
       } else {
         _flyTo(next, zoom: _zoomForRadius(next.radiusKm), duration: 420);
       }
       _scheduleProjection();
     });
-    ref.listen(mapListingsProvider, (_, __) => _scheduleProjection());
-    ref.listen(mapProfilesProvider, (_, __) => _scheduleProjection());
+    ref.listen(mapListingsProvider, (_, __) {
+      _scheduleProjection();
+      _queueInitialFlight();
+    });
+    ref.listen(mapProfilesProvider, (_, __) {
+      _scheduleProjection();
+      _queueInitialFlight();
+    });
 
     if (!tokenReady) {
       return const Material(
@@ -385,15 +435,19 @@ class _RealMapboxGlobeScreenV2State
                   key: const ValueKey('swipess-globe-projected-v2'),
                   styleUri: isLight ? _lightStyle : _darkStyle,
                   onMapCreated: _setupMap,
-                  onMapLoadedListener: (_) async {
+                  onMapLoadedListener: (_) {
                     _mapLoaded = true;
                     _scheduleProjection();
-                    await Future<void>.delayed(const Duration(milliseconds: 220));
-                    if (!mounted) return;
-                    await _flyTo(ref.read(discoveryLocationProvider));
+                    _queueInitialFlight();
                   },
                   onCameraChangeListener: (_) => _scheduleProjection(),
-                  onMapIdleListener: (_) => _scheduleProjection(),
+                  onMapIdleListener: (_) {
+                    _scheduleProjection();
+                    if (!_initialFlightStarted) {
+                      _initialBaseIdle = true;
+                      _queueInitialFlight();
+                    }
+                  },
                 ),
               ),
 
@@ -634,8 +688,30 @@ class _ProjectedPin extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  static const _accentPalette = <Color>[
+    Color(0xFF5B8CFF),
+    Color(0xFFFF7289),
+    Color(0xFFFFB34D),
+    Color(0xFF43C7A1),
+    Color(0xFF9A7BFF),
+    Color(0xFF35B9D8),
+  ];
+
+  Color _accentForPin() {
+    var hash = pin.isListing ? 131 : 271;
+    for (final unit in pin.id.codeUnits) {
+      hash = 0x1fffffff & (hash * 31 + unit);
+    }
+    return _accentPalette[hash % _accentPalette.length];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final accent = _accentForPin();
+    final fill = pin.isListing
+        ? Color.alphaBlend(accent.withAlpha(72), const Color(0xFF111318))
+        : Color.alphaBlend(accent.withAlpha(18), Colors.white);
+
     return Semantics(
       button: true,
       label: pin.isListing ? 'Listing marker' : 'User marker',
@@ -652,19 +728,27 @@ class _ProjectedPin extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: pin.isListing ? const Color(0xFF111318) : Colors.white,
+              color: fill,
               border: Border.all(
-                color: pin.isListing ? Colors.white : const Color(0xFF111318),
-                width: selected ? 3 : 2,
+                color: selected ? Colors.white : accent,
+                width: selected ? 3 : 2.2,
               ),
-              boxShadow: const [
-                BoxShadow(color: Color(0x52000000), blurRadius: 10),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withAlpha(selected ? 125 : 68),
+                  blurRadius: selected ? 16 : 10,
+                  spreadRadius: selected ? 1.2 : 0,
+                ),
+                const BoxShadow(
+                  color: Color(0x42000000),
+                  blurRadius: 10,
+                ),
               ],
             ),
             child: Icon(
               pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
               size: selected ? 19 : 17,
-              color: pin.isListing ? Colors.white : const Color(0xFF111318),
+              color: pin.isListing ? Colors.white : accent,
             ),
           ),
         ),
