@@ -16,8 +16,7 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final merged = <String, Listing>{};
 
   // Start the city/table lookup immediately instead of waiting for the RPC.
-  // Both sources are still merged exactly as before, but map startup no longer
-  // pays their network latency serially.
+  // Both sources are merged, so map startup does not pay their latency serially.
   final cityListingsFuture = _fetchRegisteredCityListings(client, loc, limit);
 
   try {
@@ -33,26 +32,41 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
           },
         )
         .timeout(const Duration(seconds: 8));
-    for (final row in data as List) {
-      final listing = Listing.fromJson(row as Map<String, dynamic>);
-      merged[listing.id] = listing;
+    for (final listing in _parseRows(data)) {
+      if (listing.id.isNotEmpty) merged[listing.id] = listing;
     }
   } catch (_) {
     // City/table fallback below still keeps the map usable when the RPC fails.
   }
 
   for (final listing in await cityListingsFuture) {
-    merged[listing.id] = listing;
+    if (listing.id.isNotEmpty) merged[listing.id] = listing;
   }
 
   if (merged.isEmpty) {
-    for (final listing in await _fallbackListings(client, loc, limit)) {
-      merged[listing.id] = listing;
+    for (final listing in await _fallbackListings(client, limit)) {
+      if (listing.id.isNotEmpty) merged[listing.id] = listing;
     }
   }
 
   return _forMap(merged.values.toList(growable: false), loc);
 });
+
+List<Listing> _parseRows(dynamic data) {
+  if (data is! List) return const [];
+  final parsed = <Listing>[];
+  for (final raw in data) {
+    if (raw is! Map) continue;
+    try {
+      final row = Map<String, dynamic>.from(raw);
+      final listing = Listing.fromJson(row);
+      if (listing.id.isNotEmpty) parsed.add(listing);
+    } catch (_) {
+      // Skip only the malformed row. One bad listing must never blank the map.
+    }
+  }
+  return parsed;
+}
 
 List<Listing> _forMap(List<Listing> rows, DiscoveryLocation loc) {
   const haversine = Distance();
@@ -91,9 +105,7 @@ Future<List<Listing>> _fetchRegisteredCityListings(
     query = query.eq('is_active', true).ilike('city', '%$city%');
     if (withStatus) query = query.eq('status', 'active');
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
-    return (data as List)
-        .map((row) => Listing.fromJson(row as Map<String, dynamic>))
-        .toList(growable: false);
+    return _parseRows(data);
   }
 
   try {
@@ -109,7 +121,6 @@ Future<List<Listing>> _fetchRegisteredCityListings(
 
 Future<List<Listing>> _fallbackListings(
   SupabaseClient client,
-  DiscoveryLocation loc,
   int limit,
 ) async {
   Future<List<Listing>> fetch({required bool withStatus}) async {
@@ -121,9 +132,7 @@ Future<List<Listing>> _fallbackListings(
     query = query.eq('is_active', true);
     if (withStatus) query = query.eq('status', 'active');
     final data = await query.limit(limit).timeout(const Duration(seconds: 8));
-    return (data as List)
-        .map((row) => Listing.fromJson(row as Map<String, dynamic>))
-        .toList(growable: false);
+    return _parseRows(data);
   }
 
   try {
@@ -141,11 +150,15 @@ String _normalizeCity(String? value) => (value ?? '')
     .trim()
     .toLowerCase()
     .replaceAll('ú', 'u')
-    .replaceAll('í', 'i');
+    .replaceAll('í', 'i')
+    .replaceAll('é', 'e')
+    .replaceAll('á', 'a')
+    .replaceAll('ó', 'o');
 
 bool _sameCity(String? value, String normalizedCity) {
   if (normalizedCity.isEmpty || normalizedCity == 'near you') return false;
   final normalizedValue = _normalizeCity(value);
+  if (normalizedValue.isEmpty) return false;
   return normalizedValue == normalizedCity ||
       normalizedValue.contains(normalizedCity) ||
       normalizedCity.contains(normalizedValue);
