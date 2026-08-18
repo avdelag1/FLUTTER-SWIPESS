@@ -5,7 +5,8 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Compact liquid-glass city pills that stay clear of the map control rail.
+/// Compact liquid-glass city pills with a protected lane that never runs
+/// underneath the map's right-side zoom/location controls.
 class MapCityChips extends StatelessWidget {
   const MapCityChips({
     super.key,
@@ -18,64 +19,77 @@ class MapCityChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.antiAlias,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: PassportCities.all.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
-        itemBuilder: (context, i) {
-          final city = PassportCities.all[i];
-          final active =
-              activeCity.toLowerCase().contains(city.name.toLowerCase()) ||
-              city.name.toLowerCase() == activeCity.toLowerCase();
-          return GestureDetector(
-            onTap: () {
-              AppHaptics.selection();
-              onSelect(city);
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: active
-                        ? Colors.white.withAlpha(222)
-                        : Colors.black.withAlpha(104),
-                    border: Border.all(
-                      color: active
-                          ? Colors.white.withAlpha(230)
-                          : Colors.white.withAlpha(52),
-                      width: 0.8,
+    return Padding(
+      // The control rail is 42 px wide, sits 12 px from the edge, and needs
+      // breathing room. Keeping the viewport itself away from that area avoids
+      // the transparent vertical cut/overlap visible on compact phones.
+      padding: const EdgeInsets.only(left: 12, right: 68),
+      child: SizedBox(
+        height: 33,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          clipBehavior: Clip.hardEdge,
+          padding: EdgeInsets.zero,
+          itemCount: PassportCities.all.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 5),
+          itemBuilder: (context, i) {
+            final city = PassportCities.all[i];
+            final cityName = city.name.toLowerCase();
+            final currentCity = activeCity.toLowerCase();
+            final active = currentCity.contains(cityName) || cityName == currentCity;
+
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                AppHaptics.selection();
+                onSelect(city);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
                     ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      city.name.toUpperCase(),
-                      style: GoogleFonts.plusJakartaSans(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: active
+                          ? Colors.white.withAlpha(218)
+                          : Colors.black.withAlpha(94),
+                      border: Border.all(
                         color: active
-                            ? const Color(0xFF111318)
-                            : Colors.white.withAlpha(238),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10,
-                        letterSpacing: 0.65,
+                            ? Colors.white.withAlpha(226)
+                            : Colors.white.withAlpha(48),
+                        width: 0.7,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        city.name.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: active
+                              ? const Color(0xFF111318)
+                              : Colors.white.withAlpha(238),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 9.2,
+                          letterSpacing: 0.48,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
