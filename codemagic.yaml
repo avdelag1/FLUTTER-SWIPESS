@@ -44,9 +44,9 @@ workflows:
           flutter clean
           flutter pub get
           flutter build ios --config-only --release --no-codesign
+          # Version/build come only from pubspec.yaml so Codemagic can never
+          # silently upload an old hard-coded build number again.
           flutter build ipa --release \
-            --build-name=1.2.36 \
-            --build-number=614 \
             --export-options-plist=/Users/builder/export_options.plist
 
       - name: Reject debug/JIT IPA
