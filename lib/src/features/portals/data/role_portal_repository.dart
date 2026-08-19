@@ -73,14 +73,17 @@ class RolePortalRepository {
     required String status,
     String? lawyerNotes,
   }) async {
-    await _client
-        .from('legal_package_requests')
-        .update({
-          'status': status,
-          if (lawyerNotes != null) 'lawyer_notes': lawyerNotes.trim(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', id);
+    final result = await _client.rpc(
+      'update_legal_request_workflow',
+      params: {
+        'p_request_id': id,
+        'p_status': status,
+        'p_lawyer_notes': lawyerNotes?.trim(),
+      },
+    );
+    if (result != true) {
+      throw StateError('Legal request could not be updated');
+    }
   }
 
   Future<List<PortalVideoCall>> fetchLegalVideoCalls() async {
@@ -99,29 +102,21 @@ class RolePortalRepository {
   }
 
   Future<bool> acceptLegalVideoCall(String callId) async {
-    final uid = currentUserId;
-    if (uid == null) return false;
-    final rows = await _client
-        .from('legal_video_calls')
-        .update({
-          'lawyer_user_id': uid,
-          'status': 'accepted',
-          'answered_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', callId)
-        .eq('status', 'ringing')
-        .select('id');
-    return (rows as List).isNotEmpty;
+    final result = await _client.rpc(
+      'transition_legal_video_call',
+      params: {'p_call_id': callId, 'p_status': 'accepted'},
+    );
+    return result == true;
   }
 
   Future<void> endLegalVideoCall(String callId) async {
-    await _client
-        .from('legal_video_calls')
-        .update({
-          'status': 'ended',
-          'ended_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', callId);
+    final result = await _client.rpc(
+      'transition_legal_video_call',
+      params: {'p_call_id': callId, 'p_status': 'ended'},
+    );
+    if (result != true) {
+      throw StateError('Legal call could not be ended');
+    }
   }
 
   Future<List<PortalBusinessSubmission>> fetchBusinessSubmissions({
@@ -146,7 +141,7 @@ class RolePortalRepository {
   Future<AdminPortalOverview> fetchAdminOverview() async {
     final eventRows = await _client
         .from('events')
-        .select('id, is_published')
+        .select('id, is_published, created_at')
         .order('created_at', ascending: false)
         .limit(500);
     final submissions = await fetchBusinessSubmissions(admin: true);
