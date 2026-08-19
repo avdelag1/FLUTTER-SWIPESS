@@ -66,10 +66,14 @@ abstract final class AppPaths {
   static const faqOwner = '/faq/owner';
   static const map = '/map';
 
+  static const adminDashboard = '/admin/dashboard';
   static const adminEventos = '/admin/eventos';
   static const adminPhotos = '/admin/photos';
   static const adminCategoryPhotos = '/admin/category-photos';
   static const adminPerformance = '/admin/performance';
+  static const adminLegal = '/admin/legal';
+  static const lawyerDashboard = '/lawyer/dashboard';
+  static const businessDashboard = '/business/dashboard';
 
   static const paymentSuccess = '/payment/success';
   static const paymentCancel = '/payment/cancel';
@@ -100,7 +104,6 @@ abstract final class AppPaths {
       case NavTab.seekers:
         return exploreSeekers;
       case NavTab.legal:
-        // Cap BottomNavigation path: `/client/legal-services`
         return clientLegalServices;
       case NavTab.events:
         return exploreEvents;
@@ -134,7 +137,6 @@ abstract final class AppPaths {
         location == exploreEventsLikes ||
         (location.startsWith('$exploreEvents/') &&
             location != exploreEventsLikes)) {
-      // Detail routes are full-screen; keep feed highlighted only for feed.
       if (location == exploreEvents || location == exploreEventsLikes) {
         return NavTab.events;
       }
