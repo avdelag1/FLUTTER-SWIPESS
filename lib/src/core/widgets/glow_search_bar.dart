@@ -33,9 +33,12 @@ class GlowSearchBar extends StatefulWidget {
   State<GlowSearchBar> createState() => _GlowSearchBarState();
 }
 
-class _GlowSearchBarState extends State<GlowSearchBar> {
+class _GlowSearchBarState extends State<GlowSearchBar>
+    with SingleTickerProviderStateMixin {
   Timer? _promptTimer;
+  Timer? _glintTimer;
   int _promptIndex = 0;
+  late final AnimationController _glintController;
 
   bool get _isTapOnly => widget.onTap != null && widget.onChanged == null;
 
@@ -63,7 +66,12 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
   @override
   void initState() {
     super.initState();
+    _glintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    );
     _startPromptRotation();
+    _startGlint();
   }
 
   @override
@@ -75,6 +83,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
     }
     if (_isTapOnly != wasTapOnly) {
       _startPromptRotation();
+      _startGlint();
     }
   }
 
@@ -88,10 +97,66 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
     });
   }
 
+  void _startGlint() {
+    _glintTimer?.cancel();
+    _glintController.stop();
+    _glintController.value = 0;
+    if (!_isTapOnly) return;
+
+    _glintTimer = Timer.periodic(const Duration(seconds: 8), (_) {
+      if (!mounted || _glintController.isAnimating) return;
+      _glintController.forward(from: 0);
+    });
+  }
+
   @override
   void dispose() {
     _promptTimer?.cancel();
+    _glintTimer?.cancel();
+    _glintController.dispose();
     super.dispose();
+  }
+
+  Widget _animatedPrompt({
+    required String text,
+    required Color ink,
+    required bool isLight,
+    required Key key,
+  }) {
+    final base = ink.withAlpha(225);
+    final highlight = isLight ? const Color(0xFF6D9FEA) : Colors.white;
+
+    return AnimatedBuilder(
+      animation: _glintController,
+      child: Text(
+        text,
+        key: key,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 14.5,
+          letterSpacing: .02,
+        ),
+      ),
+      builder: (context, child) {
+        // The shader is isolated inside the search text RepaintBoundary. It
+        // never rebuilds the dashboard or video cards while the glint moves.
+        final progress = Curves.easeInOutCubic.transform(_glintController.value);
+        final x = -2.2 + (progress * 4.4);
+        return ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => LinearGradient(
+            begin: Alignment(x - .8, 0),
+            end: Alignment(x + .8, 0),
+            colors: [base, base, highlight, base, base],
+            stops: const [0, .30, .50, .70, 1],
+          ).createShader(bounds),
+          child: child,
+        );
+      },
+    );
   }
 
   @override
@@ -140,18 +205,12 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                         opacity: animation,
                         child: child,
                       ),
-                      child: Text(
-                        displayHint,
+                      child: _animatedPrompt(
+                        text: displayHint,
+                        ink: ink,
+                        isLight: isLight,
                         key: ValueKey<String>(
                           '${widget.locationLabel}:$safeIndex:$displayHint',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: ink.withAlpha(225),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14.5,
-                          letterSpacing: .02,
                         ),
                       ),
                     ),
@@ -198,12 +257,16 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                 color: const Color(0xFF60A5FA).withAlpha(210),
               ),
               const SizedBox(width: 5),
-              Text(
-                'Powered by Gemini · AI may make mistakes.',
-                style: GoogleFonts.plusJakartaSans(
-                  color: ink.withAlpha(125),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 10.5,
+              Flexible(
+                child: Text(
+                  'Powered by Gemini · AI may make mistakes.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink.withAlpha(125),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 10.5,
+                  ),
                 ),
               ),
             ],
