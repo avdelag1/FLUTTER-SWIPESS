@@ -136,14 +136,13 @@ class LegalRepository {
   }
 
   Future<void> updateVideoCallStatus(String callId, String status) async {
-    final ended = {'ended', 'missed', 'cancelled', 'declined'}.contains(status);
-    await _client
-        .from('legal_video_calls')
-        .update({
-          'status': status,
-          if (ended) 'ended_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', callId);
+    final result = await _client.rpc(
+      'transition_legal_video_call',
+      params: {'p_call_id': callId, 'p_status': status},
+    );
+    if (result != true) {
+      throw StateError('Legal video call transition was rejected');
+    }
   }
 
   Stream<Map<String, dynamic>> watchVideoCall(String callId) {
