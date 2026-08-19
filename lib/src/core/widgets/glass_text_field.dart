@@ -14,6 +14,8 @@ class GlassTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.errorText,
     this.onChanged,
+    this.onSubmitted,
+    this.textInputAction,
     this.height = 56,
     this.maxLines = 1,
     this.autofocus = false,
@@ -28,6 +30,8 @@ class GlassTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final String? errorText;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final TextInputAction? textInputAction;
   final double height;
   final int maxLines;
   final bool autofocus;
@@ -72,9 +76,11 @@ class GlassTextField extends StatelessWidget {
                     keyboardType: multi
                         ? TextInputType.multiline
                         : keyboardType,
+                    textInputAction: multi ? TextInputAction.newline : textInputAction,
                     textCapitalization: textCapitalization,
                     autocorrect: false,
                     onChanged: onChanged,
+                    onSubmitted: multi ? null : onSubmitted,
                     maxLines: maxLines,
                     minLines: multi ? maxLines : 1,
                     style: GoogleFonts.plusJakartaSans(
@@ -91,9 +97,6 @@ class GlassTextField extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
-                      // This widget already owns its glass surface. Explicitly
-                      // disable the global Material input fill so auth fields do
-                      // not render a second gray rectangle inside the pill.
                       filled: false,
                       fillColor: Colors.transparent,
                       border: InputBorder.none,
