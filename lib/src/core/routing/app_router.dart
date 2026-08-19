@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_category_photos_screen.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_eventos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_photos_screen.dart';
@@ -20,6 +21,7 @@ import 'package:flutter_swipes/src/features/auth/presentation/screens/reset_pass
 import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/screens/business_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/dashboard_shell.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
@@ -29,7 +31,9 @@ import 'package:flutter_swipes/src/features/insights/presentation/screens/local_
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/contracts_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_admin_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/likes_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_interested_clients_screen.dart';
@@ -265,6 +269,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
+        path: AppPaths.ownerDashboard,
+        builder: (ctx, _) => const BusinessDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.businessDashboard,
+        redirect: (ctx, state) => AppPaths.ownerDashboard,
+      ),
+      GoRoute(
+        path: AppPaths.ownerProfile,
+        builder: (ctx, _) => const ProfileScreen(),
+      ),
+      GoRoute(
         path: AppPaths.clientSettings,
         builder: (ctx, _) => const SettingsScreen(audience: 'client'),
       ),
@@ -414,6 +430,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/messages/:conversationId',
         builder: (ctx, state) => const MessagesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.adminDashboard,
+        builder: (ctx, _) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.legalAdminDashboard,
+        builder: (ctx, _) => const LegalAdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.lawyerDashboard,
+        builder: (ctx, _) => const LawyerDashboardScreen(),
       ),
       GoRoute(
         path: AppPaths.adminEventos,
