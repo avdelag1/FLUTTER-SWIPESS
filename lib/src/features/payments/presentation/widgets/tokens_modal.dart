@@ -60,6 +60,98 @@ class _TokensModalState extends ConsumerState<TokensModal> {
     return null;
   }
 
+  Future<void> _buyOffer(BuildContext context, IapOffer offer) async {
+    AppHaptics.light();
+    final result = await ref.read(paymentServiceProvider).buy(offer);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result.userMessage)),
+    );
+    ref.invalidate(messagingEntitlementsProvider);
+    if (result.isSuccess) {
+      await AppHaptics.success();
+      if (context.mounted) Navigator.of(context).pop();
+    }
+  }
+
+  Widget _offerInfo({
+    required IapOffer offer,
+    required Color color,
+    required int count,
+    required String pricePerToken,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 5,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              (offer.label ?? offer.name).toUpperCase(),
+              style: SwipessTokens.displayItalic(
+                color: color,
+                fontSize: 14,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withAlpha(35),
+                borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+              ),
+              child: Text(
+                '$count TOKENS',
+                style: GoogleFonts.plusJakartaSans(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 7,
+          runSpacing: 3,
+          crossAxisAlignment: WrapCrossAlignment.end,
+          children: [
+            Text(
+              offer.priceLabel,
+              style: SwipessTokens.priceOversized(fontSize: 22),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                'USD',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (pricePerToken.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  pricePerToken,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white38,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final balanceAsync = ref.watch(messagingEntitlementsProvider);
@@ -77,7 +169,6 @@ class _TokensModalState extends ConsumerState<TokensModal> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Handle
               Center(
                 child: Container(
                   width: 44,
@@ -89,14 +180,10 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   ),
                 ),
               ),
-
-              // Title & Balance Header
               Text(
                 'MESSAGE TOKENS',
                 textAlign: TextAlign.center,
-                style: SwipessTokens.displayItalic(
-                  fontSize: 26,
-                ),
+                style: SwipessTokens.displayItalic(fontSize: 26),
               ),
               const SizedBox(height: 4),
               Text(
@@ -118,20 +205,17 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Scrollable Packages
               Expanded(
                 child: ListView.separated(
                   controller: _scrollController,
                   physics: const ClampingScrollPhysics(),
                   itemCount: IapCatalog.tokens.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 16),
+                  separatorBuilder: (_, _) => const SizedBox(height: 14),
                   itemBuilder: (context, index) {
                     final offer = IapCatalog.tokens[index];
                     final color = _colorForIndex(index);
                     final icon = _iconForIndex(index);
                     final badge = _badgeForIndex(index, IapCatalog.tokens.length);
-
                     final count = offer.tokens ?? 0;
                     final parsedPrice = double.tryParse(
                           offer.priceLabel.replaceAll(RegExp(r'[^0-9.]'), ''),
@@ -145,139 +229,84 @@ class _TokensModalState extends ConsumerState<TokensModal> {
 
                     return SwipessTierCard(
                       accentColor: color,
-                      badgeLabel: badge,
+                      // Badges live inside the card now, so they can never sit
+                      // on top of the SELECT button or package typography.
                       isHighlighted: badge != null,
-                      onTap: () async {
-                        AppHaptics.light();
-                        final result =
-                            await ref.read(paymentServiceProvider).buy(offer);
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(result.userMessage)),
-                        );
-                        ref.invalidate(messagingEntitlementsProvider);
-                        if (result.isSuccess) {
-                          await AppHaptics.success();
-                          if (context.mounted) Navigator.of(context).pop();
-                        }
-                      },
-                      child: Row(
-                        children: [
-                          // Left Icon Tile
-                          SwipessIconTile(
-                            icon: icon,
-                            accentColor: color,
-                            size: 46,
-                            iconSize: 22,
-                          ),
-                          const SizedBox(width: 14),
+                      onTap: () => _buyOffer(context, offer),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact = constraints.maxWidth < 360;
+                          final info = _offerInfo(
+                            offer: offer,
+                            color: color,
+                            count: count,
+                            pricePerToken: pricePerTokenStr,
+                          );
 
-                          // Center Info
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      (offer.label ?? offer.name).toUpperCase(),
-                                      style: SwipessTokens.displayItalic(
-                                        color: color,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 7, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: color.withAlpha(35),
-                                        borderRadius: BorderRadius.circular(
-                                            SwipessTokens.radiusPill),
-                                      ),
-                                      child: Text(
-                                        '$count TOKENS',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: color,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    Text(
-                                      offer.priceLabel,
-                                      style: SwipessTokens.priceOversized(
-                                        fontSize: 22,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'USD',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white54,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      pricePerTokenStr,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white38,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                          final mainRow = Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SwipessIconTile(
+                                icon: icon,
+                                accentColor: color,
+                                size: compact ? 42 : 46,
+                                iconSize: compact ? 20 : 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(child: info),
+                              if (!compact) ...[
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 84,
+                                  height: 38,
+                                  child: SwipessPrimaryCTA(
+                                    label: 'SELECT',
+                                    accentColor: color,
+                                    height: 38,
+                                    onTap: () => _buyOffer(context, offer),
+                                  ),
                                 ),
                               ],
-                            ),
-                          ),
+                            ],
+                          );
 
-                          // Right Tactile CTA
-                          SizedBox(
-                            width: 84,
-                            height: 38,
-                            child: SwipessPrimaryCTA(
-                              label: 'SELECT',
-                              accentColor: color,
-                              height: 38,
-                              onTap: () async {
-                                AppHaptics.light();
-                                final result = await ref
-                                    .read(paymentServiceProvider)
-                                    .buy(offer);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(result.userMessage)),
-                                );
-                                ref.invalidate(messagingEntitlementsProvider);
-                                if (result.isSuccess) {
-                                  await AppHaptics.success();
-                                  if (context.mounted) {
-                                    Navigator.of(context).pop();
-                                  }
-                                }
-                              },
-                            ),
-                          ),
-                        ],
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (badge != null) ...[
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: SwipessTierBadge(
+                                    label: badge,
+                                    accentColor: color,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              mainRow,
+                              if (compact) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 40,
+                                  child: SwipessPrimaryCTA(
+                                    label: 'SELECT',
+                                    accentColor: color,
+                                    height: 40,
+                                    onTap: () => _buyOffer(context, offer),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
                       ),
                     );
                   },
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Bottom Upsell Banner: "Explore Premium plans"
               GestureDetector(
                 onTap: () {
                   AppHaptics.medium();
@@ -363,7 +392,6 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 10),
               Center(
                 child: TextButton(
