@@ -46,9 +46,14 @@ class DashboardDock extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(isLight ? 14 : 44),
-                  blurRadius: 13,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withAlpha(isLight ? 24 : 76),
+                  blurRadius: 18,
+                  offset: const Offset(0, 7),
+                ),
+                BoxShadow(
+                  color: Colors.white.withAlpha(isLight ? 80 : 16),
+                  blurRadius: 5,
+                  offset: const Offset(-1, -1),
                 ),
               ],
             ),
@@ -61,17 +66,31 @@ class DashboardDock extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  // Opaque-enough liquid glass keeps the same visual language
-                  // without forcing a backdrop blur over live video every frame.
-                  color: isLight
-                      ? const Color(0xE8F5F5F7)
-                      : const Color(0xE61A1E25),
+                  // Frozen glass without a live backdrop blur. This keeps the
+                  // icy/glassy depth while avoiding continuous GPU blur over
+                  // dashboard videos.
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isLight
+                        ? const [
+                            Color(0xFAFFFFFF),
+                            Color(0xE7E1E8F0),
+                            Color(0xF7F9FBFF),
+                          ]
+                        : const [
+                            Color(0xF24A515B),
+                            Color(0xEB252B33),
+                            Color(0xF0353C46),
+                          ],
+                    stops: const [0, .55, 1],
+                  ),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: isLight
-                        ? Colors.black.withAlpha(34)
-                        : Colors.white.withAlpha(72),
-                    width: 1.15,
+                        ? Colors.white.withAlpha(245)
+                        : Colors.white.withAlpha(112),
+                    width: 1.2,
                   ),
                 ),
                 child: SingleChildScrollView(
@@ -141,7 +160,7 @@ class DockButton extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final iconColor = isLight
         ? Colors.black.withAlpha(emphasized ? 255 : 220)
-        : Colors.white.withAlpha(emphasized ? 255 : 232);
+        : Colors.white.withAlpha(emphasized ? 255 : 238);
 
     return Semantics(
       button: true,
@@ -176,7 +195,7 @@ class DockButton extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: isLight
                                   ? Colors.black.withAlpha(205)
-                                  : Colors.white.withAlpha(215),
+                                  : Colors.white.withAlpha(225),
                               shape: BoxShape.circle,
                             ),
                           ),
