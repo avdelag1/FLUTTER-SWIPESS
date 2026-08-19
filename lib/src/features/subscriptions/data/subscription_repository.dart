@@ -18,6 +18,8 @@ class SubscriptionData {
   bool get trialHasEnded =>
       trialEndsAt != null && !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
+  // Complimentary access always wins while active. When it ends, any real
+  // paid tier immediately becomes effective again without losing purchases.
   SubscriptionTier get effectiveTier =>
       isTrialActive ? SubscriptionTier.premium : tier;
 }
@@ -57,19 +59,20 @@ class SubscriptionRepository {
       // Paid access lookup failure should not invent a paid entitlement.
     }
 
-    DateTime? trialEndsAt;
-    if (tier == SubscriptionTier.free) {
-      trialEndsAt = await _fetchCampaignTrialEnd(user);
-      if (trialEndsAt != null &&
-          !DateTime.now().toUtc().isBefore(trialEndsAt.toUtc())) {
-        try {
-          await _client.rpc(
-            'rpc_ensure_trial_expiry_notification',
-            params: {'p_trial_ends_at': trialEndsAt.toUtc().toIso8601String()},
-          );
-        } catch (_) {
-          // Notification is best-effort; access state remains authoritative.
-        }
+    // The complimentary campaign applies to every account, including users
+    // who already existed when the campaign clock was reset. Paid users keep
+    // their purchased tier underneath it and return to it after the free
+    // Premium window ends.
+    final trialEndsAt = await _fetchCampaignTrialEnd(user);
+    if (trialEndsAt != null &&
+        !DateTime.now().toUtc().isBefore(trialEndsAt.toUtc())) {
+      try {
+        await _client.rpc(
+          'rpc_ensure_trial_expiry_notification',
+          params: {'p_trial_ends_at': trialEndsAt.toUtc().toIso8601String()},
+        );
+      } catch (_) {
+        // Notification is best-effort; access state remains authoritative.
       }
     }
 
@@ -102,19 +105,29 @@ class SubscriptionRepository {
       if (row == null) return null;
 
       final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
-      final startsAt = DateTime.tryParse(row['signup_starts_at']?.toString() ?? '')?.toUtc();
-      if (createdAt == null || startsAt == null || createdAt.isBefore(startsAt)) {
+      final resetAt =
+          DateTime.tryParse(row['signup_starts_at']?.toString() ?? '')?.toUtc();
+      if (createdAt == null || resetAt == null) return null;
+
+      final explicitEnd =
+          DateTime.tryParse(row['signup_ends_at']?.toString() ?? '')?.toUtc();
+      final accepting = row['accepting_new_signups'] == true;
+      final toggledAt =
+          DateTime.tryParse(row['updated_at']?.toString() ?? '')?.toUtc();
+      final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
+
+      // Existing accounts start from the campaign reset timestamp. Accounts
+      // created after the reset get their own full three calendar months from
+      // signup. This is the behavior requested for the global free-Premium
+      // reset while preserving the same rule for every future new account.
+      final accessStartsAt = createdAt.isBefore(resetAt) ? resetAt : createdAt;
+      if (signupCutoff != null && !accessStartsAt.isBefore(signupCutoff)) {
         return null;
       }
 
-      final explicitEnd = DateTime.tryParse(row['signup_ends_at']?.toString() ?? '')?.toUtc();
-      final accepting = row['accepting_new_signups'] == true;
-      final toggledAt = DateTime.tryParse(row['updated_at']?.toString() ?? '')?.toUtc();
-      final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
-      if (signupCutoff != null && !createdAt.isBefore(signupCutoff)) return null;
-
-      final months = (((row['trial_months'] as num?)?.toInt() ?? 3).clamp(1, 24)).toInt();
-      return _addCalendarMonths(createdAt, months);
+      final months =
+          (((row['trial_months'] as num?)?.toInt() ?? 3).clamp(1, 24)).toInt();
+      return _addCalendarMonths(accessStartsAt, months);
     } catch (_) {
       return null;
     }
