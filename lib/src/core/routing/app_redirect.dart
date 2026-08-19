@@ -86,10 +86,7 @@ abstract final class AppRedirect {
       case '/':
         return AppPaths.gate;
       case AppPaths.legacyDashboard:
-      case AppPaths.ownerDashboard:
         return AppPaths.clientDashboard;
-      case AppPaths.ownerProfile:
-        return AppPaths.clientProfile;
       case AppPaths.exploreServices:
         return AppPaths.clientServices;
       case '/promote-event/request':
