@@ -141,8 +141,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         ),
       ),
       builder: (context, child) {
-        // The shader is isolated inside the search text RepaintBoundary. It
-        // never rebuilds the dashboard or video cards while the glint moves.
         final progress = Curves.easeInOutCubic.transform(_glintController.value);
         final x = -2.2 + (progress * 4.4);
         return ShaderMask(
@@ -167,146 +165,151 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final safeIndex = _promptIndex % prompts.length;
     final displayHint = _isTapOnly ? prompts[safeIndex] : widget.hint;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: isLight
-                  ? Colors.white.withAlpha(205)
-                  : const Color(0xFF121822).withAlpha(230),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: const Color(0xFF60A5FA).withAlpha(isLight ? 125 : 145),
-                width: .9,
+    // Keep a deliberate air gap below the persistent header. This prevents
+    // the AI field frame from ever visually colliding with header controls.
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isLight
+                    ? Colors.white.withAlpha(205)
+                    : const Color(0xFF121822).withAlpha(230),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: const Color(0xFF60A5FA).withAlpha(isLight ? 125 : 145),
+                  width: .9,
+                ),
               ),
-            ),
-            alignment: Alignment.centerLeft,
-            child: _isTapOnly
-                ? RepaintBoundary(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 520),
-                      reverseDuration: const Duration(milliseconds: 360),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [
-                          ...previousChildren,
-                          if (currentChild != null) currentChild,
-                        ],
-                      ),
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
-                      child: _animatedPrompt(
-                        text: displayHint,
-                        ink: ink,
-                        isLight: isLight,
-                        key: ValueKey<String>(
-                          '${widget.locationLabel}:$safeIndex:$displayHint',
+              alignment: Alignment.centerLeft,
+              child: _isTapOnly
+                  ? RepaintBoundary(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 520),
+                        reverseDuration: const Duration(milliseconds: 360),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        layoutBuilder: (currentChild, previousChildren) => Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            ...previousChildren,
+                            if (currentChild != null) currentChild,
+                          ],
+                        ),
+                        transitionBuilder: (child, animation) => FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        ),
+                        child: _animatedPrompt(
+                          text: displayHint,
+                          ink: ink,
+                          isLight: isLight,
+                          key: ValueKey<String>(
+                            '${widget.locationLabel}:$safeIndex:$displayHint',
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                : TextField(
-                    controller: widget.controller,
-                    onChanged: widget.onChanged,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: ink,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14.5,
-                    ),
-                    cursorColor: const Color(0xFF60A5FA),
-                    decoration: InputDecoration(
-                      hintText: widget.hint,
-                      hintStyle: GoogleFonts.plusJakartaSans(
-                        color: ink.withAlpha(130),
-                        fontWeight: FontWeight.w500,
+                    )
+                  : TextField(
+                      controller: widget.controller,
+                      onChanged: widget.onChanged,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink,
+                        fontWeight: FontWeight.w600,
                         fontSize: 14.5,
                       ),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      filled: false,
-                      fillColor: Colors.transparent,
-                      hoverColor: Colors.transparent,
-                      focusColor: Colors.transparent,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
+                      cursorColor: const Color(0xFF60A5FA),
+                      decoration: InputDecoration(
+                        hintText: widget.hint,
+                        hintStyle: GoogleFonts.plusJakartaSans(
+                          color: ink.withAlpha(130),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14.5,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        filled: false,
+                        fillColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
+                        focusColor: Colors.transparent,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 12,
+                  color: const Color(0xFF60A5FA).withAlpha(210),
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    'Powered by Gemini · AI may make mistakes.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink.withAlpha(125),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 10.5,
                     ),
                   ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 5),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 7),
+          Row(
             children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                size: 12,
-                color: const Color(0xFF60A5FA).withAlpha(210),
+              Expanded(
+                child: _outerPill(
+                  Icons.location_on_rounded,
+                  widget.locationLabel,
+                  ink,
+                  isLight,
+                  widget.onLocationTap,
+                ),
               ),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  'Powered by Gemini · AI may make mistakes.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: ink.withAlpha(125),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 10.5,
-                  ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _outerPill(
+                  Icons.calendar_month_rounded,
+                  widget.dateLabel,
+                  ink,
+                  isLight,
+                  widget.onDatesTap,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _outerPill(
+                  Icons.person_rounded,
+                  widget.guestLabel,
+                  ink,
+                  isLight,
+                  widget.onGuestsTap,
                 ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 7),
-        Row(
-          children: [
-            Expanded(
-              child: _outerPill(
-                Icons.location_on_rounded,
-                widget.locationLabel,
-                ink,
-                isLight,
-                widget.onLocationTap,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: _outerPill(
-                Icons.calendar_month_rounded,
-                widget.dateLabel,
-                ink,
-                isLight,
-                widget.onDatesTap,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: _outerPill(
-                Icons.person_rounded,
-                widget.guestLabel,
-                ink,
-                isLight,
-                widget.onGuestsTap,
-              ),
-            ),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 
