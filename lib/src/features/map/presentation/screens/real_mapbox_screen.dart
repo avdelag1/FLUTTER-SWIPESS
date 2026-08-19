@@ -11,7 +11,8 @@ import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart' hide Position, LocationSettings;
+import 'package:geolocator/geolocator.dart' as geo show LocationSettings;
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -136,7 +137,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       }
 
       final current = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
+        locationSettings: const geo.LocationSettings(
           accuracy: LocationAccuracy.high,
           timeLimit: Duration(seconds: 10),
         ),
