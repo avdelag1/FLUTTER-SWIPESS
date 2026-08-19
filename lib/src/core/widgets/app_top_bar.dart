@@ -256,16 +256,41 @@ class _ProfileAvatarButton extends StatelessWidget {
             width: AppTopBar._hudSize,
             height: AppTopBar._hudSize,
             decoration: BoxDecoration(
-              color: isLight
-                  ? Colors.white.withAlpha(210)
-                  : const Color(0xFF171C25).withAlpha(235),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isLight
+                    ? const [
+                        Color(0xFAFFFFFF),
+                        Color(0xE6E4EBF2),
+                        Color(0xF5FFFFFF),
+                      ]
+                    : const [
+                        Color(0xF0444B55),
+                        Color(0xEA20262F),
+                        Color(0xF02E3540),
+                      ],
+                stops: const [0, .58, 1],
+              ),
               shape: BoxShape.circle,
               border: Border.all(
                 color: isLight
-                    ? Colors.black.withAlpha(20)
-                    : Colors.white.withAlpha(45),
-                width: .65,
+                    ? Colors.white.withAlpha(235)
+                    : Colors.white.withAlpha(105),
+                width: .9,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(isLight ? 20 : 62),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.white.withAlpha(isLight ? 90 : 18),
+                  blurRadius: 4,
+                  offset: const Offset(-1, -1),
+                ),
+              ],
               image: avatarUrl != null
                   ? DecorationImage(
                       image: NetworkImage(avatarUrl!),
@@ -317,16 +342,43 @@ class _HudButton extends StatelessWidget {
                 : null,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isLight
-                  ? Colors.white.withAlpha(210)
-                  : const Color(0xFF171C25).withAlpha(235),
+              // Static frozen-glass surface: layered icy highlights without a
+              // live backdrop filter over the dashboard/video content.
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isLight
+                    ? const [
+                        Color(0xFAFFFFFF),
+                        Color(0xE6E4EBF2),
+                        Color(0xF5FFFFFF),
+                      ]
+                    : const [
+                        Color(0xF0444B55),
+                        Color(0xEA20262F),
+                        Color(0xF02E3540),
+                      ],
+                stops: const [0, .58, 1],
+              ),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: isLight
-                    ? Colors.black.withAlpha(20)
-                    : Colors.white.withAlpha(45),
-                width: .65,
+                    ? Colors.white.withAlpha(235)
+                    : Colors.white.withAlpha(105),
+                width: .9,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(isLight ? 20 : 62),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.white.withAlpha(isLight ? 90 : 18),
+                  blurRadius: 4,
+                  offset: const Offset(-1, -1),
+                ),
+              ],
             ),
             child: child,
           ),
