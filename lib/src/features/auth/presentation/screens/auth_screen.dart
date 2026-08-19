@@ -68,6 +68,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    if (_isLoading) return;
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     if (email.isEmpty || password.isEmpty) {
@@ -223,6 +224,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               controller: _nameController,
                               hint: 'Full Name',
                               icon: Icons.person_outline_rounded,
+                              textInputAction: TextInputAction.next,
                             ),
                             const SizedBox(height: 14),
                           ],
@@ -231,6 +233,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             hint: 'Email Address',
                             icon: Icons.mail_outline_rounded,
                             keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
                           ),
                           const SizedBox(height: 14),
                           _buildInput(
@@ -239,6 +242,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             icon: Icons.lock_outline_rounded,
                             obscureText: _obscurePassword,
                             isPassword: true,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) {
+                              if (!_isLoading) _handleSubmit();
+                            },
                             onTogglePassword: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
@@ -396,6 +403,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     bool isPassword = false,
     VoidCallback? onTogglePassword,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onSubmitted,
   }) {
     return GlassTextField(
       controller: controller,
@@ -404,6 +413,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       obscureText: obscureText,
       onToggleObscure: isPassword ? onTogglePassword : null,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onSubmitted: onSubmitted,
       height: 54,
     );
   }
