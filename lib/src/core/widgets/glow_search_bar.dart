@@ -50,14 +50,13 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
       'What are you looking for today?',
       'Find something worth your time',
       'Show me something nearby',
+      'Need a trusted mechanic?',
+      'Find a great place to eat',
+      'Show me homes for rent',
+      'Find trusted workers',
       'What’s happening around $place tonight?',
-      'Find a great place to eat in $place',
-      'Show me homes for rent in $place',
-      'Find trusted workers in $place',
-      'Find a private chef in $place',
       'Need local legal help in $place?',
       'What’s popular around $place right now?',
-      'Create a listing in $place',
     ];
   }
 
@@ -185,6 +184,29 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                size: 12,
+                color: const Color(0xFF60A5FA).withAlpha(210),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'Powered by Gemini · AI may make mistakes.',
+                style: GoogleFonts.plusJakartaSans(
+                  color: ink.withAlpha(125),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 10.5,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 7),
