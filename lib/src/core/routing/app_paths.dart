@@ -29,6 +29,7 @@ abstract final class AppPaths {
   static const clientVapId = '/client/vap-id';
 
   static const ownerDashboard = '/owner/dashboard';
+  static const businessDashboard = '/business/dashboard';
   static const ownerProfile = '/owner/profile';
   static const ownerSettings = '/owner/settings';
   static const ownerProperties = '/owner/properties';
@@ -66,6 +67,9 @@ abstract final class AppPaths {
   static const faqOwner = '/faq/owner';
   static const map = '/map';
 
+  static const adminDashboard = '/admin/dashboard';
+  static const legalAdminDashboard = '/admin/legal';
+  static const lawyerDashboard = '/lawyer/dashboard';
   static const adminEventos = '/admin/eventos';
   static const adminPhotos = '/admin/photos';
   static const adminCategoryPhotos = '/admin/category-photos';
