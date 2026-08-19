@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/data/subscription_repository.dart';
-import 'package:flutter_swipes/src/features/subscriptions/domain/subscription_tier.dart';
 
 final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
   return SubscriptionRepository();
 });
 
-final subscriptionProvider = AsyncNotifierProvider<SubscriptionNotifier, SubscriptionData>(() {
+final subscriptionProvider =
+    AsyncNotifierProvider<SubscriptionNotifier, SubscriptionData>(() {
   return SubscriptionNotifier();
 });
 
@@ -22,6 +23,12 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionData> {
       _disposeRegistered = true;
       ref.onDispose(() => _trialExpiryTimer?.cancel());
     }
+
+    // Entitlements must be recalculated whenever the signed-in account changes.
+    // This prevents a stale free state from a previous/anonymous session from
+    // blocking AI, Events, Legal or the Virtual ID after login.
+    ref.watch(currentUserProvider);
+
     final repo = ref.watch(subscriptionRepositoryProvider);
     final data = await repo.fetchCurrent();
     _scheduleTrialExpiryRefresh(data);
