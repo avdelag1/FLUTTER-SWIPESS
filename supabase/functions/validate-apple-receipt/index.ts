@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { receipt, productId, transactionId } = await req.json()
+    const { receipt, productId, transactionId, submissionId } = await req.json()
     if (!receipt || !productId) {
       return new Response(JSON.stringify({ ok: false, error: 'Missing receipt or productId' }), {
         status: 400,
@@ -82,21 +82,17 @@ Deno.serve(async (req) => {
       })
     }
 
-    const knownProduct =
-      productId in SUBSCRIPTIONS || productId in TOKENS || EVENT_PROMOS.has(productId)
+    const isEventPromo = EVENT_PROMOS.has(productId)
+    const knownProduct = productId in SUBSCRIPTIONS || productId in TOKENS || isEventPromo
     if (!knownProduct) {
       return new Response(JSON.stringify({ ok: false, error: 'Unknown product' }), {
         status: 400,
         headers,
       })
     }
-
-    // Native event promotion entitlements are intentionally not shipped yet.
-    // Reject them before contacting Apple or reserving an audit row so the
-    // client receives a deterministic validation error rather than a 500.
-    if (EVENT_PROMOS.has(productId)) {
+    if (isEventPromo && !submissionId) {
       return new Response(
-        JSON.stringify({ ok: false, error: 'Event promo purchases are not supported yet' }),
+        JSON.stringify({ ok: false, error: 'Approved promotion submission is required' }),
         { status: 400, headers },
       )
     }
@@ -135,9 +131,6 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey)
     const userId = userData.user.id
 
-    // Reserve the Apple transaction before granting anything. The database has
-    // a unique replay guard on (source, action, purchase_token), so two retries
-    // cannot grant the same transaction twice.
     const { data: audit, error: auditError } = await admin
       .from('purchase_audit_log')
       .insert({
@@ -151,6 +144,7 @@ Deno.serve(async (req) => {
         metadata: {
           status: 'processing',
           environment: verified.environment ?? 'Production',
+          ...(submissionId ? { submissionId } : {}),
         },
       })
       .select('id')
@@ -158,6 +152,24 @@ Deno.serve(async (req) => {
 
     if (auditError) {
       if (auditError.code === '23505') {
+        if (isEventPromo) {
+          const { data: existing } = await admin
+            .from('business_promo_submissions')
+            .select('id, status, payment_transaction_id, is_review_demo')
+            .eq('id', submissionId)
+            .eq('user_id', userId)
+            .maybeSingle()
+          const alreadyFinalized =
+            existing &&
+            existing.payment_transaction_id === txKey &&
+            (existing.is_review_demo === true || existing.status === 'paid' || existing.status === 'live')
+          if (!alreadyFinalized) {
+            return new Response(
+              JSON.stringify({ ok: false, error: 'Apple transaction was already used' }),
+              { status: 409, headers },
+            )
+          }
+        }
         return new Response(JSON.stringify({ ok: true, alreadyProcessed: true, productId }), {
           status: 200,
           headers,
@@ -214,6 +226,14 @@ Deno.serve(async (req) => {
           notes: `Apple IAP: ${productId}`,
         })
         if (tokenError) throw tokenError
+      } else if (isEventPromo) {
+        const { error: promoError } = await admin.rpc('finalize_event_promo_purchase', {
+          p_user_id: userId,
+          p_submission_id: submissionId,
+          p_product_id: productId,
+          p_transaction_id: txKey,
+        })
+        if (promoError) throw promoError
       }
 
       await admin
@@ -223,13 +243,13 @@ Deno.serve(async (req) => {
             status: 'granted',
             environment: verified.environment ?? 'Production',
             productId,
+            ...(submissionId ? { submissionId } : {}),
           },
         })
         .eq('id', audit.id)
 
       return new Response(JSON.stringify({ ok: true, productId }), { status: 200, headers })
     } catch (grantError) {
-      // Allow a legitimate retry if the entitlement write itself failed.
       await admin.from('purchase_audit_log').delete().eq('id', audit.id)
       throw grantError
     }

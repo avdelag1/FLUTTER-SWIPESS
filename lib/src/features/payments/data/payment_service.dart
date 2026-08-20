@@ -28,20 +28,23 @@ class PaymentService {
 
   Future<void> logOut() async {}
 
-  Future<CheckoutResult> buy(IapOffer offer) {
+  Future<CheckoutResult> buy(IapOffer offer, {String? contextId}) {
     return _orchestrator.purchase(
       storeProductId: offer.storeProductId,
       paypalPath: offer.paypalPath,
+      contextId: contextId,
     );
   }
 
   Future<CheckoutResult> buyProduct({
     required String storeProductId,
     String? paypalPath,
+    String? contextId,
   }) {
     return _orchestrator.purchase(
       storeProductId: storeProductId,
       paypalPath: paypalPath,
+      contextId: contextId,
     );
   }
 

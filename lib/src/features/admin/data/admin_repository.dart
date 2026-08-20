@@ -59,7 +59,7 @@ class AdminRepository {
       final rows = await _client
           .from('business_promo_submissions')
           .select(
-            'id, user_id, title, description, event_type, location, contact_name, contact_phone, status, created_at, website, image_url, video_url',
+            'id, user_id, title, description, event_type, location, contact_name, contact_phone, status, created_at, website, image_url, video_url, package, approved_at, paid_at, payment_product_id, published_event_id, is_review_demo',
           )
           .order('created_at', ascending: false)
           .limit(200);
@@ -111,36 +111,20 @@ class AdminRepository {
         .eq('id', id);
   }
 
+  /// Moderation approval is deliberately separated from payment. Approving a
+  /// submission only unlocks checkout; the verified StoreKit transaction is
+  /// what atomically creates/publishes the event in the backend.
   Future<void> approveSubmission(PromoSubmission sub) async {
-    final payload = <String, dynamic>{
-      'title': sub.title,
-      'description': sub.description,
-      'category': sub.eventType ?? 'promo',
-      'image_url': sub.imageUrl,
-      'video_url': sub.videoUrl,
-      'location': sub.location,
-      'organizer_name': sub.contactName,
-      'organizer_whatsapp': sub.contactPhone,
-      'organizer_website': sub.website,
-      'is_approved': true,
-      'is_published': true,
-      'created_by': sub.userId,
-    };
-    try {
-      await _client.from('events').insert(payload);
-    } catch (_) {
-      payload.remove('organizer_website');
-      try {
-        await _client.from('events').insert(payload);
-      } catch (_) {
-        payload.remove('video_url');
-        await _client.from('events').insert(payload);
-      }
-    }
+    final now = DateTime.now().toUtc().toIso8601String();
     await _client
         .from('business_promo_submissions')
-        .update({'status': 'approved'})
+        .update({
+          'status': 'approved',
+          'approved_at': now,
+          'updated_at': now,
+        })
         .eq('id', sub.id);
+
     if (sub.userId != null) {
       try {
         await _client.rpc(
@@ -148,9 +132,9 @@ class AdminRepository {
           params: {
             'p_user_id': sub.userId,
             'p_notification_type': 'system_announcement',
-            'p_title': 'Your event is live! 🎉',
+            'p_title': 'Event approved — complete purchase',
             'p_message':
-                '"${sub.title}" was approved and is now featured in the Events feed.',
+                '“${sub.title}” passed review. Open Events → Promote to choose a plan and complete the native App Store purchase. You have not been charged yet.',
           },
         );
       } catch (_) {}
@@ -171,7 +155,7 @@ class AdminRepository {
             'p_notification_type': 'system_announcement',
             'p_title': 'Event submission update',
             'p_message':
-                '"${sub.title}" wasn\'t approved this time. You can edit and resubmit it from the Advertise page.',
+                '“${sub.title}” wasn\'t approved this time. You were not charged. You can edit and resubmit it from the Advertise page.',
           },
         );
       } catch (_) {}

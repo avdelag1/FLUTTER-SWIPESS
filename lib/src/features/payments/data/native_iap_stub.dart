@@ -6,7 +6,8 @@ class NativeIap {
 
   Future<void> init() async {}
 
-  Future<CheckoutResult> purchase(String _) async => CheckoutResult.unavailable;
+  Future<CheckoutResult> purchase(String _, {String? contextId}) async =>
+      CheckoutResult.unavailable;
 
   Future<CheckoutResult> restore() async => CheckoutResult.unavailable;
 
