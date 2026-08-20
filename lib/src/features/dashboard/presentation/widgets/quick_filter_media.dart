@@ -143,12 +143,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
   void _reshuffle(List<String> sources) {
     _pool = List<String>.from(sources);
-    if (_pool.length > 1) {
+    if (_pool.length > 2) {
+      // Source 0 is the art-directed hero for this category. Keep it stable so
+      // the first paint is intentional, then randomize only the secondary media.
+      final hero = _pool.removeAt(0);
       _pool.shuffle(
         math.Random(
           DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
         ),
       );
+      _pool.insert(0, hero);
     }
     _index = 0;
   }
@@ -337,6 +341,22 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     return null;
   }
 
+  Widget _localFallbackFor(String failedUrl) {
+    for (final source in _pool) {
+      if (source != failedUrl && source.startsWith('assets/')) {
+        return Image.asset(
+          source,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (_, _, _) =>
+              const ColoredBox(color: Color(0xFF15171C)),
+        );
+      }
+    }
+    return const ColoredBox(color: Color(0xFF15171C));
+  }
+
   Widget _buildStill(String url) {
     if (url.startsWith('assets/')) {
       return Image.asset(
@@ -344,7 +364,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
+        errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF15171C)),
       );
     }
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -358,7 +378,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       cacheWidth: cacheW,
       filterQuality: FilterQuality.medium,
       gaplessPlayback: true,
-      errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
+      errorBuilder: (_, _, _) => _localFallbackFor(url),
     );
   }
 
@@ -381,7 +401,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
       final fallback = _fallbackStillUrl();
       if (fallback != null) return _buildStill(fallback);
-      return const ColoredBox(color: Colors.black);
+      return const ColoredBox(color: Color(0xFF15171C));
     }
     return _buildStill(url);
   }
@@ -390,7 +410,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   Widget build(BuildContext context) {
     final sources = _sources;
     if (sources.isEmpty) {
-      return const ColoredBox(color: Colors.black);
+      return const ColoredBox(color: Color(0xFF15171C));
     }
     final current = sources[_index % sources.length];
     final soundOn = ref.watch(deckSoundOnProvider);
