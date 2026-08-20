@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -318,7 +319,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     }
   }
 
-  Future<void> _openEvents(List<Event> videos) async {
+  void _openEvents(List<Event> videos) {
     if (_leavingForEvents || !_routeActive) return;
     final current = _currentOf(videos);
     final player = _player;
@@ -333,6 +334,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       EventPreviewHandoff.clear();
     }
 
+    // Route first. Native/web video shutdown can take hundreds of milliseconds
+    // and must never sit in the user's tap-to-events critical path.
     _leavingForEvents = true;
     _visibleFraction = 0;
     player?.removeListener(_onTick);
@@ -341,6 +344,15 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _boundUrl = null;
     _musicUrl = null;
 
+    AppHaptics.medium();
+    widget.onTap?.call();
+    unawaited(_releaseDepartingPlayers(player, music));
+  }
+
+  Future<void> _releaseDepartingPlayers(
+    VideoPlayerController? player,
+    VideoPlayerController? music,
+  ) async {
     try {
       await player?.setVolume(0);
       await music?.setVolume(0);
@@ -349,11 +361,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       await player?.dispose();
       await music?.dispose();
     } catch (_) {
-      // The route change is more important than a native player already closing.
+      // Navigation already happened; a player closing late is non-blocking.
     }
-    if (!mounted) return;
-    AppHaptics.medium();
-    widget.onTap?.call();
   }
 
   Widget _fallbackMedia(Event? current) {
