@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
+import 'package:flutter_swipes/src/features/events/data/event_engagement_tracker.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -12,6 +15,18 @@ class EventConnectBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void openTracked(Uri? uri, String action, String channel) {
+      unawaited(
+        EventEngagementTracker.track(
+          event,
+          action,
+          source: 'event_connect_bar',
+          metadata: <String, dynamic>{'channel': channel},
+        ),
+      );
+      unawaited(EventConnect.open(uri));
+    }
+
     final items = <_Chip>[
       if (event.hasWhatsApp)
         _Chip(
@@ -19,8 +34,10 @@ class EventConnectBar extends StatelessWidget {
           icon: Icons.chat_rounded,
           color: const Color(0xFF25D366),
           filled: true,
-          onTap: () => EventConnect.open(
+          onTap: () => openTracked(
             EventConnect.whatsAppUri(event.organizerWhatsapp, message: message),
+            'tap_whatsapp',
+            'whatsapp',
           ),
         ),
       if (EventConnect.instagramUri(event.organizerInstagram) != null)
@@ -28,8 +45,10 @@ class EventConnectBar extends StatelessWidget {
           label: 'Instagram',
           icon: Icons.camera_alt_rounded,
           color: const Color(0xFFE1306C),
-          onTap: () => EventConnect.open(
+          onTap: () => openTracked(
             EventConnect.instagramUri(event.organizerInstagram),
+            'tap_contact',
+            'instagram',
           ),
         ),
       if (EventConnect.websiteUri(event.organizerWebsite) != null)
@@ -37,8 +56,10 @@ class EventConnectBar extends StatelessWidget {
           label: 'Website',
           icon: Icons.language_rounded,
           color: const Color(0xFF38BDF8),
-          onTap: () => EventConnect.open(
+          onTap: () => openTracked(
             EventConnect.websiteUri(event.organizerWebsite),
+            'tap_contact',
+            'website',
           ),
         ),
       if (EventConnect.facebookUri(event.organizerFacebook) != null)
@@ -46,8 +67,10 @@ class EventConnectBar extends StatelessWidget {
           label: 'Facebook',
           icon: Icons.public_rounded,
           color: const Color(0xFF1877F2),
-          onTap: () => EventConnect.open(
+          onTap: () => openTracked(
             EventConnect.facebookUri(event.organizerFacebook),
+            'tap_contact',
+            'facebook',
           ),
         ),
     ];
