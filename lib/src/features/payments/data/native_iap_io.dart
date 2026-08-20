@@ -13,6 +13,7 @@ class NativeIap {
   final InAppPurchase _store;
   StreamSubscription<List<PurchaseDetails>>? _sub;
   final _pending = <String, Completer<CheckoutResult>>{};
+  final _pendingContext = <String, String>{};
 
   Future<void> init() async {
     if (kIsWeb || _sub != null) return;
@@ -20,7 +21,7 @@ class NativeIap {
     _sub = _store.purchaseStream.listen(_onPurchases);
   }
 
-  Future<CheckoutResult> purchase(String productId) async {
+  Future<CheckoutResult> purchase(String productId, {String? contextId}) async {
     if (kIsWeb) return CheckoutResult.unavailable;
     await init();
     if (!await _store.isAvailable()) return CheckoutResult.unavailable;
@@ -35,6 +36,9 @@ class NativeIap {
 
     final completer = Completer<CheckoutResult>();
     _pending[productId] = completer;
+    if (contextId != null && contextId.trim().isNotEmpty) {
+      _pendingContext[productId] = contextId.trim();
+    }
 
     // Cap registers plus.* as PAID_SUBSCRIPTION and tokens/promo as CONSUMABLE.
     final started = IapCatalog.subscriptionIds.contains(productId)
@@ -42,6 +46,7 @@ class NativeIap {
         : await _store.buyConsumable(purchaseParam: param);
     if (!started) {
       _pending.remove(productId);
+      _pendingContext.remove(productId);
       return CheckoutResult.error;
     }
 
@@ -49,6 +54,7 @@ class NativeIap {
       const Duration(minutes: 2),
       onTimeout: () {
         _pending.remove(productId);
+        _pendingContext.remove(productId);
         return CheckoutResult.cancelled;
       },
     );
@@ -71,7 +77,7 @@ class NativeIap {
 
       var result = CheckoutResult.error;
       var validationPassed = false;
-      
+
       if (purchase.status == PurchaseStatus.purchased) {
         validationPassed = await _validate(purchase);
         result = validationPassed ? CheckoutResult.purchased : CheckoutResult.error;
@@ -80,16 +86,17 @@ class NativeIap {
         result = validationPassed ? CheckoutResult.restored : CheckoutResult.error;
       } else if (purchase.status == PurchaseStatus.canceled) {
         result = CheckoutResult.cancelled;
-        validationPassed = true; // no validation needed for cancel
+        validationPassed = true;
       } else if (purchase.status == PurchaseStatus.error) {
         result = CheckoutResult.error;
-        validationPassed = true; // no validation needed for error
+        validationPassed = true;
       }
 
       if (purchase.pendingCompletePurchase && validationPassed) {
         await _store.completePurchase(purchase);
       }
 
+      _pendingContext.remove(purchase.productID);
       final pending = _pending.remove(purchase.productID);
       if (pending != null && !pending.isCompleted) {
         pending.complete(result);
@@ -103,6 +110,7 @@ class NativeIap {
       final client = Supabase.instance.client;
       final receipt = purchase.verificationData.serverVerificationData;
       if (receipt.isEmpty) return false;
+      final submissionId = _pendingContext[purchase.productID];
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         final res = await client.functions.invoke(
           'validate-apple-receipt',
@@ -110,6 +118,7 @@ class NativeIap {
             'productId': purchase.productID,
             'transactionId': purchase.purchaseID,
             'receipt': receipt,
+            if (submissionId != null) 'submissionId': submissionId,
           },
         );
         final data = res.data;
@@ -117,12 +126,16 @@ class NativeIap {
       }
       final res = await client.functions.invoke(
         'validate-google-play-purchase',
-        body: {'productId': purchase.productID, 'purchaseToken': receipt},
+        body: {
+          'productId': purchase.productID,
+          'purchaseToken': receipt,
+          if (submissionId != null) 'submissionId': submissionId,
+        },
       );
       final data = res.data;
       return data is Map && (data['ok'] == true || data['valid'] == true);
     } catch (e) {
-      debugPrint('IAP validate skipped: $e');
+      debugPrint('IAP validation failed: $e');
       return false;
     }
   }
@@ -130,5 +143,6 @@ class NativeIap {
   Future<void> dispose() async {
     await _sub?.cancel();
     _sub = null;
+    _pendingContext.clear();
   }
 }
