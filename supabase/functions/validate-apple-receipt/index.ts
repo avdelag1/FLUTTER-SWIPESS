@@ -155,14 +155,14 @@ Deno.serve(async (req) => {
         if (isEventPromo) {
           const { data: existing } = await admin
             .from('business_promo_submissions')
-            .select('id, status, payment_transaction_id')
+            .select('id, status, payment_transaction_id, is_review_demo')
             .eq('id', submissionId)
             .eq('user_id', userId)
             .maybeSingle()
           const alreadyFinalized =
             existing &&
-            (existing.status === 'paid' || existing.status === 'live') &&
-            existing.payment_transaction_id === txKey
+            existing.payment_transaction_id === txKey &&
+            (existing.is_review_demo === true || existing.status === 'paid' || existing.status === 'live')
           if (!alreadyFinalized) {
             return new Response(
               JSON.stringify({ ok: false, error: 'Apple transaction was already used' }),
