@@ -45,18 +45,22 @@ class BentoMediaPools {
           'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'motorcycle':
-        // The local hero is the reliable ad-style anchor; the editorial shots
-        // add racer / road variety around the scooter + quad concept.
         return const [
           AppAssets.filterMotorcycle,
+          // Vespa / scooter lifestyle.
+          'https://unsplash.com/photos/948-Gq5HqhA/download?force=true&w=1000',
+          // Sport / racer motorcycle.
           'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
-          'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=92',
+          // Quad / ATV action.
+          'https://unsplash.com/photos/7aTvdifysGg/download?force=true&w=1000',
         ];
       case 'bicycle':
-        // Keep this pool local-first and local-only: these two art-directed
-        // images guarantee the bicycle tile never disappears on a CDN error.
         return const [
           AppAssets.filterBicycle,
+          // Fat-tire electric bike with an ocean backdrop.
+          'https://unsplash.com/photos/AXRzAfhS9Gg/download?force=true&w=1000',
+          // Beach cruiser / fat-bike pairing.
+          'https://unsplash.com/photos/A_9I3vrKzx4/download?force=true&w=1000',
           AppAssets.filterBicycleSunset,
         ];
       case 'seekers':
