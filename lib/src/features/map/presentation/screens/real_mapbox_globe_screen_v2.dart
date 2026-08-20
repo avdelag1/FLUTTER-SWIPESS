@@ -486,10 +486,10 @@ class _RealMapboxGlobeScreenV2State
 
               for (final pin in pins)
                 if (_pinPixels[_pinKey(pin)] case final Offset pixel)
-                  if (onScreen(pixel)) ...[
+                  if (onScreen(pixel, margin: 110)) ...[
                     Positioned(
-                      left: pixel.dx - 20,
-                      top: pixel.dy - 20,
+                      left: pixel.dx - 62,
+                      top: pixel.dy - 74,
                       child: _ProjectedPin(
                         pin: pin,
                         selected: _isSelected(pin),
@@ -501,7 +501,7 @@ class _RealMapboxGlobeScreenV2State
                         left: (pixel.dx - 118)
                             .clamp(8.0, math.max(8.0, constraints.maxWidth - 244))
                             .toDouble(),
-                        top: math.max(8, pixel.dy - 116).toDouble(),
+                        top: math.max(8, pixel.dy - 134).toDouble(),
                         child: _PinPreview(
                           pin: pin,
                           onOpen: () => _openPin(pin),
@@ -705,50 +705,107 @@ class _ProjectedPin extends StatelessWidget {
     return _accentPalette[hash % _accentPalette.length];
   }
 
+  String _label() {
+    final raw = pin.isListing
+        ? (pin.listing?.formattedPrice ?? 'Listing')
+        : (pin.profile?.displayName ?? 'Member');
+    final clean = raw.trim().isEmpty ? (pin.isListing ? 'Listing' : 'Member') : raw.trim();
+    if (clean.length <= 17) return clean;
+    return '${clean.substring(0, 15)}…';
+  }
+
   @override
   Widget build(BuildContext context) {
     final accent = _accentForPin();
     final fill = pin.isListing
-        ? Color.alphaBlend(accent.withAlpha(72), const Color(0xFF111318))
-        : Color.alphaBlend(accent.withAlpha(18), Colors.white);
+        ? Color.alphaBlend(accent.withAlpha(86), const Color(0xFF111318))
+        : Color.alphaBlend(accent.withAlpha(22), Colors.white);
+    final markerSize = selected ? 52.0 : 48.0;
+    final label = _label();
 
     return Semantics(
       button: true,
-      label: pin.isListing ? 'Listing marker' : 'User marker',
+      label: pin.isListing ? 'Listing $label' : 'User $label',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          borderRadius: BorderRadius.circular(999),
           hoverColor: Colors.transparent,
           onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: fill,
-              border: Border.all(
-                color: selected ? Colors.white : accent,
-                width: selected ? 3 : 2.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withAlpha(selected ? 125 : 68),
-                  blurRadius: selected ? 16 : 10,
-                  spreadRadius: selected ? 1.2 : 0,
+          child: SizedBox(
+            width: 124,
+            height: 74,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  constraints: const BoxConstraints(maxWidth: 118),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? const Color(0xF211141A)
+                        : const Color(0xEFFFFFFF),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: selected ? Colors.white : accent.withAlpha(210),
+                      width: selected ? 1.4 : 1.0,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x48000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: selected ? Colors.white : const Color(0xFF111318),
+                      fontSize: pin.isListing ? 10.2 : 9.6,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -.1,
+                      height: 1,
+                    ),
+                  ),
                 ),
-                const BoxShadow(
-                  color: Color(0x42000000),
-                  blurRadius: 10,
+                const SizedBox(height: 3),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  width: markerSize,
+                  height: markerSize,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: fill,
+                    border: Border.all(
+                      color: selected ? Colors.white : accent,
+                      width: selected ? 3.2 : 2.6,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withAlpha(selected ? 145 : 82),
+                        blurRadius: selected ? 18 : 12,
+                        spreadRadius: selected ? 1.4 : .4,
+                      ),
+                      const BoxShadow(
+                        color: Color(0x52000000),
+                        blurRadius: 11,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
+                    size: selected ? 23 : 21,
+                    color: pin.isListing ? Colors.white : accent,
+                  ),
                 ),
               ],
-            ),
-            child: Icon(
-              pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
-              size: selected ? 19 : 17,
-              color: pin.isListing ? Colors.white : accent,
             ),
           ),
         ),
