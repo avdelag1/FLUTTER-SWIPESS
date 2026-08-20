@@ -1,7 +1,9 @@
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 
-/// Cap-style quick-filter media pools — **disjoint** per category so cards
-/// never share the same photo/video with another quick filter.
+/// Quick-filter media pools are intentionally disjoint by category so every
+/// card reads as its own destination. Local assets are mixed with editorial
+/// photography where possible so a temporary CDN failure never turns the most
+/// important discovery cards into an empty black tile.
 class BentoMediaPools {
   BentoMediaPools._();
 
@@ -9,62 +11,74 @@ class BentoMediaPools {
     switch (id) {
       case 'property':
         return const [
-          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterPropertyJungle,
+          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'events':
         return const [
-          'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterEvents,
+          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'recommended':
         return const [
-          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterRenters,
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=92',
         ];
-      case 'services': // Workers
+      case 'services': // Workers: cleaning, maintenance, wellness and pros.
         return const [
-          'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterPros,
+          'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'popular':
         return const [
-          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterBuyers,
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'yacht':
         return const [
-          'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=800&q=90',
+          'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'motorcycle':
+        // The local hero is the reliable ad-style anchor; the editorial shots
+        // add racer / road variety around the scooter + quad concept.
         return const [
-          'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterMotorcycle,
+          'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'bicycle':
+        // Keep this pool local-first and local-only: these two art-directed
+        // images guarantee the bicycle tile never disappears on a CDN error.
         return const [
-          'https://images.unsplash.com/photo-1485965120184-aafb397b3bf5?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterBicycle,
+          AppAssets.filterBicycleSunset,
         ];
       case 'seekers':
         return const [
-          'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterLeads,
+          'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'legal':
         return const [
-          'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=90',
+          'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'premium':
         return const [
-          'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=800&q=90',
-          'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterProperty,
+          'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=92',
         ];
       default:
         return const [
-          'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=90',
+          AppAssets.filterProperty,
         ];
     }
   }
