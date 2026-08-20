@@ -24,9 +24,9 @@ Use the App Review credentials supplied in App Store Connect.
 6. Tap **Continue to purchase**.
 7. The native App Store / StoreKit purchase sheet appears.
 8. Complete the sandbox purchase.
-9. Swipess verifies the Apple transaction with the backend and shows **Purchase verified**.
+9. Swipess verifies the Apple transaction with the backend and shows **Purchase verified** confirmation.
 
-The App Review sample is deliberately kept out of the public Events feed after the sandbox purchase. Normal approved customer events are published only after payment verification succeeds.
+The App Review sample is deliberately kept out of the public Events feed after the sandbox purchase. The review sample remains approved so another reviewer can repeat the consumable sandbox purchase when the screen is reopened. Normal approved customer events are published only after payment verification succeeds.
 
 ## Important reviewer notes
 
@@ -36,6 +36,7 @@ The App Review sample is deliberately kept out of the public Events feed after t
 - The purchase button is available only for an approved submission.
 - iOS event promotion uses Apple In-App Purchase; no external checkout URL is exposed in the iOS purchase path.
 - The prepared review sample avoids requiring an Apple reviewer to wait for a human moderator.
+- The prepared review sample is repeatable and never appears publicly in the Events feed.
 
 ## Product identifiers
 
