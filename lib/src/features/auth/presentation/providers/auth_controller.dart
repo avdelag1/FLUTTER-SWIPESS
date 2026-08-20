@@ -81,10 +81,15 @@ class AuthController extends AsyncNotifier<void> {
   }
 
   String _mapError(Object e) {
-    if (e is AuthException) {
-      return e.message;
+    final raw = e is AuthException ? e.message : e.toString();
+    final normalized = raw.toLowerCase();
+    if (normalized.contains('banned') ||
+        normalized.contains('user_banned') ||
+        normalized.contains('account is disabled')) {
+      return 'This account is unavailable. Contact support if you need assistance.';
     }
-    return e.toString().replaceAll('Exception: ', '');
+    if (e is AuthException) return e.message;
+    return raw.replaceAll('Exception: ', '');
   }
 }
 
