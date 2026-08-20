@@ -177,8 +177,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     final center = const ui.Offset(size / 2, size / 2);
 
     if (location) {
-      // Classic navigation puck: soft blue accuracy halo, crisp white ring and
-      // solid blue core. No glyph — the dot itself always means "you".
       final halo = ui.Paint()..color = const Color(0x33147DFF);
       canvas.drawCircle(center, 31, halo);
 
@@ -450,7 +448,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           PointAnnotationOptions(
             geometry: _point(pin.lat, pin.lng),
             image: _listingIcon,
-            iconSize: 0.82,
+            iconSize: 1.08,
             symbolSortKey: 5000,
           ),
     ];
@@ -464,7 +462,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           PointAnnotationOptions(
             geometry: _point(pin.lat, pin.lng),
             image: _peopleIcon,
-            iconSize: 0.78,
+            iconSize: 1.02,
             symbolSortKey: 6000,
           ),
     ];
@@ -926,7 +924,9 @@ class _SelectedPinCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = pin.isListing ? (pin.listing?.title ?? 'Listing') : (pin.profile?.displayName ?? 'Swipess member');
-    final subtitle = pin.isListing ? (pin.listing?.city ?? 'Nearby listing') : (pin.profile?.city ?? 'Nearby member');
+    final subtitle = pin.isListing
+        ? (pin.listing?.formattedPrice ?? pin.listing?.city ?? 'Nearby listing')
+        : (pin.profile?.city ?? 'Nearby member');
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
