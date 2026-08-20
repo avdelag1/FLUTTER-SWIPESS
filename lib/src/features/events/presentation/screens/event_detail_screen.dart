@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
+import 'package:flutter_swipes/src/features/events/data/event_engagement_tracker.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/event_connect_bar.dart';
@@ -39,6 +42,22 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   void initState() {
     super.initState();
     _pages = PageController();
+    unawaited(
+      EventEngagementTracker.track(
+        event,
+        'impression',
+        source: 'event_detail',
+        oncePerSession: true,
+      ),
+    );
+    unawaited(
+      EventEngagementTracker.track(
+        event,
+        'tap_detail',
+        source: 'event_detail',
+        oncePerSession: true,
+      ),
+    );
   }
 
   @override
@@ -81,6 +100,15 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           .read(eventRepositoryProvider)
           .setFavorited(event.id, favorited: !current);
       ref.invalidate(eventFavoriteProvider(event.id));
+      if (!current) {
+        unawaited(
+          EventEngagementTracker.track(
+            event,
+            'tap_like',
+            source: 'event_detail',
+          ),
+        );
+      }
     } catch (_) {
       setState(() => _favoritedOverride = current);
       if (mounted) {
@@ -95,6 +123,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Future<void> _share() async {
     AppHaptics.light();
+    unawaited(
+      EventEngagementTracker.track(
+        event,
+        'tap_share',
+        source: 'event_detail',
+        metadata: const <String, dynamic>{'method': 'copy_link'},
+      ),
+    );
     final text = 'Check out ${event.title} on Swipess! ${event.shareUrl}';
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
@@ -105,6 +141,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   Future<void> _addToCalendar() async {
     AppHaptics.light();
+    unawaited(
+      EventEngagementTracker.track(
+        event,
+        'tap_calendar',
+        source: 'event_detail',
+      ),
+    );
     final start =
         event.eventDate ?? DateTime.now().add(const Duration(days: 1));
     final end = event.eventEndDate ?? start.add(const Duration(hours: 2));
@@ -126,6 +169,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Future<void> _whatsApp() async {
     if (!event.hasWhatsApp) return;
     AppHaptics.heavy();
+    unawaited(
+      EventEngagementTracker.track(
+        event,
+        'tap_whatsapp',
+        source: 'event_detail_primary_cta',
+        metadata: const <String, dynamic>{'channel': 'whatsapp'},
+      ),
+    );
     await EventConnect.open(
       EventConnect.whatsAppUri(
         event.organizerWhatsapp,
