@@ -22,10 +22,11 @@ class PaymentOrchestrator {
   Future<CheckoutResult> purchase({
     required String storeProductId,
     String? paypalPath,
+    String? contextId,
   }) async {
     await init();
     if (IapCatalog.usesNativeStore) {
-      return _native.purchase(storeProductId);
+      return _native.purchase(storeProductId, contextId: contextId);
     }
 
     final url = IapCatalog.paypalUrl(paypalPath);
