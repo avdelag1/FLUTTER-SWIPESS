@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/features/events/data/event_engagement_tracker.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -103,6 +106,22 @@ class EventDetailRouteScreen extends ConsumerWidget {
             ),
           );
         }
+        unawaited(
+          EventEngagementTracker.track(
+            event,
+            'impression',
+            source: 'event_detail',
+            oncePerSession: true,
+          ),
+        );
+        unawaited(
+          EventEngagementTracker.track(
+            event,
+            'tap_detail',
+            source: 'event_detail',
+            oncePerSession: true,
+          ),
+        );
         return EventDetailScreen(event: event);
       },
     );
