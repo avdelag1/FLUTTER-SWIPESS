@@ -16,7 +16,7 @@ abstract final class IapCatalog {
       durationLabel: '/month',
       paypalPath: 'QSRXCJYYQ2UGY',
       benefits: [
-        'Direct Requests included — only spent when accepted',
+        '15 Direct Requests included — only spent when accepted',
         'More active listings',
         'Better marketplace visibility',
         'AI Concierge — 15 messages/day',
@@ -34,7 +34,7 @@ abstract final class IapCatalog {
       paypalPath: 'HUESWJ68BRUSY',
       popular: true,
       benefits: [
-        'More Direct Requests — only spent when accepted',
+        '25 Direct Requests included — only spent when accepted',
         'Higher active-listing limits',
         'Priority matching & visibility',
         'AI Concierge — 50 messages/day',
@@ -52,7 +52,7 @@ abstract final class IapCatalog {
       durationLabel: '/year',
       paypalPath: '7E6R38L33LYUJ',
       benefits: [
-        'Highest Direct Request allowance',
+        '50 Direct Requests included — only spent when accepted',
         'Maximum listing capacity',
         'Priority matching & visibility',
         'AI Concierge — Unlimited',
