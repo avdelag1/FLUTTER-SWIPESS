@@ -1,14 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap `rpc_grant_welcome_tokens` + `rpc_get_user_tokens` / `tokens` table.
+class DirectRequestTokenBalance {
+  const DirectRequestTokenBalance({
+    required this.total,
+    required this.reserved,
+    required this.available,
+  });
+
+  final int total;
+  final int reserved;
+  final int available;
+
+  static const empty = DirectRequestTokenBalance(
+    total: 0,
+    reserved: 0,
+    available: 0,
+  );
+}
+
+/// Direct Request balance + legacy premium lookup.
+///
+/// Pending Direct Requests reserve priority capacity without consuming a token.
+/// A token is deducted server-side only after the receiver accepts.
 class TokenRepository {
   TokenRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
-  /// Cap: grants **5** welcome message tokens (6 with referral). Idempotent.
+  /// Grants the existing welcome allowance. These tokens now power Direct
+  /// Requests rather than unrestricted cold conversations. Idempotent server-side.
   Future<void> grantWelcomeTokens({bool hasReferral = false}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return;
@@ -22,7 +44,37 @@ class TokenRepository {
     }
   }
 
+  Future<DirectRequestTokenBalance> fetchDirectRequestBalance() async {
+    if (_client.auth.currentUser == null) return DirectRequestTokenBalance.empty;
+    try {
+      final rpc = await _client.rpc('rpc_get_direct_request_tokens');
+      final raw = rpc is List && rpc.isNotEmpty ? rpc.first : rpc;
+      if (raw is Map) {
+        int value(String key) => (raw[key] as num?)?.toInt() ?? 0;
+        return DirectRequestTokenBalance(
+          total: value('total_tokens'),
+          reserved: value('reserved_tokens'),
+          available: value('available_tokens'),
+        );
+      }
+    } catch (_) {
+      // Compatibility fallback below for staged backend/client rollouts.
+    }
+    final legacy = await _fetchLegacyBalance();
+    return DirectRequestTokenBalance(
+      total: legacy,
+      reserved: 0,
+      available: legacy,
+    );
+  }
+
+  /// Compatibility API used by existing entitlement widgets. Balance now means
+  /// Direct Requests available to send (pending reservations are excluded).
   Future<int> fetchBalance() async {
+    return (await fetchDirectRequestBalance()).available;
+  }
+
+  Future<int> _fetchLegacyBalance() async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return 0;
     try {
@@ -48,11 +100,15 @@ class TokenRepository {
     try {
       final rows = await _client
           .from('tokens')
-          .select('remaining_activations')
+          .select('remaining_activations, expires_at')
           .eq('user_id', uid);
+      final now = DateTime.now();
       var sum = 0;
-      for (final r in rows as List) {
-        sum += ((r as Map)['remaining_activations'] as num?)?.toInt() ?? 0;
+      for (final raw in rows as List) {
+        final r = raw as Map;
+        final expires = DateTime.tryParse('${r['expires_at'] ?? ''}');
+        if (expires != null && !expires.isAfter(now)) continue;
+        sum += (r['remaining_activations'] as num?)?.toInt() ?? 0;
       }
       return sum;
     } catch (_) {
