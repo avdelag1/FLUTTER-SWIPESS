@@ -20,6 +20,7 @@ class TokensModal extends ConsumerStatefulWidget {
 
 class _TokensModalState extends ConsumerState<TokensModal> {
   bool _busy = false;
+  String? _cancellingId;
 
   Color _colorForIndex(int index) {
     switch (index % 4) {
@@ -43,6 +44,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
     setState(() => _busy = false);
     ref.invalidate(messagingEntitlementsProvider);
     ref.invalidate(directRequestBalanceProvider);
+    ref.invalidate(pendingDirectRequestsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.userMessage)),
     );
@@ -52,9 +54,40 @@ class _TokensModalState extends ConsumerState<TokensModal> {
     }
   }
 
+  Future<void> _cancelPending(String requestId) async {
+    if (_cancellingId != null) return;
+    setState(() => _cancellingId = requestId);
+    try {
+      final result = await ref
+          .read(directRequestRepositoryProvider)
+          .cancel(requestId);
+      if (!mounted) return;
+      ref.invalidate(directRequestBalanceProvider);
+      ref.invalidate(pendingDirectRequestsProvider);
+      ref.invalidate(messagingEntitlementsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.tokenReturned
+                ? 'Direct Request cancelled. Your token is available again.'
+                : 'Direct Request updated.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not cancel request: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _cancellingId = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final balance = ref.watch(directRequestBalanceProvider);
+    final pending = ref.watch(pendingDirectRequestsProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -146,77 +179,72 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               Expanded(
-                child: ListView.separated(
+                child: ListView(
                   physics: const ClampingScrollPhysics(),
-                  itemCount: IapCatalog.tokens.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final offer = IapCatalog.tokens[index];
-                    final accent = _colorForIndex(index);
-                    final count = offer.tokens ?? 0;
-                    final badge = index == 1
-                        ? 'POPULAR'
-                        : index == IapCatalog.tokens.length - 1
-                            ? 'BEST VALUE'
-                            : null;
-                    return SwipessTierCard(
-                      accentColor: accent,
-                      badgeLabel: badge,
-                      isHighlighted: badge != null,
-                      onTap: _busy ? null : () => _buy(context, offer),
-                      child: Row(
-                        children: [
-                          SwipessIconTile(
-                            icon: Icons.bolt_rounded,
-                            accentColor: accent,
-                            size: 46,
-                            iconSize: 23,
-                          ),
-                          const SizedBox(width: 13),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '$count DIRECT REQUESTS',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: accent,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 12,
-                                    letterSpacing: .5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  offer.priceLabel,
-                                  style: SwipessTokens.priceOversized(fontSize: 23),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  offer.description ?? '',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white45,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                  children: [
+                    pending.when(
+                      data: (requests) {
+                        if (requests.isEmpty) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'PENDING',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.3,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          SizedBox(
-                            width: 76,
-                            child: ElevatedButton(
-                              onPressed: _busy ? null : () => _buy(context, offer),
-                              child: const Text('GET'),
-                            ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            for (final request in requests) ...[
+                              _PendingRequestTile(
+                                request: request,
+                                cancelling:
+                                    _cancellingId == request['id']?.toString(),
+                                onCancel: () => _cancelPending(
+                                  request['id'].toString(),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            const SizedBox(height: 10),
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, _) => const SizedBox.shrink(),
+                    ),
+                    Text(
+                      'GET MORE',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.3,
                       ),
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 8),
+                    for (var index = 0;
+                        index < IapCatalog.tokens.length;
+                        index++) ...[
+                      _TokenOfferCard(
+                        offer: IapCatalog.tokens[index],
+                        accent: _colorForIndex(index),
+                        badge: index == 1
+                            ? 'POPULAR'
+                            : index == IapCatalog.tokens.length - 1
+                                ? 'BEST VALUE'
+                                : null,
+                        busy: _busy,
+                        onBuy: () => _buy(context, IapCatalog.tokens[index]),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -230,8 +258,11 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: SwipessTokens.darkWell,
-                    borderRadius: BorderRadius.circular(SwipessTokens.radiusTile),
-                    border: Border.all(color: const Color(0xFFF59E0B).withAlpha(70)),
+                    borderRadius:
+                        BorderRadius.circular(SwipessTokens.radiusTile),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withAlpha(70),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -263,7 +294,10 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white54,
+                      ),
                     ],
                   ),
                 ),
@@ -279,6 +313,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                           if (!mounted) return;
                           ref.invalidate(messagingEntitlementsProvider);
                           ref.invalidate(directRequestBalanceProvider);
+                          ref.invalidate(pendingDirectRequestsProvider);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text(result.userMessage)),
                           );
@@ -289,6 +324,154 @@ class _TokensModalState extends ConsumerState<TokensModal> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PendingRequestTile extends StatelessWidget {
+  const _PendingRequestTile({
+    required this.request,
+    required this.cancelling,
+    required this.onCancel,
+  });
+
+  final Map<String, dynamic> request;
+  final bool cancelling;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = (request['message']?.toString() ?? '').trim();
+    final expiresAt = DateTime.tryParse(
+      request['expires_at']?.toString() ?? '',
+    )?.toLocal();
+    final expiry = expiresAt == null
+        ? 'Awaiting response'
+        : 'Expires ${MaterialLocalizations.of(context).formatMediumDate(expiresAt)}';
+
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.hourglass_top_rounded,
+            color: SwipessTokens.brandOrange,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message.isEmpty ? 'Direct Request pending' : message,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$expiry · 1 token held',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white45,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: cancelling ? null : onCancel,
+            child: Text(cancelling ? 'CANCELLING…' : 'CANCEL'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TokenOfferCard extends StatelessWidget {
+  const _TokenOfferCard({
+    required this.offer,
+    required this.accent,
+    required this.badge,
+    required this.busy,
+    required this.onBuy,
+  });
+
+  final IapOffer offer;
+  final Color accent;
+  final String? badge;
+  final bool busy;
+  final VoidCallback onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = offer.tokens ?? 0;
+    return SwipessTierCard(
+      accentColor: accent,
+      badgeLabel: badge,
+      isHighlighted: badge != null,
+      onTap: busy ? null : onBuy,
+      child: Row(
+        children: [
+          SwipessIconTile(
+            icon: Icons.bolt_rounded,
+            accentColor: accent,
+            size: 46,
+            iconSize: 23,
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$count DIRECT REQUESTS',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: accent,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: .5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  offer.priceLabel,
+                  style: SwipessTokens.priceOversized(fontSize: 23),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  offer.description ?? '',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white45,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 76,
+            child: ElevatedButton(
+              onPressed: busy ? null : onBuy,
+              child: const Text('GET'),
+            ),
+          ),
+        ],
       ),
     );
   }
