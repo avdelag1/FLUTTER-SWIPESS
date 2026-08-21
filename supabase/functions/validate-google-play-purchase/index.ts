@@ -8,7 +8,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// TODO: Confirm these product IDs match the Google Play Console configuration.
 const SUBSCRIPTIONS: Record<string, string> = {
   'swipess.plus.monthly.v2': 'Basic Client',
   'swipess.plus.semestral.v2': 'Premium Client',
@@ -106,8 +105,7 @@ async function verifyWithGooglePlay(
     }
 
     const accessToken = tokenData.access_token;
-    const kind = isSubscription ? "subscriptionsv2/tokens" : "products";
-    const endpoint = isSubscription 
+    const endpoint = isSubscription
       ? `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`
       : `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}`;
 
@@ -123,7 +121,7 @@ async function verifyWithGooglePlay(
     const result = await verifyRes.json();
 
     if (isSubscription) {
-      const isActive = result.subscriptionState === 'SUBSCRIPTION_STATE_ACTIVE' || 
+      const isActive = result.subscriptionState === 'SUBSCRIPTION_STATE_ACTIVE' ||
                        result.subscriptionState === 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD' ||
                        result.subscriptionState === 'SUBSCRIPTION_STATE_CANCELED';
       const lineItem = result.lineItems && result.lineItems.find((item: any) => item.productId === productId);
@@ -133,7 +131,7 @@ async function verifyWithGooglePlay(
       }
       const expiryTime = lineItem.expiryTime;
       const notExpired = !!expiryTime && new Date(expiryTime).getTime() > Date.now();
-      
+
       return {
         verified: isActive && notExpired,
         orderId: lineItem.latestSuccessfulOrderId,
@@ -142,7 +140,6 @@ async function verifyWithGooglePlay(
       };
     }
 
-    // One-time product: purchaseState 0=purchased,1=cancelled,2=pending.
     return {
       verified: result.purchaseState === 0,
       orderId: result.orderId,
@@ -161,13 +158,11 @@ Deno.serve(async (req) => {
 
   try {
     const auth = req.headers.get('Authorization') ?? '';
-    // Service-role client for privileged DB writes (NO auth override)
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // User client for auth.getUser() only
     const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -193,7 +188,7 @@ Deno.serve(async (req) => {
     const isSubscription = productId in SUBSCRIPTIONS;
     const isToken = productId in TOKENS;
     const isPromo = EVENT_PROMOS.has(productId);
-    
+
     if (!isSubscription && !isToken && !isPromo) {
       return new Response(JSON.stringify({ ok: false, error: 'Unknown productId' }), {
         status: 400,
@@ -201,7 +196,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Server-side verification with the Google Play Developer API.
     const verification = await verifyWithGooglePlay('com.swipess.mobile', productId, purchaseToken, isSubscription);
     if (!verification.verified) {
       return new Response(JSON.stringify({ ok: false, error: 'Purchase could not be verified' }), {
@@ -210,7 +204,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Reservation pattern matching apple validator
     const { data: audit, error: auditError } = await adminClient
       .from('purchase_audit_log')
       .insert({
@@ -221,10 +214,7 @@ Deno.serve(async (req) => {
         action: 'google_play_grant',
         source: 'google',
         verified: true,
-        metadata: {
-          status: 'processing',
-          environment: 'Production',
-        },
+        metadata: { status: 'processing', environment: 'Production' },
       })
       .select('id')
       .single();
@@ -236,19 +226,18 @@ Deno.serve(async (req) => {
           .select('user_id, product_id, metadata')
           .eq('purchase_token', purchaseToken)
           .single();
-          
+
         if (existing && existing.user_id === userId && existing.product_id === productId) {
           if (existing.metadata?.status === 'granted') {
             return new Response(JSON.stringify({ ok: true, alreadyProcessed: true, productId }), {
               status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
-          } else {
-            return new Response(JSON.stringify({ ok: false, error: 'Purchase is currently processing' }), {
-              status: 409,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
           }
+          return new Response(JSON.stringify({ ok: false, error: 'Purchase is currently processing' }), {
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
         }
       }
       throw auditError;
@@ -277,7 +266,7 @@ Deno.serve(async (req) => {
           .eq('name', packageName)
           .eq('is_active', true)
           .maybeSingle();
-          
+
         if (pkgError || !pkg) throw new Error(`Subscription package unavailable: ${packageName}`);
 
         const purchaseDate = verification.startTimeMillis
@@ -287,14 +276,12 @@ Deno.serve(async (req) => {
           ? new Date(Number(verification.expiryTimeMillis)).toISOString()
           : null;
 
-        // Invalidate old active subscriptions
         await adminClient
           .from('user_subscriptions')
           .update({ is_active: false, end_date: new Date().toISOString() })
           .eq('user_id', userId)
           .eq('is_active', true);
 
-        // Insert new subscription or update if it exists
         const { error: subError } = await adminClient.from('user_subscriptions').upsert({
           user_id: userId,
           package_id: pkg.id,
@@ -305,7 +292,17 @@ Deno.serve(async (req) => {
           transaction_id: verification.orderId || clientOrderId || purchaseToken,
         }, { onConflict: 'user_id,package_id' });
         if (subError) throw subError;
-        
+
+        const { error: requestGrantError } = await adminClient.rpc(
+          'service_grant_subscription_direct_requests',
+          {
+            p_user_id: userId,
+            p_product_id: productId,
+            p_transaction_key: `google:${purchaseToken}`,
+            p_expires_at: expiresDate,
+          },
+        );
+        if (requestGrantError) throw requestGrantError;
       } else if (isToken) {
         const amount = TOKENS[productId];
         const { error: tokenError } = await adminClient.from('tokens').insert({
@@ -317,32 +314,24 @@ Deno.serve(async (req) => {
           used_activations: 0,
           activation_type: 'purchase',
           source: 'google_play',
-          notes: `Google Play IAP: ${productId}`,
+          notes: `Google Play IAP Direct Requests: ${productId}`,
         });
         if (tokenError) throw tokenError;
       } else if (isPromo) {
-        // Event promos are not fully implemented in DB schema yet.
-        // We report them as an unsupported path for now rather than inventing tables.
         throw new Error('Event promotions storage is not yet implemented.');
       }
 
       await adminClient
         .from('purchase_audit_log')
         .update({
-          metadata: {
-            status: 'granted',
-            environment: 'Production',
-            productId,
-          },
+          metadata: { status: 'granted', environment: 'Production', productId },
         })
         .eq('id', audit.id);
 
-      return new Response(JSON.stringify({ ok: true, environment: 'Production', productId, verified: true }), { 
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      return new Response(JSON.stringify({ ok: true, environment: 'Production', productId, verified: true }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-      
     } catch (grantError) {
-      // Allow a legitimate retry if the entitlement write itself failed
       await adminClient.from('google_play_transactions').delete().eq('purchase_token', purchaseToken);
       await adminClient.from('purchase_audit_log').delete().eq('id', audit.id);
       throw grantError;
