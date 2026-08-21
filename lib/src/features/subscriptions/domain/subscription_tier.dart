@@ -18,9 +18,8 @@ enum SubscriptionTier {
     }
   }
 
-  /// AI, Events and Legal are core membership benefits. The complimentary
-  /// campaign temporarily maps new users to premium; after it ends any paid
-  /// membership restores these areas.
+  /// Existing non-marketplace membership access remains unchanged by the
+  /// Direct Request redesign. Events and Legal are intentionally out of scope.
   bool get canUseAI => this != SubscriptionTier.free;
   bool get canViewEvents => this != SubscriptionTier.free;
   bool get canUseLegal => this != SubscriptionTier.free;
@@ -40,16 +39,18 @@ enum SubscriptionTier {
     }
   }
 
+  /// Included Direct Requests for the store-linked memberships.
+  /// Purchased token packs remain separate and do not expire.
   int get initialTokens {
     switch (this) {
       case SubscriptionTier.free:
         return 0;
       case SubscriptionTier.package1:
-        return 15;
+        return 6;
       case SubscriptionTier.package2:
-        return 25;
+        return 12;
       case SubscriptionTier.premium:
-        return 999999;
+        return 30;
     }
   }
 }
