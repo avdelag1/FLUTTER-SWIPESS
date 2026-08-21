@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/direct_request_controller.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -32,7 +33,6 @@ class _DirectRequestComposer extends ConsumerStatefulWidget {
 class _DirectRequestComposerState
     extends ConsumerState<_DirectRequestComposer> {
   final _controller = TextEditingController();
-  bool _sending = false;
 
   @override
   void dispose() {
@@ -42,29 +42,14 @@ class _DirectRequestComposerState
 
   Future<void> _send() async {
     final ownerId = widget.listing.ownerId;
-    if (ownerId == null || ownerId.isEmpty || _sending) return;
+    if (ownerId == null || ownerId.isEmpty) return;
 
-    final balance = await ref.read(directRequestRepositoryProvider).fetchBalance();
-    if (!mounted) return;
-    if (balance.available < 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No Direct Requests available. Get tokens or Premium to skip the wait.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _sending = true);
     try {
-      await ref.read(directRequestRepositoryProvider).send(
+      await ref.read(directRequestActionControllerProvider.notifier).send(
             receiverId: ownerId,
             listingId: widget.listing.id,
             message: _controller.text.trim(),
           );
-      ref.invalidate(directRequestBalanceProvider);
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +61,6 @@ class _DirectRequestComposerState
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _sending = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not send Direct Request: $e')),
       );
@@ -90,6 +74,8 @@ class _DirectRequestComposerState
     final ink = isLight ? Colors.black : Colors.white;
     final muted = isLight ? Colors.black54 : Colors.white60;
     final balance = ref.watch(directRequestBalanceProvider);
+    final action = ref.watch(directRequestActionControllerProvider);
+    final sending = action.isLoading;
 
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets),
@@ -189,7 +175,9 @@ class _DirectRequestComposerState
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   color: AppTheme.brandPrimary.withAlpha(16),
-                  border: Border.all(color: AppTheme.brandPrimary.withAlpha(55)),
+                  border: Border.all(
+                    color: AppTheme.brandPrimary.withAlpha(55),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -232,10 +220,10 @@ class _DirectRequestComposerState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _sending ? null : _send,
+                  onPressed: sending ? null : _send,
                   icon: const Icon(Icons.bolt_rounded),
                   label: Text(
-                    _sending ? 'SENDING…' : 'SEND DIRECT REQUEST · 1 ⚡',
+                    sending ? 'SENDING…' : 'SEND DIRECT REQUEST · 1 ⚡',
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w900,
                     ),
