@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `MessageActivationPackages` — messaging token packs (design + IAP hook).
+/// Legacy entry point retained for existing callers. The product is now one
+/// universal Direct Request economy: the action determines the cost, not a
+/// client/provider identity.
 class MessageActivationPackages extends ConsumerWidget {
   const MessageActivationPackages({
     super.key,
@@ -15,6 +18,7 @@ class MessageActivationPackages extends ConsumerWidget {
     this.onClose,
   });
 
+  /// Kept only for source compatibility. Direct Requests are role-agnostic.
   final String userRole;
   final VoidCallback? onClose;
 
@@ -24,7 +28,7 @@ class MessageActivationPackages extends ConsumerWidget {
       name: 'Starter',
       tokens: 20,
       priceUsd: 9.99,
-      description: '20 new conversations',
+      description: '20 Direct Requests',
       tier: _PackTier.starter,
     ),
     _TokenPack(
@@ -32,7 +36,7 @@ class MessageActivationPackages extends ConsumerWidget {
       name: 'Plus',
       tokens: 50,
       priceUsd: 19.99,
-      description: '50 new conversations',
+      description: '50 Direct Requests',
       badge: 'Most Popular Choice',
       tier: _PackTier.standard,
     ),
@@ -41,7 +45,7 @@ class MessageActivationPackages extends ConsumerWidget {
       name: 'Power',
       tokens: 100,
       priceUsd: 39.99,
-      description: '100 new conversations',
+      description: '100 Direct Requests',
       tier: _PackTier.premium,
     ),
     _TokenPack(
@@ -49,7 +53,7 @@ class MessageActivationPackages extends ConsumerWidget {
       name: 'Mega',
       tokens: 150,
       priceUsd: 49.99,
-      description: '150 new conversations',
+      description: '150 Direct Requests',
       badge: 'Best Value',
       tier: _PackTier.premium,
     ),
@@ -57,11 +61,7 @@ class MessageActivationPackages extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOwner = userRole == 'owner';
-    final roleLabel = isOwner ? 'Provider' : 'Explorer';
-    final roleDescription = isOwner
-        ? 'Connect with explorers interested in your listings'
-        : 'Start conversations with providers about their listings';
+    final balance = ref.watch(directRequestBalanceProvider);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
@@ -78,13 +78,13 @@ class MessageActivationPackages extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 14,
+                  Icons.bolt_rounded,
+                  size: 15,
                   color: Color(0xFFFBBF24),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '$roleLabel Privilege'.toUpperCase(),
+                  'SKIP THE WAIT',
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontSize: 11,
@@ -98,7 +98,7 @@ class MessageActivationPackages extends ConsumerWidget {
         ),
         const SizedBox(height: 18),
         Text(
-          'Elevate Your Experience',
+          'Direct Requests',
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
@@ -108,46 +108,61 @@ class MessageActivationPackages extends ConsumerWidget {
             height: 1.1,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(
-          '$roleDescription. Choose the package that suits your goals.',
+          'Interest is free. Matches are free. Use one when something matters enough to send a priority request.',
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
             color: Colors.white60,
             fontSize: 13,
+            height: 1.4,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 28,
-              height: 1,
-              color: const Color(0xFFFBBF24).withAlpha(120),
+        const SizedBox(height: 12),
+        balance.when(
+          data: (b) => Text(
+            '${b.available} available${b.reserved > 0 ? ' · ${b.reserved} pending' : ''}',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFFFBBF24),
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFBBF24)),
-            const SizedBox(width: 6),
-            Text(
-              'NEW MEMBER BONUS: 3 TOKENS',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFFBBF24),
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 28,
-              height: 1,
-              color: const Color(0xFFFBBF24).withAlpha(120),
-            ),
-          ],
+          ),
+          loading: () => const SizedBox(height: 18),
+          error: (_, _) => const SizedBox(height: 18),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.replay_rounded,
+                size: 19,
+                color: Color(0xFFFBBF24),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'A token is only spent when the receiver accepts. Declined, cancelled or expired requests return automatically.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white70,
+                    fontSize: 11.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
         for (final pkg in _packages) ...[
           _PackCard(pack: pkg, onBuy: () => _purchase(context, ref, pkg)),
           const SizedBox(height: 14),
@@ -159,9 +174,11 @@ class MessageActivationPackages extends ConsumerWidget {
                 .read(paymentServiceProvider)
                 .restorePurchases();
             if (!context.mounted) return;
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(result.userMessage)));
+            ref.invalidate(messagingEntitlementsProvider);
+            ref.invalidate(directRequestBalanceProvider);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result.userMessage)),
+            );
           },
           child: Text(
             'Restore purchases',
@@ -186,9 +203,10 @@ class MessageActivationPackages extends ConsumerWidget {
     final result = await ref.read(paymentServiceProvider).buy(offer);
     if (!context.mounted) return;
     ref.invalidate(messagingEntitlementsProvider);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(result.userMessage)));
+    ref.invalidate(directRequestBalanceProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result.userMessage)),
+    );
     if (result.isSuccess) {
       onClose?.call();
       Navigator.of(context).maybePop();
@@ -224,7 +242,7 @@ Future<void> showMessageActivationPackages(
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.transparent,
+                    color: Colors.white24,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -278,13 +296,13 @@ class _PackCard extends StatelessWidget {
     final border = isPremium
         ? const Color(0xFFF59E0B).withAlpha(140)
         : isStandard
-        ? Colors.white.withAlpha(55)
-        : Colors.white.withAlpha(28);
+            ? Colors.white.withAlpha(55)
+            : Colors.white.withAlpha(28);
     final icon = isPremium
         ? Icons.workspace_premium_rounded
         : isStandard
-        ? Icons.bolt_rounded
-        : Icons.chat_bubble_rounded;
+            ? Icons.bolt_rounded
+            : Icons.flash_on_rounded;
     final iconColor = isPremium ? const Color(0xFFFBBF24) : Colors.white;
 
     return Container(
@@ -331,56 +349,32 @@ class _PackCard extends StatelessWidget {
                 ),
               ),
             ),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(icon, color: iconColor, size: 28),
-          ),
+          Icon(icon, color: iconColor, size: 28),
           const SizedBox(height: 12),
           Text(
             pack.name.toUpperCase(),
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontWeight: FontWeight.w900,
-              letterSpacing: -0.4,
               fontSize: 18,
             ),
           ),
           const SizedBox(height: 4),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: '\$${pack.priceUsd.toStringAsFixed(2)}',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    fontStyle: FontStyle.italic,
-                    letterSpacing: -1.2,
-                  ),
-                ),
-                TextSpan(
-                  text: ' USD',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white54,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+          Text(
+            '\$${pack.priceUsd.toStringAsFixed(2)} USD',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              fontStyle: FontStyle.italic,
             ),
           ),
           Text(
-            '\$${(pack.priceUsd / pack.tokens).toStringAsFixed(2)} per token',
+            '\$${(pack.priceUsd / pack.tokens).toStringAsFixed(2)} per Direct Request',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white54,
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 10),
@@ -402,8 +396,8 @@ class _PackCard extends StatelessWidget {
                 backgroundColor: isPremium
                     ? AppTheme.brandPrimary
                     : isStandard
-                    ? Colors.white
-                    : const Color(0xFF334155),
+                        ? Colors.white
+                        : const Color(0xFF334155),
                 foregroundColor: isStandard && !isPremium
                     ? Colors.black
                     : Colors.white,
@@ -413,10 +407,10 @@ class _PackCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'ACTIVATE',
+                'GET REQUESTS',
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.6,
+                  letterSpacing: 1.2,
                   fontSize: 12,
                 ),
               ),
