@@ -8,6 +8,7 @@ class AppNotification {
     this.isRead = false,
     this.linkUrl,
     this.relatedUserId,
+    this.metadata = const <String, dynamic>{},
   });
 
   final String id;
@@ -18,8 +19,10 @@ class AppNotification {
   final bool isRead;
   final String? linkUrl;
   final String? relatedUserId;
+  final Map<String, dynamic> metadata;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    final rawMetadata = json['metadata'];
     return AppNotification(
       id: json['id'] as String,
       title: json['title'] as String? ?? 'Notification',
@@ -31,6 +34,9 @@ class AppNotification {
       isRead: json['is_read'] as bool? ?? false,
       linkUrl: json['link_url'] as String?,
       relatedUserId: json['related_user_id'] as String?,
+      metadata: rawMetadata is Map
+          ? Map<String, dynamic>.from(rawMetadata)
+          : const <String, dynamic>{},
     );
   }
 
@@ -45,6 +51,8 @@ class AppNotification {
       case 'new_message':
       case 'property_inquiry':
         return 'message';
+      case 'direct_request':
+        return 'direct_request';
       case 'contract_signed':
       case 'contract_pending':
         return 'contract';
