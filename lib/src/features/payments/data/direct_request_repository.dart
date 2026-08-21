@@ -92,6 +92,17 @@ class DirectRequestRepository {
     return _result(data);
   }
 
+  Future<Map<String, dynamic>?> fetchById(String requestId) async {
+    final row = await _client
+        .from('direct_requests')
+        .select(
+          'id, sender_id, receiver_id, listing_id, message, status, token_consumed, conversation_id, created_at, expires_at',
+        )
+        .eq('id', requestId)
+        .maybeSingle();
+    return row == null ? null : Map<String, dynamic>.from(row);
+  }
+
   Future<List<Map<String, dynamic>>> inbox() async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return const [];
