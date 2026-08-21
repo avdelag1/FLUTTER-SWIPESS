@@ -116,7 +116,8 @@ class SwipeRepository {
   /// Opens/sends into a conversation only when consent exists. For the legacy
   /// owner "Interested Clients" surface, tapping reply is itself an explicit
   /// acceptance of that person's latest listing interest and creates a free
-  /// match first. No path here consumes a token.
+  /// match first. New clients intentionally call the v2 RPC so the rollout
+  /// compatibility RPC used by older installed builds cannot bypass consent.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -140,7 +141,7 @@ class SwipeRepository {
     }
 
     final data = await _client.rpc(
-      'start_conversation_with_message',
+      'start_mutual_conversation_v2',
       params: {
         'p_other_user_id': ownerId,
         'p_initial_message': initialMessage,
