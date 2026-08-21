@@ -212,6 +212,17 @@ Deno.serve(async (req) => {
           transaction_id: tx.transaction_id ?? transactionId ?? txKey,
         }, { onConflict: 'user_id,package_id' })
         if (subError) throw subError
+
+        const { error: requestGrantError } = await admin.rpc(
+          'service_grant_subscription_direct_requests',
+          {
+            p_user_id: userId,
+            p_product_id: productId,
+            p_transaction_key: `apple:${txKey}`,
+            p_expires_at: expiresDate,
+          },
+        )
+        if (requestGrantError) throw requestGrantError
       } else if (productId in TOKENS) {
         const amount = TOKENS[productId]
         const { error: tokenError } = await admin.from('tokens').insert({
@@ -223,7 +234,7 @@ Deno.serve(async (req) => {
           used_activations: 0,
           activation_type: 'purchase',
           source: 'apple_iap',
-          notes: `Apple IAP: ${productId}`,
+          notes: `Apple IAP Direct Requests: ${productId}`,
         })
         if (tokenError) throw tokenError
       } else if (isEventPromo) {
