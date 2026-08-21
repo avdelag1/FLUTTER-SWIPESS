@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const PROD_URL = 'https://buy.itunes.apple.com/verifyReceipt'
 const SANDBOX_URL = 'https://sandbox.itunes.apple.com/verifyReceipt'
+const BUNDLE_ID = 'com.swipess.mobile'
 
 const SUBSCRIPTIONS: Record<string, string> = {
   'Swipess.plus.monthly.v3': 'Basic Client',
@@ -23,6 +24,12 @@ const EVENT_PROMOS = new Set([
 ])
 
 const headers = { 'Content-Type': 'application/json' }
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function validUuid(value: unknown): string | null {
+  const text = typeof value === 'string' ? value.trim() : ''
+  return uuidPattern.test(text) ? text : null
+}
 
 async function verifyReceipt(receipt: string, sharedSecret: string) {
   const body = JSON.stringify({
@@ -105,6 +112,14 @@ Deno.serve(async (req) => {
       })
     }
 
+    const receiptBundleId = verified.receipt?.bundle_id
+    if (receiptBundleId && receiptBundleId !== BUNDLE_ID) {
+      return new Response(JSON.stringify({ ok: false, error: 'Receipt bundle mismatch' }), {
+        status: 400,
+        headers,
+      })
+    }
+
     const transactions = [
       ...(verified.latest_receipt_info ?? []),
       ...(verified.receipt?.in_app ?? []),
@@ -144,6 +159,7 @@ Deno.serve(async (req) => {
         metadata: {
           status: 'processing',
           environment: verified.environment ?? 'Production',
+          originalTransactionId: tx.original_transaction_id ?? null,
           ...(submissionId ? { submissionId } : {}),
         },
       })
@@ -195,6 +211,8 @@ Deno.serve(async (req) => {
         const expiresDate = tx.expires_date_ms
           ? new Date(Number(tx.expires_date_ms)).toISOString()
           : null
+        const originalTransactionId = tx.original_transaction_id ?? tx.transaction_id ?? txKey
+        const appAccountToken = validUuid(tx.app_account_token)
 
         await admin
           .from('user_subscriptions')
@@ -210,6 +228,9 @@ Deno.serve(async (req) => {
           is_active: expiresDate ? new Date(expiresDate) > new Date() : true,
           payment_status: 'paid',
           transaction_id: tx.transaction_id ?? transactionId ?? txKey,
+          original_transaction_id: originalTransactionId,
+          app_account_token: appAccountToken,
+          store: 'apple',
         }, { onConflict: 'user_id,package_id' })
         if (subError) throw subError
       } else if (productId in TOKENS) {
@@ -243,6 +264,7 @@ Deno.serve(async (req) => {
             status: 'granted',
             environment: verified.environment ?? 'Production',
             productId,
+            originalTransactionId: tx.original_transaction_id ?? null,
             ...(submissionId ? { submissionId } : {}),
           },
         })
