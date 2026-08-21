@@ -166,6 +166,7 @@ abstract final class IapCatalog {
     'Swipess.promo.event.month.v3',
     'Swipess.promo.event.quarter.v3',
     'swipess.promo.event.week.v2',
+    'swipess.promo.event.month.v2',
     'swipess.promo.event.quarter.v2',
   };
 
