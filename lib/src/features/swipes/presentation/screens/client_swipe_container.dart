@@ -20,7 +20,7 @@ import 'package:flutter_swipes/src/features/map/presentation/providers/map_listi
 import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/widgets/direct_request_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
@@ -40,8 +40,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ex
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 
-/// Cap listing swipe deck — chrome auto-hides after seven seconds and the
-/// full-bleed photo grows smoothly into the released space.
+/// Listing swipe deck. Right = free interest, left = pass. Messaging is free
+/// after a match; before a match the user can wait or send a Direct Request.
 class ClientSwipeContainer extends ConsumerStatefulWidget {
   const ClientSwipeContainer({
     super.key,
@@ -59,8 +59,6 @@ class ClientSwipeContainer extends ConsumerStatefulWidget {
 
 class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   List<Listing>? _deck;
-
-  /// One-shot return: only the most recent swipe can be restored once.
   Listing? _undoable;
   late String _categoryId;
   bool _demoMatchShown = false;
@@ -118,14 +116,29 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     }
     final me = ref.read(currentUserProvider)?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This is your listing')),
+      );
       return;
     }
+
+    final repo = ref.read(swipeRepositoryProvider);
+    final matched = await repo.checkForMatch(listing.id);
+    if (!mounted) return;
+
+    if (!matched) {
+      await showDirectRequestSheet(
+        context,
+        receiverId: ownerId,
+        listingId: listing.id,
+        listingTitle: listing.title ?? 'this listing',
+      );
+      return;
+    }
+
     AppHaptics.medium();
     try {
-      final convoId = await ref.read(swipeRepositoryProvider).startConversation(
+      final convoId = await repo.startConversation(
         ownerId: ownerId,
         listingId: listing.id,
       );
@@ -146,7 +159,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('You need a message token or membership to start this chat.'),
+          content: Text(
+            'Chat opens free after a match. Send a Direct Request if you need an answer sooner.',
+          ),
         ),
       );
     }
@@ -218,9 +233,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       },
       onOpenFilters: () => FilterBottomSheet.show(context),
       onOpenMap: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const LiveMapScreen()));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LiveMapScreen()),
+        );
       },
       onOpenAi: () => showMagicAiProfileSheet(context),
       onCategoryChange: (cat) {
@@ -268,9 +283,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
           context,
           clientName: listing.title ?? 'this listing',
           clientImageUrl: profile?.avatarUrl,
-          ownerImageUrl: listing.images.isNotEmpty
-              ? listing.images.first
-              : null,
+          ownerImageUrl: listing.images.isNotEmpty ? listing.images.first : null,
           onMessage: () => _message(listing),
         );
       }
@@ -332,20 +345,14 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                               onUndo: _undo,
                               onBack: _goDashboard,
                               onSummonChrome: () {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .toggle();
+                                ref.read(chromeRevealProvider.notifier).toggle();
                               },
                               onOpenAi: () {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .reveal();
+                                ref.read(chromeRevealProvider.notifier).reveal();
                                 showIntelCoreSheet(context);
                               },
                               onOpenMap: () {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .reveal();
+                                ref.read(chromeRevealProvider.notifier).reveal();
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => const LiveMapScreen(),
@@ -353,9 +360,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                                 );
                               },
                               onInsights: (listing) {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .reveal();
+                                ref.read(chromeRevealProvider.notifier).reveal();
                                 showListingInsightsSheet(
                                   context,
                                   listing: listing,
@@ -395,7 +400,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     ),
                   ),
                 ),
-
                 Positioned(
                   top: 0,
                   left: 0,
@@ -431,7 +435,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     ),
                   ),
                 ),
-
                 Positioned(
                   bottom: 18,
                   left: 0,
