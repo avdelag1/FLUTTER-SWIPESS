@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/screens/direct_request_decision_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/screens/interest_decision_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Cap `handleNotificationClick` — open listing / profile / chat / external link.
+/// Open the authoritative destination encoded by a Swipess notification.
 Future<void> openNotificationTarget(
   BuildContext context,
   AppNotification notification,
@@ -18,12 +20,37 @@ Future<void> openNotificationTarget(
     final uri = Uri.tryParse(link);
     if (uri != null) {
       final path = uri.path;
+
+      final directRequestMatch =
+          RegExp(r'/direct-request/([^/]+)').firstMatch(path);
+      if (directRequestMatch != null) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => DirectRequestDecisionScreen(
+              requestId: directRequestMatch.group(1)!,
+            ),
+          ),
+        );
+        return;
+      }
+
+      final interestMatch = RegExp(r'/interest/([^/]+)').firstMatch(path);
+      if (interestMatch != null) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => InterestDecisionScreen(
+              likeId: interestMatch.group(1)!,
+            ),
+          ),
+        );
+        return;
+      }
+
       final listingMatch = RegExp(r'/listing/([^/]+)').firstMatch(path);
       if (listingMatch != null) {
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                ListingDetailScreen(listingId: listingMatch.group(1)),
+            builder: (_) => ListingDetailScreen(listingId: listingMatch.group(1)),
           ),
         );
         return;
@@ -58,7 +85,6 @@ Future<void> openNotificationTarget(
     }
   }
 
-  // Fallback by type + related user.
   switch (notification.visualType) {
     case 'message':
       if (related != null) {
