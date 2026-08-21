@@ -1,14 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap `rpc_grant_welcome_tokens` + `rpc_get_user_tokens` / `tokens` table.
+/// Token wallet for Direct Requests.
+///
+/// Purchased/Premium tokens are universal. Pending Direct Requests reserve one
+/// token each, so the user-facing balance reports only tokens that are actually
+/// available to send another priority request.
 class TokenRepository {
   TokenRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
-  /// Cap: grants **5** welcome message tokens (6 with referral). Idempotent.
+  /// Grants the existing welcome token allowance. Idempotent on the backend.
   Future<void> grantWelcomeTokens({bool hasReferral = false}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return;
@@ -25,6 +29,20 @@ class TokenRepository {
   Future<int> fetchBalance() async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return 0;
+
+    // New economy: pending Direct Requests reserve tokens without spending
+    // them. This RPC returns the true sendable balance.
+    try {
+      final rpc = await _client.rpc('rpc_get_direct_request_tokens');
+      final row = rpc is List && rpc.isNotEmpty ? rpc.first : rpc;
+      if (row is Map) {
+        final available = row['available_tokens'];
+        if (available is num) return available.toInt();
+      }
+    } catch (_) {
+      // Keep legacy fallback during staged database rollout.
+    }
+
     try {
       final rpc = await _client.rpc('rpc_get_user_tokens');
       if (rpc is List && rpc.isNotEmpty) {
