@@ -93,6 +93,11 @@ GRANT EXECUTE ON FUNCTION public.start_mutual_conversation_v2(uuid, text, uuid)
 -- Existing clients expect one spendable message token to create a new chat,
 -- unless the account has unlimited messaging. Continuing an existing chat is
 -- always free. New clients MUST NOT call this function.
+--
+-- Active Direct Requests are real reservations: legacy clients may only spend
+-- from the unreserved portion of the balance. The same per-user advisory lock
+-- used by Direct Request creation prevents a race between reserving and legacy
+-- spending during the rollout window.
 CREATE OR REPLACE FUNCTION public.start_conversation_with_message(
   p_other_user_id uuid,
   p_initial_message text,
@@ -109,6 +114,8 @@ DECLARE
   v_message_id uuid;
   v_created boolean := false;
   v_unlimited boolean := false;
+  v_total integer := 0;
+  v_reserved integer := 0;
   v_msg text := COALESCE(NULLIF(btrim(p_initial_message), ''), 'Hi!');
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
@@ -129,6 +136,27 @@ BEGIN
     v_unlimited := COALESCE(public.user_has_unlimited_messaging(v_uid), false);
 
     IF NOT v_unlimited THEN
+      PERFORM pg_advisory_xact_lock(hashtextextended(v_uid::text, 0));
+      PERFORM public._expire_direct_requests(v_uid);
+
+      SELECT COALESCE(sum(COALESCE(t.remaining_activations, 0)), 0)::integer
+        INTO v_total
+      FROM public.tokens t
+      WHERE t.user_id = v_uid
+        AND COALESCE(t.remaining_activations, 0) > 0
+        AND (t.expires_at IS NULL OR t.expires_at > now());
+
+      SELECT count(*)::integer
+        INTO v_reserved
+      FROM public.direct_requests dr
+      WHERE dr.sender_id = v_uid
+        AND dr.status = 'pending'
+        AND dr.expires_at > now();
+
+      IF v_total - v_reserved < 1 THEN
+        RAISE EXCEPTION 'No message tokens available';
+      END IF;
+
       IF NOT COALESCE(public._deduct_user_tokens(v_uid, 1), false) THEN
         RAISE EXCEPTION 'No message tokens available';
       END IF;
