@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
@@ -18,13 +19,7 @@ class TokensModal extends ConsumerStatefulWidget {
 }
 
 class _TokensModalState extends ConsumerState<TokensModal> {
-  final _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
+  bool _busy = false;
 
   Color _colorForIndex(int index) {
     switch (index % 4) {
@@ -34,128 +29,32 @@ class _TokensModalState extends ConsumerState<TokensModal> {
         return SwipessTokens.tierPlus;
       case 2:
         return SwipessTokens.tierPower;
-      case 3:
       default:
         return SwipessTokens.tierMega;
     }
   }
 
-  IconData _iconForIndex(int index) {
-    switch (index % 4) {
-      case 0:
-        return Icons.chat_bubble_outline_rounded;
-      case 1:
-        return Icons.bolt_rounded;
-      case 2:
-        return Icons.workspace_premium_rounded;
-      case 3:
-      default:
-        return Icons.auto_awesome_rounded;
-    }
-  }
-
-  String? _badgeForIndex(int index, int total) {
-    if (index == 1) return 'POPULAR';
-    if (index == total - 1) return 'BEST VALUE';
-    return null;
-  }
-
-  Future<void> _buyOffer(BuildContext context, IapOffer offer) async {
+  Future<void> _buy(BuildContext context, IapOffer offer) async {
+    if (_busy) return;
+    setState(() => _busy = true);
     AppHaptics.light();
     final result = await ref.read(paymentServiceProvider).buy(offer);
-    if (!context.mounted) return;
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ref.invalidate(messagingEntitlementsProvider);
+    ref.invalidate(directRequestBalanceProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.userMessage)),
     );
-    ref.invalidate(messagingEntitlementsProvider);
     if (result.isSuccess) {
       await AppHaptics.success();
       if (context.mounted) Navigator.of(context).pop();
     }
   }
 
-  Widget _offerInfo({
-    required IapOffer offer,
-    required Color color,
-    required int count,
-    required String pricePerToken,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 5,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              (offer.label ?? offer.name).toUpperCase(),
-              style: SwipessTokens.displayItalic(
-                color: color,
-                fontSize: 14,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withAlpha(35),
-                borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
-              ),
-              child: Text(
-                '$count TOKENS',
-                style: GoogleFonts.plusJakartaSans(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 7,
-          runSpacing: 3,
-          crossAxisAlignment: WrapCrossAlignment.end,
-          children: [
-            Text(
-              offer.priceLabel,
-              style: SwipessTokens.priceOversized(fontSize: 22),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                'USD',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (pricePerToken.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  pricePerToken,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final balanceAsync = ref.watch(messagingEntitlementsProvider);
-    final currentBalance = balanceAsync.value?.tokenBalance ?? 0;
+    final balance = ref.watch(directRequestBalanceProvider);
 
     return Container(
       decoration: const BoxDecoration(
@@ -165,7 +64,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -181,240 +80,210 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 ),
               ),
               Text(
-                'MESSAGE TOKENS',
+                'DIRECT REQUESTS',
                 textAlign: TextAlign.center,
-                style: SwipessTokens.displayItalic(fontSize: 26),
+                style: SwipessTokens.displayItalic(fontSize: 27),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'You have $currentBalance tokens remaining',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  color: SwipessTokens.brandOrange,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(height: 5),
+              balance.when(
+                data: (b) => Text(
+                  '${b.available} available${b.reserved > 0 ? ' · ${b.reserved} pending' : ''}',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: SwipessTokens.brandOrange,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
                 ),
+                loading: () => const SizedBox(
+                  height: 20,
+                  child: Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+                error: (_, _) => const SizedBox(height: 20),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
-                'Tokens are used to message owners or unlock chat actions. One token = one new conversation.',
+                'Interest is free. Matches are free. Use a Direct Request when you want to skip the wait.',
                 textAlign: TextAlign.center,
                 style: SwipessTokens.bodyClean(
                   color: Colors.white60,
-                  fontSize: 12,
+                  fontSize: 12.5,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.replay_rounded,
+                      color: SwipessTokens.brandOrange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Only spent when accepted. Declined, cancelled or expired requests return automatically.',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white70,
+                          fontSize: 11.5,
+                          height: 1.35,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
               Expanded(
                 child: ListView.separated(
-                  controller: _scrollController,
                   physics: const ClampingScrollPhysics(),
                   itemCount: IapCatalog.tokens.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final offer = IapCatalog.tokens[index];
-                    final color = _colorForIndex(index);
-                    final icon = _iconForIndex(index);
-                    final badge = _badgeForIndex(index, IapCatalog.tokens.length);
+                    final accent = _colorForIndex(index);
                     final count = offer.tokens ?? 0;
-                    final parsedPrice = double.tryParse(
-                          offer.priceLabel.replaceAll(RegExp(r'[^0-9.]'), ''),
-                        ) ??
-                        0.0;
-                    final pricePerToken =
-                        (count > 0 && parsedPrice > 0) ? (parsedPrice / count) : 0.0;
-                    final pricePerTokenStr = pricePerToken > 0
-                        ? '\$${pricePerToken.toStringAsFixed(2)}/tk'
-                        : '';
-
+                    final badge = index == 1
+                        ? 'POPULAR'
+                        : index == IapCatalog.tokens.length - 1
+                            ? 'BEST VALUE'
+                            : null;
                     return SwipessTierCard(
-                      accentColor: color,
-                      // Badges live inside the card now, so they can never sit
-                      // on top of the SELECT button or package typography.
+                      accentColor: accent,
+                      badgeLabel: badge,
                       isHighlighted: badge != null,
-                      onTap: () => _buyOffer(context, offer),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final compact = constraints.maxWidth < 360;
-                          final info = _offerInfo(
-                            offer: offer,
-                            color: color,
-                            count: count,
-                            pricePerToken: pricePerTokenStr,
-                          );
-
-                          final mainRow = Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SwipessIconTile(
-                                icon: icon,
-                                accentColor: color,
-                                size: compact ? 42 : 46,
-                                iconSize: compact ? 20 : 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(child: info),
-                              if (!compact) ...[
-                                const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 84,
-                                  height: 38,
-                                  child: SwipessPrimaryCTA(
-                                    label: 'SELECT',
-                                    accentColor: color,
-                                    height: 38,
-                                    onTap: () => _buyOffer(context, offer),
+                      onTap: _busy ? null : () => _buy(context, offer),
+                      child: Row(
+                        children: [
+                          SwipessIconTile(
+                            icon: Icons.bolt_rounded,
+                            accentColor: accent,
+                            size: 46,
+                            iconSize: 23,
+                          ),
+                          const SizedBox(width: 13),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$count DIRECT REQUESTS',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: accent,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12,
+                                    letterSpacing: .5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  offer.priceLabel,
+                                  style: SwipessTokens.priceOversized(fontSize: 23),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  offer.description ?? '',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white45,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
-                            ],
-                          );
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (badge != null) ...[
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: SwipessTierBadge(
-                                    label: badge,
-                                    accentColor: color,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                              ],
-                              mainRow,
-                              if (compact) ...[
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 40,
-                                  child: SwipessPrimaryCTA(
-                                    label: 'SELECT',
-                                    accentColor: color,
-                                    height: 40,
-                                    onTap: () => _buyOffer(context, offer),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          );
-                        },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 76,
+                            child: ElevatedButton(
+                              onPressed: _busy ? null : () => _buy(context, offer),
+                              child: const Text('GET'),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               GestureDetector(
                 onTap: () {
                   AppHaptics.medium();
-                  if (context.mounted) Navigator.of(context).pop();
+                  Navigator.of(context).pop();
                   context.push(AppPaths.subscriptionPackages);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: SwipessTokens.darkWell,
                     borderRadius: BorderRadius.circular(SwipessTokens.radiusTile),
-                    border: Border.all(
-                      color: const Color(0xFFF59E0B).withAlpha(80),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF59E0B).withAlpha(20),
-                        blurRadius: 16,
-                      ),
-                    ],
+                    border: Border.all(color: const Color(0xFFF59E0B).withAlpha(70)),
                   ),
                   child: Row(
                     children: [
-                      const SwipessIconTile(
-                        icon: Icons.workspace_premium_rounded,
-                        accentColor: Color(0xFFF59E0B),
-                        size: 38,
-                        iconSize: 20,
+                      const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: Color(0xFFF59E0B),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Explore Premium plans',
+                              'Use Swipess often?',
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white,
-                                fontSize: 14,
                                 fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
                               ),
                             ),
-                            const SizedBox(height: 2),
                             Text(
-                              'See all Swipess premium options.',
-                              style: SwipessTokens.bodyClean(
+                              'Premium adds more priority, visibility, AI and scale.',
+                              style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white54,
-                                fontSize: 12,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(
-                        height: 36,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            AppHaptics.medium();
-                            if (context.mounted) Navigator.of(context).pop();
-                            context.push(AppPaths.subscriptionPackages);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white10,
-                            foregroundColor: Colors.white,
-                            shape: const StadiumBorder(),
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                          ),
-                          child: Text(
-                            'GO!',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
+                      const Icon(Icons.chevron_right_rounded, color: Colors.white54),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
               Center(
                 child: TextButton(
-                  onPressed: () async {
-                    AppHaptics.light();
-                    final result = await ref
-                        .read(paymentServiceProvider)
-                        .restorePurchases();
-                    if (!context.mounted) return;
-                    ref.invalidate(messagingEntitlementsProvider);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(result.userMessage)),
-                    );
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                  child: Text(
-                    'Restore Purchases',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          final result = await ref
+                              .read(paymentServiceProvider)
+                              .restorePurchases();
+                          if (!mounted) return;
+                          ref.invalidate(messagingEntitlementsProvider);
+                          ref.invalidate(directRequestBalanceProvider);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(result.userMessage)),
+                          );
+                        },
+                  child: const Text('Restore Purchases'),
                 ),
               ),
             ],
