@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/token_repository.dart';
 
-/// Cap `useFreeTrial` — 30 days from account creation (NOT 90).
+/// Legacy rolling trial metadata. Trial/Premium can add benefits, but neither
+/// bypasses marketplace consent: matched chats are free for everyone.
 class FreeTrialInfo {
   const FreeTrialInfo({
     required this.isTrialActive,
@@ -31,7 +33,6 @@ class FreeTrialInfo {
   }
 }
 
-/// Cap `messagingEntitlements.ts` (high level): trial OR subscription OR tokens > 0.
 class MessagingEntitlements {
   const MessagingEntitlements({
     required this.tokenBalance,
@@ -39,20 +40,24 @@ class MessagingEntitlements {
     this.hasPremium = false,
   });
 
+  /// Total token inventory. Pending Direct Requests reserve part of this total;
+  /// use [directRequestBalanceProvider] for the spendable amount.
   final int tokenBalance;
   final FreeTrialInfo trial;
   final bool hasPremium;
 
-  bool get canStartConversation =>
-      trial.isTrialActive || hasPremium || tokenBalance > 0;
+  /// Conversation permission is now consent-based on the server. A match (or
+  /// an already accepted Direct Request) opens chat for free regardless of plan.
+  bool get canUseMatchedChat => true;
+
+  /// Kept for compatibility with older widgets. This no longer means a user may
+  /// cold-message someone; the backend still requires a match/accepted request.
+  bool get canStartConversation => canUseMatchedChat;
 }
 
-final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((
-  ref,
-) async {
+final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
-    // Demo / gate path (e.g. URDBEST) — offline-friendly, trial-like access.
     return MessagingEntitlements(
       tokenBalance: 5,
       trial: FreeTrialInfo.fromCreatedAt(DateTime.now()),
@@ -81,11 +86,11 @@ final freeTrialActiveProvider = Provider<bool>((ref) {
       .maybeWhen(data: (e) => e.trial.isTrialActive, orElse: () => false);
 });
 
-final canStartConversationProvider = Provider<bool>((ref) {
-  return ref
-      .watch(messagingEntitlementsProvider)
-      .maybeWhen(
-        data: (e) => e.canStartConversation,
-        orElse: () => true, // Don't hard-block while loading.
+final canStartConversationProvider = Provider<bool>((ref) => true);
+
+final canSendDirectRequestProvider = Provider<bool>((ref) {
+  return ref.watch(directRequestBalanceProvider).maybeWhen(
+        data: (balance) => balance.available > 0,
+        orElse: () => false,
       );
 });
