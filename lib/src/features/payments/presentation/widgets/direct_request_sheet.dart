@@ -50,6 +50,19 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
     super.dispose();
   }
 
+  Future<void> _openTokens() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const FractionallySizedBox(
+        heightFactor: .9,
+        child: TokensModal(),
+      ),
+    );
+    ref.invalidate(directRequestBalanceProvider);
+  }
+
   Future<void> _send() async {
     if (_sending) return;
     setState(() {
@@ -76,17 +89,12 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
       );
     } catch (error) {
       if (!mounted) return;
-      final text = error.toString();
-      if (text.toLowerCase().contains('no direct request tokens')) {
-        setState(() {
-          _sending = false;
-          _error = 'You need an available Direct Request token.';
-        });
-        return;
-      }
+      final text = error.toString().toLowerCase();
       setState(() {
         _sending = false;
-        _error = 'Could not send the Direct Request. Please try again.';
+        _error = text.contains('no direct request tokens')
+            ? 'You need an available Direct Request token.'
+            : 'Could not send the Direct Request. Please try again.';
       });
     }
   }
@@ -214,7 +222,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                     ),
                     if (b.available == 0)
                       TextButton(
-                        onPressed: () => showTokensModal(context),
+                        onPressed: _openTokens,
                         child: const Text('Get tokens'),
                       ),
                   ],
