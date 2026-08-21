@@ -30,7 +30,14 @@ class NativeIap {
     if (response.productDetails.isEmpty) return CheckoutResult.unavailable;
 
     final product = response.productDetails.first;
-    final param = PurchaseParam(productDetails: product);
+    final appUserId = Supabase.instance.client.auth.currentUser?.id;
+    final param = PurchaseParam(
+      productDetails: product,
+      // Supabase user IDs are UUIDs. On StoreKit 2 this is carried as the app
+      // account token, giving server notifications a stable account identity;
+      // on Google Play it becomes the obfuscated account identifier.
+      applicationUserName: appUserId,
+    );
     final existing = _pending[productId];
     if (existing != null) return existing.future;
 
@@ -64,7 +71,9 @@ class NativeIap {
     if (kIsWeb) return CheckoutResult.unavailable;
     await init();
     try {
-      await _store.restorePurchases();
+      await _store.restorePurchases(
+        applicationUserName: Supabase.instance.client.auth.currentUser?.id,
+      );
       return CheckoutResult.restored;
     } catch (_) {
       return CheckoutResult.error;
