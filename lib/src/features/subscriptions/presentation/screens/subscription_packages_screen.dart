@@ -15,7 +15,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 class SubscriptionPackagesScreen extends ConsumerStatefulWidget {
   const SubscriptionPackagesScreen({super.key});
-
   @override
   ConsumerState<SubscriptionPackagesScreen> createState() => _SubscriptionPackagesScreenState();
 }
@@ -65,50 +64,36 @@ class _SubscriptionPackagesScreenState extends ConsumerState<SubscriptionPackage
       backgroundColor: MatteSurface.canvas(context),
       body: AmbientPageBackground(
         child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 10, 0),
-                child: Row(
-                  children: [
-                    IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.arrow_back_ios_new_rounded, color: ink)),
-                    const Spacer(),
-                    TextButton(onPressed: _busy ? null : _restore, child: Text('Restore Purchases', style: TextStyle(color: ink.withAlpha(150)))),
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 10, 0),
+              child: Row(children: [
+                IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.arrow_back_ios_new_rounded, color: ink)),
+                const Spacer(),
+                TextButton(onPressed: _busy ? null : _restore, child: Text('Restore Purchases', style: TextStyle(color: ink.withAlpha(150)))),
+              ]),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                children: [
+                  Text('GET MORE FROM SWIPESS', textAlign: TextAlign.center, style: SwipessTokens.displayItalic(color: ink, fontSize: 30)),
+                  const SizedBox(height: 7),
+                  Text('More speed. More visibility. More opportunities.', textAlign: TextAlign.center, style: SwipessTokens.bodyClean(color: ink.withAlpha(155), fontSize: 14)),
+                  const SizedBox(height: 20),
+                  _HowItWorks(isLight: isLight),
+                  const SizedBox(height: 18),
+                  _CurrentAccess(isLight: isLight),
+                  const SizedBox(height: 4),
+                  for (var i = 0; i < IapCatalog.subscriptions.length; i++) ...[
+                    _PlanCard(offer: IapCatalog.subscriptions[i], accent: _accent(i, IapCatalog.subscriptions[i]), isLight: isLight, busy: _busy, onBuy: () => _buy(IapCatalog.subscriptions[i])),
+                    const SizedBox(height: 16),
                   ],
-                ),
+                  Text('Not ready for Premium? Keep using Swipess for free and buy Direct Requests only when something matters enough to skip the wait.', textAlign: TextAlign.center, style: SwipessTokens.bodyClean(color: ink.withAlpha(135), fontSize: 12)),
+                ],
               ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-                  children: [
-                    Text('GET MORE FROM SWIPESS', textAlign: TextAlign.center, style: SwipessTokens.displayItalic(color: ink, fontSize: 30)),
-                    const SizedBox(height: 7),
-                    Text('More speed. More visibility. More opportunities.', textAlign: TextAlign.center, style: SwipessTokens.bodyClean(color: ink.withAlpha(155), fontSize: 14)),
-                    const SizedBox(height: 20),
-                    _HowItWorks(isLight: isLight),
-                    const SizedBox(height: 18),
-                    _CurrentAccess(isLight: isLight),
-                    const SizedBox(height: 4),
-                    for (var i = 0; i < IapCatalog.subscriptions.length; i++) ...[
-                      _PlanCard(
-                        offer: IapCatalog.subscriptions[i],
-                        accent: _accent(i, IapCatalog.subscriptions[i]),
-                        isLight: isLight,
-                        busy: _busy,
-                        onBuy: () => _buy(IapCatalog.subscriptions[i]),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    Text(
-                      'Not ready for Premium? Keep using Swipess for free and buy Direct Requests only when something matters enough to skip the wait.',
-                      textAlign: TextAlign.center,
-                      style: SwipessTokens.bodyClean(color: ink.withAlpha(135), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ]),
         ),
       ),
     );
@@ -124,23 +109,16 @@ class _HowItWorks extends StatelessWidget {
     final ink = isLight ? Colors.black : Colors.white;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ink.withAlpha(isLight ? 8 : 12),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: ink.withAlpha(25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('SWIPESS WORKS FOR FREE', style: SwipessTokens.kickerUppercase(color: ink.withAlpha(140), fontSize: 10)),
-          const SizedBox(height: 11),
-          _rule(Icons.favorite_rounded, 'Interest is free', ink),
-          _rule(Icons.handshake_rounded, 'Mutual match = free chat', ink),
-          _rule(Icons.bolt_rounded, 'Direct Request = priority', ink),
-          const SizedBox(height: 8),
-          Text('Premium never buys access to people. It gives you more speed, visibility, AI and scale.', style: SwipessTokens.bodyClean(color: ink.withAlpha(145), fontSize: 12.5)),
-        ],
-      ),
+      decoration: BoxDecoration(color: ink.withAlpha(isLight ? 8 : 12), borderRadius: BorderRadius.circular(22), border: Border.all(color: ink.withAlpha(25))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('SWIPESS WORKS FOR FREE', style: SwipessTokens.kickerUppercase(color: ink.withAlpha(140), fontSize: 10)),
+        const SizedBox(height: 11),
+        _rule(Icons.favorite_rounded, 'Interest is free', ink),
+        _rule(Icons.handshake_rounded, 'Mutual match = free chat', ink),
+        _rule(Icons.bolt_rounded, 'Direct Request = priority', ink),
+        const SizedBox(height: 8),
+        Text('Premium never buys access to people. It gives you more speed, visibility, AI and scale.', style: SwipessTokens.bodyClean(color: ink.withAlpha(145), fontSize: 12.5)),
+      ]),
     );
   }
 
@@ -172,8 +150,8 @@ class _CurrentAccess extends ConsumerWidget {
         final body = trial
             ? 'Your welcome Premium access is active. Experience the faster marketplace before choosing a plan.'
             : free
-            ? 'Browse, show interest and chat after a mutual match for free. Use Direct Requests only when you want priority.'
-            : 'Your included Direct Requests follow the same fair rule: they are spent only when accepted.';
+                ? 'Browse, show interest and chat after a mutual match for free. Use Direct Requests only when you want priority.'
+                : 'Your included Direct Requests follow the same fair rule: they are spent only when accepted.';
         return Padding(
           padding: const EdgeInsets.only(bottom: 18),
           child: SwipessTierCard(
@@ -236,7 +214,7 @@ class _PlanCard extends StatelessWidget {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.check_circle_rounded, color: accent, size: 17),
               const SizedBox(width: 9),
-              Expanded(child: Text(benefit, style: GoogleFonts.plusJakartaSans(color: isLight ? Colors.black87 : Colors.white, fontSize: 13, fontWeight: FontWeight.w650))),
+              Expanded(child: Text(benefit, style: GoogleFonts.plusJakartaSans(color: isLight ? Colors.black87 : Colors.white, fontSize: 13, fontWeight: FontWeight.w600))),
             ]),
           ),
         const SizedBox(height: 8),
