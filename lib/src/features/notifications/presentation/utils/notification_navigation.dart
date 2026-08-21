@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/direct_requests/presentation/screens/direct_request_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
@@ -6,13 +7,29 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/profile
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Cap `handleNotificationClick` — open listing / profile / chat / external link.
+/// Open listing / profile / chat / Direct Request / external notification target.
 Future<void> openNotificationTarget(
   BuildContext context,
   AppNotification notification,
 ) async {
   final link = notification.linkUrl?.trim();
   final related = notification.relatedUserId;
+
+  // Handle consent-sensitive Direct Requests before generic link routing so a
+  // pending request always opens the accept/decline surface.
+  final metadataRequestId = notification.metadata['direct_request_id']?.toString();
+  final linkRequestId = link == null
+      ? null
+      : RegExp(r'/direct-request/([^/]+)').firstMatch(Uri.tryParse(link)?.path ?? '')?.group(1);
+  final requestId = metadataRequestId ?? linkRequestId;
+  if (requestId != null && requestId.isNotEmpty) {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DirectRequestScreen(requestId: requestId),
+      ),
+    );
+    return;
+  }
 
   if (link != null && link.isNotEmpty) {
     final uri = Uri.tryParse(link);
@@ -58,7 +75,6 @@ Future<void> openNotificationTarget(
     }
   }
 
-  // Fallback by type + related user.
   switch (notification.visualType) {
     case 'message':
       if (related != null) {
