@@ -131,6 +131,16 @@ class DirectRequestRepository {
     return (rows as List).cast<Map<String, dynamic>>();
   }
 
+  Future<List<Map<String, dynamic>>> pendingSent() async {
+    final rows = await sent();
+    final now = DateTime.now().toUtc();
+    return rows.where((row) {
+      if (row['status'] != 'pending') return false;
+      final expiresAt = DateTime.tryParse('${row['expires_at'] ?? ''}')?.toUtc();
+      return expiresAt == null || expiresAt.isAfter(now);
+    }).toList(growable: false);
+  }
+
   DirectRequestResult _result(dynamic raw) {
     final row = raw is List && raw.isNotEmpty ? raw.first : raw;
     if (row is! Map) throw StateError('Invalid Direct Request response');
@@ -150,4 +160,9 @@ final directRequestRepositoryProvider = Provider<DirectRequestRepository>((ref) 
 
 final directRequestBalanceProvider = FutureProvider<DirectRequestBalance>((ref) {
   return ref.watch(directRequestRepositoryProvider).fetchBalance();
+});
+
+final pendingDirectRequestsProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(directRequestRepositoryProvider).pendingSent();
 });
