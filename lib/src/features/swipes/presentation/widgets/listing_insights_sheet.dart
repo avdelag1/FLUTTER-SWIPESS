@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/widgets/direct_request_composer.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,7 +18,6 @@ Future<void> showListingInsightsSheet(
     isScrollControlled: true,
     builder: (_) => _InsightsSheet(
       listing: listing,
-      onMessage: onMessage,
       onShare: onShare,
       onReport: onReport,
     ),
@@ -27,13 +27,11 @@ Future<void> showListingInsightsSheet(
 class _InsightsSheet extends StatelessWidget {
   const _InsightsSheet({
     required this.listing,
-    required this.onMessage,
     required this.onShare,
     required this.onReport,
   });
 
   final Listing listing;
-  final VoidCallback onMessage;
   final VoidCallback onShare;
   final VoidCallback onReport;
 
@@ -296,21 +294,50 @@ class _InsightsSheet extends StatelessWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.favorite_rounded,
+                      color: Color(0xFFEB4898),
+                      size: 19,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Swipe right to show interest for free. If they match you, chat opens free.',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.35,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        onMessage();
-                      },
-                      icon: const Icon(Icons.chat_bubble_rounded),
+                      onPressed: () => showDirectRequestComposer(
+                        context,
+                        listing: listing,
+                      ),
+                      icon: const Icon(Icons.bolt_rounded),
                       label: Text(
-                        'CONNECT',
+                        'DIRECT REQUEST · 1 ⚡',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                          letterSpacing: .7,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -340,6 +367,17 @@ class _InsightsSheet extends StatelessWidget {
                     },
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Text(
+                  'Only spent when the receiver accepts.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white38,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
           ),
