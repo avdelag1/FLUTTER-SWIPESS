@@ -81,16 +81,15 @@ void main() {
     expect(CheckoutResult.unavailable.userMessage, contains('App Store'));
   });
 
-  testWidgets('tokens modal lists Cap packs and PayPal web copy', (
-    tester,
-  ) async {
+  testWidgets('tokens modal lists Direct Request packs', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(home: Scaffold(body: TokensModal())),
       ),
     );
-    expect(find.text('20 Tokens'), findsOneWidget);
-    expect(find.text('50 Tokens'), findsOneWidget);
+    await tester.pump();
+    expect(find.text('20 DIRECT REQUESTS'), findsOneWidget);
+    expect(find.text('50 DIRECT REQUESTS'), findsOneWidget);
     expect(find.text('\$9.99'), findsOneWidget);
     expect(find.text('\$19.99'), findsOneWidget);
     expect(find.text('Restore Purchases'), findsOneWidget);
