@@ -31,15 +31,12 @@ void main() {
       'Swipess.promo.event.quarter.v3',
     ]);
     expect(IapCatalog.tokenById('plus')?.tokens, 50);
-    expect(
-      IapCatalog.promoById('growth')?.appleProductId,
-      'Swipess.promo.event.month.v3',
-    );
+    expect(IapCatalog.promoById('growth')?.appleProductId, 'Swipess.promo.event.month.v3');
     expect(IapCatalog.subscriptions.where((o) => o.isSubscription).length, 3);
     expect(IapCatalog.tokens.first.isSubscription, isFalse);
   });
 
-  test('PayPal NCP suffixes match Cap iapProducts / AdvertisePage', () {
+  test('PayPal NCP suffixes remain unchanged', () {
     expect(IapCatalog.subscriptions.map((o) => o.paypalPath).toList(), [
       'QSRXCJYYQ2UGY',
       'HUESWJ68BRUSY',
@@ -67,10 +64,7 @@ void main() {
 
   test('paypalUrl builds Cap NCP links off iOS', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
-    expect(
-      IapCatalog.paypalUrl('VNM2QVBFG6TA4'),
-      'https://www.paypal.com/ncp/payment/VNM2QVBFG6TA4',
-    );
+    expect(IapCatalog.paypalUrl('VNM2QVBFG6TA4'), 'https://www.paypal.com/ncp/payment/VNM2QVBFG6TA4');
   });
 
   test('CheckoutResult copy matches Cap orchestrator outcomes', () {
@@ -81,16 +75,15 @@ void main() {
     expect(CheckoutResult.unavailable.userMessage, contains('App Store'));
   });
 
-  testWidgets('tokens modal lists Cap packs and PayPal web copy', (
-    tester,
-  ) async {
+  testWidgets('Direct Request modal lists canonical packs', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(home: Scaffold(body: TokensModal())),
       ),
     );
-    expect(find.text('20 Tokens'), findsOneWidget);
-    expect(find.text('50 Tokens'), findsOneWidget);
+    expect(find.text('DIRECT REQUESTS'), findsOneWidget);
+    expect(find.text('20 REQUESTS'), findsOneWidget);
+    expect(find.text('50 REQUESTS'), findsOneWidget);
     expect(find.text('\$9.99'), findsOneWidget);
     expect(find.text('\$19.99'), findsOneWidget);
     expect(find.text('Restore Purchases'), findsOneWidget);
