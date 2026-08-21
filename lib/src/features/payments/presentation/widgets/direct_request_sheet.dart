@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
@@ -240,8 +241,8 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                           orElse: () => null,
                         ),
                   style: FilledButton.styleFrom(
-                    backgroundColor: ink,
-                    foregroundColor: MatteSurface.canvas(context),
+                    backgroundColor: AppTheme.brandPrimary,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),
@@ -250,7 +251,10 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : const Text('SEND DIRECT REQUEST · 1 TOKEN'),
                 ),
