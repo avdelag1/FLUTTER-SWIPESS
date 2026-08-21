@@ -9,25 +9,25 @@ abstract final class IapCatalog {
   static const subscriptions = <IapOffer>[
     IapOffer(
       id: 'client-unlimited-1-month',
-      name: 'Monthly',
-      label: 'STARTER',
+      name: 'Here Now',
+      label: 'MONTHLY',
       appleProductId: 'Swipess.plus.monthly.v3',
       googleProductId: 'swipess.plus.monthly.v2',
       priceLabel: '\$39.99',
       durationLabel: '/month',
       paypalPath: 'QSRXCJYYQ2UGY',
       benefits: [
-        'Communicate with listings and members',
-        'Post properties, services & motos',
-        'Save favorite listings',
+        '6 Direct Requests included',
+        'More active listings',
         'AI Concierge — 15 messages/day',
         'AI Listing Creator — 3/month',
+        'Better matching & visibility',
       ],
     ),
     IapOffer(
       id: 'client-unlimited-6-months',
-      name: 'Semi-Annual',
-      label: 'POPULAR',
+      name: 'Live Local',
+      label: 'MOST POPULAR',
       appleProductId: 'Swipess.plus.semestral.v3',
       googleProductId: 'swipess.plus.semestral.v2',
       priceLabel: '\$119.99',
@@ -35,17 +35,17 @@ abstract final class IapCatalog {
       paypalPath: 'HUESWJ68BRUSY',
       popular: true,
       benefits: [
-        'Communicate with listings and members',
-        'Post properties, services & motos',
-        'Save favorite listings',
+        '12 Direct Requests included',
+        'Higher listing limits',
         'AI Concierge — 50 messages/day',
         'AI Listing Creator — 10/month',
+        'Priority matching & visibility',
         'Local Expert Knowledge',
       ],
     ),
     IapOffer(
       id: 'client-unlimited-1-year',
-      name: 'Yearly',
+      name: 'Pro',
       label: 'BEST VALUE',
       appleProductId: 'Swipess.plus.annual.v3',
       googleProductId: 'swipess.plus.annual.v2',
@@ -53,12 +53,12 @@ abstract final class IapCatalog {
       durationLabel: '/year',
       paypalPath: '7E6R38L33LYUJ',
       benefits: [
-        'Communicate with listings and members',
-        'Post properties, services & motos',
-        'Save favorite listings',
+        '30 Direct Requests included',
+        'Maximum listing capacity',
         'AI Concierge — Unlimited',
         'AI Listing Creator — Unlimited',
-        'Priority AI Responses',
+        'Priority matching & visibility',
+        'Professional growth tools',
       ],
     ),
   ];
@@ -72,7 +72,7 @@ abstract final class IapCatalog {
       priceLabel: '\$9.99',
       tokens: 20,
       paypalPath: 'VNM2QVBFG6TA4',
-      description: '20 new conversations',
+      description: '20 Direct Requests',
     ),
     IapOffer(
       id: 'plus',
@@ -82,7 +82,7 @@ abstract final class IapCatalog {
       priceLabel: '\$19.99',
       tokens: 50,
       paypalPath: 'VG2C7QMAC8N6A',
-      description: '50 new conversations',
+      description: '50 Direct Requests',
       popular: true,
     ),
     IapOffer(
@@ -93,7 +93,7 @@ abstract final class IapCatalog {
       priceLabel: '\$39.99',
       tokens: 100,
       paypalPath: '9NBGA9X3BJ5UA',
-      description: '100 new conversations',
+      description: '100 Direct Requests',
     ),
     IapOffer(
       id: 'mega',
@@ -103,7 +103,7 @@ abstract final class IapCatalog {
       priceLabel: '\$49.99',
       tokens: 150,
       paypalPath: 'KP9WHGEN23MYA',
-      description: '150 new conversations',
+      description: '150 Direct Requests',
     ),
   ];
 
@@ -166,7 +166,6 @@ abstract final class IapCatalog {
     'Swipess.promo.event.month.v3',
     'Swipess.promo.event.quarter.v3',
     'swipess.promo.event.week.v2',
-    'swipess.promo.event.month.v2',
     'swipess.promo.event.quarter.v2',
   };
 
@@ -225,13 +224,13 @@ class IapOffer {
   final int? tokens;
   final List<String> benefits;
   final bool popular;
-  
-  String get storeProductId => 
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android 
-          ? (googleProductId ?? appleProductId) 
+
+  String get storeProductId =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+          ? (googleProductId ?? appleProductId)
           : appleProductId;
 
   bool get isSubscription =>
-      IapCatalog.subscriptionIds.contains(appleProductId) || 
+      IapCatalog.subscriptionIds.contains(appleProductId) ||
       (googleProductId != null && IapCatalog.subscriptionIds.contains(googleProductId));
 }
