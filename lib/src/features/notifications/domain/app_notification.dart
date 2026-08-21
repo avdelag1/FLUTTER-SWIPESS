@@ -45,6 +45,8 @@ class AppNotification {
       case 'new_message':
       case 'property_inquiry':
         return 'message';
+      case 'direct_request':
+        return 'direct_request';
       case 'contract_signed':
       case 'contract_pending':
         return 'contract';
