@@ -18,8 +18,6 @@ class SubscriptionData {
   bool get trialHasEnded =>
       trialEndsAt != null && !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
-  // Complimentary access always wins while active. When it ends, any real
-  // paid tier immediately becomes effective again without losing purchases.
   SubscriptionTier get effectiveTier =>
       isTrialActive ? SubscriptionTier.premium : tier;
 }
@@ -56,13 +54,12 @@ class SubscriptionRepository {
         }
       }
     } catch (_) {
-      // Paid access lookup failure should not invent a paid entitlement.
+      // Paid access lookup failure must not invent an entitlement.
     }
 
-    // The complimentary campaign applies to every account, including users
-    // who already existed when the campaign clock was reset. Paid users keep
-    // their purchased tier underneath it and return to it after the free
-    // Premium window ends.
+    // Existing complimentary campaign remains intact. This redesign does not
+    // change Events or Legal access; it only removes the old unlimited-message
+    // interpretation from marketplace tokens.
     final trialEndsAt = await _fetchCampaignTrialEnd(user);
     if (trialEndsAt != null &&
         !DateTime.now().toUtc().isBefore(trialEndsAt.toUtc())) {
@@ -71,19 +68,29 @@ class SubscriptionRepository {
           'rpc_ensure_trial_expiry_notification',
           params: {'p_trial_ends_at': trialEndsAt.toUtc().toIso8601String()},
         );
-      } catch (_) {
-        // Notification is best-effort; access state remains authoritative.
-      }
+      } catch (_) {}
     }
 
     int tokens = 0;
     try {
-      final rows = await _client.rpc('rpc_get_user_tokens');
-      if (rows is List && rows.isNotEmpty && rows.first is Map) {
-        tokens = ((rows.first as Map)['total_messages'] as num?)?.toInt() ?? 0;
+      final rows = await _client.rpc('rpc_get_direct_request_tokens');
+      final row = rows is List && rows.isNotEmpty ? rows.first : rows;
+      if (row is Map) {
+        tokens = (row['available_tokens'] as num?)?.toInt() ?? 0;
       }
     } catch (_) {
-      // Access must not fail just because token accounting is unavailable.
+      // Fallback while migrations roll out.
+      try {
+        final rows = await _client.rpc('rpc_get_user_tokens');
+        if (rows is List && rows.isNotEmpty && rows.first is Map) {
+          final row = rows.first as Map;
+          tokens = ((row['remaining_activations'] ??
+                      row['remaining'] ??
+                      row['total_messages']) as num?)
+                  ?.toInt() ??
+              0;
+        }
+      } catch (_) {}
     }
 
     return SubscriptionData(
@@ -115,11 +122,6 @@ class SubscriptionRepository {
       final toggledAt =
           DateTime.tryParse(row['updated_at']?.toString() ?? '')?.toUtc();
       final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
-
-      // Existing accounts start from the campaign reset timestamp. Accounts
-      // created after the reset get their own full three calendar months from
-      // signup. This is the behavior requested for the global free-Premium
-      // reset while preserving the same rule for every future new account.
       final accessStartsAt = createdAt.isBefore(resetAt) ? resetAt : createdAt;
       if (signupCutoff != null && !accessStartsAt.isBefore(signupCutoff)) {
         return null;
@@ -167,6 +169,8 @@ class SubscriptionRepository {
     }
   }
 
+  /// Legacy balance mutation kept for compatibility with older surfaces.
+  /// New Direct Requests must use rpc_create/respond_direct_request instead.
   Future<void> updateTokens(int newBalance) async {
     final current = await fetchCurrent();
     if (newBalance >= current.tokensBalance) return;
@@ -179,9 +183,9 @@ class SubscriptionRepository {
     }
   }
 
+  /// No Premium bypass: priority requests are finite for every tier to prevent
+  /// spam. Direct Requests themselves are consumed only on receiver acceptance.
   Future<bool> decrementToken() async {
-    final data = await fetchCurrent();
-    if (data.effectiveTier == SubscriptionTier.premium) return true;
     try {
       final rows = await _client.rpc(
         'rpc_deduct_token',
