@@ -113,9 +113,10 @@ class SwipeRepository {
         .eq('target_type', 'profile');
   }
 
-  /// Opens/sends into a conversation only when consent already exists through
-  /// an active match (or an already-open conversation). This RPC never consumes
-  /// a token. Users without a match should use [sendDirectRequest].
+  /// Opens/sends into a conversation only when consent exists. For the legacy
+  /// owner "Interested Clients" surface, tapping reply is itself an explicit
+  /// acceptance of that person's latest listing interest and creates a free
+  /// match first. No path here consumes a token.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -123,6 +124,20 @@ class SwipeRepository {
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
+
+    if (listingId == null) {
+      try {
+        final accepted = await _client.rpc(
+          'rpc_accept_latest_listing_interest',
+          params: {'p_liker_id': ownerId},
+        );
+        if (accepted is Map && accepted['conversation_id'] != null) {
+          return accepted['conversation_id'].toString();
+        }
+      } catch (_) {
+        // Not an owner replying to listing interest; normal match-only gate below.
+      }
+    }
 
     final data = await _client.rpc(
       'start_conversation_with_message',
