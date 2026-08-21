@@ -5,12 +5,10 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
-import 'package:flutter_swipes/src/features/swipes/data/interest_repository.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/providers/direct_request_controller.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Listing-owner response to a free right-swipe interest.
-/// The owner never reads another user's raw like row; the secure RPC validates
-/// ownership and returns only the payload required after acceptance.
 class InterestDecisionScreen extends ConsumerStatefulWidget {
   const InterestDecisionScreen({super.key, required this.likeId});
 
@@ -23,14 +21,10 @@ class InterestDecisionScreen extends ConsumerStatefulWidget {
 
 class _InterestDecisionScreenState
     extends ConsumerState<InterestDecisionScreen> {
-  bool _busy = false;
-
   Future<void> _match() async {
-    if (_busy) return;
-    setState(() => _busy = true);
     try {
       final result = await ref
-          .read(interestRepositoryProvider)
+          .read(interestDecisionControllerProvider.notifier)
           .accept(widget.likeId);
       if (!mounted) return;
       await showChatPopup(
@@ -47,7 +41,6 @@ class _InterestDecisionScreenState
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not create match: $e')),
       );
@@ -58,6 +51,9 @@ class _InterestDecisionScreenState
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
+    final decision = ref.watch(interestDecisionControllerProvider);
+    final busy = decision.isLoading;
+
     return Scaffold(
       backgroundColor: MatteSurface.canvas(context),
       body: AmbientPageBackground(
@@ -120,7 +116,7 @@ class _InterestDecisionScreenState
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: _busy
+                        onPressed: busy
                             ? null
                             : () => Navigator.of(context).pop(),
                         child: const Text('NOT NOW'),
@@ -129,9 +125,9 @@ class _InterestDecisionScreenState
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: _busy ? null : _match,
+                        onPressed: busy ? null : _match,
                         icon: const Icon(Icons.favorite_rounded),
-                        label: Text(_busy ? 'MATCHING…' : 'MATCH & CHAT'),
+                        label: Text(busy ? 'MATCHING…' : 'MATCH & CHAT'),
                       ),
                     ),
                   ],
