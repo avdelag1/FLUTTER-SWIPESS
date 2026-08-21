@@ -32,7 +32,7 @@ The `new_user_premium_trial` campaign in `app_access_campaigns` is an app-manage
 Rules:
 
 - Eligible otherwise-free accounts receive Premium-equivalent app access for three calendar months.
-- Paid subscriptions are never masked by the complimentary campaign.
+- Existing paid subscriptions remain authoritative; complimentary access never masks a paid plan while billing continues.
 - The app blocks starting a paid membership while complimentary access is active, preventing overlapping membership charges.
 - Token packs remain purchasable during complimentary access.
 - Each eligible campaign user receives one idempotent allowance of 6 welcome Direct Requests, expiring with that user's complimentary access.
@@ -68,6 +68,15 @@ The Swipess three-month campaign is already free Premium-equivalent access. Do *
 
 If an Apple introductory offer is currently configured for this subscription group, review/remove it before release unless stacking is intentional.
 
+## Store subscription identity
+
+Store lifecycle events must map back to a Swipess account without guessing.
+
+- Native purchases attach the authenticated Supabase UUID as the store application account identifier.
+- `user_subscriptions` stores the latest transaction ID plus Apple `original_transaction_id`, `app_account_token`, and `store` when available.
+- Apple receipt validation verifies the expected `com.swipess.mobile` bundle ID before granting access.
+- Never map a renewal to a user only by product ID or email.
+
 ## App Store Server Notifications V2 — required before paid subscription lifecycle is considered complete
 
 First purchase/restore validation is not enough for a renewable subscription. Apple can renew, enter billing retry/grace, expire, revoke, or refund while the app is closed.
@@ -76,7 +85,7 @@ Before paid subscriptions are production-complete:
 
 1. Implement a secure App Store Server Notifications **V2** HTTPS endpoint.
 2. Cryptographically verify Apple's JWS `signedPayload` and signed transaction/renewal data. Do not trust decoded-but-unverified payloads.
-3. Map verified Apple transaction/original-transaction identity back to the Swipess user subscription.
+3. Map verified Apple transaction/original-transaction/app-account identity back to the Swipess user subscription.
 4. Process notifications idempotently by notification/transaction identity and signed date.
 5. On successful renewal, update `user_subscriptions` with the new transaction/end date. The existing subscription Direct Request trigger then grants the next plan allowance exactly once for that validated transaction.
 6. On expiration/revocation/refund, update entitlement state immediately and do not grant a new allowance.
