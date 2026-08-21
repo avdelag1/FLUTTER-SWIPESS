@@ -111,7 +111,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final profile = ref.watch(currentProfileProvider).value;
     final isLight = ref.watch(isLightThemeProvider);
     final showChrome = ref.watch(chromeVisibilityProvider);
-    final showHeader = showChrome;
+
+    // A MaterialPageRoute pushed from Profile/Settings lives above the shell
+    // content but below this persistent header/dock. ModalRoute currentness
+    // changes when that happens. Never allow shell chrome to remain interactive
+    // or visible above a pushed full-screen page; restore it automatically when
+    // the nested page is popped. This prevents titles/back buttons from being
+    // covered even on pages that do not scroll.
+    final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    final persistentChromeVisible = showChrome && shellRouteIsCurrent;
+    final showHeader = persistentChromeVisible;
 
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
@@ -151,7 +160,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutCubic,
-                    margin: showChrome
+                    margin: persistentChromeVisible
                         ? EdgeInsets.fromLTRB(
                             8,
                             safe.top + 58,
@@ -162,7 +171,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: Colors.black,
-                      borderRadius: BorderRadius.circular(showChrome ? 24 : 0),
+                      borderRadius: BorderRadius.circular(
+                        persistentChromeVisible ? 24 : 0,
+                      ),
                     ),
                     child: const EventsScreen(),
                   ),
@@ -209,9 +220,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               top: MediaQuery.paddingOf(context).top + _headerInset,
               left: 16,
               child: IgnorePointer(
-                ignoring: !showChrome,
+                ignoring: !persistentChromeVisible,
                 child: AnimatedOpacity(
-                  opacity: showChrome ? 1 : 0,
+                  opacity: persistentChromeVisible ? 1 : 0,
                   duration: const Duration(milliseconds: 180),
                   child: Material(
                     color: isLight ? Colors.white : const Color(0xFF111111),
@@ -247,13 +258,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             left: 0,
             right: 0,
             child: IgnorePointer(
-              ignoring: !showChrome,
+              ignoring: !persistentChromeVisible,
               child: AnimatedOpacity(
-                opacity: showChrome ? 1 : 0,
+                opacity: persistentChromeVisible ? 1 : 0,
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
                 child: AnimatedSlide(
-                  offset: showChrome ? Offset.zero : const Offset(0, 1.0),
+                  offset: persistentChromeVisible
+                      ? Offset.zero
+                      : const Offset(0, 1.0),
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
                   child: SafeArea(
@@ -332,12 +345,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           ),
           if (!isEvents)
             ChromeSummonZones(
-              visible: showChrome,
-              onSummon: () => ref.read(chromeVisibilityProvider.notifier).show(),
+              visible: persistentChromeVisible,
+              onSummon: () {
+                if (shellRouteIsCurrent) {
+                  ref.read(chromeVisibilityProvider.notifier).show();
+                }
+              },
             ),
           const PushNotificationPrompt(enabled: false),
           GuidedTourOverlay(
-            enabled: user != null,
+            enabled: user != null && shellRouteIsCurrent,
             userId: user?.id,
             userCreatedAt: user?.createdAt,
           ),
