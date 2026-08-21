@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_swipes/src/features/direct_requests/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_queue.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// Product rules live in `rpc_record_discovery_decision` so every client uses
 /// the same behavior:
-/// - right = saved and removed from discovery
+/// - right = free interest + owner notification
 /// - first left = hidden for 7 days, then one retry
 /// - second left = hidden until an objective target improvement
 /// - third left = permanent pass
@@ -110,10 +111,39 @@ class SwipeRepository {
         .eq('target_type', 'profile');
   }
 
-  /// Starts a conversation through the authoritative backend gate.
-  /// A brand-new conversation costs one message token unless the account has
-  /// unlimited messaging. Never fall back to a direct insert: that would bypass
-  /// the product's token/subscription rule.
+  /// Owner accepts a free listing interest. This creates a mutual match and
+  /// opens chat for both sides without consuming any token.
+  Future<String?> acceptListingInterest({
+    required String likerId,
+    required String listingId,
+  }) async {
+    final raw = await _client.rpc(
+      'rpc_accept_listing_interest',
+      params: {'p_liker_id': likerId, 'p_listing_id': listingId},
+    );
+    final data = raw is List && raw.isNotEmpty ? raw.first : raw;
+    if (data is Map && data['conversation_id'] != null) {
+      return data['conversation_id'].toString();
+    }
+    return null;
+  }
+
+  /// Sends a priority Direct Request. The backend reserves one available token
+  /// now and only consumes it if the receiver accepts.
+  Future<DirectRequestResult> sendDirectRequest({
+    required String receiverId,
+    String? listingId,
+    String message = '',
+  }) {
+    return DirectRequestRepository(client: _client).send(
+      receiverId: receiverId,
+      listingId: listingId,
+      message: message,
+    );
+  }
+
+  /// Opens an existing/matched conversation. New cold conversations are never
+  /// created here; the server requires mutual consent or an accepted Direct Request.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -132,7 +162,7 @@ class SwipeRepository {
     );
     final row = data is List && data.isNotEmpty ? data.first : data;
     if (row is Map && row['conversation_id'] != null) {
-      return row['conversation_id'] as String;
+      return row['conversation_id'].toString();
     }
     return null;
   }
