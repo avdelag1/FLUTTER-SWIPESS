@@ -3,36 +3,34 @@ import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 
 void main() {
   group('IapCatalog subscription distinctions', () {
-    test('paid plans keep their AI benefits separate', () {
+    test('plans keep distinct audiences and AI value', () {
       final monthly = IapCatalog.subscriptions[0];
       final semiAnnual = IapCatalog.subscriptions[1];
       final yearly = IapCatalog.subscriptions[2];
 
-      expect(monthly.name, 'Monthly');
+      expect(monthly.name, 'Here Now');
       expect(monthly.benefits, contains('AI Concierge — 15 messages/day'));
       expect(monthly.benefits, contains('AI Listing Creator — 3/month'));
       expect(
-        monthly.benefits.any((benefit) => benefit.contains('Unlimited')),
-        isFalse,
+        monthly.benefits.any((benefit) => benefit.contains('only spent when accepted')),
+        isTrue,
       );
 
-      expect(semiAnnual.name, 'Semi-Annual');
-      expect(
-        semiAnnual.benefits,
-        contains('AI Concierge — 50 messages/day'),
-      );
+      expect(semiAnnual.name, 'Live Local');
+      expect(semiAnnual.popular, isTrue);
+      expect(semiAnnual.benefits, contains('AI Concierge — 50 messages/day'));
       expect(semiAnnual.benefits, contains('AI Listing Creator — 10/month'));
-      expect(semiAnnual.benefits, contains('Local Expert Knowledge'));
+      expect(semiAnnual.benefits, contains('Priority matching & visibility'));
 
-      expect(yearly.name, 'Yearly');
+      expect(yearly.name, 'Pro');
       expect(yearly.benefits, contains('AI Concierge — Unlimited'));
       expect(yearly.benefits, contains('AI Listing Creator — Unlimited'));
-      expect(yearly.benefits, contains('Priority AI Responses'));
+      expect(yearly.benefits, contains('Highest Direct Request allowance'));
     });
   });
 
   group('IapCatalog token bundles', () {
-    test('message token quantities and prices remain canonical', () {
+    test('Direct Request quantities and prices remain store-compatible', () {
       final tokens = IapCatalog.tokens;
 
       expect(tokens, hasLength(4));
@@ -44,6 +42,10 @@ void main() {
       expect(tokens[2].priceLabel, r'$39.99');
       expect(tokens[3].tokens, 150);
       expect(tokens[3].priceLabel, r'$49.99');
+      expect(
+        tokens.every((offer) => offer.description?.contains('charged only when accepted') == true),
+        isTrue,
+      );
     });
   });
 }
