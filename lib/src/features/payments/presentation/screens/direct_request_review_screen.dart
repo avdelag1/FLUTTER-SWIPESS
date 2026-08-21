@@ -146,7 +146,7 @@ class _DirectRequestReviewScreenState
                     color: ink,
                     fontSize: 15,
                     height: 1.45,
-                    fontWeight: FontWeight.w650,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
