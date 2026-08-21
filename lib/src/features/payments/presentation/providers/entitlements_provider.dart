@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/payments/data/token_repository.dart';
 
-/// Cap `useFreeTrial` — 30 days from account creation (NOT 90).
 class FreeTrialInfo {
   const FreeTrialInfo({
     required this.isTrialActive,
@@ -31,7 +30,11 @@ class FreeTrialInfo {
   }
 }
 
-/// Cap `messagingEntitlements.ts` (high level): trial OR subscription OR tokens > 0.
+/// Marketplace entitlement snapshot.
+///
+/// Premium can include more tokens, but it never overrides another user's
+/// consent and it never creates unlimited Direct Requests. `tokenBalance` is
+/// already reservation-aware (pending requests are excluded).
 class MessagingEntitlements {
   const MessagingEntitlements({
     required this.tokenBalance,
@@ -43,8 +46,10 @@ class MessagingEntitlements {
   final FreeTrialInfo trial;
   final bool hasPremium;
 
-  bool get canStartConversation =>
-      trial.isTrialActive || hasPremium || tokenBalance > 0;
+  /// Legacy name retained for compatibility with existing UI. In the new
+  /// economy this means "can send another priority Direct Request". Free
+  /// mutual-match conversations do not use this gate at all.
+  bool get canStartConversation => tokenBalance > 0;
 }
 
 final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((
@@ -52,7 +57,6 @@ final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((
 ) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
-    // Demo / gate path (e.g. URDBEST) — offline-friendly, trial-like access.
     return MessagingEntitlements(
       tokenBalance: 5,
       trial: FreeTrialInfo.fromCreatedAt(DateTime.now()),
@@ -86,6 +90,6 @@ final canStartConversationProvider = Provider<bool>((ref) {
       .watch(messagingEntitlementsProvider)
       .maybeWhen(
         data: (e) => e.canStartConversation,
-        orElse: () => true, // Don't hard-block while loading.
+        orElse: () => true,
       );
 });
