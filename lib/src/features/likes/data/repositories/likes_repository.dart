@@ -6,6 +6,7 @@ class InterestedClient {
   const InterestedClient({
     required this.userId,
     required this.name,
+    required this.likedListingId,
     this.bio,
     this.avatarUrl,
     this.images = const [],
@@ -17,6 +18,7 @@ class InterestedClient {
 
   final String userId;
   final String name;
+  final String likedListingId;
   final String? bio;
   final String? avatarUrl;
   final List<String> images;
@@ -41,147 +43,71 @@ class LikesRepository {
   Future<List<Listing>> fetchLikedListings() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return [];
-
-    final likes = await _client
-        .from('likes')
-        .select('target_id, created_at')
-        .eq('user_id', userId)
-        .eq('direction', 'right')
-        .eq('target_type', 'listing')
-        .order('created_at', ascending: false);
-
-    final ids = (likes as List)
-        .map((row) => (row as Map<String, dynamic>)['target_id'] as String?)
-        .whereType<String>()
-        .toList();
+    final likes = await _client.from('likes').select('target_id, created_at').eq('user_id', userId).eq('direction', 'right').eq('target_type', 'listing').order('created_at', ascending: false);
+    final ids = (likes as List).map((row) => (row as Map<String, dynamic>)['target_id'] as String?).whereType<String>().toList();
     if (ids.isEmpty) return [];
-
     final rows = await _client.from('listings').select().inFilter('id', ids);
-    final byId = {
-      for (final row in rows as List)
-        (row as Map<String, dynamic>)['id'] as String: Listing.fromJson(row),
-    };
+    final byId = {for (final row in rows as List) (row as Map<String, dynamic>)['id'] as String: Listing.fromJson(row)};
     return ids.map((id) => byId[id]).whereType<Listing>().toList();
   }
 
-  /// Capacitor LikedClients — profiles the current user swiped right on.
   Future<List<ProfileLike>> fetchLikedPeople() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return const [];
-
-    final likes = await _client
-        .from('likes')
-        .select('target_id, created_at')
-        .eq('user_id', userId)
-        .eq('target_type', 'profile')
-        .eq('direction', 'right')
-        .order('created_at', ascending: false);
-
-    final ids = (likes as List)
-        .map((row) => (row as Map<String, dynamic>)['target_id'] as String?)
-        .whereType<String>()
-        .toList();
+    final likes = await _client.from('likes').select('target_id, created_at').eq('user_id', userId).eq('target_type', 'profile').eq('direction', 'right').order('created_at', ascending: false);
+    final ids = (likes as List).map((row) => (row as Map<String, dynamic>)['target_id'] as String?).whereType<String>().toList();
     if (ids.isEmpty) return const [];
-
     final profiles = await _loadProfiles(ids);
-    final likeAt = {
-      for (final row in likes as List)
-        (row as Map<String, dynamic>)['target_id'] as String: DateTime.tryParse(
-          row['created_at']?.toString() ?? '',
-        ),
-    };
-
-    return [
-      for (final id in ids)
-        if (profiles[id] != null) profiles[id]!.copyWithLikedAt(likeAt[id]),
-    ];
+    final likeAt = {for (final row in likes as List) (row as Map<String, dynamic>)['target_id'] as String: DateTime.tryParse(row['created_at']?.toString() ?? '')};
+    return [for (final id in ids) if (profiles[id] != null) profiles[id]!.copyWithLikedAt(likeAt[id])];
   }
 
   Future<void> removeLikedPerson(String targetUserId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
-    await _client
-        .from('likes')
-        .delete()
-        .eq('user_id', userId)
-        .eq('target_id', targetUserId)
-        .eq('target_type', 'profile');
+    await _client.from('likes').delete().eq('user_id', userId).eq('target_id', targetUserId).eq('target_type', 'profile');
   }
 
   Future<void> removeLikedListing(String listingId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
-    await _client
-        .from('likes')
-        .delete()
-        .eq('user_id', userId)
-        .eq('target_id', listingId)
-        .eq('target_type', 'listing');
+    await _client.from('likes').delete().eq('user_id', userId).eq('target_id', listingId).eq('target_type', 'listing');
   }
 
-  /// Capacitor OwnerInterestedClients — people who liked my listings.
+  /// People who freely expressed interest in one of the current user's listings.
   Future<List<InterestedClient>> fetchInterestedClients() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return const [];
-
-    final listings =
-        await _client
-                .from('listings')
-                .select('id, title')
-                .eq('owner_id', userId)
-            as List;
+    final listings = await _client.from('listings').select('id, title').eq('owner_id', userId) as List;
     if (listings.isEmpty) return const [];
-
-    final listingIds = listings
-        .map((row) => (row as Map)['id'] as String?)
-        .whereType<String>()
-        .toList();
-    final titles = {
-      for (final row in listings)
-        (row as Map)['id'] as String: (row)['title'] as String?,
-    };
-
-    final likes = await _client
-        .from('likes')
-        .select('user_id, target_id, created_at')
-        .inFilter('target_id', listingIds)
-        .eq('target_type', 'listing')
-        .eq('direction', 'right')
-        .order('created_at', ascending: false);
-
+    final listingIds = listings.map((row) => (row as Map)['id'] as String?).whereType<String>().toList();
+    final titles = {for (final row in listings) (row as Map)['id'] as String: (row)['title'] as String?};
+    final likes = await _client.from('likes').select('user_id, target_id, created_at').inFilter('target_id', listingIds).eq('target_type', 'listing').eq('direction', 'right').order('created_at', ascending: false);
     if ((likes as List).isEmpty) return const [];
-
-    final clientIds = likes
-        .map((row) => (row as Map)['user_id'] as String?)
-        .whereType<String>()
-        .toSet()
-        .toList();
-
+    final clientIds = likes.map((row) => (row as Map)['user_id'] as String?).whereType<String>().toSet().toList();
     final profiles = await _loadProfiles(clientIds);
-
-    // Keep first like per client (newest first from query order).
     final seen = <String>{};
     final out = <InterestedClient>[];
     for (final raw in likes) {
       final row = Map<String, dynamic>.from(raw as Map);
       final cid = row['user_id'] as String?;
-      if (cid == null || seen.contains(cid)) continue;
+      final listingId = row['target_id'] as String?;
+      if (cid == null || listingId == null || seen.contains(cid)) continue;
       seen.add(cid);
       final p = profiles[cid];
       if (p == null) continue;
-      out.add(
-        InterestedClient(
-          userId: cid,
-          name: p.name,
-          bio: p.bio,
-          avatarUrl: p.avatarUrl,
-          images: p.images,
-          age: p.age,
-          occupation: p.occupation,
-          likedListingTitle: titles[row['target_id'] as String?],
-          likedAt: DateTime.tryParse(row['created_at']?.toString() ?? ''),
-        ),
-      );
+      out.add(InterestedClient(
+        userId: cid,
+        name: p.name,
+        likedListingId: listingId,
+        bio: p.bio,
+        avatarUrl: p.avatarUrl,
+        images: p.images,
+        age: p.age,
+        occupation: p.occupation,
+        likedListingTitle: titles[listingId],
+        likedAt: DateTime.tryParse(row['created_at']?.toString() ?? ''),
+      ));
     }
     return out;
   }
@@ -189,94 +115,41 @@ class LikesRepository {
   Future<void> dismissInterestedClient(String clientId) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
-    final listings =
-        await _client.from('listings').select('id').eq('owner_id', userId)
-            as List;
-    final listingIds = listings
-        .map((row) => (row as Map)['id'] as String?)
-        .whereType<String>()
-        .toList();
+    final listings = await _client.from('listings').select('id').eq('owner_id', userId) as List;
+    final listingIds = listings.map((row) => (row as Map)['id'] as String?).whereType<String>().toList();
     if (listingIds.isEmpty) return;
-    await _client
-        .from('likes')
-        .delete()
-        .eq('user_id', clientId)
-        .inFilter('target_id', listingIds);
+    await _client.from('likes').delete().eq('user_id', clientId).inFilter('target_id', listingIds);
   }
 
   Future<Map<String, ProfileLike>> _loadProfiles(List<String> ids) async {
     if (ids.isEmpty) return {};
     final out = <String, ProfileLike>{};
-
     try {
-      final rows = await _client
-          .from('profiles')
-          .select(
-            'user_id, full_name, bio, images, avatar_url, age, occupation',
-          )
-          .inFilter('user_id', ids);
+      final rows = await _client.from('profiles').select('user_id, full_name, bio, images, avatar_url, age, occupation').inFilter('user_id', ids);
       for (final row in rows as List) {
         final map = row as Map<String, dynamic>;
         final id = map['user_id'] as String;
         final images = map['images'];
-        out[id] = ProfileLike(
-          userId: id,
-          name: (map['full_name'] as String?)?.trim().isNotEmpty == true
-              ? map['full_name'] as String
-              : 'Member',
-          bio: map['bio'] as String?,
-          avatarUrl: map['avatar_url'] as String?,
-          images: images is List
-              ? images.map((e) => e.toString()).toList()
-              : const [],
-          age: (map['age'] as num?)?.toInt(),
-          occupation: map['occupation'] as String?,
-        );
+        out[id] = ProfileLike(userId: id,name: (map['full_name'] as String?)?.trim().isNotEmpty == true ? map['full_name'] as String : 'Member',bio: map['bio'] as String?,avatarUrl: map['avatar_url'] as String?,images: images is List ? images.map((e) => e.toString()).toList() : const [],age: (map['age'] as num?)?.toInt(),occupation: map['occupation'] as String?);
       }
     } catch (_) {}
-
     final missing = ids.where((id) => !out.containsKey(id)).toList();
     if (missing.isEmpty) return out;
-
     try {
-      final rows = await _client
-          .from('client_profiles')
-          .select('user_id, name, bio, profile_images, age, occupation')
-          .inFilter('user_id', missing);
+      final rows = await _client.from('client_profiles').select('user_id, name, bio, profile_images, age, occupation').inFilter('user_id', missing);
       for (final row in rows as List) {
         final map = row as Map<String, dynamic>;
         final id = map['user_id'] as String;
         final images = map['profile_images'];
-        out[id] = ProfileLike(
-          userId: id,
-          name: (map['name'] as String?)?.trim().isNotEmpty == true
-              ? map['name'] as String
-              : 'Member',
-          bio: map['bio'] as String?,
-          images: images is List
-              ? images.map((e) => e.toString()).toList()
-              : const [],
-          age: (map['age'] as num?)?.toInt(),
-          occupation: map['occupation'] as String?,
-        );
+        out[id] = ProfileLike(userId: id,name: (map['name'] as String?)?.trim().isNotEmpty == true ? map['name'] as String : 'Member',bio: map['bio'] as String?,images: images is List ? images.map((e) => e.toString()).toList() : const [],age: (map['age'] as num?)?.toInt(),occupation: map['occupation'] as String?);
       }
     } catch (_) {}
-
     return out;
   }
 }
 
 extension on ProfileLike {
   ProfileLike copyWithLikedAt(DateTime? likedAt) {
-    return ProfileLike(
-      userId: userId,
-      name: name,
-      bio: bio,
-      avatarUrl: avatarUrl,
-      images: images,
-      age: age,
-      occupation: occupation,
-      likedAt: likedAt,
-    );
+    return ProfileLike(userId: userId,name: name,bio: bio,avatarUrl: avatarUrl,images: images,age: age,occupation: occupation,likedAt: likedAt);
   }
 }
