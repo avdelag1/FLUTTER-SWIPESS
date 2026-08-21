@@ -109,11 +109,10 @@ class SwipeRepository {
         .eq('target_type', 'profile');
   }
 
-  /// Compatibility method used by the existing match celebration UI.
+  /// Compatibility method used by existing accepted-match messaging surfaces.
   ///
-  /// It no longer buys a conversation or bypasses consent. It only returns an
-  /// already-open free conversation created by an accepted match/Direct
-  /// Request. New priority contact must use DirectRequestRepository.
+  /// It never buys a thread or bypasses consent. The current user may be either
+  /// side of the already-open free conversation.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -124,15 +123,24 @@ class SwipeRepository {
 
     var query = _client
         .from('conversations')
-        .select('id')
-        .eq('client_id', userId)
-        .eq('owner_id', ownerId)
+        .select('id,client_id,owner_id')
+        .or('client_id.eq.$userId,owner_id.eq.$userId')
         .eq('free_messaging', true)
         .neq('status', 'archived');
     if (listingId != null) {
       query = query.eq('listing_id', listingId);
     }
-    final row = await query.order('created_at', ascending: false).limit(1).maybeSingle();
-    return row?['id']?.toString();
+
+    final rows = await query.order('created_at', ascending: false).limit(50);
+    for (final raw in rows) {
+      final row = raw as Map<String, dynamic>;
+      final clientId = row['client_id']?.toString();
+      final conversationOwnerId = row['owner_id']?.toString();
+      final samePair =
+          (clientId == userId && conversationOwnerId == ownerId) ||
+          (clientId == ownerId && conversationOwnerId == userId);
+      if (samePair) return row['id']?.toString();
+    }
+    return null;
   }
 }
