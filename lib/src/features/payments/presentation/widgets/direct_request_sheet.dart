@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 Future<bool?> showDirectRequestSheet(
   BuildContext context, {
   required String receiverId,
-  required String listingId,
+  String? listingId,
   required String listingTitle,
 }) {
   return showModalBottomSheet<bool>(
@@ -27,12 +27,12 @@ Future<bool?> showDirectRequestSheet(
 class _DirectRequestSheet extends ConsumerStatefulWidget {
   const _DirectRequestSheet({
     required this.receiverId,
-    required this.listingId,
+    this.listingId,
     required this.listingTitle,
   });
 
   final String receiverId;
-  final String listingId;
+  final String? listingId;
   final String listingTitle;
 
   @override
