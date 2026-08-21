@@ -5,19 +5,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Records discovery decisions through the server-side state machine.
 ///
-/// Product rules live in `rpc_record_discovery_decision` so every client uses
-/// the same behavior:
-/// - right = saved and removed from discovery
-/// - first left = hidden for 7 days, then one retry
-/// - second left = hidden until an objective target improvement
-/// - third left = permanent pass
+/// Product rules:
+/// - right = free interest and removed from discovery
+/// - left = pass/cooldown state
+/// - communication is opened by a free accepted match or an accepted Direct
+///   Request; a swipe itself never consumes a token.
 class SwipeRepository {
   final SupabaseClient _client;
   final OfflineSwipeQueue _offlineQueue;
 
   SwipeRepository({SupabaseClient? client, OfflineSwipeQueue? offlineQueue})
-    : _client = client ?? Supabase.instance.client,
-      _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
+      : _client = client ?? Supabase.instance.client,
+        _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
 
   Future<({int synced, int failed})> flushOfflineQueue() => _offlineQueue.flush();
 
@@ -52,16 +51,16 @@ class SwipeRepository {
   }
 
   Future<void> likeListing(String targetId) => _recordDecision(
-    targetId: targetId,
-    targetType: 'listing',
-    direction: 'right',
-  );
+        targetId: targetId,
+        targetType: 'listing',
+        direction: 'right',
+      );
 
   Future<void> dislikeListing(String targetId) => _recordDecision(
-    targetId: targetId,
-    targetType: 'listing',
-    direction: 'left',
-  );
+        targetId: targetId,
+        targetType: 'listing',
+        direction: 'left',
+      );
 
   Future<void> undoSwipe(String targetId) async {
     final userId = _client.auth.currentUser?.id;
@@ -88,16 +87,16 @@ class SwipeRepository {
   }
 
   Future<void> likeProfile(String targetUserId) => _recordDecision(
-    targetId: targetUserId,
-    targetType: 'profile',
-    direction: 'right',
-  );
+        targetId: targetUserId,
+        targetType: 'profile',
+        direction: 'right',
+      );
 
   Future<void> dislikeProfile(String targetUserId) => _recordDecision(
-    targetId: targetUserId,
-    targetType: 'profile',
-    direction: 'left',
-  );
+        targetId: targetUserId,
+        targetType: 'profile',
+        direction: 'left',
+      );
 
   Future<void> undoProfileSwipe(String targetUserId) async {
     final userId = _client.auth.currentUser?.id;
@@ -110,10 +109,11 @@ class SwipeRepository {
         .eq('target_type', 'profile');
   }
 
-  /// Starts a conversation through the authoritative backend gate.
-  /// A brand-new conversation costs one message token unless the account has
-  /// unlimited messaging. Never fall back to a direct insert: that would bypass
-  /// the product's token/subscription rule.
+  /// Compatibility method used by the existing match celebration UI.
+  ///
+  /// It no longer buys a conversation or bypasses consent. It only returns an
+  /// already-open free conversation created by an accepted match/Direct
+  /// Request. New priority contact must use DirectRequestRepository.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -122,18 +122,17 @@ class SwipeRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
 
-    final data = await _client.rpc(
-      'start_conversation_with_message',
-      params: {
-        'p_other_user_id': ownerId,
-        'p_initial_message': initialMessage,
-        'p_listing_id': listingId,
-      },
-    );
-    final row = data is List && data.isNotEmpty ? data.first : data;
-    if (row is Map && row['conversation_id'] != null) {
-      return row['conversation_id'] as String;
+    var query = _client
+        .from('conversations')
+        .select('id')
+        .eq('client_id', userId)
+        .eq('owner_id', ownerId)
+        .eq('free_messaging', true)
+        .neq('status', 'archived');
+    if (listingId != null) {
+      query = query.eq('listing_id', listingId);
     }
-    return null;
+    final row = await query.order('created_at', ascending: false).limit(1).maybeSingle();
+    return row?['id']?.toString();
   }
 }
