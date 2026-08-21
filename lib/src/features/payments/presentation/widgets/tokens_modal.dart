@@ -43,7 +43,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
   IconData _iconForIndex(int index) {
     switch (index % 4) {
       case 0:
-        return Icons.chat_bubble_outline_rounded;
+        return Icons.bolt_outlined;
       case 1:
         return Icons.bolt_rounded;
       case 2:
@@ -78,7 +78,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
     required IapOffer offer,
     required Color color,
     required int count,
-    required String pricePerToken,
+    required String pricePerRequest,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +103,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
               ),
               child: Text(
-                '$count TOKENS',
+                '$count REQUESTS',
                 style: GoogleFonts.plusJakartaSans(
                   color: color,
                   fontSize: 10,
@@ -134,11 +134,11 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 ),
               ),
             ),
-            if (pricePerToken.isNotEmpty)
+            if (pricePerRequest.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
-                  pricePerToken,
+                  pricePerRequest,
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white38,
                     fontSize: 11,
@@ -181,13 +181,13 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 ),
               ),
               Text(
-                'MESSAGE TOKENS',
+                'DIRECT REQUESTS',
                 textAlign: TextAlign.center,
                 style: SwipessTokens.displayItalic(fontSize: 26),
               ),
               const SizedBox(height: 4),
               Text(
-                'You have $currentBalance tokens remaining',
+                'You have $currentBalance ready to use',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   color: SwipessTokens.brandOrange,
@@ -197,7 +197,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Tokens are used to message owners or unlock chat actions. One token = one new conversation.',
+                'Interest is free and mutual matches chat for free. Use a Direct Request when you do not want to wait — it is only spent if the other person accepts.',
                 textAlign: TextAlign.center,
                 style: SwipessTokens.bodyClean(
                   color: Colors.white60,
@@ -221,16 +221,14 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                           offer.priceLabel.replaceAll(RegExp(r'[^0-9.]'), ''),
                         ) ??
                         0.0;
-                    final pricePerToken =
+                    final pricePerRequest =
                         (count > 0 && parsedPrice > 0) ? (parsedPrice / count) : 0.0;
-                    final pricePerTokenStr = pricePerToken > 0
-                        ? '\$${pricePerToken.toStringAsFixed(2)}/tk'
+                    final pricePerRequestStr = pricePerRequest > 0
+                        ? '\$${pricePerRequest.toStringAsFixed(2)}/request'
                         : '';
 
                     return SwipessTierCard(
                       accentColor: color,
-                      // Badges live inside the card now, so they can never sit
-                      // on top of the SELECT button or package typography.
                       isHighlighted: badge != null,
                       onTap: () => _buyOffer(context, offer),
                       child: LayoutBuilder(
@@ -240,7 +238,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                             offer: offer,
                             color: color,
                             count: count,
-                            pricePerToken: pricePerTokenStr,
+                            pricePerRequest: pricePerRequestStr,
                           );
 
                           final mainRow = Row(
@@ -314,16 +312,11 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   context.push(AppPaths.subscriptionPackages);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
                     color: SwipessTokens.darkWell,
                     borderRadius: BorderRadius.circular(SwipessTokens.radiusTile),
-                    border: Border.all(
-                      color: const Color(0xFFF59E0B).withAlpha(80),
-                    ),
+                    border: Border.all(color: const Color(0xFFF59E0B).withAlpha(80)),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFFF59E0B).withAlpha(20),
@@ -345,7 +338,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Explore Premium plans',
+                              'Premium includes priority',
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -354,7 +347,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'See all Swipess premium options.',
+                              'Direct Requests + more visibility, AI and scale.',
                               style: SwipessTokens.bodyClean(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -379,11 +372,11 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                           ),
                           child: Text(
-                            'GO!',
+                            'SEE PLANS',
                             style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                              letterSpacing: 1,
+                              fontSize: 11,
+                              letterSpacing: .4,
                             ),
                           ),
                         ),
@@ -397,9 +390,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                 child: TextButton(
                   onPressed: () async {
                     AppHaptics.light();
-                    final result = await ref
-                        .read(paymentServiceProvider)
-                        .restorePurchases();
+                    final result = await ref.read(paymentServiceProvider).restorePurchases();
                     if (!context.mounted) return;
                     ref.invalidate(messagingEntitlementsProvider);
                     ScaffoldMessenger.of(context).showSnackBar(
