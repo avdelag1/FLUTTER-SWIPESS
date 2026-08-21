@@ -1,14 +1,13 @@
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart'
     as cap;
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Deck-facing swipe repository (feed helpers + write facade).
-/// Writes delegate to the authoritative discovery-decision repository so the
-/// UI never maintains a second like/dislike state machine.
+/// Deck-facing swipe repository (feed helpers + marketplace write facade).
 class SwipeRepository {
   SwipeRepository(this._supabase, {cap.SwipeRepository? swipeRepository})
-    : _swipes = swipeRepository ?? cap.SwipeRepository(client: _supabase);
+      : _swipes = swipeRepository ?? cap.SwipeRepository(client: _supabase);
 
   final SupabaseClient _supabase;
   final cap.SwipeRepository _swipes;
@@ -57,13 +56,31 @@ class SwipeRepository {
   Future<String?> startConversation({
     required String ownerId,
     required String listingId,
-  }) {
-    return _swipes.startConversation(ownerId: ownerId, listingId: listingId);
-  }
+  }) =>
+      _swipes.startConversation(ownerId: ownerId, listingId: listingId);
 
-  Future<bool> checkForMatch(String listingId) {
-    return _swipes.checkForMatch(listingId);
-  }
+  Future<bool> checkForMatch(String listingId) =>
+      _swipes.checkForMatch(listingId);
+
+  Future<DirectRequestBalance> directRequestBalance() =>
+      _swipes.directRequestBalance();
+
+  Future<DirectRequestResult> sendDirectRequest({
+    required String receiverId,
+    required String listingId,
+    String message = '',
+  }) =>
+      _swipes.sendDirectRequest(
+        receiverId: receiverId,
+        listingId: listingId,
+        message: message,
+      );
+
+  Future<String?> acceptListingInterest({
+    required String likerId,
+    required String listingId,
+  }) =>
+      _swipes.acceptListingInterest(likerId: likerId, listingId: listingId);
 
   Future<void> reportListing({
     required String? reporterId,
