@@ -46,17 +46,24 @@ class ContractRepository {
   }
 
   Future<List<DigitalContract>> fetchMine() async {
-    final user = await _requireUser();
-    final data = await _withSessionRetry(
-      () => _client
-          .from('digital_contracts')
-          .select()
-          .or('owner_id.eq.${user.id},client_id.eq.${user.id}')
-          .order('updated_at', ascending: false),
-    );
-    return (data as List)
-        .map((row) => DigitalContract.fromJson(row as Map<String, dynamic>))
-        .toList();
+    try {
+      final user = await _requireUser();
+      final data = await _withSessionRetry(
+        () => _client
+            .from('digital_contracts')
+            .select()
+            .or('owner_id.eq.${user.id},client_id.eq.${user.id}')
+            .order('updated_at', ascending: false),
+      );
+      return (data as List)
+          .map((row) => DigitalContract.fromJson(row as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      // RLS policy may not be configured yet, or session expired.
+      // Return empty instead of throwing — prevents the infinite
+      // 403 → retry → token flood → sign-out crash loop.
+      return const [];
+    }
   }
 
   Future<DigitalContract> createFromTemplate(ContractTemplate template) async {
