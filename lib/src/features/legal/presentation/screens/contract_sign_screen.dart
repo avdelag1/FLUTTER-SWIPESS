@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/features/legal/data/contract_export_service.dart';
 import 'package:flutter_swipes/src/features/legal/data/repositories/contract_repository.dart';
 import 'package:flutter_swipes/src/features/legal/data/saved_signature_store.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
@@ -32,6 +33,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
   late DigitalContract _contract;
   bool _reviewed = false;
   bool _signing = false;
+  bool _exporting = false;
   bool _useSavedSignature = false;
   bool _saveForNextTime = true;
   String? _savedSignature;
@@ -182,6 +184,26 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _exporting ? null : () => _export('pdf'),
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 17),
+                    label: const Text('PDF'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _exporting ? null : () => _export('word'),
+                    icon: const Icon(Icons.description_rounded, size: 17),
+                    label: const Text('WORD'),
+                  ),
+                ),
+              ],
+            ),
             if (_contract.documentHash != null) ...[
               const SizedBox(height: 12),
               Container(
@@ -279,10 +301,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                             _decodeSignature(_savedSignature!),
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => Center(
-                              child: Text(
-                                'Saved signature',
-                                style: TextStyle(color: muted),
-                              ),
+                              child: Text('Saved signature', style: TextStyle(color: muted)),
                             ),
                           ),
                         ),
@@ -357,7 +376,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 controller: _pad,
                 onClear: () => setState(() {}),
               ),
-              if (_pad.isNotEmpty) ...[
+              if (_pad.isNotEmpty)
                 CheckboxListTile(
                   value: _saveForNextTime,
                   onChanged: (value) =>
@@ -374,7 +393,6 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                     ),
                   ),
                 ),
-              ],
               if (_error != null) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -394,7 +412,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'A saved signature is only a convenience on this device. Swipess still records a new contract signature event each time you sign a document.',
+                'A saved signature is only a convenience on this device. Swipess still records a new contract signature event each time you sign.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   color: muted.withAlpha(145),
@@ -455,6 +473,27 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
   String _shortHash(String hash) {
     if (hash.length <= 28) return hash;
     return '${hash.substring(0, 14)}…${hash.substring(hash.length - 14)}';
+  }
+
+  Future<void> _export(String format) async {
+    final content = _contract.content?.trim() ?? '';
+    if (content.isEmpty || _exporting) return;
+    setState(() => _exporting = true);
+    try {
+      if (format == 'pdf') {
+        await ContractExportService.sharePdf(title: _contract.title, content: content);
+      } else {
+        await ContractExportService.shareWord(title: _contract.title, content: content);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not export document: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   Future<void> _forgetSavedSignature() async {
