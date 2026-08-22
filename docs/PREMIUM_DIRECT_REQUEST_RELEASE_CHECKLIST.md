@@ -19,9 +19,9 @@ Keep the existing store product IDs and prices unless a separate pricing decisio
 
 | Plan | Price | Included Direct Requests |
 | --- | ---: | ---: |
-| Monthly / Here Now | $39.99 / month | 6 |
-| 6 Months / Live Local | $119.99 / 6 months | 12 |
-| Yearly / Pro | $299.99 / year | 30 |
+| Monthly / Here Now | $39.99 / month | 20 |
+| 6 Months / Live Local | $119.99 / 6 months | 50 |
+| Yearly / Pro | $299.99 / year | 150 |
 
 Token packs remain 20 / 50 / 100 / 150 and are marketed as Direct Requests, not "new conversations".
 
@@ -48,9 +48,9 @@ If `accepting_new_signups = true` and `signup_ends_at` is null, future new users
 
 For existing products, keep the product IDs. Update customer-facing names/descriptions so they match the shipped app:
 
-- Monthly: 6 Direct Requests + Premium benefits.
-- 6 Months: 12 Direct Requests + enhanced Premium benefits.
-- Yearly: 30 Direct Requests + maximum Premium benefits.
+- Monthly: 20 Direct Requests + Premium benefits.
+- 6 Months: 50 Direct Requests + enhanced Premium benefits.
+- Yearly: 150 Direct Requests + maximum Premium benefits.
 - Token packs: 20 / 50 / 100 / 150 Direct Requests.
 
 Remove old wording such as:
@@ -120,7 +120,7 @@ Do not merge/release solely because the UI looks correct. Require:
 - Direct Request smoke tests: create/reserve, accept/consume, decline/return, expiry/return, cancel/return, duplicate pending request, concurrent requests, legacy-reservation protection.
 - Free-match smoke test proves no token is consumed.
 - App Store sandbox: subscription purchase, receipt validation, restore, renewal notification, expiry/revoke/refund notification.
-- Product metadata in App Store Connect matches 6 / 12 / 30 and Direct Request terminology.
+- Product metadata in App Store Connect matches 20 / 50 / 150 and Direct Request terminology.
 - Verify whether an Apple introductory offer exists; avoid unintentionally stacking it with the Swipess-managed three months.
 
 ## Marketing sentence
