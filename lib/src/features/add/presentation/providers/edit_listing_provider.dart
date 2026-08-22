@@ -217,7 +217,13 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       );
       return;
     }
-    final picked = await ImagePicker().pickMultiImage(limit: remaining);
+    final picked = await ImagePicker().pickMultiImage(
+      limit: remaining,
+      imageQuality: 92,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      requestFullMetadata: false,
+    );
     if (picked.isEmpty) return;
     state = current.copyWith(
       newPhotos: [...current.newPhotos, ...picked.take(remaining)],
