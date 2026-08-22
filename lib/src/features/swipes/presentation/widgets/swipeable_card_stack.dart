@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -55,10 +56,12 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   late Animation<Offset> _snapAnimation;
 
   final _topCardKey = GlobalKey<CapSwipeCardState>();
+  final Set<String> _prefetchedImages = <String>{};
 
   static const _swipeThreshold = 72.0;
   static const _velocityThreshold = 900.0;
   static const _maxVisibleCards = 3;
+  static const _prefetchCards = 4;
 
   @override
   void initState() {
@@ -67,6 +70,50 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _prefetchUpcomingImages();
+  }
+
+  @override
+  void didUpdateWidget(covariant SwipeableCardStack oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.listings, widget.listings) ||
+        oldWidget.listings.length != widget.listings.length ||
+        (oldWidget.listings.isNotEmpty &&
+            widget.listings.isNotEmpty &&
+            oldWidget.listings.first.id != widget.listings.first.id)) {
+      _prefetchUpcomingImages();
+    }
+  }
+
+  void _prefetchUpcomingImages() {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final count = min(_prefetchCards, widget.listings.length);
+      for (var i = 0; i < count; i++) {
+        final listing = widget.listings[i];
+        if (listing.images.isEmpty) continue;
+        final url = listing.images.first.trim();
+        final uri = Uri.tryParse(url);
+        if (url.isEmpty ||
+            uri == null ||
+            !(uri.scheme == 'https' || uri.scheme == 'http') ||
+            !_prefetchedImages.add(url)) {
+          continue;
+        }
+        unawaited(
+          precacheImage(NetworkImage(url), context).catchError((_) {
+            // A failed image should be retryable when the card becomes active.
+            _prefetchedImages.remove(url);
+          }),
+        );
+      }
+    });
   }
 
   @override
@@ -125,8 +172,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final shouldSwipe = _dragOffset.dx.abs() > _swipeThreshold || fling;
 
     if (shouldSwipe && widget.listings.isNotEmpty) {
-      // A fast release should follow the finger velocity even if the card was a
-      // few pixels on the opposite side when the gesture ended.
       final directionalDx = fling ? velocity : _dragOffset.dx;
       final direction = directionalDx >= 0
           ? SwipeDirection.right
@@ -169,6 +214,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       });
       _snapController.removeListener(_updateFromAnimation);
       _snapController.reset();
+      _prefetchUpcomingImages();
     });
   }
 
