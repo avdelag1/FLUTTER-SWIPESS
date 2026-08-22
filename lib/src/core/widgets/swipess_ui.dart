@@ -375,7 +375,7 @@ class SwipessStatCard extends StatelessWidget {
 
     if (compact) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(SwipessTokens.radiusTile),
@@ -387,11 +387,11 @@ class SwipessStatCard extends StatelessWidget {
             SwipessIconTile(
               icon: icon,
               accentColor: accentColor,
-              size: 28,
-              iconSize: 14,
+              size: 22,
+              iconSize: 12,
               isLight: isLight,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -401,17 +401,16 @@ class SwipessStatCard extends StatelessWidget {
                     title.toUpperCase(),
                     style: SwipessTokens.kickerUppercase(
                       color: isLight ? Colors.black54 : Colors.white60,
-                      fontSize: 8,
+                      fontSize: 7.5,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle.toUpperCase(),
                     style: SwipessTokens.kickerUppercase(
                       color: isLight ? Colors.black38 : Colors.white38,
-                      fontSize: 7,
+                      fontSize: 6.5,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -419,14 +418,14 @@ class SwipessStatCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 value,
                 style: SwipessTokens.priceOversized(
                   color: isLight ? Colors.black : Colors.white,
-                  fontSize: 22,
+                  fontSize: 20,
                 ),
               ),
             ),
