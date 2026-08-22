@@ -145,7 +145,12 @@ class SupabaseAuthRepository implements AuthRepository {
             'The sign-in window could not be opened. Allow pop-ups for Swipess and try again.',
           );
         }
-        return true;
+
+        // Do not report success just because the provider window opened. The
+        // AuthScreen must remain where it is until the popup has actually
+        // completed and Supabase has synchronized the new session back to the
+        // opener via its web auth broadcast channel.
+        return await _waitForWebOAuthSession(popup);
       } catch (_) {
         closeOAuthPopup(popup);
         rethrow;
@@ -160,6 +165,30 @@ class SupabaseAuthRepository implements AuthRepository {
     }
 
     return _auth.signInWithOAuth(provider);
+  }
+
+  Future<bool> _waitForWebOAuthSession(OAuthPopupHandle popup) async {
+    final deadline = DateTime.now().add(const Duration(minutes: 5));
+    while (DateTime.now().isBefore(deadline)) {
+      if (_auth.currentSession != null) {
+        closeOAuthPopup(popup);
+        return true;
+      }
+
+      if (isOAuthPopupClosed(popup)) {
+        // Give the BroadcastChannel a brief moment to deliver the signed-in
+        // session; the popup can close a few milliseconds before the opener
+        // applies that state.
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+        if (_auth.currentSession != null) return true;
+        throw Exception('CANCELLED');
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    }
+
+    closeOAuthPopup(popup);
+    throw Exception('Sign-in timed out. Please try again.');
   }
 
   Future<bool> _signInWithNativeApple() async {
