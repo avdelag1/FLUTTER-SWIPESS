@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,10 +16,10 @@ final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
 
 /// Foreground engagement heartbeat.
 ///
-/// The server is authoritative: one 90-minute block = one step and five steps
-/// grant one spendable message token. Background/inactive time never counts.
-/// Multiple UI shells may attach to this service, so tracking uses a small
-/// reference count and remains alive while the root app is active.
+/// The server is authoritative: one 45-minute foreground-use block = one step
+/// and five steps grant one spendable Direct Request token. The user does not
+/// need to upload, swipe or message for this reward; normal active app use is
+/// enough. Background/inactive time never counts.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
 
@@ -100,6 +101,7 @@ class SessionGamificationService {
       if (!stepAwarded && !tokenAwarded) return;
 
       ref.invalidate(dailyQuestsProvider);
+      ref.invalidate(directRequestBalanceProvider);
       ref.invalidate(notificationsProvider);
       ref.invalidate(unreadNotificationsProvider);
       await ref.read(subscriptionProvider.notifier).refresh();
@@ -113,13 +115,16 @@ class SessionGamificationService {
         SnackBar(
           content: Row(
             children: [
-              Text(tokenAwarded ? '🎉' : '⚡', style: const TextStyle(fontSize: 20)),
+              Text(
+                tokenAwarded ? '🎉' : '⚡',
+                style: const TextStyle(fontSize: 20),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   tokenAwarded
-                      ? 'Free token unlocked! You completed 5/5 steps.'
-                      : 'Step $steps/5 unlocked.',
+                      ? 'Free token unlocked! 5/5 activity steps complete.'
+                      : '45 minutes active · Step $steps/5 unlocked.',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
@@ -129,7 +134,9 @@ class SessionGamificationService {
               ? const Color(0xFF7C3AED)
               : const Color(0xFF2563EB),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           duration: const Duration(seconds: 4),
         ),
       );
