@@ -35,7 +35,7 @@ class SupabaseAuthRepository implements AuthRepository {
 
   SupabaseAuthRepository(this._client);
 
-  static const _resetRedirect = 'https://www.swipess.com/reset-password';
+  static const _resetRedirect = 'https://swipess.com/reset-password';
 
   @override
   Future<AuthResponse> signInWithEmailPassword(String email, String password) {
@@ -107,12 +107,14 @@ class SupabaseAuthRepository implements AuthRepository {
       return _signInWithNativeGoogle();
     }
 
-    // On Flutter web, do not force Uri.base.origin as redirectTo. Supabase's
-    // configured Site URL/redirect allow-list is the source of truth and the
-    // Flutter web auth client consumes the returned session from that flow.
-    // Overriding this here can split sessions across www/non-www origins.
+    // PKCE stores its verifier in browser storage for the exact origin that
+    // starts the flow. Always return to that same origin. This prevents a
+    // swipess.com -> www.swipess.com callback from losing the verifier and
+    // failing with `flow_state_expired`.
+    final redirectTo = kIsWeb ? Uri.base.origin : null;
     return _auth.signInWithOAuth(
       provider,
+      redirectTo: redirectTo,
       queryParams: provider == OAuthProvider.google
           ? const {'prompt': 'select_account'}
           : null,
