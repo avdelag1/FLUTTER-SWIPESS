@@ -43,6 +43,13 @@ final eventsListProvider = AsyncNotifierProvider<EventsNotifier, List<Event>>(
   EventsNotifier.new,
 );
 
+/// Lightweight published/approved event videos used only by the dashboard tile.
+/// This feed is intentionally independent from the Premium-gated Events feed so
+/// the dashboard can remain visually alive while access rules are evaluated.
+final dashboardVideoEventsProvider = FutureProvider<List<Event>>((ref) {
+  return ref.read(eventRepositoryProvider).fetchDashboardVideoTeasers(limit: 8);
+});
+
 final filteredEventsProvider = Provider<AsyncValue<List<Event>>>((ref) {
   final category = ref.watch(selectedCategoryProvider);
   final query = ref.watch(eventSearchProvider).trim().toLowerCase();
@@ -73,6 +80,7 @@ final eventSearchProvider = NotifierProvider<EventSearchNotifier, String>(
   EventSearchNotifier.new,
 );
 
+/// Full-feed video list retained for the Events experience itself.
 final videoEventsProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsListProvider).value ?? const <Event>[];
   return events
