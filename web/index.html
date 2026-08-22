@@ -20,11 +20,12 @@
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
   <script>
     // Do not force www/apex in client JavaScript. The hosting platform owns the
-    // canonical-domain redirect, while OAuth explicitly returns to Uri.base.origin.
-    // A second browser-side canonicalization can create redirect loops and stop
-    // Flutter from booting at all.
+    // canonical-domain redirect. A second browser-side canonicalization can
+    // create redirect loops and stop Flutter from booting.
     (function () {
       var params = new URLSearchParams(location.search);
+      window.__swipessOAuthPopup =
+        params.get('oauth_popup') === '1' && !!window.opener;
       if (params.has('code') || params.has('error') || params.has('error_code')) {
         document.documentElement.classList.add('oauth-return');
       }
@@ -106,10 +107,36 @@
       document.body.style.background = '#0A0A0D';
     }
 
+    function watchOAuthPopupCompletion() {
+      if (!window.__swipessOAuthPopup) return;
+      var sessionKey = 'sb-vplgtcguxujxwrgguxqq-auth-token';
+      var deadline = Date.now() + 30000;
+      var timer = setInterval(function () {
+        if (Date.now() > deadline) {
+          clearInterval(timer);
+          return;
+        }
+        var raw = null;
+        try { raw = localStorage.getItem(sessionKey); } catch (_) {}
+        if (!raw || raw.indexOf('"access_token"') === -1) return;
+
+        clearInterval(timer);
+        try {
+          window.opener.postMessage(
+            { type: 'swipess-oauth-complete' },
+            location.origin
+          );
+        } catch (_) {}
+        setTimeout(function () {
+          try { window.close(); } catch (_) {}
+        }, 120);
+      }, 150);
+    }
+
     window.addEventListener('flutter-first-frame', removeSplashFromWeb, { once: true });
 
-    // Never leave a second branded loading state sitting over Flutter.
     window.addEventListener('load', function () {
+      watchOAuthPopupCompletion();
       setTimeout(function () {
         if (document.querySelector('flt-glass-pane, flutter-view')) {
           removeSplashFromWeb();
