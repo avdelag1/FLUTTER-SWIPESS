@@ -60,58 +60,51 @@ class DashboardDock extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
-              child: Container(
-                height: 54,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isLight
-                            ? Colors.white.withAlpha(180)
-                            : Colors.black.withAlpha(140),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2.0,
-                        ),
-                      ),
-                      child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+                child: Container(
+                  height: 54,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
                   ),
-                  child: Row(
-                    children: [
-                      for (final item in items)
-                        SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: DockButton(
-                            item: item,
-                            wash: item.wash,
-                            selected: selectedTab == item.id,
-                            onTap: () {
-                              AppHaptics.light();
-                              onTabSelected(item.id);
-                            },
+                  decoration: BoxDecoration(
+                    color: isLight
+                        ? Colors.white.withAlpha(180)
+                        : Colors.black.withAlpha(140),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2.0,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    child: Row(
+                      children: [
+                        for (final item in items)
+                          SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: DockButton(
+                              item: item,
+                              wash: item.wash,
+                              selected: selectedTab == item.id,
+                              onTap: () {
+                                AppHaptics.light();
+                                onTabSelected(item.id);
+                              },
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-            ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
