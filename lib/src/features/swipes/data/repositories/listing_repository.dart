@@ -223,7 +223,22 @@ class ListingRepository {
     for (var i = 0; i < files.length; i++) {
       final file = files[i];
       final bytes = await file.readAsBytes();
-      final ext = _extensionFor(file.name);
+      if (bytes.isEmpty) throw Exception('One selected photo is empty.');
+      if (bytes.lengthInBytes > 20 * 1024 * 1024) {
+        throw Exception('Each photo must be under 20MB.');
+      }
+
+      // image_picker is asked to re-encode gallery images before this point.
+      // Check the actual bytes anyway so a raw HEIC/HEIF file can never be
+      // uploaded with a fake .jpg extension and then fail in browsers/cards.
+      if (_isHeif(bytes)) {
+        throw Exception(
+          'One iPhone photo is still HEIC/HEIF and could not be converted. '
+          'Open it in Photos, save/share it as JPEG, then choose it again.',
+        );
+      }
+
+      final ext = _extensionForBytes(bytes, file.name);
       final path = '$userId/${DateTime.now().millisecondsSinceEpoch}-$i.$ext';
       await _client.storage
           .from('listing-images')
@@ -370,12 +385,45 @@ class ListingRepository {
         .eq('id', listingId);
   }
 
-  String _extensionFor(String name) {
+  String _extensionForBytes(List<int> bytes, String name) {
+    if (_startsWith(bytes, const [0x89, 0x50, 0x4E, 0x47])) return 'png';
+    if (_isWebp(bytes)) return 'webp';
+    if (_startsWith(bytes, const [0xFF, 0xD8, 0xFF])) return 'jpg';
+
     final lower = name.toLowerCase();
     if (lower.endsWith('.png')) return 'png';
     if (lower.endsWith('.webp')) return 'webp';
-    if (lower.endsWith('.heic')) return 'jpg';
     return 'jpg';
+  }
+
+  bool _startsWith(List<int> bytes, List<int> signature) {
+    if (bytes.length < signature.length) return false;
+    for (var i = 0; i < signature.length; i++) {
+      if (bytes[i] != signature[i]) return false;
+    }
+    return true;
+  }
+
+  bool _isWebp(List<int> bytes) {
+    if (bytes.length < 12) return false;
+    return String.fromCharCodes(bytes.sublist(0, 4)) == 'RIFF' &&
+        String.fromCharCodes(bytes.sublist(8, 12)) == 'WEBP';
+  }
+
+  bool _isHeif(List<int> bytes) {
+    if (bytes.length < 12) return false;
+    if (String.fromCharCodes(bytes.sublist(4, 8)) != 'ftyp') return false;
+    final brand = String.fromCharCodes(bytes.sublist(8, 12)).toLowerCase();
+    return const {
+      'heic',
+      'heix',
+      'hevc',
+      'hevx',
+      'heim',
+      'heis',
+      'mif1',
+      'msf1',
+    }.contains(brand);
   }
 
   String _contentTypeFor(String ext) {
