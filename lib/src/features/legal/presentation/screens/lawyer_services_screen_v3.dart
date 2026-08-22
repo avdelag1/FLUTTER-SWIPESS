@@ -446,7 +446,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                 const Icon(Icons.schedule_rounded, color: Color(0xFF6366F1), size: 34),
                 const SizedBox(height: 12),
                 Text(
-                  '$channel · COMING SOON',
+                  '$channel',
                   textAlign: TextAlign.center,
                   style: SwipessTokens.displayItalic(color: ink, fontSize: 22),
                 ),
@@ -527,23 +527,7 @@ class _ConnectCard extends StatelessWidget {
                   child: Icon(icon, color: accent, size: 19),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: ink.withAlpha(8),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: MatteSurface.hairline(context)),
-                  ),
-                  child: Text(
-                    'SOON',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: muted,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .8,
-                    ),
-                  ),
-                ),
+                
               ],
             ),
             const Spacer(),

@@ -22,7 +22,8 @@ class ContractRepository {
   Future<T> _withSessionRetry<T>(Future<T> Function() action) async {
     try {
       return await action();
-    } on PostgrestException {
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') rethrow; // Permission denied. Refresh won't help.
       if (_client.auth.currentUser == null) rethrow;
       try {
         await _client.auth.refreshSession();
