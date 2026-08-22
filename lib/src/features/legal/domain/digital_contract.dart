@@ -90,7 +90,8 @@ class DigitalContract {
   bool get isDisputed => status == 'disputed';
   bool get isLocked => !isDraft;
   bool get hasOwnerSignature => ownerSignedAt != null || ownerSignature != null;
-  bool get hasClientSignature => clientSignedAt != null || clientSignature != null;
+  bool get hasClientSignature =>
+      clientSignedAt != null || clientSignature != null;
   bool get hasCounterparty => clientId != null && clientId != ownerId;
 
   String get statusLabel {
@@ -185,7 +186,8 @@ class ContractEvent {
       contractId: json['contract_id'] as String,
       eventType: json['event_type'] as String? ?? 'updated',
       createdAt:
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
       actorId: json['actor_id'] as String?,
       metadata: rawMetadata is Map
           ? Map<String, dynamic>.from(rawMetadata)

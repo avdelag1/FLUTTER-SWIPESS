@@ -28,7 +28,8 @@ abstract final class ContractExportService {
     required String title,
     required String content,
   }) async {
-    final html = '''<!doctype html>
+    final html =
+        '''<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -61,10 +62,7 @@ h1{font-family:Arial,sans-serif;font-size:20pt;margin-bottom:24px}
   /// Builds a small standards-compatible PDF without adding another native
   /// dependency to the release build. It uses Helvetica and paginates plain
   /// legal text, which keeps export reliable on web, iOS and Android.
-  static Uint8List _buildPdf({
-    required String title,
-    required String content,
-  }) {
+  static Uint8List _buildPdf({required String title, required String content}) {
     final normalizedTitle = _pdfText(title);
     final wrapped = <String>[
       normalizedTitle,
@@ -87,7 +85,9 @@ h1{font-family:Arial,sans-serif;font-size:20pt;margin-bottom:24px}
     final objects = <int, String>{};
 
     objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-    final kids = [for (var i = 0; i < pageCount; i++) '${3 + i * 2} 0 R'].join(' ');
+    final kids = [
+      for (var i = 0; i < pageCount; i++) '${3 + i * 2} 0 R',
+    ].join(' ');
     objects[2] = '<< /Type /Pages /Kids [$kids] /Count $pageCount >>';
 
     for (var i = 0; i < pageCount; i++) {
@@ -173,7 +173,9 @@ h1{font-family:Arial,sans-serif;font-size:20pt;margin-bottom:24px}
     var result = value;
     replacements.forEach((key, val) => result = result.replaceAll(key, val));
     return result.runes
-        .map((r) => r >= 32 && r <= 126 || r == 10 ? String.fromCharCode(r) : '?')
+        .map(
+          (r) => r >= 32 && r <= 126 || r == 10 ? String.fromCharCode(r) : '?',
+        )
         .join();
   }
 

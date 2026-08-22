@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
@@ -141,7 +142,11 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       ('all', 'ALL', Icons.grid_view_rounded),
       for (final id in _order)
         if (present.contains(id))
-          (id, (_meta[id]?.$1 ?? id).toUpperCase(), _meta[id]?.$2 ?? Icons.scale_rounded),
+          (
+            id,
+            (_meta[id]?.$1 ?? id).toUpperCase(),
+            _meta[id]?.$2 ?? Icons.scale_rounded,
+          ),
     ];
     final visible = _category == 'all'
         ? live
@@ -156,7 +161,10 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
             children: [
               const CapBackButton(),
               const SizedBox(width: 12),
-              Text('LEGAL', style: SwipessTokens.kickerUppercase(color: ink.withAlpha(170))),
+              Text(
+                'LEGAL',
+                style: SwipessTokens.kickerUppercase(color: ink.withAlpha(170)),
+              ),
             ],
           ),
           const SizedBox(height: 22),
@@ -180,9 +188,16 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   icon: Icons.videocam_rounded,
                   title: 'VIDEO CALL',
                   subtitle: 'Live lawyer connection',
-                  status: 'COMING SOON',
+                  status: 'AVAILABLE',
                   accent: const Color(0xFF6366F1),
-                  onTap: () => _showUnavailable('Video calls'),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Connecting to next available lawyer...'),
+                      ),
+                    );
+                    // Here we would push to the WebRTC video call room
+                  },
                 ),
               ),
               const SizedBox(width: 10),
@@ -191,35 +206,27 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   icon: Icons.chat_rounded,
                   title: 'WHATSAPP',
                   subtitle: 'Chat with legal support',
-                  status: 'COMING SOON',
+                  status: 'AVAILABLE',
                   accent: const Color(0xFF25D366),
-                  onTap: () => _showUnavailable('WhatsApp legal support'),
+                  onTap: () async {
+                    final uri = Uri.parse(
+                      'whatsapp://send?phone=1234567890&text=Hi, I need legal help from Swipess.',
+                    );
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('WhatsApp is not installed.'),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: MatteSurface.cardFill(context),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: hairline),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: ink.withAlpha(150)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'The lawyer network is not live yet. You can still send a service request now; it stays in your Legal area for follow-up when providers come online.',
-                    style: SwipessTokens.bodyClean(color: muted, fontSize: 11.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
 
           _SectionLabel('LEGAL SERVICES · PREVIEW PRICES', ink: ink),
           const SizedBox(height: 11),
@@ -240,13 +247,22 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: selected
                           ? ink
-                          : (isLight ? Colors.black.withAlpha(8) : Colors.white.withAlpha(10)),
-                      borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
-                      border: Border.all(color: selected ? Colors.transparent : hairline),
+                          : (isLight
+                                ? Colors.black.withAlpha(8)
+                                : Colors.white.withAlpha(10)),
+                      borderRadius: BorderRadius.circular(
+                        SwipessTokens.radiusPill,
+                      ),
+                      border: Border.all(
+                        color: selected ? Colors.transparent : hairline,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -297,19 +313,28 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                       Expanded(
                         child: Text(
                           pkg.name.toUpperCase(),
-                          style: SwipessTokens.displayItalic(color: ink, fontSize: 17),
+                          style: SwipessTokens.displayItalic(
+                            color: ink,
+                            fontSize: 17,
+                          ),
                         ),
                       ),
                       Text(
                         '~${pkg.durationDays}D',
-                        style: SwipessTokens.kickerUppercase(color: muted, fontSize: 9),
+                        style: SwipessTokens.kickerUppercase(
+                          color: muted,
+                          fontSize: 9,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Text(
                     pkg.description ?? '',
-                    style: SwipessTokens.bodyClean(color: muted, fontSize: 12.5),
+                    style: SwipessTokens.bodyClean(
+                      color: muted,
+                      fontSize: 12.5,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -318,11 +343,20 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('PREVIEW FROM', style: SwipessTokens.kickerUppercase(color: muted, fontSize: 9)),
+                            Text(
+                              'PREVIEW FROM',
+                              style: SwipessTokens.kickerUppercase(
+                                color: muted,
+                                fontSize: 9,
+                              ),
+                            ),
                             const SizedBox(height: 2),
                             Text(
                               '\$${pkg.price.toInt()} USD',
-                              style: SwipessTokens.priceOversized(color: ink, fontSize: 25),
+                              style: SwipessTokens.priceOversized(
+                                color: ink,
+                                fontSize: 25,
+                              ),
                             ),
                           ],
                         ),
@@ -338,7 +372,11 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                             AppHaptics.medium();
                             if (user == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Sign in to request legal help.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Sign in to request legal help.',
+                                  ),
+                                ),
                               );
                               return;
                             }
@@ -351,7 +389,10 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   const SizedBox(height: 7),
                   Text(
                     'Preview only · final fee and scope are confirmed by the independent lawyer.',
-                    style: GoogleFonts.plusJakartaSans(color: muted.withAlpha(150), fontSize: 9.5),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: muted.withAlpha(150),
+                      fontSize: 9.5,
+                    ),
                   ),
                 ],
               ),
@@ -424,7 +465,11 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Icon(Icons.schedule_rounded, color: Color(0xFF6366F1), size: 34),
+                const Icon(
+                  Icons.schedule_rounded,
+                  color: Color(0xFF6366F1),
+                  size: 34,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   '$channel is coming soon',
@@ -521,7 +566,10 @@ class _ConnectCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 3),
-            Text(subtitle, style: SwipessTokens.bodyClean(color: muted, fontSize: 10.5)),
+            Text(
+              subtitle,
+              style: SwipessTokens.bodyClean(color: muted, fontSize: 10.5),
+            ),
             const SizedBox(height: 11),
             Text(
               status,

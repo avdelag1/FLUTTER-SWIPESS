@@ -44,8 +44,8 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
     super.initState();
     _contract = widget.contract;
     _pad = SignatureController(
-      penStrokeWidth: 3,
-      penColor: const Color(0xFFEB4898),
+      penStrokeWidth: 4,
+      penColor: const Color(0xFF1E3A8A), // Deep ink blue
       exportBackgroundColor: const Color(0x00000000),
     );
     _pad.addListener(_onPadChanged);
@@ -78,7 +78,9 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
 
   Future<void> _refresh() async {
     try {
-      final fresh = await ref.read(contractRepositoryProvider).fetchById(_contract.id);
+      final fresh = await ref
+          .read(contractRepositoryProvider)
+          .fetchById(_contract.id);
       if (mounted) setState(() => _contract = fresh);
     } catch (_) {}
   }
@@ -91,7 +93,8 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
     final top = MediaQuery.paddingOf(context).top;
     final userId = Supabase.instance.client.auth.currentUser?.id;
     final needsSignature = userId != null && _contract.needsSignature(userId);
-    final canSign = _reviewed &&
+    final canSign =
+        _reviewed &&
         !_signing &&
         ((_useSavedSignature && _savedSignature != null) || _pad.isNotEmpty);
 
@@ -106,7 +109,10 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 const CapBackButton(),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: _contract.isCompleted
                         ? const Color(0xFF22C55E).withAlpha(24)
@@ -150,7 +156,11 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.lock_rounded, size: 15, color: AppTheme.brandPrimary),
+                const Icon(
+                  Icons.lock_rounded,
+                  size: 15,
+                  color: AppTheme.brandPrimary,
+                ),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
@@ -215,7 +225,10 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.fingerprint_rounded, color: AppTheme.brandPrimary),
+                    const Icon(
+                      Icons.fingerprint_rounded,
+                      color: AppTheme.brandPrimary,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -250,7 +263,8 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
             if (needsSignature) ...[
               CheckboxListTile(
                 value: _reviewed,
-                onChanged: (value) => setState(() => _reviewed = value ?? false),
+                onChanged: (value) =>
+                    setState(() => _reviewed = value ?? false),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppTheme.brandPrimary,
@@ -301,7 +315,10 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                             _decodeSignature(_savedSignature!),
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => Center(
-                              child: Text('Saved signature', style: TextStyle(color: muted)),
+                              child: Text(
+                                'Saved signature',
+                                style: TextStyle(color: muted),
+                              ),
                             ),
                           ),
                         ),
@@ -481,9 +498,15 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
     setState(() => _exporting = true);
     try {
       if (format == 'pdf') {
-        await ContractExportService.sharePdf(title: _contract.title, content: content);
+        await ContractExportService.sharePdf(
+          title: _contract.title,
+          content: content,
+        );
       } else {
-        await ContractExportService.shareWord(title: _contract.title, content: content);
+        await ContractExportService.shareWord(
+          title: _contract.title,
+          content: content,
+        );
       }
     } catch (e) {
       if (mounted) {

@@ -113,7 +113,9 @@ class ContractRepository {
     if (data is! List) return const [];
     return data
         .whereType<Map>()
-        .map((row) => ContractPartyMatch.fromJson(Map<String, dynamic>.from(row)))
+        .map(
+          (row) => ContractPartyMatch.fromJson(Map<String, dynamic>.from(row)),
+        )
         .toList();
   }
 

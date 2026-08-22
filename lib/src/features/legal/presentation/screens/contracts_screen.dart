@@ -132,8 +132,9 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                     label: 'Choose a template',
                     icon: Icons.library_books_rounded,
                     backgroundColor: ink,
-                    foregroundColor:
-                        MatteSurface.isLight(context) ? Colors.white : Colors.black,
+                    foregroundColor: MatteSurface.isLight(context)
+                        ? Colors.white
+                        : Colors.black,
                     onPressed: () => _pickTemplate(context),
                   ),
                   const SizedBox(height: 22),
@@ -204,7 +205,9 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     );
     if (template == null || !mounted) return;
     try {
-      final created = await ref.read(contractsProvider.notifier).create(template);
+      final created = await ref
+          .read(contractsProvider.notifier)
+          .create(template);
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -230,7 +233,9 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     );
     if (template == null) return;
     try {
-      final created = await ref.read(contractsProvider.notifier).create(template);
+      final created = await ref
+          .read(contractsProvider.notifier)
+          .create(template);
       if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -308,7 +313,10 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
                 const SizedBox(width: 9),
                 Text(
                   'CREATE WITH AI',
-                  style: AppTheme.displayItalic.copyWith(color: ink, fontSize: 26),
+                  style: AppTheme.displayItalic.copyWith(
+                    color: ink,
+                    fontSize: 26,
+                  ),
                 ),
               ],
             ),
@@ -380,7 +388,9 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
             ],
             const SizedBox(height: 16),
             BrandPrimaryButton(
-              label: _generating ? 'Creating draft…' : 'Generate editable draft',
+              label: _generating
+                  ? 'Creating draft…'
+                  : 'Generate editable draft',
               icon: Icons.auto_awesome_rounded,
               loading: _generating,
               onPressed: _generating ? null : _generate,
@@ -403,7 +413,9 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
   Future<void> _generate() async {
     final prompt = _prompt.text.trim();
     if (prompt.length < 20) {
-      setState(() => _error = 'Describe the agreement with a little more detail.');
+      setState(
+        () => _error = 'Describe the agreement with a little more detail.',
+      );
       return;
     }
     setState(() {
@@ -411,13 +423,14 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
       _error = null;
     });
     try {
-      final generated = await ref.read(aiEdgeRepositoryProvider).enhanceText(
-            text: prompt,
-            type: 'legal_draft',
-          );
+      final generated = await ref
+          .read(aiEdgeRepositoryProvider)
+          .enhanceText(text: prompt, type: 'legal_draft');
       if (!mounted) return;
       if (generated == null || generated.trim().length < 80) {
-        setState(() => _error = 'AI could not create a usable draft. Try again.');
+        setState(
+          () => _error = 'AI could not create a usable draft. Try again.',
+        );
         return;
       }
       final typedTitle = _title.text.trim();
@@ -572,7 +585,10 @@ class _EmptyVault extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          TextButton(onPressed: onCreate, child: const Text('Choose a template')),
+          TextButton(
+            onPressed: onCreate,
+            child: const Text('Choose a template'),
+          ),
         ],
       ),
     );
@@ -739,12 +755,18 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
               children: [
                 Text(
                   'TEMPLATE LIBRARY',
-                  style: AppTheme.displayItalic.copyWith(color: ink, fontSize: 26),
+                  style: AppTheme.displayItalic.copyWith(
+                    color: ink,
+                    fontSize: 26,
+                  ),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   'Start with a Swipess document, then customize it before sending.',
-                  style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 11),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: muted,
+                    fontSize: 11,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 TextField(
@@ -759,11 +781,15 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                     fillColor: MatteSurface.cardFill(context),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(18),
-                      borderSide: BorderSide(color: MatteSurface.hairline(context)),
+                      borderSide: BorderSide(
+                        color: MatteSurface.hairline(context),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(18),
-                      borderSide: BorderSide(color: MatteSurface.hairline(context)),
+                      borderSide: BorderSide(
+                        color: MatteSurface.hairline(context),
+                      ),
                     ),
                   ),
                 ),
@@ -793,7 +819,9 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                       decoration: BoxDecoration(
                         color: MatteSurface.cardFill(context),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: MatteSurface.hairline(context)),
+                        border: Border.all(
+                          color: MatteSurface.hairline(context),
+                        ),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(

@@ -208,7 +208,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                                   foregroundColor: MatteSurface.isLight(context)
                                       ? Colors.white
                                       : Colors.black,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
@@ -292,8 +294,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                 label: 'Send for signature',
                 icon: Icons.send_rounded,
                 backgroundColor: ink,
-                foregroundColor:
-                    MatteSurface.isLight(context) ? Colors.white : Colors.black,
+                foregroundColor: MatteSurface.isLight(context)
+                    ? Colors.white
+                    : Colors.black,
                 onPressed: _saving ? null : _sendForSignature,
               ),
             ] else ...[
@@ -309,11 +312,14 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                   label: 'Duplicate to edit',
                   icon: Icons.content_copy_rounded,
                   backgroundColor: ink,
-                  foregroundColor:
-                      MatteSurface.isLight(context) ? Colors.white : Colors.black,
+                  foregroundColor: MatteSurface.isLight(context)
+                      ? Colors.white
+                      : Colors.black,
                   onPressed: _duplicate,
                 ),
-              if (_isOwner && !_contract.isCompleted && !_contract.isCancelled) ...[
+              if (_isOwner &&
+                  !_contract.isCompleted &&
+                  !_contract.isCancelled) ...[
                 const SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: _cancelling ? null : _cancel,
@@ -366,10 +372,7 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
-        borderSide: const BorderSide(
-          color: AppTheme.brandPrimary,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: AppTheme.brandPrimary, width: 1.5),
       ),
     );
   }
@@ -408,7 +411,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
       _error = null;
     });
     try {
-      final saved = await ref.read(contractRepositoryProvider).saveDraft(
+      final saved = await ref
+          .read(contractRepositoryProvider)
+          .saveDraft(
             contractId: _contract.id,
             title: title,
             content: content,
@@ -419,9 +424,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
       await ref.read(contractsProvider.notifier).refresh();
       if (!mounted) return false;
       if (notify) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Draft saved securely')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Draft saved securely')));
       }
       return true;
     } catch (e) {
@@ -471,10 +476,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
       _error = null;
     });
     try {
-      final improved = await ref.read(aiEdgeRepositoryProvider).enhanceText(
-            text: text,
-            type: 'legal',
-          );
+      final improved = await ref
+          .read(aiEdgeRepositoryProvider)
+          .enhanceText(text: text, type: 'legal');
       if (!mounted) return;
       if (improved == null || improved.trim().isEmpty) {
         setState(() => _error = 'AI Polish is temporarily unavailable.');
@@ -497,9 +501,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     );
     if (!mounted) return;
     AppHaptics.light();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Document copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Document copied')));
   }
 
   Future<void> _openSignature() async {
@@ -510,9 +514,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     );
     if (!mounted) return;
     try {
-      final fresh = await ref.read(contractRepositoryProvider).fetchById(
-            _contract.id,
-          );
+      final fresh = await ref
+          .read(contractRepositoryProvider)
+          .fetchById(_contract.id);
       if (!mounted) return;
       setState(() => _contract = fresh);
       await ref.read(contractsProvider.notifier).refresh();
@@ -521,10 +525,14 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
 
   Future<void> _duplicate() async {
     try {
-      final copy = await ref.read(contractsProvider.notifier).duplicate(_contract);
+      final copy = await ref
+          .read(contractsProvider.notifier)
+          .duplicate(_contract);
       if (!mounted) return;
       await Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => ContractBuilderScreen(contract: copy)),
+        MaterialPageRoute(
+          builder: (_) => ContractBuilderScreen(contract: copy),
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -536,9 +544,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
   Future<void> _cancel() async {
     setState(() => _cancelling = true);
     try {
-      final cancelled = await ref.read(contractRepositoryProvider).cancel(
-            _contract.id,
-          );
+      final cancelled = await ref
+          .read(contractRepositoryProvider)
+          .cancel(_contract.id);
       if (!mounted) return;
       setState(() => _contract = cancelled);
       await ref.read(contractsProvider.notifier).refresh();
@@ -589,8 +597,9 @@ class _QuickFillField extends StatelessWidget {
       controller: controller,
       maxLines: field.kind == ContractFieldKind.multiline ? 3 : 1,
       keyboardType: switch (field.kind) {
-        ContractFieldKind.number =>
-          const TextInputType.numberWithOptions(decimal: true),
+        ContractFieldKind.number => const TextInputType.numberWithOptions(
+          decimal: true,
+        ),
         ContractFieldKind.date => TextInputType.datetime,
         ContractFieldKind.multiline => TextInputType.multiline,
         ContractFieldKind.text => TextInputType.text,
@@ -886,7 +895,10 @@ class _SendForSignatureSheetState
                     ),
                     subtitle: match.username == null
                         ? null
-                        : Text('@${match.username}', style: TextStyle(color: muted)),
+                        : Text(
+                            '@${match.username}',
+                            style: TextStyle(color: muted),
+                          ),
                     trailing: _sendingId == match.userId
                         ? const SizedBox(
                             width: 20,
@@ -913,7 +925,9 @@ class _SendForSignatureSheetState
       _error = null;
     });
     try {
-      final matches = await ref.read(contractRepositoryProvider).resolveCounterparty(q);
+      final matches = await ref
+          .read(contractRepositoryProvider)
+          .resolveCounterparty(q);
       if (!mounted) return;
       setState(() {
         _matches = matches;
@@ -936,7 +950,9 @@ class _SendForSignatureSheetState
       _error = null;
     });
     try {
-      final sent = await ref.read(contractRepositoryProvider).sendForSignature(
+      final sent = await ref
+          .read(contractRepositoryProvider)
+          .sendForSignature(
             contractId: widget.contract.id,
             clientId: match.userId,
           );
