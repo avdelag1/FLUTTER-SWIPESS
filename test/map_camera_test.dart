@@ -13,31 +13,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
 void main() {
-  test('10 km search radius frames a regional drone zoom', () {
-    expect(MapCameraMath.zoomForRadiusKm(10), closeTo(9.08, 0.05));
-    expect(MapCameraMath.zoomForRadiusKm(5), closeTo(10.08, 0.05));
-    expect(
-      MapCameraMath.openAltitudeZoom,
-      lessThan(MapCameraMath.zoomForRadiusKm(10)),
-    );
+  test('search radius uses the current close regional framing', () {
+    final fiveKm = MapCameraMath.zoomForRadiusKm(5);
+    final tenKm = MapCameraMath.zoomForRadiusKm(10);
+    final fiftyKm = MapCameraMath.zoomForRadiusKm(50);
+    expect(tenKm, closeTo(12.18, 0.05));
+    expect(fiveKm, closeTo(13.18, 0.05));
+    expect(fiveKm, greaterThan(tenKm));
+    expect(tenKm, greaterThan(fiftyKm));
+    expect(MapCameraMath.openAltitudeZoom, lessThan(tenKm));
   });
 
-  test('cinematic pitch stays 3D after the fly-in', () {
-    expect(MapCameraMath.openPitch, greaterThan(MapCameraMath.cruisePitch));
-    expect(MapCameraMath.cruisePitch, greaterThan(0.4));
-    expect(MapCameraMath.perspective, greaterThan(0));
+  test('map opens flat without synthetic perspective distortion', () {
+    expect(MapCameraMath.openPitch, 0);
+    expect(MapCameraMath.cruisePitch, 0);
+    expect(MapCameraMath.perspective, 0);
+    expect(MapCameraMath.stageScale, 1);
+    expect(MapCameraMath.stageTranslateY, 0);
   });
 
-  test('basemap uses photographic imagery with readable labels', () {
-    expect(MapBasemap.fallbackDarkUrl.contains('World_Imagery'), isTrue);
-    expect(MapBasemap.labelsUrl, contains('light_only_labels'));
+  test('basemap uses Swipess Mapbox styles with neutral fallbacks', () {
+    expect(MapBasemap.darkStyle, isNotEmpty);
+    expect(MapBasemap.lightStyle, isNotEmpty);
+    expect(MapBasemap.fallbackDarkUrl, contains('cartocdn.com/dark_all'));
+    expect(MapBasemap.fallbackLightUrl, contains('cartocdn.com/light_all'));
+    expect(MapBasemap.labelsUrl, isNull);
     expect(MapBasemap.canvas, const Color(0xFF0A0A0D));
   });
 
-  test('quick-filter frames never use category-colored glow', () {
+  test('quick-filter frames use only a neutral black shadow', () {
     final decoration = AppTheme.qfNeoFrame(isLight: false);
     expect(decoration.boxShadow, isNotEmpty);
-    expect(decoration.boxShadow!.single.color, Colors.black.withAlpha(105));
+    final shadow = decoration.boxShadow!.single;
+    expect(shadow.color, Colors.black.withAlpha(84));
+    expect(shadow.offset, const Offset(0, 5));
   });
 
   test('a single live listing is not padded with fake Tulum homes', () {
@@ -67,8 +76,6 @@ void main() {
     );
     final merged = listingsForMap([tulumListing], paris, 'Paris');
     expect(merged, isNotEmpty);
-    // listingsForMap no longer fabricates pins; city radius is applied
-    // by the provider. This just guarantees no demo overlay is injected.
     expect(merged.any((l) => l.id.startsWith('map-demo-')), isFalse);
   });
 
