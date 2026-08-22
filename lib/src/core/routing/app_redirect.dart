@@ -39,6 +39,9 @@ abstract final class AppRedirect {
 
   /// [location] is the matched path; [uri] is the full incoming location
   /// including any query, which is what gets queued as a pending deep link.
+  ///
+  /// [platformIsWeb] exists only to keep this routing function deterministic
+  /// in unit tests. Production callers omit it and use Flutter's real [kIsWeb].
   static String? resolve({
     required String location,
     required String uri,
@@ -46,6 +49,7 @@ abstract final class AppRedirect {
     required bool granted,
     required bool signedIn,
     required PendingDeepLink pending,
+    bool? platformIsWeb,
   }) {
     // While grant status is still loading, stay on splash screen.
     if (grantLoading) {
@@ -56,7 +60,8 @@ abstract final class AppRedirect {
     if (isPublic(location)) return null;
 
     // Native apps bypass the access-code gate completely.
-    final effectiveGranted = !kIsWeb || granted;
+    final isWeb = platformIsWeb ?? kIsWeb;
+    final effectiveGranted = !isWeb || granted;
 
     if (!effectiveGranted) {
       if (location == AppPaths.gate) return null;
