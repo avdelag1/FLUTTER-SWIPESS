@@ -365,14 +365,82 @@ class SwipessStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).height <= 900;
+    final background = isLight
+        ? SwipessTokens.lightElevated
+        : SwipessTokens.darkElevated;
+    final border = isLight
+        ? SwipessTokens.lightBorder
+        : SwipessTokens.darkBorder;
+
+    if (compact) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusTile),
+          border: Border.all(color: border),
+          boxShadow: SwipessTokens.cardShadow(isLight: isLight),
+        ),
+        child: Row(
+          children: [
+            SwipessIconTile(
+              icon: icon,
+              accentColor: accentColor,
+              size: 28,
+              iconSize: 14,
+              isLight: isLight,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title.toUpperCase(),
+                    style: SwipessTokens.kickerUppercase(
+                      color: isLight ? Colors.black54 : Colors.white60,
+                      fontSize: 8,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle.toUpperCase(),
+                    style: SwipessTokens.kickerUppercase(
+                      color: isLight ? Colors.black38 : Colors.white38,
+                      fontSize: 7,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: SwipessTokens.priceOversized(
+                  color: isLight ? Colors.black : Colors.white,
+                  fontSize: 22,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isLight ? SwipessTokens.lightElevated : SwipessTokens.darkElevated,
+        color: background,
         borderRadius: BorderRadius.circular(SwipessTokens.radiusTile),
-        border: Border.all(
-          color: isLight ? SwipessTokens.lightBorder : SwipessTokens.darkBorder,
-        ),
+        border: Border.all(color: border),
         boxShadow: SwipessTokens.cardShadow(isLight: isLight),
       ),
       child: Column(
