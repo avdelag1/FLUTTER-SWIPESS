@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
+import 'package:flutter_swipes/src/features/legal/data/repositories/contract_repository.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/contracts_provider.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/document_attachment.dart';
@@ -15,7 +16,12 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/quest
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `MessageDocumentsPanel` — vault / this chat / signed + send into thread.
+/// Secure document picker for a conversation.
+///
+/// A digital contract is never attached to a chat unless the other user is
+/// already a contract party or a draft is first assigned to them through the
+/// audited send-for-signature RPC. This keeps chat sharing and contract RLS in
+/// sync instead of leaking an attachment the recipient cannot open.
 Future<void> showChatDocumentsSheet(
   BuildContext context, {
   required String conversationId,
@@ -51,53 +57,81 @@ class _ChatDocumentsSheet extends ConsumerStatefulWidget {
 }
 
 class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
-  /// Cap tabs: vault | thread | completed
-  String _tab = 'vault';
-  bool _sending = false;
+  String _tab = 'vault'; // vault | thread | signed
+  String? _sendingId;
+  String? _error;
 
-  static const _rose = Color(0xFFF43F5E);
-
-  bool _isSigned(DigitalContract c) =>
-      c.status == 'signed' ||
-      c.status == 'completed' ||
-      c.status == 'fully_signed';
-
-  bool _isDraft(DigitalContract c) =>
-      c.status == 'draft' || c.templateType != null;
+  bool _isSigned(DigitalContract c) => c.isCompleted;
 
   Future<void> _sendContract(DigitalContract contract) async {
-    if (_sending) return;
-    setState(() => _sending = true);
+    if (_sendingId != null) return;
+    setState(() {
+      _sendingId = contract.id;
+      _error = null;
+    });
     AppHaptics.medium();
+
     try {
-      await ref
-          .read(messageRepositoryProvider)
-          .sendDocumentMessage(
+      DigitalContract shared = contract;
+      final alreadyParty =
+          contract.clientId == widget.otherUserId ||
+          contract.ownerId == widget.otherUserId;
+
+      if (!alreadyParty) {
+        if (!contract.isDraft) {
+          throw Exception(
+            'This document is already assigned or signed. Duplicate it in Swipess Sign before sending it to another person.',
+          );
+        }
+        shared = await ref.read(contractRepositoryProvider).sendForSignature(
+              contractId: contract.id,
+              clientId: widget.otherUserId,
+            );
+        await ref.read(contractsProvider.notifier).refresh();
+      }
+
+      await ref.read(messageRepositoryProvider).sendDocumentMessage(
             conversationId: widget.conversationId,
             attachment: DocumentAttachment(
               type: 'digital_contract',
-              id: contract.id,
-              title: contract.title,
-              status: contract.status,
-              templateType: contract.templateType,
+              id: shared.id,
+              title: shared.title,
+              status: shared.status,
+              templateType: shared.templateType,
             ),
           );
       ref.invalidate(conversationMessagesProvider(widget.conversationId));
       ref.read(dailyQuestsProvider.notifier).increment('message');
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            shared.isCompleted
+                ? 'Signed document shared in this chat'
+                : 'Document sent to ${widget.otherUserName} for signature',
+          ),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) setState(() => _sendingId = null);
     }
   }
 
   Future<void> _sendFile(LegalDocument doc) async {
-    if (_sending) return;
-    setState(() => _sending = true);
-    AppHaptics.medium();
+    if (_sendingId != null) return;
+    setState(() {
+      _sendingId = doc.id;
+      _error = null;
+    });
     try {
-      await ref
-          .read(messageRepositoryProvider)
-          .sendDocumentMessage(
+      await ref.read(messageRepositoryProvider).sendDocumentMessage(
             conversationId: widget.conversationId,
             attachment: DocumentAttachment(
               type: 'vault_file',
@@ -110,26 +144,23 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
       ref.invalidate(conversationMessagesProvider(widget.conversationId));
       ref.read(dailyQuestsProvider.notifier).increment('message');
       if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
-      if (mounted) setState(() => _sending = false);
+      if (mounted) setState(() => _sendingId = null);
     }
   }
 
-  Future<void> _exportPdf(DigitalContract contract) async {
-    AppHaptics.light();
+  Future<void> _copyContract(DigitalContract contract) async {
     final body = contract.content?.trim();
-    if (body == null || body.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No content to export')));
-      return;
-    }
+    if (body == null || body.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: '${contract.title}\n\n$body'));
     if (!mounted) return;
+    AppHaptics.light();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied — save outside Swipess for any business'),
-      ),
+      const SnackBar(content: Text('Document text copied')),
     );
   }
 
@@ -144,44 +175,46 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
     final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
     final isLight = MatteSurface.isLight(context);
-    final height = MediaQuery.sizeOf(context).height * 0.82;
+    final height = MediaQuery.sizeOf(context).height * 0.84;
 
     final contracts = contractsAsync.asData?.value ?? const <DigitalContract>[];
     final files = docsAsync.asData?.value ?? const <LegalDocument>[];
     final messages = messagesAsync.asData?.value ?? const [];
 
-    final withParty = contracts.where((c) {
-      return c.clientId == widget.otherUserId ||
-          c.ownerId == widget.otherUserId;
-    }).toList();
-
-    final signed = contracts.where(_isSigned).toList();
-
-    // Cap `extractThreadDocuments` — read structured attachments, not text sniffing.
     final threadContractIds = <String>{
       for (final m in messages)
         if (m.isDocument)
           for (final att in m.attachments)
             if (att.isContract) att.id,
     };
+    final withParty = contracts
+        .where(
+          (c) =>
+              c.clientId == widget.otherUserId ||
+              c.ownerId == widget.otherUserId,
+        )
+        .toList();
+    final signed = contracts.where(_isSigned).toList();
 
     List<DigitalContract> listForTab() {
-      if (_tab == 'vault') return contracts;
-      if (_tab == 'thread') {
-        return withParty
-            .where((c) => threadContractIds.contains(c.id))
-            .toList();
+      switch (_tab) {
+        case 'thread':
+          return withParty
+              .where((c) => threadContractIds.contains(c.id))
+              .toList();
+        case 'signed':
+          return signed;
+        default:
+          return contracts;
       }
-      return signed;
     }
 
     final list = listForTab();
-    final loading = contractsAsync.isLoading;
 
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: isLight ? const Color(0xFFF4F4F6) : const Color(0xFF121214),
+        color: isLight ? const Color(0xFFF5F5F7) : const Color(0xFF111113),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         border: Border(top: BorderSide(color: hairline)),
       ),
@@ -189,15 +222,15 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
         children: [
           const SizedBox(height: 10),
           Container(
-            width: 40,
+            width: 42,
             height: 4,
             decoration: BoxDecoration(
-              color: ink.withAlpha(40),
-              borderRadius: BorderRadius.circular(2),
+              color: muted.withAlpha(60),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 14, 12, 10),
+            padding: const EdgeInsets.fromLTRB(20, 14, 10, 10),
             child: Row(
               children: [
                 Expanded(
@@ -205,22 +238,22 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'DOCUMENTS',
+                        'SWIPESS SIGN',
                         style: GoogleFonts.plusJakartaSans(
-                          color: _rose,
-                          fontWeight: FontWeight.w900,
+                          color: AppTheme.brandPrimary,
                           fontSize: 9,
-                          letterSpacing: 2.8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.5,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'SEND TO ${widget.otherUserName.toUpperCase()}',
+                        'SHARE WITH ${widget.otherUserName.toUpperCase()}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTheme.displayItalic.copyWith(
-                          fontSize: 18,
                           color: ink,
+                          fontSize: 18,
                         ),
                       ),
                     ],
@@ -228,13 +261,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  style: IconButton.styleFrom(
-                    backgroundColor: isLight
-                        ? Colors.white
-                        : const Color(0xFF1C1C22),
-                    side: BorderSide(color: hairline),
-                  ),
-                  icon: Icon(Icons.close_rounded, color: ink.withAlpha(200)),
+                  icon: Icon(Icons.close_rounded, color: ink),
                 ),
               ],
             ),
@@ -252,24 +279,47 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                 ),
                 const SizedBox(width: 8),
                 _TabPill(
-                  icon: Icons.receipt_long_rounded,
+                  icon: Icons.forum_outlined,
                   label: 'THIS CHAT',
                   selected: _tab == 'thread',
                   onTap: () => setState(() => _tab = 'thread'),
                 ),
                 const SizedBox(width: 8),
                 _TabPill(
-                  icon: Icons.draw_rounded,
+                  icon: Icons.verified_rounded,
                   label: 'SIGNED',
-                  selected: _tab == 'completed',
-                  onTap: () => setState(() => _tab = 'completed'),
+                  selected: _tab == 'signed',
+                  onTap: () => setState(() => _tab = 'signed'),
                 ),
               ],
             ),
           ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF3B30).withAlpha(18),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFFF3B30).withAlpha(90),
+                  ),
+                ),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(
+                    color: Color(0xFFFF6B64),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           Expanded(
-            child: loading
+            child: contractsAsync.isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
                       color: AppTheme.brandPrimary,
@@ -283,55 +333,40 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
                           child: Text(
-                            'Pick a lease or template from your vault — drafts, pre-filled leases, or ones already with ${widget.otherUserName}.',
+                            'Drafts are securely assigned to ${widget.otherUserName} before they are attached. Already-assigned documents cannot be silently reassigned.',
                             style: GoogleFonts.plusJakartaSans(
                               color: muted,
                               fontSize: 11,
-                              fontWeight: FontWeight.w500,
                               height: 1.4,
                             ),
                           ),
                         ),
-                      if (list.isEmpty && _tab != 'vault')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 48),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.description_outlined,
-                                size: 40,
-                                color: ink.withAlpha(40),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                _tab == 'completed'
-                                    ? 'NO SIGNED LEASES YET'
-                                    : 'NOTHING SHARED IN THIS CHAT YET',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: muted,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                  letterSpacing: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
+                      if (list.isEmpty)
+                        _EmptyState(
+                          label: _tab == 'signed'
+                              ? 'NO SIGNED DOCUMENTS YET'
+                              : _tab == 'thread'
+                              ? 'NO DOCUMENTS IN THIS CHAT YET'
+                              : 'NO DOCUMENTS IN YOUR VAULT',
+                          showCreate: _tab == 'vault',
+                          onCreate: () {
+                            Navigator.pop(context);
+                            context.push(AppPaths.clientContracts);
+                          },
                         ),
-                      for (final c in list) ...[
+                      for (final contract in list) ...[
                         _ContractRow(
-                          contract: c,
-                          showSend: _tab == 'vault',
-                          sending: _sending,
-                          isDraft: _isDraft(c),
-                          isSigned: _isSigned(c),
-                          onSend: () => _sendContract(c),
-                          onExport: () => _exportPdf(c),
+                          contract: contract,
+                          sending: _sendingId == contract.id,
+                          otherUserId: widget.otherUserId,
+                          onSend: () => _sendContract(contract),
+                          onCopy: () => _copyContract(contract),
                         ),
                         const SizedBox(height: 10),
                       ],
                       if (_tab == 'vault' && files.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+                          padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
                           child: Text(
                             'UPLOADED FILES',
                             style: GoogleFonts.plusJakartaSans(
@@ -342,55 +377,15 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                             ),
                           ),
                         ),
-                        for (final f in files.take(8)) ...[
-                          _FileRow(doc: f, onShare: () => _sendFile(f)),
+                        for (final file in files.take(10)) ...[
+                          _FileRow(
+                            doc: file,
+                            sending: _sendingId == file.id,
+                            onShare: () => _sendFile(file),
+                          ),
                           const SizedBox(height: 8),
                         ],
                       ],
-                      if (_tab == 'vault' && list.isEmpty && !loading)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 36),
-                          child: Column(
-                            children: [
-                              Text(
-                                'NO LEASES IN YOUR VAULT YET',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: muted,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
-                                  letterSpacing: 1.4,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  context.push(AppPaths.clientContracts);
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFFFB7185),
-                                  side: BorderSide(color: _rose.withAlpha(90)),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.add_rounded, size: 18),
-                                label: Text(
-                                  'BUILD A LEASE',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 10,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                     ],
                   ),
           ),
@@ -422,16 +417,13 @@ class _TabPill extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          gradient: selected
-              ? LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)])
-              : null,
-          color: selected ? null : MatteSurface.cardFill(context),
+          color: selected ? AppTheme.brandPrimary : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected
-                ? Colors.transparent
+                ? AppTheme.brandPrimary
                 : MatteSurface.hairline(context),
           ),
         ),
@@ -445,7 +437,7 @@ class _TabPill extends StatelessWidget {
                 color: selected ? Colors.white : muted,
                 fontWeight: FontWeight.w900,
                 fontSize: 9,
-                letterSpacing: 1.4,
+                letterSpacing: 1.2,
               ),
             ),
           ],
@@ -458,32 +450,36 @@ class _TabPill extends StatelessWidget {
 class _ContractRow extends StatelessWidget {
   const _ContractRow({
     required this.contract,
-    required this.showSend,
     required this.sending,
-    required this.isDraft,
-    required this.isSigned,
+    required this.otherUserId,
     required this.onSend,
-    required this.onExport,
+    required this.onCopy,
   });
 
   final DigitalContract contract;
-  final bool showSend;
   final bool sending;
-  final bool isDraft;
-  final bool isSigned;
+  final String otherUserId;
   final VoidCallback onSend;
-  final VoidCallback onExport;
+  final VoidCallback onCopy;
 
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
-    final isLight = MatteSurface.isLight(context);
+    final alreadyParty =
+        contract.clientId == otherUserId || contract.ownerId == otherUserId;
+    final canShare = alreadyParty || contract.isDraft;
+    final statusColor = contract.isCompleted
+        ? const Color(0xFF22C55E)
+        : contract.isDraft
+        ? AppTheme.brandPrimary
+        : const Color(0xFFF59E0B);
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white.withAlpha(200) : const Color(0xFF141418),
+        color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: hairline),
       ),
@@ -493,13 +489,15 @@ class _ContractRow extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF43F5E).withAlpha(28),
+              color: statusColor.withAlpha(24),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(
-              Icons.receipt_long_rounded,
-              color: Color(0xFFFB7185),
-              size: 22,
+            child: Icon(
+              contract.isCompleted
+                  ? Icons.verified_rounded
+                  : Icons.description_rounded,
+              color: statusColor,
+              size: 21,
             ),
           ),
           const SizedBox(width: 12),
@@ -514,104 +512,56 @@ class _ContractRow extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     color: ink,
                     fontWeight: FontWeight.w900,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: const Color(0xFFF43F5E).withAlpha(80),
-                    ),
-                    color: const Color(0xFFF43F5E).withAlpha(24),
-                  ),
-                  child: Text(
-                    isDraft ? 'READY TO SEND' : contract.statusLabel,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFFB7185),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 8,
-                      letterSpacing: 1.2,
-                    ),
+                Text(
+                  alreadyParty
+                      ? contract.compactStatusLabel
+                      : contract.isDraft
+                      ? 'ASSIGN & SEND'
+                      : 'ASSIGNED ELSEWHERE',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: canShare ? statusColor : muted,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 8,
+                    letterSpacing: 1,
                   ),
                 ),
               ],
             ),
           ),
-          Column(
-            children: [
-              if (showSend)
-                GestureDetector(
-                  onTap: sending ? null : onSend,
-                  child: Container(
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                      ),
+          IconButton(
+            tooltip: 'Copy document text',
+            onPressed: onCopy,
+            icon: Icon(Icons.copy_rounded, size: 18, color: muted),
+          ),
+          FilledButton.icon(
+            onPressed: canShare && !sending ? onSend : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.brandPrimary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              minimumSize: const Size(0, 38),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(13),
+              ),
+            ),
+            icon: sending
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'SEND',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 9,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              if (isSigned) ...[
-                if (showSend) const SizedBox(height: 6),
-                GestureDetector(
-                  onTap: onExport,
-                  child: Container(
-                    height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: hairline),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.download_rounded,
-                          size: 12,
-                          color: ink.withAlpha(160),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'PDF',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: ink.withAlpha(160),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 8,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
+                  )
+                : const Icon(Icons.send_rounded, size: 14),
+            label: const Text(
+              'SEND',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
+            ),
           ),
         ],
       ),
@@ -620,21 +570,24 @@ class _ContractRow extends StatelessWidget {
 }
 
 class _FileRow extends StatelessWidget {
-  _FileRow({required this.doc, required this.onShare});
+  const _FileRow({
+    required this.doc,
+    required this.sending,
+    required this.onShare,
+  });
 
   final LegalDocument doc;
+  final bool sending;
   final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     final hairline = MatteSurface.hairline(context);
-    final isLight = MatteSurface.isLight(context);
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white.withAlpha(200) : const Color(0xFF141418),
+        color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: hairline),
       ),
@@ -658,27 +611,61 @@ class _FileRow extends StatelessWidget {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: onShare,
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: hairline),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'SHARE',
-                style: GoogleFonts.plusJakartaSans(
-                  color: ink.withAlpha(180),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 8,
-                  letterSpacing: 1.2,
-                ),
-              ),
+          TextButton.icon(
+            onPressed: sending ? null : onShare,
+            icon: sending
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send_rounded, size: 14),
+            label: const Text('SHARE'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.label,
+    required this.showCreate,
+    required this.onCreate,
+  });
+
+  final String label;
+  final bool showCreate;
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = MatteSurface.muted(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          Icon(Icons.description_outlined, size: 42, color: muted.withAlpha(60)),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: muted,
+              fontWeight: FontWeight.w900,
+              fontSize: 10,
+              letterSpacing: 1.3,
             ),
           ),
+          if (showCreate) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('CREATE DOCUMENT'),
+            ),
+          ],
         ],
       ),
     );
