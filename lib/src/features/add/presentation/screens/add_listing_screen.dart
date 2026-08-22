@@ -236,6 +236,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
           ),
         ],
       ),
+      ),
+      ),
     );
   }
 
