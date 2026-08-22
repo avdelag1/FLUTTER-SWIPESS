@@ -104,7 +104,6 @@ abstract final class AppPaths {
       case NavTab.seekers:
         return exploreSeekers;
       case NavTab.legal:
-        // Cap BottomNavigation path: `/client/legal-services`
         return clientLegalServices;
       case NavTab.events:
         return exploreEvents;
@@ -130,15 +129,16 @@ abstract final class AppPaths {
     if (location == clientLegal ||
         location == legal ||
         location == clientLegalServices ||
+        location == clientContracts ||
         location == legalServices ||
-        location == ownerLegalServices) {
+        location == ownerLegalServices ||
+        location == ownerContracts) {
       return NavTab.legal;
     }
     if (location == exploreEvents ||
         location == exploreEventsLikes ||
         (location.startsWith('$exploreEvents/') &&
             location != exploreEventsLikes)) {
-      // Detail routes are full-screen; keep feed highlighted only for feed.
       if (location == exploreEvents || location == exploreEventsLikes) {
         return NavTab.events;
       }
@@ -157,6 +157,7 @@ abstract final class AppPaths {
       exploreSeekers,
       clientLegal,
       clientLegalServices,
+      clientContracts,
       clientVapId,
       legacyDashboard,
     };
