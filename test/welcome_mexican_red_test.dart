@@ -80,7 +80,7 @@ void main() {
     expect(find.text('LOG IN'), findsOneWidget);
   });
 
-  testWidgets('AI search bar keeps its hint and frame shine', (
+  testWidgets('AI search bar keeps its I Need hint and frame shine', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -98,7 +98,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     final field = tester.widget<TextField>(find.byType(TextField));
-    expect(field.decoration?.hintText, 'Ask AI to find anything...');
+    expect(field.decoration?.hintText, 'Ask AI or say “I need…”');
     expect(find.byType(SearchFrameShine), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
   });
