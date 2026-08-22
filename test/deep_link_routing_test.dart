@@ -211,7 +211,7 @@ void main() {
 
   group('Capacitor path aliases', () {
     test('legacy aliases map onto their Flutter home', () {
-      expect(redirect('/'), AppPaths.gate);
+      expect(redirect('/'), AppPaths.clientDashboard);
       expect(redirect(AppPaths.legacyDashboard), AppPaths.clientDashboard);
       expect(redirect(AppPaths.exploreServices), AppPaths.clientServices);
       expect(redirect('/promote'), AppPaths.clientAdvertise);

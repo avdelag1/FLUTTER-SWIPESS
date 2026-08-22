@@ -12,11 +12,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('HolographicIDCard paints the selected PEARL theme', (
+  testWidgets('HolographicIDCard paints the static PEARL Local ID preview', (
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         home: Scaffold(
           body: HolographicIDCard(
             name: 'Maya Cruz',
@@ -31,9 +31,15 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('RESIDENT ID'), findsOneWidget);
+    expect(find.text('SWIPESS LOCAL ID'), findsOneWidget);
     expect(find.text('MAYA CRUZ'), findsOneWidget);
-    expect(find.text('SWIPESS GLOBAL REGISTRY'), findsOneWidget);
+    expect(find.text('RESIDENT ID'), findsNothing);
+    expect(find.text('SWIPESS GLOBAL REGISTRY'), findsNothing);
+    expect(find.text('TAP TO OPEN FULL VAP ID + DOCUMENTS'), findsOneWidget);
+
+    // The old profile card continuously shimmered and kept scheduling frames.
+    // The canonical preview is intentionally static.
+    expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
   testWidgets('vapCardThemeProvider follows the persisted theme index', (

@@ -89,7 +89,10 @@ abstract final class AppRedirect {
   static String? _capacitorAlias(String location) {
     switch (location) {
       case '/':
-        return AppPaths.gate;
+        // OAuth returns to the web origin root. Once Supabase has restored the
+        // signed-in session, go directly to the app instead of bouncing through
+        // the access gate / welcome stack again.
+        return AppPaths.clientDashboard;
       case AppPaths.legacyDashboard:
         return AppPaths.clientDashboard;
       case AppPaths.exploreServices:

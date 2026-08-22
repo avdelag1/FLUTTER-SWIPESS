@@ -35,7 +35,13 @@ class SupabaseAuthRepository implements AuthRepository {
 
   SupabaseAuthRepository(this._client);
 
-  static const _resetRedirect = 'https://www.swipess.com/reset-password';
+  static const _resetRedirect = 'https://swipess.com/reset-password';
+
+  String? get _webReferral {
+    if (!kIsWeb) return null;
+    final value = Uri.base.queryParameters['ref']?.trim();
+    return value == null || value.isEmpty ? null : value;
+  }
 
   @override
   Future<AuthResponse> signInWithEmailPassword(String email, String password) {
@@ -49,10 +55,16 @@ class SupabaseAuthRepository implements AuthRepository {
     String? name,
   }) async {
     final trimmed = name?.trim() ?? '';
+    final referral = _webReferral;
     final res = await _auth.signUp(
       email: email,
       password: password,
-      data: {'role': 'client', 'name': trimmed, 'full_name': trimmed},
+      data: {
+        'role': 'client',
+        'name': trimmed,
+        'full_name': trimmed,
+        if (referral != null) 'referred_by': referral,
+      },
     );
     if (res.session != null) return res;
     // Cap auto-signs in when email confirmation is off so signup lands on dashboard.
@@ -107,12 +119,22 @@ class SupabaseAuthRepository implements AuthRepository {
       return _signInWithNativeGoogle();
     }
 
-    // On Flutter web, do not force Uri.base.origin as redirectTo. Supabase's
-    // configured Site URL/redirect allow-list is the source of truth and the
-    // Flutter web auth client consumes the returned session from that flow.
-    // Overriding this here can split sessions across www/non-www origins.
+    // PKCE stores its verifier in browser storage for the exact origin that
+    // starts the flow. Always return to that same origin. This prevents a
+    // swipess.com -> www.swipess.com callback from losing the verifier and
+    // failing with `flow_state_expired`.
+    String? redirectTo;
+    if (kIsWeb) {
+      final referral = _webReferral;
+      redirectTo = Uri.parse(Uri.base.origin)
+          .replace(
+            queryParameters: referral == null ? null : {'ref': referral},
+          )
+          .toString();
+    }
     return _auth.signInWithOAuth(
       provider,
+      redirectTo: redirectTo,
       queryParams: provider == OAuthProvider.google
           ? const {'prompt': 'select_account'}
           : null,
