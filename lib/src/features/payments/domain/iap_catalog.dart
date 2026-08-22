@@ -13,8 +13,9 @@ abstract final class IapCatalog {
       priceLabel: '\$39.99',
       durationLabel: '/month',
       paypalPath: 'QSRXCJYYQ2UGY',
+      tokens: 20,
       benefits: [
-        '6 Direct Requests included',
+        '20 Direct Requests included',
         'More active listings & visibility',
         'Premium AI access',
         'AI Listing Creator',
@@ -30,9 +31,10 @@ abstract final class IapCatalog {
       priceLabel: '\$119.99',
       durationLabel: '/6 months',
       paypalPath: 'HUESWJ68BRUSY',
+      tokens: 50,
       popular: true,
       benefits: [
-        '12 Direct Requests included',
+        '50 Direct Requests included',
         'Higher listing limits & visibility',
         'Priority matching advantages',
         'Premium AI access',
@@ -49,8 +51,9 @@ abstract final class IapCatalog {
       priceLabel: '\$299.99',
       durationLabel: '/year',
       paypalPath: '7E6R38L33LYUJ',
+      tokens: 150,
       benefits: [
-        '30 Direct Requests included',
+        '150 Direct Requests included',
         'Maximum listing capacity & visibility',
         'Priority matching advantages',
         'Premium AI access',
