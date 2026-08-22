@@ -8,8 +8,7 @@ import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/legal_providers.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/widgets/legal_package_request_modal.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/widgets/legal_video_call_modal.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/widgets/legal_intake_panel.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LawyerServicesScreen extends ConsumerStatefulWidget {
@@ -52,7 +51,8 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'rental',
       price: 149,
       durationDays: 5,
-      description: 'Standard lease review for renting a home, rent terms, deposit, and house rules.',
+      description:
+          'Standard lease review for renting a home, rent terms, deposit, and house rules.',
     ),
     LegalServicePackage(
       id: 'seed-sale',
@@ -60,7 +60,8 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'house_sale',
       price: 299,
       durationDays: 10,
-      description: 'Buy/sell advisory — title review, earnest money, contingencies, and closing.',
+      description:
+          'Buy/sell advisory — title review, earnest money, contingencies, and closing.',
     ),
     LegalServicePackage(
       id: 'seed-nda',
@@ -68,7 +69,8 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'nda',
       price: 79,
       durationDays: 2,
-      description: 'Protect confidential business information shared between two parties.',
+      description:
+          'Protect confidential business information shared between two parties.',
     ),
   ];
 
@@ -83,7 +85,11 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       ('all', 'ALL SERVICES', Icons.grid_view_rounded),
       for (final id in _order)
         if (present.contains(id))
-          (id, (_meta[id]?.$1 ?? id).toUpperCase(), _meta[id]?.$2 ?? Icons.scale_rounded),
+          (
+            id,
+            (_meta[id]?.$1 ?? id).toUpperCase(),
+            _meta[id]?.$2 ?? Icons.scale_rounded,
+          ),
     ];
 
     final visible = _category == 'all'
@@ -107,9 +113,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               const SizedBox(width: 12),
               Text(
                 'BACK',
-                style: SwipessTokens.kickerUppercase(
-                  color: ink.withAlpha(160),
-                ),
+                style: SwipessTokens.kickerUppercase(color: ink.withAlpha(160)),
               ),
             ],
           ),
@@ -126,7 +130,10 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF6366F1).withAlpha(30),
                   borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
@@ -149,14 +156,11 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
           const SizedBox(height: 16),
           Text(
             'REQUEST LEGAL HELP.\nCONFIRM THE DETAILS.',
-            style: SwipessTokens.displayItalic(
-              color: ink,
-              fontSize: 28,
-            ),
+            style: SwipessTokens.displayItalic(color: ink, fontSize: 28),
           ),
           const SizedBox(height: 10),
           Text(
-            'Describe what you need. If a suitable independent provider is available, they may contact you to confirm credentials, jurisdiction, scope, timing, and price.',
+            'File a request. A lawyer reviews it first, then sends a yes and a price. You pay only after they accept — no cold video ringing.',
             style: SwipessTokens.bodyClean(
               color: ink.withAlpha(160),
               fontSize: 13,
@@ -164,57 +168,32 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
           ),
           const SizedBox(height: 24),
 
-          // CONNECT NOW Section
           Text(
-            'CONNECT NOW',
-            style: SwipessTokens.kickerUppercase(
-              color: ink.withAlpha(140),
-            ),
+            'START HERE',
+            style: SwipessTokens.kickerUppercase(color: ink.withAlpha(140)),
           ),
           const SizedBox(height: 12),
-
-          // Action Card 1: Video Call
           SwipessServiceActionCard(
-            title: 'VIDEO CALL',
-            subtitle: 'Live consult with an available lawyer',
-            icon: Icons.videocam_rounded,
+            title: 'NEED A LAWYER',
+            subtitle: 'Send an intake. They review, then you pay.',
+            icon: Icons.gavel_rounded,
             accentColor: const Color(0xFF6366F1),
-            statusPillLabel: 'LIVE',
-            statusPillColor: Colors.green,
+            statusPillLabel: 'REQUEST',
+            statusPillColor: const Color(0xFF6366F1),
             isLight: isLight,
             onTap: () {
               AppHaptics.medium();
               if (user == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Sign in to start a live video call with a lawyer.'),
-                  ),
+                  const SnackBar(content: Text('Sign in to request a lawyer.')),
                 );
                 return;
               }
-              showLegalVideoCallModal(context);
+              showLegalIntakeSheet(context);
             },
           ),
-          const SizedBox(height: 12),
-
-          // Action Card 2: WhatsApp
-          SwipessServiceActionCard(
-            title: 'WHATSAPP',
-            subtitle: 'Message a lawyer',
-            icon: Icons.chat_rounded,
-            accentColor: const Color(0xFF22C55E),
-            statusPillLabel: 'SOON',
-            statusPillColor: Colors.amber,
-            isLight: isLight,
-            onTap: () {
-              AppHaptics.light();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('WhatsApp lawyer chat is coming soon. Use Video call for a live consult.'),
-                ),
-              );
-            },
-          ),
+          const SizedBox(height: 16),
+          const LegalIntakeList(),
           const SizedBox(height: 24),
 
           // Category Filter Pills
@@ -235,16 +214,25 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: selected
                           ? (isLight ? Colors.black : Colors.white)
-                          : (isLight ? Colors.black.withAlpha(10) : Colors.white.withAlpha(12)),
-                      borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+                          : (isLight
+                                ? Colors.black.withAlpha(10)
+                                : Colors.white.withAlpha(12)),
+                      borderRadius: BorderRadius.circular(
+                        SwipessTokens.radiusPill,
+                      ),
                       border: Border.all(
                         color: selected
                             ? Colors.transparent
-                            : (isLight ? Colors.black.withAlpha(20) : Colors.white.withAlpha(20)),
+                            : (isLight
+                                  ? Colors.black.withAlpha(20)
+                                  : Colors.white.withAlpha(20)),
                       ),
                     ),
                     child: Row(
@@ -296,10 +284,15 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                         iconSize: 18,
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF6366F1).withAlpha(25),
-                          borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+                          borderRadius: BorderRadius.circular(
+                            SwipessTokens.radiusPill,
+                          ),
                         ),
                         child: Text(
                           '${pkg.durationDays} DAYS EST.',
@@ -330,7 +323,9 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   ),
                   const SizedBox(height: 16),
                   Divider(
-                    color: isLight ? Colors.black.withAlpha(15) : Colors.white.withAlpha(20),
+                    color: isLight
+                        ? Colors.black.withAlpha(15)
+                        : Colors.white.withAlpha(20),
                     height: 1,
                   ),
                   const SizedBox(height: 16),
@@ -382,7 +377,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                           height: 40,
                           onTap: () {
                             AppHaptics.medium();
-                            showLegalPackageRequestModal(context, pkg: pkg);
+                            showLegalIntakeSheet(context, pkg: pkg);
                           },
                         ),
                       ),

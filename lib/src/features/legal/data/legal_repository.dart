@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter_swipes/src/features/legal/domain/legal_intake.dart';
 import 'package:flutter_swipes/src/features/legal/domain/legal_service_package.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -68,7 +69,79 @@ class LegalRepository {
     }
   }
 
-  /// Cap `submitLegalPackageRequest`.
+  Future<List<LegalIntake>> fetchMyIntakes(String userId) async {
+    final rows = await _client
+        .from('legal_package_requests')
+        .select()
+        .eq('requested_by', userId)
+        .order('created_at', ascending: false)
+        .limit(20);
+    return (rows as List<dynamic>)
+        .map((e) => LegalIntake.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<String> submitIntake({
+    String? packageId,
+    String? packageName,
+    required String packageCategory,
+    double? quotedPrice,
+    required String situation,
+    String? city,
+    required String fullName,
+    required String email,
+    required String phone,
+    String preferredContact = 'phone',
+  }) async {
+    final uuid =
+        packageId != null &&
+            !packageId.startsWith('seed-') &&
+            !packageId.startsWith('contract-')
+        ? packageId
+        : null;
+    final id = await _client.rpc(
+      'rpc_submit_legal_intake',
+      params: {
+        'p_package_id': uuid,
+        'p_package_name': packageName,
+        'p_package_category': packageCategory,
+        'p_quoted_price': quotedPrice,
+        'p_situation': situation,
+        'p_city': city,
+        'p_full_name': fullName,
+        'p_email': email,
+        'p_phone': phone,
+        'p_preferred_contact': preferredContact,
+      },
+    );
+    return id as String;
+  }
+
+  Future<void> cancelIntake(String id) async {
+    await _client.rpc('rpc_client_cancel_legal_intake', params: {'p_id': id});
+  }
+
+  Future<void> confirmPayment(String id) async {
+    await _client.rpc('rpc_client_confirm_legal_payment', params: {'p_id': id});
+  }
+
+  static Uri paypalCheckout({
+    required String itemName,
+    required double amount,
+  }) {
+    return Uri.https('www.paypal.com', '/cgi-bin/webscr', {
+      'cmd': '_xclick',
+      'item_name': itemName,
+      'amount': amount.toStringAsFixed(2),
+      'currency_code': 'USD',
+      'no_shipping': '1',
+      'rm': '1',
+      'return': 'https://www.swipess.com/client/legal-services',
+      'cancel_return': 'https://www.swipess.com/client/legal-services',
+    });
+  }
+
+  /// Cap `submitLegalPackageRequest` — now an intake the lawyer must accept.
   Future<void> submitPackageRequest({
     required String userId,
     required String packageId,
@@ -82,24 +155,18 @@ class LegalRepository {
     required String preferredContact,
     required String requestType,
   }) async {
-    await _client.from('legal_package_requests').insert({
-      'requested_by': userId,
-      'package_id':
-          packageId.startsWith('seed-') || packageId.startsWith('contract-')
-          ? null
-          : packageId,
-      'package_name': packageName,
-      'package_category': packageCategory,
-      'quoted_price': quotedPrice,
-      'situation': situation,
-      'full_name': fullName,
-      'email': email,
-      'phone': phone,
-      'preferred_contact': preferredContact,
-      'request_type': requestType,
-      'status': 'pending',
-      'source': 'swipess_app',
-    });
+    assert(userId.isNotEmpty);
+    await submitIntake(
+      packageId: packageId,
+      packageName: packageName,
+      packageCategory: packageCategory,
+      quotedPrice: quotedPrice,
+      situation: situation,
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      preferredContact: preferredContact,
+    );
   }
 
   Future<int> countAvailableLawyers() async {
@@ -152,6 +219,12 @@ class LegalRepository {
         .stream(primaryKey: ['id'])
         .eq('id', callId)
         .map((rows) => rows.isEmpty ? <String, dynamic>{} : rows.first);
+  }
+
+  static String consultRoom(String intakeId) {
+    final compact = intakeId.replaceAll('-', '');
+    final slice = compact.length >= 16 ? compact.substring(0, 16) : compact;
+    return 'SwipessLegal-$slice';
   }
 
   static String jitsiUrl(String roomId, String displayName) {
