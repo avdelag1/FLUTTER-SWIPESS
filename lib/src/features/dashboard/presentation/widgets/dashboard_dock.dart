@@ -73,10 +73,7 @@ class DashboardDock extends StatelessWidget {
                         ? Colors.white.withAlpha(180)
                         : Colors.black.withAlpha(140),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2.0,
-                    ),
+                    border: Border.all(color: Colors.white, width: 2.0),
                   ),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -105,6 +102,9 @@ class DashboardDock extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ),
+      ),
     );
   }
 }
