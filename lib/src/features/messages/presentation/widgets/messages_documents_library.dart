@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/contracts_provider.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/contract_sign_screen.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/contract_builder_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Cap `MessagesDocumentsLibrary` — Business vault inside Inbox Documents tab.
+/// Document vault surfaced in the Inbox Documents tab.
+/// Secure in-app sending is handled from an individual conversation, where the
+/// recipient is first made a contract party before the attachment is sent.
 class MessagesDocumentsLibrary extends ConsumerStatefulWidget {
   const MessagesDocumentsLibrary({super.key});
 
@@ -23,7 +25,7 @@ class MessagesDocumentsLibrary extends ConsumerStatefulWidget {
 
 class _MessagesDocumentsLibraryState
     extends ConsumerState<MessagesDocumentsLibrary> {
-  String _filter = 'all'; // all | signed | drafts
+  String _filter = 'all'; // all | signed | drafts | waiting
 
   @override
   Widget build(BuildContext context) {
@@ -43,211 +45,196 @@ class _MessagesDocumentsLibraryState
       error: (e, _) => Center(
         child: TextButton(
           onPressed: () => ref.read(contractsProvider.notifier).refresh(),
-          child: Text(
-            'Could not load vault — retry',
-            style: TextStyle(color: muted),
-          ),
+          child: Text('Could not load vault — retry', style: TextStyle(color: muted)),
         ),
       ),
       data: (contracts) {
-        final signedCount = contracts.where((c) => _isSigned(c.status)).length;
+        final signedCount = contracts.where((c) => c.isCompleted).length;
+        final waitingCount = contracts
+            .where((c) => !c.isDraft && !c.isCompleted && !c.isCancelled)
+            .length;
         final filtered = contracts.where((c) {
-          if (_filter == 'signed') return _isSigned(c.status);
-          if (_filter == 'drafts') {
-            return c.status == 'draft' || c.templateType != null;
-          }
-          return true;
+          return switch (_filter) {
+            'signed' => c.isCompleted,
+            'drafts' => c.isDraft,
+            'waiting' => !c.isDraft && !c.isCompleted && !c.isCancelled,
+            _ => true,
+          };
         }).toList();
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: isLight
-                    ? Colors.white.withAlpha(200)
-                    : const Color(0xFF141418),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: hairline),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF43F5E).withAlpha(40),
-                          borderRadius: BorderRadius.circular(18),
+        return RefreshIndicator(
+          onRefresh: () => ref.read(contractsProvider.notifier).refresh(),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: MatteSurface.cardFill(context),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: hairline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: AppTheme.brandPrimary.withAlpha(30),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Icon(
+                            Icons.folder_special_rounded,
+                            color: AppTheme.brandPrimary,
+                            size: 27,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.folder_special_rounded,
-                          color: Color(0xFFFB7185),
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'BUSINESS VAULT',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFFFB7185),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2.8,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'YOUR LEASES & DOCUMENTS',
-                              style: AppTheme.displayItalic.copyWith(
-                                fontSize: 20,
-                                height: 1.05,
-                                color: ink,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Completed leases, templates, and vault files. Export or open — send straight from any chat.',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: muted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                        ),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: () {
-                            AppHaptics.medium();
-                            context.push(AppPaths.clientContracts);
-                          },
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.add_rounded,
-                                  color: Colors.white,
-                                  size: 18,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'SWIPESS SIGN',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: AppTheme.brandPrimary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2.5,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'NEW LEASE FROM TEMPLATE',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 10,
-                                    letterSpacing: 1.6,
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'DOCUMENT VAULT',
+                                style: AppTheme.displayItalic.copyWith(
+                                  color: ink,
+                                  fontSize: 21,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Draft, sent and fully signed documents in one place. Open any item to edit, review, duplicate, sign or inspect its audit trail.',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: muted,
+                        fontSize: 11,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          AppHaptics.medium();
+                          context.push(AppPaths.clientContracts);
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.brandPrimary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: Text(
+                          'CREATE DOCUMENT',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 10,
+                            letterSpacing: 1.4,
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _FilterPill(
-                    label: 'ALL',
-                    selected: _filter == 'all',
-                    onTap: () => setState(() => _filter = 'all'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterPill(
-                    label: 'SIGNED ($signedCount)',
-                    selected: _filter == 'signed',
-                    onTap: () => setState(() => _filter = 'signed'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterPill(
-                    label: 'TEMPLATES',
-                    selected: _filter == 'drafts',
-                    onTap: () => setState(() => _filter = 'drafts'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (filtered.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Column(
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.description_outlined,
-                      size: 48,
-                      color: ink.withAlpha(40),
+                    _FilterPill(
+                      label: 'ALL',
+                      selected: _filter == 'all',
+                      onTap: () => setState(() => _filter = 'all'),
                     ),
-                    const SizedBox(height: 14),
-                    Text(
-                      _filter == 'signed'
-                          ? 'NO SIGNED LEASES YET'
-                          : 'NO DOCUMENTS IN VAULT',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: muted,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                        letterSpacing: 1.6,
-                      ),
+                    const SizedBox(width: 8),
+                    _FilterPill(
+                      label: 'DRAFTS',
+                      selected: _filter == 'drafts',
+                      onTap: () => setState(() => _filter = 'drafts'),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterPill(
+                      label: 'WAITING ($waitingCount)',
+                      selected: _filter == 'waiting',
+                      onTap: () => setState(() => _filter = 'waiting'),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterPill(
+                      label: 'SIGNED ($signedCount)',
+                      selected: _filter == 'signed',
+                      onTap: () => setState(() => _filter = 'signed'),
                     ),
                   ],
                 ),
-              )
-            else
-              for (final c in filtered) ...[
-                _VaultCard(contract: c),
-                const SizedBox(height: 12),
-              ],
-          ],
+              ),
+              const SizedBox(height: 16),
+              if (filtered.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 44),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 46,
+                        color: ink.withAlpha(45),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'NO DOCUMENTS IN THIS VIEW',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: muted,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                for (final contract in filtered) ...[
+                  _VaultCard(contract: contract),
+                  const SizedBox(height: 10),
+                ],
+              if (isLight) const SizedBox(height: 0),
+            ],
+          ),
         );
       },
     );
   }
-
-  bool _isSigned(String status) =>
-      status == 'signed' || status == 'completed' || status == 'fully_signed';
 }
 
 class _FilterPill extends StatelessWidget {
-  _FilterPill({
+  const _FilterPill({
     required this.label,
     required this.selected,
     required this.onTap,
   });
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -261,16 +248,13 @@ class _FilterPill extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          gradient: selected
-              ? LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)])
-              : null,
-          color: selected ? null : MatteSurface.cardFill(context),
+          color: selected ? AppTheme.brandPrimary : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected
-                ? Colors.transparent
+                ? AppTheme.brandPrimary
                 : MatteSurface.hairline(context),
           ),
         ),
@@ -280,7 +264,7 @@ class _FilterPill extends StatelessWidget {
             color: selected ? Colors.white : muted,
             fontWeight: FontWeight.w900,
             fontSize: 9,
-            letterSpacing: 1.5,
+            letterSpacing: 1.2,
           ),
         ),
       ),
@@ -289,7 +273,8 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _VaultCard extends StatelessWidget {
-  _VaultCard({required this.contract});
+  const _VaultCard({required this.contract});
+
   final DigitalContract contract;
 
   @override
@@ -297,32 +282,37 @@ class _VaultCard extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
-    final isLight = MatteSurface.isLight(context);
-    final label = contract.statusLabel;
+    final statusColor = contract.isCompleted
+        ? const Color(0xFF22C55E)
+        : contract.isDraft
+        ? AppTheme.brandPrimary
+        : contract.isCancelled
+        ? const Color(0xFFFF6B64)
+        : const Color(0xFFF59E0B);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white.withAlpha(180) : const Color(0xFF141418),
-        borderRadius: BorderRadius.circular(24),
+        color: MatteSurface.cardFill(context),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: hairline),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF43F5E).withAlpha(28),
-                  borderRadius: BorderRadius.circular(16),
+                  color: statusColor.withAlpha(24),
+                  borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Icon(
-                  Icons.receipt_long_rounded,
-                  color: Color(0xFFFB7185),
-                  size: 24,
+                child: Icon(
+                  contract.isCompleted
+                      ? Icons.verified_rounded
+                      : Icons.description_rounded,
+                  color: statusColor,
                 ),
               ),
               const SizedBox(width: 12),
@@ -331,138 +321,104 @@ class _VaultCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      contract.title.toUpperCase(),
-                      maxLines: 1,
+                      contract.title,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         color: ink,
                         fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                    const SizedBox(height: 5),
+                    Text(
+                      contract.compactStatusLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: statusColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 8,
+                        letterSpacing: 1,
                       ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: const Color(0xFFF43F5E).withAlpha(80),
-                        ),
-                        color: const Color(0xFFF43F5E).withAlpha(24),
-                      ),
-                      child: Text(
-                        label,
+                    ),
+                    if (contract.counterpartyLabel != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        contract.counterpartyLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFFFB7185),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 8,
-                          letterSpacing: 1.4,
+                          color: muted,
+                          fontSize: 10,
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _ActionBtn(
-                  label: 'SHARE',
-                  icon: Icons.ios_share_rounded,
-                  onTap: () {
-                    AppHaptics.light();
-                    final body = contract.content?.trim();
-                    SharePlus.instance.share(
-                      ShareParams(
-                        text: (body == null || body.isEmpty)
-                            ? contract.title
-                            : '${contract.title}\n\n$body',
-                        subject: contract.title,
-                      ),
-                    );
-                  },
+                child: OutlinedButton.icon(
+                  onPressed: () => _shareCopy(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ink,
+                    side: BorderSide(color: hairline),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.ios_share_rounded, size: 15),
+                  label: const Text('EXPORT COPY'),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _ActionBtn(
-                  label: 'OPEN',
-                  icon: Icons.open_in_new_rounded,
-                  accent: true,
-                  onTap: () {
+                child: FilledButton.icon(
+                  onPressed: () {
                     AppHaptics.medium();
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => ContractSignScreen(contract: contract),
+                        builder: (_) => ContractBuilderScreen(contract: contract),
                       ),
                     );
                   },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.brandPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 15),
+                  label: const Text('OPEN'),
                 ),
               ),
             ],
           ),
-          if (muted.a > 0) const SizedBox(height: 0),
         ],
       ),
     );
   }
-}
 
-class _ActionBtn extends StatelessWidget {
-  const _ActionBtn({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.accent = false,
-  });
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 44,
-        decoration: BoxDecoration(
-          color: accent ? Color(0xFFF43F5E).withAlpha(36) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: accent
-                ? Color(0xFFF43F5E).withAlpha(90)
-                : MatteSurface.hairline(context),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: accent ? const Color(0xFFFB7185) : ink.withAlpha(180),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: accent ? const Color(0xFFFB7185) : ink.withAlpha(180),
-                fontWeight: FontWeight.w900,
-                fontSize: 9,
-                letterSpacing: 1.4,
-              ),
-            ),
-          ],
-        ),
+  Future<void> _shareCopy(BuildContext context) async {
+    AppHaptics.light();
+    final body = contract.content?.trim();
+    if (body == null || body.isEmpty) {
+      await Clipboard.setData(ClipboardData(text: contract.title));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Document title copied')),
+        );
+      }
+      return;
+    }
+    await SharePlus.instance.share(
+      ShareParams(
+        text: '${contract.title}\n\n$body',
+        subject: contract.title,
       ),
     );
   }
