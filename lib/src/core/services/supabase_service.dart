@@ -33,6 +33,11 @@ class SupabaseService {
     legacyAnonKeyOverride: _legacyAnonKeyOverride,
   );
 
+  // Transitional alias for repositories/config helpers that still use the old
+  // Supabase terminology. Keep this until those call sites are migrated.
+  @Deprecated('Use publishableKey instead.')
+  static String get anonKey => publishableKey;
+
   static String resolvePublishableKey({
     String publishableKeyOverride = '',
     String legacyAnonKeyOverride = '',
