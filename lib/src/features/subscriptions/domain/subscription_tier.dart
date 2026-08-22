@@ -18,12 +18,14 @@ enum SubscriptionTier {
     }
   }
 
-  /// AI, Events and Legal remain membership benefits. Marketplace chat itself
-  /// is consent-based and is not unlocked by a tier.
+  /// New free users receive the campaign welcome period through effectiveTier.
+  /// Once that period ends, AI, Events and Legal are Premium benefits again.
+  /// The Swipess Virtual/Local ID card remains available to every signed-in
+  /// user, including the permanent free tier.
   bool get canUseAI => this != SubscriptionTier.free;
   bool get canViewEvents => this != SubscriptionTier.free;
   bool get canUseLegal => this != SubscriptionTier.free;
-  bool get canUseVirtualCard => this != SubscriptionTier.free;
+  bool get canUseVirtualCard => true;
   bool get canPromote => this == SubscriptionTier.premium;
 
   int get maxListings {
