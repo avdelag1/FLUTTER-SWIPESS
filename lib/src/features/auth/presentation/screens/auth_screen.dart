@@ -324,17 +324,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 side: BorderSide(
-                                  color: Colors.white.withAlpha(110),
-                                  width: 1.1,
+                                  color: Colors.white.withAlpha(210),
+                                  width: 1.4,
                                 ),
                                 shape: const StadiumBorder(),
-                                backgroundColor: Colors.white.withAlpha(7),
+                                backgroundColor: Colors.white.withAlpha(24),
+                                disabledForegroundColor: Colors.white54,
                               ),
                               child: Text(
                                 _isLogin ? 'CREATE AN ACCOUNT' : 'SIGN IN',
                                 style: const TextStyle(
+                                  color: Colors.white,
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w900,
                                   letterSpacing: 1.2,
                                 ),
                               ),
@@ -345,7 +347,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withAlpha(30),
+                                  color: Colors.white.withAlpha(45),
                                 ),
                               ),
                               Padding(
@@ -354,14 +356,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 child: Text(
                                   'or',
                                   style: TextStyle(
-                                    color: Colors.white.withAlpha(105),
+                                    color: Colors.white.withAlpha(145),
                                     fontSize: 13,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withAlpha(30),
+                                  color: Colors.white.withAlpha(45),
                                 ),
                               ),
                             ],

@@ -241,8 +241,10 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: dashElevated,
+          foregroundColor: Colors.black,
+          backgroundColor: Colors.white,
+          disabledForegroundColor: Colors.black45,
+          disabledBackgroundColor: Colors.white54,
           elevation: 0,
           minimumSize: const Size(44, 48),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

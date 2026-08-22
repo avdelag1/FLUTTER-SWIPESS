@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_live_signals.dart';
 
 typedef SwipeCallback =
     void Function(Listing listing, SwipeDirection direction);
@@ -125,8 +126,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final shouldSwipe = _dragOffset.dx.abs() > _swipeThreshold || fling;
 
     if (shouldSwipe && widget.listings.isNotEmpty) {
-      // A fast release should follow the finger velocity even if the card was a
-      // few pixels on the opposite side when the gesture ended.
       final directionalDx = fling ? velocity : _dragOffset.dx;
       final direction = directionalDx >= 0
           ? SwipeDirection.right
@@ -278,26 +277,37 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                 BoxShadow(color: glow, blurRadius: 80, spreadRadius: 4),
               ],
             ),
-            child: CapSwipeCard(
-              key: _topCardKey,
-              listing: listing,
-              isTop: true,
-              likeOpacity: _likeOpacity,
-              nopeOpacity: _nopeOpacity,
-              railVisible: widget.railVisible,
-              canUndo: widget.canUndo,
-              onBack: widget.onBack,
-              onUndo: widget.onUndo,
-              onInsights: () => widget.onInsights?.call(listing),
-              onShare: () => widget.onShare?.call(listing),
-              onMessage: () => widget.onMessage?.call(listing),
-              onReport: () => widget.onReport?.call(listing),
-              onOpenAi: widget.onOpenAi,
-              onOpenMap: widget.onOpenMap,
-              onSummonChrome: widget.onSummonChrome,
-              onZoomChanged: (active) {
-                if (mounted) setState(() => _zoomLocksDrag = active);
-              },
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CapSwipeCard(
+                  key: _topCardKey,
+                  listing: listing,
+                  isTop: true,
+                  likeOpacity: _likeOpacity,
+                  nopeOpacity: _nopeOpacity,
+                  railVisible: widget.railVisible,
+                  canUndo: widget.canUndo,
+                  onBack: widget.onBack,
+                  onUndo: widget.onUndo,
+                  onInsights: () => widget.onInsights?.call(listing),
+                  onShare: () => widget.onShare?.call(listing),
+                  onMessage: () => widget.onMessage?.call(listing),
+                  onReport: () => widget.onReport?.call(listing),
+                  onOpenAi: widget.onOpenAi,
+                  onOpenMap: widget.onOpenMap,
+                  onSummonChrome: widget.onSummonChrome,
+                  onZoomChanged: (active) {
+                    if (mounted) setState(() => _zoomLocksDrag = active);
+                  },
+                ),
+                Positioned(
+                  top: 66,
+                  right: 64,
+                  left: 150,
+                  child: ListingLiveSignals(listing: listing),
+                ),
+              ],
             ),
           ),
         ),

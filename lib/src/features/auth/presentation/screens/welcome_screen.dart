@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -159,28 +158,44 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 children: [
                   TextButton(
                     onPressed: () => context.push(AppPaths.legal),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
                     child: Text(
                       'Terms of Service',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(100),
+                        color: Colors.white.withAlpha(190),
                         fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                   Text(
                     '•',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white.withAlpha(100),
+                      color: Colors.white.withAlpha(135),
                       fontSize: 12,
                     ),
                   ),
                   TextButton(
                     onPressed: () => context.push(AppPaths.legal),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
                     child: Text(
                       'Privacy Policy',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(100),
+                        color: Colors.white.withAlpha(190),
                         fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

@@ -6,9 +6,11 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/search_frame_shine.dart';
+import 'package:flutter_swipes/src/features/needs/presentation/widgets/need_composer_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `AISearchBar` — type first, submit opens Intel Core with the query.
+/// AI entry point. Normal questions still open Intel Core; marketplace intent
+/// opens the action composer so AI can find/post something after confirmation.
 class AiSearchBar extends ConsumerStatefulWidget {
   const AiSearchBar({super.key});
 
@@ -19,6 +21,11 @@ class AiSearchBar extends ConsumerStatefulWidget {
 class _AiSearchBarState extends ConsumerState<AiSearchBar> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
+
+  static final _marketplaceIntent = RegExp(
+    r'\b(i need|need a|need an|find me|looking for|i want|rent|buy|hire|book|scooter|motorcycle|bike|bicycle|villa|apartment|property|yacht|massage|cleaner|worker|service)\b',
+    caseSensitive: false,
+  );
 
   @override
   void dispose() {
@@ -31,7 +38,17 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
     final q = _controller.text.trim();
     AppHaptics.selection();
     _focus.unfocus();
+    if (q.isNotEmpty && _marketplaceIntent.hasMatch(q)) {
+      await showNeedComposerSheet(context, initialQuery: q);
+      return;
+    }
     await showIntelCoreSheet(context, initialQuery: q);
+  }
+
+  Future<void> _openNeed() async {
+    AppHaptics.selection();
+    _focus.unfocus();
+    await showNeedComposerSheet(context, initialQuery: _controller.text.trim());
   }
 
   @override
@@ -70,7 +87,7 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   isDense: true,
-                  hintText: 'Ask AI to find anything...',
+                  hintText: 'Ask AI or say “I need…”',
                   hintStyle: GoogleFonts.plusJakartaSans(
                     color: ink.withAlpha(140),
                     fontWeight: FontWeight.w500,
@@ -82,8 +99,17 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
               ),
             ),
             IconButton(
+              onPressed: _openNeed,
+              tooltip: 'I Need',
+              icon: const Icon(
+                Icons.bolt_rounded,
+                color: Color(0xFFFF4D00),
+                size: 20,
+              ),
+            ),
+            IconButton(
               onPressed: _runSearch,
-              tooltip: 'Search',
+              tooltip: 'Ask AI',
               icon: Icon(
                 Icons.arrow_forward_rounded,
                 color: glow.withAlpha(230),
