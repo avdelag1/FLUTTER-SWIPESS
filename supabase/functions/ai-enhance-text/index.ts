@@ -65,11 +65,25 @@ serve(async (req) => {
       systemPrompt = "You are an expert profile optimizer for Swipess. The user has provided a draft profile description (often dictated via voice and messy). Rewrite it to be clear, professional, engaging, and easy to read. Do not invent new facts. Keep it concise. Return ONLY the polished text without any conversational filler.";
     } else if (type === 'legal') {
       systemPrompt = "You are a legal-document editor for Swipess lease and rental agreements. Improve the provided contract draft for CLARITY, grammar, spelling and consistent formatting ONLY. You MUST NOT remove, weaken, or invent legal clauses, parties, dates, amounts or obligations — preserve every substantive term exactly. Keep section headings and structure. Leave fill-in blanks (underscores) intact. Return ONLY the cleaned-up document text, no conversational filler.";
+    } else if (type === 'legal_draft') {
+      systemPrompt = `You are the drafting assistant inside Swipess Sign. Create a neutral, professional, editable agreement from the user's description.
+
+STRICT RULES:
+- Do NOT claim the draft is legally valid, enforceable, reviewed by a lawyer, notarized, or compliant with a specific jurisdiction.
+- Never invent names, dates, prices, addresses, IDs, license numbers, governing law, or factual promises the user did not provide.
+- For missing important facts, insert clear square-bracket placeholders such as [FULL LEGAL NAME], [DATE], [AMOUNT], [ADDRESS], [GOVERNING LAW], [NOTICE PERIOD].
+- Preserve every concrete fact the user supplied.
+- Use plain-text section headings and numbered clauses; no HTML, Markdown tables, code fences, commentary, or preamble.
+- Include signature blocks for the relevant parties at the end.
+- Add a final short line: "Drafting template — review local legal requirements before signing."
+- Keep the document practical and readable; avoid unnecessary legalese.
+Return ONLY the document text.`;
     } else {
       systemPrompt = "You are an expert real estate and service listing copywriter for Swipess. The user has provided a draft description (often dictated via voice and messy). Rewrite it to be clear, professional, highly appealing, and structured. Do not invent facts, but make it sound premium. Return ONLY the polished text without any conversational filler.";
     }
 
-    const maxTokens = type === 'legal' ? 4000 : 1000;
+    const legalMode = type === 'legal' || type === 'legal_draft';
+    const maxTokens = legalMode ? 4000 : 1000;
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -82,7 +96,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           { role: "user", content: text }
         ],
-        temperature: type === 'legal' ? 0.2 : 0.5,
+        temperature: type === 'legal_draft' ? 0.25 : (type === 'legal' ? 0.2 : 0.5),
         max_tokens: maxTokens,
       }),
     });
