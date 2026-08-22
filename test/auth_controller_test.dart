@@ -9,6 +9,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class MockAuthRepository extends Mock implements AuthRepository {}
 class FakeAuthResponse extends Fake implements AuthResponse {}
 
+class TestCurrentUserNotifier extends CurrentUserNotifier {
+  @override
+  User? build() => null;
+
+  @override
+  void apply(User? user) {
+    state = user;
+  }
+
+  @override
+  void clear() {
+    state = null;
+  }
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(OAuthProvider.google);
@@ -24,7 +39,7 @@ void main() {
     return ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(mockRepo),
-        currentUserProvider.overrideWith(() => CurrentUserNotifier()),
+        currentUserProvider.overrideWith(TestCurrentUserNotifier.new),
       ],
     );
   }
@@ -34,6 +49,7 @@ void main() {
         .thenAnswer((_) async => FakeAuthResponse());
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.login('test@example.com', 'password');
@@ -46,6 +62,7 @@ void main() {
         .thenThrow(Exception('Invalid login'));
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.login('test@example.com', 'password');
@@ -57,6 +74,7 @@ void main() {
         .thenAnswer((_) async => FakeAuthResponse());
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.signup('test@example.com', 'password');
@@ -69,6 +87,7 @@ void main() {
         .thenAnswer((_) async {});
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.resetPassword('test@example.com');
@@ -81,6 +100,7 @@ void main() {
         .thenAnswer((_) async => true);
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.loginWithOAuth(OAuthProvider.google);
@@ -92,6 +112,7 @@ void main() {
         .thenAnswer((_) async => false);
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.loginWithOAuth(OAuthProvider.apple);
@@ -104,6 +125,7 @@ void main() {
         .thenThrow(Exception('OAuth Failed'));
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.loginWithOAuth(OAuthProvider.google);
@@ -115,6 +137,7 @@ void main() {
         .thenAnswer((_) async {});
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.updatePassword('new_password');
@@ -126,6 +149,7 @@ void main() {
         .thenThrow(Exception('Update failed'));
 
     final container = makeContainer();
+    addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
     await controller.updatePassword('new_password');
