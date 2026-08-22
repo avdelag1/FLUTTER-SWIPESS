@@ -8,9 +8,11 @@ void main() {
     'ModalRoute currentness changes while a full-screen child route is pushed',
     (tester) async {
       bool? underlyingIsCurrent;
+      final navigatorKey = GlobalKey<NavigatorState>();
 
       await tester.pumpWidget(
         MaterialApp(
+          navigatorKey: navigatorKey,
           home: Builder(
             builder: (context) {
               underlyingIsCurrent = ModalRoute.of(context)?.isCurrent;
@@ -38,7 +40,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(underlyingIsCurrent, isFalse);
 
-      await tester.pageBack();
+      navigatorKey.currentState!.pop();
       await tester.pumpAndSettle();
       expect(underlyingIsCurrent, isTrue);
     },
