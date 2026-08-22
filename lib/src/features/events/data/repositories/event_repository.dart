@@ -25,7 +25,8 @@ class EventRepository {
     _legacy,
   ];
 
-  /// Matches Capacitor `useEventsDeck`: newest events, with video when present.
+  /// Matches Capacitor `useEventsDeck`: newest published events, with video
+  /// when present.
   Future<List<Event>> fetchEvents() async {
     for (final select in eventRepositoryProviderFallbackSelects) {
       try {
@@ -57,6 +58,9 @@ class EventRepository {
     }
   }
 
+  /// Detail links must never resurrect an unpublished event. RLS remains the
+  /// security boundary; this explicit filter is defense in depth and keeps the
+  /// product behavior consistent with the Events deck.
   Future<Event?> fetchById(String id) async {
     for (final select in eventRepositoryProviderFallbackSelects) {
       try {
@@ -64,6 +68,7 @@ class EventRepository {
             .from('events')
             .select(select)
             .eq('id', id)
+            .eq('is_published', true)
             .maybeSingle();
         if (row == null) return null;
         return Event.fromJson(Map<String, dynamic>.from(row));
@@ -110,7 +115,7 @@ class EventRepository {
     }
   }
 
-  /// Capacitor EventosLikes — favorited events for current user.
+  /// Capacitor EventosLikes — favorited, still-published events for current user.
   Future<List<Event>> fetchFavoritedEvents() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return const [];
@@ -132,7 +137,8 @@ class EventRepository {
         final rows = await _client
             .from('events')
             .select(select)
-            .inFilter('id', ids);
+            .inFilter('id', ids)
+            .eq('is_published', true);
         final byId = {
           for (final row in rows as List)
             (row as Map<String, dynamic>)['id'] as String: Event.fromJson(row),
