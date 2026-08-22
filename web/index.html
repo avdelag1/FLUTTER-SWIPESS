@@ -19,16 +19,11 @@
   <link rel="manifest" href="manifest.json">
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
   <script>
-    // Keep one production browser origin. Supabase PKCE stores the verifier in
-    // origin-scoped browser storage, so www <-> apex hops can invalidate OAuth.
+    // Do not force www/apex in client JavaScript. The hosting platform owns the
+    // canonical-domain redirect, while OAuth explicitly returns to Uri.base.origin.
+    // A second browser-side canonicalization can create redirect loops and stop
+    // Flutter from booting at all.
     (function () {
-      if (location.hostname === 'www.swipess.com') {
-        location.replace(
-          'https://swipess.com' + location.pathname + location.search + location.hash
-        );
-        return;
-      }
-
       var params = new URLSearchParams(location.search);
       if (params.has('code') || params.has('error') || params.has('error_code')) {
         document.documentElement.classList.add('oauth-return');
