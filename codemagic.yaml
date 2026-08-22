@@ -20,6 +20,10 @@ workflows:
         # fallback change.
         SUPABASE_URL: https://vplgtcguxujxwrgguxqq.supabase.co
         SUPABASE_PUBLISHABLE_KEY: sb_publishable_FA0BseFSS6zM7Y8K3w8zLQ_d8BXqEuV
+        # GOOGLE_SERVER_CLIENT_ID and GOOGLE_IOS_CLIENT_ID are intentionally not
+        # hardcoded in git. Add the existing OAuth client IDs as Codemagic env
+        # variables; this workflow forwards them into Flutter and derives the
+        # required reversed iOS callback scheme automatically.
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -31,11 +35,36 @@ workflows:
       - name: Install CocoaPods dependencies
         script: find . -name "Podfile" -execdir pod install \;
 
+      - name: Configure native Google Sign-In
+        script: |
+          if [ -n "${GOOGLE_IOS_CLIENT_ID:-}" ] || [ -n "${GOOGLE_SERVER_CLIENT_ID:-}" ]; then
+            if [ -z "${GOOGLE_IOS_CLIENT_ID:-}" ] || [ -z "${GOOGLE_SERVER_CLIENT_ID:-}" ]; then
+              echo "Both GOOGLE_IOS_CLIENT_ID and GOOGLE_SERVER_CLIENT_ID must be set for native Google Sign-In."
+              exit 1
+            fi
+            case "$GOOGLE_IOS_CLIENT_ID" in
+              *.apps.googleusercontent.com) ;;
+              *) echo "GOOGLE_IOS_CLIENT_ID is not a Google OAuth client ID."; exit 1 ;;
+            esac
+            GOOGLE_REVERSED_CLIENT_ID="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+            /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes:1" ios/Runner/Info.plist >/dev/null 2>&1 || true
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1 dict" ios/Runner/Info.plist
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1:CFBundleTypeRole string Editor" ios/Runner/Info.plist
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1:CFBundleURLName string google-sign-in" ios/Runner/Info.plist
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1:CFBundleURLSchemes array" ios/Runner/Info.plist
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:1:CFBundleURLSchemes:0 string $GOOGLE_REVERSED_CLIENT_ID" ios/Runner/Info.plist
+            echo "Native Google Sign-In callback configured."
+          else
+            echo "Google OAuth env vars are not set; native Google Sign-In will remain unavailable in this archive."
+          fi
+
       - name: Force Flutter/Xcode release configuration
         script: |
           flutter build ios --config-only --release --no-codesign \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}"
           grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig || true
 
       - name: Fetch App Store signing files
@@ -53,12 +82,16 @@ workflows:
           flutter pub get
           flutter build ios --config-only --release --no-codesign \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}"
           # Version/build come only from pubspec.yaml so Codemagic can never
           # silently upload an old hard-coded build number again.
           flutter build ipa --release \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}" \
             --export-options-plist=/Users/builder/export_options.plist
 
       - name: Reject debug/JIT IPA
