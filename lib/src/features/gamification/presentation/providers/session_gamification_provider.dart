@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
@@ -26,6 +27,7 @@ class SessionGamificationService {
   final Ref ref;
   Timer? _timer;
   bool _syncing = false;
+  bool _referralChecked = false;
   _GamificationLifecycleObserver? _lifecycleObserver;
   BuildContext? _context;
   int _trackingClients = 0;
@@ -86,7 +88,29 @@ class SessionGamificationService {
 
   void dispose() => _stopCompletely();
 
+  Future<void> _applyPendingReferral() async {
+    if (_referralChecked || !kIsWeb) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final referrer = Uri.base.queryParameters['ref']?.trim();
+    _referralChecked = true;
+    if (referrer == null || referrer.isEmpty) return;
+    try {
+      await Supabase.instance.client.rpc(
+        'rpc_apply_signup_referral',
+        params: {'p_referrer_id': referrer},
+      );
+      ref.invalidate(directRequestBalanceProvider);
+      ref.invalidate(notificationsProvider);
+      ref.invalidate(unreadNotificationsProvider);
+    } catch (_) {
+      // Invalid, self, stale or already-used referral links are intentionally
+      // ignored. The server is authoritative and never grants twice.
+    }
+  }
+
   Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
+    await _applyPendingReferral();
     if (_syncing || Supabase.instance.client.auth.currentUser == null) return;
     _syncing = true;
     try {
