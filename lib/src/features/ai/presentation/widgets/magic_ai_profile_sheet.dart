@@ -9,7 +9,9 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/providers
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap Magic AI Profile — `ai-profile-extract` then save core fields.
+/// Magic AI Profile — included with the 3-month welcome period and Premium.
+/// Direct Requests are marketplace connection credits and are never consumed by
+/// AI generation.
 Future<void> showMagicAiProfileSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
@@ -45,32 +47,36 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
       );
       return;
     }
+
     setState(() => _busy = true);
     AppHaptics.medium();
-    
-    final repo = ref.read(subscriptionRepositoryProvider);
-    final hasToken = await repo.decrementToken();
-    if (!hasToken) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      showPaywall(context, featureName: 'AI Tokens');
-      return;
-    }
-    ref.read(subscriptionProvider.notifier).refresh();
 
-    final ai = ref.read(aiEdgeRepositoryProvider);
-    final draft = await ai.extractProfile(narrative: text);
-    var bio = draft['bio']?.toString().trim();
-    if (bio == null || bio.isEmpty) {
-      bio = await ai.enhanceText(text: text, type: 'profile') ?? text;
-    }
-    final name = draft['name']?.toString().trim();
-    final city = draft['city']?.toString().trim();
-    final existing = ref.read(currentProfileProvider).value;
-    final displayName = (name != null && name.isNotEmpty)
-        ? name
-        : (existing?.displayName ?? 'Swipess User');
     try {
+      // Use the same authoritative subscription/trial calculation as the rest
+      // of the app. Never spend a Direct Request to use Premium AI.
+      final cached = ref.read(subscriptionProvider).value;
+      final access = cached ??
+          await ref.read(subscriptionRepositoryProvider).fetchCurrent();
+      if (!access.effectiveTier.canUseAI) {
+        if (!mounted) return;
+        setState(() => _busy = false);
+        showPaywall(context, featureName: 'Swipess AI');
+        return;
+      }
+
+      final ai = ref.read(aiEdgeRepositoryProvider);
+      final draft = await ai.extractProfile(narrative: text);
+      var bio = draft['bio']?.toString().trim();
+      if (bio == null || bio.isEmpty) {
+        bio = await ai.enhanceText(text: text, type: 'profile') ?? text;
+      }
+      final name = draft['name']?.toString().trim();
+      final city = draft['city']?.toString().trim();
+      final existing = ref.read(currentProfileProvider).value;
+      final displayName = (name != null && name.isNotEmpty)
+          ? name
+          : (existing?.displayName ?? 'Swipess User');
+
       await ref
           .read(profileRepositoryProvider)
           .updateProfile(
@@ -88,7 +94,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Could not save profile: $e')));
+      ).showSnackBar(SnackBar(content: Text('Could not generate profile: $e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -135,7 +141,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Describe yourself — Swipess Edge AI drafts your bio (and name/city when found).',
+              'Included during your 3-month welcome access and with Premium. Describe yourself and Swipess AI drafts your bio.',
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white54,
                 fontSize: 12,
