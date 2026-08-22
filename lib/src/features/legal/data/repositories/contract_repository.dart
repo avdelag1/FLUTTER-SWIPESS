@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/features/legal/domain/contract_templates.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
 
 final contractRepositoryProvider = Provider<ContractRepository>((ref) {
@@ -34,9 +35,36 @@ class ContractRepository {
           'title': template.name,
           'template_type': template.id,
           'content': template.content,
+          'terms_and_conditions': template.content,
           'owner_id': userId,
           'client_id': userId,
+          'created_by': userId,
           'status': 'draft',
+          'metadata': {
+            'template_category': template.category,
+            'for_role': template.forRole,
+          },
+        })
+        .select()
+        .single();
+    return DigitalContract.fromJson(data);
+  }
+
+  Future<DigitalContract> duplicate(DigitalContract contract) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not signed in');
+    final data = await _client
+        .from('digital_contracts')
+        .insert({
+          'title': '${contract.title} — Copy',
+          'template_type': contract.templateType,
+          'content': contract.content ?? '',
+          'terms_and_conditions': contract.content ?? '',
+          'owner_id': userId,
+          'client_id': userId,
+          'created_by': userId,
+          'status': 'draft',
+          'metadata': {...contract.metadata, 'duplicated_from': contract.id},
         })
         .select()
         .single();
@@ -52,52 +80,95 @@ class ContractRepository {
     return DigitalContract.fromJson(data);
   }
 
-  /// Finger-sign a contract the same way Capacitor LegalHub does:
-  /// insert `contract_signatures`, then stamp owner/client signature columns.
-  Future<void> sign({
+  Future<DigitalContract> saveDraft({
+    required String contractId,
+    required String title,
+    required String content,
+    Map<String, dynamic> metadata = const {},
+  }) async {
+    final data = await _client.rpc(
+      'rpc_update_contract_draft',
+      params: {
+        'p_contract_id': contractId,
+        'p_title': title,
+        'p_content': content,
+        'p_metadata': metadata,
+      },
+    );
+    return _fromRpc(data);
+  }
+
+  Future<List<ContractPartyMatch>> resolveCounterparty(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+    final data = await _client.rpc(
+      'rpc_resolve_contract_counterparty',
+      params: {'p_query': trimmed},
+    );
+    if (data is! List) return const [];
+    return data
+        .whereType<Map>()
+        .map((row) => ContractPartyMatch.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+  }
+
+  Future<DigitalContract> sendForSignature({
+    required String contractId,
+    required String clientId,
+  }) async {
+    final data = await _client.rpc(
+      'rpc_share_contract_with_user',
+      params: {'p_contract_id': contractId, 'p_client_id': clientId},
+    );
+    return _fromRpc(data);
+  }
+
+  Future<DigitalContract> sign({
     required DigitalContract contract,
     required String signatureData,
     String signatureType = 'drawn',
   }) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) throw Exception('Not signed in');
+    final data = await _client.rpc(
+      'rpc_sign_contract',
+      params: {
+        'p_contract_id': contract.id,
+        'p_signature_data': signatureData,
+        'p_signature_type': signatureType,
+        'p_user_agent': 'flutter-swipess',
+      },
+    );
+    return _fromRpc(data);
+  }
 
-    await _client.from('contract_signatures').insert({
-      'contract_id': contract.id,
-      'signer_id': userId,
-      'signature_data': signatureData,
-      'signature_type': signatureType,
-      'user_agent': 'flutter-swipes',
-    });
+  Future<DigitalContract> cancel(String contractId) async {
+    final data = await _client.rpc(
+      'rpc_cancel_contract',
+      params: {'p_contract_id': contractId},
+    );
+    return _fromRpc(data);
+  }
 
-    final isOwner = contract.ownerId == userId;
-    final now = DateTime.now().toUtc().toIso8601String();
-    final update = <String, dynamic>{
-      if (isOwner) 'owner_signature': signatureData,
-      if (isOwner) 'owner_signed_at': now,
-      if (!isOwner) 'client_signature': signatureData,
-      if (!isOwner) 'client_signed_at': now,
-    };
+  Future<List<ContractEvent>> fetchEvents(String contractId) async {
+    final data = await _client
+        .from('contract_events')
+        .select()
+        .eq('contract_id', contractId)
+        .order('created_at', ascending: false);
+    return (data as List)
+        .whereType<Map>()
+        .map((row) => ContractEvent.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+  }
 
-    final otherAlreadySigned = isOwner
-        ? contract.clientSignedAt != null
-        : contract.ownerSignedAt != null;
-    update['status'] =
-        otherAlreadySigned || contract.clientId == contract.ownerId
-        ? 'signed'
-        : (isOwner ? 'signed_by_owner' : 'signed_by_client');
-
-    try {
-      await _client
-          .from('digital_contracts')
-          .update(update)
-          .eq('id', contract.id);
-    } catch (error) {
-      // Live schema may not have signature columns — still keep status.
-      await _client
-          .from('digital_contracts')
-          .update({'status': update['status']})
-          .eq('id', contract.id);
+  DigitalContract _fromRpc(dynamic data) {
+    if (data is Map) {
+      return DigitalContract.fromJson(Map<String, dynamic>.from(data));
     }
+    if (data is List && data.isNotEmpty && data.first is Map) {
+      return DigitalContract.fromJson(
+        Map<String, dynamic>.from(data.first as Map),
+      );
+    }
+    throw Exception('Unexpected contract response');
   }
 }
