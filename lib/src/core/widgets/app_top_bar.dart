@@ -31,7 +31,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(58);
 
-  static const _hudSize = 38.0;
+  // Keep the visible chrome compact while preserving Apple's 44pt minimum
+  // interaction target around every header action.
+  static const _hudSize = 44.0;
 
   void _openProfile(BuildContext context) {
     AppHaptics.medium();
@@ -75,6 +77,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             Row(
               children: [
                 _ProfileAvatarButton(
+                  key: const ValueKey('header-profile'),
                   avatarUrl: avatarUrl,
                   ink: ink,
                   semanticLabel: 'Open profile, $_label',
@@ -82,6 +85,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-create'),
                   semanticLabel: 'Create a listing',
                   onTap: () {
                     AppHaptics.medium();
@@ -94,6 +98,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             Row(
               children: [
                 _HudButton(
+                  key: const ValueKey('header-tokens'),
                   semanticLabel: 'Open tokens, balance $tokens',
                   wide: true,
                   onTap: () {
@@ -125,6 +130,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-map'),
                   semanticLabel: 'Open map',
                   onTap: () {
                     AppHaptics.medium();
@@ -134,6 +140,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-theme'),
                   semanticLabel: isLight
                       ? 'Switch to dark appearance'
                       : 'Switch to light appearance',
@@ -151,6 +158,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-notifications'),
                   semanticLabel: 'Open notifications',
                   onTap: () {
                     AppHaptics.medium();
@@ -198,6 +206,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
 class _ProfileAvatarButton extends StatelessWidget {
   const _ProfileAvatarButton({
+    super.key,
     required this.ink,
     required this.onTap,
     this.avatarUrl,
@@ -243,6 +252,7 @@ class _ProfileAvatarButton extends StatelessWidget {
 /// dense black on light surfaces — without circles, pills, glass or borders.
 class _HudButton extends StatelessWidget {
   const _HudButton({
+    super.key,
     required this.child,
     required this.onTap,
     this.wide = false,
