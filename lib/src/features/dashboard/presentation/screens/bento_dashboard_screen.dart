@@ -28,6 +28,14 @@ class BentoDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
+  final _aiSearchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _aiSearchController.dispose();
+    super.dispose();
+  }
+
   void _openCategory(String id, String title) {
     if (id == 'events') {
       context.go(AppPaths.exploreEvents);
@@ -36,13 +44,16 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
   }
 
-  void _openAiSearch() {
+  void _openAiSearch([String? query]) {
     final subscription = ref.read(subscriptionProvider).value;
     if (subscription != null && subscription.effectiveTier.canUseAI != true) {
       showPaywall(context, featureName: 'Swipess AI');
       return;
     }
-    ref.read(overlayModalsProvider.notifier).openConcierge();
+    ref
+        .read(overlayModalsProvider.notifier)
+        .openConcierge(query ?? _aiSearchController.text);
+    _aiSearchController.clear();
   }
 
   Future<void> _pickCity() async {
@@ -59,8 +70,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (sheetContext) {
-          final isLight =
-              Theme.of(sheetContext).brightness == Brightness.light;
+          final isLight = Theme.of(sheetContext).brightness == Brightness.light;
           final ink = isLight ? const Color(0xFF101014) : Colors.white;
           final surface = isLight
               ? Colors.white.withAlpha(245)
@@ -112,8 +122,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 required double longitude,
                 required int radiusKm,
               }) {
-                final notifier =
-                    ref.read(discoveryLocationProvider.notifier);
+                final notifier = ref.read(discoveryLocationProvider.notifier);
                 notifier.setCoordinates(
                   city: city,
                   country: country,
@@ -196,7 +205,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onSubmitted: (_) => runSearch(),
                           decoration: InputDecoration(
                             hintText: 'Search Texas, Nashville, Alaska…',
-                            prefixIcon: const Icon(Icons.travel_explore_rounded),
+                            prefixIcon: const Icon(
+                              Icons.travel_explore_rounded,
+                            ),
                             suffixIcon: IconButton(
                               tooltip: 'Search world',
                               onPressed: searching ? null : runSearch,
@@ -212,21 +223,16 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(
-                                color: ink.withAlpha(28),
-                              ),
+                              borderSide: BorderSide(color: ink.withAlpha(28)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(
-                                color: ink.withAlpha(28),
-                              ),
+                              borderSide: BorderSide(color: ink.withAlpha(28)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(18),
                               borderSide: BorderSide(
-                                color: const Color(0xFF60A5FA)
-                                    .withAlpha(180),
+                                color: const Color(0xFF60A5FA).withAlpha(180),
                                 width: 1.2,
                               ),
                             ),
@@ -260,8 +266,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           children: [
                             if (searchResults.isNotEmpty) ...[
                               Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(8, 8, 8, 5),
+                                padding: const EdgeInsets.fromLTRB(8, 8, 8, 5),
                                 child: Text(
                                   'SEARCH RESULTS',
                                   style: GoogleFonts.plusJakartaSans(
@@ -439,76 +444,81 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         : Colors.white.withAlpha(30),
                   ),
                 ),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: ink.withAlpha(55),
-                      borderRadius: BorderRadius.circular(99),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: ink.withAlpha(55),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Guests',
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Guests',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'How many people?',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink.withAlpha(130),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton.filledTonal(
+                          tooltip: 'Remove guest',
+                          onPressed: guests > 1
+                              ? () => setSheetState(() => guests--)
+                              : null,
+                          icon: const Icon(Icons.remove_rounded),
+                        ),
+                        SizedBox(
+                          width: 42,
+                          child: Text(
+                            '$guests',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               color: ink,
                               fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'How many people?',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: ink.withAlpha(130),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton.filledTonal(
-                      tooltip: 'Remove guest',
-                      onPressed: guests > 1
-                          ? () => setSheetState(() => guests--)
-                          : null,
-                      icon: const Icon(Icons.remove_rounded),
-                    ),
-                    SizedBox(
-                      width: 42,
-                      child: Text(
-                        '$guests',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: ink,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
                         ),
+                        IconButton.filledTonal(
+                          tooltip: 'Add guest',
+                          onPressed: guests < 16
+                              ? () => setSheetState(() => guests++)
+                              : null,
+                          icon: const Icon(Icons.add_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(sheetContext, guests),
+                        child: const Text('Apply'),
                       ),
                     ),
-                    IconButton.filledTonal(
-                      tooltip: 'Add guest',
-                      onPressed: guests < 16
-                          ? () => setSheetState(() => guests++)
-                          : null,
-                      icon: const Icon(Icons.add_rounded),
-                    ),
-                  ]),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(sheetContext, guests),
-                      child: const Text('Apply'),
-                    ),
-                  ),
-                ]),
+                  ],
+                ),
               ),
             );
           },
@@ -549,7 +559,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         curve: Curves.easeOut,
                         child: GlowSearchBar(
                           hint: 'What are you looking for?',
-                          onTap: _openAiSearch,
+                          onTap: () => _openAiSearch(),
+                          controller: _aiSearchController,
+                          onSubmitted: (val) => _openAiSearch(val),
                           locationLabel: discovery.city,
                           dateLabel: discovery.dateLabel,
                           guestLabel:
@@ -648,7 +660,8 @@ class _BentoTile extends StatelessWidget {
                 child: EventsTeaserCard(
                   onTap: () {
                     final sub = ref.read(subscriptionProvider).value;
-                    if (sub != null && sub.effectiveTier.canViewEvents != true) {
+                    if (sub != null &&
+                        sub.effectiveTier.canViewEvents != true) {
                       showPaywall(context, featureName: 'Events & Pros');
                       return;
                     }
@@ -704,10 +717,26 @@ class _BentoCardState extends State<_BentoCard> {
   bool _pressed = false;
 
   static const _clarityMatrix = <double>[
-    1.14, 0, 0, 0, 4,
-    0, 1.14, 0, 0, 4,
-    0, 0, 1.14, 0, 4,
-    0, 0, 0, 1, 0,
+    1.14,
+    0,
+    0,
+    0,
+    4,
+    0,
+    1.14,
+    0,
+    0,
+    4,
+    0,
+    0,
+    1.14,
+    0,
+    4,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   @override
@@ -810,15 +839,92 @@ class _BentoItemData {
 }
 
 const _bentoItems = [
-  _BentoItemData(index: 0, id: 'property', title: 'PROPERTIES', subtitle: 'Find properties to buy or rent', height: 300, delaySeconds: '0'),
-  _BentoItemData(index: 1, id: 'events', title: 'EVENTS LIVE', subtitle: 'Swipe event videos · tap to open', height: 380, delaySeconds: '4'),
-  _BentoItemData(index: 2, id: 'recommended', title: 'RECOMMENDED FOR YOU', subtitle: 'Curated listings', height: 300, delaySeconds: '8'),
-  _BentoItemData(index: 3, id: 'services', title: 'WORKERS', subtitle: 'Find people offering services', height: 380, delaySeconds: '12'),
-  _BentoItemData(index: 4, id: 'popular', title: 'POPULAR', subtitle: 'Trending now', height: 300, delaySeconds: '16'),
-  _BentoItemData(index: 5, id: 'yacht', title: 'YACHTS', subtitle: 'Yachts & boats to charter or buy', height: 380, delaySeconds: '20'),
-  _BentoItemData(index: 6, id: 'motorcycle', title: 'MOTORCYCLES', subtitle: 'Motorcycles for sale or rent', height: 380, delaySeconds: '24'),
-  _BentoItemData(index: 7, id: 'bicycle', title: 'BICYCLES', subtitle: 'Bicycles for sale or rent', height: 300, delaySeconds: '28'),
-  _BentoItemData(index: 8, id: 'seekers', title: 'SEEKERS', subtitle: 'People looking for workers', height: 300, delaySeconds: '32'),
-  _BentoItemData(index: 9, id: 'legal', title: 'LEGAL SERVICES', subtitle: 'Hire a top tier lawyer', height: 380, delaySeconds: '36'),
-  _BentoItemData(index: 10, id: 'premium', title: 'PREMIUM', subtitle: 'Buy a package & get benefits', height: 300, delaySeconds: '40'),
+  _BentoItemData(
+    index: 0,
+    id: 'property',
+    title: 'PROPERTIES',
+    subtitle: 'Find properties to buy or rent',
+    height: 300,
+    delaySeconds: '0',
+  ),
+  _BentoItemData(
+    index: 1,
+    id: 'events',
+    title: 'EVENTS LIVE',
+    subtitle: 'Swipe event videos · tap to open',
+    height: 380,
+    delaySeconds: '4',
+  ),
+  _BentoItemData(
+    index: 2,
+    id: 'recommended',
+    title: 'RECOMMENDED FOR YOU',
+    subtitle: 'Curated listings',
+    height: 300,
+    delaySeconds: '8',
+  ),
+  _BentoItemData(
+    index: 3,
+    id: 'services',
+    title: 'WORKERS',
+    subtitle: 'Find people offering services',
+    height: 380,
+    delaySeconds: '12',
+  ),
+  _BentoItemData(
+    index: 4,
+    id: 'popular',
+    title: 'POPULAR',
+    subtitle: 'Trending now',
+    height: 300,
+    delaySeconds: '16',
+  ),
+  _BentoItemData(
+    index: 5,
+    id: 'yacht',
+    title: 'YACHTS',
+    subtitle: 'Yachts & boats to charter or buy',
+    height: 380,
+    delaySeconds: '20',
+  ),
+  _BentoItemData(
+    index: 6,
+    id: 'motorcycle',
+    title: 'MOTORCYCLES',
+    subtitle: 'Motorcycles for sale or rent',
+    height: 380,
+    delaySeconds: '24',
+  ),
+  _BentoItemData(
+    index: 7,
+    id: 'bicycle',
+    title: 'BICYCLES',
+    subtitle: 'Bicycles for sale or rent',
+    height: 300,
+    delaySeconds: '28',
+  ),
+  _BentoItemData(
+    index: 8,
+    id: 'seekers',
+    title: 'SEEKERS',
+    subtitle: 'People looking for workers',
+    height: 300,
+    delaySeconds: '32',
+  ),
+  _BentoItemData(
+    index: 9,
+    id: 'legal',
+    title: 'LEGAL SERVICES',
+    subtitle: 'Hire a top tier lawyer',
+    height: 380,
+    delaySeconds: '36',
+  ),
+  _BentoItemData(
+    index: 10,
+    id: 'premium',
+    title: 'PREMIUM',
+    subtitle: 'Buy a package & get benefits',
+    height: 300,
+    delaySeconds: '40',
+  ),
 ];

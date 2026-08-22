@@ -71,9 +71,20 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
   Widget build(BuildContext context) {
     final isUser = widget.message.isUser;
     final parsed = isUser ? null : ConciergeParse.of(widget.message.content);
-    final text = parsed?.cleanContent.isNotEmpty == true
-        ? parsed!.cleanContent
-        : widget.message.content;
+
+    final hasData =
+        (parsed?.listings.isNotEmpty == true) ||
+        (parsed?.profiles.isNotEmpty == true) ||
+        (parsed?.events.isNotEmpty == true);
+
+    String text;
+    if (parsed != null && parsed.cleanContent.trim().isNotEmpty) {
+      text = parsed.cleanContent.trim();
+    } else if (hasData) {
+      text = 'Here is what I found:';
+    } else {
+      text = widget.message.content;
+    }
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,

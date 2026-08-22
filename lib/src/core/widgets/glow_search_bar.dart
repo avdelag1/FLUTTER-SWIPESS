@@ -10,6 +10,7 @@ class GlowSearchBar extends StatefulWidget {
     this.onTap,
     this.controller,
     this.onChanged,
+    this.onSubmitted,
     this.locationLabel = 'Tulum',
     this.dateLabel = 'Any date',
     this.guestLabel = '1 guest',
@@ -22,6 +23,7 @@ class GlowSearchBar extends StatefulWidget {
   final VoidCallback? onTap;
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final String locationLabel;
   final String dateLabel;
   final String guestLabel;
@@ -141,7 +143,9 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         ),
       ),
       builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(_glintController.value);
+        final progress = Curves.easeInOutCubic.transform(
+          _glintController.value,
+        );
         final x = -2.2 + (progress * 4.4);
         return ShaderMask(
           blendMode: BlendMode.srcIn,
@@ -196,17 +200,16 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                         reverseDuration: const Duration(milliseconds: 360),
                         switchInCurve: Curves.easeOut,
                         switchOutCurve: Curves.easeIn,
-                        layoutBuilder: (currentChild, previousChildren) => Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
-                          ],
-                        ),
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        ),
+                        layoutBuilder: (currentChild, previousChildren) =>
+                            Stack(
+                              alignment: Alignment.centerLeft,
+                              children: [
+                                ...previousChildren,
+                                if (currentChild != null) currentChild,
+                              ],
+                            ),
+                        transitionBuilder: (child, animation) =>
+                            FadeTransition(opacity: animation, child: child),
                         child: _animatedPrompt(
                           text: displayHint,
                           ink: ink,
@@ -220,6 +223,8 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                   : TextField(
                       controller: widget.controller,
                       onChanged: widget.onChanged,
+                      onSubmitted: widget.onSubmitted,
+                      textInputAction: TextInputAction.search,
                       style: GoogleFonts.plusJakartaSans(
                         color: ink,
                         fontWeight: FontWeight.w600,

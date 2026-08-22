@@ -48,19 +48,19 @@ class BentoMediaPools {
         return const [
           AppAssets.filterMotorcycle,
           // Vespa / scooter lifestyle.
-          'https://unsplash.com/photos/948-Gq5HqhA/download?force=true&w=1000',
+          'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
           // Sport / racer motorcycle.
           'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
           // Quad / ATV action.
-          'https://unsplash.com/photos/7aTvdifysGg/download?force=true&w=1000',
+          'https://images.unsplash.com/photo-1590401831889-4e4c2755e1aa?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'bicycle':
         return const [
           AppAssets.filterBicycle,
           // Fat-tire electric bike with an ocean backdrop.
-          'https://unsplash.com/photos/AXRzAfhS9Gg/download?force=true&w=1000',
+          'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1000&q=92',
           // Beach cruiser / fat-bike pairing.
-          'https://unsplash.com/photos/A_9I3vrKzx4/download?force=true&w=1000',
+          'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=1000&q=92',
           AppAssets.filterBicycleSunset,
         ];
       case 'seekers':
@@ -81,9 +81,7 @@ class BentoMediaPools {
           'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=92',
         ];
       default:
-        return const [
-          AppAssets.filterProperty,
-        ];
+        return const [AppAssets.filterProperty];
     }
   }
 }
