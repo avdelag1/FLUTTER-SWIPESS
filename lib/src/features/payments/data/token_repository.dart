@@ -1,14 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap `rpc_grant_welcome_tokens` + `rpc_get_user_tokens` / `tokens` table.
+/// Direct Request token inventory and legacy-compatible welcome grant access.
 class TokenRepository {
   TokenRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
-  /// Cap: grants **5** welcome message tokens (6 with referral). Idempotent.
+  /// Ensures the app-managed welcome allowance is present. The backend grants
+  /// six complimentary Direct Requests once per campaign (seven with the
+  /// preserved referral bonus), expiring with complimentary access.
   Future<void> grantWelcomeTokens({bool hasReferral = false}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return;
@@ -60,7 +62,8 @@ class TokenRepository {
     }
   }
 
-  /// Best-effort premium flag. Missing columns/tables must not throw.
+  /// Best-effort paid/profile premium flag kept for legacy callers. New
+  /// entitlement decisions use SubscriptionRepository as the source of truth.
   Future<bool> fetchHasPremium() async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return false;

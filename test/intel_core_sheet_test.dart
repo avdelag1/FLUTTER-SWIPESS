@@ -5,7 +5,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/conci
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Intel Core card slides up and keeps chat when MENU is tapped', (
+  testWidgets('concierge sheet slides up and keeps chat after a partial drag', (
     tester,
   ) async {
     var closed = false;
@@ -27,26 +27,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('CHAT BODY'), findsOneWidget);
-    expect(find.text('MENU'), findsOneWidget);
     expect(find.byType(PopupMenuButton), findsNothing);
 
-    await tester.tap(find.text('MENU'));
+    // The current host is gesture-first: a short drag should spring back and
+    // preserve the live AI session rather than closing it.
+    await tester.dragFrom(const Offset(400, 14), const Offset(0, 40));
     await tester.pumpAndSettle();
 
     expect(find.text('CHAT BODY'), findsOneWidget);
-    expect(find.text('MENU'), findsNothing);
     expect(closed, isFalse);
   });
 
-  testWidgets('Intel Core card is bounded and does not overflow', (
+  testWidgets('concierge card is bounded and does not overflow', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const ProviderScope(child: _HostApp()));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('CHAT BODY'), findsOneWidget);
-    await tester.binding.setSurfaceSize(null);
   });
 
   test('opening the map keeps an open concierge session', () {

@@ -13,7 +13,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  analyze-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Flutter version
+        run: flutter --version
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+      - name: Release-critical tests
+        timeout-minutes: 15
+        run: flutter test --exclude-tags golden --reporter expanded
+
+  visual-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Golden visual regression tests
+        timeout-minutes: 8
+        run: flutter test test/parity/parity_harness_test.dart --tags golden --reporter expanded
+
+  web-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Web release build
+        run: flutter build web --release
+
+  android-build:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -25,16 +74,8 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Android 16 SDK
         run: sdkmanager "platforms;android-36"
-      - name: Flutter version
-        run: flutter --version
       - name: Dependencies
         run: flutter pub get
-      - name: Analyzer
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
-      - name: Tests
-        run: flutter test
-      - name: Web release build
-        run: flutter build web --release
       - name: Android release bundle (unsigned CI artifact)
         run: flutter build appbundle --release
 

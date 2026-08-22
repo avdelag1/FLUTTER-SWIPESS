@@ -18,10 +18,13 @@ class SubscriptionData {
   bool get trialHasEnded =>
       trialEndsAt != null && !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
-  // Complimentary access always wins while active. When it ends, any real
-  // paid tier immediately becomes effective again without losing purchases.
+  /// Complimentary access is only applied to otherwise-free accounts. Real
+  /// paid subscriptions remain authoritative and are never visually masked by
+  /// a free campaign while billing may continue underneath.
   SubscriptionTier get effectiveTier =>
-      isTrialActive ? SubscriptionTier.premium : tier;
+      isTrialActive && tier == SubscriptionTier.free
+          ? SubscriptionTier.premium
+          : tier;
 }
 
 class SubscriptionRepository {
@@ -59,11 +62,11 @@ class SubscriptionRepository {
       // Paid access lookup failure should not invent a paid entitlement.
     }
 
-    // The complimentary campaign applies to every account, including users
-    // who already existed when the campaign clock was reset. Paid users keep
-    // their purchased tier underneath it and return to it after the free
-    // Premium window ends.
-    final trialEndsAt = await _fetchCampaignTrialEnd(user);
+    // Complimentary access is an app-managed onboarding campaign for users who
+    // are not already paying. Never layer it over a live paid subscription.
+    final trialEndsAt = tier == SubscriptionTier.free
+        ? await _fetchCampaignTrialEnd(user)
+        : null;
     if (trialEndsAt != null &&
         !DateTime.now().toUtc().isBefore(trialEndsAt.toUtc())) {
       try {
@@ -116,10 +119,9 @@ class SubscriptionRepository {
           DateTime.tryParse(row['updated_at']?.toString() ?? '')?.toUtc();
       final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
 
-      // Existing accounts start from the campaign reset timestamp. Accounts
-      // created after the reset get their own full three calendar months from
-      // signup. This is the behavior requested for the global free-Premium
-      // reset while preserving the same rule for every future new account.
+      // Existing free accounts start from the campaign reset timestamp. Free
+      // accounts created after the reset receive the full configured number of
+      // calendar months from signup.
       final accessStartsAt = createdAt.isBefore(resetAt) ? resetAt : createdAt;
       if (signupCutoff != null && !accessStartsAt.isBefore(signupCutoff)) {
         return null;
@@ -179,9 +181,9 @@ class SubscriptionRepository {
     }
   }
 
+  /// Legacy compatibility only. Marketplace Direct Requests are reserved and
+  /// consumed by their dedicated server RPCs, never by this helper.
   Future<bool> decrementToken() async {
-    final data = await fetchCurrent();
-    if (data.effectiveTier == SubscriptionTier.premium) return true;
     try {
       final rows = await _client.rpc(
         'rpc_deduct_token',

@@ -4,11 +4,13 @@ import 'package:flutter_swipes/src/core/routing/app_redirect.dart';
 import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 
 /// Shorthand for the redirect decision at a given point in the gate/auth flow.
+/// Routing tests model the web gate explicitly; native production bypasses it.
 String? redirect(
   String location, {
   bool granted = true,
   bool signedIn = true,
   bool grantLoading = false,
+  bool platformIsWeb = true,
   PendingDeepLink? pending,
   String? uri,
 }) {
@@ -19,6 +21,7 @@ String? redirect(
     granted: granted,
     signedIn: signedIn,
     pending: pending ?? PendingDeepLink(),
+    platformIsWeb: platformIsWeb,
   );
 }
 
@@ -44,14 +47,12 @@ void main() {
     });
 
     test('the /u/ member link the share sheets hand out is public', () {
-      // profile_screen, profile_detail_screen and public_profile_preview all
-      // copy https://www.swipess.com/u/<id>.
       expect(AppRedirect.isPublic('/u/9f3a'), isTrue);
     });
   });
 
   group('gated deep links', () {
-    test('a listing link bounces to the gate and is remembered', () {
+    test('a listing link bounces to the web gate and is remembered', () {
       final pending = PendingDeepLink();
       expect(
         redirect(
@@ -147,8 +148,20 @@ void main() {
   });
 
   group('gate flow', () {
-    test('an ungated launch stays on the gate', () {
+    test('an ungated web launch stays on the gate', () {
       expect(redirect(AppPaths.gate, granted: false, signedIn: false), isNull);
+    });
+
+    test('native launch bypasses the access-code gate', () {
+      expect(
+        redirect(
+          '/listing/42',
+          granted: false,
+          signedIn: false,
+          platformIsWeb: false,
+        ),
+        AppPaths.welcome,
+      );
     });
 
     test('passing the gate moves on to welcome', () {
@@ -166,7 +179,7 @@ void main() {
       }
     });
 
-    test('a signed-in user who skipped the gate stays on the gate', () {
+    test('a signed-in web user who skipped the gate stays on the gate', () {
       expect(
         redirect(AppPaths.clientDashboard, granted: false, signedIn: true),
         AppPaths.gate,
@@ -174,10 +187,19 @@ void main() {
       expect(redirect(AppPaths.gate, granted: false, signedIn: true), isNull);
     });
 
-    test('nothing bounces while the grant is still loading', () {
+    test('grant loading routes protected content to splash', () {
       expect(
         redirect(
           '/listing/42',
+          grantLoading: true,
+          granted: false,
+          signedIn: false,
+        ),
+        AppPaths.splash,
+      );
+      expect(
+        redirect(
+          AppPaths.splash,
           grantLoading: true,
           granted: false,
           signedIn: false,
@@ -188,11 +210,9 @@ void main() {
   });
 
   group('Capacitor path aliases', () {
-    test('map onto their Flutter home', () {
+    test('legacy aliases map onto their Flutter home', () {
       expect(redirect('/'), AppPaths.gate);
       expect(redirect(AppPaths.legacyDashboard), AppPaths.clientDashboard);
-      expect(redirect(AppPaths.ownerDashboard), AppPaths.clientDashboard);
-      expect(redirect(AppPaths.ownerProfile), AppPaths.clientProfile);
       expect(redirect(AppPaths.exploreServices), AppPaths.clientServices);
       expect(redirect('/promote'), AppPaths.clientAdvertise);
       expect(redirect('/privacy-policy'), '${AppPaths.legal}?doc=privacy');
@@ -201,7 +221,9 @@ void main() {
       expect(redirect('/share-target'), AppPaths.clientDashboard);
     });
 
-    test('an ordinary authenticated path is left alone', () {
+    test('real owner and authenticated routes are left alone', () {
+      expect(redirect(AppPaths.ownerDashboard), isNull);
+      expect(redirect(AppPaths.ownerProfile), isNull);
       expect(redirect(AppPaths.messages), isNull);
       expect(redirect('/listing/42'), isNull);
     });

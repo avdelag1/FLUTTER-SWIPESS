@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_cta_button.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
@@ -11,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('hero wordmark paints huge italic SWIPESS in Mexican red', (
+  testWidgets('hero wordmark uses the canonical transparent artwork and tint', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -29,10 +30,11 @@ void main() {
       ),
     );
 
-    final text = tester.widget<Text>(find.text('SWIPESS'));
-    expect(text.style?.fontSize, greaterThanOrEqualTo(72));
-    expect(text.style?.fontStyle, FontStyle.italic);
-    expect(text.style?.color, AppTheme.mexicanRed);
+    final image = tester.widget<Image>(find.byType(Image));
+    expect(image.width, 420);
+    expect(image.color, AppTheme.mexicanRed);
+    expect(image.colorBlendMode, BlendMode.srcIn);
+    expect((image.image as AssetImage).assetName, AppAssets.logoTransparent);
   });
 
   testWidgets('Mexican CTA uses the Rosa Mexicano gradient', (tester) async {
@@ -78,7 +80,7 @@ void main() {
     expect(find.text('LOG IN'), findsOneWidget);
   });
 
-  testWidgets('AI search bar hosts inner + frame shine painters', (
+  testWidgets('AI search bar keeps its hint and frame shine', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -95,7 +97,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Ask AI to find anything...'), findsOneWidget);
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration?.hintText, 'Ask AI to find anything...');
     expect(find.byType(SearchFrameShine), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
   });

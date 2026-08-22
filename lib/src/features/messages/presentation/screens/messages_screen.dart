@@ -158,7 +158,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Activate messaging tokens',
+                              'Get Direct Requests for priority',
                               style: GoogleFonts.plusJakartaSans(
                                 color: ink,
                                 fontWeight: FontWeight.w800,
@@ -167,7 +167,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             ),
                           ),
                           Text(
-                            'UPGRADE',
+                            'VIEW',
                             style: GoogleFonts.plusJakartaSans(
                               color: AppTheme.brandPrimary,
                               fontWeight: FontWeight.w900,

@@ -102,7 +102,8 @@ class DashboardDock extends StatelessWidget {
                     children: [
                       for (final item in items)
                         SizedBox(
-                          width: 40,
+                          width: 44,
+                          height: 44,
                           child: DockButton(
                             item: item,
                             wash: item.wash,
@@ -162,21 +163,23 @@ class DockButton extends StatelessWidget {
         ? Colors.black.withAlpha(emphasized ? 255 : 220)
         : Colors.white.withAlpha(emphasized ? 255 : 238);
 
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: _label,
-      child: Tooltip(
-        message: _label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkResponse(
-            onTap: onTap,
-            containedInkWell: true,
-            highlightShape: BoxShape.circle,
-            radius: 19,
-            splashColor: wash.withAlpha(34),
-            child: SizedBox.expand(
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: _label,
+        child: Tooltip(
+          message: _label,
+          child: Material(
+            color: Colors.transparent,
+            child: InkResponse(
+              onTap: onTap,
+              containedInkWell: true,
+              highlightShape: BoxShape.circle,
+              radius: 19,
+              splashColor: wash.withAlpha(34),
               child: Center(
                 child: AnimatedScale(
                   scale: emphasized ? 1.04 : 1,

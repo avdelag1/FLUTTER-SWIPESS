@@ -1,33 +1,30 @@
 import 'package:flutter/foundation.dart';
 
-/// Cap `iapProducts.ts` + `SubscriptionPackages` + `AdvertisePage` PACKAGES.
-///
-/// Same App Store / Play product IDs the live Capacitor app already sells.
-/// Web (and non-iOS) checkout uses the same PayPal NCP links. iOS never
-/// exposes an external URL (Guideline 3.1.1).
+/// Store catalog. Product IDs/prices stay compatible with the live stores;
+/// marketplace copy follows the consent-first Direct Request model.
 abstract final class IapCatalog {
   static const subscriptions = <IapOffer>[
     IapOffer(
       id: 'client-unlimited-1-month',
       name: 'Monthly',
-      label: 'STARTER',
+      label: 'HERE NOW',
       appleProductId: 'Swipess.plus.monthly.v3',
       googleProductId: 'swipess.plus.monthly.v2',
       priceLabel: '\$39.99',
       durationLabel: '/month',
       paypalPath: 'QSRXCJYYQ2UGY',
       benefits: [
-        'Communicate with listings and members',
-        'Post properties, services & motos',
-        'Save favorite listings',
-        'AI Concierge — 15 messages/day',
-        'AI Listing Creator — 3/month',
+        '6 Direct Requests included',
+        'More active listings & visibility',
+        'Premium AI access',
+        'AI Listing Creator',
+        'Better matching advantages',
       ],
     ),
     IapOffer(
       id: 'client-unlimited-6-months',
       name: 'Semi-Annual',
-      label: 'POPULAR',
+      label: 'LIVE LOCAL',
       appleProductId: 'Swipess.plus.semestral.v3',
       googleProductId: 'swipess.plus.semestral.v2',
       priceLabel: '\$119.99',
@@ -35,29 +32,29 @@ abstract final class IapCatalog {
       paypalPath: 'HUESWJ68BRUSY',
       popular: true,
       benefits: [
-        'Communicate with listings and members',
-        'Post properties, services & motos',
-        'Save favorite listings',
-        'AI Concierge — 50 messages/day',
-        'AI Listing Creator — 10/month',
+        '12 Direct Requests included',
+        'Higher listing limits & visibility',
+        'Priority matching advantages',
+        'Premium AI access',
+        'AI Listing Creator',
         'Local Expert Knowledge',
       ],
     ),
     IapOffer(
       id: 'client-unlimited-1-year',
       name: 'Yearly',
-      label: 'BEST VALUE',
+      label: 'PRO',
       appleProductId: 'Swipess.plus.annual.v3',
       googleProductId: 'swipess.plus.annual.v2',
       priceLabel: '\$299.99',
       durationLabel: '/year',
       paypalPath: '7E6R38L33LYUJ',
       benefits: [
-        'Communicate with listings and members',
-        'Post properties, services & motos',
-        'Save favorite listings',
-        'AI Concierge — Unlimited',
-        'AI Listing Creator — Unlimited',
+        '30 Direct Requests included',
+        'Maximum listing capacity & visibility',
+        'Priority matching advantages',
+        'Premium AI access',
+        'AI Listing Creator',
         'Priority AI Responses',
       ],
     ),
@@ -72,7 +69,7 @@ abstract final class IapCatalog {
       priceLabel: '\$9.99',
       tokens: 20,
       paypalPath: 'VNM2QVBFG6TA4',
-      description: '20 new conversations',
+      description: '20 Direct Requests',
     ),
     IapOffer(
       id: 'plus',
@@ -82,7 +79,7 @@ abstract final class IapCatalog {
       priceLabel: '\$19.99',
       tokens: 50,
       paypalPath: 'VG2C7QMAC8N6A',
-      description: '50 new conversations',
+      description: '50 Direct Requests',
       popular: true,
     ),
     IapOffer(
@@ -93,7 +90,7 @@ abstract final class IapCatalog {
       priceLabel: '\$39.99',
       tokens: 100,
       paypalPath: '9NBGA9X3BJ5UA',
-      description: '100 new conversations',
+      description: '100 Direct Requests',
     ),
     IapOffer(
       id: 'mega',
@@ -103,10 +100,11 @@ abstract final class IapCatalog {
       priceLabel: '\$49.99',
       tokens: 150,
       paypalPath: 'KP9WHGEN23MYA',
-      description: '150 new conversations',
+      description: '150 Direct Requests',
     ),
   ];
 
+  // Event products are intentionally untouched by the marketplace redesign.
   static const eventPromos = <IapOffer>[
     IapOffer(
       id: 'starter',
@@ -175,7 +173,6 @@ abstract final class IapCatalog {
       (defaultTargetPlatform == TargetPlatform.iOS ||
           defaultTargetPlatform == TargetPlatform.android);
 
-  /// Cap `getSafePaymentUrl` — never on native iOS.
   static String? paypalUrl(String? path) {
     if (path == null || path.isEmpty) return null;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) return null;
@@ -184,14 +181,22 @@ abstract final class IapCatalog {
 
   static IapOffer? tokenById(String id) {
     for (final offer in tokens) {
-      if (offer.id == id || offer.appleProductId == id || offer.googleProductId == id) return offer;
+      if (offer.id == id ||
+          offer.appleProductId == id ||
+          offer.googleProductId == id) {
+        return offer;
+      }
     }
     return null;
   }
 
   static IapOffer? promoById(String id) {
     for (final offer in eventPromos) {
-      if (offer.id == id || offer.appleProductId == id || offer.googleProductId == id) return offer;
+      if (offer.id == id ||
+          offer.appleProductId == id ||
+          offer.googleProductId == id) {
+        return offer;
+      }
     }
     return null;
   }
@@ -225,13 +230,14 @@ class IapOffer {
   final int? tokens;
   final List<String> benefits;
   final bool popular;
-  
-  String get storeProductId => 
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android 
-          ? (googleProductId ?? appleProductId) 
+
+  String get storeProductId =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+          ? (googleProductId ?? appleProductId)
           : appleProductId;
 
   bool get isSubscription =>
-      IapCatalog.subscriptionIds.contains(appleProductId) || 
-      (googleProductId != null && IapCatalog.subscriptionIds.contains(googleProductId));
+      IapCatalog.subscriptionIds.contains(appleProductId) ||
+      (googleProductId != null &&
+          IapCatalog.subscriptionIds.contains(googleProductId));
 }

@@ -1,23 +1,26 @@
 import 'dart:async';
 
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_queue.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Records discovery decisions through the server-side state machine.
 ///
-/// Product rules live in `rpc_record_discovery_decision` so every client uses
-/// the same behavior:
-/// - right = saved and removed from discovery
-/// - first left = hidden for 7 days, then one retry
-/// - second left = hidden until an objective target improvement
-/// - third left = permanent pass
+/// Marketplace communication rules:
+/// - right = free interest
+/// - left = pass/discovery feedback
+/// - mutual/owner-accepted interest = free chat
+/// - Direct Request = priority path; one token is reserved and consumed only
+///   when the receiver accepts it.
 class SwipeRepository {
   final SupabaseClient _client;
   final OfflineSwipeQueue _offlineQueue;
+  late final DirectRequestRepository _directRequests =
+      DirectRequestRepository(client: _client);
 
   SwipeRepository({SupabaseClient? client, OfflineSwipeQueue? offlineQueue})
-    : _client = client ?? Supabase.instance.client,
-      _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
+      : _client = client ?? Supabase.instance.client,
+        _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
 
   Future<({int synced, int failed})> flushOfflineQueue() => _offlineQueue.flush();
 
@@ -52,16 +55,16 @@ class SwipeRepository {
   }
 
   Future<void> likeListing(String targetId) => _recordDecision(
-    targetId: targetId,
-    targetType: 'listing',
-    direction: 'right',
-  );
+        targetId: targetId,
+        targetType: 'listing',
+        direction: 'right',
+      );
 
   Future<void> dislikeListing(String targetId) => _recordDecision(
-    targetId: targetId,
-    targetType: 'listing',
-    direction: 'left',
-  );
+        targetId: targetId,
+        targetType: 'listing',
+        direction: 'left',
+      );
 
   Future<void> undoSwipe(String targetId) async {
     final userId = _client.auth.currentUser?.id;
@@ -88,16 +91,16 @@ class SwipeRepository {
   }
 
   Future<void> likeProfile(String targetUserId) => _recordDecision(
-    targetId: targetUserId,
-    targetType: 'profile',
-    direction: 'right',
-  );
+        targetId: targetUserId,
+        targetType: 'profile',
+        direction: 'right',
+      );
 
   Future<void> dislikeProfile(String targetUserId) => _recordDecision(
-    targetId: targetUserId,
-    targetType: 'profile',
-    direction: 'left',
-  );
+        targetId: targetUserId,
+        targetType: 'profile',
+        direction: 'left',
+      );
 
   Future<void> undoProfileSwipe(String targetUserId) async {
     final userId = _client.auth.currentUser?.id;
@@ -110,10 +113,11 @@ class SwipeRepository {
         .eq('target_type', 'profile');
   }
 
-  /// Starts a conversation through the authoritative backend gate.
-  /// A brand-new conversation costs one message token unless the account has
-  /// unlimited messaging. Never fall back to a direct insert: that would bypass
-  /// the product's token/subscription rule.
+  /// Opens/sends into a conversation only when consent exists. For the legacy
+  /// owner "Interested Clients" surface, tapping reply is itself an explicit
+  /// acceptance of that person's latest listing interest and creates a free
+  /// match first. New clients intentionally call the v2 RPC so the rollout
+  /// compatibility RPC used by older installed builds cannot bypass consent.
   Future<String?> startConversation({
     required String ownerId,
     String? listingId,
@@ -122,8 +126,22 @@ class SwipeRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return null;
 
+    if (listingId == null) {
+      try {
+        final accepted = await _client.rpc(
+          'rpc_accept_latest_listing_interest',
+          params: {'p_liker_id': ownerId},
+        );
+        if (accepted is Map && accepted['conversation_id'] != null) {
+          return accepted['conversation_id'].toString();
+        }
+      } catch (_) {
+        // Not an owner replying to listing interest; normal match-only gate below.
+      }
+    }
+
     final data = await _client.rpc(
-      'start_conversation_with_message',
+      'start_mutual_conversation_v2',
       params: {
         'p_other_user_id': ownerId,
         'p_initial_message': initialMessage,
@@ -132,8 +150,40 @@ class SwipeRepository {
     );
     final row = data is List && data.isNotEmpty ? data.first : data;
     if (row is Map && row['conversation_id'] != null) {
-      return row['conversation_id'] as String;
+      return row['conversation_id'].toString();
     }
     return null;
   }
+
+  Future<DirectRequestBalance> directRequestBalance() =>
+      _directRequests.fetchBalance();
+
+  Future<DirectRequestResult> sendDirectRequest({
+    required String receiverId,
+    String? listingId,
+    String message = '',
+  }) =>
+      _directRequests.create(
+        receiverId: receiverId,
+        listingId: listingId,
+        message: message,
+      );
+
+  Future<DirectRequestResult> respondToDirectRequest({
+    required String requestId,
+    required bool accept,
+  }) =>
+      _directRequests.respond(requestId: requestId, accept: accept);
+
+  Future<DirectRequestResult> cancelDirectRequest(String requestId) =>
+      _directRequests.cancel(requestId);
+
+  Future<String?> acceptListingInterest({
+    required String likerId,
+    required String listingId,
+  }) =>
+      _directRequests.acceptListingInterest(
+        likerId: likerId,
+        listingId: listingId,
+      );
 }

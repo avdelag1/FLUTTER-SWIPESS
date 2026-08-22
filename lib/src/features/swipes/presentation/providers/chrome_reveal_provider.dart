@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Cap `useChromeReveal` — header/dock + rail fade after idle on the swipe deck.
@@ -38,6 +39,16 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
   }
 
   void reveal() {
+    // Riverpod does not allow provider state changes while Flutter is building
+    // the widget tree. Swipe screens may request a reveal from initState or
+    // didUpdateWidget, so defer only that lifecycle-time mutation to the end
+    // of the current frame. User-triggered reveals still happen immediately.
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) => reveal());
+      return;
+    }
+
     _clear();
     state = const ChromeRevealState(chromeVisible: true, railVisible: true);
     _chromeTimer = Timer(const Duration(milliseconds: chromeHideMs), hide);

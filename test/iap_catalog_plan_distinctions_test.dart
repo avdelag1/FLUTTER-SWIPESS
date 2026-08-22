@@ -3,36 +3,36 @@ import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 
 void main() {
   group('IapCatalog subscription distinctions', () {
-    test('paid plans keep their AI benefits separate', () {
+    test('paid plans keep finite Direct Request and AI benefits explicit', () {
       final monthly = IapCatalog.subscriptions[0];
       final semiAnnual = IapCatalog.subscriptions[1];
       final yearly = IapCatalog.subscriptions[2];
 
       expect(monthly.name, 'Monthly');
-      expect(monthly.benefits, contains('AI Concierge — 15 messages/day'));
-      expect(monthly.benefits, contains('AI Listing Creator — 3/month'));
+      expect(monthly.benefits, contains('6 Direct Requests included'));
+      expect(monthly.benefits, contains('Premium AI access'));
+      expect(monthly.benefits, contains('AI Listing Creator'));
       expect(
         monthly.benefits.any((benefit) => benefit.contains('Unlimited')),
         isFalse,
       );
 
       expect(semiAnnual.name, 'Semi-Annual');
-      expect(
-        semiAnnual.benefits,
-        contains('AI Concierge — 50 messages/day'),
-      );
-      expect(semiAnnual.benefits, contains('AI Listing Creator — 10/month'));
+      expect(semiAnnual.benefits, contains('12 Direct Requests included'));
+      expect(semiAnnual.benefits, contains('Premium AI access'));
+      expect(semiAnnual.benefits, contains('AI Listing Creator'));
       expect(semiAnnual.benefits, contains('Local Expert Knowledge'));
 
       expect(yearly.name, 'Yearly');
-      expect(yearly.benefits, contains('AI Concierge — Unlimited'));
-      expect(yearly.benefits, contains('AI Listing Creator — Unlimited'));
+      expect(yearly.benefits, contains('30 Direct Requests included'));
+      expect(yearly.benefits, contains('Premium AI access'));
+      expect(yearly.benefits, contains('AI Listing Creator'));
       expect(yearly.benefits, contains('Priority AI Responses'));
     });
   });
 
-  group('IapCatalog token bundles', () {
-    test('message token quantities and prices remain canonical', () {
+  group('IapCatalog Direct Request bundles', () {
+    test('Direct Request quantities and prices remain canonical', () {
       final tokens = IapCatalog.tokens;
 
       expect(tokens, hasLength(4));

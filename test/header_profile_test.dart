@@ -141,7 +141,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(const AppTopBar().preferredSize.height, 72);
+    expect(const AppTopBar().preferredSize.height, 58);
     final profile = tester.getSize(
       find.byKey(const ValueKey('header-profile')),
     );

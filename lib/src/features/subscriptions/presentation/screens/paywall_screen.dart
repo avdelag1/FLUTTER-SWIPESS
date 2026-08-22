@@ -238,11 +238,14 @@ class _PaidPlanTile extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
+                flex: 3,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       offer.name.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
@@ -253,6 +256,8 @@ class _PaidPlanTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       badge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         color: color,
                         fontWeight: FontWeight.w900,
@@ -263,56 +268,65 @@ class _PaidPlanTile extends StatelessWidget {
                   ],
                 ),
               ),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: offer.priceLabel,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 20,
-                      ),
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 2,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: RichText(
+                    maxLines: 1,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: offer.priceLabel,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                          ),
+                        ),
+                        TextSpan(
+                          text: duration.isEmpty ? '' : ' / $duration',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withAlpha(145),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
                     ),
-                    TextSpan(
-                      text: duration.isEmpty ? '' : ' / $duration',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(145),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 9,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
           if (focusBenefits.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 9,
-              runSpacing: 5,
-              children: [
-                for (final benefit in focusBenefits)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle_rounded, color: color, size: 13),
-                      const SizedBox(width: 4),
-                      Text(
-                        benefit,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white.withAlpha(225),
-                          fontWeight: benefit.toLowerCase().contains('unlimited')
-                              ? FontWeight.w800
-                              : FontWeight.w600,
-                          fontSize: 10.5,
-                        ),
+            for (var i = 0; i < focusBenefits.length; i++) ...[
+              Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: color, size: 13),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      focusBenefits[i],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withAlpha(225),
+                        fontWeight:
+                            focusBenefits[i].toLowerCase().contains('unlimited')
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                        fontSize: 10.5,
                       ),
-                    ],
+                    ),
                   ),
-              ],
-            ),
+                ],
+              ),
+              if (i != focusBenefits.length - 1) const SizedBox(height: 5),
+            ],
           ],
         ],
       ),

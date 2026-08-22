@@ -1,0 +1,3 @@
+tags:
+  golden:
+    description: Visual parity/golden regression tests maintained separately from release-critical functional tests.
