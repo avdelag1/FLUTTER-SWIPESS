@@ -112,6 +112,7 @@ class SupabaseService {
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: publishableKey,
+      storageOptions: const StorageClientOptions(retryAttempts: 5),
     );
   }
 
