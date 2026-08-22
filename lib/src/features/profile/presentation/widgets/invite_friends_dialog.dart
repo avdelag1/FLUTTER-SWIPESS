@@ -147,7 +147,11 @@ class InviteFriendsDialog extends ConsumerWidget {
                       onPressed: () => _shareInvite(context, link),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.black,
+                        backgroundColor: Colors.white,
+                        disabledForegroundColor: Colors.black45,
+                        disabledBackgroundColor: Colors.white54,
                         elevation: 0,
+                        side: const BorderSide(color: Colors.white, width: 1),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -155,6 +159,7 @@ class InviteFriendsDialog extends ConsumerWidget {
                       child: Text(
                         'SHARE & INVITE',
                         style: GoogleFonts.plusJakartaSans(
+                          color: Colors.black,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                           fontSize: 12,
@@ -170,6 +175,8 @@ class InviteFriendsDialog extends ConsumerWidget {
                       onPressed: () => _copyLink(context, link),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white70, width: 1.2),
+                        backgroundColor: Colors.white.withAlpha(12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -177,6 +184,7 @@ class InviteFriendsDialog extends ConsumerWidget {
                       child: Text(
                         'COPY REFERRAL LINK',
                         style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                           fontSize: 12,
@@ -189,7 +197,7 @@ class InviteFriendsDialog extends ConsumerWidget {
                     'Friends get priority access · You unlock perks',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white38,
+                      color: Colors.white54,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.4,

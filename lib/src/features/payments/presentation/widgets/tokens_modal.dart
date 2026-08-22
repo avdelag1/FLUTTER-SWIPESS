@@ -184,36 +184,52 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              offer.priceLabel,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
+                        SizedBox(
+                          width: 94,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                offer.priceLabel,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 7),
-                            SizedBox(
-                              height: 34,
-                              child: FilledButton(
-                                onPressed: _buyingId == null
-                                    ? () => _buy(offer)
-                                    : null,
-                                child: _buyingId == offer.id
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                              const SizedBox(height: 7),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 36,
+                                child: FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    alignment: Alignment.center,
+                                    minimumSize: const Size(94, 36),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: _buyingId == null
+                                      ? () => _buy(offer)
+                                      : null,
+                                  child: _buyingId == offer.id
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Text(
+                                            'GET',
+                                            textAlign: TextAlign.center,
+                                          ),
                                         ),
-                                      )
-                                    : const Text('GET'),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),

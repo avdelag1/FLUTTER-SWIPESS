@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/reputation_signals_panel.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -187,6 +188,10 @@ class _InsightsSheet extends StatelessWidget {
                   ),
                 ],
               ),
+              if (listing.ownerId?.trim().isNotEmpty == true) ...[
+                const SizedBox(height: 18),
+                ReputationSignalsPanel(userId: listing.ownerId!),
+              ],
               const SizedBox(height: 18),
               Wrap(
                 spacing: 10,

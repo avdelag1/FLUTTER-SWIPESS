@@ -135,6 +135,10 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                             onPressed: _finish,
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
+                              backgroundColor: Colors.black.withAlpha(105),
+                              side: BorderSide(
+                                color: Colors.white.withAlpha(125),
+                              ),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 10,
@@ -188,7 +192,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                           decoration: BoxDecoration(
                             color: i == _index
                                 ? AppTheme.brandPrimary
-                                : Colors.white.withAlpha(50),
+                                : Colors.white.withAlpha(80),
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
@@ -199,8 +203,10 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                           onPressed: _next,
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.black,
+                            backgroundColor: Colors.white,
                             elevation: 0,
                             padding: const EdgeInsets.symmetric(horizontal: 22),
+                            side: const BorderSide(color: Colors.white, width: 1),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
                             ),
@@ -208,6 +214,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                           child: Text(
                             isLast ? 'ENTER SWIPESS' : 'NEXT',
                             style: GoogleFonts.plusJakartaSans(
+                              color: Colors.black,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.4,
                               fontSize: 12,

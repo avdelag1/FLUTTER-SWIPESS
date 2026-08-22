@@ -16,7 +16,7 @@ final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
 /// Foreground engagement heartbeat.
 ///
 /// The server is authoritative: one 90-minute block = one step and five steps
-/// grant one spendable message token. Background/inactive time never counts.
+/// grant one spendable Direct Request. Background/inactive time never counts.
 /// Multiple UI shells may attach to this service, so tracking uses a small
 /// reference count and remains alive while the root app is active.
 class SessionGamificationService {
@@ -118,7 +118,7 @@ class SessionGamificationService {
               Expanded(
                 child: Text(
                   tokenAwarded
-                      ? 'Free token unlocked! You completed 5/5 steps.'
+                      ? 'Free Direct Request unlocked! You completed 5/5 steps.'
                       : 'Step $steps/5 unlocked.',
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),

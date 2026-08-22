@@ -12,7 +12,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('HolographicIDCard paints the selected PEARL theme', (
+  testWidgets('profile VAP card renders the canonical local ID design', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -31,9 +31,12 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('RESIDENT ID'), findsOneWidget);
+    expect(find.text('SWIPESS LOCAL ID'), findsOneWidget);
     expect(find.text('MAYA CRUZ'), findsOneWidget);
-    expect(find.text('SWIPESS GLOBAL REGISTRY'), findsOneWidget);
+    expect(find.text('ID NX-ABCD1234'), findsOneWidget);
+    expect(find.text('SCAN TO VALIDATE'), findsOneWidget);
+    expect(find.text('SWIPESS GLOBAL REGISTRY'), findsNothing);
+    expect(find.text('RESIDENT ID'), findsNothing);
   });
 
   testWidgets('vapCardThemeProvider follows the persisted theme index', (

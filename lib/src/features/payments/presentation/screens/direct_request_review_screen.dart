@@ -155,6 +155,24 @@ class _DirectRequestReviewScreenState
                   ),
                 ),
               ),
+              if (!request.context.isEmpty) ...[
+                const SizedBox(height: 14),
+                Text(
+                  'REQUEST DETAILS',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.muted(context),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 7,
+                  runSpacing: 7,
+                  children: _contextChips(request.context),
+                ),
+              ],
               const SizedBox(height: 16),
               Text(
                 pending
@@ -201,4 +219,58 @@ class _DirectRequestReviewScreenState
       ),
     );
   }
+
+  List<Widget> _contextChips(DirectRequestContext details) {
+    final items = <(IconData, String)>[];
+    if (details.startsAt != null) {
+      final start = _date(details.startsAt!);
+      final end = details.endsAt == null ? null : _date(details.endsAt!);
+      items.add((Icons.calendar_today_rounded, end == null ? start : '$start – $end'));
+    }
+    if (details.budgetMax != null) {
+      items.add((
+        Icons.payments_outlined,
+        'Up to ${details.currency} ${details.budgetMax!.toStringAsFixed(0)}',
+      ));
+    }
+    if (details.location?.trim().isNotEmpty == true) {
+      items.add((Icons.location_on_outlined, details.location!.trim()));
+    }
+    if (details.partySize != null) {
+      items.add((Icons.group_outlined, '${details.partySize} people'));
+    }
+    if (details.urgency != 'flexible') {
+      items.add((Icons.bolt_rounded, details.urgency.replaceAll('_', ' ').toUpperCase()));
+    }
+    return [for (final item in items) _chip(item.$1, item.$2)];
+  }
+
+  Widget _chip(IconData icon, String text) {
+    final ink = MatteSurface.ink(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: ink.withAlpha(9),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: ink.withAlpha(28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: ink, size: 13),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              color: ink,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _date(DateTime value) => '${value.month}/${value.day}/${value.year}';
 }

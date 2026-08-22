@@ -5,9 +5,10 @@ import 'package:flutter_swipes/src/features/notifications/domain/app_notificatio
 import 'package:flutter_swipes/src/features/payments/presentation/screens/direct_request_review_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_interest_review_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Opens notification targets without assuming that priority requests are chats.
+/// Opens notification targets without assuming that interest/priority means chat.
 Future<void> openNotificationTarget(
   BuildContext context,
   AppNotification notification,
@@ -27,6 +28,20 @@ Future<void> openNotificationTarget(
             builder: (_) => DirectRequestReviewScreen(
               requestId: directRequestMatch.group(1)!,
               senderName: notification.title,
+            ),
+          ),
+        );
+        return;
+      }
+      final interestMatch = RegExp(
+        r'/interest/([^/]+)/([^/]+)',
+      ).firstMatch(path);
+      if (interestMatch != null) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ListingInterestReviewScreen(
+              listingId: interestMatch.group(1)!,
+              likerId: interestMatch.group(2)!,
             ),
           ),
         );

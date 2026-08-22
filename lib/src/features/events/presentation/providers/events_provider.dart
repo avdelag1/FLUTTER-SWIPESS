@@ -73,11 +73,16 @@ final eventSearchProvider = NotifierProvider<EventSearchNotifier, String>(
   EventSearchNotifier.new,
 );
 
+/// The dashboard teaser intentionally exposes only one autoplay-capable event.
+/// Event videos are some of the largest Storage objects in Swipess; rotating
+/// through every video on the dashboard caused unnecessary CDN/cached egress.
+/// The full Events experience still uses [eventsListProvider] and is unchanged.
 final videoEventsProvider = Provider<List<Event>>((ref) {
   final events = ref.watch(eventsListProvider).value ?? const <Event>[];
   return events
       .where((e) => e.videoUrl != null && e.videoUrl!.trim().isNotEmpty)
-      .toList();
+      .take(1)
+      .toList(growable: false);
 });
 
 final eventCategoriesProvider = Provider<List<EventFeedCategory>>((ref) {
