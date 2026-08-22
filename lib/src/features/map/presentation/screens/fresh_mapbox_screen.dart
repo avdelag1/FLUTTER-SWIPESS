@@ -97,7 +97,11 @@ class _FreshMapboxScreenState extends ConsumerState<FreshMapboxScreen> {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.refresh_rounded, color: Colors.white, size: 16),
+                      Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'RETRY MAP DATA',
@@ -120,10 +124,7 @@ class _FreshMapboxScreenState extends ConsumerState<FreshMapboxScreen> {
 }
 
 class _CompactListingStrip extends StatelessWidget {
-  const _CompactListingStrip({
-    required this.listings,
-    required this.onOpen,
-  });
+  const _CompactListingStrip({required this.listings, required this.onOpen});
 
   final List<Listing> listings;
   final ValueChanged<Listing> onOpen;

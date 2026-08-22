@@ -37,8 +37,7 @@ class WebDiscoveryMapScreen extends ConsumerStatefulWidget {
       _WebDiscoveryMapScreenState();
 }
 
-class _WebDiscoveryMapScreenState
-    extends ConsumerState<WebDiscoveryMapScreen>
+class _WebDiscoveryMapScreenState extends ConsumerState<WebDiscoveryMapScreen>
     with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
   late final AnimationController _fly;
@@ -184,10 +183,7 @@ class _WebDiscoveryMapScreenState
     AppHaptics.selection();
     setState(() => _selected = pin);
     final loc = ref.read(discoveryLocationProvider);
-    _flyTo(
-      loc.copyWith(latitude: pin.lat, longitude: pin.lng),
-      zoom: 14.2,
-    );
+    _flyTo(loc.copyWith(latitude: pin.lat, longitude: pin.lng), zoom: 14.2);
   }
 
   void _openPin(MapPin pin) {
@@ -334,7 +330,8 @@ class _WebDiscoveryMapScreenState
                         alignment: Alignment.center,
                         child: _PinMarker(
                           pin: pin,
-                          selected: _selected?.id == pin.id &&
+                          selected:
+                              _selected?.id == pin.id &&
                               _selected?.isListing == pin.isListing,
                           onTap: () => _selectPin(pin),
                         ),
@@ -365,7 +362,8 @@ class _WebDiscoveryMapScreenState
                       _WebIconButton(
                         icon: Icons.close_rounded,
                         tooltip: 'Close',
-                        onTap: widget.onClose ??
+                        onTap:
+                            widget.onClose ??
                             () => context.go(AppPaths.clientDashboard),
                       ),
                       const SizedBox(width: 7),
@@ -413,8 +411,9 @@ class _WebDiscoveryMapScreenState
                 child: MapCityChips(
                   activeCity: loc.city,
                   onSelect: (city) {
-                    final notifier =
-                        ref.read(discoveryLocationProvider.notifier);
+                    final notifier = ref.read(
+                      discoveryLocationProvider.notifier,
+                    );
                     notifier.setCoordinates(
                       city: city.name,
                       country: city.country,
@@ -660,21 +659,13 @@ class _WebRangePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _WebChoice(
-            label: 'LOCAL',
-            active: radiusKm <= 25,
-            onTap: onLocal,
-          ),
+          _WebChoice(label: 'LOCAL', active: radiusKm <= 25, onTap: onLocal),
           _WebChoice(
             label: 'REGION',
             active: radiusKm > 25 && radiusKm < 5000,
             onTap: onRegion,
           ),
-          _WebChoice(
-            label: 'WORLD',
-            active: radiusKm >= 5000,
-            onTap: onWorld,
-          ),
+          _WebChoice(label: 'WORLD', active: radiusKm >= 5000, onTap: onWorld),
         ],
       ),
     );
@@ -902,9 +893,7 @@ class _WebSelectedCard extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                pin.isListing
-                    ? Icons.home_work_rounded
-                    : Icons.person_rounded,
+                pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
                 color: Colors.white,
                 size: 20,
               ),

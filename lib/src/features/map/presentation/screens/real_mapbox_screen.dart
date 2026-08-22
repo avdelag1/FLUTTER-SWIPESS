@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -104,12 +105,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     final lng = _deviceLongitude;
     if (map == null || lat == null || lng == null) return;
     await map.flyTo(
-      CameraOptions(
-        center: _point(lat, lng),
-        zoom: 14.5,
-        pitch: 0,
-        bearing: 0,
-      ),
+      CameraOptions(center: _point(lat, lng), zoom: 14.5, pitch: 0, bearing: 0),
       MapAnimationOptions(duration: 650, startDelay: 0),
     );
   }
@@ -216,14 +212,14 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       )..layout();
       painter.paint(
         canvas,
-        ui.Offset(
-          (size - painter.width) / 2,
-          (size - painter.height) / 2,
-        ),
+        ui.Offset((size - painter.width) / 2, (size - painter.height) / 2),
       );
     }
 
-    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
     return data!.buffer.asUint8List();
   }
@@ -287,20 +283,34 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
   }
 
   ({double lat, double lng}) _cityLevelPoint(
-    String key,
+    dynamic item,
     DiscoveryLocation loc, {
     required bool listing,
   }) {
+    final key = (item.id ?? '').toString();
     var hash = listing ? 97 : 193;
     for (final unit in key.codeUnits) {
       hash = 0x1fffffff & (hash * 31 + unit);
     }
     final angle = (hash % 360) * math.pi / 180;
     final ring = 0.008 + ((hash ~/ 360) % 7) * 0.0024;
-    final lat = loc.latitude + math.sin(angle) * ring;
-    final cosLat = math.cos(loc.latitude * math.pi / 180).abs();
+
+    // Base the center on the item's actual city if possible, falling back to loc
+    double centerLat = loc.latitude;
+    double centerLng = loc.longitude;
+    final itemCity = (item.city ?? '').toString().trim();
+    if (itemCity.isNotEmpty) {
+      final resolved = ListingLocations.resolve(itemCity);
+      if (resolved != null) {
+        centerLat = resolved.lat;
+        centerLng = resolved.lng;
+      }
+    }
+
+    final lat = centerLat + math.sin(angle) * ring;
+    final cosLat = math.cos(centerLat * math.pi / 180).abs();
     final lngScale = cosLat < .25 ? .25 : cosLat;
-    final lng = loc.longitude + (math.cos(angle) * ring / lngScale);
+    final lng = centerLng + (math.cos(angle) * ring / lngScale);
     return (lat: lat, lng: lng);
   }
 
@@ -314,7 +324,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       );
       return MapPin.listingAt(listing, p.lat, p.lng);
     }
-    final point = _cityLevelPoint(listing.id, loc, listing: true);
+    final point = _cityLevelPoint(listing, loc, listing: true);
     return MapPin.listingAt(listing, point.lat, point.lng);
   }
 
@@ -328,7 +338,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       );
       return MapPin.profileAt(profile, p.lat, p.lng);
     }
-    final point = _cityLevelPoint(profile.id, loc, listing: false);
+    final point = _cityLevelPoint(profile, loc, listing: false);
     return MapPin.profileAt(profile, point.lat, point.lng);
   }
 
@@ -524,7 +534,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                   await _renderAnnotations();
                   _refreshDeviceLocation();
                   await Future<void>.delayed(const Duration(milliseconds: 120));
-                  if (mounted) await _flyTo(ref.read(discoveryLocationProvider));
+                  if (mounted)
+                    await _flyTo(ref.read(discoveryLocationProvider));
                 },
               ),
             ),
@@ -539,7 +550,9 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                       _GlassMapButton(
                         icon: Icons.close_rounded,
                         tooltip: 'Close',
-                        onTap: widget.onClose ?? () => context.go(AppPaths.clientDashboard),
+                        onTap:
+                            widget.onClose ??
+                            () => context.go(AppPaths.clientDashboard),
                       ),
                       const SizedBox(width: 8),
                       _GlassMapLabelButton(
@@ -585,14 +598,18 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                 child: MapCityChips(
                   activeCity: loc.city,
                   onSelect: (city) {
-                    ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                    ref
+                        .read(discoveryLocationProvider.notifier)
+                        .setCoordinates(
                           city: city.name,
                           country: city.country,
                           latitude: city.lat,
                           longitude: city.lng,
                         );
                     if (loc.radiusKm > 500) {
-                      ref.read(discoveryLocationProvider.notifier).setRadiusKm(25);
+                      ref
+                          .read(discoveryLocationProvider.notifier)
+                          .setRadiusKm(25);
                     }
                     setState(() => _citiesOpen = false);
                   },
@@ -611,7 +628,11 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                       if (map == null) return;
                       final camera = await map.getCameraState();
                       await map.easeTo(
-                        CameraOptions(zoom: math.min(camera.zoom + 1, 18), pitch: 0, bearing: 0),
+                        CameraOptions(
+                          zoom: math.min(camera.zoom + 1, 18),
+                          pitch: 0,
+                          bearing: 0,
+                        ),
                         MapAnimationOptions(duration: 220, startDelay: 0),
                       );
                     },
@@ -625,7 +646,11 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                       if (map == null) return;
                       final camera = await map.getCameraState();
                       await map.easeTo(
-                        CameraOptions(zoom: math.max(camera.zoom - 1, 1), pitch: 0, bearing: 0),
+                        CameraOptions(
+                          zoom: math.max(camera.zoom - 1, 1),
+                          pitch: 0,
+                          bearing: 0,
+                        ),
                         MapAnimationOptions(duration: 220, startDelay: 0),
                       );
                     },
@@ -684,7 +709,10 @@ class _GlassMapButton extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withAlpha(76), width: .8),
+                  border: Border.all(
+                    color: Colors.white.withAlpha(76),
+                    width: .8,
+                  ),
                 ),
                 child: Icon(icon, color: Colors.white, size: 20),
               ),
@@ -716,7 +744,9 @@ class _GlassMapLabelButton extends StatelessWidget {
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Material(
-          color: selected ? Colors.white.withAlpha(218) : Colors.black.withAlpha(82),
+          color: selected
+              ? Colors.white.withAlpha(218)
+              : Colors.black.withAlpha(82),
           child: InkWell(
             onTap: onTap,
             child: Container(
@@ -724,12 +754,19 @@ class _GlassMapLabelButton extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: Colors.white.withAlpha(selected ? 225 : 76), width: .8),
+                border: Border.all(
+                  color: Colors.white.withAlpha(selected ? 225 : 76),
+                  width: .8,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: selected ? const Color(0xFF111318) : Colors.white, size: 16),
+                  Icon(
+                    icon,
+                    color: selected ? const Color(0xFF111318) : Colors.white,
+                    size: 16,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     label,
@@ -780,9 +817,24 @@ class _RangePill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _RangeChoice(icon: Icons.near_me_rounded, label: 'LOCAL', active: radiusKm <= 25, onTap: onLocal),
-              _RangeChoice(icon: Icons.travel_explore_rounded, label: 'REGION', active: radiusKm > 25 && radiusKm < 5000, onTap: onRegion),
-              _RangeChoice(icon: Icons.public_rounded, label: 'WORLD', active: radiusKm >= 5000, onTap: onWorld),
+              _RangeChoice(
+                icon: Icons.near_me_rounded,
+                label: 'LOCAL',
+                active: radiusKm <= 25,
+                onTap: onLocal,
+              ),
+              _RangeChoice(
+                icon: Icons.travel_explore_rounded,
+                label: 'REGION',
+                active: radiusKm > 25 && radiusKm < 5000,
+                onTap: onRegion,
+              ),
+              _RangeChoice(
+                icon: Icons.public_rounded,
+                label: 'WORLD',
+                active: radiusKm >= 5000,
+                onTap: onWorld,
+              ),
             ],
           ),
         ),
@@ -792,7 +844,12 @@ class _RangePill extends StatelessWidget {
 }
 
 class _RangeChoice extends StatelessWidget {
-  const _RangeChoice({required this.icon, required this.label, required this.active, required this.onTap});
+  const _RangeChoice({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -833,7 +890,12 @@ class _RangeChoice extends StatelessWidget {
 }
 
 class _LayerPill extends StatelessWidget {
-  const _LayerPill({required this.value, required this.listingCount, required this.peopleCount, required this.onChanged});
+  const _LayerPill({
+    required this.value,
+    required this.listingCount,
+    required this.peopleCount,
+    required this.onChanged,
+  });
 
   final String value;
   final int listingCount;
@@ -857,9 +919,26 @@ class _LayerPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _LayerChoice(icon: Icons.layers_rounded, label: 'ALL', active: value == 'all', onTap: () => onChanged('all')),
-              _LayerChoice(icon: Icons.home_work_rounded, label: 'LISTINGS', active: value == 'listings', badge: listingCount, onTap: () => onChanged('listings')),
-              _LayerChoice(icon: Icons.people_alt_rounded, label: 'USERS', active: value == 'people', badge: peopleCount, onTap: () => onChanged('people')),
+              _LayerChoice(
+                icon: Icons.layers_rounded,
+                label: 'ALL',
+                active: value == 'all',
+                onTap: () => onChanged('all'),
+              ),
+              _LayerChoice(
+                icon: Icons.home_work_rounded,
+                label: 'LISTINGS',
+                active: value == 'listings',
+                badge: listingCount,
+                onTap: () => onChanged('listings'),
+              ),
+              _LayerChoice(
+                icon: Icons.people_alt_rounded,
+                label: 'USERS',
+                active: value == 'people',
+                badge: peopleCount,
+                onTap: () => onChanged('people'),
+              ),
             ],
           ),
         ),
@@ -869,7 +948,13 @@ class _LayerPill extends StatelessWidget {
 }
 
 class _LayerChoice extends StatelessWidget {
-  const _LayerChoice({required this.icon, required this.label, required this.active, required this.onTap, this.badge});
+  const _LayerChoice({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.badge,
+  });
 
   final IconData icon;
   final String label;
@@ -905,7 +990,14 @@ class _LayerChoice extends StatelessWidget {
             ),
             if (badge != null) ...[
               const SizedBox(width: 4),
-              Text('$badge', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+              Text(
+                '$badge',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ],
         ),
@@ -915,7 +1007,11 @@ class _LayerChoice extends StatelessWidget {
 }
 
 class _SelectedPinCard extends StatelessWidget {
-  const _SelectedPinCard({required this.pin, required this.onOpen, required this.onClose});
+  const _SelectedPinCard({
+    required this.pin,
+    required this.onOpen,
+    required this.onClose,
+  });
 
   final MapPin pin;
   final VoidCallback onOpen;
@@ -923,7 +1019,9 @@ class _SelectedPinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = pin.isListing ? (pin.listing?.title ?? 'Listing') : (pin.profile?.displayName ?? 'Swipess member');
+    final title = pin.isListing
+        ? (pin.listing?.title ?? 'Listing')
+        : (pin.profile?.displayName ?? 'Swipess member');
     final subtitle = pin.isListing
         ? (pin.listing?.formattedPrice ?? pin.listing?.city ?? 'Nearby listing')
         : (pin.profile?.city ?? 'Nearby member');
@@ -940,7 +1038,10 @@ class _SelectedPinCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withAlpha(58), width: .7),
+                border: Border.all(
+                  color: Colors.white.withAlpha(58),
+                  width: .7,
+                ),
               ),
               child: Row(
                 children: [
@@ -948,10 +1049,20 @@ class _SelectedPinCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: (pin.isListing ? const Color(0xFFFF6338) : const Color(0xFFE95B9B)).withAlpha(235),
+                      color:
+                          (pin.isListing
+                                  ? const Color(0xFFFF6338)
+                                  : const Color(0xFFE95B9B))
+                              .withAlpha(235),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(pin.isListing ? Icons.home_work_rounded : Icons.person_rounded, color: Colors.white, size: 19),
+                    child: Icon(
+                      pin.isListing
+                          ? Icons.home_work_rounded
+                          : Icons.person_rounded,
+                      color: Colors.white,
+                      size: 19,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -959,14 +1070,43 @@ class _SelectedPinCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12.5)),
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12.5,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 10.5)),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10.5,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 19),
-                  IconButton(onPressed: onClose, icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 17)),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 19,
+                  ),
+                  IconButton(
+                    onPressed: onClose,
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white70,
+                      size: 17,
+                    ),
+                  ),
                 ],
               ),
             ),

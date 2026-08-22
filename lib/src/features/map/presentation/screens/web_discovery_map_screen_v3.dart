@@ -149,12 +149,7 @@ class _WebDiscoveryMapScreenV3State
       );
       return MapPin.listingAt(listing, p.lat, p.lng);
     }
-    final p = _spreadCity(
-      listing.id,
-      centerLat,
-      centerLng,
-      listing: true,
-    );
+    final p = _spreadCity(listing.id, centerLat, centerLng, listing: true);
     return MapPin.listingAt(listing, p.lat, p.lng);
   }
 
@@ -168,12 +163,7 @@ class _WebDiscoveryMapScreenV3State
       );
       return MapPin.profileAt(profile, p.lat, p.lng);
     }
-    final p = _spreadCity(
-      profile.id,
-      centerLat,
-      centerLng,
-      listing: false,
-    );
+    final p = _spreadCity(profile.id, centerLat, centerLng, listing: false);
     return MapPin.profileAt(profile, p.lat, p.lng);
   }
 
@@ -225,7 +215,8 @@ class _WebDiscoveryMapScreenV3State
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null) return;
-      final changed = previous.latitude != next.latitude ||
+      final changed =
+          previous.latitude != next.latitude ||
           previous.longitude != next.longitude ||
           previous.radiusKm != next.radiusKm ||
           previous.city != next.city;
@@ -233,11 +224,7 @@ class _WebDiscoveryMapScreenV3State
       _selected = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _move(
-          next.latitude,
-          next.longitude,
-          _zoomForRadius(next.radiusKm),
-        );
+        _move(next.latitude, next.longitude, _zoomForRadius(next.radiusKm));
       });
     });
 
@@ -362,15 +349,15 @@ class _WebDiscoveryMapScreenV3State
                       _CircleButton(
                         icon: Icons.close_rounded,
                         tooltip: 'Close map',
-                        onTap: widget.onClose ??
+                        onTap:
+                            widget.onClose ??
                             () => context.go(AppPaths.clientDashboard),
                       ),
                       const SizedBox(width: 7),
                       _LabelButton(
                         label: 'CITIES',
                         selected: _citiesOpen,
-                        onTap: () =>
-                            setState(() => _citiesOpen = !_citiesOpen),
+                        onTap: () => setState(() => _citiesOpen = !_citiesOpen),
                       ),
                       const Spacer(),
                       _CountsPill(
@@ -408,8 +395,9 @@ class _WebDiscoveryMapScreenV3State
                 child: MapCityChips(
                   activeCity: loc.city,
                   onSelect: (city) {
-                    final notifier =
-                        ref.read(discoveryLocationProvider.notifier);
+                    final notifier = ref.read(
+                      discoveryLocationProvider.notifier,
+                    );
                     notifier.setCoordinates(
                       city: city.name,
                       country: city.country,
@@ -458,11 +446,7 @@ class _WebDiscoveryMapScreenV3State
                   _CircleButton(
                     icon: Icons.my_location_rounded,
                     tooltip: 'Recenter',
-                    onTap: () => _move(
-                      loc.latitude,
-                      loc.longitude,
-                      targetZoom,
-                    ),
+                    onTap: () => _move(loc.latitude, loc.longitude, targetZoom),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -495,9 +479,7 @@ class _CenterDot extends StatelessWidget {
           shape: BoxShape.circle,
           color: const Color(0xFF147DFF),
           border: Border.all(color: Colors.white, width: 2.3),
-          boxShadow: const [
-            BoxShadow(color: Color(0x55000000), blurRadius: 8),
-          ],
+          boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 8)],
         ),
       ),
     );
@@ -565,9 +547,7 @@ class _PinPreview extends StatelessWidget {
         : (profile?.role?.trim().isNotEmpty == true
               ? profile!.role!
               : 'Swipess member');
-    final detail = pin.isListing
-        ? _listingDetail(pin)
-        : _profileDetail(pin);
+    final detail = pin.isListing ? _listingDetail(pin) : _profileDetail(pin);
 
     return Material(
       color: Colors.transparent,
@@ -762,11 +742,7 @@ class _PinDot extends StatelessWidget {
 }
 
 class _CircleButton extends StatelessWidget {
-  const _CircleButton({
-    required this.icon,
-    required this.onTap,
-    this.tooltip,
-  });
+  const _CircleButton({required this.icon, required this.onTap, this.tooltip});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -921,11 +897,7 @@ class _RangePill extends StatelessWidget {
             active: radiusKm > 25 && radiusKm < 5000,
             onTap: onRegion,
           ),
-          _Choice(
-            label: 'WORLD',
-            active: radiusKm >= 5000,
-            onTap: onWorld,
-          ),
+          _Choice(label: 'WORLD', active: radiusKm >= 5000, onTap: onWorld),
         ],
       ),
     );

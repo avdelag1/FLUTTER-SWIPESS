@@ -123,10 +123,7 @@ class _RealMapboxGlobeScreenV2State
   }
 
   void _queueInitialFlight() {
-    if (!_mapLoaded ||
-        !_initialBaseIdle ||
-        _initialFlightStarted ||
-        !mounted) {
+    if (!_mapLoaded || !_initialBaseIdle || _initialFlightStarted || !mounted) {
       return;
     }
 
@@ -146,10 +143,7 @@ class _RealMapboxGlobeScreenV2State
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 220));
       if (!mounted) return;
-      await _flyTo(
-        ref.read(discoveryLocationProvider),
-        duration: 2600,
-      );
+      await _flyTo(ref.read(discoveryLocationProvider), duration: 2600);
     });
   }
 
@@ -337,9 +331,7 @@ class _RealMapboxGlobeScreenV2State
     try {
       final camera = await map.getCameraState();
       await map.easeTo(
-        CameraOptions(
-          zoom: (camera.zoom + delta).clamp(1.0, 18.0).toDouble(),
-        ),
+        CameraOptions(zoom: (camera.zoom + delta).clamp(1.0, 18.0).toDouble()),
         MapAnimationOptions(duration: 220, startDelay: 0),
       );
     } catch (_) {}
@@ -373,7 +365,8 @@ class _RealMapboxGlobeScreenV2State
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null) return;
-      final destinationChanged = previous.latitude != next.latitude ||
+      final destinationChanged =
+          previous.latitude != next.latitude ||
           previous.longitude != next.longitude ||
           previous.city != next.city;
       final radiusChanged = previous.radiusKm != next.radiusKm;
@@ -499,7 +492,10 @@ class _RealMapboxGlobeScreenV2State
                     if (_isSelected(pin) && _chromeVisible)
                       Positioned(
                         left: (pixel.dx - 118)
-                            .clamp(8.0, math.max(8.0, constraints.maxWidth - 244))
+                            .clamp(
+                              8.0,
+                              math.max(8.0, constraints.maxWidth - 244),
+                            )
                             .toDouble(),
                         top: math.max(8, pixel.dy - 134).toDouble(),
                         child: _PinPreview(
@@ -534,7 +530,8 @@ class _RealMapboxGlobeScreenV2State
                           _MapCircleButton(
                             semanticLabel: 'Close map',
                             icon: Icons.close_rounded,
-                            onTap: widget.onClose ??
+                            onTap:
+                                widget.onClose ??
                                 () => context.go(AppPaths.clientDashboard),
                           ),
                           const SizedBox(width: 7),
@@ -580,8 +577,9 @@ class _RealMapboxGlobeScreenV2State
                     child: MapCityChips(
                       activeCity: loc.city,
                       onSelect: (city) {
-                        final notifier =
-                            ref.read(discoveryLocationProvider.notifier);
+                        final notifier = ref.read(
+                          discoveryLocationProvider.notifier,
+                        );
                         notifier.setCoordinates(
                           city: city.name,
                           country: city.country,
@@ -639,8 +637,9 @@ class _RealMapboxGlobeScreenV2State
                       const SizedBox(height: 8),
                     ],
                     _MapCircleButton(
-                      semanticLabel:
-                          _chromeVisible ? 'Hide controls' : 'Show controls',
+                      semanticLabel: _chromeVisible
+                          ? 'Hide controls'
+                          : 'Show controls',
                       icon: _chromeVisible
                           ? Icons.visibility_off_rounded
                           : Icons.visibility_rounded,
@@ -669,9 +668,7 @@ class _CurrentLocationDot extends StatelessWidget {
         color: const Color(0xFF147DFF),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2.5),
-        boxShadow: const [
-          BoxShadow(color: Color(0x55000000), blurRadius: 8),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 8)],
       ),
     );
   }
@@ -709,7 +706,9 @@ class _ProjectedPin extends StatelessWidget {
     final raw = pin.isListing
         ? (pin.listing?.formattedPrice ?? 'Listing')
         : (pin.profile?.displayName ?? 'Member');
-    final clean = raw.trim().isEmpty ? (pin.isListing ? 'Listing' : 'Member') : raw.trim();
+    final clean = raw.trim().isEmpty
+        ? (pin.isListing ? 'Listing' : 'Member')
+        : raw.trim();
     if (clean.length <= 17) return clean;
     return '${clean.substring(0, 15)}…';
   }
@@ -741,7 +740,10 @@ class _ProjectedPin extends StatelessWidget {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 140),
                   constraints: const BoxConstraints(maxWidth: 118),
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? const Color(0xF211141A)
@@ -800,7 +802,9 @@ class _ProjectedPin extends StatelessWidget {
                     ],
                   ),
                   child: Icon(
-                    pin.isListing ? Icons.home_work_rounded : Icons.person_rounded,
+                    pin.isListing
+                        ? Icons.home_work_rounded
+                        : Icons.person_rounded,
                     size: selected ? 23 : 21,
                     color: pin.isListing ? Colors.white : accent,
                   ),
@@ -838,9 +842,7 @@ class _PinPreview extends StatelessWidget {
         : (profile?.role?.trim().isNotEmpty == true
               ? profile!.role!
               : 'Swipess member');
-    final detail = pin.isListing
-        ? _listingDetail(pin)
-        : _profileDetail(pin);
+    final detail = pin.isListing ? _listingDetail(pin) : _profileDetail(pin);
 
     return Material(
       color: const Color(0xF511141A),
@@ -1044,11 +1046,7 @@ class _MapCircleButton extends StatelessWidget {
           focusColor: Colors.white.withAlpha(10),
           splashColor: Colors.white.withAlpha(24),
           onTap: onTap,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Center(child: child),
-          ),
+          child: SizedBox(width: 40, height: 40, child: Center(child: child)),
         ),
       ),
     );
@@ -1126,7 +1124,11 @@ class _CountsPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _Choice(label: 'ALL', active: layer == 'all', onTap: () => onLayer('all')),
+          _Choice(
+            label: 'ALL',
+            active: layer == 'all',
+            onTap: () => onLayer('all'),
+          ),
           _Choice(
             label: 'LISTINGS $listings',
             active: layer == 'listings',
@@ -1175,11 +1177,7 @@ class _RangePill extends StatelessWidget {
             active: radiusKm > 25 && radiusKm < 5000,
             onTap: onRegion,
           ),
-          _Choice(
-            label: 'WORLD',
-            active: radiusKm >= 5000,
-            onTap: onWorld,
-          ),
+          _Choice(label: 'WORLD', active: radiusKm >= 5000, onTap: onWorld),
         ],
       ),
     );

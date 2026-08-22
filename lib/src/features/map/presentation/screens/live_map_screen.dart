@@ -24,7 +24,8 @@ class LiveMapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return PlatformDiscoveryMapScreen(
       showCitiesOnOpen: showCitiesOnOpen,
-      onClose: onClose ??
+      onClose:
+          onClose ??
           () {
             final navigator = Navigator.of(context);
             if (navigator.canPop()) {

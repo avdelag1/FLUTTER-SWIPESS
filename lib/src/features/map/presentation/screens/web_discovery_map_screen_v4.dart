@@ -61,16 +61,17 @@ class _WebDiscoveryMapScreenV4State
   void initState() {
     super.initState();
     _citiesOpen = widget.showCitiesOnOpen;
-    _flight = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3400),
-    )
-      ..addListener(_onFlightTick)
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed && mounted) {
-          setState(() => _flightRunning = false);
-        }
-      });
+    _flight =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 3400),
+          )
+          ..addListener(_onFlightTick)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed && mounted) {
+              setState(() => _flightRunning = false);
+            }
+          });
 
     // Do not invalidate map providers here. They are deliberately kept warm by
     // the dashboard so opening the map can reuse already-fetched data.
@@ -127,8 +128,7 @@ class _WebDiscoveryMapScreenV4State
 
     // A gentle world turn at the beginning makes the arrival feel like travel,
     // not a camera falling vertically onto a coordinate.
-    final rotation =
-        -24.0 * (1 - travelT) + math.sin(math.pi * raw) * 5.0;
+    final rotation = -24.0 * (1 - travelT) + math.sin(math.pi * raw) * 5.0;
 
     try {
       _mapController.moveAndRotate(LatLng(lat, lng), zoom, rotation);
@@ -152,11 +152,7 @@ class _WebDiscoveryMapScreenV4State
     _toZoom = _zoomForRadius(loc.radiusKm);
 
     try {
-      _mapController.moveAndRotate(
-        LatLng(_fromLat, _fromLng),
-        _fromZoom,
-        -24,
-      );
+      _mapController.moveAndRotate(LatLng(_fromLat, _fromLng), _fromZoom, -24);
     } catch (_) {}
 
     if (mounted) setState(() => _flightRunning = true);
@@ -169,11 +165,7 @@ class _WebDiscoveryMapScreenV4State
     if (_flightRunning && mounted) setState(() => _flightRunning = false);
     final safeZoom = zoom.clamp(2.0, 18.0).toDouble();
     try {
-      _mapController.moveAndRotate(
-        LatLng(latitude, longitude),
-        safeZoom,
-        0,
-      );
+      _mapController.moveAndRotate(LatLng(latitude, longitude), safeZoom, 0);
       _zoom = safeZoom;
     } catch (_) {}
   }
@@ -324,7 +316,8 @@ class _WebDiscoveryMapScreenV4State
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null) return;
-      final destinationChanged = previous.latitude != next.latitude ||
+      final destinationChanged =
+          previous.latitude != next.latitude ||
           previous.longitude != next.longitude ||
           previous.city != next.city;
       final radiusChanged = previous.radiusKm != next.radiusKm;
@@ -468,10 +461,7 @@ class _WebDiscoveryMapScreenV4State
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.center,
-                    colors: [
-                      Colors.black.withAlpha(30),
-                      Colors.transparent,
-                    ],
+                    colors: [Colors.black.withAlpha(30), Colors.transparent],
                   ),
                 ),
               ),
@@ -499,15 +489,15 @@ class _WebDiscoveryMapScreenV4State
                       _CircleButton(
                         icon: Icons.close_rounded,
                         semanticLabel: 'Close map',
-                        onTap: widget.onClose ??
+                        onTap:
+                            widget.onClose ??
                             () => context.go(AppPaths.clientDashboard),
                       ),
                       const SizedBox(width: 7),
                       _LabelButton(
                         label: 'CITIES',
                         selected: _citiesOpen,
-                        onTap: () =>
-                            setState(() => _citiesOpen = !_citiesOpen),
+                        onTap: () => setState(() => _citiesOpen = !_citiesOpen),
                       ),
                       const Spacer(),
                       _CountsPill(
@@ -545,8 +535,9 @@ class _WebDiscoveryMapScreenV4State
                 child: MapCityChips(
                   activeCity: loc.city,
                   onSelect: (city) {
-                    final notifier =
-                        ref.read(discoveryLocationProvider.notifier);
+                    final notifier = ref.read(
+                      discoveryLocationProvider.notifier,
+                    );
                     notifier.setCoordinates(
                       city: city.name,
                       country: city.country,
@@ -593,11 +584,7 @@ class _WebDiscoveryMapScreenV4State
                   _CircleButton(
                     icon: Icons.my_location_rounded,
                     semanticLabel: 'Recenter',
-                    onTap: () => _move(
-                      loc.latitude,
-                      loc.longitude,
-                      targetZoom,
-                    ),
+                    onTap: () => _move(loc.latitude, loc.longitude, targetZoom),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -605,8 +592,9 @@ class _WebDiscoveryMapScreenV4State
                   icon: _chromeVisible
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
-                  semanticLabel:
-                      _chromeVisible ? 'Hide controls' : 'Show controls',
+                  semanticLabel: _chromeVisible
+                      ? 'Hide controls'
+                      : 'Show controls',
                   onTap: _toggleChrome,
                 ),
               ],
@@ -631,9 +619,7 @@ class _CenterDot extends StatelessWidget {
           shape: BoxShape.circle,
           color: const Color(0xFF147DFF),
           border: Border.all(color: Colors.white, width: 2.3),
-          boxShadow: const [
-            BoxShadow(color: Color(0x55000000), blurRadius: 8),
-          ],
+          boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 8)],
         ),
       ),
     );
@@ -660,7 +646,9 @@ class _MapMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!showPreview) {
-      return Center(child: _PinDot(pin: pin, selected: selected, onTap: onTap));
+      return Center(
+        child: _PinDot(pin: pin, selected: selected, onTap: onTap),
+      );
     }
 
     return Stack(
@@ -671,11 +659,7 @@ class _MapMarker extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 42,
-          child: _PinPreview(
-            pin: pin,
-            onOpen: onOpen,
-            onClose: onClose,
-          ),
+          child: _PinPreview(pin: pin, onOpen: onOpen, onClose: onClose),
         ),
         Positioned(
           bottom: 0,
@@ -710,8 +694,7 @@ class _PinPreview extends StatelessWidget {
         : (profile?.role?.trim().isNotEmpty == true
               ? profile!.role!
               : 'Swipess member');
-    final detail =
-        pin.isListing ? _listingDetail(pin) : _profileDetail(pin);
+    final detail = pin.isListing ? _listingDetail(pin) : _profileDetail(pin);
 
     return Material(
       color: Colors.transparent,
@@ -973,11 +956,7 @@ class _CircleButton extends StatelessWidget {
           hoverColor: Colors.transparent,
           focusColor: Colors.white.withAlpha(12),
           splashColor: Colors.white.withAlpha(24),
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Center(child: visual),
-          ),
+          child: SizedBox(width: 40, height: 40, child: Center(child: visual)),
         ),
       ),
     );
@@ -1060,7 +1039,11 @@ class _CountsPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _Choice(label: 'ALL', active: layer == 'all', onTap: () => onLayer('all')),
+          _Choice(
+            label: 'ALL',
+            active: layer == 'all',
+            onTap: () => onLayer('all'),
+          ),
           _Choice(
             label: 'LISTINGS $listings',
             active: layer == 'listings',
@@ -1109,11 +1092,7 @@ class _RangePill extends StatelessWidget {
             active: radiusKm > 25 && radiusKm < 5000,
             onTap: onRegion,
           ),
-          _Choice(
-            label: 'WORLD',
-            active: radiusKm >= 5000,
-            onTap: onWorld,
-          ),
+          _Choice(label: 'WORLD', active: radiusKm >= 5000, onTap: onWorld),
         ],
       ),
     );
