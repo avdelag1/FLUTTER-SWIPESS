@@ -16,7 +16,8 @@ void main() {
           'bicycle-rental-agreement',
           'motorcycle-rental-agreement',
           'yacht-charter-agreement',
-          'service-agreement',
+          'service-contract-longterm',
+          'service-one-time',
           'mutual-nda',
         ]),
       );
