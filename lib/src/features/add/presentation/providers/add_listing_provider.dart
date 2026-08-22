@@ -52,16 +52,30 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       );
       return;
     }
-    // Re-encode gallery photos on supported platforms. On iOS this normally
-    // converts HEIC/HEIF originals to a web-safe JPEG while also preventing
-    // huge camera originals from making uploads feel stalled.
-    final picked = await picker.pickMultiImage(
-      limit: remaining,
-      imageQuality: 92,
-      maxWidth: 2400,
-      maxHeight: 2400,
-      requestFullMetadata: false,
-    );
+
+    // image_picker 1.2.1 can reject pickMultiImage(limit: 1), so use the
+    // single-image API when only one slot is left. Asking the picker to resize
+    // and re-encode also makes iPhone HEIC/HEIF selections web-friendlier and
+    // prevents giant camera originals from making uploads feel stalled.
+    final List<XFile> picked;
+    if (remaining == 1) {
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 92,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        requestFullMetadata: false,
+      );
+      picked = file == null ? const <XFile>[] : <XFile>[file];
+    } else {
+      picked = await picker.pickMultiImage(
+        limit: remaining,
+        imageQuality: 92,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        requestFullMetadata: false,
+      );
+    }
     if (picked.isEmpty) return;
     state = state.copyWith(
       photos: [...state.photos, ...picked.take(remaining)],
