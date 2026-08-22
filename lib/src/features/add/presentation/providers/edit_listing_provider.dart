@@ -217,13 +217,27 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       );
       return;
     }
-    final picked = await ImagePicker().pickMultiImage(
-      limit: remaining,
-      imageQuality: 92,
-      maxWidth: 2400,
-      maxHeight: 2400,
-      requestFullMetadata: false,
-    );
+
+    final picker = ImagePicker();
+    final List<XFile> picked;
+    if (remaining == 1) {
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 92,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        requestFullMetadata: false,
+      );
+      picked = file == null ? const <XFile>[] : <XFile>[file];
+    } else {
+      picked = await picker.pickMultiImage(
+        limit: remaining,
+        imageQuality: 92,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        requestFullMetadata: false,
+      );
+    }
     if (picked.isEmpty) return;
     state = current.copyWith(
       newPhotos: [...current.newPhotos, ...picked.take(remaining)],
