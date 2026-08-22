@@ -28,29 +28,33 @@ class NativeSwipeApp extends ConsumerWidget {
     final isLight = ref.watch(isLightThemeProvider);
 
     return OfflineSwipeSyncBootstrap(
-      child: _EngagementTrackingBootstrap(
-        child: MaterialApp.router(
-          title: 'Swipess',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
-          // Spelled out instead of `routerConfig:` so the Android Back key runs
-          // through our dispatcher (Cap `useGlobalBackButton`) before GoRouter.
-          routeInformationProvider: router.routeInformationProvider,
-          routeInformationParser: router.routeInformationParser,
-          routerDelegate: router.routerDelegate,
-          backButtonDispatcher: ref.watch(globalBackButtonDispatcherProvider),
-          debugShowCheckedModeBanner: false,
-          scrollBehavior: const SwipessScrollBehavior(),
-          locale: Locale(locale.code),
-          supportedLocales: const [Locale('en'), Locale('es')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          builder: (context, child) {
-            return SystemChromeSync(
+      child: MaterialApp.router(
+        title: 'Swipess',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
+        // Spelled out instead of `routerConfig:` so the Android Back key runs
+        // through our dispatcher (Cap `useGlobalBackButton`) before GoRouter.
+        routeInformationProvider: router.routeInformationProvider,
+        routeInformationParser: router.routeInformationParser,
+        routerDelegate: router.routerDelegate,
+        backButtonDispatcher: ref.watch(globalBackButtonDispatcherProvider),
+        debugShowCheckedModeBanner: false,
+        scrollBehavior: const SwipessScrollBehavior(),
+        locale: Locale(locale.code),
+        supportedLocales: const [Locale('en'), Locale('es')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (context, child) {
+          // Engagement tracking must live *under* MaterialApp so its context
+          // can reach the global ScaffoldMessenger. Previously it was above
+          // MaterialApp, which meant earned-step/token SnackBars were silently
+          // dropped even though the backend reward was recorded.
+          return _EngagementTrackingBootstrap(
+            child: SystemChromeSync(
               child: ConnectivityWatcher(
                 child: AppLifecycleWatcher(
                   child: AppBadgeSync(
@@ -62,9 +66,9 @@ class NativeSwipeApp extends ConsumerWidget {
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
