@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
@@ -66,9 +67,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       data: media.copyWith(
         padding: padding.copyWith(
           top:
-              padding.top +
-              _headerInset +
-              (reserveBackRow ? _backRowInset : 0),
+              padding.top + _headerInset + (reserveBackRow ? _backRowInset : 0),
           bottom: padding.bottom + _dockInset,
         ),
       ),
@@ -133,7 +132,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (!isEvents && notification is ScrollUpdateNotification) {
-                ref.read(chromeVisibilityProvider.notifier).onScroll(
+                ref
+                    .read(chromeVisibilityProvider.notifier)
+                    .onScroll(
                       pixels: notification.metrics.pixels,
                       delta: notification.scrollDelta ?? 0,
                     );
@@ -151,9 +152,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 ),
                 if (isEvents)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
+                  Container(
                     margin: persistentChromeVisible
                         ? EdgeInsets.fromLTRB(
                             8,
@@ -266,7 +265,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   child: SafeArea(
                     child: Consumer(
                       builder: (context, ref, _) {
-                        final subscription = ref.watch(subscriptionProvider).value;
+                        final subscription = ref
+                            .watch(subscriptionProvider)
+                            .value;
                         return DashboardDock(
                           items: defaultDashboardNavItems,
                           selectedTab: dockSelected,
@@ -288,7 +289,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 return;
                               }
 
-                              ref.read(chromeVisibilityProvider.notifier).show();
+                              ref
+                                  .read(chromeVisibilityProvider.notifier)
+                                  .show();
                               if (overlays.showConcierge) {
                                 ref
                                     .read(overlayModalsProvider.notifier)
@@ -302,7 +305,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
                             if (id == NavTab.idCard) {
                               if (subscription != null &&
-                                  subscription.effectiveTier.canUseVirtualCard !=
+                                  subscription
+                                          .effectiveTier
+                                          .canUseVirtualCard !=
                                       true) {
                                 showPaywall(
                                   context,
@@ -310,19 +315,26 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 );
                                 return;
                               }
-                              ref.read(overlayModalsProvider.notifier).openVapId();
+                              ref
+                                  .read(overlayModalsProvider.notifier)
+                                  .openVapId();
                               return;
                             }
                             if (id == NavTab.events &&
                                 subscription != null &&
-                                subscription.effectiveTier.canViewEvents != true) {
+                                subscription.effectiveTier.canViewEvents !=
+                                    true) {
                               showPaywall(context, featureName: 'Events');
                               return;
                             }
                             if (id == NavTab.legal &&
                                 subscription != null &&
-                                subscription.effectiveTier.canUseLegal != true) {
-                              showPaywall(context, featureName: 'Legal services');
+                                subscription.effectiveTier.canUseLegal !=
+                                    true) {
+                              showPaywall(
+                                context,
+                                featureName: 'Legal services',
+                              );
                               return;
                             }
 
