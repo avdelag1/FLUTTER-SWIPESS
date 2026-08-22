@@ -16,8 +16,10 @@ import 'package:flutter_swipes/src/features/legal/presentation/screens/contract_
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Swipess Sign — document builder, Quick Fill, AI polish, secure send,
-/// immutable signing and audit history. Sent documents are locked server-side.
+/// Swipess Sign document workspace.
+/// Drafts are editable. A successful save is required before the send sheet can
+/// open. Sending locks the exact server version and signatures are checked
+/// against its SHA-256 fingerprint by the backend.
 class ContractBuilderScreen extends ConsumerStatefulWidget {
   const ContractBuilderScreen({super.key, required this.contract});
 
@@ -46,11 +48,12 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     _contract = widget.contract;
     _title = TextEditingController(text: _contract.title);
     _content = TextEditingController(text: _contract.content ?? '');
-    _template = _templateById(_contract.templateType);
-    final savedValues = _contract.metadata['quick_fill'];
+    _template = _findTemplate(_contract.templateType);
+    final saved = _contract.metadata['quick_fill'];
     for (final field in _template?.fields ?? const <ContractTemplateField>[]) {
-      final value = savedValues is Map ? savedValues[field.key]?.toString() : null;
-      _quickFill[field.key] = TextEditingController(text: value ?? '');
+      _quickFill[field.key] = TextEditingController(
+        text: saved is Map ? saved[field.key]?.toString() ?? '' : '',
+      );
     }
     _quickFillOpen = _contract.isDraft && _quickFill.isNotEmpty;
   }
@@ -59,58 +62,49 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
   void dispose() {
     _title.dispose();
     _content.dispose();
-    for (final controller in _quickFill.values) {
-      controller.dispose();
+    for (final c in _quickFill.values) {
+      c.dispose();
     }
     super.dispose();
   }
 
-  ContractTemplate? _templateById(String? id) {
+  ContractTemplate? _findTemplate(String? id) {
     if (id == null) return null;
-    for (final item in contractTemplates) {
-      if (item.id == id) return item;
+    for (final t in contractTemplates) {
+      if (t.id == id) return t;
     }
     return null;
   }
 
-  bool get _editable {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    return userId != null && _contract.canEdit(userId);
-  }
+  String? get _userId => Supabase.instance.client.auth.currentUser?.id;
+  bool get _editable => _userId != null && _contract.canEdit(_userId!);
+  bool get _needsSignature =>
+      _userId != null && _contract.needsSignature(_userId!);
+  bool get _isOwner => _userId != null && _contract.isOwner(_userId!);
 
-  bool get _needsMySignature {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    return userId != null && _contract.needsSignature(userId);
-  }
-
-  bool get _isOwner {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    return userId != null && _contract.isOwner(userId);
-  }
-
-  Map<String, String> get _quickFillValues => {
-    for (final entry in _quickFill.entries) entry.key: entry.value.text.trim(),
+  Map<String, String> get _quickValues => {
+    for (final e in _quickFill.entries) e.key: e.value.text.trim(),
   };
 
   Map<String, dynamic> get _metadata => {
     ..._contract.metadata,
     if (_template != null) 'template_category': _template!.category,
-    'quick_fill': _quickFillValues,
+    'quick_fill': _quickValues,
   };
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.paddingOf(context).top;
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
     final card = MatteSurface.cardFill(context);
+    final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
       body: AmbientPageBackground(
         fill: true,
         child: ListView(
-          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 120),
+          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 110),
           children: [
             Row(
               children: [
@@ -119,7 +113,7 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                 _StatusPill(contract: _contract),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             Text(
               'SWIPESS SIGN',
               style: GoogleFonts.plusJakartaSans(
@@ -134,15 +128,15 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
               _editable ? 'BUILD YOUR\nDOCUMENT' : 'REVIEW &\nSIGN',
               style: AppTheme.displayItalic.copyWith(
                 color: ink,
-                fontSize: 38,
+                fontSize: 36,
                 height: 0.95,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               _editable
-                  ? 'Start from a Swipess template, Quick Fill the important fields, edit the wording, then send it securely to another Swipess user.'
-                  : 'This document is locked because it has been sent for signature. Review the exact terms and the audit trail before signing.',
+                  ? 'Fill, edit and AI-polish this draft. Swipess saves it before you can send it for signature.'
+                  : 'This version is locked. Review the exact wording, signatures and audit history.',
               style: GoogleFonts.plusJakartaSans(
                 color: muted,
                 fontSize: 12,
@@ -150,61 +144,39 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _TrustStrip(contract: _contract),
             if (_error != null) ...[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF3B30).withAlpha(20),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFFF3B30).withAlpha(100)),
-                ),
-                child: Text(
-                  _error!,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFFFF6B64),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+              const SizedBox(height: 12),
+              _ErrorBox(message: _error!),
             ],
             if (_editable && _quickFill.isNotEmpty) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               Container(
                 decoration: BoxDecoration(
                   color: card,
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: hairline),
                 ),
                 child: Column(
                   children: [
                     ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 4,
-                      ),
                       leading: const Icon(
-                        Icons.auto_fix_high_rounded,
+                        Icons.bolt_rounded,
                         color: AppTheme.brandPrimary,
                       ),
                       title: Text(
                         'QUICK FILL',
                         style: GoogleFonts.plusJakartaSans(
                           color: ink,
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.4,
                         ),
                       ),
                       subtitle: Text(
-                        'Fill the important details once.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: muted,
-                          fontSize: 11,
-                        ),
+                        'Fill the important facts once.',
+                        style: TextStyle(color: muted, fontSize: 11),
                       ),
                       trailing: Icon(
                         _quickFillOpen
@@ -212,11 +184,12 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                             : Icons.keyboard_arrow_down_rounded,
                         color: muted,
                       ),
-                      onTap: () => setState(() => _quickFillOpen = !_quickFillOpen),
+                      onTap: () =>
+                          setState(() => _quickFillOpen = !_quickFillOpen),
                     ),
                     if (_quickFillOpen)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                         child: Column(
                           children: [
                             for (final field in _template!.fields) ...[
@@ -224,7 +197,7 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                                 field: field,
                                 controller: _quickFill[field.key]!,
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 9),
                             ],
                             SizedBox(
                               width: double.infinity,
@@ -237,10 +210,10 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                                       : Colors.black,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                icon: const Icon(Icons.bolt_rounded, size: 18),
+                                icon: const Icon(Icons.auto_fix_high_rounded),
                                 label: const Text('APPLY TO DOCUMENT'),
                               ),
                             ),
@@ -251,57 +224,35 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             TextField(
               controller: _title,
               readOnly: !_editable,
               style: GoogleFonts.plusJakartaSans(
                 color: ink,
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.w900,
               ),
-              decoration: InputDecoration(
-                labelText: 'DOCUMENT TITLE',
-                labelStyle: GoogleFonts.plusJakartaSans(
-                  color: muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.6,
-                ),
-                filled: true,
-                fillColor: card,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: BorderSide(color: hairline),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: BorderSide(color: hairline),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: const BorderSide(
-                    color: AppTheme.brandPrimary,
-                    width: 1.5,
-                  ),
-                ),
+              decoration: _inputDecoration(
+                context,
+                label: 'DOCUMENT TITLE',
+                hint: 'Agreement title',
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _EditorToolbar(
               editable: _editable,
               polishing: _polishing,
-              onPolish: _polishWithAi,
-              onCopy: _copyDocument,
+              onPolish: _polish,
+              onCopy: _copy,
             ),
             const SizedBox(height: 10),
             Container(
               decoration: BoxDecoration(
                 color: card,
-                borderRadius: BorderRadius.circular(26),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: hairline),
               ),
-              padding: const EdgeInsets.all(4),
               child: TextField(
                 controller: _content,
                 readOnly: !_editable,
@@ -312,34 +263,31 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                   fontSize: 15,
                   height: 1.55,
                 ),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Document terms…',
-                  hintStyle: TextStyle(color: MatteSurface.faint(context)),
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  contentPadding: const EdgeInsets.all(18),
+                  contentPadding: EdgeInsets.all(18),
                   border: InputBorder.none,
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
-              'Templates are drafting tools, not a substitute for jurisdiction-specific legal advice. Some transactions may require a lawyer, witness, notary or government filing.',
+              'Drafting templates and AI tools are not a substitute for jurisdiction-specific legal advice. Some transactions may require a lawyer, witness, notary or government filing.',
               style: GoogleFonts.plusJakartaSans(
                 color: MatteSurface.faint(context),
-                fontSize: 10,
+                fontSize: 9.5,
                 height: 1.45,
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
             if (_editable) ...[
               BrandPrimaryButton(
                 label: _saving ? 'Saving…' : 'Save draft',
                 icon: Icons.save_rounded,
                 loading: _saving,
-                onPressed: _saving ? null : _saveDraft,
+                onPressed: _saving ? null : () => _saveDraft(),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 9),
               BrandPrimaryButton(
                 label: 'Send for signature',
                 icon: Icons.send_rounded,
@@ -349,13 +297,13 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                 onPressed: _saving ? null : _sendForSignature,
               ),
             ] else ...[
-              if (_needsMySignature)
+              if (_needsSignature)
                 BrandPrimaryButton(
                   label: 'Review & sign',
                   icon: Icons.draw_rounded,
                   onPressed: _openSignature,
                 ),
-              if (_needsMySignature) const SizedBox(height: 10),
+              if (_needsSignature) const SizedBox(height: 9),
               if (_contract.isLocked)
                 BrandPrimaryButton(
                   label: 'Duplicate to edit',
@@ -366,9 +314,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                   onPressed: _duplicate,
                 ),
               if (_isOwner && !_contract.isCompleted && !_contract.isCancelled) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 TextButton.icon(
-                  onPressed: _cancelling ? null : _cancelContract,
+                  onPressed: _cancelling ? null : _cancel,
                   icon: const Icon(Icons.cancel_outlined),
                   label: Text(_cancelling ? 'Cancelling…' : 'Cancel document'),
                   style: TextButton.styleFrom(
@@ -377,13 +325,13 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
                 ),
               ],
             ],
-            const SizedBox(height: 30),
+            const SizedBox(height: 28),
             Text(
               'AUDIT TRAIL',
               style: GoogleFonts.plusJakartaSans(
                 color: muted,
-                fontWeight: FontWeight.w900,
                 fontSize: 10,
+                fontWeight: FontWeight.w900,
                 letterSpacing: 2,
               ),
             ),
@@ -395,30 +343,65 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     );
   }
 
+  InputDecoration _inputDecoration(
+    BuildContext context, {
+    required String label,
+    required String hint,
+  }) {
+    final hairline = MatteSurface.hairline(context);
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: TextStyle(color: MatteSurface.muted(context)),
+      hintStyle: TextStyle(color: MatteSurface.faint(context)),
+      filled: true,
+      fillColor: MatteSurface.cardFill(context),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide(color: hairline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: BorderSide(color: hairline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(20),
+        borderSide: const BorderSide(
+          color: AppTheme.brandPrimary,
+          width: 1.5,
+        ),
+      ),
+    );
+  }
+
   void _applyQuickFill() {
     if (_template == null) return;
     final missing = _template!.fields
-        .where((field) => field.required && (_quickFill[field.key]?.text.trim().isEmpty ?? true))
-        .map((field) => field.label)
+        .where(
+          (f) => f.required && (_quickFill[f.key]?.text.trim().isEmpty ?? true),
+        )
+        .map((f) => f.label)
         .toList();
     if (missing.isNotEmpty) {
       setState(() => _error = 'Complete: ${missing.join(', ')}');
       return;
     }
     setState(() {
-      _content.text = _template!.applyValues(_quickFillValues);
+      _content.text = _template!.applyValues(_quickValues);
       _error = null;
     });
     AppHaptics.success();
   }
 
-  Future<void> _saveDraft() async {
-    if (!_editable || _saving) return;
+  Future<bool> _saveDraft({bool notify = true}) async {
+    if (!_editable || _saving) return false;
     final title = _title.text.trim();
     final content = _content.text.trim();
     if (title.isEmpty || content.length < 20) {
-      setState(() => _error = 'Add a title and complete the document before saving.');
-      return;
+      setState(
+        () => _error = 'Add a title and complete the document before saving.',
+      );
+      return false;
     }
     setState(() {
       _saving = true;
@@ -431,67 +414,29 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
             content: content,
             metadata: _metadata,
           );
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() => _contract = saved);
       await ref.read(contractsProvider.notifier).refresh();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Draft saved securely')),
-      );
+      if (!mounted) return false;
+      if (notify) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Draft saved securely')),
+        );
+      }
+      return true;
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
       }
+      return false;
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  Future<void> _polishWithAi() async {
-    if (!_editable || _polishing) return;
-    final text = _content.text.trim();
-    if (text.length < 20) {
-      setState(() => _error = 'Add more document text before using AI Polish.');
-      return;
-    }
-    setState(() {
-      _polishing = true;
-      _error = null;
-    });
-    try {
-      final improved = await ref
-          .read(aiEdgeRepositoryProvider)
-          .enhanceText(text: text, type: 'legal');
-      if (!mounted) return;
-      if (improved == null || improved.trim().isEmpty) {
-        setState(() => _error = 'AI Polish is temporarily unavailable.');
-      } else {
-        setState(() => _content.text = improved.trim());
-        AppHaptics.success();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _polishing = false);
-    }
-  }
-
-  Future<void> _copyDocument() async {
-    await Clipboard.setData(
-      ClipboardData(text: '${_title.text.trim()}\n\n${_content.text.trim()}'),
-    );
-    if (!mounted) return;
-    AppHaptics.light();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Document copied')),
-    );
-  }
-
   Future<void> _sendForSignature() async {
-    await _saveDraft();
-    if (!mounted || !_contract.isDraft) return;
+    final saved = await _saveDraft(notify: false);
+    if (!saved || !mounted || !_contract.isDraft) return;
     final sent = await showModalBottomSheet<DigitalContract>(
       context: context,
       isScrollControlled: true,
@@ -514,6 +459,49 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     );
   }
 
+  Future<void> _polish() async {
+    if (!_editable || _polishing) return;
+    final text = _content.text.trim();
+    if (text.length < 20) {
+      setState(() => _error = 'Add more text before using AI Polish.');
+      return;
+    }
+    setState(() {
+      _polishing = true;
+      _error = null;
+    });
+    try {
+      final improved = await ref.read(aiEdgeRepositoryProvider).enhanceText(
+            text: text,
+            type: 'legal',
+          );
+      if (!mounted) return;
+      if (improved == null || improved.trim().isEmpty) {
+        setState(() => _error = 'AI Polish is temporarily unavailable.');
+      } else {
+        setState(() => _content.text = improved.trim());
+        AppHaptics.success();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _polishing = false);
+    }
+  }
+
+  Future<void> _copy() async {
+    await Clipboard.setData(
+      ClipboardData(text: '${_title.text.trim()}\n\n${_content.text.trim()}'),
+    );
+    if (!mounted) return;
+    AppHaptics.light();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Document copied')),
+    );
+  }
+
   Future<void> _openSignature() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -522,7 +510,9 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     );
     if (!mounted) return;
     try {
-      final fresh = await ref.read(contractRepositoryProvider).fetchById(_contract.id);
+      final fresh = await ref.read(contractRepositoryProvider).fetchById(
+            _contract.id,
+          );
       if (!mounted) return;
       setState(() => _contract = fresh);
       await ref.read(contractsProvider.notifier).refresh();
@@ -537,61 +527,88 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
         MaterialPageRoute(builder: (_) => ContractBuilderScreen(contract: copy)),
       );
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     }
   }
 
-  Future<void> _cancelContract() async {
+  Future<void> _cancel() async {
     setState(() => _cancelling = true);
     try {
-      final cancelled = await ref.read(contractRepositoryProvider).cancel(_contract.id);
+      final cancelled = await ref.read(contractRepositoryProvider).cancel(
+            _contract.id,
+          );
       if (!mounted) return;
       setState(() => _contract = cancelled);
       await ref.read(contractsProvider.notifier).refresh();
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _cancelling = false);
     }
   }
 }
 
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF3B30).withAlpha(18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFF3B30).withAlpha(90)),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: Color(0xFFFF6B64),
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _QuickFillField extends StatelessWidget {
   const _QuickFillField({required this.field, required this.controller});
-
   final ContractTemplateField field;
   final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
     return TextField(
       controller: controller,
       maxLines: field.kind == ContractFieldKind.multiline ? 3 : 1,
       keyboardType: switch (field.kind) {
-        ContractFieldKind.number => const TextInputType.numberWithOptions(decimal: true),
+        ContractFieldKind.number =>
+          const TextInputType.numberWithOptions(decimal: true),
         ContractFieldKind.date => TextInputType.datetime,
         ContractFieldKind.multiline => TextInputType.multiline,
         ContractFieldKind.text => TextInputType.text,
       },
-      style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 13),
+      style: TextStyle(color: MatteSurface.ink(context), fontSize: 13),
       decoration: InputDecoration(
         labelText: '${field.label}${field.required ? ' *' : ''}',
         hintText: field.placeholder,
-        labelStyle: TextStyle(color: muted),
+        labelStyle: TextStyle(color: MatteSurface.muted(context)),
         hintStyle: TextStyle(color: MatteSurface.faint(context)),
         filled: true,
-        fillColor: MatteSurface.isLight(context)
-            ? Colors.white.withAlpha(180)
-            : Colors.black.withAlpha(35),
+        fillColor: MatteSurface.cardFill(context),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(15),
           borderSide: BorderSide(color: hairline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(15),
           borderSide: BorderSide(color: hairline),
         ),
       ),
@@ -606,7 +623,6 @@ class _EditorToolbar extends StatelessWidget {
     required this.onPolish,
     required this.onCopy,
   });
-
   final bool editable;
   final bool polishing;
   final VoidCallback onPolish;
@@ -623,7 +639,9 @@ class _EditorToolbar extends StatelessWidget {
           foregroundColor: ink,
           side: BorderSide(color: hairline),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         icon: Icon(icon, size: 16),
         label: Text(
@@ -669,9 +687,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withAlpha(24),
+        color: color.withAlpha(22),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withAlpha(110)),
+        border: Border.all(color: color.withAlpha(100)),
       ),
       child: Text(
         contract.compactStatusLabel,
@@ -679,7 +697,7 @@ class _StatusPill extends StatelessWidget {
           color: color,
           fontSize: 9,
           fontWeight: FontWeight.w900,
-          letterSpacing: 1.2,
+          letterSpacing: 1.1,
         ),
       ),
     );
@@ -695,13 +713,16 @@ class _TrustStrip extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final items = <(IconData, String)>[
-      (Icons.lock_outline_rounded, contract.isLocked ? 'LOCKED AFTER SEND' : 'EDITABLE DRAFT'),
+      (
+        contract.isLocked ? Icons.lock_rounded : Icons.edit_outlined,
+        contract.isLocked ? 'LOCKED VERSION' : 'EDITABLE DRAFT',
+      ),
       (Icons.history_rounded, 'AUDIT TRAIL'),
-      (Icons.fingerprint_rounded, 'TAMPER HASH'),
+      (Icons.fingerprint_rounded, 'SHA-256'),
     ];
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: 7,
+      runSpacing: 7,
       children: [
         for (final item in items)
           Container(
@@ -715,7 +736,7 @@ class _TrustStrip extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(item.$1, size: 13, color: ink),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 Text(
                   item.$2,
                   style: GoogleFonts.plusJakartaSans(
@@ -747,8 +768,8 @@ class _SendForSignatureSheetState
   final _query = TextEditingController();
   List<ContractPartyMatch> _matches = const [];
   bool _searching = false;
+  String? _sendingId;
   String? _error;
-  String? _sendingUserId;
 
   @override
   void dispose() {
@@ -758,11 +779,12 @@ class _SendForSignatureSheetState
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final isLight = MatteSurface.isLight(context);
+
     return Container(
       padding: EdgeInsets.fromLTRB(18, 12, 18, bottom + 28),
       decoration: BoxDecoration(
@@ -793,14 +815,14 @@ class _SendForSignatureSheetState
             ),
             const SizedBox(height: 6),
             Text(
-              'Find the other Swipess user by exact email, @username or full name. Sending locks this version of the document.',
+              'Find the other Swipess user by exact email, @username or full name. Sending locks this saved version.',
               style: GoogleFonts.plusJakartaSans(
                 color: muted,
                 fontSize: 11,
                 height: 1.45,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             TextField(
               controller: _query,
               autofocus: true,
@@ -809,6 +831,8 @@ class _SendForSignatureSheetState
               decoration: InputDecoration(
                 hintText: 'Email, @username or full name',
                 hintStyle: TextStyle(color: MatteSurface.faint(context)),
+                filled: true,
+                fillColor: MatteSurface.cardFill(context),
                 suffixIcon: IconButton(
                   onPressed: _searching ? null : _search,
                   icon: _searching
@@ -819,45 +843,37 @@ class _SendForSignatureSheetState
                         )
                       : const Icon(Icons.search_rounded),
                 ),
-                filled: true,
-                fillColor: MatteSurface.cardFill(context),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(17),
                   borderSide: BorderSide(color: hairline),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(17),
                   borderSide: BorderSide(color: hairline),
                 ),
               ),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _error!,
-                style: const TextStyle(
-                  color: Color(0xFFFF6B64),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              const SizedBox(height: 9),
+              _ErrorBox(message: _error!),
             ],
             if (_matches.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               for (final match in _matches)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
                     color: MatteSurface.cardFill(context),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(17),
                     border: Border.all(color: hairline),
                   ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppTheme.brandPrimary.withAlpha(30),
+                      backgroundColor: AppTheme.brandPrimary.withAlpha(28),
                       child: Text(
                         match.displayName.isEmpty
                             ? 'S'
-                            : match.displayName.substring(0, 1).toUpperCase(),
+                            : match.displayName[0].toUpperCase(),
                         style: const TextStyle(
                           color: AppTheme.brandPrimary,
                           fontWeight: FontWeight.w900,
@@ -871,14 +887,14 @@ class _SendForSignatureSheetState
                     subtitle: match.username == null
                         ? null
                         : Text('@${match.username}', style: TextStyle(color: muted)),
-                    trailing: _sendingUserId == match.userId
+                    trailing: _sendingId == match.userId
                         ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.send_rounded),
-                    onTap: _sendingUserId == null ? () => _send(match) : null,
+                    onTap: _sendingId == null ? () => _send(match) : null,
                   ),
                 ),
             ],
@@ -893,18 +909,22 @@ class _SendForSignatureSheetState
     if (q.isEmpty) return;
     setState(() {
       _searching = true;
-      _error = null;
       _matches = const [];
+      _error = null;
     });
     try {
       final matches = await ref.read(contractRepositoryProvider).resolveCounterparty(q);
       if (!mounted) return;
       setState(() {
         _matches = matches;
-        if (matches.isEmpty) _error = 'No active Swipess user matched that exact search.';
+        if (matches.isEmpty) {
+          _error = 'No active Swipess user matched that exact search.';
+        }
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _searching = false);
     }
@@ -912,7 +932,7 @@ class _SendForSignatureSheetState
 
   Future<void> _send(ContractPartyMatch match) async {
     setState(() {
-      _sendingUserId = match.userId;
+      _sendingId = match.userId;
       _error = null;
     });
     try {
@@ -928,7 +948,7 @@ class _SendForSignatureSheetState
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
-      if (mounted) setState(() => _sendingUserId = null);
+      if (mounted) setState(() => _sendingId = null);
     }
   }
 }
@@ -939,29 +959,29 @@ class _AuditTrail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final muted = MatteSurface.muted(context);
     final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     final hairline = MatteSurface.hairline(context);
     return FutureBuilder<List<ContractEvent>>(
       future: ref.read(contractRepositoryProvider).fetchEvents(contractId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+            padding: EdgeInsets.all(20),
             child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
           );
         }
         final events = snapshot.data ?? const <ContractEvent>[];
         if (events.isEmpty) {
           return Text(
-            'Audit history will appear here as the document is edited, sent and signed.',
+            'History appears here as the document is edited, sent and signed.',
             style: TextStyle(color: muted, fontSize: 11),
           );
         }
         return Container(
           decoration: BoxDecoration(
             color: MatteSurface.cardFill(context),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: hairline),
           ),
           child: Column(
