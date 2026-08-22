@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/legal/data/repositories/contract_repository.dart';
+import 'package:flutter_swipes/src/features/legal/data/saved_signature_store.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/contracts_provider.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/widgets/finger_signature_pad.dart';
@@ -30,6 +32,9 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
   late DigitalContract _contract;
   bool _reviewed = false;
   bool _signing = false;
+  bool _useSavedSignature = false;
+  bool _saveForNextTime = true;
+  String? _savedSignature;
   String? _error;
 
   @override
@@ -41,14 +46,32 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
       penColor: const Color(0xFFEB4898),
       exportBackgroundColor: const Color(0x00000000),
     );
-    _pad.addListener(() => setState(() {}));
+    _pad.addListener(_onPadChanged);
     _refresh();
+    _loadSavedSignature();
+  }
+
+  void _onPadChanged() {
+    if (!mounted) return;
+    setState(() {
+      if (_pad.isNotEmpty) _useSavedSignature = false;
+    });
   }
 
   @override
   void dispose() {
+    _pad.removeListener(_onPadChanged);
     _pad.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedSignature() async {
+    final saved = await SavedSignatureStore.load();
+    if (!mounted) return;
+    setState(() {
+      _savedSignature = saved;
+      _useSavedSignature = saved != null;
+    });
   }
 
   Future<void> _refresh() async {
@@ -62,15 +85,19 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
+    final hairline = MatteSurface.hairline(context);
     final top = MediaQuery.paddingOf(context).top;
     final userId = Supabase.instance.client.auth.currentUser?.id;
     final needsSignature = userId != null && _contract.needsSignature(userId);
+    final canSign = _reviewed &&
+        !_signing &&
+        ((_useSavedSignature && _savedSignature != null) || _pad.isNotEmpty);
 
     return Scaffold(
       body: AmbientPageBackground(
         fill: true,
         child: ListView(
-          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 50),
+          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 60),
           children: [
             Row(
               children: [
@@ -79,11 +106,11 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E).withAlpha(
-                      _contract.isCompleted ? 24 : 0,
-                    ),
+                    color: _contract.isCompleted
+                        ? const Color(0xFF22C55E).withAlpha(24)
+                        : MatteSurface.cardFill(context),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: MatteSurface.hairline(context)),
+                    border: Border.all(color: hairline),
                   ),
                   child: Text(
                     _contract.compactStatusLabel,
@@ -101,7 +128,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'SECURE SIGNATURE',
+              'SWIPESS SIGN',
               style: GoogleFonts.plusJakartaSans(
                 color: AppTheme.brandPrimary,
                 fontWeight: FontWeight.w900,
@@ -125,7 +152,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
-                    'This exact document version is locked for signature. The server verifies its SHA-256 hash again when you sign.',
+                    'This exact version is locked. The server verifies the document fingerprint again when a signature is submitted.',
                     style: GoogleFonts.plusJakartaSans(
                       color: muted,
                       fontSize: 10,
@@ -142,7 +169,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
               decoration: BoxDecoration(
                 color: MatteSurface.cardFill(context),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: MatteSurface.hairline(context)),
+                border: Border.all(color: hairline),
               ),
               child: SelectableText(
                 _contract.content?.trim().isNotEmpty == true
@@ -162,7 +189,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 decoration: BoxDecoration(
                   color: MatteSurface.cardFill(context),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: MatteSurface.hairline(context)),
+                  border: Border.all(color: hairline),
                 ),
                 child: Row(
                   children: [
@@ -214,9 +241,110 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+              if (_savedSignature != null) ...[
+                Text(
+                  'SAVED SIGNATURE',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: muted,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.8,
+                  ),
+                ),
+                const SizedBox(height: 9),
+                GestureDetector(
+                  onTap: () => setState(() => _useSavedSignature = true),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: _useSavedSignature
+                          ? AppTheme.brandAccent.withAlpha(18)
+                          : MatteSurface.cardFill(context),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: _useSavedSignature
+                            ? AppTheme.brandAccent
+                            : hairline,
+                        width: _useSavedSignature ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 105,
+                          width: double.infinity,
+                          child: Image.memory(
+                            _decodeSignature(_savedSignature!),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                'Saved signature',
+                                style: TextStyle(color: muted),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              _useSavedSignature
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              color: _useSavedSignature
+                                  ? AppTheme.brandAccent
+                                  : muted,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _useSavedSignature
+                                    ? 'READY TO USE'
+                                    : 'USE SAVED SIGNATURE',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _forgetSavedSignature,
+                              child: const Text('Forget'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: hairline)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'OR DRAW A NEW ONE',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: muted,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: hairline)),
+                  ],
+                ),
+                const SizedBox(height: 14),
+              ],
               Text(
-                'DRAW YOUR SIGNATURE',
+                'SIGNATURE PAD',
                 style: GoogleFonts.plusJakartaSans(
                   color: muted,
                   fontSize: 9,
@@ -225,17 +353,28 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              FingerSignaturePad(controller: _pad),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: _pad.isEmpty ? null : _pad.clear,
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: const Text('Clear'),
-                  ),
-                ],
+              FingerSignaturePad(
+                controller: _pad,
+                onClear: () => setState(() {}),
               ),
+              if (_pad.isNotEmpty) ...[
+                CheckboxListTile(
+                  value: _saveForNextTime,
+                  onChanged: (value) =>
+                      setState(() => _saveForNextTime = value ?? true),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppTheme.brandAccent,
+                  title: Text(
+                    'Save this signature on this device for next time',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -246,12 +385,22 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                   ),
                 ),
               ],
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               BrandPrimaryButton(
                 label: _signing ? 'Signing…' : 'Sign this version',
                 icon: Icons.verified_user_rounded,
                 loading: _signing,
-                onPressed: !_reviewed || !_pad.isNotEmpty || _signing ? null : _sign,
+                onPressed: canSign ? _sign : null,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'A saved signature is only a convenience on this device. Swipess still records a new contract signature event each time you sign a document.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  color: muted.withAlpha(145),
+                  fontSize: 9,
+                  height: 1.4,
+                ),
               ),
             ] else ...[
               Container(
@@ -261,7 +410,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                       ? const Color(0xFF22C55E).withAlpha(18)
                       : MatteSurface.cardFill(context),
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: MatteSurface.hairline(context)),
+                  border: Border.all(color: hairline),
                 ),
                 child: Row(
                   children: [
@@ -297,9 +446,32 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
     );
   }
 
+  Uint8List _decodeSignature(String dataUrl) {
+    final comma = dataUrl.indexOf(',');
+    final payload = comma >= 0 ? dataUrl.substring(comma + 1) : dataUrl;
+    return base64Decode(payload);
+  }
+
   String _shortHash(String hash) {
     if (hash.length <= 28) return hash;
     return '${hash.substring(0, 14)}…${hash.substring(hash.length - 14)}';
+  }
+
+  Future<void> _forgetSavedSignature() async {
+    await SavedSignatureStore.clear();
+    if (!mounted) return;
+    setState(() {
+      _savedSignature = null;
+      _useSavedSignature = false;
+    });
+  }
+
+  Future<String> _capturePadSignature() async {
+    final image = await _pad.toImage();
+    if (image == null) throw Exception('Draw your signature first');
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (bytes == null) throw Exception('Could not capture signature');
+    return 'data:image/png;base64,${base64Encode(bytes.buffer.asUint8List())}';
   }
 
   Future<void> _sign() async {
@@ -308,12 +480,17 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
       _error = null;
     });
     try {
-      final image = await _pad.toImage();
-      if (image == null) throw Exception('Draw your signature first');
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (bytes == null) throw Exception('Could not capture signature');
-      final dataUrl =
-          'data:image/png;base64,${base64Encode(bytes.buffer.asUint8List())}';
+      String dataUrl;
+      if (_useSavedSignature && _savedSignature != null) {
+        dataUrl = _savedSignature!;
+      } else {
+        dataUrl = await _capturePadSignature();
+        if (_saveForNextTime) {
+          await SavedSignatureStore.save(dataUrl);
+          if (mounted) setState(() => _savedSignature = dataUrl);
+        }
+      }
+
       final signed = await ref
           .read(contractRepositoryProvider)
           .sign(contract: _contract, signatureData: dataUrl);
