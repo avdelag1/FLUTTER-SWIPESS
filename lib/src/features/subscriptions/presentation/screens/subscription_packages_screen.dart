@@ -101,7 +101,7 @@ class _SubscriptionPackagesScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'More speed. More visibility. More opportunities.',
+                    'More connections. More visibility. More opportunities.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       color: MatteSurface.muted(context),
@@ -124,7 +124,7 @@ class _SubscriptionPackagesScreenState
                       benefits: const [
                         'Matched chats remain free',
                         'Premium listing, AI and visibility advantages',
-                        'Direct Requests use the same fair accept/return rule',
+                        'Declined or expired Direct Requests stay available',
                       ],
                       accent: SwipessTokens.tierPower,
                     )
@@ -154,7 +154,7 @@ class _SubscriptionPackagesScreenState
                   ],
                   const SizedBox(height: 24),
                   Text(
-                    'Not ready for Premium? No problem. Swipess still works for free — use a Direct Request token only when something matters enough to skip the wait.',
+                    'Not ready for Premium? Swipess still works for free. Use a Direct Request only when you want to reach someone directly without waiting for a match.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       color: MatteSurface.muted(context),
@@ -184,7 +184,7 @@ class _SubscriptionPackagesScreenState
       child: Column(
         children: [
           Text(
-            'INTEREST IS FREE. MATCHES ARE FREE.',
+            'MATCH FREE. CONNECT DIRECT WHEN YOU WANT.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               color: ink,
@@ -194,7 +194,7 @@ class _SubscriptionPackagesScreenState
           ),
           const SizedBox(height: 5),
           Text(
-            'Premium gives you more priority, reach, AI and scale — it never buys permission to force-message somebody.',
+            'A Direct Request is reserved while you wait. If they decline or it expires, it stays available. If they accept, chat opens and the request is used.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               color: MatteSurface.muted(context),
@@ -261,6 +261,71 @@ class _SubscriptionPackagesScreenState
     );
   }
 
+  Widget _directRequestAllowance(
+    BuildContext context, {
+    required int amount,
+    required Color accent,
+  }) {
+    final ink = MatteSurface.ink(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: accent.withAlpha(18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withAlpha(85)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withAlpha(30),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              '$amount',
+              style: GoogleFonts.plusJakartaSans(
+                color: ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DIRECT REQUESTS INCLUDED',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .35,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Reach someone directly. Declined or expired requests stay available.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.muted(context),
+                    fontSize: 10.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _planCard(
     BuildContext context, {
     required IapOffer offer,
@@ -282,6 +347,7 @@ class _SubscriptionPackagesScreenState
       1 => 'The best choice if this is home for a while.',
       _ => 'Make Swipess work for you.',
     };
+    final allowance = offer.tokens ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -343,8 +409,18 @@ class _SubscriptionPackagesScreenState
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (allowance > 0) ...[
+            const SizedBox(height: 16),
+            _directRequestAllowance(
+              context,
+              amount: allowance,
+              accent: accent,
+            ),
+          ],
           const SizedBox(height: 16),
-          for (final benefit in offer.benefits)
+          for (final benefit in offer.benefits.where(
+            (benefit) => !benefit.contains('Direct Requests included'),
+          ))
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
