@@ -1,15 +1,12 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class HolographicIDCard extends StatefulWidget {
-  final String name;
-  final String idNumber;
-  final String? avatarUrl;
-  final String occupation;
-  final String location;
-  final String years;
-  final String bio;
-
+/// Compact profile preview of the same Pearl VAP / Local ID opened from nav.
+///
+/// This intentionally has no automatic shimmer, glow sweep or animated tilt.
+/// The full card remains available when the preview is tapped by its parent.
+class HolographicIDCard extends StatelessWidget {
   const HolographicIDCard({
     super.key,
     required this.name,
@@ -21,336 +18,167 @@ class HolographicIDCard extends StatefulWidget {
     required this.bio,
   });
 
-  @override
-  State<HolographicIDCard> createState() => _HolographicIDCardState();
-}
-
-class _HolographicIDCardState extends State<HolographicIDCard>
-    with SingleTickerProviderStateMixin {
-  Offset _tilt = Offset.zero;
-  late AnimationController _shimmerController;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 6),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    super.dispose();
-  }
-
-  void _onPanUpdate(DragUpdateDetails details) {
-    setState(() {
-      _tilt += details.delta * 0.005;
-      _tilt = Offset(_tilt.dx.clamp(-0.2, 0.2), _tilt.dy.clamp(-0.2, 0.2));
-    });
-  }
-
-  void _onPanEnd(DragEndDetails details) {
-    setState(() {
-      _tilt = Offset.zero;
-    });
-  }
+  final String name;
+  final String idNumber;
+  final String? avatarUrl;
+  final String occupation;
+  final String location;
+  final String years;
+  final String bio;
 
   @override
   Widget build(BuildContext context) {
-    final initials = widget.name
-        .split(' ')
-        .map((n) => n.isNotEmpty ? n[0] : '')
+    final theme = VapCardTheme.themes.first;
+    final cleanName = name.trim().isEmpty ? 'SWIPESS MEMBER' : name.trim();
+    final initials = cleanName
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
         .take(2)
-        .join('')
-        .toUpperCase();
+        .map((part) => part[0].toUpperCase())
+        .join();
 
-    return GestureDetector(
-      onPanUpdate: _onPanUpdate,
-      onPanEnd: _onPanEnd,
-      child: TweenAnimationBuilder(
-        tween: Tween<Offset>(begin: Offset.zero, end: _tilt),
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        builder: (context, Offset tilt, child) {
-          return Transform(
-            alignment: FractionalOffset.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001) // perspective
-              ..rotateX(-tilt.dy)
-              ..rotateY(tilt.dx),
-            child: child,
-          );
-        },
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A0F1A),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: Colors.transparent, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF4D00).withAlpha(25),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: theme.gradient,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: theme.tagBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(24),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(40),
-            child: Stack(
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                // Micro-circuit background pattern (simulated with GridPaper)
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.03,
-                    child: GridPaper(
-                      color: Colors.white,
-                      interval: 16,
-                      divisions: 1,
-                      subdivisions: 1,
+                Icon(
+                  Icons.verified_user_outlined,
+                  color: theme.badge,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'SWIPESS LOCAL ID',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: theme.badge,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 9.5,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.tagBg,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: theme.tagBorder),
+                  ),
+                  child: Text(
+                    'ACTIVE',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: theme.textSecondary,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .8,
                     ),
                   ),
                 ),
-
-                // Shimmer Overlay (subtle, soft sheen)
-                Positioned.fill(
-                  child: AnimatedBuilder(
-                    animation: _shimmerController,
-                    builder: (context, child) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            stops: const [0.0, 0.45, 0.5, 0.55, 1.0],
-                            colors: [
-                              Colors.transparent,
-                              Colors.white.withAlpha(4),
-                              Colors.white.withAlpha(15),
-                              Colors.white.withAlpha(4),
-                              Colors.transparent,
-                            ],
-                            transform: GradientRotation(
-                              _shimmerController.value * 2 * pi,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 78,
+                  height: 98,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: theme.tagBg,
+                    borderRadius: BorderRadius.circular(17),
+                    border: Border.all(color: theme.tagBorder),
                   ),
+                  child: avatarUrl != null && avatarUrl!.trim().isNotEmpty
+                      ? Image.network(
+                          avatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _Initials(
+                            initials: initials,
+                            color: theme.textPrimary,
+                          ),
+                        )
+                      : _Initials(
+                          initials: initials,
+                          color: theme.textPrimary,
+                        ),
                 ),
-
-                // Card Content
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.public,
-                                    size: 12,
-                                    color: const Color(
-                                      0xFFFF4D00,
-                                    ).withAlpha(150),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'SWIPESS GLOBAL REGISTRY',
-                                    style: TextStyle(
-                                      color: const Color(
-                                        0xFFFF4D00,
-                                      ).withAlpha(150),
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 4,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                'RESIDENT ID',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                  fontStyle: FontStyle.italic,
-                                  letterSpacing: -1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF4D00).withAlpha(25),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFFFF4D00).withAlpha(50),
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.verified_user_rounded,
-                                color: Color(0xFFFF4D00),
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Identity Row
-                      Row(
-                        children: [
-                          // Avatar
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFFFF4D00).withAlpha(50),
-                              border: Border.all(
-                                color: const Color(0xFFFF4D00).withAlpha(75),
-                                width: 2,
-                              ),
-                              image: widget.avatarUrl != null
-                                  ? DecorationImage(
-                                      image: NetworkImage(widget.avatarUrl!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: widget.avatarUrl == null
-                                ? Center(
-                                    child: Text(
-                                      initials,
-                                      style: const TextStyle(
-                                        color: Color(0xFFFF4D00),
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          // Name & ID
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.name.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0,
-                                  ),
-                                ),
-                                Text(
-                                  widget.idNumber,
-                                  style: TextStyle(
-                                    color: const Color(
-                                      0xFFFF4D00,
-                                    ).withAlpha(150),
-                                    fontSize: 9,
-                                    fontFamily: 'monospace',
-                                    letterSpacing: 2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Badges
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              border: Border.all(color: Colors.transparent),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'ACTIVE',
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF4D00).withAlpha(25),
-                              border: Border.all(
-                                color: const Color(0xFFFF4D00).withAlpha(50),
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text(
-                              'VERIFIED',
-                              style: TextStyle(
-                                color: Color(0xFFFF4D00),
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Details Row
-                      Row(
-                        children: [
-                          _buildDetail(Icons.work_rounded, widget.occupation),
-                          const SizedBox(width: 16),
-                          _buildDetail(
-                            Icons.location_on_rounded,
-                            widget.location,
-                          ),
-                          const SizedBox(width: 16),
-                          _buildDetail(Icons.access_time_rounded, widget.years),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Bio
                       Text(
-                        widget.bio,
+                        cleanName.toUpperCase(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(127),
-                          fontSize: 10,
-                          height: 1.5,
-                          fontStyle: FontStyle.italic,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: theme.textPrimary,
+                          fontSize: 20,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -.5,
+                        ),
+                      ),
+                      if (occupation.trim().isNotEmpty) ...[
+                        const SizedBox(height: 7),
+                        Text(
+                          occupation.trim().toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: theme.accent,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: .8,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 9),
+                      _InfoLine(
+                        icon: Icons.location_on_outlined,
+                        text: location.trim().isEmpty ? 'Location not set' : location,
+                        color: theme.textSecondary,
+                      ),
+                      if (years.trim().isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        _InfoLine(
+                          icon: Icons.timelapse_rounded,
+                          text: years,
+                          color: theme.textSecondary,
+                        ),
+                      ],
+                      const SizedBox(height: 7),
+                      Text(
+                        'ID ${idNumber.toUpperCase()}',
+                        style: GoogleFonts.robotoMono(
+                          color: theme.textTertiary,
+                          fontSize: 9,
+                          letterSpacing: .6,
                         ),
                       ),
                     ],
@@ -358,23 +186,104 @@ class _HolographicIDCardState extends State<HolographicIDCard>
                 ),
               ],
             ),
-          ),
+            if (bio.trim().isNotEmpty) ...[
+              const SizedBox(height: 13),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: theme.tagBg,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: theme.tagBorder),
+                ),
+                child: Text(
+                  bio.trim(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: theme.textSecondary,
+                    fontSize: 10.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.touch_app_outlined,
+                  color: theme.textTertiary,
+                  size: 14,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'TAP TO OPEN FULL VAP ID + DOCUMENTS',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: theme.textTertiary,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .55,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildDetail(IconData icon, String text) {
+class _Initials extends StatelessWidget {
+  const _Initials({required this.initials, required this.color});
+
+  final String initials;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        initials.isEmpty ? '?' : initials,
+        style: GoogleFonts.plusJakartaSans(
+          color: color,
+          fontSize: 28,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoLine extends StatelessWidget {
+  const _InfoLine({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 12, color: const Color(0xFFFF4D00).withAlpha(150)),
+        Icon(icon, color: color, size: 13),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
