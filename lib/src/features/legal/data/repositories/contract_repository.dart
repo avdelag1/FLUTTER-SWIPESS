@@ -32,6 +32,9 @@ class ContractRepository {
     final data = await _client
         .from('digital_contracts')
         .insert({
+          // contract_type remains a required legacy column in production.
+          // Keep it meaningful while template_type identifies the exact builder.
+          'contract_type': template.category,
           'title': template.name,
           'template_type': template.id,
           'content': template.content,
@@ -56,6 +59,8 @@ class ContractRepository {
     final data = await _client
         .from('digital_contracts')
         .insert({
+          'contract_type':
+              contract.metadata['template_category']?.toString() ?? 'agreement',
           'title': '${contract.title} — Copy',
           'template_type': contract.templateType,
           'content': contract.content ?? '',
