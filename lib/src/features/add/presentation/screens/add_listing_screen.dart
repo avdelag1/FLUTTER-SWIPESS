@@ -125,9 +125,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     final top = MediaQuery.paddingOf(context).top;
     final stepMeta = _steps[draft.step.clamp(0, _steps.length - 1)];
 
-    return ColoredBox(
-      color: AppTheme.dashBg,
-      child: Column(
+    return Scaffold(
+      backgroundColor: AppTheme.dashBg,
+      body: SafeArea(
+        child: Column(
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(20, top + 12, 20, 12),
