@@ -106,9 +106,13 @@ class SupabaseAuthRepository implements AuthRepository {
     if (provider == OAuthProvider.google && !kIsWeb) {
       return _signInWithNativeGoogle();
     }
+
+    // On Flutter web, do not force Uri.base.origin as redirectTo. Supabase's
+    // configured Site URL/redirect allow-list is the source of truth and the
+    // Flutter web auth client consumes the returned session from that flow.
+    // Overriding this here can split sessions across www/non-www origins.
     return _auth.signInWithOAuth(
       provider,
-      redirectTo: kIsWeb ? Uri.base.origin : null,
       queryParams: provider == OAuthProvider.google
           ? const {'prompt': 'select_account'}
           : null,
