@@ -14,6 +14,12 @@ workflows:
       vars:
         BUNDLE_ID: com.swipess.mobile
         APP_STORE_APPLE_ID: 6779810584
+        # Supabase publishable client configuration. These are public client
+        # values, not service-role/database secrets. Passing them explicitly
+        # prevents release archives from depending on an accidental source
+        # fallback change.
+        SUPABASE_URL: https://vplgtcguxujxwrgguxqq.supabase.co
+        SUPABASE_PUBLISHABLE_KEY: sb_publishable_FA0BseFSS6zM7Y8K3w8zLQ_d8BXqEuV
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -27,7 +33,9 @@ workflows:
 
       - name: Force Flutter/Xcode release configuration
         script: |
-          flutter build ios --config-only --release --no-codesign
+          flutter build ios --config-only --release --no-codesign \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
           grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig || true
 
       - name: Fetch App Store signing files
@@ -43,10 +51,14 @@ workflows:
         script: |
           flutter clean
           flutter pub get
-          flutter build ios --config-only --release --no-codesign
+          flutter build ios --config-only --release --no-codesign \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
           # Version/build come only from pubspec.yaml so Codemagic can never
           # silently upload an old hard-coded build number again.
           flutter build ipa --release \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
             --export-options-plist=/Users/builder/export_options.plist
 
       - name: Reject debug/JIT IPA
