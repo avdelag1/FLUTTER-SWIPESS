@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/legal/domain/contract_templates.dart';
 import 'package:flutter_swipes/src/features/legal/domain/digital_contract.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/contracts_provider.dart';
@@ -35,10 +36,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
         fill: true,
         child: async.when(
           loading: () => Center(
-            child: CircularProgressIndicator(
-              color: ink,
-              strokeWidth: 2,
-            ),
+            child: CircularProgressIndicator(color: ink, strokeWidth: 2),
           ),
           error: (e, _) => Center(
             child: TextButton(
@@ -90,7 +88,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Build from templates, fill details, edit or AI-polish the wording, send to another Swipess user and keep the signature history in one vault.',
+                    'Choose a template or tell AI what you need. Edit it, send it to another Swipess user, sign the locked version, and keep the audit history in one vault.',
                     style: GoogleFonts.plusJakartaSans(
                       color: muted,
                       fontSize: 12,
@@ -125,8 +123,17 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   ),
                   const SizedBox(height: 18),
                   BrandPrimaryButton(
-                    label: 'Create document',
-                    icon: Icons.edit_document,
+                    label: 'Create with AI',
+                    icon: Icons.auto_awesome_rounded,
+                    onPressed: _createWithAi,
+                  ),
+                  const SizedBox(height: 10),
+                  BrandPrimaryButton(
+                    label: 'Choose a template',
+                    icon: Icons.library_books_rounded,
+                    backgroundColor: ink,
+                    foregroundColor:
+                        MatteSurface.isLight(context) ? Colors.white : Colors.black,
                     onPressed: () => _pickTemplate(context),
                   ),
                   const SizedBox(height: 22),
@@ -188,6 +195,32 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     if (mounted) await ref.read(contractsProvider.notifier).refresh();
   }
 
+  Future<void> _createWithAi() async {
+    final template = await showModalBottomSheet<ContractTemplate>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _AiDraftSheet(),
+    );
+    if (template == null || !mounted) return;
+    try {
+      final created = await ref.read(contractsProvider.notifier).create(template);
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ContractBuilderScreen(contract: created),
+        ),
+      );
+      if (mounted) await ref.read(contractsProvider.notifier).refresh();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not create AI draft: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _pickTemplate(BuildContext context) async {
     final template = await showModalBottomSheet<ContractTemplate>(
       context: context,
@@ -197,9 +230,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     );
     if (template == null) return;
     try {
-      final created = await ref
-          .read(contractsProvider.notifier)
-          .create(template);
+      final created = await ref.read(contractsProvider.notifier).create(template);
       if (!context.mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -214,6 +245,219 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
         );
       }
     }
+  }
+}
+
+class _AiDraftSheet extends ConsumerStatefulWidget {
+  const _AiDraftSheet();
+
+  @override
+  ConsumerState<_AiDraftSheet> createState() => _AiDraftSheetState();
+}
+
+class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
+  final _title = TextEditingController();
+  final _prompt = TextEditingController();
+  bool _generating = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _prompt.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final hairline = MatteSurface.hairline(context);
+    final isLight = MatteSurface.isLight(context);
+    return Container(
+      padding: EdgeInsets.fromLTRB(18, 12, 18, bottom + 28),
+      decoration: BoxDecoration(
+        color: isLight ? const Color(0xFFF5F5F7) : const Color(0xFF111113),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        border: Border(top: BorderSide(color: hairline)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: muted.withAlpha(60),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppTheme.brandPrimary,
+                ),
+                const SizedBox(width: 9),
+                Text(
+                  'CREATE WITH AI',
+                  style: AppTheme.displayItalic.copyWith(color: ink, fontSize: 26),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Describe the agreement in normal words. AI creates an editable draft and leaves placeholders instead of inventing missing legal facts.',
+              style: GoogleFonts.plusJakartaSans(
+                color: muted,
+                fontSize: 11,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _title,
+              style: TextStyle(color: ink),
+              decoration: InputDecoration(
+                labelText: 'Document title (optional)',
+                hintText: 'e.g. Villa rental agreement',
+                labelStyle: TextStyle(color: muted),
+                hintStyle: TextStyle(color: MatteSurface.faint(context)),
+                filled: true,
+                fillColor: MatteSurface.cardFill(context),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: hairline),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: hairline),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _prompt,
+              minLines: 5,
+              maxLines: 8,
+              autofocus: true,
+              style: TextStyle(color: ink),
+              decoration: InputDecoration(
+                labelText: 'Tell Swipess what you need',
+                hintText:
+                    'Example: I need a 6-month furnished apartment rental agreement in Tulum between an owner and tenant, USD 2,000 monthly, one-month deposit, no smoking, pets allowed…',
+                labelStyle: TextStyle(color: muted),
+                hintStyle: TextStyle(color: MatteSurface.faint(context)),
+                filled: true,
+                fillColor: MatteSurface.cardFill(context),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: hairline),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide(color: hairline),
+                ),
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _error!,
+                style: const TextStyle(
+                  color: Color(0xFFFF6B64),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            BrandPrimaryButton(
+              label: _generating ? 'Creating draft…' : 'Generate editable draft',
+              icon: Icons.auto_awesome_rounded,
+              loading: _generating,
+              onPressed: _generating ? null : _generate,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'AI drafting is a convenience tool. Review local legal requirements before signing.',
+              style: GoogleFonts.plusJakartaSans(
+                color: MatteSurface.faint(context),
+                fontSize: 9,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _generate() async {
+    final prompt = _prompt.text.trim();
+    if (prompt.length < 20) {
+      setState(() => _error = 'Describe the agreement with a little more detail.');
+      return;
+    }
+    setState(() {
+      _generating = true;
+      _error = null;
+    });
+    try {
+      final generated = await ref.read(aiEdgeRepositoryProvider).enhanceText(
+            text: prompt,
+            type: 'legal_draft',
+          );
+      if (!mounted) return;
+      if (generated == null || generated.trim().length < 80) {
+        setState(() => _error = 'AI could not create a usable draft. Try again.');
+        return;
+      }
+      final typedTitle = _title.text.trim();
+      final fallbackTitle = _guessTitle(prompt);
+      final template = ContractTemplate(
+        id: 'ai-custom-${DateTime.now().millisecondsSinceEpoch}',
+        name: typedTitle.isEmpty ? fallbackTitle : typedTitle,
+        description: 'AI-assisted editable draft created in Swipess Sign.',
+        category: 'custom',
+        forRole: 'both',
+        content: generated.trim(),
+      );
+      Navigator.pop(context, template);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  String _guessTitle(String prompt) {
+    final lower = prompt.toLowerCase();
+    if (lower.contains('nda') || lower.contains('confidential')) {
+      return 'Confidentiality Agreement';
+    }
+    if (lower.contains('yacht') || lower.contains('charter')) {
+      return 'Yacht Charter Agreement';
+    }
+    if (lower.contains('service') || lower.contains('worker')) {
+      return 'Service Agreement';
+    }
+    if (lower.contains('sale') || lower.contains('purchase')) {
+      return 'Purchase Agreement';
+    }
+    if (lower.contains('rent') || lower.contains('lease')) {
+      return 'Rental Agreement';
+    }
+    return 'Custom Agreement';
   }
 }
 
