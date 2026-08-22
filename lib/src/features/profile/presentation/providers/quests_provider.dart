@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/profile/data/repositories/quest_repository.dart';
 import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 
@@ -27,6 +29,13 @@ class DailyQuestsNotifier extends AsyncNotifier<DailyQuestBoard> {
     if (next.isEmpty) return false;
     final points = await ref.read(questRepositoryProvider).fetchPoints();
     state = AsyncData(DailyQuestBoard(quests: next, points: points));
+
+    // A claim can cross the 5-point threshold and mint a token. Refresh the
+    // visible balance and notification badge immediately instead of waiting
+    // for another navigation or app restart.
+    ref.invalidate(directRequestBalanceProvider);
+    ref.invalidate(notificationsProvider);
+    ref.invalidate(unreadNotificationsProvider);
     return true;
   }
 }
