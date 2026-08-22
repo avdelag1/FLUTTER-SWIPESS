@@ -4,7 +4,7 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/p
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('three month promo stays centered and paywall needs no scrolling', (
+  testWidgets('current membership paywall fits a compact phone without scrolling', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 568);
@@ -26,15 +26,14 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(Scrollable), findsNothing);
-    expect(find.text('3 MONTHS FREE ACCESS'), findsOneWidget);
-    expect(find.text('Package 1'), findsOneWidget);
-    expect(find.text('Package 2'), findsOneWidget);
-    expect(find.text('Premium'), findsOneWidget);
+    expect(find.text('Continue with Events'), findsOneWidget);
+    expect(find.textContaining('complimentary access has ended'), findsOneWidget);
+    expect(find.text('MONTHLY'), findsOneWidget);
+    expect(find.text('SEMI-ANNUAL'), findsOneWidget);
+    expect(find.text('YEARLY'), findsOneWidget);
+    expect(find.text('HERE NOW'), findsOneWidget);
+    expect(find.text('LIVE LOCAL'), findsOneWidget);
+    expect(find.text('PRO'), findsOneWidget);
     expect(find.byKey(const ValueKey('paywall-view-packages')), findsOneWidget);
-
-    final promoCenter = tester.getCenter(
-      find.byKey(const ValueKey('three-month-promo')),
-    );
-    expect((promoCenter.dx - 160).abs(), lessThan(2));
   });
 }
