@@ -4,7 +4,7 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosur
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_welcome_grid.dart';
 
 void main() {
-  testWidgets('Intel Core welcome shows category pills', (tester) async {
+  testWidgets('AI welcome shows compact conversation suggestions', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -15,19 +15,19 @@ void main() {
       ),
     );
 
-    expect(find.text('INTEL CORE'), findsOneWidget);
-    expect(find.text('CHOOSE A CATEGORY'), findsOneWidget);
-    expect(find.text('PROPERTIES'), findsOneWidget);
-    expect(find.text('WORKERS'), findsOneWidget);
-    expect(find.text('MOTORCYCLES'), findsOneWidget);
-    expect(find.text('BICYCLES'), findsOneWidget);
-    expect(find.text('YACHTS'), findsOneWidget);
-    expect(find.text('BUYERS'), findsOneWidget);
-    expect(find.text('RENTERS'), findsOneWidget);
-    expect(find.text('SEEKERS'), findsOneWidget);
+    expect(find.text('How can I help?'), findsOneWidget);
+    expect(find.text('Ask anything, or start with one of these.'), findsOneWidget);
+    expect(find.text('Find a place'), findsOneWidget);
+    expect(find.text('Find a worker'), findsOneWidget);
+    expect(find.text('People nearby'), findsOneWidget);
+    expect(find.text('What’s happening?'), findsOneWidget);
+    expect(find.text('Yachts'), findsOneWidget);
+    expect(find.text('Motorcycles'), findsOneWidget);
   });
 
-  testWidgets('Intel Core category opens prompt chips', (tester) async {
+  testWidgets('AI suggestion sends its prompt directly to the conversation', (
+    tester,
+  ) async {
     String? picked;
     await tester.pumpWidget(
       MaterialApp(
@@ -42,15 +42,9 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('PROPERTIES'));
+    await tester.tap(find.text('Find a place'));
     await tester.pump();
-
-    expect(find.text('PICK A PROMPT'), findsOneWidget);
-    expect(find.text('All Rentals'), findsOneWidget);
-
-    await tester.tap(find.text('All Rentals'));
-    await tester.pump();
-    expect(picked, 'Show me all rental properties');
+    expect(picked, 'Help me find a property that matches what I need');
   });
 
   testWidgets('AI disclosure names the live model and fallbacks', (
@@ -78,7 +72,7 @@ void main() {
     expect(find.textContaining('password or payment'), findsOneWidget);
   });
 
-  testWidgets('compact disclosure includes AI can make mistakes', (
+  testWidgets('compact disclosure includes model and AI warning', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -88,6 +82,7 @@ void main() {
     );
 
     expect(find.textContaining('AI can make mistakes'), findsOneWidget);
-    expect(find.textContaining('Using Llama 3.3 (via Groq)'), findsOneWidget);
+    expect(find.textContaining('Llama 3.3 (via Groq)'), findsOneWidget);
+    expect(find.textContaining('Gemini, Moonshot & MiniMax fallbacks'), findsOneWidget);
   });
 }
