@@ -8,9 +8,9 @@ class TokenRepository {
 
   final SupabaseClient _client;
 
-  /// Ensures the app-managed welcome allowance is present. The backend grants
-  /// six complimentary Direct Requests once per campaign (seven with the
-  /// preserved referral bonus), expiring with complimentary access.
+  /// Ensures the app-managed welcome allowance is present. New Freemium users
+  /// receive five welcome Direct Requests once per campaign. Their visible
+  /// balance can be higher after activity/referral rewards or extra purchases.
   Future<void> grantWelcomeTokens({bool hasReferral = false}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return;
