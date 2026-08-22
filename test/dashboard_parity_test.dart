@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 
 void main() {
-  testWidgets('BentoDashboardScreen renders search, chips, and grid', (
+  testWidgets('BentoDashboardScreen renders current search and discovery grid', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -13,18 +13,13 @@ void main() {
       ),
     );
 
-    // Give images time to load/fail
+    // Give remote media a moment to load/fail without coupling this test to it.
     await tester.pump(const Duration(seconds: 1));
 
-    // Verify search bar exists (case-sensitive)
-    expect(find.text('SEARCH ASSETS...'), findsOneWidget);
-
-    // Verify chips exist
-    expect(find.text('Events'), findsOneWidget);
-    expect(find.text('Pros'), findsOneWidget);
-
-    // Verify bento grid elements exist
-    expect(find.text('EVENTS LIVE'), findsWidgets);
+    expect(find.text('What are you looking for?'), findsOneWidget);
     expect(find.text('PROPERTIES'), findsWidgets);
+    expect(find.text('EVENTS LIVE'), findsWidgets);
+    expect(find.text('WORKERS'), findsWidgets);
+    expect(find.text('RECOMMENDED FOR YOU'), findsWidgets);
   });
 }
