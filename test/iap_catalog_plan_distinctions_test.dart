@@ -11,8 +11,7 @@ void main() {
       expect(monthly.name, 'Monthly');
       expect(monthly.tokens, 20);
       expect(monthly.benefits, contains('20 Direct Requests included'));
-      expect(monthly.benefits, contains('Premium AI access'));
-      expect(monthly.benefits, contains('AI Listing Creator'));
+      expect(monthly.benefits, contains('AI + AI Listing Creator'));
       expect(
         monthly.benefits.any((benefit) => benefit.contains('Unlimited')),
         isFalse,
@@ -21,16 +20,14 @@ void main() {
       expect(semiAnnual.name, 'Semi-Annual');
       expect(semiAnnual.tokens, 50);
       expect(semiAnnual.benefits, contains('50 Direct Requests included'));
-      expect(semiAnnual.benefits, contains('Premium AI access'));
-      expect(semiAnnual.benefits, contains('AI Listing Creator'));
+      expect(semiAnnual.benefits, contains('AI + AI Listing Creator'));
       expect(semiAnnual.benefits, contains('Local Expert Knowledge'));
 
       expect(yearly.name, 'Yearly');
       expect(yearly.tokens, 150);
       expect(yearly.benefits, contains('150 Direct Requests included'));
-      expect(yearly.benefits, contains('Premium AI access'));
-      expect(yearly.benefits, contains('AI Listing Creator'));
-      expect(yearly.benefits, contains('Priority AI Responses'));
+      expect(yearly.benefits, contains('AI + AI Listing Creator'));
+      expect(yearly.benefits, contains('Priority AI responses'));
     });
   });
 
