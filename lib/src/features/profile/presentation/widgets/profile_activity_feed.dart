@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -36,9 +35,9 @@ class ProfileActivityFeed extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: const Color(0xFF1A2029),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: Colors.white.withAlpha(42), width: 1.15),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

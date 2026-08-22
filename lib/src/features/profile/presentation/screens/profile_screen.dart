@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -36,7 +35,7 @@ import 'package:flutter_swipes/src/features/notifications/presentation/screens/n
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_dialog.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_section.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
@@ -429,7 +428,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               onTap: () async {
                                 AppHaptics.medium();
-                                await ref.read(authRepositoryProvider).signOut();
+                                await ref
+                                    .read(authRepositoryProvider)
+                                    .signOut();
                                 if (!context.mounted) return;
                                 context.go(AppPaths.welcome);
                               },
@@ -456,9 +457,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 18),
 
-                      // Share & Earn
                       _Panel(
-                        child: _ShareEarn(
+                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+                        child: InviteFriendsSection(
                           profileId:
                               profile?.userId ??
                               Supabase.instance.client.auth.currentUser?.id ??
@@ -535,9 +536,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.transparent,
+                                  color: const Color(0xFF222833),
                                   borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(color: Colors.white24),
+                                  border: Border.all(
+                                    color: Colors.white.withAlpha(42),
+                                    width: 1.1,
+                                  ),
                                 ),
                                 child: Text(
                                   'Sync Protocol',
@@ -802,8 +806,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
-
-
 class _Panel extends StatelessWidget {
   const _Panel({required this.child, this.padding});
   final Widget child;
@@ -819,9 +821,9 @@ class _Panel extends StatelessWidget {
           width: double.infinity,
           padding: padding ?? EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: MatteSurface.cardFill(context),
+            color: MatteSurface.elevated(context),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: MatteSurface.hairline(context)),
+            border: Border.all(color: Colors.white.withAlpha(42), width: 1.15),
           ),
           child: child,
         ),
@@ -857,9 +859,9 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: MatteSurface.cardFill(context),
+          color: MatteSurface.elevated(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: MatteSurface.hairline(context)),
+          border: Border.all(color: Colors.white.withAlpha(42), width: 1.15),
         ),
         child: Column(
           children: [
@@ -1010,8 +1012,12 @@ class _DailyQuests extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.transparent,
+                    color: const Color(0xFF10141B),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withAlpha(36),
+                      width: 1.1,
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -1095,214 +1101,6 @@ class _DailyQuests extends ConsumerWidget {
               ),
         ],
       ],
-    );
-  }
-}
-
-class _ShareEarn extends StatelessWidget {
-  const _ShareEarn({required this.profileId, required this.profileName});
-  final String profileId;
-  final String profileName;
-
-  @override
-  Widget build(BuildContext context) {
-    final url = profileId.isEmpty
-        ? 'https://www.swipess.com'
-        : 'https://www.swipess.com/u/$profileId';
-
-    return Padding(
-      padding: const EdgeInsets.all(6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                  ),
-                ),
-                child: Icon(Icons.share_rounded, color: Colors.white, size: 20),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'SHARE & EARN',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.ink(context),
-                        fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      'Get free messages for referrals',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                AppHaptics.medium();
-                showInviteFriendsDialog(context);
-              },
-              style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.black,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: Text(
-                'INVITE FRIENDS',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.4,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(80),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    url,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(text: url));
-                    AppHaptics.selection();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invite link copied')),
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                      ),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'COPY',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _SocialBtn(
-                icon: Icons.chat_rounded,
-                label: 'WA',
-                onTap: () => showInviteFriendsDialog(context),
-              ),
-              const SizedBox(width: 8),
-              _SocialBtn(
-                icon: Icons.camera_alt_outlined,
-                label: 'IG',
-                onTap: () => showInviteFriendsDialog(context),
-              ),
-              const SizedBox(width: 8),
-              _SocialBtn(
-                icon: Icons.music_note_rounded,
-                label: 'TT',
-                onTap: () => showInviteFriendsDialog(context),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SocialBtn extends StatelessWidget {
-  const _SocialBtn({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 42,
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white24),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white70, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1392,11 +1190,14 @@ class _FeedbackForm extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: category == c.$1
-                        ? c.$3.withAlpha(50)
-                        : Colors.white.withAlpha(10),
+                        ? c.$3.withAlpha(55)
+                        : const Color(0xFF222833),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: category == c.$1 ? c.$3 : Colors.white24,
+                      color: category == c.$1
+                          ? c.$3
+                          : Colors.white.withAlpha(42),
+                      width: 1.15,
                     ),
                   ),
                   child: Text(
@@ -1418,26 +1219,41 @@ class _FeedbackForm extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: 'Tell us what\'s on your mind…',
-            hintStyle: TextStyle(color: Colors.transparent),
+            hintStyle: TextStyle(color: Colors.white54),
             filled: true,
-            fillColor: Colors.black.withAlpha(70),
+            fillColor: const Color(0xFF10141B),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.white, width: 1),
+              borderSide: BorderSide(
+                color: Colors.white.withAlpha(48),
+                width: 1.15,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: Colors.white, width: 1),
+              borderSide: BorderSide(
+                color: Colors.white.withAlpha(48),
+                width: 1.15,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: AppTheme.brandPrimary,
+                width: 1.4,
+              ),
             ),
           ),
         ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
+          child: FilledButton(
             onPressed: sending ? null : onSubmit,
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              disabledBackgroundColor: Colors.white24,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -1474,11 +1290,12 @@ class _LangChip extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: active
-              ? AppTheme.brandPrimary.withAlpha(40)
-              : Colors.white.withAlpha(12),
+              ? AppTheme.brandPrimary.withAlpha(48)
+              : const Color(0xFF222833),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: active ? AppTheme.brandPrimary : Colors.white24,
+            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(42),
+            width: 1.15,
           ),
         ),
         child: Text(
