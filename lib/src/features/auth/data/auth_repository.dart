@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/providers/supabase_provider.dart';
+import 'package:flutter_swipes/src/features/auth/data/oauth_popup.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -67,7 +68,6 @@ class SupabaseAuthRepository implements AuthRepository {
       },
     );
     if (res.session != null) return res;
-    // Cap auto-signs in when email confirmation is off so signup lands on dashboard.
     return _auth.signInWithPassword(email: email, password: password);
   }
 
@@ -112,42 +112,60 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<bool> signInWithOAuth(OAuthProvider provider) async {
-    if (provider == OAuthProvider.apple && !kIsWeb) {
+    if (kIsWeb) {
+      // Preserve the Swipess login/signup page. Supabase Flutter intentionally
+      // targets `_self` for web OAuth, which replaces the whole app. Open a
+      // named popup synchronously while the button gesture is still active,
+      // then navigate that popup to the PKCE URL once Supabase creates it.
+      final popup = openOAuthPopupPlaceholder();
+      if (popup == null) {
+        throw Exception(
+          'Your browser blocked the sign-in window. Allow pop-ups for Swipess and try again.',
+        );
+      }
+      try {
+        final referral = _webReferral;
+        final query = <String, String>{
+          'oauth_popup': '1',
+          if (referral != null) 'ref': referral,
+        };
+        final redirectTo = Uri.parse(
+          Uri.base.origin,
+        ).replace(queryParameters: query).toString();
+        final queryParams = provider == OAuthProvider.google
+            ? const {'prompt': 'select_account'}
+            : null;
+        final oauth = await _auth.getOAuthSignInUrl(
+          provider: provider,
+          redirectTo: redirectTo,
+          queryParams: queryParams,
+        );
+        if (!navigateOAuthPopup(popup, oauth.url)) {
+          throw Exception(
+            'The sign-in window could not be opened. Allow pop-ups for Swipess and try again.',
+          );
+        }
+        return true;
+      } catch (_) {
+        closeOAuthPopup(popup);
+        rethrow;
+      }
+    }
+
+    if (provider == OAuthProvider.apple) {
       return _signInWithNativeApple();
     }
-    if (provider == OAuthProvider.google && !kIsWeb) {
+    if (provider == OAuthProvider.google) {
       return _signInWithNativeGoogle();
     }
 
-    // PKCE stores its verifier in browser storage for the exact origin that
-    // starts the flow. Always return to that same origin. This prevents a
-    // swipess.com -> www.swipess.com callback from losing the verifier and
-    // failing with `flow_state_expired`.
-    String? redirectTo;
-    if (kIsWeb) {
-      final referral = _webReferral;
-      redirectTo = Uri.parse(Uri.base.origin)
-          .replace(
-            queryParameters: referral == null ? null : {'ref': referral},
-          )
-          .toString();
-    }
-    return _auth.signInWithOAuth(
-      provider,
-      redirectTo: redirectTo,
-      queryParams: provider == OAuthProvider.google
-          ? const {'prompt': 'select_account'}
-          : null,
-    );
+    return _auth.signInWithOAuth(provider);
   }
 
   Future<bool> _signInWithNativeApple() async {
     final available = await SignInWithApple.isAvailable();
     if (!available) {
-      return _auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: kIsWeb ? Uri.base.origin : null,
-      );
+      return _auth.signInWithOAuth(OAuthProvider.apple);
     }
     try {
       final rawNonce = _generateNonce();
@@ -198,17 +216,15 @@ class SupabaseAuthRepository implements AuthRepository {
     if (!google.supportsAuthenticate()) {
       return _auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? Uri.base.origin : null,
         queryParams: const {'prompt': 'select_account'},
       );
     }
     final serverId = AppConfig.googleServerClientId.trim();
     final clientId = AppConfig.googleIosClientId.trim();
     if (defaultTargetPlatform == TargetPlatform.iOS &&
-        serverId.isEmpty &&
-        clientId.isEmpty) {
+        (serverId.isEmpty || clientId.isEmpty)) {
       throw Exception(
-        'Please use Sign in with Apple or your email address on this device.',
+        'Google Sign-In is not configured for this iPhone build yet. Use Apple or email, or install the next configured TestFlight build.',
       );
     }
     try {
