@@ -52,7 +52,16 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       );
       return;
     }
-    final picked = await picker.pickMultiImage(limit: remaining);
+    // Re-encode gallery photos on supported platforms. On iOS this normally
+    // converts HEIC/HEIF originals to a web-safe JPEG while also preventing
+    // huge camera originals from making uploads feel stalled.
+    final picked = await picker.pickMultiImage(
+      limit: remaining,
+      imageQuality: 92,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      requestFullMetadata: false,
+    );
     if (picked.isEmpty) return;
     state = state.copyWith(
       photos: [...state.photos, ...picked.take(remaining)],
