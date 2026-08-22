@@ -2,8 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 
 /// Event reads retry once after refreshing an authenticated Supabase session.
-/// This prevents a recoverable browser 401/403 from collapsing the dashboard
-/// video teaser into a static fallback image.
 class EventRepository {
   EventRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
@@ -37,6 +35,30 @@ class EventRepository {
         rethrow;
       }
       return action();
+    }
+  }
+
+  /// Dashboard-only teaser feed.
+  ///
+  /// This intentionally uses a tiny SECURITY DEFINER RPC that exposes only
+  /// published/approved event ids, titles and video URLs. That keeps the moving
+  /// dashboard preview alive even when the full Events section is Premium-gated
+  /// or the browser session is still restoring. Tapping Events is still gated by
+  /// the normal subscription routing.
+  Future<List<Event>> fetchDashboardVideoTeasers({int limit = 8}) async {
+    try {
+      final rows = await _client.rpc(
+        'rpc_event_video_teasers',
+        params: {'p_limit': limit},
+      );
+      if (rows is! List) return const [];
+      return rows
+          .whereType<Map>()
+          .map((row) => Event.fromJson(Map<String, dynamic>.from(row)))
+          .where((event) => event.videoUrl?.trim().isNotEmpty == true)
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
     }
   }
 
