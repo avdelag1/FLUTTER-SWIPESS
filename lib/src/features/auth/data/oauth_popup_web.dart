@@ -32,6 +32,15 @@ bool navigateOAuthPopup(OAuthPopupHandle? handle, String url) {
   }
 }
 
+bool isOAuthPopupClosed(OAuthPopupHandle? handle) {
+  if (handle == null) return true;
+  try {
+    return handle.window.closed == true;
+  } catch (_) {
+    return true;
+  }
+}
+
 void closeOAuthPopup(OAuthPopupHandle? handle) {
   if (handle == null) return;
   try {
