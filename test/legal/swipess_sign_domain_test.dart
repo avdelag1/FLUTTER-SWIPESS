@@ -17,7 +17,7 @@ void main() {
           'motorcycle-rental-agreement',
           'yacht-charter-agreement',
           'service-agreement',
-          'nda-mutual',
+          'mutual-nda',
         ]),
       );
     });
