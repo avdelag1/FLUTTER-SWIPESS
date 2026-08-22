@@ -15,7 +15,6 @@ OAuthPopupHandle? openOAuthPopupPlaceholder() {
       'swipess_oauth',
       'popup=yes,width=520,height=720,resizable=yes,scrollbars=yes',
     );
-    popup.focus();
     return OAuthPopupHandle(popup);
   } catch (_) {
     return null;
@@ -27,7 +26,6 @@ bool navigateOAuthPopup(OAuthPopupHandle? handle, String url) {
   try {
     if (handle.window.closed == true) return false;
     handle.window.location.href = url;
-    handle.window.focus();
     return true;
   } catch (_) {
     return false;
