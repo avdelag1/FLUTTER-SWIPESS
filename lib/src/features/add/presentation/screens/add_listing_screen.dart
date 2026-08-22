@@ -129,114 +129,115 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       backgroundColor: AppTheme.dashBg,
       body: SafeArea(
         child: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 12, 20, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const CapBackButton(),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'STEP ${draft.step + 1} OF ${_steps.length}',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white38,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2.4,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, top + 12, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const CapBackButton(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'STEP ${draft.step + 1} OF ${_steps.length}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white38,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.4,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            stepMeta.$2.toUpperCase(),
-                            style: AppTheme.displayItalic.copyWith(
-                              fontSize: 26,
-                              height: 1.05,
+                            const SizedBox(height: 4),
+                            Text(
+                              stepMeta.$2.toUpperCase(),
+                              style: AppTheme.displayItalic.copyWith(
+                                fontSize: 26,
+                                height: 1.05,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _WizardStepPills(
-                  current: draft.step,
-                  steps: _steps,
-                  onSelect: (i) =>
-                      ref.read(addListingProvider.notifier).setStep(i),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: (draft.step + 1) / _steps.length,
-                    minHeight: 3,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 160),
-              children: [
-                if (draft.step == 0) _PhotosStep(draft: draft),
-                if (draft.step == 1) _CategoryStep(draft: draft),
-                if (draft.step == 2)
-                  _DetailsStep(
-                    draft: draft,
-                    title: _title,
-                    price: _price,
-                    description: _description,
-                    neighborhood: _neighborhood,
-                    year: _year,
-                    mileage: _mileage,
-                    engine: _engine,
-                    length: _length,
-                    berths: _berths,
-                    guests: _guests,
-                    model: _model,
+                  const SizedBox(height: 14),
+                  _WizardStepPills(
+                    current: draft.step,
+                    steps: _steps,
+                    onSelect: (i) =>
+                        ref.read(addListingProvider.notifier).setStep(i),
                   ),
-                if (draft.step == 3) _PublishStep(draft: draft),
-                if (draft.error != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    draft.error!,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFF87171),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: (draft.step + 1) / _steps.length,
+                      minHeight: 3,
+                      valueColor: const AlwaysStoppedAnimation(
+                        Color(0xFFEB4898),
+                      ),
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
-                if (draft.step > 0)
-                  BrandGhostButton(
-                    label: 'Back',
-                    onPressed: () => ref
-                        .read(addListingProvider.notifier)
-                        .setStep(draft.step - 1),
-                  ),
-                if (draft.step > 0) const SizedBox(height: 12),
-                BrandPrimaryButton(
-                  label: draft.step == 3 ? 'Publish listing' : 'Continue',
-                  loading: draft.publishing,
-                  onPressed: draft.publishing ? null : () => _next(draft),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
-      ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 160),
+                children: [
+                  if (draft.step == 0) _PhotosStep(draft: draft),
+                  if (draft.step == 1) _CategoryStep(draft: draft),
+                  if (draft.step == 2)
+                    _DetailsStep(
+                      draft: draft,
+                      title: _title,
+                      price: _price,
+                      description: _description,
+                      neighborhood: _neighborhood,
+                      year: _year,
+                      mileage: _mileage,
+                      engine: _engine,
+                      length: _length,
+                      berths: _berths,
+                      guests: _guests,
+                      model: _model,
+                    ),
+                  if (draft.step == 3) _PublishStep(draft: draft),
+                  if (draft.error != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      draft.error!,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFFF87171),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  if (draft.step > 0)
+                    BrandGhostButton(
+                      label: 'Back',
+                      onPressed: () => ref
+                          .read(addListingProvider.notifier)
+                          .setStep(draft.step - 1),
+                    ),
+                  if (draft.step > 0) const SizedBox(height: 12),
+                  BrandPrimaryButton(
+                    label: draft.step == 3 ? 'Publish listing' : 'Continue',
+                    loading: draft.publishing,
+                    onPressed: draft.publishing ? null : () => _next(draft),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
