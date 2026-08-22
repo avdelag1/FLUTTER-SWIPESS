@@ -7,7 +7,7 @@ class SupabaseService {
   static const String _defaultUrl =
       'https://vplgtcguxujxwrgguxqq.supabase.co';
   static const String _defaultAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwbGd0Y2d1eHVqeHdyZ2d1eHFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMDI5MDIsImV4cCI6MjA2MzU3ODkwMn0.-TzSQ-nDho4J6TftVF4RNjbhr5cKbknQxxUT-AaSIJU';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYXNlIiwicm9sZSI6ImFub24iLCJyZWYiOiJ2cGxndGNndXh1anh3cmdndXhxcSIsImlhdCI6MTc0ODAwMjkwMiwiZXhwIjoyMDYzNTc4OTAyfQ.-TzSQ-nDho4J6TftVF4RNjbhr5cKbknQxxUT-AaSIJU';
 
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
@@ -19,7 +19,7 @@ class SupabaseService {
   );
 
   static Future<void> initialize() async {
-    await Supabase.initialize(url: supabaseUrl, anonKey: anonKey);
+    await Supabase.initialize(url: supabaseUrl, publishableKey: anonKey);
   }
 
   static SupabaseClient get client => Supabase.instance.client;
