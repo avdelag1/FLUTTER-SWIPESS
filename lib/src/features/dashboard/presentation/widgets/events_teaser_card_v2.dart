@@ -11,11 +11,12 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// The dashboard Events tile is intentionally a moving video preview.
+/// Dashboard Events is a moving reel, never a photo card.
 ///
-/// Videos rotate every four seconds. The next controller is initialized while
-/// the current video is still on screen, then AnimatedSwitcher dissolves video
-/// directly into video. We never reveal an event photo between clips.
+/// Published/approved teaser videos come from a dedicated lightweight feed,
+/// rotate every four seconds, preload ahead, and transition video -> video with
+/// a dissolve/slide/scale effect. The full Events section remains independently
+/// Premium-gated by navigation and backend access rules.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -34,6 +35,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   bool _switching = false;
   bool _routeActive = true;
   double _dragDx = 0;
+
+  List<Event> get _videos =>
+      ref.read(dashboardVideoEventsProvider).value ?? const <Event>[];
 
   @override
   void initState() {
@@ -87,7 +91,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   Future<void> _ensureVideo() async {
     if (!mounted || _loading || _current != null) return;
-    final videos = ref.read(videoEventsProvider);
+    final videos = _videos;
     if (videos.isEmpty) return;
     _loading = true;
     try {
@@ -115,7 +119,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   void _startRotation() {
     _rotation?.cancel();
-    final videos = ref.read(videoEventsProvider);
+    final videos = _videos;
     if (!_routeActive || videos.length < 2 || _current == null) return;
     _rotation = Timer.periodic(const Duration(seconds: 4), (_) {
       unawaited(_advance(1));
@@ -137,7 +141,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   Future<void> _advance(int delta) async {
     if (!mounted || _switching) return;
-    final videos = ref.read(videoEventsProvider);
+    final videos = _videos;
     if (videos.length < 2) return;
     _switching = true;
     try {
@@ -160,10 +164,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       if (_routeActive) await next.play();
       if (mounted) setState(() {});
 
-      // AnimatedSwitcher keeps the previous VideoPlayer alive during this
-      // interval, so the user sees a real video-to-video dissolve.
+      // Keep the outgoing controller alive until the transition is over. This
+      // guarantees a real moving-video -> moving-video transition with no image
+      // or blank frame inserted between clips.
       if (previous != null) {
-        Future<void>.delayed(const Duration(milliseconds: 700), () async {
+        Future<void>.delayed(const Duration(milliseconds: 760), () async {
           try {
             await previous.setVolume(0);
             await previous.pause();
@@ -210,11 +215,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   @override
   Widget build(BuildContext context) {
-    final videos = ref.watch(videoEventsProvider);
+    final teaserAsync = ref.watch(dashboardVideoEventsProvider);
+    final videos = teaserAsync.value ?? const <Event>[];
     final soundOn = ref.watch(deckSoundOnProvider);
 
-    ref.listen<List<Event>>(videoEventsProvider, (_, next) {
-      if (next.isNotEmpty && _current == null) {
+    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (_, next) {
+      final loaded = next.value ?? const <Event>[];
+      if (loaded.isNotEmpty && _current == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVideo());
       }
     });
@@ -244,8 +251,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
             const ColoredBox(color: Color(0xFF080A0F)),
             if (ready)
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 560),
-                reverseDuration: const Duration(milliseconds: 420),
+                duration: const Duration(milliseconds: 650),
+                reverseDuration: const Duration(milliseconds: 520),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 layoutBuilder: (currentChild, previousChildren) => Stack(
@@ -255,28 +262,51 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                     if (currentChild != null) currentChild,
                   ],
                 ),
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(begin: 1.018, end: 1).animate(animation),
-                    child: child,
-                  ),
-                ),
+                transitionBuilder: (child, animation) {
+                  final curved = CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  );
+                  return FadeTransition(
+                    opacity: curved,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(.035, 0),
+                        end: Offset.zero,
+                      ).animate(curved),
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 1.035, end: 1).animate(curved),
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
                 child: _CoverVideo(
                   key: ValueKey(event?.videoUrl ?? _index),
                   controller: controller,
                 ),
               )
             else
-              const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.8,
-                    color: Colors.white54,
-                  ),
-                ),
+              Center(
+                child: teaserAsync.hasError
+                    ? IconButton(
+                        tooltip: 'Retry event videos',
+                        onPressed: () {
+                          ref.invalidate(dashboardVideoEventsProvider);
+                        },
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          color: Colors.white70,
+                        ),
+                      )
+                    : const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                          color: Colors.white54,
+                        ),
+                      ),
               ),
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -318,7 +348,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               top: 8,
               child: IconButton(
                 tooltip: soundOn ? 'Mute' : 'Sound on',
-                onPressed: _toggleSound,
+                onPressed: ready ? _toggleSound : null,
                 icon: Icon(
                   soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
                   color: Colors.white,
