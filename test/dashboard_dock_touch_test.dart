@@ -52,14 +52,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final list = find.byType(ListView);
-    await tester.drag(list, const Offset(-280, 0));
+    final scroller = find.byType(SingleChildScrollView);
+    expect(scroller, findsOneWidget);
+    await tester.drag(scroller, const Offset(-280, 0));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.balance_rounded));
     expect(tapped, NavTab.legal);
 
-    await tester.tap(find.byIcon(Icons.event_rounded));
+    await tester.tap(find.byIcon(Icons.celebration_rounded));
     expect(tapped, NavTab.events);
   });
 }
