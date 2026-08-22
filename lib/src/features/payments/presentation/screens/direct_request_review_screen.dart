@@ -47,7 +47,10 @@ class _DirectRequestReviewScreenState
         Navigator.of(context).pop();
         return;
       }
+
       await AppHaptics.success();
+      if (!mounted) return;
+
       final conversationId = result.conversationId;
       if (conversationId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -56,6 +59,7 @@ class _DirectRequestReviewScreenState
         Navigator.of(context).pop();
         return;
       }
+
       await showChatPopup(
         context,
         isNewConversation: true,
@@ -68,7 +72,8 @@ class _DirectRequestReviewScreenState
           listingTag: request.listingId,
         ),
       );
-      if (mounted) Navigator.of(context).pop();
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
       setState(() => _busy = false);
