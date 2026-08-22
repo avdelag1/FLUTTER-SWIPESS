@@ -46,11 +46,11 @@ enum SubscriptionTier {
       case SubscriptionTier.free:
         return 0;
       case SubscriptionTier.package1:
-        return 6;
+        return 20;
       case SubscriptionTier.package2:
-        return 12;
+        return 50;
       case SubscriptionTier.premium:
-        return 30;
+        return 150;
     }
   }
 }
