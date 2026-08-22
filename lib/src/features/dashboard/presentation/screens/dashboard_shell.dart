@@ -112,12 +112,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isLight = ref.watch(isLightThemeProvider);
     final showChrome = ref.watch(chromeVisibilityProvider);
 
-    // A MaterialPageRoute pushed from Profile/Settings lives above the shell
-    // content but below this persistent header/dock. ModalRoute currentness
-    // changes when that happens. Never allow shell chrome to remain interactive
-    // or visible above a pushed full-screen page; restore it automatically when
-    // the nested page is popped. This prevents titles/back buttons from being
-    // covered even on pages that do not scroll.
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
     final persistentChromeVisible = showChrome && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
@@ -327,7 +321,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
                             if (id == NavTab.legal &&
                                 subscription != null &&
-                                subscription.effectiveTier.canViewEvents != true) {
+                                subscription.effectiveTier.canUseLegal != true) {
                               showPaywall(context, featureName: 'Legal services');
                               return;
                             }
