@@ -28,9 +28,25 @@ jobs:
         run: flutter pub get
       - name: Analyzer
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
-      - name: Tests
+      - name: Release-critical tests
         timeout-minutes: 15
-        run: flutter test --reporter expanded
+        run: flutter test --exclude-tags golden --reporter expanded
+
+  visual-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Golden visual regression tests
+        timeout-minutes: 8
+        run: flutter test test/parity/parity_harness_test.dart --tags golden --reporter expanded
 
   web-build:
     runs-on: ubuntu-latest
