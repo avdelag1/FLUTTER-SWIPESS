@@ -59,15 +59,20 @@ void main() {
       ),
     );
 
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    final iosPhysics = behavior.getScrollPhysics(context);
-    expect(iosPhysics, isA<RangeMaintainingScrollPhysics>());
-    expect(iosPhysics.parent, isA<BouncingScrollPhysics>());
-    expect(iosPhysics.parent?.parent, isA<AlwaysScrollableScrollPhysics>());
+    try {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final iosPhysics = behavior.getScrollPhysics(context);
+      expect(iosPhysics, isA<RangeMaintainingScrollPhysics>());
+      expect(iosPhysics.parent, isA<BouncingScrollPhysics>());
+      expect(iosPhysics.parent?.parent, isA<AlwaysScrollableScrollPhysics>());
 
-    debugDefaultTargetPlatformOverride = TargetPlatform.android;
-    final androidPhysics = behavior.getScrollPhysics(context);
-    expect(androidPhysics, isA<RangeMaintainingScrollPhysics>());
-    expect(androidPhysics.parent, isA<ClampingScrollPhysics>());
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final androidPhysics = behavior.getScrollPhysics(context);
+      expect(androidPhysics, isA<RangeMaintainingScrollPhysics>());
+      expect(androidPhysics.parent, isA<ClampingScrollPhysics>());
+    } finally {
+      // Flutter verifies debug foundation variables before test tearDowns run.
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 }
