@@ -27,7 +27,8 @@ class EventRepository {
   Future<T> _withSessionRetry<T>(Future<T> Function() action) async {
     try {
       return await action();
-    } on PostgrestException {
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') rethrow; // Permission denied. Refresh won't help.
       if (_client.auth.currentUser == null) rethrow;
       try {
         await _client.auth.refreshSession();
@@ -76,6 +77,15 @@ class EventRepository {
         return (data as List)
             .map((json) => Event.fromJson(json as Map<String, dynamic>))
             .toList();
+      } on PostgrestException catch (e) {
+        // If it's a permission denied / RLS error, do NOT try fallbacks.
+        // The table is locked, so all fallbacks will fail and spam the network.
+        if (e.code == '42501' ||
+            e.message.contains('permission denied') ||
+            e.message.contains('Forbidden')) {
+          return const [];
+        }
+        continue;
       } catch (_) {
         continue;
       }
@@ -92,6 +102,13 @@ class EventRepository {
       return (data as List)
           .map((json) => Event.fromJson(json as Map<String, dynamic>))
           .toList();
+    } on PostgrestException catch (e) {
+      if (e.code == '42501' ||
+          e.message.contains('permission denied') ||
+          e.message.contains('Forbidden')) {
+        return const [];
+      }
+      return const [];
     } catch (_) {
       return const [];
     }
