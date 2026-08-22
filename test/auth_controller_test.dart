@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
-class FakeAuthResponse extends Fake implements AuthResponse {}
+class MockAuthResponse extends Mock implements AuthResponse {}
 
 class TestCurrentUserNotifier extends CurrentUserNotifier {
   @override
@@ -44,15 +44,22 @@ void main() {
     );
   }
 
+  MockAuthResponse successResponse() {
+    final response = MockAuthResponse();
+    when(() => response.user).thenReturn(null);
+    return response;
+  }
+
   test('login success', () async {
+    final response = successResponse();
     when(() => mockRepo.signInWithEmailPassword('test@example.com', 'password'))
-        .thenAnswer((_) async => FakeAuthResponse());
+        .thenAnswer((_) async => response);
 
     final container = makeContainer();
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.login('test@example.com', 'password');
+    expect(await controller.login('test@example.com', 'password'), isTrue);
     verify(() => mockRepo.signInWithEmailPassword('test@example.com', 'password')).called(1);
     expect(container.read(authControllerProvider).hasError, isFalse);
   });
@@ -65,19 +72,20 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.login('test@example.com', 'password');
+    expect(await controller.login('test@example.com', 'password'), isFalse);
     expect(container.read(authControllerProvider).hasError, isTrue);
   });
 
   test('sign-up success', () async {
+    final response = successResponse();
     when(() => mockRepo.signUpWithEmailPassword('test@example.com', 'password', name: any(named: 'name')))
-        .thenAnswer((_) async => FakeAuthResponse());
+        .thenAnswer((_) async => response);
 
     final container = makeContainer();
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.signup('test@example.com', 'password');
+    expect(await controller.signup('test@example.com', 'password'), isTrue);
     verify(() => mockRepo.signUpWithEmailPassword('test@example.com', 'password', name: any(named: 'name'))).called(1);
     expect(container.read(authControllerProvider).hasError, isFalse);
   });
@@ -90,7 +98,7 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.resetPassword('test@example.com');
+    expect(await controller.resetPassword('test@example.com'), isTrue);
     verify(() => mockRepo.resetPassword('test@example.com')).called(1);
     expect(container.read(authControllerProvider).hasError, isFalse);
   });
@@ -103,7 +111,7 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.loginWithOAuth(OAuthProvider.google);
+    expect(await controller.loginWithOAuth(OAuthProvider.google), isTrue);
     expect(container.read(authControllerProvider).hasError, isFalse);
   });
 
@@ -115,8 +123,8 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.loginWithOAuth(OAuthProvider.apple);
-    // Cancellation should not be an error
+    expect(await controller.loginWithOAuth(OAuthProvider.apple), isFalse);
+    // Cancellation should not be an error.
     expect(container.read(authControllerProvider).hasError, isFalse);
   });
 
@@ -128,7 +136,7 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.loginWithOAuth(OAuthProvider.google);
+    expect(await controller.loginWithOAuth(OAuthProvider.google), isFalse);
     expect(container.read(authControllerProvider).hasError, isTrue);
   });
 
@@ -140,7 +148,7 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.updatePassword('new_password');
+    expect(await controller.updatePassword('new_password'), isTrue);
     expect(container.read(authControllerProvider).hasError, isFalse);
   });
 
@@ -152,7 +160,7 @@ void main() {
     addTearDown(container.dispose);
     final controller = container.read(authControllerProvider.notifier);
 
-    await controller.updatePassword('new_password');
+    expect(await controller.updatePassword('new_password'), isFalse);
     expect(container.read(authControllerProvider).hasError, isTrue);
   });
 }
