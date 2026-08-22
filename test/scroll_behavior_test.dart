@@ -42,7 +42,7 @@ void main() {
     expect(identical(wrapped, child), isTrue);
   });
 
-  testWidgets('uses native bounce on iOS and clamping on Android', (
+  testWidgets('keeps range stability around native platform physics', (
     tester,
   ) async {
     const behavior = SwipessScrollBehavior();
@@ -60,9 +60,14 @@ void main() {
     );
 
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-    expect(behavior.getScrollPhysics(context), isA<BouncingScrollPhysics>());
+    final iosPhysics = behavior.getScrollPhysics(context);
+    expect(iosPhysics, isA<RangeMaintainingScrollPhysics>());
+    expect(iosPhysics.parent, isA<BouncingScrollPhysics>());
+    expect(iosPhysics.parent?.parent, isA<AlwaysScrollableScrollPhysics>());
 
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
-    expect(behavior.getScrollPhysics(context), isA<ClampingScrollPhysics>());
+    final androidPhysics = behavior.getScrollPhysics(context);
+    expect(androidPhysics, isA<RangeMaintainingScrollPhysics>());
+    expect(androidPhysics.parent, isA<ClampingScrollPhysics>());
   });
 }
