@@ -9,7 +9,7 @@ import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
+import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -57,7 +57,22 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF050608) : Colors.white;
-    final tokens = ref.watch(tokenBalanceProvider);
+
+    // The Tokens modal displays Direct Request inventory, so the header must
+    // read from the exact same source of truth. The legacy token balance can be
+    // zero even while a user owns Direct Requests, which made the header show
+    // an incorrect 0 next to a modal balance such as 6.
+    final directRequests = ref.watch(directRequestBalanceProvider);
+    final tokensLabel = directRequests.when(
+      data: (balance) => '${balance.available}',
+      loading: () => '…',
+      error: (_, _) => '—',
+    );
+    final tokenSemanticLabel = directRequests.maybeWhen(
+      data: (balance) => '${balance.available}',
+      orElse: () => 'loading',
+    );
+
     final compact = MediaQuery.sizeOf(context).width < 370;
     final chromeGap = compact ? 1.0 : 3.0;
 
@@ -99,7 +114,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               children: [
                 _HudButton(
                   key: const ValueKey('header-tokens'),
-                  semanticLabel: 'Open tokens, balance $tokens',
+                  semanticLabel:
+                      'Open Direct Requests, available $tokenSemanticLabel',
                   wide: true,
                   onTap: () {
                     AppHaptics.medium();
@@ -118,7 +134,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        '$tokens',
+                        tokensLabel,
                         style: GoogleFonts.plusJakartaSans(
                           color: ink,
                           fontSize: 11.5,
