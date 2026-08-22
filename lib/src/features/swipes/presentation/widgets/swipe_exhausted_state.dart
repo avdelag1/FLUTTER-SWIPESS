@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `SwipeExhaustedState` — empty deck with radius, map, AI, categories.
+/// Empty state for real swipe/discovery categories only.
+/// Full product sections such as Legal, Events, Seekers and Premium route
+/// directly from the dashboard and should never land on this screen.
 class SwipeExhaustedState extends ConsumerStatefulWidget {
   const SwipeExhaustedState({
     super.key,
@@ -71,13 +73,12 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
     final others = _clientCategories
         .where((c) => c.$1 != widget.activeCategory)
         .toList(growable: false);
+    final canvas = MatteSurface.canvas(context);
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0C),
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
+    return ColoredBox(
+      color: canvas,
       child: Stack(
         children: [
           if (widget.onBack != null)
@@ -86,7 +87,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
               left: 16,
               child: SafeArea(
                 bottom: false,
-                child: _GlassRoundButton(
+                child: _RoundAction(
                   icon: Icons.chevron_left_rounded,
                   onTap: widget.onBack!,
                 ),
@@ -94,7 +95,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
             ),
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+              padding: const EdgeInsets.fromLTRB(24, 76, 24, 34),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
@@ -103,26 +104,25 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                       'No ${widget.categoryName} found nearby',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 26,
+                        color: ink,
+                        fontSize: 25,
                         fontWeight: FontWeight.w900,
-                        height: 1.15,
+                        height: 1.12,
                         letterSpacing: -0.4,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'ADJUST RADIUS OR TRY ANOTHER CATEGORY',
+                      'Move the radius or try another discovery category.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(140),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2.4,
+                        color: muted,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (widget.onRadiusChange != null) ...[
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
                       _RadiusCard(
                         km: _kmSteps[step],
                         step: step,
@@ -135,36 +135,35 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                       ),
                     ],
                     if (widget.onOpenMap != null) ...[
-                      const SizedBox(height: 16),
-                      _MapCta(onTap: widget.onOpenMap!),
+                      const SizedBox(height: 12),
+                      _PrimaryAction(
+                        icon: Icons.map_outlined,
+                        label: 'Explore on live map',
+                        onTap: widget.onOpenMap!,
+                      ),
                     ],
                     if (widget.onOpenAi != null) ...[
-                      const SizedBox(height: 16),
-                      _AiCta(onTap: widget.onOpenAi!),
+                      const SizedBox(height: 10),
+                      _SecondaryAction(onTap: widget.onOpenAi!),
                     ],
-                    if (widget.onCategoryChange != null &&
-                        others.isNotEmpty) ...[
-                      const SizedBox(height: 28),
+                    if (widget.onCategoryChange != null && others.isNotEmpty) ...[
+                      const SizedBox(height: 24),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'OR TRY ANOTHER',
+                          'TRY ANOTHER',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white.withAlpha(128),
-                            fontSize: 10,
+                            color: muted,
+                            fontSize: 9.5,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 2.4,
+                            letterSpacing: 1.6,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      GridView.count(
-                        crossAxisCount: others.length >= 3 ? 3 : others.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 2.4,
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           for (final cat in others)
                             _CategoryChip(
@@ -208,49 +207,46 @@ class _RadiusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(36),
-        border: Border.all(color: Colors.white, width: 1.5),
+        color: MatteSurface.cardFill(context),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(
-                Icons.place_outlined,
-                size: 14,
-                color: Colors.white.withAlpha(180),
-              ),
+              Icon(Icons.place_outlined, size: 14, color: muted),
               const SizedBox(width: 6),
               Text(
                 'SEARCH RADIUS',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withAlpha(160),
-                  fontSize: 10,
+                  color: muted,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 2.4,
+                  letterSpacing: 1.5,
                 ),
               ),
               const Spacer(),
               if (onOpenFilters != null)
-                _GlassRoundButton(
+                _RoundAction(
                   icon: Icons.tune_rounded,
-                  size: 40,
-                  iconSize: 16,
                   onTap: onOpenFilters!,
+                  size: 38,
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '$km km',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 22,
+              color: ink,
+              fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -258,9 +254,9 @@ class _RadiusCard extends StatelessWidget {
             data: SliderTheme.of(context).copyWith(
               trackHeight: 4,
               activeTrackColor: AppTheme.brandPrimary,
-              inactiveTrackColor: Colors.white.withAlpha(30),
-              thumbColor: Colors.white,
-              overlayColor: AppTheme.brandPrimary.withAlpha(40),
+              inactiveTrackColor: ink.withAlpha(24),
+              thumbColor: ink,
+              overlayColor: AppTheme.brandPrimary.withAlpha(32),
             ),
             child: Slider(
               value: step.toDouble(),
@@ -276,51 +272,20 @@ class _RadiusCard extends StatelessWidget {
           if (onDetect != null)
             Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  AppHaptics.light();
-                  onDetect!();
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: detected
-                        ? const Color(0x3334D399)
-                        : Colors.white.withAlpha(20),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: detected
-                          ? const Color(0xFF34D399)
-                          : Colors.white.withAlpha(40),
-                    ),
-                  ),
-                  child: detecting
-                      ? const Padding(
-                          padding: EdgeInsets.all(10),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(
-                          detected
-                              ? Icons.check_rounded
-                              : Icons.my_location_rounded,
-                          color: detected
-                              ? const Color(0xFF34D399)
-                              : Colors.white,
-                          size: 18,
-                        ),
-                ),
+              child: _RoundAction(
+                icon: detected ? Icons.check_rounded : Icons.my_location_rounded,
+                onTap: onDetect!,
+                size: 38,
+                busy: detecting,
+                accent: detected ? const Color(0xFF34D399) : null,
               ),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             'Move the slider to search further',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white.withAlpha(140),
-              fontSize: 11,
+              color: muted,
+              fontSize: 10.5,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -330,146 +295,14 @@ class _RadiusCard extends StatelessWidget {
   }
 }
 
-class _MapCta extends StatelessWidget {
-  const _MapCta({required this.onTap});
+class _PrimaryAction extends StatelessWidget {
+  const _PrimaryAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.heavy();
-        onTap();
-      },
-      child: Container(
-        width: double.infinity,
-        height: 48,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [AppTheme.brandPrimary, Color(0xFFFC567E)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.transparent,
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.map_outlined, color: Colors.white, size: 16),
-            const SizedBox(width: 8),
-            Text(
-              'EXPLORE ON LIVE MAP',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.8,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AiCta extends StatelessWidget {
-  const _AiCta({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.heavy();
-        onTap();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF06B6D4), Color(0xFF6366F1), Color(0xFF8B5CF6)],
-          ),
-        ),
-        padding: const EdgeInsets.all(1),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(31),
-            color: const Color(0xE60A0A0C),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(16)),
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
-                  ),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Let AI Find Your Match',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      "Describe what you're looking for",
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white.withAlpha(166),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.label, required this.onTap});
-
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
 
@@ -481,22 +314,126 @@ class _CategoryChip extends StatelessWidget {
         onTap();
       },
       child: Container(
-        alignment: Alignment.center,
+        height: 50,
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            colors: [AppTheme.brandPrimary, Color(0xFFFC567E)],
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 17),
+            const SizedBox(width: 8),
+            Text(
+              label.toUpperCase(),
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryAction extends StatelessWidget {
+  const _SecondaryAction({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.medium();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+        decoration: BoxDecoration(
+          color: MatteSurface.cardFill(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MatteSurface.hairline(context)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(13),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
+                ),
+              ),
+              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Let AI find your match',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    "Describe what you're looking for",
+                    style: GoogleFonts.plusJakartaSans(
+                      color: muted,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: muted, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.selection();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white, width: 1.5),
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
         child: Text(
           label.toUpperCase(),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 10,
+            color: ink,
+            fontSize: 9.5,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.8,
+            letterSpacing: .7,
           ),
         ),
       ),
@@ -504,38 +441,50 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _GlassRoundButton extends StatelessWidget {
-  const _GlassRoundButton({
+class _RoundAction extends StatelessWidget {
+  const _RoundAction({
     required this.icon,
     required this.onTap,
     this.size = 44,
-    this.iconSize = 22,
+    this.busy = false,
+    this.accent,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final double size;
-  final double iconSize;
+  final bool busy;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
     return GestureDetector(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
+      onTap: busy
+          ? null
+          : () {
+              AppHaptics.light();
+              onTap();
+            },
       child: Container(
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: Colors.black.withAlpha(77),
+          color: MatteSurface.cardFill(context),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
-          boxShadow: const [
-            BoxShadow(color: Color(0x80000000), blurRadius: 24),
-          ],
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
-        child: Icon(icon, color: Colors.white, size: iconSize),
+        alignment: Alignment.center,
+        child: busy
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: accent ?? ink,
+                ),
+              )
+            : Icon(icon, color: accent ?? ink, size: size * .45),
       ),
     );
   }
