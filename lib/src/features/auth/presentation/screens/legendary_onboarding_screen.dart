@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Cap `LegendaryOnboarding` — first-run cinematic slides after access grant.
+/// First-run cinematic welcome slides after access grant.
 class LegendaryOnboardingScreen extends StatefulWidget {
   const LegendaryOnboardingScreen({super.key, required this.onFinish});
 
@@ -20,7 +19,7 @@ class LegendaryOnboardingScreen extends StatefulWidget {
       );
       return prefs.getBool(prefsKey) ?? false;
     } catch (_) {
-      return true; // Don't trap users on a spinner if prefs hang.
+      return true;
     }
   }
 
@@ -41,7 +40,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
     _Slide(
       title: 'Discover Properties',
       desc:
-          'Find your ideal client. Buyers, tenants. And connect with direct owners.',
+          'Swipe through places worth seeing. Connect directly with owners, buyers and renters.',
       networkImage:
           'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200',
       assetImage: null,
@@ -50,7 +49,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
     _Slide(
       title: 'Trusted Network',
       desc:
-          'Find the perfect roommate or tenant. Connect with trusted people and rent together.',
+          'Find roommates, services and local people through one connected community.',
       networkImage:
           'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
       assetImage: null,
@@ -59,7 +58,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
     _Slide(
       title: 'AI Concierge',
       desc:
-          'Your personal assistant for finding the best local deals and private parties.',
+          'Search naturally, discover faster and let AI help you find what matters around you.',
       networkImage: null,
       assetImage: 'assets/images/onboarding/ai_chat_onboarding.png',
       icon: Icons.auto_awesome_rounded,
@@ -67,7 +66,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
     _Slide(
       title: 'Resident Identity',
       desc:
-          'Your digital VAP card proves you belong to the elite Swipess community.',
+          'Keep your local identity, profile and verified documents together in your Swipess card.',
       networkImage: null,
       assetImage: 'assets/images/onboarding/resident_girl_onboarding.png',
       icon: Icons.verified_user_rounded,
@@ -90,138 +89,223 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
     setState(() => _index += 1);
   }
 
+  void _previous() {
+    if (_index == 0) return;
+    AppHaptics.light();
+    setState(() => _index -= 1);
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity < -250) {
+      _next();
+    } else if (velocity > 250) {
+      _previous();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final slide = _slides[_index];
     final isLast = _index == _slides.length - 1;
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 700),
-            child: KeyedSubtree(
-              key: ValueKey(_index),
-              child: _Background(slide: slide),
-            ),
-          ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Color(0x99000000), Colors.black],
-                stops: [0.35, 0.65, 1],
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: _onHorizontalDragEnd,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 620),
+              transitionBuilder: (child, animation) {
+                final slideIn = Tween<Offset>(
+                  begin: const Offset(.045, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                );
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: slideIn, child: child),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey(_index),
+                child: _Background(slide: slide),
               ),
             ),
-          ),
-          if (slide.showVapCard)
-            Align(
-              alignment: const Alignment(0, -0.15),
-              child: _VapPreviewCard(),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x22000000),
+                    Color(0x33000000),
+                    Color(0xD9000000),
+                    Colors.black,
+                  ],
+                  stops: [0, .38, .73, 1],
+                ),
+              ),
             ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: isLast
-                        ? const SizedBox(height: 44)
-                        : TextButton(
+            if (slide.showVapCard)
+              Align(
+                alignment: const Alignment(0, -0.12),
+                child: _VapPreviewCard(),
+              ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'SWIPESS',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!isLast)
+                          TextButton(
                             onPressed: _finish,
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                horizontal: 14,
                                 vertical: 10,
                               ),
+                            ),
+                            child: Text(
+                              'SKIP',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                                fontSize: 11,
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 40),
+                      ],
+                    ),
+                    const Spacer(),
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(115),
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(slide.icon, color: Colors.white, size: 21),
+                    ),
+                    const SizedBox(height: 16),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 360),
+                      child: Text(
+                        slide.title,
+                        key: ValueKey('title-$_index'),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 35,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1.1,
+                          height: 1.02,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 420),
+                      child: Text(
+                        slide.desc,
+                        key: ValueKey('desc-$_index'),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white.withAlpha(205),
+                          fontSize: 14.5,
+                          height: 1.42,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < _slides.length; i++)
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOutCubic,
+                            margin: const EdgeInsets.only(right: 6),
+                            width: i == _index ? 24 : 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: i == _index
+                                  ? Colors.white
+                                  : Colors.white.withAlpha(55),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        const Spacer(),
+                        SizedBox(
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed: _next,
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: AppTheme.brandPrimary,
+                              shadowColor: Colors.black.withAlpha(100),
+                              elevation: 8,
+                              padding: const EdgeInsets.symmetric(horizontal: 22),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
-                            child: Text(
-                              'SKIP →',
+                            iconAlignment: IconAlignment.end,
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            label: Text(
+                              isLast ? 'ENTER SWIPESS' : 'CONTINUE',
                               style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                                fontSize: 12,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.1,
+                                fontSize: 11.5,
                               ),
                             ),
                           ),
-                  ),
-                  const Spacer(),
-                  Icon(slide.icon, color: Colors.white70, size: 28),
-                  const SizedBox(height: 14),
-                  Text(
-                    slide.title,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1,
-                      height: 1.05,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    slide.desc,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white70,
-                      fontSize: 15,
-                      height: 1.4,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      for (var i = 0; i < _slides.length; i++)
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.only(right: 6),
-                          width: i == _index ? 22 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: i == _index
-                                ? AppTheme.brandPrimary
-                                : Colors.white.withAlpha(50),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
                         ),
-                      const Spacer(),
-                      SizedBox(
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _next,
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.black,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 22),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          child: Text(
-                            isLast ? 'ENTER SWIPESS' : 'NEXT',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.4,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Swipe to explore',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withAlpha(115),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -258,7 +342,7 @@ class _Background extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => Container(color: Colors.black),
           );
-    return Opacity(opacity: 0.62, child: SizedBox.expand(child: image));
+    return Opacity(opacity: .76, child: SizedBox.expand(child: image));
   }
 }
 
@@ -269,13 +353,12 @@ class _VapPreviewCard extends StatelessWidget {
       width: 280,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: const Color(0xB514171D),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.white, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(120),
-            blurRadius: 30,
+            color: Colors.black.withAlpha(145),
+            blurRadius: 34,
             offset: const Offset(0, 16),
           ),
         ],
@@ -286,7 +369,7 @@ class _VapPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.verified_user_rounded, color: Colors.white70),
+              const Icon(Icons.verified_user_rounded, color: Colors.white),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -316,7 +399,7 @@ class _VapPreviewCard extends StatelessWidget {
           Text(
             'ORIGIN',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white60,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.4,
@@ -334,7 +417,7 @@ class _VapPreviewCard extends StatelessWidget {
           Text(
             'DURATION',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white60,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.4,
