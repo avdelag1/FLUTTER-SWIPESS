@@ -50,11 +50,12 @@ class DashboardDock extends StatelessWidget {
                   blurRadius: 18,
                   offset: const Offset(0, 7),
                 ),
-                BoxShadow(
-                  color: Colors.white.withAlpha(isLight ? 80 : 16),
-                  blurRadius: 5,
-                  offset: const Offset(-1, -1),
-                ),
+                if (isLight)
+                  BoxShadow(
+                    color: Colors.white.withAlpha(80),
+                    blurRadius: 5,
+                    offset: const Offset(-1, -1),
+                  ),
               ],
             ),
             child: ClipRRect(
@@ -66,9 +67,8 @@ class DashboardDock extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  // Frozen glass without a live backdrop blur. This keeps the
-                  // icy/glassy depth while avoiding continuous GPU blur over
-                  // dashboard videos.
+                  // Frozen glass without a live backdrop blur. Dark mode keeps
+                  // the depth but intentionally has no white perimeter frame.
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -89,7 +89,7 @@ class DashboardDock extends StatelessWidget {
                   border: Border.all(
                     color: isLight
                         ? Colors.white.withAlpha(245)
-                        : Colors.white.withAlpha(112),
+                        : Colors.transparent,
                     width: 1.2,
                   ),
                 ),
