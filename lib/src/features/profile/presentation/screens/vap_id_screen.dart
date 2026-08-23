@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -7,6 +9,7 @@ import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
+import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
@@ -14,8 +17,6 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_i
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'dart:ui';
 
 Future<void> showVapIdModal(BuildContext context) async {
   await showGeneralDialog<void>(
@@ -106,11 +107,17 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                           ),
                         ),
                         _PearlRoundBtn(
+                          icon: Icons.folder_copy_outlined,
+                          tooltip: 'Documents',
+                          onTap: () => _openDocuments(context),
+                        ),
+                        const SizedBox(width: 6),
+                        _PearlRoundBtn(
                           icon: Icons.edit_outlined,
                           tooltip: 'Edit VIP card',
                           onTap: () => _edit(context, ref, data),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _PearlRoundBtn(
                           icon: Icons.close_rounded,
                           tooltip: 'Close',
@@ -136,6 +143,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         docsAsync: docs,
                         onPreview: (doc) =>
                             showDocumentPreviewDialog(context, doc),
+                        onManageDocuments: () => _openDocuments(context),
                       ),
                     ),
                   ),
@@ -146,6 +154,19 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openDocuments(BuildContext context) async {
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    await rootNavigator.push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const DocumentVaultScreen(),
+      ),
+    );
+    if (mounted) {
+      await ref.read(documentsProvider.notifier).refresh();
+    }
   }
 
   Future<void> _edit(
@@ -163,8 +184,6 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
     );
 
     try {
-      // This screen lives inside DashboardShell. Push the editor on the root
-      // navigator so it cannot be hidden behind shell chrome/overlay layers.
       await showModalBottomSheet<void>(
         context: context,
         useRootNavigator: true,
@@ -175,13 +194,8 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
         builder: (sheetContext) {
           return Container(
             decoration: const BoxDecoration(
-              color: Colors.black,
+              color: Color(0xFF101116),
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border(
-                top: BorderSide(color: Colors.white, width: 1.5),
-                left: BorderSide(color: Colors.white, width: 1.5),
-                right: BorderSide(color: Colors.white, width: 1.5),
-              ),
             ),
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -198,19 +212,38 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.white38,
+                        color: Colors.white24,
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      t(ref, 'flutter.vapEdit', 'EDIT ID'),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            t(ref, 'flutter.vapEdit', 'EDIT ID'),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Documents',
+                          onPressed: () async {
+                            Navigator.of(sheetContext, rootNavigator: true).pop();
+                            await Future<void>.delayed(
+                              const Duration(milliseconds: 80),
+                            );
+                            if (mounted) await _openDocuments(context);
+                          },
+                          icon: const Icon(
+                            Icons.folder_copy_outlined,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     GlassTextField(
@@ -251,11 +284,9 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                     ),
                     const SizedBox(height: 20),
                     BrandPrimaryButton(
-                      label: t(ref, 'flutter.vapSave', 'Save card'),
+                      label: t(ref, 'flutter.vapSave', 'SAVE CARD'),
                       onPressed: () async {
-                        await ref
-                            .read(vapIdProvider.notifier)
-                            .save(
+                        await ref.read(vapIdProvider.notifier).save(
                               VapIdCard(
                                 userId: card.userId,
                                 name: name.text.trim(),
@@ -307,20 +338,17 @@ class _PearlRoundBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onTap,
-        padding: EdgeInsets.zero,
-        style: IconButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: Colors.transparent,
-          side: const BorderSide(color: Colors.white, width: 1.5),
-          shape: const CircleBorder(),
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 20,
+        highlightShape: BoxShape.circle,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon, size: 18, color: Colors.white),
         ),
-        icon: Icon(icon, size: 18),
       ),
     );
   }
