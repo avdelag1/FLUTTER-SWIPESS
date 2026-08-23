@@ -19,6 +19,13 @@ class ContractRepository {
 
   final SupabaseClient _client;
 
+  /// A contract builder can rebuild frequently while the user types. The audit
+  /// trail uses FutureBuilder, so returning a brand-new Future on every rebuild
+  /// makes the bottom of the document flash back to a loading spinner. Cache the
+  /// in-flight/completed request per contract and invalidate only after a real
+  /// contract mutation.
+  final Map<String, Future<List<ContractEvent>>> _eventRequests = {};
+
   Future<T> _withSessionRetry<T>(Future<T> Function() action) async {
     try {
       return await action();
@@ -144,6 +151,7 @@ class ContractRepository {
         },
       ),
     );
+    _eventRequests.remove(contractId);
     return _fromRpc(data);
   }
 
@@ -177,6 +185,7 @@ class ContractRepository {
         params: {'p_contract_id': contractId, 'p_client_id': clientId},
       ),
     );
+    _eventRequests.remove(contractId);
     return _fromRpc(data);
   }
 
@@ -197,6 +206,7 @@ class ContractRepository {
         },
       ),
     );
+    _eventRequests.remove(contract.id);
     return _fromRpc(data);
   }
 
@@ -208,10 +218,15 @@ class ContractRepository {
         params: {'p_contract_id': contractId},
       ),
     );
+    _eventRequests.remove(contractId);
     return _fromRpc(data);
   }
 
-  Future<List<ContractEvent>> fetchEvents(String contractId) async {
+  Future<List<ContractEvent>> fetchEvents(String contractId) {
+    return _eventRequests.putIfAbsent(contractId, () => _loadEvents(contractId));
+  }
+
+  Future<List<ContractEvent>> _loadEvents(String contractId) async {
     await _requireUser();
     final data = await _withSessionRetry(
       () => _client
