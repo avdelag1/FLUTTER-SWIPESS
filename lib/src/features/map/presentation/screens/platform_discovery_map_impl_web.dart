@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v4.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_globe_screen_v2.dart';
 
-/// Stable browser discovery renderer.
-///
-/// Keep the map surface, listings, people, radius and current-location marker
-/// inside the same Flutter render tree. This prevents projected overlay pins
-/// from lagging behind the Mapbox camera while the user pans or zooms.
-/// Native iOS/Android still use the real Mapbox SDK renderer.
+/// Web discovery keeps the real Mapbox globe, while Flutter projects the live
+/// Swipess listings/users on top of it. This avoids Mapbox web-alpha annotation
+/// managers without changing discovery data, coordinates, filters or routes.
 Widget buildPlatformDiscoveryMap({
   required VoidCallback? onClose,
   required bool showCitiesOnOpen,
 }) {
-  return WebDiscoveryMapScreenV4(
+  return RealMapboxGlobeScreenV2(
     onClose: onClose,
     showCitiesOnOpen: showCitiesOnOpen,
   );
