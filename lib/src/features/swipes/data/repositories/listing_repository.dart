@@ -21,7 +21,8 @@ class ListingRepository {
     listing_type, property_type, vehicle_brand, vehicle_model, year,
     mileage, amenities, pet_friendly, furnished, owner_id, created_at,
     updated_at, currency, pricing_unit, service_category, experience_years,
-    experience_level, latitude, longitude, status, is_active, hourly_rate
+    experience_level, latitude, longitude, status, is_active, hourly_rate,
+    has_verified_documents, verification_status, owner_verified_at
   ''';
 
   /// Fetch the swipe feed for the current user.
@@ -296,6 +297,55 @@ class ListingRepository {
     return _client.storage.from('listing-videos').getPublicUrl(path);
   }
 
+  Future<void> uploadListingLegalDocuments({
+    required String userId,
+    required String listingId,
+    required String category,
+    required List<XFile> files,
+  }) async {
+    if (files.isEmpty) return;
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) throw Exception('One selected legal document is empty.');
+      if (bytes.lengthInBytes > 15 * 1024 * 1024) {
+        throw Exception('Each legal document must be under 15MB.');
+      }
+      final safeName = _safeFileName(file.name);
+      final contentType = _legalContentType(bytes, file.name, file.mimeType);
+      final path = 'listing-documents/$userId/$listingId/${DateTime.now().millisecondsSinceEpoch}-$i-$safeName';
+      await _client.storage
+          .from('legal-documents')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(contentType: contentType, upsert: false),
+          );
+      await _client.from('listing_legal_documents').insert({
+        'listing_id': listingId,
+        'owner_id': userId,
+        'file_name': file.name,
+        'file_path': path,
+        'mime_type': contentType,
+        'file_size': bytes.lengthInBytes,
+        'document_type': _listingLegalDocumentType(category, file.name),
+        'status': 'pending',
+      });
+    }
+    try {
+      await _client
+          .from('listings')
+          .update({
+            'verification_status': 'pending',
+            'has_verified_documents': false,
+          })
+          .eq('id', listingId)
+          .eq('owner_id', userId);
+    } catch (_) {
+      // Live schemas before the verification migration should not block publish.
+    }
+  }
+
   Future<Listing> createListing(Map<String, dynamic> payload) async {
     return _saveWithSchemaRetry(payload, editingId: null);
   }
@@ -437,9 +487,47 @@ class ListingRepository {
     }
   }
 
+  String _legalContentType(List<int> bytes, String name, String? mimeType) {
+    final mime = mimeType?.trim();
+    if (mime != null && mime.isNotEmpty) return mime;
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.pdf') || _startsWith(bytes, const [0x25, 0x50, 0x44, 0x46])) {
+      return 'application/pdf';
+    }
+    if (lower.endsWith('.png') || _startsWith(bytes, const [0x89, 0x50, 0x4E, 0x47])) {
+      return 'image/png';
+    }
+    if (lower.endsWith('.webp') || _isWebp(bytes)) return 'image/webp';
+    if (lower.endsWith('.heic') || lower.endsWith('.heif') || _isHeif(bytes)) {
+      return 'image/heic';
+    }
+    return 'image/jpeg';
+  }
+
+  String _listingLegalDocumentType(String category, String fileName) {
+    final lower = fileName.toLowerCase();
+    if (category == 'property') {
+      if (lower.contains('fideicomiso') || lower.contains('trust')) {
+        return 'fideicomiso';
+      }
+      if (lower.contains('lease') || lower.contains('rental') || lower.contains('contrato')) {
+        return 'rental_agreement';
+      }
+      return 'ownership_deed';
+    }
+    if (category == 'yacht') return 'boat_registration';
+    if (category == 'motorcycle') return 'vehicle_registration';
+    return 'ownership_proof';
+  }
+
+  String _safeFileName(String name) {
+    final trimmed = name.trim().isEmpty ? 'document' : name.trim();
+    return trimmed.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+  }
+
   String? _missingColumn(String message) {
     final quoted = RegExp(
-      r'''['"]([^'"]+)['"]\s+column|column\s+['"]([^'"]+)['"]|find the ['"]([^'"]+)['"] column''',
+      r'''['\"]([^'\"]+)['\"]\s+column|column\s+['\"]([^'\"]+)['\"]|find the ['\"]([^'\"]+)['\"] column''',
       caseSensitive: false,
     ).firstMatch(message);
     return quoted?.group(1) ?? quoted?.group(2) ?? quoted?.group(3);
