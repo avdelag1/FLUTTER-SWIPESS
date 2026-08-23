@@ -12,7 +12,7 @@ workflows:
         # APP_STORE_CONNECT_ISSUER_ID
         - appstore_credentials
       vars:
-        BUNDLE_ID: com.swipess.app
+        BUNDLE_ID: com.swipess.mobile
         APP_STORE_APPLE_ID: 6779810584
         # Supabase publishable client configuration. These are public client
         # values, not service-role/database secrets. Passing them explicitly
@@ -125,7 +125,7 @@ workflows:
         # - GOOGLE_PLAY_CREDENTIALS (base64 encoded service account json)
         - keys
       vars:
-        PACKAGE_NAME: com.swipess.app
+        PACKAGE_NAME: com.swipess.mobile
         SUPABASE_URL: https://vplgtcguxujxwrgguxqq.supabase.co
         SUPABASE_PUBLISHABLE_KEY: sb_publishable_FA0BseFSS6zM7Y8K3w8zLQ_d8BXqEuV
       flutter: stable

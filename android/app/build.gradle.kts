@@ -33,7 +33,7 @@ android {
 
     defaultConfig {
         // Matches the shipped Capacitor app so this build installs as an update.
-        applicationId = "com.swipess.app"
+        applicationId = "com.swipess.mobile"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode

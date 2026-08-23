@@ -1,4 +1,4 @@
-package com.swipess.app
+package com.swipess.mobile
 
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
