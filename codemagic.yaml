@@ -147,7 +147,3 @@ workflows:
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
     artifacts:
       - build/app/outputs/bundle/release/app-release.aab
-    publishing:
-      google_play:
-        credentials: $GOOGLE_PLAY_CREDENTIALS
-        track: internal
