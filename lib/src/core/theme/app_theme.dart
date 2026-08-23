@@ -10,7 +10,6 @@ class AppTheme {
   static const Color brandAccent2 = NexusTheme.mexicanPink;
   static const Color mexicanRed = NexusTheme.mexicanPink;
 
-  // Brighter dark surfaces shared by dashboard and the rest of the app.
   static const Color background = Color(0xFF0D1015);
   static const Color surfaceColor = Color(0xFF0D1015);
   static const Color dashBg = Color(0xFF0D1015);
@@ -246,8 +245,18 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
           backgroundColor: dashElevated,
+          disabledForegroundColor: Colors.white54,
           elevation: 0,
           minimumSize: const Size(44, 48),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: brandPrimary,
+          disabledForegroundColor: Colors.white54,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
@@ -255,11 +264,22 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
+          disabledForegroundColor: Colors.white54,
           minimumSize: const Size(44, 48),
           side: BorderSide.none,
           backgroundColor: dashElevated,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: Colors.white,
+          disabledForegroundColor: Colors.white38,
+          backgroundColor: Colors.transparent,
+          highlightColor: Colors.white.withAlpha(18),
+          hoverColor: Colors.white.withAlpha(12),
+          shape: const CircleBorder(),
         ),
       ),
       chipTheme: ChipThemeData(
@@ -269,9 +289,13 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: textPrimary,
+          foregroundColor: Colors.white,
+          disabledForegroundColor: Colors.white38,
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        foregroundColor: Colors.white,
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
