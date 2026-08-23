@@ -19,7 +19,10 @@ abstract final class SwipessTokens {
   static const Color darkCanvas = Color(0xFF0A0A0D);
   static const Color darkWell = Color(0xFF121218);
   static const Color darkElevated = Color(0xFF181822);
-  static const Color darkBorder = Color(0x1AFFFFFF); // 10% white stroke
+
+  // Dark mode intentionally has no white perimeter strokes. Depth comes from
+  // surface contrast and shadow instead of outlined cards/buttons.
+  static const Color darkBorder = Colors.transparent;
 
   static const Color lightCanvas = Color(0xFFF2F2F7);
   static const Color lightWell = Color(0xFFE5E5EA);
