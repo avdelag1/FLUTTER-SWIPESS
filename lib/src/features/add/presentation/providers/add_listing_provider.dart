@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,8 +18,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
 
   void reset() => state = const ListingDraft();
 
-  void setStep(int step) =>
-      state = state.copyWith(step: step, clearError: true);
+  void setStep(int step) => state = state.copyWith(step: step, clearError: true);
 
   void setCategory(ListingCategory category) {
     state = state.copyWith(category: category, clearError: true);
@@ -47,9 +47,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final picker = ImagePicker();
     final remaining = state.maxPhotos - state.photos.length;
     if (remaining <= 0) {
-      state = state.copyWith(
-        error: 'Maximum photos reached for this category.',
-      );
+      state = state.copyWith(error: 'Maximum photos reached for this category.');
       return;
     }
 
@@ -83,6 +81,51 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     );
   }
 
+  Future<void> pickLegalDocuments() async {
+    if (!state.requiresLegalDocuments) {
+      state = state.copyWith(
+        error: 'Legal documents are only used for properties, yachts, and motorcycles.',
+      );
+      return;
+    }
+    final remaining = state.maxLegalDocuments - state.legalDocuments.length;
+    if (remaining <= 0) {
+      state = state.copyWith(error: 'Maximum legal documents reached.');
+      return;
+    }
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic'],
+    );
+    final picked = result?.files ?? const <PlatformFile>[];
+    if (picked.isEmpty) return;
+    final files = <XFile>[];
+    for (final file in picked.take(remaining)) {
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) continue;
+      files.add(
+        XFile.fromData(
+          bytes,
+          name: file.name,
+          mimeType: _mimeTypeForLegalFile(file),
+          length: bytes.lengthInBytes,
+        ),
+      );
+    }
+    if (files.isEmpty) return;
+    state = state.copyWith(
+      legalDocuments: [...state.legalDocuments, ...files],
+      clearError: true,
+    );
+  }
+
+  void removeLegalDocument(int index) {
+    final next = List<XFile>.of(state.legalDocuments)..removeAt(index);
+    state = state.copyWith(legalDocuments: next, clearError: true);
+  }
+
   void setVideo(XFile file) {
     state = state.copyWith(video: file, clearError: true);
   }
@@ -112,9 +155,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   Future<bool> publish() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      state = state.copyWith(
-        error: 'Session expired — sign in again to publish.',
-      );
+      state = state.copyWith(error: 'Session expired — sign in again to publish.');
       return false;
     }
     if (state.photos.isEmpty) {
@@ -145,7 +186,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
-      await repo.createListing(payload);
+      final listing = await repo.createListing(payload);
+      if (state.requiresLegalDocuments && state.legalDocuments.isNotEmpty) {
+        await repo.uploadListingLegalDocuments(
+          userId: user.id,
+          listingId: listing.id,
+          category: state.categoryValue,
+          files: state.legalDocuments,
+        );
+      }
       ref.invalidate(swipeListingsProvider);
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
@@ -206,14 +255,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'video_url': videoUrl,
       'amenities': draft.amenities,
       'services_included': draft.included,
+      'has_verified_documents': false,
+      'verification_status': draft.legalDocuments.isNotEmpty ? 'pending' : 'unverified',
     };
 
     if (draft.category == ListingCategory.property) {
       data['property_type'] = draft.propertyType?.toLowerCase();
       data['beds'] = _bedsValue(draft.beds);
       data['baths'] = double.tryParse(draft.baths ?? '');
-      data['furnished'] =
-          draft.furnished || draft.amenities.contains('Furnished');
+      data['furnished'] = draft.furnished || draft.amenities.contains('Furnished');
       data['pet_friendly'] =
           draft.petFriendly ||
           draft.vibe.contains('Pet-friendly') ||
@@ -234,9 +284,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['vehicle_type'] = draft.categoryValue;
       data['vehicle_brand'] = draft.brand;
       data['vehicle_model'] = draft.model;
-      data['vehicle_condition'] = ListingTaxonomies.conditionSlug(
-        draft.condition,
-      );
+      data['vehicle_condition'] = ListingTaxonomies.conditionSlug(draft.condition);
       data['year'] = int.tryParse(draft.year);
       data['mileage'] = int.tryParse(draft.mileage);
       data['engine_cc'] = int.tryParse(draft.engineCc);
@@ -253,8 +301,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['bicycle_type'] = draft.vehicleType;
       data['frame_size'] = draft.frameSize;
       data['electric_assist'] =
-          draft.vehicleType == 'Electric' ||
-          draft.features.contains('Electric');
+          draft.vehicleType == 'Electric' || draft.features.contains('Electric');
       data['includes_lock'] = draft.vehicleIncluded.contains('Lock');
       data['includes_lights'] = draft.vehicleIncluded.contains('Lights');
     }
@@ -323,8 +370,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       ...draft.traits,
       ...draft.skills,
       ...draft.availability,
-      if (draft.serviceCategory != null)
-        serviceCategoryLabel(draft.serviceCategory),
+      if (draft.serviceCategory != null) serviceCategoryLabel(draft.serviceCategory),
       draft.city,
     ]);
   }
@@ -348,6 +394,22 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         return 'month';
       default:
         return label?.toLowerCase();
+    }
+  }
+
+  String _mimeTypeForLegalFile(PlatformFile file) {
+    final extension = file.extension?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+        return 'image/heic';
+      default:
+        return 'image/jpeg';
     }
   }
 }
