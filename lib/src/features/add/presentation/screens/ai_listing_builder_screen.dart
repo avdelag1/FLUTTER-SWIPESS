@@ -117,9 +117,8 @@ class _AiListingBuilderScreenState
       return;
     }
     setState(() => _description.text = polished);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('AI enhance applied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('AI enhance applied')));
   }
 
   Future<void> _create() async {
@@ -373,7 +372,7 @@ class _AiListingBuilderScreenState
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
                 ),
               ],
             ),
@@ -389,7 +388,7 @@ class _AiListingBuilderScreenState
                 child: Text(
                   'Upload photos and describe what you are offering. We\'ll generate a beautiful listing automatically.',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -461,7 +460,7 @@ class _AiListingBuilderScreenState
                         Text(
                           'AI will analyze and arrange them automatically',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 10,
                           ),
@@ -483,7 +482,7 @@ class _AiListingBuilderScreenState
               Text(
                 'GENERAL AREA ONLY — NO EXACT ADDRESS',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white38,
+                  color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
@@ -522,8 +521,7 @@ class _AiListingBuilderScreenState
               ),
               GlassTextField(
                 controller: _description,
-                hint:
-                    "Describe your listing. E.g. 'Stunning ocean view villa with private pool, 2 bedrooms'...",
+                hint: "Describe your listing. E.g. 'Stunning ocean view villa with private pool, 2 bedrooms'...",
                 icon: Icons.notes_rounded,
                 maxLines: 5,
                 height: 140,
@@ -533,7 +531,7 @@ class _AiListingBuilderScreenState
                 'SECURELY PROCESSED BY SWIPESS AI (SUPABASE EDGE · GROQ).',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white38,
+                  color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
@@ -635,7 +633,7 @@ class _ListingWelcome extends StatelessWidget {
               'Snap a photo, say a sentence — and our AI will craft a stunning listing that sells in seconds.',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
+                color: Colors.white,
                 fontSize: 14,
                 height: 1.45,
               ),
@@ -673,7 +671,7 @@ class _ListingWelcome extends StatelessWidget {
               child: Text(
                 'SKIP FOR NOW',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white38,
+                  color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 11,
                   letterSpacing: 1.4,
@@ -762,7 +760,7 @@ class _CatChip extends StatelessWidget {
         child: Text(
           label.toUpperCase(),
           style: GoogleFonts.plusJakartaSans(
-            color: selected ? const Color(0xFF0A0A0D) : Colors.white60,
+            color: selected ? const Color(0xFF0A0A0D) : Colors.white,
             fontWeight: FontWeight.w900,
             fontSize: 12,
             letterSpacing: 1.5,

@@ -83,7 +83,7 @@ class AdminPhotosScreen extends ConsumerWidget {
                   return Center(
                     child: Text(
                       t(ref, 'flutter.noPhotos', 'No photos in this folder'),
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white),
                     ),
                   );
                 }

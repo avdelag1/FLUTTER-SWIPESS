@@ -6,8 +6,10 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 
-typedef SwipeCallback =
-    void Function(Listing listing, SwipeDirection direction);
+typedef SwipeCallback = void Function(
+  Listing listing,
+  SwipeDirection direction,
+);
 
 enum SwipeDirection { left, right }
 
@@ -254,7 +256,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       return const Center(
         child: Text(
           "You've seen all listings in this category!",
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Colors.white),
         ),
       );
     }

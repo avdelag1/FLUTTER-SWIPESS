@@ -245,7 +245,9 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         ),
       ),
       builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(_glintController.value);
+        final progress = Curves.easeInOutCubic.transform(
+          _glintController.value,
+        );
         final x = -2.2 + (progress * 4.4);
         return ShaderMask(
           blendMode: BlendMode.srcIn,
@@ -334,9 +336,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                     : const Color(0xFF121822).withAlpha(230),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: const Color(
-                    0xFF60A5FA,
-                  ).withAlpha(isLight ? 125 : 145),
+                  color: const Color(0xFF60A5FA).withAlpha(isLight ? 125 : 145),
                   width: .9,
                 ),
               ),

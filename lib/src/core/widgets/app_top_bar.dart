@@ -193,7 +193,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         size: 23,
                         color: ink,
                       ),
-                      ref.watch(unreadNotificationsProvider).when(
+                      ref
+                          .watch(unreadNotificationsProvider)
+                          .when(
                             data: (count) => count <= 0
                                 ? const SizedBox.shrink()
                                 : const Positioned(
@@ -238,31 +240,31 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: semanticLabel,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: SizedBox(
-            width: AppTopBar._hudSize,
-            height: AppTopBar._hudSize,
-            child: Center(
-              child: avatarUrl == null
-                  ? Icon(Icons.person_rounded, size: 23, color: ink)
-                  : ClipOval(
-                      child: Image.network(
-                        avatarUrl!,
-                        width: 32,
-                        height: 32,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Icon(Icons.person_rounded, size: 23, color: ink),
-                      ),
-                    ),
-            ),
-          ),
+    button: true,
+    label: semanticLabel,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: AppTopBar._hudSize,
+        height: AppTopBar._hudSize,
+        child: Center(
+          child: avatarUrl == null
+              ? Icon(Icons.person_rounded, size: 23, color: ink)
+              : ClipOval(
+                  child: Image.network(
+                    avatarUrl!,
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        Icon(Icons.person_rounded, size: 23, color: ink),
+                  ),
+                ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// Instagram-style header action: compact tap target, zero visible chrome.

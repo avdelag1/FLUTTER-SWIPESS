@@ -37,7 +37,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
             Text(
               'Could not load event.',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
+                color: Colors.white,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -83,7 +83,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
                 Text(
                   'No results found',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 11,
                     letterSpacing: 1.8,

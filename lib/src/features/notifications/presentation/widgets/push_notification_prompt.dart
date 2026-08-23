@@ -147,7 +147,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                             'Allow notifications so matches, messages, and promos pop up even when the app is closed.',
                             textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white60,
+                              color: Colors.white,
                               fontSize: 13,
                               height: 1.35,
                             ),
@@ -209,7 +209,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                             child: Text(
                               'Not now',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
+                                color: Colors.white,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

@@ -87,7 +87,7 @@ class NotFoundScreen extends StatelessWidget {
                             : 'No screen for $path',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
+                          color: Colors.white,
                           fontSize: 13,
                         ),
                       ),
@@ -124,7 +124,7 @@ class NotFoundScreen extends StatelessWidget {
                         child: Text(
                           'TRY THESE',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white38,
+                            color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2,
@@ -168,7 +168,7 @@ class NotFoundScreen extends StatelessWidget {
                                     ),
                                     const Icon(
                                       Icons.chevron_right_rounded,
-                                      color: Colors.white38,
+                                      color: Colors.white,
                                     ),
                                   ],
                                 ),

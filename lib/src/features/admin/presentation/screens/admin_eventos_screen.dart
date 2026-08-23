@@ -83,7 +83,7 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
                 if (rows.isEmpty) {
                   return Text(
                     'No submissions',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white),
                   );
                 }
                 return Column(
@@ -222,7 +222,7 @@ class _EventTile extends StatelessWidget {
                 Text(
                   '${event.category} · ${event.location ?? '—'}',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white54,
+                    color: Colors.white,
                     fontSize: 11,
                   ),
                 ),
@@ -231,7 +231,7 @@ class _EventTile extends StatelessWidget {
                       ? 'WhatsApp ${event.organizerWhatsapp}'
                       : 'No WhatsApp number yet',
                   style: GoogleFonts.plusJakartaSans(
-                    color: wa ? const Color(0xFF25D366) : Colors.white38,
+                    color: wa ? const Color(0xFF25D366) : Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -241,15 +241,13 @@ class _EventTile extends StatelessWidget {
           ),
           IconButton(
             onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined, color: Colors.white70),
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
           ),
           IconButton(
             onPressed: onToggle,
             icon: Icon(
               event.isPublished ? Icons.visibility : Icons.visibility_off,
-              color: event.isPublished
-                  ? const Color(0xFF10B981)
-                  : Colors.white38,
+              color: event.isPublished ? const Color(0xFF10B981) : Colors.white,
             ),
           ),
           IconButton(
@@ -294,7 +292,7 @@ class _SubCard extends StatelessWidget {
           Text(
             '${sub.status} · ${sub.location ?? ''}',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white,
               fontSize: 12,
             ),
           ),
@@ -399,7 +397,7 @@ class _EventFormState extends State<_EventForm> {
           Text(
             widget.editing ? 'EDIT EVENT HOST' : 'NEW EVENT HOST',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white,
               fontWeight: FontWeight.w900,
               fontSize: 11,
               letterSpacing: 1.4,
@@ -432,7 +430,7 @@ class _EventFormState extends State<_EventForm> {
               child: Text(
                 'Add a full number with country code. The app builds the WhatsApp link.',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white38,
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -450,9 +448,9 @@ class _EventFormState extends State<_EventForm> {
                     source: ImageSource.gallery,
                   );
                   if (file == null || !context.mounted) return;
-                  final url = await ProviderScope.containerOf(
-                    context,
-                  ).read(adminRepositoryProvider).uploadEventImage(file);
+                  final url = await ProviderScope.containerOf(context)
+                      .read(adminRepositoryProvider)
+                      .uploadEventImage(file);
                   setState(() => _imageUrl = url);
                 },
                 icon: const Icon(Icons.image_outlined),

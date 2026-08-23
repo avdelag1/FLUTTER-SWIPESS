@@ -80,7 +80,7 @@ class MapPreviewCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
@@ -120,7 +120,7 @@ class MapPreviewCard extends StatelessWidget {
               onPressed: onClose,
               icon: const Icon(
                 Icons.close_rounded,
-                color: Colors.white70,
+                color: Colors.white,
                 size: 20,
               ),
             ),

@@ -61,8 +61,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'rental',
       price: 149,
       durationDays: 3,
-      description:
-          'Review rent, deposit, cancellation, house rules, obligations and risk clauses.',
+      description: 'Review rent, deposit, cancellation, house rules, obligations and risk clauses.',
     ),
     LegalServicePackage(
       id: 'preview-lease-draft',
@@ -70,8 +69,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'rental',
       price: 249,
       durationDays: 5,
-      description:
-          'Lawyer-assisted residential or furnished lease adapted to the facts you provide.',
+      description: 'Lawyer-assisted residential or furnished lease adapted to the facts you provide.',
     ),
     LegalServicePackage(
       id: 'preview-deposit',
@@ -79,8 +77,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'dispute',
       price: 129,
       durationDays: 3,
-      description:
-          'Review a security-deposit, rent, fee or landlord/tenant dispute and next-step options.',
+      description: 'Review a security-deposit, rent, fee or landlord/tenant dispute and next-step options.',
     ),
     LegalServicePackage(
       id: 'preview-eviction',
@@ -88,8 +85,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'eviction',
       price: 199,
       durationDays: 3,
-      description:
-          'Initial review of notices, non-payment, breach, timelines and local process.',
+      description: 'Initial review of notices, non-payment, breach, timelines and local process.',
     ),
     LegalServicePackage(
       id: 'preview-sale',
@@ -97,8 +93,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'house_sale',
       price: 299,
       durationDays: 7,
-      description:
-          'Contract, title-document and closing-risk review for a property purchase or sale.',
+      description: 'Contract, title-document and closing-risk review for a property purchase or sale.',
     ),
     LegalServicePackage(
       id: 'preview-nda',
@@ -115,8 +110,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'business',
       price: 199,
       durationDays: 4,
-      description:
-          'Review a service, contractor, partnership or basic commercial agreement.',
+      description: 'Review a service, contractor, partnership or basic commercial agreement.',
     ),
     LegalServicePackage(
       id: 'preview-estate',
@@ -124,8 +118,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
       category: 'estate',
       price: 249,
       durationDays: 7,
-      description:
-          'Initial estate-planning consultation and document checklist for your situation.',
+      description: 'Initial estate-planning consultation and document checklist for your situation.',
     ),
   ];
 
@@ -318,13 +311,16 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: selected
                           ? ink
                           : (isLight
-                              ? Colors.black.withAlpha(8)
-                              : Colors.white.withAlpha(10)),
+                                ? Colors.black.withAlpha(8)
+                                : Colors.white.withAlpha(10)),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: selected ? Colors.transparent : hairline,
@@ -367,7 +363,9 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                 AppHaptics.medium();
                 if (user == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Sign in to request legal help.')),
+                    const SnackBar(
+                      content: Text('Sign in to request legal help.'),
+                    ),
                   );
                   return;
                 }
@@ -396,7 +394,9 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
     AppHaptics.medium();
     setState(() => _creatingTemplateId = template.id);
     try {
-      final created = await ref.read(contractsProvider.notifier).create(template);
+      final created = await ref
+          .read(contractsProvider.notifier)
+          .create(template);
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -443,7 +443,11 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Icon(Icons.schedule_rounded, color: Color(0xFF6366F1), size: 34),
+                const Icon(
+                  Icons.schedule_rounded,
+                  color: Color(0xFF6366F1),
+                  size: 34,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   '$channel',
@@ -477,9 +481,9 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        label,
-        style: SwipessTokens.kickerUppercase(color: ink.withAlpha(145)),
-      );
+    label,
+    style: SwipessTokens.kickerUppercase(color: ink.withAlpha(145)),
+  );
 }
 
 class _ConnectCard extends StatelessWidget {
@@ -527,7 +531,6 @@ class _ConnectCard extends StatelessWidget {
                   child: Icon(icon, color: accent, size: 19),
                 ),
                 const Spacer(),
-                
               ],
             ),
             const Spacer(),
@@ -589,7 +592,11 @@ class _LeaseTemplateCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.edit_document, color: Color(0xFFEB4898), size: 20),
+                  const Icon(
+                    Icons.edit_document,
+                    color: Color(0xFFEB4898),
+                    size: 20,
+                  ),
                   const Spacer(),
                   Text(
                     'EDITABLE',

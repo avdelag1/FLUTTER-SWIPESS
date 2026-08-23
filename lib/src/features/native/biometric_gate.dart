@@ -113,7 +113,7 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
                 const SizedBox(height: 8),
                 const Text(
                   'Unlock your Swipess vault',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: Colors.white),
                 ),
                 const SizedBox(height: 24),
                 if (_busy)

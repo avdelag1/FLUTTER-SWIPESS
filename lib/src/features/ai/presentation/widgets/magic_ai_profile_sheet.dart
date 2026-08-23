@@ -55,7 +55,8 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
       // Use the same authoritative subscription/trial calculation as the rest
       // of the app. Never spend a Direct Request to use Premium AI.
       final cached = ref.read(subscriptionProvider).value;
-      final access = cached ??
+      final access =
+          cached ??
           await ref.read(subscriptionRepositoryProvider).fetchCurrent();
       if (!access.effectiveTier.canUseAI) {
         if (!mounted) return;
@@ -143,7 +144,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
             Text(
               'Included during your 3-month welcome access and with Premium. Describe yourself and Swipess AI drafts your bio.',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white54,
+                color: Colors.white,
                 fontSize: 12,
               ),
             ),
@@ -163,17 +164,21 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
                 height: 48,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(999),
-                  gradient: _busy ? null : const LinearGradient(
-                    colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                  ),
+                  gradient: _busy
+                      ? null
+                      : const LinearGradient(
+                          colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                        ),
                   color: _busy ? Colors.white24 : null,
-                  boxShadow: _busy ? null : const [
-                    BoxShadow(
-                      color: Color(0x59E11D48),
-                      blurRadius: 16,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
+                  boxShadow: _busy
+                      ? null
+                      : const [
+                          BoxShadow(
+                            color: Color(0x59E11D48),
+                            blurRadius: 16,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
                 ),
                 child: Center(
                   child: _busy

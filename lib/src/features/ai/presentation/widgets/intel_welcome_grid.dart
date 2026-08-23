@@ -38,11 +38,7 @@ class IntelWelcomeGrid extends StatelessWidget {
       'What’s happening?',
       'Show me interesting events happening nearby',
     ),
-    (
-      Icons.sailing_outlined,
-      'Yachts',
-      'Help me find yachts available near me',
-    ),
+    (Icons.sailing_outlined, 'Yachts', 'Help me find yachts available near me'),
     (
       Icons.two_wheeler_outlined,
       'Motorcycles',
@@ -53,13 +49,11 @@ class IntelWelcomeGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = isLight ? const Color(0xFF111114) : Colors.white;
-    final muted = ink.withAlpha(120);
+    final muted = isLight ? ink.withAlpha(120) : Colors.white;
     final chipFill = isLight
         ? const Color(0xFFF5F5F7)
         : Colors.white.withAlpha(10);
-    final border = isLight
-        ? Colors.black.withAlpha(22)
-        : Colors.white.withAlpha(28);
+    final border = isLight ? Colors.black.withAlpha(22) : Colors.white;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 28, 22, 12),

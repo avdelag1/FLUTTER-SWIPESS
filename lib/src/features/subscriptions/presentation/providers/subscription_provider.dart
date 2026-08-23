@@ -10,8 +10,8 @@ final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
 
 final subscriptionProvider =
     AsyncNotifierProvider<SubscriptionNotifier, SubscriptionData>(() {
-  return SubscriptionNotifier();
-});
+      return SubscriptionNotifier();
+    });
 
 class SubscriptionNotifier extends AsyncNotifier<SubscriptionData> {
   Timer? _trialExpiryTimer;

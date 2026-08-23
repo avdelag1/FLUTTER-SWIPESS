@@ -359,8 +359,7 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
               style: TextStyle(color: ink),
               decoration: InputDecoration(
                 labelText: 'Tell Swipess what you need',
-                hintText:
-                    'Example: I need a 6-month furnished apartment rental agreement in Tulum between an owner and tenant, USD 2,000 monthly, one-month deposit, no smoking, pets allowed…',
+                hintText: 'Example: I need a 6-month furnished apartment rental agreement in Tulum between an owner and tenant, USD 2,000 monthly, one-month deposit, no smoking, pets allowed…',
                 labelStyle: TextStyle(color: muted),
                 hintStyle: TextStyle(color: MatteSurface.faint(context)),
                 filled: true,

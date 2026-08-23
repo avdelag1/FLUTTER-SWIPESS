@@ -154,8 +154,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                         variant: CapEmptyVariant.likes,
                         icon: Icons.favorite_border_rounded,
                         title: 'Stay Noticed.',
-                        description:
-                            'When an owner likes your profile, they will appear here instantly.',
+                        description: 'When an owner likes your profile, they will appear here instantly.',
                         actionLabel: 'EXPLORE WORLD',
                         onAction: () => Navigator.pop(context),
                       ),

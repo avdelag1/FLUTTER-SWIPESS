@@ -83,7 +83,7 @@ class _SafeListingDetailRouteState extends State<SafeListingDetailRoute> {
                           SizedBox(height: 14),
                           Text(
                             'Loading listing…',
-                            style: TextStyle(color: Colors.white70),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ],
                       )
@@ -94,8 +94,8 @@ class _SafeListingDetailRouteState extends State<SafeListingDetailRoute> {
                             error is TimeoutException
                                 ? 'The listing took too long to load.'
                                 : snapshot.data == null && error == null
-                                    ? 'Listing not found.'
-                                    : 'Could not load this listing.',
+                                ? 'Listing not found.'
+                                : 'Could not load this listing.',
                             style: const TextStyle(color: Colors.white),
                             textAlign: TextAlign.center,
                           ),

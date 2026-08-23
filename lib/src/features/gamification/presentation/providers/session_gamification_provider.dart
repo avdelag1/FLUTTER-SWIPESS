@@ -39,7 +39,8 @@ class SessionGamificationService {
 
   void startTracking(BuildContext context) {
     _trackingClients++;
-    if (_context == null || Overlay.maybeOf(context, rootOverlay: true) != null) {
+    if (_context == null ||
+        Overlay.maybeOf(context, rootOverlay: true) != null) {
       _context = context;
     }
 

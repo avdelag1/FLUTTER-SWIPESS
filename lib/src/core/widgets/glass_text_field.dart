@@ -76,7 +76,9 @@ class GlassTextField extends StatelessWidget {
                     keyboardType: multi
                         ? TextInputType.multiline
                         : keyboardType,
-                    textInputAction: multi ? TextInputAction.newline : textInputAction,
+                    textInputAction: multi
+                        ? TextInputAction.newline
+                        : textInputAction,
                     textCapitalization: textCapitalization,
                     autocorrect: false,
                     onChanged: onChanged,

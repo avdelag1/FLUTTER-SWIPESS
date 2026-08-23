@@ -78,7 +78,8 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
               _SourceButton(
                 icon: Icons.photo_library_rounded,
                 title: 'CHOOSE FROM LIBRARY',
-                onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(ImageSource.gallery),
               ),
             ],
           ),
@@ -251,10 +252,7 @@ class _SourceButton extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white,
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white),
             ],
           ),
         ),

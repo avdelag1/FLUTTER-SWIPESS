@@ -115,7 +115,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         Text(
                           state.category.toUpperCase(),
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: Colors.white,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
@@ -142,24 +142,24 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                             ref.read(editListingProvider.notifier).pickPhotos(),
                         icon: const Icon(
                           Icons.photo_library_rounded,
-                          color: Colors.white70,
+                          color: Colors.white,
                           size: 18,
                         ),
                         label: const Text(
                           'Gallery',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
                       TextButton.icon(
                         onPressed: () => _openCamera(state),
                         icon: const Icon(
                           Icons.photo_camera_rounded,
-                          color: Colors.white70,
+                          color: Colors.white,
                           size: 18,
                         ),
                         label: const Text(
                           'Camera',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
@@ -371,7 +371,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     return Text(
       text.toUpperCase(),
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white54,
+        color: Colors.white,
         fontWeight: FontWeight.w800,
         fontSize: 11,
         letterSpacing: 1.4,
@@ -401,9 +401,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     final ok = await ref.read(editListingProvider.notifier).save();
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Listing updated')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Listing updated')));
       Navigator.of(context).pop(true);
     }
   }
@@ -440,7 +439,7 @@ class _PhotoGrid extends ConsumerWidget {
         ),
         child: Text(
           'Add at least one photo',
-          style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+          style: GoogleFonts.plusJakartaSans(color: Colors.white),
         ),
       );
     }

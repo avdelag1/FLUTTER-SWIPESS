@@ -146,7 +146,8 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                       const SizedBox(height: 10),
                       _SecondaryAction(onTap: widget.onOpenAi!),
                     ],
-                    if (widget.onCategoryChange != null && others.isNotEmpty) ...[
+                    if (widget.onCategoryChange != null &&
+                        others.isNotEmpty) ...[
                       const SizedBox(height: 24),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -273,7 +274,9 @@ class _RadiusCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: _RoundAction(
-                icon: detected ? Icons.check_rounded : Icons.my_location_rounded,
+                icon: detected
+                    ? Icons.check_rounded
+                    : Icons.my_location_rounded,
                 onTap: onDetect!,
                 size: 38,
                 busy: detecting,
@@ -374,7 +377,11 @@ class _SecondaryAction extends StatelessWidget {
                   colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
                 ),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 19),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 19,
+              ),
             ),
             const SizedBox(width: 11),
             Expanded(

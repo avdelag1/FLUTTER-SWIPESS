@@ -15,14 +15,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SwipeRepository {
   final SupabaseClient _client;
   final OfflineSwipeQueue _offlineQueue;
-  late final DirectRequestRepository _directRequests =
-      DirectRequestRepository(client: _client);
+  late final DirectRequestRepository _directRequests = DirectRequestRepository(
+    client: _client,
+  );
 
   SwipeRepository({SupabaseClient? client, OfflineSwipeQueue? offlineQueue})
-      : _client = client ?? Supabase.instance.client,
-        _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
+    : _client = client ?? Supabase.instance.client,
+      _offlineQueue = offlineQueue ?? OfflineSwipeQueue(client: client);
 
-  Future<({int synced, int failed})> flushOfflineQueue() => _offlineQueue.flush();
+  Future<({int synced, int failed})> flushOfflineQueue() =>
+      _offlineQueue.flush();
 
   Future<void> _afterSuccessfulWrite() async {
     unawaited(_offlineQueue.flush());
@@ -55,16 +57,16 @@ class SwipeRepository {
   }
 
   Future<void> likeListing(String targetId) => _recordDecision(
-        targetId: targetId,
-        targetType: 'listing',
-        direction: 'right',
-      );
+    targetId: targetId,
+    targetType: 'listing',
+    direction: 'right',
+  );
 
   Future<void> dislikeListing(String targetId) => _recordDecision(
-        targetId: targetId,
-        targetType: 'listing',
-        direction: 'left',
-      );
+    targetId: targetId,
+    targetType: 'listing',
+    direction: 'left',
+  );
 
   Future<void> undoSwipe(String targetId) async {
     final userId = _client.auth.currentUser?.id;
@@ -91,16 +93,16 @@ class SwipeRepository {
   }
 
   Future<void> likeProfile(String targetUserId) => _recordDecision(
-        targetId: targetUserId,
-        targetType: 'profile',
-        direction: 'right',
-      );
+    targetId: targetUserId,
+    targetType: 'profile',
+    direction: 'right',
+  );
 
   Future<void> dislikeProfile(String targetUserId) => _recordDecision(
-        targetId: targetUserId,
-        targetType: 'profile',
-        direction: 'left',
-      );
+    targetId: targetUserId,
+    targetType: 'profile',
+    direction: 'left',
+  );
 
   Future<void> undoProfileSwipe(String targetUserId) async {
     final userId = _client.auth.currentUser?.id;
@@ -162,18 +164,16 @@ class SwipeRepository {
     required String receiverId,
     String? listingId,
     String message = '',
-  }) =>
-      _directRequests.create(
-        receiverId: receiverId,
-        listingId: listingId,
-        message: message,
-      );
+  }) => _directRequests.create(
+    receiverId: receiverId,
+    listingId: listingId,
+    message: message,
+  );
 
   Future<DirectRequestResult> respondToDirectRequest({
     required String requestId,
     required bool accept,
-  }) =>
-      _directRequests.respond(requestId: requestId, accept: accept);
+  }) => _directRequests.respond(requestId: requestId, accept: accept);
 
   Future<DirectRequestResult> cancelDirectRequest(String requestId) =>
       _directRequests.cancel(requestId);
@@ -181,9 +181,8 @@ class SwipeRepository {
   Future<String?> acceptListingInterest({
     required String likerId,
     required String listingId,
-  }) =>
-      _directRequests.acceptListingInterest(
-        likerId: likerId,
-        listingId: listingId,
-      );
+  }) => _directRequests.acceptListingInterest(
+    likerId: likerId,
+    listingId: listingId,
+  );
 }

@@ -149,7 +149,7 @@ class _LegalPackageRequestSheetState
         Text(
           'A provider will confirm scope, jurisdiction and a quote before any engagement.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+          style: GoogleFonts.plusJakartaSans(color: Colors.white),
         ),
         const SizedBox(height: 24),
         SizedBox(
@@ -196,10 +196,7 @@ class _LegalPackageRequestSheetState
         const SizedBox(height: 4),
         Text(
           widget.pkg.description ?? 'Confirm the details for this request.',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
-            fontSize: 13,
-          ),
+          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
         ),
         const SizedBox(height: 16),
         Row(
@@ -228,7 +225,7 @@ class _LegalPackageRequestSheetState
         Text(
           'PREFERRED CONTACT',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
+            color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.4,
@@ -300,7 +297,7 @@ class _LegalPackageRequestSheetState
         decoration: BoxDecoration(
           color: on ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white54),
+          border: Border.all(color: Colors.white),
         ),
         child: Text(
           label,
@@ -332,7 +329,7 @@ class _LegalPackageRequestSheetState
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white38),
+        hintStyle: const TextStyle(color: Colors.white),
         filled: true,
         fillColor: const Color(0xFF1A1A22),
         border: OutlineInputBorder(

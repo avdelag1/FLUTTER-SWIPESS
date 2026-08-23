@@ -13,8 +13,8 @@ class PaymentService {
   PaymentService({
     PaymentOrchestrator? orchestrator,
     Future<bool> Function()? complimentaryAccessActive,
-  })  : _orchestrator = orchestrator ?? PaymentOrchestrator(),
-        _complimentaryAccessActive = complimentaryAccessActive;
+  }) : _orchestrator = orchestrator ?? PaymentOrchestrator(),
+       _complimentaryAccessActive = complimentaryAccessActive;
 
   final PaymentOrchestrator _orchestrator;
   final Future<bool> Function()? _complimentaryAccessActive;
@@ -34,10 +34,10 @@ class PaymentService {
   Future<void> logOut() async {}
 
   bool _isSubscription(IapOffer offer) => IapCatalog.subscriptions.any(
-        (candidate) =>
-            candidate.id == offer.id ||
-            candidate.storeProductId == offer.storeProductId,
-      );
+    (candidate) =>
+        candidate.id == offer.id ||
+        candidate.storeProductId == offer.storeProductId,
+  );
 
   Future<CheckoutResult> buy(IapOffer offer, {String? contextId}) async {
     // The three-month welcome campaign is app-managed complimentary access,

@@ -45,7 +45,10 @@ class _MessagesDocumentsLibraryState
       error: (e, _) => Center(
         child: TextButton(
           onPressed: () => ref.read(contractsProvider.notifier).refresh(),
-          child: Text('Could not load vault — retry', style: TextStyle(color: muted)),
+          child: Text(
+            'Could not load vault — retry',
+            style: TextStyle(color: muted),
+          ),
         ),
       ),
       data: (contracts) {
@@ -250,7 +253,9 @@ class _FilterPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.brandPrimary : MatteSurface.cardFill(context),
+          color: selected
+              ? AppTheme.brandPrimary
+              : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected
@@ -381,7 +386,8 @@ class _VaultCard extends StatelessWidget {
                     AppHaptics.medium();
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => ContractBuilderScreen(contract: contract),
+                        builder: (_) =>
+                            ContractBuilderScreen(contract: contract),
                       ),
                     );
                   },
@@ -409,17 +415,14 @@ class _VaultCard extends StatelessWidget {
     if (body == null || body.isEmpty) {
       await Clipboard.setData(ClipboardData(text: contract.title));
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Document title copied')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Document title copied')));
       }
       return;
     }
     await SharePlus.instance.share(
-      ShareParams(
-        text: '${contract.title}\n\n$body',
-        subject: contract.title,
-      ),
+      ShareParams(text: '${contract.title}\n\n$body', subject: contract.title),
     );
   }
 }

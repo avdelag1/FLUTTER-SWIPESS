@@ -266,11 +266,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               iconColor: const Color(0xFFFF4D00),
                               value: likes,
                               label: 'Likes',
-                              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const WhoLikedYouScreen(),
-                                ),
-                              ),
+                              onTap: () =>
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const WhoLikedYouScreen(),
+                                    ),
+                                  ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -340,11 +344,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFF4E50), Color(0xFFF9D423)],
                               ),
-                              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const EditProfileScreen(),
-                                ),
-                              ),
+                              onTap: () =>
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const EditProfileScreen(),
+                                    ),
+                                  ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -355,11 +363,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
                               ),
-                              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const AdvertiseScreen(),
-                                ),
-                              ),
+                              onTap: () =>
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const AdvertiseScreen(),
+                                    ),
+                                  ),
                             ),
                           ),
                         ],
@@ -407,15 +419,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF475569), Color(0xFF334155)],
                               ),
-                              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (_) => SettingsScreen(
-                                    audience: profile?.role == 'owner'
-                                        ? 'owner'
-                                        : 'client',
+                              onTap: () =>
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => SettingsScreen(
+                                        audience: profile?.role == 'owner'
+                                            ? 'owner'
+                                            : 'client',
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -449,11 +465,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         isFullWidth: true,
                         height: 64,
-                        onTap: () => Navigator.of(context, rootNavigator: true).push(
-                          MaterialPageRoute(
-                            builder: (_) => const SubscriptionPackagesScreen(),
-                          ),
-                        ),
+                        onTap: () =>
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const SubscriptionPackagesScreen(),
+                              ),
+                            ),
                       ),
                       const SizedBox(height: 18),
 
@@ -546,7 +564,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 child: Text(
                                   'Sync Protocol',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white70,
+                                    color: Colors.white,
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -615,7 +633,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               const Icon(
                                 Icons.chevron_right_rounded,
-                                color: Colors.white38,
+                                color: Colors.white,
                               ),
                             ],
                           ),
@@ -960,7 +978,7 @@ class _DailyQuests extends ConsumerWidget {
                 expanded
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
-                color: Colors.white54,
+                color: Colors.white,
               ),
             ],
           ),
@@ -983,7 +1001,7 @@ class _DailyQuests extends ConsumerWidget {
               '¡Gana ${DailyQuestBoard.pointsNeeded} puntos para un token gratis!',
             ),
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white,
               fontSize: 12,
             ),
           ),
@@ -1001,7 +1019,7 @@ class _DailyQuests extends ConsumerWidget {
                 'Inicia sesión para desbloquear misiones.',
               ),
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white54,
+                color: Colors.white,
                 fontSize: 12,
               ),
             )
@@ -1033,7 +1051,7 @@ class _DailyQuests extends ConsumerWidget {
                             ? const Color(0xFF10B981)
                             : q.completed
                             ? AppTheme.brandPrimary
-                            : Colors.white38,
+                            : Colors.white,
                         size: 18,
                       ),
                       const SizedBox(width: 10),
@@ -1056,7 +1074,7 @@ class _DailyQuests extends ConsumerWidget {
                               Text(
                                 '${q.progress}/${q.goal}  ·  +${q.points} pts',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
+                                  color: Colors.white,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1203,7 +1221,7 @@ class _FeedbackForm extends StatelessWidget {
                   child: Text(
                     c.$2,
                     style: GoogleFonts.plusJakartaSans(
-                      color: category == c.$1 ? c.$3 : Colors.white70,
+                      color: category == c.$1 ? c.$3 : Colors.white,
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
                     ),
@@ -1219,7 +1237,7 @@ class _FeedbackForm extends StatelessWidget {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: 'Tell us what\'s on your mind…',
-            hintStyle: TextStyle(color: Colors.white54),
+            hintStyle: TextStyle(color: Colors.white),
             filled: true,
             fillColor: const Color(0xFF10141B),
             border: OutlineInputBorder(
@@ -1377,9 +1395,8 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.gavel_rounded,
         'Legal hub',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const LegalHubScreen())),
+        () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const LegalHubScreen())),
       ),
       (
         Icons.balance_rounded,
@@ -1398,30 +1415,28 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.card_giftcard_rounded,
         'Resident perks',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const PerksScreen())),
+        () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const PerksScreen())),
       ),
       (
         Icons.info_outline_rounded,
         'About Swipess',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const AboutScreen())),
+        () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
       ),
       (
         Icons.qr_code_scanner_rounded,
         'Validate PEARL',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const VapValidateScreen())),
+        () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const VapValidateScreen())),
       ),
       (
         Icons.videocam_outlined,
         'Video tours',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const VideoToursScreen())),
+        () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const VideoToursScreen())),
       ),
       (
         Icons.people_outline_rounded,
@@ -1433,9 +1448,8 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.newspaper_outlined,
         'Local intel',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const LocalIntelScreen())),
+        () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const LocalIntelScreen())),
       ),
       (
         Icons.trending_up_rounded,
@@ -1454,9 +1468,9 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.help_outline_rounded,
         'Help & FAQ',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const FAQScreen())),
+        () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const FAQScreen())),
       ),
     ];
 

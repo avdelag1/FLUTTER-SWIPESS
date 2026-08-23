@@ -63,7 +63,7 @@ class VideoToursScreen extends ConsumerWidget {
                     child: Text(
                       'Property video tours appear here as owners upload walkthroughs.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+                      style: GoogleFonts.plusJakartaSans(color: Colors.white),
                     ),
                   ),
                   const Spacer(),
@@ -124,9 +124,8 @@ class _TourPageState extends State<_TourPage> {
     final url = 'https://www.swipess.com/listing/${widget.listing.id}';
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Tour link copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Tour link copied')));
   }
 
   Future<void> _like() async {
@@ -192,7 +191,7 @@ class _TourPageState extends State<_TourPage> {
                           Text(
                             'IMMERSIVE',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white54,
+                              color: Colors.white,
                               fontSize: 9,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 2.4,
@@ -241,7 +240,7 @@ class _TourPageState extends State<_TourPage> {
                           Text(
                             listing.formattedLocation,
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -365,7 +364,7 @@ class _SideAction extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white60,
+            color: Colors.white,
             fontSize: 9,
             fontWeight: FontWeight.w900,
           ),

@@ -85,9 +85,8 @@ h1{font-family:Arial,sans-serif;font-size:20pt;margin-bottom:24px}
     final objects = <int, String>{};
 
     objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-    final kids = [
-      for (var i = 0; i < pageCount; i++) '${3 + i * 2} 0 R',
-    ].join(' ');
+    final kids = [for (var i = 0; i < pageCount; i++) '${3 + i * 2} 0 R']
+        .join(' ');
     objects[2] = '<< /Type /Pages /Kids [$kids] /Count $pageCount >>';
 
     for (var i = 0; i < pageCount; i++) {

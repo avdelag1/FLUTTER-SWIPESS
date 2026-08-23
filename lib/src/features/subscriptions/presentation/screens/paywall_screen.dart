@@ -87,9 +87,11 @@ class PaywallScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(height: 14),
-                            for (var i = 0;
-                                i < IapCatalog.subscriptions.length;
-                                i++) ...[
+                            for (
+                              var i = 0;
+                              i < IapCatalog.subscriptions.length;
+                              i++
+                            ) ...[
                               _PaidPlanTile(
                                 offer: IapCatalog.subscriptions[i],
                                 color: _colorForPlan(i),
@@ -106,7 +108,9 @@ class PaywallScreen extends ConsumerWidget {
                                   AppHaptics.medium();
                                   final router = GoRouter.of(context);
                                   Navigator.of(context).pop();
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
                                     router.push(AppPaths.subscriptionPackages);
                                   });
                                 },
@@ -117,7 +121,9 @@ class PaywallScreen extends ConsumerWidget {
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   elevation: 8,
-                                  shadowColor: AppTheme.brandPrimary.withAlpha(120),
+                                  shadowColor: AppTheme.brandPrimary.withAlpha(
+                                    120,
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -230,8 +236,8 @@ class _PaidPlanTile extends StatelessWidget {
                   offer.popular
                       ? Icons.bolt_rounded
                       : offer.name.toLowerCase().contains('year')
-                          ? Icons.workspace_premium_rounded
-                          : Icons.chat_bubble_outline_rounded,
+                      ? Icons.workspace_premium_rounded
+                      : Icons.chat_bubble_outline_rounded,
                   color: color,
                   size: 19,
                 ),
@@ -317,8 +323,8 @@ class _PaidPlanTile extends StatelessWidget {
                         color: Colors.white.withAlpha(225),
                         fontWeight:
                             focusBenefits[i].toLowerCase().contains('unlimited')
-                                ? FontWeight.w800
-                                : FontWeight.w600,
+                            ? FontWeight.w800
+                            : FontWeight.w600,
                         fontSize: 10.5,
                       ),
                     ),

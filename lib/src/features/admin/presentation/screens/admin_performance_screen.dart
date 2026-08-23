@@ -46,7 +46,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
           Text(
             'PageSpeed snapshot (Cap source)',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -80,7 +80,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                       Text(
                         e.key,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -132,7 +132,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                   Text(
                     issue.$2,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: Colors.white,
                       fontSize: 12,
                     ),
                   ),

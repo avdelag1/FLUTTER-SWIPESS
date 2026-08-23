@@ -55,7 +55,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
           const SizedBox(height: 8),
           Text(
             'Who should see your listings',
-            style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+            style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
           const SizedBox(height: 20),
           Wrap(
@@ -72,7 +72,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
           Text(
             'CLIENT INTENT',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.4,
               fontSize: 11,

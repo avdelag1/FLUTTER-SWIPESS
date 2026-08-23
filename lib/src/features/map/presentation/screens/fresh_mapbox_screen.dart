@@ -172,7 +172,7 @@ class _CompactListingStrip extends StatelessWidget {
                                   color: Color(0xFF242830),
                                   child: Icon(
                                     Icons.home_work_rounded,
-                                    color: Colors.white70,
+                                    color: Colors.white,
                                     size: 18,
                                   ),
                                 ),
@@ -181,7 +181,7 @@ class _CompactListingStrip extends StatelessWidget {
                                 color: Color(0xFF242830),
                                 child: Icon(
                                   Icons.home_work_rounded,
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                   size: 18,
                                 ),
                               ),

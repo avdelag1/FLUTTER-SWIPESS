@@ -14,65 +14,63 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final publicProfileProvider = FutureProvider.family<PublicMemberProfile?, String>((
-  ref,
-  userId,
-) async {
-  final client = Supabase.instance.client;
-  try {
-    final row = await client
-        .from('client_profiles')
-        .select(
-          'user_id, name, age, bio, city, country, profile_images, intentions, vap_occupation, occupation',
-        )
-        .eq('user_id', userId)
-        .maybeSingle();
-    if (row != null) {
-      final images = row['profile_images'];
-      return PublicMemberProfile(
-        userId: userId,
-        name: (row['name'] as String?)?.trim().isNotEmpty == true
-            ? row['name'] as String
-            : 'Swipess member',
-        age: (row['age'] as num?)?.toInt(),
-        bio: row['bio'] as String?,
-        city: row['city'] as String?,
-        country: row['country'] as String?,
-        occupation:
-            (row['vap_occupation'] as String?) ??
-            (row['occupation'] as String?),
-        images: images is List
-            ? images.map((e) => e.toString()).toList()
-            : const [],
-        intentions: (row['intentions'] is List)
-            ? (row['intentions'] as List).whereType<String>().toList()
-            : const [],
-      );
-    }
-  } catch (_) {}
-  try {
-    final owner = await client
-        .from('owner_profiles')
-        .select('user_id, business_name, city, profile_images, bio')
-        .eq('user_id', userId)
-        .maybeSingle();
-    if (owner != null) {
-      final images = owner['profile_images'];
-      return PublicMemberProfile(
-        userId: userId,
-        name: (owner['business_name'] as String?)?.trim().isNotEmpty == true
-            ? owner['business_name'] as String
-            : 'Owner',
-        bio: owner['bio'] as String?,
-        city: owner['city'] as String?,
-        images: images is List
-            ? images.map((e) => e.toString()).toList()
-            : const [],
-      );
-    }
-  } catch (_) {}
-  return null;
-});
+final publicProfileProvider =
+    FutureProvider.family<PublicMemberProfile?, String>((ref, userId) async {
+      final client = Supabase.instance.client;
+      try {
+        final row = await client
+            .from('client_profiles')
+            .select(
+              'user_id, name, age, bio, city, country, profile_images, intentions, vap_occupation, occupation',
+            )
+            .eq('user_id', userId)
+            .maybeSingle();
+        if (row != null) {
+          final images = row['profile_images'];
+          return PublicMemberProfile(
+            userId: userId,
+            name: (row['name'] as String?)?.trim().isNotEmpty == true
+                ? row['name'] as String
+                : 'Swipess member',
+            age: (row['age'] as num?)?.toInt(),
+            bio: row['bio'] as String?,
+            city: row['city'] as String?,
+            country: row['country'] as String?,
+            occupation:
+                (row['vap_occupation'] as String?) ??
+                (row['occupation'] as String?),
+            images: images is List
+                ? images.map((e) => e.toString()).toList()
+                : const [],
+            intentions: (row['intentions'] is List)
+                ? (row['intentions'] as List).whereType<String>().toList()
+                : const [],
+          );
+        }
+      } catch (_) {}
+      try {
+        final owner = await client
+            .from('owner_profiles')
+            .select('user_id, business_name, city, profile_images, bio')
+            .eq('user_id', userId)
+            .maybeSingle();
+        if (owner != null) {
+          final images = owner['profile_images'];
+          return PublicMemberProfile(
+            userId: userId,
+            name: (owner['business_name'] as String?)?.trim().isNotEmpty == true
+                ? owner['business_name'] as String
+                : 'Owner',
+            bio: owner['bio'] as String?,
+            city: owner['city'] as String?,
+            images: images is List
+                ? images.map((e) => e.toString()).toList()
+                : const [],
+          );
+        }
+      } catch (_) {}
+      return null;
+    });
 
 class PublicMemberProfile {
   const PublicMemberProfile({
@@ -135,7 +133,7 @@ class ProfileDetailScreen extends ConsumerWidget {
             body: Center(
               child: Text(
                 'Profile not found',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                style: GoogleFonts.plusJakartaSans(color: Colors.white),
               ),
             ),
           );
@@ -313,21 +311,21 @@ class _BodyState extends State<_Body> {
                               Text(
                                 p.locationLabel,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               if (p.occupation != null) ...[
                                 const Text(
                                   '  ·  ',
-                                  style: TextStyle(color: Colors.white38),
+                                  style: TextStyle(color: Colors.white),
                                 ),
                                 Expanded(
                                   child: Text(
                                     p.occupation!,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white54,
+                                      color: Colors.white,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -340,7 +338,7 @@ class _BodyState extends State<_Body> {
                             Text(
                               p.bio!,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
+                                color: Colors.white,
                                 height: 1.4,
                               ),
                             ),
@@ -488,7 +486,7 @@ class _Round extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(140),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white38),
+          border: Border.all(color: Colors.white),
         ),
         child: Icon(icon, color: Colors.white, size: 18),
       ),

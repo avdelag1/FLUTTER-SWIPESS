@@ -131,7 +131,7 @@ class PremiumLikedCard extends StatelessWidget {
                       ),
                       child: const Icon(
                         Icons.delete_outline_rounded,
-                        color: Colors.white70,
+                        color: Colors.white,
                         size: 20,
                       ),
                     ),
@@ -170,7 +170,7 @@ class PremiumLikedCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
+                                color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -255,7 +255,7 @@ class PremiumLikedCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: Colors.white,
                       fontSize: 12,
                       height: 1.45,
                       fontWeight: FontWeight.w500,
@@ -381,7 +381,7 @@ class _SpecChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.white54),
+          Icon(icon, size: 14, color: Colors.white),
           const SizedBox(width: 6),
           Text(
             label,

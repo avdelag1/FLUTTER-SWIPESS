@@ -140,7 +140,9 @@ class Listing {
       likes: (json['likes'] as num?)?.toInt(),
       views: (json['views'] as num?)?.toInt(),
       hasVerifiedDocuments: hasApprovedDocuments,
-      verificationStatus: hasApprovedDocuments ? 'approved' : rawVerificationStatus,
+      verificationStatus: hasApprovedDocuments
+          ? 'approved'
+          : rawVerificationStatus,
       ownerVerifiedAt: json['owner_verified_at'] != null
           ? DateTime.tryParse(json['owner_verified_at'] as String)
           : null,

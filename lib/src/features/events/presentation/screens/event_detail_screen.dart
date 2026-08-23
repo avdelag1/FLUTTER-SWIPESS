@@ -134,9 +134,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final text = 'Check out ${event.title} on Swipess! ${event.shareUrl}';
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Event link copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Event link copied')));
   }
 
   Future<void> _addToCalendar() async {
@@ -327,7 +326,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   decoration: BoxDecoration(
                                     color: i == _index
                                         ? Colors.white
-                                        : Colors.white38,
+                                        : Colors.white,
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                 ),
@@ -459,7 +458,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                           Text(
                             'THE EXPERIENCE',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white38,
+                              color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 10,
                               letterSpacing: 2.2,
@@ -473,10 +472,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        event.description ??
-                            'Join us for an unforgettable experience in the heart of the Riviera Maya.',
+                        event.description ?? 'Join us for an unforgettable experience in the heart of the Riviera Maya.',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: Colors.white,
                           fontSize: 16,
                           height: 1.55,
                           fontStyle: FontStyle.italic,
@@ -499,7 +497,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   Text(
                                     'ADMISSION PASS',
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white38,
+                                      color: Colors.white,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 10,
                                       letterSpacing: 1.6,
@@ -567,7 +565,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 child: event.organizerPhotoUrl == null
                                     ? const Icon(
                                         Icons.person_rounded,
-                                        color: Colors.white54,
+                                        color: Colors.white,
                                       )
                                     : null,
                               ),
@@ -579,7 +577,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     Text(
                                       'ELITE ORGANIZER',
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white38,
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 9,
                                         letterSpacing: 1.6,
@@ -827,7 +825,7 @@ class _SiblingChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null && !trailing) ...[
-                Icon(icon, size: 16, color: Colors.white70),
+                Icon(icon, size: 16, color: Colors.white),
                 const SizedBox(width: 2),
               ],
               Text(
@@ -841,7 +839,7 @@ class _SiblingChip extends StatelessWidget {
               ),
               if (icon != null && trailing) ...[
                 const SizedBox(width: 2),
-                Icon(icon, size: 16, color: Colors.white70),
+                Icon(icon, size: 16, color: Colors.white),
               ],
             ],
           ),
@@ -893,7 +891,7 @@ class _InfoRow extends StatelessWidget {
                 Text(
                   eyebrow.toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
                     letterSpacing: 1.6,
@@ -914,7 +912,7 @@ class _InfoRow extends StatelessWidget {
                   Text(
                     subtitle!.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
                     ),

@@ -62,10 +62,7 @@ class DashboardDock extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               child: Container(
                 height: 52,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 5,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 decoration: BoxDecoration(
                   // Frozen glass without a live backdrop blur. Dark mode keeps
                   // the depth but intentionally has no white perimeter frame.

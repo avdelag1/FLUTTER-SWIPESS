@@ -8,8 +8,7 @@ class SupabaseService {
   // Keep a valid publishable fallback so a malformed CI/Vercel override cannot
   // make production fail before Flutter renders its first frame.
   static const String _projectRef = 'vplgtcguxujxwrgguxqq';
-  static const String _defaultUrl =
-      'https://$_projectRef.supabase.co';
+  static const String _defaultUrl = 'https://$_projectRef.supabase.co';
   static const String _defaultPublishableKey =
       'sb_publishable_FA0BseFSS6zM7Y8K3w8zLQ_d8BXqEuV';
 

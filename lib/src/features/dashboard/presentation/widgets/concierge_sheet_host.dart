@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 
 class ConciergeSheetHost extends ConsumerStatefulWidget {
-  const ConciergeSheetHost({super.key, required this.onClose, required this.child});
+  const ConciergeSheetHost({
+    super.key,
+    required this.onClose,
+    required this.child,
+  });
   final VoidCallback onClose;
   final Widget child;
 
@@ -63,8 +67,13 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
           top: m.padding.top + 4,
           bottom: m.padding.bottom + 4,
           child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 1.08), end: Offset.zero)
-                .animate(CurvedAnimation(parent: _slide, curve: Curves.easeOutCubic)),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0, 1.08),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: _slide, curve: Curves.easeOutCubic),
+                ),
             child: FadeTransition(
               opacity: _slide,
               child: Transform.translate(
@@ -73,10 +82,14 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                   color: Colors.transparent,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isLight ? const Color(0xFFF7F8FA) : const Color(0xFF10141B),
+                      color: isLight
+                          ? const Color(0xFFF7F8FA)
+                          : const Color(0xFF10141B),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
-                        color: isLight ? Colors.black.withAlpha(22) : Colors.white.withAlpha(36),
+                        color: isLight
+                            ? Colors.black.withAlpha(22)
+                            : Colors.white.withAlpha(36),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -93,7 +106,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (d) {
                             if (d.delta.dy <= 0) return;
-                            setState(() => _drag = (_drag + d.delta.dy).clamp(0, 260));
+                            setState(
+                              () => _drag = (_drag + d.delta.dy).clamp(0, 260),
+                            );
                           },
                           onVerticalDragEnd: (_) {
                             if (_drag > 82) {
@@ -110,7 +125,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                 width: 42,
                                 height: 4,
                                 decoration: BoxDecoration(
-                                  color: isLight ? Colors.black.withAlpha(80) : Colors.white.withAlpha(115),
+                                  color: isLight
+                                      ? Colors.black.withAlpha(80)
+                                      : Colors.white.withAlpha(115),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                               ),

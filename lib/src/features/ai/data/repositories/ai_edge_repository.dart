@@ -34,7 +34,12 @@ class AiEdgeRepository {
     final user = _client.auth.currentUser;
     if (user == null) return null;
     final meta = user.userMetadata ?? const <String, dynamic>{};
-    for (final key in const ['first_name', 'full_name', 'name', 'display_name']) {
+    for (final key in const [
+      'first_name',
+      'full_name',
+      'name',
+      'display_name',
+    ]) {
       final raw = meta[key]?.toString().trim();
       if (raw != null && raw.isNotEmpty) return raw.split(RegExp(r'\s+')).first;
     }
@@ -49,7 +54,10 @@ class AiEdgeRepository {
   String? _personaStyleDirective(String? character) {
     if (character == null || character.isEmpty) return null;
     final firstName = _currentFirstName();
-    final normalizedName = firstName?.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+    final normalizedName = firstName?.toLowerCase().replaceAll(
+      RegExp(r'[^a-z]'),
+      '',
+    );
 
     if (character == 'beaugosse') {
       final fanny = normalizedName == 'fanny';
@@ -61,7 +69,11 @@ class AiEdgeRepository {
           '"très bien", "avec plaisir", "bien sûr" and "magnifique" when the tone fits. '
           'When feminine address is clearly appropriate from the conversation, make '
           'the charm a little warmer while remaining respectful. '
-          '${fanny ? 'CURRENT FIRST NAME: Fanny. For every reply addressed to Fanny, open with a short affectionate French greeting such as "Bonjour, mon amour" or "Ma belle Fanny", vary it naturally, and treat her with extra queen-like warmth and courtesy. ' : firstName != null ? 'CURRENT FIRST NAME: $firstName. ' : ''}'
+          '${fanny
+              ? 'CURRENT FIRST NAME: Fanny. For every reply addressed to Fanny, open with a short affectionate French greeting such as "Bonjour, mon amour" or "Ma belle Fanny", vary it naturally, and treat her with extra queen-like warmth and courtesy. '
+              : firstName != null
+              ? 'CURRENT FIRST NAME: $firstName. '
+              : ''}'
           'Never rename yourself Hugo. Your name is Beau Gosse.]';
     }
 
@@ -223,7 +235,8 @@ class AiEdgeRepository {
     ).hasMatch(q)) {
       category = 'property';
       label = 'properties';
-    } else if (RegExp(r'\b(yacht|yachts|boat|boats|yate|yates)\b').hasMatch(q)) {
+    } else if (RegExp(r'\b(yacht|yachts|boat|boats|yate|yates)\b')
+        .hasMatch(q)) {
       category = 'yacht';
       label = 'yachts';
     } else if (RegExp(
@@ -231,7 +244,8 @@ class AiEdgeRepository {
     ).hasMatch(q)) {
       category = 'motorcycle';
       label = 'motorcycles';
-    } else if (RegExp(r'\b(bicycle|bicycles|bike|bikes|bici|bicicleta)\b').hasMatch(q)) {
+    } else if (RegExp(r'\b(bicycle|bicycles|bike|bikes|bici|bicicleta)\b')
+        .hasMatch(q)) {
       category = 'bicycle';
       label = 'bicycles';
     } else if (RegExp(

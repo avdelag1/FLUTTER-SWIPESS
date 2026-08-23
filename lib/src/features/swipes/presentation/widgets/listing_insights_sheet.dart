@@ -151,10 +151,7 @@ class _InsightsSheet extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white70,
-                    ),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
                   ),
                 ],
               ),
@@ -180,7 +177,7 @@ class _InsightsSheet extends StatelessWidget {
                     child: Text(
                       listing.formattedLocation,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white60,
+                        color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -212,7 +209,7 @@ class _InsightsSheet extends StatelessWidget {
                                 Text(
                                   s.$2.toUpperCase(),
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white38,
+                                    color: Colors.white,
                                     fontSize: 9,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1,
@@ -241,7 +238,7 @@ class _InsightsSheet extends StatelessWidget {
                 Text(
                   'DESCRIPTION',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,
@@ -251,7 +248,7 @@ class _InsightsSheet extends StatelessWidget {
                 Text(
                   listing.description!,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white70,
+                    color: Colors.white,
                     height: 1.45,
                     fontSize: 14,
                   ),
@@ -262,7 +259,7 @@ class _InsightsSheet extends StatelessWidget {
                 Text(
                   'AMENITIES',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 2,

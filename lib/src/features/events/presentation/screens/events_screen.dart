@@ -99,7 +99,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 children: [
                   Text(
                     'No $_category events',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                    style: GoogleFonts.plusJakartaSans(color: Colors.white),
                   ),
                   TextButton(
                     onPressed: () {
@@ -439,20 +439,14 @@ class _EventCategoryRing extends StatelessWidget {
                     ? Image.asset(
                         category.image,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          category.icon,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            Icon(category.icon, size: 14, color: Colors.white),
                       )
                     : Image.network(
                         category.image,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          category.icon,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            Icon(category.icon, size: 14, color: Colors.white),
                       ),
               ),
             ),
@@ -463,7 +457,7 @@ class _EventCategoryRing extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: active ? Colors.white : Colors.white70,
+                color: active ? Colors.white : Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 9,
                 letterSpacing: 0.2,
@@ -606,9 +600,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       ),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Event link copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Event link copied')));
   }
 
   Future<void> _whatsApp() async {
@@ -807,7 +800,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                         Text(
                           'by ${event.organizerName}',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70,
+                            color: Colors.white,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -832,9 +825,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                           if (event.eventDate != null)
                             _MetaChip(
                               icon: Icons.calendar_today_rounded,
-                              label: DateFormat(
-                                'MMM d · h:mm a',
-                              ).format(event.eventDate!.toLocal()),
+                              label: DateFormat('MMM d · h:mm a')
+                                  .format(event.eventDate!.toLocal()),
                             ),
                           if (event.location != null)
                             _MetaChip(
@@ -852,7 +844,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                       Text(
                         'Swipe up for next · tap video for focus controls',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white38,
+                          color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),

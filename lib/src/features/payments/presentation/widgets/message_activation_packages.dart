@@ -26,9 +26,7 @@ Future<void> showMessageActivationPackages(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const FractionallySizedBox(
-      heightFactor: .9,
-      child: TokensModal(),
-    ),
+    builder: (_) =>
+        const FractionallySizedBox(heightFactor: .9, child: TokensModal()),
   );
 }

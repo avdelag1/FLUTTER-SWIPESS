@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/auth/presentation/screens/app_splash
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+
 import 'src/app.dart';
 
 Future<void> main() async {

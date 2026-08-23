@@ -64,9 +64,8 @@ class _OwnerClientSwipeDialogState
   void _like(InterestedClient client) {
     AppHaptics.medium();
     setState(() => _index++);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Interested in ${client.name}')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Interested in ${client.name}')));
   }
 
   @override
@@ -106,7 +105,7 @@ class _OwnerClientSwipeDialogState
                           Text(
                             'Swipe through people who matched your listings',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white54,
+                              color: Colors.white,
                               fontSize: 12,
                             ),
                           ),
@@ -117,7 +116,7 @@ class _OwnerClientSwipeDialogState
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(
                         Icons.close_rounded,
-                        color: Colors.white70,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -138,7 +137,7 @@ class _OwnerClientSwipeDialogState
                                   children: [
                                     const Icon(
                                       Icons.people_outline_rounded,
-                                      color: Colors.white54,
+                                      color: Colors.white,
                                       size: 40,
                                     ),
                                     const SizedBox(height: 12),
@@ -155,7 +154,7 @@ class _OwnerClientSwipeDialogState
                                       'Check Interested Clients later, or refresh the deck.',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white54,
+                                        color: Colors.white,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -235,7 +234,7 @@ class _Deck extends StatelessWidget {
               child: Text(
                 '$remaining LEFT',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white70,
+                  color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
@@ -311,7 +310,7 @@ class _Deck extends StatelessWidget {
                             Text(
                               subtitle,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
+                                color: Colors.white,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),

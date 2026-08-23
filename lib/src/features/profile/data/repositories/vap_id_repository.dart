@@ -144,15 +144,17 @@ class VapIdRepository {
 
     final path =
         '${user.id}/vap-id/id-photo-${DateTime.now().millisecondsSinceEpoch}.$extension';
-    await _client.storage.from('profile-images').uploadBinary(
-      path,
-      bytes,
-      fileOptions: FileOptions(
-        upsert: false,
-        contentType: contentType,
-        cacheControl: '3600',
-      ),
-    );
+    await _client.storage
+        .from('profile-images')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            upsert: false,
+            contentType: contentType,
+            cacheControl: '3600',
+          ),
+        );
     return _client.storage.from('profile-images').getPublicUrl(path);
   }
 }

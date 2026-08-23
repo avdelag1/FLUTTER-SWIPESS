@@ -13,23 +13,25 @@ class SubscriptionData {
   });
 
   bool get isTrialActive =>
-      trialEndsAt != null && DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
+      trialEndsAt != null &&
+      DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
   bool get trialHasEnded =>
-      trialEndsAt != null && !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
+      trialEndsAt != null &&
+      !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
   /// Complimentary access is only applied to otherwise-free accounts. Real
   /// paid subscriptions remain authoritative and are never visually masked by
   /// a free campaign while billing may continue underneath.
   SubscriptionTier get effectiveTier =>
       isTrialActive && tier == SubscriptionTier.free
-          ? SubscriptionTier.premium
-          : tier;
+      ? SubscriptionTier.premium
+      : tier;
 }
 
 class SubscriptionRepository {
   SubscriptionRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -108,15 +110,17 @@ class SubscriptionRepository {
       if (row == null) return null;
 
       final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
-      final resetAt =
-          DateTime.tryParse(row['signup_starts_at']?.toString() ?? '')?.toUtc();
+      final resetAt = DateTime.tryParse(
+        row['signup_starts_at']?.toString() ?? '',
+      )?.toUtc();
       if (createdAt == null || resetAt == null) return null;
 
-      final explicitEnd =
-          DateTime.tryParse(row['signup_ends_at']?.toString() ?? '')?.toUtc();
+      final explicitEnd = DateTime.tryParse(
+        row['signup_ends_at']?.toString() ?? '',
+      )?.toUtc();
       final accepting = row['accepting_new_signups'] == true;
-      final toggledAt =
-          DateTime.tryParse(row['updated_at']?.toString() ?? '')?.toUtc();
+      final toggledAt = DateTime.tryParse(row['updated_at']?.toString() ?? '')
+          ?.toUtc();
       final signupCutoff = explicitEnd ?? (accepting ? null : toggledAt);
 
       // Existing free accounts start from the campaign reset timestamp. Free
@@ -127,8 +131,10 @@ class SubscriptionRepository {
         return null;
       }
 
-      final months =
-          (((row['trial_months'] as num?)?.toInt() ?? 3).clamp(1, 24)).toInt();
+      final months = (((row['trial_months'] as num?)?.toInt() ?? 3).clamp(
+        1,
+        24,
+      )).toInt();
       return _addCalendarMonths(accessStartsAt, months);
     } catch (_) {
       return null;

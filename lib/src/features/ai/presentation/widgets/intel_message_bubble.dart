@@ -191,7 +191,9 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                             size: 14,
                             color: widget.speaking
                                 ? AppTheme.brandPrimary
-                                : _ink.withAlpha(90),
+                                : (widget.isLight
+                                      ? _ink.withAlpha(90)
+                                      : Colors.white),
                           ),
                         ),
                       ),
@@ -214,7 +216,9 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                     Text(
                       'POWERED BY ${aiProviderBubbleLabel(widget.message.provider).toUpperCase()}',
                       style: GoogleFonts.plusJakartaSans(
-                        color: _ink.withAlpha(100),
+                        color: widget.isLight
+                            ? _ink.withAlpha(100)
+                            : Colors.white,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.1,

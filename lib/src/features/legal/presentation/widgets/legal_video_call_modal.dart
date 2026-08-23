@@ -170,7 +170,7 @@ class _LegalVideoCallBodyState extends ConsumerState<_LegalVideoCallBody> {
                   label,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 14,
                     height: 1.4,
                   ),

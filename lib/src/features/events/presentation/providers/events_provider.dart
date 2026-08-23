@@ -122,8 +122,7 @@ const eventFeedCategories = <EventFeedCategory>[
     key: 'Nightlife',
     label: 'Beach',
     icon: Icons.beach_access_rounded,
-    image:
-        'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=200&q=80',
+    image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=200&q=80',
     color: Color(0xFF0EA5E9),
   ),
   EventFeedCategory(
@@ -137,24 +136,21 @@ const eventFeedCategories = <EventFeedCategory>[
     key: 'Music',
     label: 'Music',
     icon: Icons.music_note_rounded,
-    image:
-        'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=200&q=80',
+    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=200&q=80',
     color: Color(0xFF8B5CF6),
   ),
   EventFeedCategory(
     key: 'Food',
     label: 'Restaurants',
     icon: Icons.restaurant_rounded,
-    image:
-        'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=200&q=80',
+    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=200&q=80',
     color: Color(0xFFEF4444),
   ),
   EventFeedCategory(
     key: 'Sports',
     label: 'Deals',
     icon: Icons.local_offer_rounded,
-    image:
-        'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=200&q=80',
+    image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=200&q=80',
     color: Color(0xFFFACC15),
   ),
 ];

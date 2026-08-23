@@ -84,9 +84,8 @@ class MapResultsRail extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(
-                          0xFFFF4D00,
-                        ).withAlpha(selected ? 80 : 30),
+                        color: const Color(0xFFFF4D00)
+                            .withAlpha(selected ? 80 : 30),
                         blurRadius: 10,
                       ),
                     ],

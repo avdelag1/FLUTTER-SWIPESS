@@ -90,39 +90,33 @@ class _LegalSheet extends StatelessWidget {
                         _LegalBlock(
                           index: '01',
                           title: 'Eligibility',
-                          body:
-                              'You must be at least 18 years old and have the legal capacity to enter binding agreements to use Swipess.',
+                          body: 'You must be at least 18 years old and have the legal capacity to enter binding agreements to use Swipess.',
                         ),
                         _LegalBlock(
                           index: '02',
                           title: 'Zero Tolerance for Objectionable Content',
-                          body:
-                              'Swipess prohibits objectionable content and abusive behavior. You agree not to post content that is illegal, hateful, sexually explicit, threatening, harassing, or otherwise prohibited.',
+                          body: 'Swipess prohibits objectionable content and abusive behavior. You agree not to post content that is illegal, hateful, sexually explicit, threatening, harassing, or otherwise prohibited.',
                         ),
                         _LegalBlock(
                           index: '03',
                           title: 'Reporting & Blocking',
-                          body:
-                              'You can report content or users and block unwanted interactions from profiles or chats. Reports are prioritized by severity and reviewed as resources allow.',
+                          body: 'You can report content or users and block unwanted interactions from profiles or chats. Reports are prioritized by severity and reviewed as resources allow.',
                         ),
                       ] else ...const [
                         _LegalBlock(
                           index: '01',
                           title: 'Data Collection',
-                          body:
-                              'We collect account, profile, listing, message, location, device, usage, and purchase-related data as needed to operate the features you choose.',
+                          body: 'We collect account, profile, listing, message, location, device, usage, and purchase-related data as needed to operate the features you choose.',
                         ),
                         _LegalBlock(
                           index: '02',
                           title: 'Data Sharing',
-                          body:
-                              'Profile and listing information is shared with other users as needed for discovery and messaging. We do not sell personal data to data brokers.',
+                          body: 'Profile and listing information is shared with other users as needed for discovery and messaging. We do not sell personal data to data brokers.',
                         ),
                         _LegalBlock(
                           index: '03',
                           title: 'Asset Privacy',
-                          body:
-                              'Location data may be used for maps and nearby discovery. You can control device location permission and review the full Privacy Policy for details.',
+                          body: 'Location data may be used for maps and nearby discovery. You can control device location permission and review the full Privacy Policy for details.',
                         ),
                       ],
                     ],

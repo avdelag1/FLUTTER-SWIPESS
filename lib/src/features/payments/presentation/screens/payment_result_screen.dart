@@ -23,7 +23,7 @@ class PaymentResultScreen extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
                 ),
               ),
               const Spacer(),
@@ -77,7 +77,7 @@ class PaymentResultScreen extends StatelessWidget {
                         : 'No charge was completed. You can retry anytime from Premium.'),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white60,
+                  color: Colors.white,
                   fontSize: 14,
                   height: 1.4,
                 ),

@@ -42,7 +42,7 @@ class AdminShell extends ConsumerWidget {
             body: Center(
               child: Text(
                 t(ref, 'flutter.notAdmin', 'Admin only'),
-                style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+                style: GoogleFonts.plusJakartaSans(color: Colors.white),
               ),
             ),
           );
@@ -90,7 +90,8 @@ class AdminShell extends ConsumerWidget {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(999),
-                                    onTap: () => context.go(AppPaths.adminDashboard),
+                                    onTap: () =>
+                                        context.go(AppPaths.adminDashboard),
                                     child: Container(
                                       width: 42,
                                       height: 42,
@@ -109,7 +110,8 @@ class AdminShell extends ConsumerWidget {
                                 const SizedBox(width: 11),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'SWIPESS ADMIN',
@@ -148,11 +150,19 @@ class AdminShell extends ConsumerWidget {
                                     path: AppPaths.adminDashboard,
                                   ),
                                   _NavChip(
-                                    label: t(ref, 'flutter.adminEvents', 'Events'),
+                                    label: t(
+                                      ref,
+                                      'flutter.adminEvents',
+                                      'Events',
+                                    ),
                                     path: AppPaths.adminEventos,
                                   ),
                                   _NavChip(
-                                    label: t(ref, 'flutter.adminPhotos', 'Photos'),
+                                    label: t(
+                                      ref,
+                                      'flutter.adminPhotos',
+                                      'Photos',
+                                    ),
                                     path: AppPaths.adminPhotos,
                                   ),
                                   _NavChip(

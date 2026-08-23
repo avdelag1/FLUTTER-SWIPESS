@@ -174,7 +174,7 @@ class _NotificationTile extends StatelessWidget {
       case 'payment':
         return const Color(0xFFFFD43B);
       default:
-        return Colors.white70;
+        return Colors.white;
     }
   }
 

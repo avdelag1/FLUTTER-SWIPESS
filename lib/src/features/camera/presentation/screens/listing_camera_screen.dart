@@ -110,7 +110,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                         Text(
                           '${_shots.length} captured · $_remaining left',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: Colors.white,
                             fontSize: 11,
                           ),
                         ),
@@ -139,7 +139,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                           Text(
                             'Shoot listing photos like Cap camera',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white54,
+                              color: Colors.white,
                             ),
                           ),
                         ],

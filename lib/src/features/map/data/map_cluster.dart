@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:latlong2/latlong.dart';
@@ -16,15 +17,13 @@ class MapClusterGroup {
 /// Cluster passport pins. Nearby-but-distinct listings stay separate so a
 /// 50 km zoom never collapses a city into a single bubble.
 
-
-
 List<MapPin> _scatterOverlaps(List<MapPin> raw) {
   final exact = <String, List<MapPin>>{};
   for (final p in raw) {
     final key = '${p.lat.toStringAsFixed(4)}_${p.lng.toStringAsFixed(4)}';
     exact.putIfAbsent(key, () => []).add(p);
   }
-  
+
   final scattered = <MapPin>[];
   for (final group in exact.values) {
     if (group.length == 1) {
@@ -35,10 +34,12 @@ List<MapPin> _scatterOverlaps(List<MapPin> raw) {
         final rand = math.Random(group[i].id.hashCode);
         final r = baseRadius + (rand.nextDouble() * 0.008); // up to ~1km
         final angle = rand.nextDouble() * 2 * math.pi;
-        
+
         final dLat = r * math.cos(angle);
         final dLng = r * math.sin(angle);
-        scattered.add(MapPin.scattered(group[i], group[i].lat + dLat, group[i].lng + dLng));
+        scattered.add(
+          MapPin.scattered(group[i], group[i].lat + dLat, group[i].lng + dLng),
+        );
       }
     }
   }

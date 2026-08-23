@@ -79,9 +79,7 @@ class _AppSplashScreenState extends State<AppSplashScreen>
                         double pulse = 0;
                         if (phase < 0.6) {
                           final local = phase / 0.6;
-                          pulse = local <= 0.5
-                              ? local * 2
-                              : (1 - local) * 2;
+                          pulse = local <= 0.5 ? local * 2 : (1 - local) * 2;
                         }
                         return Padding(
                           padding: EdgeInsets.only(right: index == 2 ? 0 : 7),

@@ -136,15 +136,21 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             'id, status, title, package, payment_product_id, published_event_id, is_review_demo',
           )
           .eq('user_id', userId)
-          .inFilter('status', ['pending', 'approved', 'paid', 'live', 'rejected'])
+          .inFilter('status', [
+            'pending',
+            'approved',
+            'paid',
+            'live',
+            'rejected',
+          ])
           .order('created_at', ascending: false)
           .limit(1);
       if (!mounted || (rows as List).isEmpty) return;
 
       final row = Map<String, dynamic>.from(rows.first as Map);
       final status = row['status']?.toString() ?? 'pending';
-      final packageValue = row['payment_product_id']?.toString() ??
-          row['package']?.toString();
+      final packageValue =
+          row['payment_product_id']?.toString() ?? row['package']?.toString();
       final offer = packageValue == null
           ? null
           : IapCatalog.promoById(packageValue);
@@ -221,9 +227,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       if (mounted) setState(() => _video = file);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not pick video: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not pick video: $e')));
       }
     } finally {
       if (mounted) setState(() => _videoChecking = false);
@@ -251,7 +256,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         final bytes = await _cover!.readAsBytes();
         final path =
             'promo-submissions/${user.id}-${DateTime.now().millisecondsSinceEpoch}.jpg';
-        await client.storage.from('event-images').uploadBinary(
+        await client.storage
+            .from('event-images')
+            .uploadBinary(
               path,
               bytes,
               fileOptions: const FileOptions(
@@ -277,7 +284,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             : ext == 'webm'
             ? 'video/webm'
             : 'video/mp4';
-        await client.storage.from('event-images').uploadBinary(
+        await client.storage
+            .from('event-images')
+            .uploadBinary(
               path,
               bytes,
               fileOptions: FileOptions(contentType: contentType, upsert: true),
@@ -334,9 +343,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not submit event: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not submit event: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -347,7 +355,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     final submissionId = _submissionId;
     if (_submissionStatus != 'approved' || submissionId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This event must be approved before payment.')),
+        const SnackBar(
+          content: Text('This event must be approved before payment.'),
+        ),
       );
       return;
     }
@@ -378,9 +388,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.userMessage)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result.userMessage)));
     } finally {
       if (mounted) setState(() => _checkoutBusy = false);
     }
@@ -456,7 +465,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         'Submit first. We review the event before you pay. If approved, payment unlocks and the native App Store sheet handles the purchase.',
         textAlign: TextAlign.center,
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white60,
+          color: Colors.white,
           fontWeight: FontWeight.w700,
           height: 1.4,
         ),
@@ -482,7 +491,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         'No payment is collected at submission. Rejected events are never charged.',
         textAlign: TextAlign.center,
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white38,
+          color: Colors.white,
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
@@ -506,7 +515,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
               child: Container(
                 height: 1,
                 margin: const EdgeInsets.symmetric(horizontal: 5),
-                color: i <= active ? Colors.white70 : Colors.white12,
+                color: i <= active ? Colors.white : Colors.white12,
               ),
             ),
           Column(
@@ -522,14 +531,14 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 child: Icon(
                   icons[i],
                   size: 17,
-                  color: i <= active ? Colors.black : Colors.white54,
+                  color: i <= active ? Colors.black : Colors.white,
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 labels[i],
                 style: GoogleFonts.plusJakartaSans(
-                  color: i <= active ? Colors.white : Colors.white38,
+                  color: i <= active ? Colors.white : Colors.white,
                   fontSize: 8,
                   fontWeight: FontWeight.w900,
                   letterSpacing: .6,
@@ -552,13 +561,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 18),
+          const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
+                color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -621,7 +630,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ],
       ),
       const SizedBox(height: 18),
-      _primaryBtn(label: 'Continue', onPressed: () => setState(() => _step = 2)),
+      _primaryBtn(
+        label: 'Continue',
+        onPressed: () => setState(() => _step = 2),
+      ),
     ];
   }
 
@@ -685,7 +697,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 10),
       OutlinedButton.icon(
         onPressed: _videoChecking ? null : _pickVideo,
-        icon: Icon(_video == null ? Icons.videocam_outlined : Icons.check_rounded),
+        icon: Icon(
+          _video == null ? Icons.videocam_outlined : Icons.check_rounded,
+        ),
         label: Text(
           _videoChecking
               ? 'Checking video…'
@@ -732,12 +746,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 10),
       Text(
         'Our team checks the event before payment is enabled. Submitting this form does not charge you.',
-        style: GoogleFonts.plusJakartaSans(color: Colors.white60, height: 1.4),
+        style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.4),
       ),
       const SizedBox(height: 18),
       _summaryRow('Event', _title.text),
       _summaryRow('Category', _types.firstWhere((t) => t.$1 == _type).$2),
-      if (_location.text.trim().isNotEmpty) _summaryRow('Location', _location.text),
+      if (_location.text.trim().isNotEmpty)
+        _summaryRow('Location', _location.text),
       if (_date.text.trim().isNotEmpty) _summaryRow('Date', _date.text),
       if (_video != null) _summaryRow('Video', 'Attached · up to 1 minute'),
       const SizedBox(height: 22),
@@ -750,7 +765,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         'NO PAYMENT NOW · PAYMENT ONLY AFTER APPROVAL',
         textAlign: TextAlign.center,
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white38,
+          color: Colors.white,
           fontSize: 9.5,
           fontWeight: FontWeight.w900,
           letterSpacing: 1.2,
@@ -774,7 +789,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             child: Text(
               label.toUpperCase(),
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: Colors.white,
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: .8,
@@ -815,17 +830,17 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       Text(
         'We’re reviewing “${_submissionTitle ?? 'your event'}”. You have not been charged. If approved, we’ll notify you and unlock payment.',
         textAlign: TextAlign.center,
-        style: GoogleFonts.plusJakartaSans(color: Colors.white60, height: 1.45),
+        style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.45),
       ),
       const SizedBox(height: 22),
       _statusCard('NO CHARGE · WAITING FOR MODERATION'),
       const SizedBox(height: 18),
-      _primaryBtn(
-        label: 'Refresh approval status',
-        onPressed: _loadStatus,
-      ),
+      _primaryBtn(label: 'Refresh approval status', onPressed: _loadStatus),
       const SizedBox(height: 8),
-      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Done'),
+      ),
     ];
   }
 
@@ -836,7 +851,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 22),
       Row(
         children: [
-          const Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 25),
+          const Icon(
+            Icons.verified_rounded,
+            color: Color(0xFF34D399),
+            size: 25,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -863,7 +882,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 7),
       Text(
         '“${_submissionTitle ?? 'Your event'}” passed moderation. Pick a plan, then tap the button below to open the native App Store purchase sheet.',
-        style: GoogleFonts.plusJakartaSans(color: Colors.white60, height: 1.4),
+        style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.4),
       ),
       if (_isReviewDemo) ...[
         const SizedBox(height: 12),
@@ -886,13 +905,17 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 18),
+              const Icon(
+                Icons.shopping_bag_outlined,
+                color: Colors.white,
+                size: 18,
+              ),
               const SizedBox(width: 9),
               Expanded(
                 child: Text(
                   'PAYMENT: NATIVE APP STORE IN-APP PURCHASE',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w900,
                     letterSpacing: .7,
@@ -913,7 +936,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       Text(
         'Your event becomes active only after the store transaction is verified. Cancelling checkout leaves the event approved and unpaid.',
         textAlign: TextAlign.center,
-        style: GoogleFonts.plusJakartaSans(color: Colors.white38, fontSize: 10.5),
+        style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10.5),
       ),
     ];
   }
@@ -943,7 +966,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             ? 'The native App Store event-promotion purchase completed and was verified by the backend. The review sample is intentionally not published publicly.'
             : '“${_submissionTitle ?? 'Your event'}” is approved, paid and available in Events.',
         textAlign: TextAlign.center,
-        style: GoogleFonts.plusJakartaSans(color: Colors.white60, height: 1.45),
+        style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.45),
       ),
       const SizedBox(height: 22),
       _statusCard(
@@ -954,7 +977,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 18),
       _primaryBtn(label: 'Done', onPressed: () => Navigator.pop(context)),
       const SizedBox(height: 8),
-      TextButton(onPressed: _resetForNew, child: const Text('Promote another event')),
+      TextButton(
+        onPressed: _resetForNew,
+        child: const Text('Promote another event'),
+      ),
     ];
   }
 
@@ -982,7 +1008,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                   child: Text(
                     p.name,
                     style: GoogleFonts.plusJakartaSans(
-                      color: selected && selectable ? Colors.black : Colors.white,
+                      color: selected && selectable
+                          ? Colors.black
+                          : Colors.white,
                       fontWeight: FontWeight.w900,
                       fontSize: 18,
                     ),
@@ -1015,7 +1043,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                   TextSpan(
                     text: ' ${p.durationLabel}',
                     style: GoogleFonts.plusJakartaSans(
-                      color: selected && selectable ? Colors.black54 : Colors.white54,
+                      color: selected && selectable
+                          ? Colors.black54
+                          : Colors.white,
                       fontSize: 13,
                     ),
                   ),
@@ -1026,7 +1056,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             Text(
               p.tagline,
               style: GoogleFonts.plusJakartaSans(
-                color: selected && selectable ? Colors.black54 : Colors.white38,
+                color: selected && selectable ? Colors.black54 : Colors.white,
                 fontSize: 11.5,
               ),
             ),
@@ -1047,7 +1077,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                       child: Text(
                         perk,
                         style: GoogleFonts.plusJakartaSans(
-                          color: selected && selectable ? Colors.black87 : Colors.white70,
+                          color: selected && selectable
+                              ? Colors.black87
+                              : Colors.white,
                           fontSize: 11.5,
                         ),
                       ),
@@ -1075,7 +1107,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
               label.toUpperCase(),
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: onPressed == null ? Colors.white38 : Colors.black,
+                color: onPressed == null ? Colors.white : Colors.black,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1,
                 fontSize: 12.5,

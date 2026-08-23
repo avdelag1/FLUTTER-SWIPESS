@@ -39,19 +39,25 @@ class AppBottomNav extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _DockIcon(
-                      icon: activeTab == NavTab.dashboard ? CupertinoIcons.square_grid_2x2_fill : CupertinoIcons.square_grid_2x2,
+                      icon: activeTab == NavTab.dashboard
+                          ? CupertinoIcons.square_grid_2x2_fill
+                          : CupertinoIcons.square_grid_2x2,
                       active: activeTab == NavTab.dashboard,
                       onTap: () => onTabSelected(NavTab.dashboard),
                       iconColor: const Color(0xFFFF4D00), // Vibrant Orange/Red
                     ),
                     _DockIcon(
-                      icon: activeTab == NavTab.likes ? CupertinoIcons.flame_fill : CupertinoIcons.flame,
+                      icon: activeTab == NavTab.likes
+                          ? CupertinoIcons.flame_fill
+                          : CupertinoIcons.flame,
                       active: activeTab == NavTab.likes,
                       onTap: () => onTabSelected(NavTab.likes),
                       iconColor: const Color(0xFFFF007F), // Neon Pink
                     ),
                     _DockIcon(
-                      icon: activeTab == NavTab.ai ? CupertinoIcons.sparkles : CupertinoIcons.sparkles, // No fill variant
+                      icon: activeTab == NavTab.ai
+                          ? CupertinoIcons.sparkles
+                          : CupertinoIcons.sparkles, // No fill variant
                       active: activeTab == NavTab.ai,
                       onTap: () => onTabSelected(NavTab.ai),
                       iconColor: const Color(0xFF9D4EDD), // Bright Purple
@@ -63,14 +69,18 @@ class AppBottomNav extends StatelessWidget {
                       onTap: () => onTabSelected(NavTab.add),
                     ),
                     _DockIcon(
-                      icon: activeTab == NavTab.messages ? CupertinoIcons.chat_bubble_2_fill : CupertinoIcons.chat_bubble_2,
+                      icon: activeTab == NavTab.messages
+                          ? CupertinoIcons.chat_bubble_2_fill
+                          : CupertinoIcons.chat_bubble_2,
                       active: activeTab == NavTab.messages,
                       badge: unreadMessages,
                       onTap: () => onTabSelected(NavTab.messages),
                       iconColor: const Color(0xFF3B82F6), // Bright Blue
                     ),
                     _DockIcon(
-                      icon: activeTab == NavTab.idCard ? CupertinoIcons.person_crop_circle_fill : CupertinoIcons.person_crop_circle,
+                      icon: activeTab == NavTab.idCard
+                          ? CupertinoIcons.person_crop_circle_fill
+                          : CupertinoIcons.person_crop_circle,
                       active: activeTab == NavTab.idCard,
                       onTap: () => onTabSelected(NavTab.idCard),
                       iconColor: const Color(0xFFE4007C), // Magenta
@@ -125,7 +135,8 @@ class _DockIcon extends StatelessWidget {
                 color: emphasized
                     ? const Color(0xFFFF4D00) // Solid CTA red/orange
                     : active
-                    ? (iconColor?.withValues(alpha: 0.2) ?? Colors.white.withValues(alpha: 0.12))
+                    ? (iconColor?.withValues(alpha: 0.2) ??
+                          Colors.white.withValues(alpha: 0.12))
                     : Colors.transparent,
               ),
               child: Icon(
@@ -135,7 +146,8 @@ class _DockIcon extends StatelessWidget {
                     ? Colors.white
                     : active
                     ? (iconColor ?? Colors.white)
-                    : (iconColor?.withValues(alpha: 0.8) ?? Colors.white.withValues(alpha: 0.82)),
+                    : (iconColor?.withValues(alpha: 0.8) ??
+                          Colors.white.withValues(alpha: 0.82)),
               ),
             ),
             if (badge > 0)

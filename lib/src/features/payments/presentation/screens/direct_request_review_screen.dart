@@ -31,10 +31,9 @@ class _DirectRequestReviewScreenState
     setState(() => _busy = true);
     AppHaptics.medium();
     try {
-      final result = await ref.read(directRequestRepositoryProvider).respond(
-            requestId: request.id,
-            accept: accept,
-          );
+      final result = await ref
+          .read(directRequestRepositoryProvider)
+          .respond(requestId: request.id, accept: accept);
       ref.invalidate(incomingDirectRequestsProvider);
       ref.invalidate(directRequestBalanceProvider);
       if (!mounted) return;

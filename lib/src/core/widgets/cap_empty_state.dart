@@ -177,7 +177,7 @@ class CapPageHeader extends StatelessWidget {
               Text(
                 subtitle,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: Colors.white,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),

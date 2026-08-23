@@ -118,11 +118,7 @@ class AdminRepository {
     final now = DateTime.now().toUtc().toIso8601String();
     await _client
         .from('business_promo_submissions')
-        .update({
-          'status': 'approved',
-          'approved_at': now,
-          'updated_at': now,
-        })
+        .update({'status': 'approved', 'approved_at': now, 'updated_at': now})
         .eq('id', sub.id);
 
     if (sub.userId != null) {

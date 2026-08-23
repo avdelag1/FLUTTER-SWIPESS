@@ -37,9 +37,7 @@ class MapCityChips extends StatelessWidget {
                 currentCity.contains(cityName) || cityName == currentCity;
 
             return Material(
-              color: active
-                  ? const Color(0xE8FFFFFF)
-                  : const Color(0xB011141A),
+              color: active ? const Color(0xE8FFFFFF) : const Color(0xB011141A),
               borderRadius: BorderRadius.circular(999),
               clipBehavior: Clip.antiAlias,
               child: InkWell(

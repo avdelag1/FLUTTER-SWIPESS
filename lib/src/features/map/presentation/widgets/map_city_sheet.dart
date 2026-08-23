@@ -45,7 +45,7 @@ class _MapCitySheetState extends State<MapCitySheet> {
                 ),
                 IconButton(
                   onPressed: widget.onClose,
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
                 ),
               ],
             ),
@@ -59,12 +59,12 @@ class _MapCitySheetState extends State<MapCitySheet> {
               decoration: InputDecoration(
                 hintText: 'Search Miami, Tulum, Paris…',
                 hintStyle: GoogleFonts.plusJakartaSans(
-                  color: Colors.white38,
+                  color: Colors.white,
                   fontSize: 13,
                 ),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: Colors.white54,
+                  color: Colors.white,
                 ),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.06),
@@ -134,7 +134,7 @@ class _MapCitySheetState extends State<MapCitySheet> {
                                 city.country,
                                 maxLines: 1,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                 ),

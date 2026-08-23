@@ -144,9 +144,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Choose a strong new password for your Swipess account.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
-                        ),
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                       const SizedBox(height: 28),
                       GlassTextField(
@@ -204,13 +202,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 size: 16,
                                 color: row.$1
                                     ? const Color(0xFF10B981)
-                                    : Colors.white38,
+                                    : Colors.white,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 row.$2,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                   fontSize: 13,
                                 ),
                               ),

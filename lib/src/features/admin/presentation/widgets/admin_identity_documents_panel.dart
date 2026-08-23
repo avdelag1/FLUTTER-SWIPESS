@@ -33,8 +33,7 @@ class _AdminIdentityDocumentsPanelState
         .order('created_at', ascending: false)
         .limit(100);
 
-    final rows = (raw as List)
-        .cast<Map<String, dynamic>>();
+    final rows = (raw as List).cast<Map<String, dynamic>>();
     if (rows.isEmpty) return const [];
 
     final userIds = rows
@@ -63,14 +62,16 @@ class _AdminIdentityDocumentsPanelState
       }
     }
 
-    return rows.map((row) {
-      final userId = row['user_id'] as String? ?? 'unknown';
-      return _AdminDocumentRecord(
-        userId: userId,
-        userName: names[userId],
-        document: LegalDocument.fromJson(row),
-      );
-    }).toList(growable: false);
+    return rows
+        .map((row) {
+          final userId = row['user_id'] as String? ?? 'unknown';
+          return _AdminDocumentRecord(
+            userId: userId,
+            userName: names[userId],
+            document: LegalDocument.fromJson(row),
+          );
+        })
+        .toList(growable: false);
   }
 
   void _refresh() {
@@ -171,7 +172,10 @@ class _AdminIdentityDocumentsPanelState
                           style: TextStyle(color: secondary),
                         ),
                       ),
-                      TextButton(onPressed: _refresh, child: const Text('Retry')),
+                      TextButton(
+                        onPressed: _refresh,
+                        child: const Text('Retry'),
+                      ),
                     ],
                   ),
                 );
@@ -200,10 +204,7 @@ class _AdminIdentityDocumentsPanelState
               return Column(
                 children: [
                   for (final entry in grouped.entries) ...[
-                    _UserDocumentGroup(
-                      records: entry.value,
-                      isLight: isLight,
-                    ),
+                    _UserDocumentGroup(records: entry.value, isLight: isLight),
                     if (entry.key != grouped.keys.last)
                       const SizedBox(height: 10),
                   ],
@@ -340,7 +341,10 @@ class _AdminDocumentTile extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: approved
                         ? const Color(0xFF36D17C).withAlpha(28)

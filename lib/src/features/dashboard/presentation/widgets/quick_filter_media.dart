@@ -96,7 +96,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   void initState() {
     super.initState();
     _reshuffle(widget.sources);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleVisibilityCheck());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scheduleVisibilityCheck(),
+    );
   }
 
   @override
@@ -180,11 +182,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     final top = render.localToGlobal(Offset.zero).dy;
     final bottom = top + render.size.height;
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final visibleHeight =
-        (math.min(bottom, screenHeight) - math.max(top, 0.0)).clamp(
-          0.0,
-          render.size.height,
-        );
+    final visibleHeight = (math.min(bottom, screenHeight) - math.max(top, 0.0))
+        .clamp(0.0, render.size.height);
     final fraction = render.size.height <= 0
         ? 0.0
         : visibleHeight / render.size.height;
@@ -349,8 +348,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (_, _, _) =>
-              const ColoredBox(color: Color(0xFF15171C)),
+          errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF15171C)),
         );
       }
     }
@@ -424,7 +422,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       }
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scheduleVisibilityCheck());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scheduleVisibilityCheck(),
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -433,8 +433,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
         final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
-        if (_sources.length > 1 &&
-            (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
+        if (_sources.length > 1 && (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
           AppHaptics.selection();
           _advance(gesture < 0 ? 1 : -1);
         }

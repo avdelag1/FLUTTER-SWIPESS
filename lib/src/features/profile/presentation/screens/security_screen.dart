@@ -361,18 +361,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         UserAttributes(password: _next.text),
       );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Password updated')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Password updated')));
         _current.clear();
         _next.clear();
         _confirm.clear();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not update: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);

@@ -182,10 +182,7 @@ class RoleControlCenter extends StatelessWidget {
                       );
                     },
                   ),
-                  if (footer != null) ...[
-                    const SizedBox(height: 18),
-                    footer!,
-                  ],
+                  if (footer != null) ...[const SizedBox(height: 18), footer!],
                 ],
               ),
             ),

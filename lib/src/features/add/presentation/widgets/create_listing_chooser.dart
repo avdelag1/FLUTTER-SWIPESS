@@ -52,7 +52,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
                       padding: EdgeInsets.only(right: 8),
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white70,
+                        color: Colors.white,
                         size: 18,
                       ),
                     ),
@@ -79,7 +79,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
                             ? 'SELECT THE TYPE OF LISTING YOU WANT TO CREATE'
                             : 'FOR RENT, FOR SALE, OR BOTH',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
+                          color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.6,
@@ -113,7 +113,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
                     child: Text(
                       'OR MANUAL MODE',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white38,
+                        color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1,
@@ -292,14 +292,14 @@ class _ModeCard extends StatelessWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: Colors.white,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white),
           ],
         ),
       ),
@@ -374,7 +374,7 @@ class _MagicCard extends StatelessWidget {
                   Text(
                     'Upload photos & describe your asset. AI generates the entire listing in seconds.',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white60,
+                      color: Colors.white,
                       fontSize: 12,
                       height: 1.35,
                     ),
@@ -453,7 +453,7 @@ class _ManualTile extends StatelessWidget {
                         Text(
                           subtitle,
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: Colors.white,
                             fontSize: 12,
                           ),
                         ),

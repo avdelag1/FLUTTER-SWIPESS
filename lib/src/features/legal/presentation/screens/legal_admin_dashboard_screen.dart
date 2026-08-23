@@ -13,8 +13,7 @@ class LegalAdminDashboardScreen extends StatelessWidget {
       child: RoleControlCenter(
         eyebrow: 'Legal operations',
         title: 'Legal admin',
-        subtitle:
-            'Centralize contracts, lawyer services, FAQs and client-facing legal resources without mixing them into the general admin area.',
+        subtitle: 'Centralize contracts, lawyer services, FAQs and client-facing legal resources without mixing them into the general admin area.',
         statusLabel: 'Legal workspace',
         actions: [
           RoleDashboardAction(

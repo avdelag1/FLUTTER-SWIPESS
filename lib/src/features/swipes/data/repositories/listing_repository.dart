@@ -155,7 +155,8 @@ class ListingRepository {
     if (city != null && city.trim().isNotEmpty) {
       query = query.ilike('city', '%${city.trim()}%');
     }
-    if (propertyTypes.isNotEmpty) query = query.inFilter('property_type', propertyTypes);
+    if (propertyTypes.isNotEmpty)
+      query = query.inFilter('property_type', propertyTypes);
 
     final data = await query
         .order('created_at', ascending: false)
@@ -192,7 +193,8 @@ class ListingRepository {
       final baths = (listing.baths ?? listing.bathrooms ?? 0).ceil();
       if (minBaths != null && minBaths > 0 && baths < minBaths) return false;
       if (furnished != null && listing.furnished != furnished) return false;
-      if (petFriendly != null && listing.petFriendly != petFriendly) return false;
+      if (petFriendly != null && listing.petFriendly != petFriendly)
+        return false;
       if (propertyTypes.isNotEmpty) {
         final pt = listing.propertyType;
         if (pt == null || !propertyTypes.contains(pt)) return false;
@@ -307,13 +309,15 @@ class ListingRepository {
     for (var i = 0; i < files.length; i++) {
       final file = files[i];
       final bytes = await file.readAsBytes();
-      if (bytes.isEmpty) throw Exception('One selected legal document is empty.');
+      if (bytes.isEmpty)
+        throw Exception('One selected legal document is empty.');
       if (bytes.lengthInBytes > 15 * 1024 * 1024) {
         throw Exception('Each legal document must be under 15MB.');
       }
       final safeName = _safeFileName(file.name);
       final contentType = _legalContentType(bytes, file.name, file.mimeType);
-      final path = 'listing-documents/$userId/$listingId/${DateTime.now().millisecondsSinceEpoch}-$i-$safeName';
+      final path =
+          'listing-documents/$userId/$listingId/${DateTime.now().millisecondsSinceEpoch}-$i-$safeName';
       await _client.storage
           .from('legal-documents')
           .uploadBinary(
@@ -491,10 +495,12 @@ class ListingRepository {
     final mime = mimeType?.trim();
     if (mime != null && mime.isNotEmpty) return mime;
     final lower = name.toLowerCase();
-    if (lower.endsWith('.pdf') || _startsWith(bytes, const [0x25, 0x50, 0x44, 0x46])) {
+    if (lower.endsWith('.pdf') ||
+        _startsWith(bytes, const [0x25, 0x50, 0x44, 0x46])) {
       return 'application/pdf';
     }
-    if (lower.endsWith('.png') || _startsWith(bytes, const [0x89, 0x50, 0x4E, 0x47])) {
+    if (lower.endsWith('.png') ||
+        _startsWith(bytes, const [0x89, 0x50, 0x4E, 0x47])) {
       return 'image/png';
     }
     if (lower.endsWith('.webp') || _isWebp(bytes)) return 'image/webp';
@@ -510,7 +516,9 @@ class ListingRepository {
       if (lower.contains('fideicomiso') || lower.contains('trust')) {
         return 'fideicomiso';
       }
-      if (lower.contains('lease') || lower.contains('rental') || lower.contains('contrato')) {
+      if (lower.contains('lease') ||
+          lower.contains('rental') ||
+          lower.contains('contrato')) {
         return 'rental_agreement';
       }
       return 'ownership_deed';

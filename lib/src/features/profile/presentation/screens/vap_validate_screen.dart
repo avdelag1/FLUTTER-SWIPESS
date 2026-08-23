@@ -128,14 +128,14 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                     const Spacer(),
                     const Icon(
                       Icons.qr_code_scanner_rounded,
-                      color: Colors.white70,
+                      color: Colors.white,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'BUSINESS VALIDATION',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2.4,
@@ -207,7 +207,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                             child: Text(
                               'OR ENTER ID MANUALLY',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
+                                color: Colors.white,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.2,
@@ -225,7 +225,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'User ID (e.g. NX-ABC123)',
-                          hintStyle: const TextStyle(color: Colors.white38),
+                          hintStyle: const TextStyle(color: Colors.white),
                           filled: true,
                           fillColor: Colors.white.withAlpha(10),
                           contentPadding: const EdgeInsets.symmetric(
@@ -283,7 +283,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                             Text(
                               'Could not verify this ID.',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white70,
+                                color: Colors.white,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -454,7 +454,7 @@ class _ValidCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'This Virtual Residency ID is active.',
-            style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+            style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
           const SizedBox(height: 24),
           Container(
@@ -482,7 +482,7 @@ class _ValidCard extends StatelessWidget {
             'Discounts at participating locations apply. ID provided by Swipess.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white38,
+              color: Colors.white,
               fontSize: 11,
             ),
           ),
@@ -518,7 +518,7 @@ class _InvalidCard extends StatelessWidget {
           Text(
             'This Virtual Residency ID is not recognized or has expired.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(color: Colors.white54),
+            style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
         ],
       ),
@@ -541,7 +541,7 @@ class _Field extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white38,
+              color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.6,

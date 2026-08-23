@@ -59,8 +59,9 @@ class MessagingEntitlements {
   bool get canStartConversation => canUseMatchedChat;
 }
 
-final messagingEntitlementsProvider =
-    FutureProvider<MessagingEntitlements>((ref) async {
+final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((
+  ref,
+) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     return const MessagingEntitlements(
@@ -99,8 +100,7 @@ final freeTrialActiveProvider = Provider<bool>((ref) {
 final canStartConversationProvider = Provider<bool>((ref) => true);
 
 final canSendDirectRequestProvider = Provider<bool>((ref) {
-  return ref.watch(directRequestBalanceProvider).maybeWhen(
-        data: (balance) => balance.available > 0,
-        orElse: () => false,
-      );
+  return ref
+      .watch(directRequestBalanceProvider)
+      .maybeWhen(data: (balance) => balance.available > 0, orElse: () => false);
 });

@@ -244,7 +244,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     final videos = teaserAsync.value ?? const <Event>[];
     final soundOn = ref.watch(deckSoundOnProvider);
 
-    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (_, next) {
+    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (
+      _,
+      next,
+    ) {
       final loaded = next.value ?? const <Event>[];
       if (loaded.isNotEmpty && _current == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _ensureVideo());
@@ -300,7 +303,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                         end: Offset.zero,
                       ).animate(curved),
                       child: ScaleTransition(
-                        scale: Tween<double>(begin: 1.035, end: 1).animate(curved),
+                        scale: Tween<double>(
+                          begin: 1.035,
+                          end: 1,
+                        ).animate(curved),
                         child: child,
                       ),
                     ),
@@ -321,7 +327,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                         },
                         icon: const Icon(
                           Icons.refresh_rounded,
-                          color: Colors.white70,
+                          color: Colors.white,
                         ),
                       )
                     : const SizedBox(
@@ -329,7 +335,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.8,
-                          color: Colors.white54,
+                          color: Colors.white,
                         ),
                       ),
               ),
@@ -351,7 +357,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
               left: 14,
               top: 13,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(125),
                   borderRadius: BorderRadius.circular(999),
@@ -413,7 +422,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                               ? 'Next event plays when this video ends'
                               : 'Tap to explore events',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70,
+                            color: Colors.white,
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
                           ),

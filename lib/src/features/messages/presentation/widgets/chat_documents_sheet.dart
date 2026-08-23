@@ -83,14 +83,18 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
             'This document is already assigned or signed. Duplicate it in Swipess Sign before sending it to another person.',
           );
         }
-        shared = await ref.read(contractRepositoryProvider).sendForSignature(
+        shared = await ref
+            .read(contractRepositoryProvider)
+            .sendForSignature(
               contractId: contract.id,
               clientId: widget.otherUserId,
             );
         await ref.read(contractsProvider.notifier).refresh();
       }
 
-      await ref.read(messageRepositoryProvider).sendDocumentMessage(
+      await ref
+          .read(messageRepositoryProvider)
+          .sendDocumentMessage(
             conversationId: widget.conversationId,
             attachment: DocumentAttachment(
               type: 'digital_contract',
@@ -131,7 +135,9 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
       _error = null;
     });
     try {
-      await ref.read(messageRepositoryProvider).sendDocumentMessage(
+      await ref
+          .read(messageRepositoryProvider)
+          .sendDocumentMessage(
             conversationId: widget.conversationId,
             attachment: DocumentAttachment(
               type: 'vault_file',
@@ -159,9 +165,8 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
     await Clipboard.setData(ClipboardData(text: '${contract.title}\n\n$body'));
     if (!mounted) return;
     AppHaptics.light();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Document text copied')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Document text copied')));
   }
 
   @override
@@ -419,7 +424,9 @@ class _TabPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.brandPrimary : MatteSurface.cardFill(context),
+          color: selected
+              ? AppTheme.brandPrimary
+              : MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected
@@ -646,7 +653,11 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
-          Icon(Icons.description_outlined, size: 42, color: muted.withAlpha(60)),
+          Icon(
+            Icons.description_outlined,
+            size: 42,
+            color: muted.withAlpha(60),
+          ),
           const SizedBox(height: 12),
           Text(
             label,

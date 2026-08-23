@@ -263,9 +263,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                       () => _rememberMe = val ?? false,
                                     ),
                                     fillColor: WidgetStateProperty.resolveWith(
-                                      (states) => states.contains(
-                                        WidgetState.selected,
-                                      )
+                                      (states) =>
+                                          states.contains(WidgetState.selected)
                                           ? AppTheme.brandPrimary
                                           : Colors.transparent,
                                     ),
@@ -349,8 +348,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 ),
                               ),
                               Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
                                 child: Text(
                                   'or',
                                   style: TextStyle(

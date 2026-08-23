@@ -81,7 +81,8 @@ class _SwipessPrimaryCTAState extends State<SwipessPrimaryCTA> {
 
   @override
   Widget build(BuildContext context) {
-    final active = !widget.isDisabled && !widget.isLoading && widget.onTap != null;
+    final active =
+        !widget.isDisabled && !widget.isLoading && widget.onTap != null;
 
     return GestureDetector(
       onTapDown: active ? (_) => setState(() => _pressed = true) : null,
@@ -136,7 +137,7 @@ class _SwipessPrimaryCTAState extends State<SwipessPrimaryCTA> {
                     Text(
                       widget.label,
                       style: GoogleFonts.plusJakartaSans(
-                        color: active ? Colors.white : Colors.white38,
+                        color: active ? Colors.white : Colors.white,
                         fontWeight: FontWeight.w900,
                         fontSize: 14,
                         letterSpacing: 1.5,
@@ -206,11 +207,11 @@ class SwipessTierCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = isLight
         ? (isHighlighted
-            ? accentColor.withAlpha(12)
-            : SwipessTokens.lightElevated)
+              ? accentColor.withAlpha(12)
+              : SwipessTokens.lightElevated)
         : (isHighlighted
-            ? accentColor.withAlpha(22)
-            : SwipessTokens.darkElevated);
+              ? accentColor.withAlpha(22)
+              : SwipessTokens.darkElevated);
 
     final border = isHighlighted
         ? accentColor.withAlpha(isLight ? 120 : 160)
@@ -306,7 +307,7 @@ class SwipessServiceActionCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: SwipessTokens.bodyClean(
-                    color: isLight ? Colors.black54 : Colors.white60,
+                    color: isLight ? Colors.black54 : Colors.white,
                     fontSize: 12,
                   ),
                   maxLines: 1,
@@ -400,7 +401,7 @@ class SwipessStatCard extends StatelessWidget {
                   Text(
                     title.toUpperCase(),
                     style: SwipessTokens.kickerUppercase(
-                      color: isLight ? Colors.black54 : Colors.white60,
+                      color: isLight ? Colors.black54 : Colors.white,
                       fontSize: 7.5,
                     ),
                     maxLines: 1,
@@ -409,7 +410,7 @@ class SwipessStatCard extends StatelessWidget {
                   Text(
                     subtitle.toUpperCase(),
                     style: SwipessTokens.kickerUppercase(
-                      color: isLight ? Colors.black38 : Colors.white38,
+                      color: isLight ? Colors.black38 : Colors.white,
                       fontSize: 6.5,
                     ),
                     maxLines: 1,
@@ -453,7 +454,7 @@ class SwipessStatCard extends StatelessWidget {
                 child: Text(
                   title.toUpperCase(),
                   style: SwipessTokens.kickerUppercase(
-                    color: isLight ? Colors.black54 : Colors.white60,
+                    color: isLight ? Colors.black54 : Colors.white,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -480,7 +481,7 @@ class SwipessStatCard extends StatelessWidget {
           Text(
             subtitle.toUpperCase(),
             style: SwipessTokens.kickerUppercase(
-              color: isLight ? Colors.black38 : Colors.white38,
+              color: isLight ? Colors.black38 : Colors.white,
               fontSize: 9,
             ),
           ),

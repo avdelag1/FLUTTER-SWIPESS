@@ -39,34 +39,28 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
   static const _slides = [
     _Slide(
       title: 'Discover Properties',
-      desc:
-          'Swipe through places worth seeing. Connect directly with owners, buyers and renters.',
-      networkImage:
-          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200',
+      desc: 'Swipe through places worth seeing. Connect directly with owners, buyers and renters.',
+      networkImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200',
       assetImage: null,
       icon: Icons.place_rounded,
     ),
     _Slide(
       title: 'Trusted Network',
-      desc:
-          'Find roommates, services and local people through one connected community.',
-      networkImage:
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
+      desc: 'Find roommates, services and local people through one connected community.',
+      networkImage: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=1200',
       assetImage: null,
       icon: Icons.groups_rounded,
     ),
     _Slide(
       title: 'AI Concierge',
-      desc:
-          'Search naturally, discover faster and let AI help you find what matters around you.',
+      desc: 'Search naturally, discover faster and let AI help you find what matters around you.',
       networkImage: null,
       assetImage: 'assets/images/onboarding/ai_chat_onboarding.png',
       icon: Icons.auto_awesome_rounded,
     ),
     _Slide(
       title: 'Resident Identity',
-      desc:
-          'Keep your local identity, profile and verified documents together in your Swipess card.',
+      desc: 'Keep your local identity, profile and verified documents together in your Swipess card.',
       networkImage: null,
       assetImage: 'assets/images/onboarding/resident_girl_onboarding.png',
       icon: Icons.verified_user_rounded,
@@ -120,12 +114,16 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 620),
               transitionBuilder: (child, animation) {
-                final slideIn = Tween<Offset>(
-                  begin: const Offset(.045, 0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-                );
+                final slideIn =
+                    Tween<Offset>(
+                      begin: const Offset(.045, 0),
+                      end: Offset.zero,
+                    ).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
+                    );
                 return FadeTransition(
                   opacity: animation,
                   child: SlideTransition(position: slideIn, child: child),
@@ -266,7 +264,9 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                               backgroundColor: AppTheme.brandPrimary,
                               shadowColor: Colors.black.withAlpha(100),
                               elevation: 8,
-                              padding: const EdgeInsets.symmetric(horizontal: 22),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
                               ),
@@ -399,7 +399,7 @@ class _VapPreviewCard extends StatelessWidget {
           Text(
             'ORIGIN',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white60,
+              color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.4,
@@ -417,7 +417,7 @@ class _VapPreviewCard extends StatelessWidget {
           Text(
             'DURATION',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white60,
+              color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.4,

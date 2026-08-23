@@ -47,21 +47,23 @@ class DirectRequest {
   final DateTime createdAt;
   final DateTime expiresAt;
 
-  bool get isPending => status == 'pending' && expiresAt.isAfter(DateTime.now());
+  bool get isPending =>
+      status == 'pending' && expiresAt.isAfter(DateTime.now());
 
   factory DirectRequest.fromJson(Map data) => DirectRequest(
-        id: '${data['id']}',
-        senderId: '${data['sender_id']}',
-        receiverId: '${data['receiver_id']}',
-        listingId: data['listing_id']?.toString(),
-        status: '${data['status'] ?? 'pending'}',
-        message: '${data['message'] ?? ''}',
-        conversationId: data['conversation_id']?.toString(),
-        tokenConsumed: data['token_consumed'] == true,
-        createdAt: DateTime.tryParse('${data['created_at']}') ?? DateTime.now(),
-        expiresAt: DateTime.tryParse('${data['expires_at']}') ??
-            DateTime.now().add(const Duration(hours: 48)),
-      );
+    id: '${data['id']}',
+    senderId: '${data['sender_id']}',
+    receiverId: '${data['receiver_id']}',
+    listingId: data['listing_id']?.toString(),
+    status: '${data['status'] ?? 'pending'}',
+    message: '${data['message'] ?? ''}',
+    conversationId: data['conversation_id']?.toString(),
+    tokenConsumed: data['token_consumed'] == true,
+    createdAt: DateTime.tryParse('${data['created_at']}') ?? DateTime.now(),
+    expiresAt:
+        DateTime.tryParse('${data['expires_at']}') ??
+        DateTime.now().add(const Duration(hours: 48)),
+  );
 }
 
 class DirectRequestResult {
@@ -80,17 +82,17 @@ class DirectRequestResult {
   final bool tokenReturned;
 
   factory DirectRequestResult.fromJson(Map data) => DirectRequestResult(
-        id: '${data['id'] ?? ''}',
-        status: '${data['status'] ?? ''}',
-        conversationId: data['conversation_id']?.toString(),
-        tokenConsumed: data['token_consumed'] == true,
-        tokenReturned: data['token_returned'] == true,
-      );
+    id: '${data['id'] ?? ''}',
+    status: '${data['status'] ?? ''}',
+    conversationId: data['conversation_id']?.toString(),
+    tokenConsumed: data['token_consumed'] == true,
+    tokenReturned: data['token_returned'] == true,
+  );
 }
 
 class DirectRequestRepository {
   DirectRequestRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
 
@@ -154,7 +156,10 @@ class DirectRequestRepository {
   Future<List<DirectRequest>> fetchIncoming({String? requestId}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return const [];
-    dynamic query = _client.from('direct_requests').select().eq('receiver_id', uid);
+    dynamic query = _client
+        .from('direct_requests')
+        .select()
+        .eq('receiver_id', uid);
     if (requestId != null && requestId.isNotEmpty) {
       query = query.eq('id', requestId);
     }
@@ -179,18 +184,26 @@ class DirectRequestRepository {
   }
 }
 
-final directRequestRepositoryProvider = Provider<DirectRequestRepository>((ref) {
+final directRequestRepositoryProvider = Provider<DirectRequestRepository>((
+  ref,
+) {
   return DirectRequestRepository();
 });
 
-final directRequestBalanceProvider = FutureProvider<DirectRequestBalance>((ref) {
+final directRequestBalanceProvider = FutureProvider<DirectRequestBalance>((
+  ref,
+) {
   return ref.read(directRequestRepositoryProvider).fetchBalance();
 });
 
-final incomingDirectRequestsProvider = FutureProvider<List<DirectRequest>>((ref) {
+final incomingDirectRequestsProvider = FutureProvider<List<DirectRequest>>((
+  ref,
+) {
   return ref.read(directRequestRepositoryProvider).fetchIncoming();
 });
 
-final outgoingDirectRequestsProvider = FutureProvider<List<DirectRequest>>((ref) {
+final outgoingDirectRequestsProvider = FutureProvider<List<DirectRequest>>((
+  ref,
+) {
   return ref.read(directRequestRepositoryProvider).fetchOutgoing();
 });

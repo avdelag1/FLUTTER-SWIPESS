@@ -181,7 +181,7 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
                                 tooltip: 'Close',
                                 onPressed: _finish,
                                 icon: const Icon(Icons.close_rounded),
-                                color: Colors.white70,
+                                color: Colors.white,
                               ),
                             ),
                             const Icon(
@@ -255,7 +255,7 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
                               'AFTER YOUR COMPLIMENTARY ACCESS',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
+                                color: Colors.white,
                                 fontSize: 10,
                                 letterSpacing: 1.2,
                                 fontWeight: FontWeight.w900,
@@ -264,9 +264,11 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
                             const SizedBox(height: 10),
                             Row(
                               children: [
-                                for (var i = 0;
-                                    i < IapCatalog.subscriptions.length;
-                                    i++) ...[
+                                for (
+                                  var i = 0;
+                                  i < IapCatalog.subscriptions.length;
+                                  i++
+                                ) ...[
                                   Expanded(
                                     child: _CompactPlan(
                                       offer: IapCatalog.subscriptions[i],
@@ -368,7 +370,7 @@ class _BenefitTile extends StatelessWidget {
                 Text(
                   benefit.subtitle,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white60,
+                    color: Colors.white,
                     fontSize: 9.5,
                     height: 1.25,
                     fontWeight: FontWeight.w500,
@@ -411,7 +413,7 @@ class _CompactPlan extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
+              color: Colors.white,
               fontSize: 8.5,
               letterSpacing: 0.4,
               fontWeight: FontWeight.w900,
@@ -432,7 +434,7 @@ class _CompactPlan extends StatelessWidget {
               offer.durationLabel!,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: Colors.white,
                 fontSize: 8.5,
                 fontWeight: FontWeight.w600,
               ),

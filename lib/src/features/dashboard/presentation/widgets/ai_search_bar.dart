@@ -66,47 +66,67 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
       return true;
     }
 
-    if (has(r'\b(business|owner dashboard|owner side|landlord|host dashboard)\b')) {
+    if (has(
+      r'\b(business|owner dashboard|owner side|landlord|host dashboard)\b',
+    )) {
       context.go(AppPaths.ownerDashboard);
       return true;
     }
 
-    if (has(r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b')) {
+    if (has(
+      r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b',
+    )) {
       context.go(AppPaths.documents);
       return true;
     }
 
-    if (has(r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b')) {
+    if (has(
+      r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b',
+    )) {
       ref.read(overlayModalsProvider.notifier).openPassportMap();
       return true;
     }
 
-    if (has(r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b')) {
+    if (has(
+      r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b',
+    )) {
       context.go(AppPaths.exploreEvents);
       return true;
     }
 
-    if (has(r'\b(legal|lawyer|lawyers|attorney|contract|contracts|fideicomiso|escrow|police help|legal help)\b')) {
+    if (has(
+      r'\b(legal|lawyer|lawyers|attorney|contract|contracts|fideicomiso|escrow|police help|legal help)\b',
+    )) {
       context.go(AppPaths.clientLegalServices);
       return true;
     }
 
-    if (has(r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b')) {
+    if (has(
+      r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b',
+    )) {
       context.go(AppPaths.clientServices);
       return true;
     }
 
-    if (has(r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b')) {
+    if (has(
+      r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b',
+    )) {
       context.go(AppPaths.exploreSeekers);
       return true;
     }
 
     if (has(r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b')) {
-      openClientSwipeDeck(context, categoryId: 'yacht', categoryTitle: 'YACHTS');
+      openClientSwipeDeck(
+        context,
+        categoryId: 'yacht',
+        categoryTitle: 'YACHTS',
+      );
       return true;
     }
 
-    if (has(r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b')) {
+    if (has(
+      r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'motorcycle',
@@ -116,11 +136,17 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
     }
 
     if (has(r'\b(bicycles?|bikes?|bicis?|bicicletas?)\b')) {
-      openClientSwipeDeck(context, categoryId: 'bicycle', categoryTitle: 'BICYCLES');
+      openClientSwipeDeck(
+        context,
+        categoryId: 'bicycle',
+        categoryTitle: 'BICYCLES',
+      );
       return true;
     }
 
-    if (has(r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b')) {
+    if (has(
+      r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'property',

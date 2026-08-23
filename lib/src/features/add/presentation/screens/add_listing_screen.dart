@@ -146,7 +146,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                             Text(
                               'STEP ${draft.step + 1} OF ${_steps.length}',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white38,
+                                color: Colors.white,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 2.4,
@@ -345,7 +345,7 @@ class _WizardStepPills extends StatelessWidget {
                           ? Colors.white
                           : step.$1 < current
                           ? const Color(0xFF34D399)
-                          : Colors.white54,
+                          : Colors.white,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -355,7 +355,7 @@ class _WizardStepPills extends StatelessWidget {
                             ? Colors.white
                             : step.$1 < current
                             ? const Color(0xFF34D399)
-                            : Colors.white54,
+                            : Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.6,
@@ -393,7 +393,7 @@ class _PublishStep extends StatelessWidget {
         Text(
           'Confirm your listing looks right. Publishing makes it live on the swipe deck.',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white60,
+            color: Colors.white,
             fontSize: 13,
             height: 1.4,
           ),
@@ -459,7 +459,7 @@ class _ReviewRow extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1,
@@ -594,7 +594,7 @@ class _PhotosStep extends ConsumerWidget {
         Text(
           'PHOTOS · up to ${draft.maxPhotos} · first is the swipe cover',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white70,
+            color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 12,
             letterSpacing: 0.6,
@@ -670,7 +670,7 @@ class _PhotosStep extends ConsumerWidget {
                   ),
                   child: const Icon(
                     Icons.add_a_photo_rounded,
-                    color: Colors.white70,
+                    color: Colors.white,
                   ),
                 ),
               );
@@ -735,7 +735,7 @@ class _PhotosStep extends ConsumerWidget {
         Text(
           'VIDEO · optional 10s loop for the swipe card',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white70,
+            color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 12,
             letterSpacing: 0.6,
@@ -769,7 +769,7 @@ class _PhotosStep extends ConsumerWidget {
                 IconButton(
                   onPressed: () =>
                       ref.read(addListingProvider.notifier).removeVideo(),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
                 ),
               ],
             ),
@@ -819,7 +819,7 @@ class _PhotosStep extends ConsumerWidget {
                   Text(
                     '10-second loop · under 50MB',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: Colors.white,
                       fontSize: 12,
                     ),
                   ),
@@ -1221,7 +1221,7 @@ class _DetailsStep extends ConsumerWidget {
       Text(
         'SERVICE TYPE',
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white54,
+          color: Colors.white,
           fontWeight: FontWeight.w900,
           fontSize: 11,
           letterSpacing: 1.2,
@@ -1378,7 +1378,7 @@ class _SelectCard extends StatelessWidget {
             ),
             Icon(
               active ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-              color: Colors.white70,
+              color: Colors.white,
             ),
           ],
         ),

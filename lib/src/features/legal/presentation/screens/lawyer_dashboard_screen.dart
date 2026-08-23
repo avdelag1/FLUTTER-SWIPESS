@@ -10,8 +10,7 @@ class LawyerDashboardScreen extends StatelessWidget {
     return const RoleControlCenter(
       eyebrow: 'Professional workspace',
       title: 'Lawyer dashboard',
-      subtitle:
-          'A focused workspace for legal services, contracts and client communication, using the same modern Swipess interface as the main app.',
+      subtitle: 'A focused workspace for legal services, contracts and client communication, using the same modern Swipess interface as the main app.',
       statusLabel: 'Lawyer workspace',
       actions: [
         RoleDashboardAction(

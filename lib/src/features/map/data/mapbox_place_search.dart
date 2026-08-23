@@ -50,17 +50,13 @@ class MapboxPlaceSearch {
     final token = AppConfig.mapboxAccessToken.trim();
     if (query.length < 2 || token.isEmpty) return const [];
 
-    final uri = Uri.https(
-      'api.mapbox.com',
-      '/search/searchbox/v1/forward',
-      {
-        'q': query,
-        'access_token': token,
-        'language': 'en',
-        'limit': '6',
-        'types': 'place,region,locality,country',
-      },
-    );
+    final uri = Uri.https('api.mapbox.com', '/search/searchbox/v1/forward', {
+      'q': query,
+      'access_token': token,
+      'language': 'en',
+      'limit': '6',
+      'types': 'place,region,locality,country',
+    });
 
     final response = await http.get(uri).timeout(const Duration(seconds: 8));
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -88,7 +84,8 @@ class MapboxPlaceSearch {
       final name = properties['name']?.toString().trim() ?? '';
       if (name.isEmpty) continue;
       final featureType =
-          properties['feature_type']?.toString().trim().toLowerCase() ?? 'place';
+          properties['feature_type']?.toString().trim().toLowerCase() ??
+          'place';
 
       final context = properties['context'];
       String country = '';

@@ -1,4 +1,5 @@
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
+
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -1086,7 +1087,7 @@ class _SelectedPinCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70,
+                            color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 10.5,
                           ),
@@ -1103,7 +1104,7 @@ class _SelectedPinCard extends StatelessWidget {
                     onPressed: onClose,
                     icon: const Icon(
                       Icons.close_rounded,
-                      color: Colors.white70,
+                      color: Colors.white,
                       size: 17,
                     ),
                   ),

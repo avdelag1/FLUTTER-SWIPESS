@@ -223,7 +223,10 @@ class ContractRepository {
   }
 
   Future<List<ContractEvent>> fetchEvents(String contractId) {
-    return _eventRequests.putIfAbsent(contractId, () => _loadEvents(contractId));
+    return _eventRequests.putIfAbsent(
+      contractId,
+      () => _loadEvents(contractId),
+    );
   }
 
   Future<List<ContractEvent>> _loadEvents(String contractId) async {

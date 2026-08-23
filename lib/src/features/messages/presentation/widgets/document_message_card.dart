@@ -38,7 +38,7 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
       case 'draft':
         return const Color(0xFF38BDF8);
       default:
-        return Colors.white60;
+        return Colors.white;
     }
   }
 
@@ -181,13 +181,13 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
                     Icon(
                       Icons.edit_note_rounded,
                       size: 13,
-                      color: mine ? Colors.white70 : const Color(0xFFFB7185),
+                      color: mine ? Colors.white : const Color(0xFFFB7185),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       mine ? 'AWAITING SIGNATURE' : 'TAP TO SIGN',
                       style: GoogleFonts.plusJakartaSans(
-                        color: mine ? Colors.white70 : const Color(0xFFFB7185),
+                        color: mine ? Colors.white : const Color(0xFFFB7185),
                         fontWeight: FontWeight.w900,
                         fontSize: 9,
                         letterSpacing: 1,
@@ -197,7 +197,7 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
                     Text(
                       'VIEW DOCUMENT',
                       style: GoogleFonts.plusJakartaSans(
-                        color: mine ? Colors.white70 : textColor.withAlpha(110),
+                        color: mine ? Colors.white : textColor.withAlpha(110),
                         fontWeight: FontWeight.w900,
                         fontSize: 9,
                         letterSpacing: 1,
@@ -207,13 +207,13 @@ class _DocumentMessageCardState extends ConsumerState<DocumentMessageCard> {
                     Icon(
                       Icons.open_in_new_rounded,
                       size: 13,
-                      color: mine ? Colors.white70 : textColor.withAlpha(140),
+                      color: mine ? Colors.white : textColor.withAlpha(140),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'OPEN FILE',
                       style: GoogleFonts.plusJakartaSans(
-                        color: mine ? Colors.white70 : textColor.withAlpha(140),
+                        color: mine ? Colors.white : textColor.withAlpha(140),
                         fontWeight: FontWeight.w900,
                         fontSize: 9,
                         letterSpacing: 1,

@@ -96,7 +96,7 @@ class PulseFeedEmpty extends StatelessWidget {
               'SILENCE IS GOLDEN',
               style: AppTheme.displayItalic.copyWith(
                 fontSize: 18,
-                color: Colors.white60,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
@@ -104,7 +104,7 @@ class PulseFeedEmpty extends StatelessWidget {
               'Check back later for system updates',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: Colors.white,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),

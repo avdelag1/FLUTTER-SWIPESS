@@ -120,7 +120,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                     Text(
                       'Access help for account protocols, liquidations, or neural glitches.',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white60,
+                        color: Colors.white,
                         fontSize: 13,
                       ),
                     ),
@@ -129,7 +129,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
               ),
             ],
           ),
@@ -156,7 +156,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
           Text(
             'NEW PROTOCOL',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white38,
+              color: Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               fontStyle: FontStyle.italic,
@@ -179,7 +179,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
-                  avatar: Icon(c.$3, size: 14, color: Colors.white70),
+                  avatar: Icon(c.$3, size: 14, color: Colors.white),
                 ),
             ],
           ),

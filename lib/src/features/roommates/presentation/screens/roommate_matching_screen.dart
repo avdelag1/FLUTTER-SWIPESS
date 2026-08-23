@@ -202,7 +202,9 @@ class _RoommateMatchingScreenState
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save that decision. Try again.')),
+        const SnackBar(
+          content: Text('Could not save that decision. Try again.'),
+        ),
       );
       return;
     }
@@ -216,9 +218,8 @@ class _RoommateMatchingScreenState
       _busy = false;
     });
     if (like) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Saved ${profile.name}')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Saved ${profile.name}')));
     }
   }
 
@@ -271,7 +272,9 @@ class _RoommateMatchingScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('You need a message token or membership to start this chat.'),
+          content: Text(
+            'You need a message token or membership to start this chat.',
+          ),
         ),
       );
     } finally {
@@ -471,7 +474,7 @@ class _Header extends StatelessWidget {
             onPressed: canUndo ? onUndo : null,
             icon: Icon(
               Icons.undo_rounded,
-              color: canUndo ? Colors.white70 : Colors.white24,
+              color: canUndo ? Colors.white : Colors.white24,
             ),
           ),
           IconButton(

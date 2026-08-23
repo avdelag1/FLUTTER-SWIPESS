@@ -501,9 +501,8 @@ class _ContractBuilderScreenState extends ConsumerState<ContractBuilderScreen> {
     );
     if (!mounted) return;
     AppHaptics.light();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Document copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Document copied')));
   }
 
   Future<void> _openSignature() async {

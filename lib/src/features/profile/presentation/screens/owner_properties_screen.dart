@@ -216,9 +216,13 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        final subscription = ref.read(subscriptionProvider).value;
+                        final subscription = ref
+                            .read(subscriptionProvider)
+                            .value;
                         final currentCount = async.value?.length ?? 0;
-                        if (subscription != null && currentCount >= subscription.effectiveTier.maxListings) {
+                        if (subscription != null &&
+                            currentCount >=
+                                subscription.effectiveTier.maxListings) {
                           showPaywall(context, featureName: 'More Listings');
                           return;
                         }
@@ -412,15 +416,13 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                               Icon(
                                 tab.$3,
                                 size: 16,
-                                color: selected ? Colors.white : Colors.white70,
+                                color: selected ? Colors.white : Colors.white,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 tab.$2,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: selected
-                                      ? Colors.white
-                                      : Colors.white70,
+                                  color: selected ? Colors.white : Colors.white,
                                   fontWeight: FontWeight.w900,
                                   fontStyle: FontStyle.italic,
                                   fontSize: 11,
@@ -706,9 +708,8 @@ class _AssetCard extends ConsumerWidget {
     await ref.read(ownerListingsActionsProvider).setStatus(listing.id, status);
     onChanged();
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Status → $status')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Status → $status')));
     }
   }
 
@@ -770,9 +771,8 @@ class _AssetCard extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -781,9 +781,8 @@ class _AssetCard extends ConsumerWidget {
     final url = 'https://www.swipess.com/listing/${listing.id}';
     await Clipboard.setData(ClipboardData(text: url));
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Listing link copied')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Listing link copied')));
     }
   }
 

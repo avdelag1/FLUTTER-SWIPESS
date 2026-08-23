@@ -125,7 +125,7 @@ class _LayerChoice extends StatelessWidget {
                 Text(
                   '$count',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                   ),

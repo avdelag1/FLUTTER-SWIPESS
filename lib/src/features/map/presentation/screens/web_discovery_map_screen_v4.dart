@@ -802,7 +802,7 @@ class _PinPreview extends StatelessWidget {
                     height: 24,
                     child: Icon(
                       Icons.close_rounded,
-                      color: Colors.white70,
+                      color: Colors.white,
                       size: 14,
                     ),
                   ),

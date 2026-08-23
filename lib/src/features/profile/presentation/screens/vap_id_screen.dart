@@ -233,7 +233,10 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         IconButton(
                           tooltip: 'Documents',
                           onPressed: () async {
-                            Navigator.of(sheetContext, rootNavigator: true).pop();
+                            Navigator.of(
+                              sheetContext,
+                              rootNavigator: true,
+                            ).pop();
                             await Future<void>.delayed(
                               const Duration(milliseconds: 80),
                             );
@@ -290,7 +293,9 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                       label: t(ref, 'flutter.vapSave', 'SAVE CARD'),
                       onPressed: () async {
                         final latest = ref.read(vapIdProvider).value ?? card;
-                        await ref.read(vapIdProvider.notifier).save(
+                        await ref
+                            .read(vapIdProvider.notifier)
+                            .save(
                               latest.copyWith(
                                 name: name.text.trim(),
                                 occupation: occupation.text.trim(),

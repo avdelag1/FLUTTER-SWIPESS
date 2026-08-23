@@ -81,7 +81,7 @@ class EventConnectBar extends StatelessWidget {
         Text(
           'CONNECT WITH HOST',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white38,
+            color: Colors.white,
             fontWeight: FontWeight.w900,
             fontSize: 10,
             letterSpacing: 1.8,

@@ -148,9 +148,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                   ? Center(
                       child: Text(
                         'Could not preview video',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
-                        ),
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                     )
                   : !_ready
@@ -174,7 +172,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                   Text(
                     'Cap looping card · max ${VideoCropperScreen.maxSeconds.toInt()}s',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
+                      color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,

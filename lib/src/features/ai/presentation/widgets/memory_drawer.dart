@@ -134,7 +134,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                               ? 'Brain online · Supabase Edge AI'
                               : 'Brain paused',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: Colors.white,
                             fontSize: 11,
                           ),
                         ),
@@ -196,7 +196,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: 'Title',
-                        hintStyle: const TextStyle(color: Colors.white38),
+                        hintStyle: const TextStyle(color: Colors.white),
                         filled: true,
                         fillColor: Colors.transparent,
                         border: OutlineInputBorder(
@@ -212,7 +212,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: 'What should the brain remember?',
-                        hintStyle: const TextStyle(color: Colors.white38),
+                        hintStyle: const TextStyle(color: Colors.white),
                         filled: true,
                         fillColor: Colors.transparent,
                         border: OutlineInputBorder(
@@ -259,9 +259,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       child: Text(
                         'No memories yet — teach the brain preferences, contacts, and facts.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
-                        ),
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                     );
                   }
@@ -306,7 +304,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                                   Text(
                                     m.content,
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white70,
+                                      color: Colors.white,
                                       fontSize: 13,
                                       height: 1.35,
                                     ),
@@ -320,7 +318,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                                   .remove(m.id),
                               icon: const Icon(
                                 Icons.delete_outline_rounded,
-                                color: Colors.white38,
+                                color: Colors.white,
                               ),
                             ),
                           ],

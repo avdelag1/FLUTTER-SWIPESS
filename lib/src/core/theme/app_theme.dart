@@ -189,17 +189,24 @@ class AppTheme {
   );
 
   static ThemeData get darkTheme {
-    final base = GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
-        .apply(bodyColor: textPrimary, displayColor: textPrimary);
+    final base = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData.dark().textTheme,
+    ).apply(bodyColor: textPrimary, displayColor: textPrimary);
 
     return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: brandPrimary,
-        brightness: Brightness.dark,
-        surface: dashWell,
-        primary: brandPrimary,
-        secondary: brandAccent,
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: brandPrimary,
+            brightness: Brightness.dark,
+            surface: dashWell,
+            primary: brandPrimary,
+            secondary: brandAccent,
+          ).copyWith(
+            onSurface: Colors.white,
+            onSurfaceVariant: Colors.white,
+            outline: Colors.white,
+            outlineVariant: Colors.white,
+          ),
       useMaterial3: true,
       scaffoldBackgroundColor: surfaceColor,
       canvasColor: surfaceColor,
@@ -208,12 +215,27 @@ class AppTheme {
       iconTheme: const IconThemeData(color: Colors.white, size: 22),
       textTheme: base.copyWith(
         bodyLarge: base.bodyLarge?.copyWith(color: textPrimary, height: 1.35),
-        bodyMedium: base.bodyMedium?.copyWith(color: textSecondary, height: 1.35),
+        bodyMedium: base.bodyMedium?.copyWith(
+          color: textSecondary,
+          height: 1.35,
+        ),
         bodySmall: base.bodySmall?.copyWith(color: textTertiary, height: 1.3),
-        titleLarge: base.titleLarge?.copyWith(color: textPrimary, fontWeight: FontWeight.w800),
-        titleMedium: base.titleMedium?.copyWith(color: textPrimary, fontWeight: FontWeight.w700),
-        titleSmall: base.titleSmall?.copyWith(color: textSecondary, fontWeight: FontWeight.w700),
-        labelLarge: base.labelLarge?.copyWith(color: textPrimary, fontWeight: FontWeight.w800),
+        titleLarge: base.titleLarge?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w800,
+        ),
+        titleMedium: base.titleMedium?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        titleSmall: base.titleSmall?.copyWith(
+          color: textSecondary,
+          fontWeight: FontWeight.w700,
+        ),
+        labelLarge: base.labelLarge?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w800,
+        ),
       ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
@@ -234,21 +256,23 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Colors.white, width: 1.15),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: Colors.white, width: 1.5),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.white,
           backgroundColor: dashElevated,
-          disabledForegroundColor: Colors.white54,
+          disabledForegroundColor: Colors.white,
           elevation: 0,
           minimumSize: const Size(44, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -256,29 +280,33 @@ class AppTheme {
         style: FilledButton.styleFrom(
           foregroundColor: Colors.white,
           backgroundColor: brandPrimary,
-          disabledForegroundColor: Colors.white54,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          disabledForegroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white54,
+          disabledForegroundColor: Colors.white,
           minimumSize: const Size(44, 48),
-          side: BorderSide.none,
+          side: const BorderSide(color: Colors.white, width: 1.15),
           backgroundColor: dashElevated,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white38,
+          disabledForegroundColor: Colors.white,
           backgroundColor: Colors.transparent,
-          highlightColor: Colors.white.withAlpha(18),
-          hoverColor: Colors.white.withAlpha(12),
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
           shape: const CircleBorder(),
         ),
       ),
@@ -290,7 +318,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white38,
+          disabledForegroundColor: Colors.white,
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -312,7 +340,9 @@ class AppTheme {
   static ThemeData get lightTheme {
     const bg = lightDashBg;
     const surface = lightDashElevated;
-    final base = GoogleFonts.plusJakartaSansTextTheme(ThemeData.light().textTheme);
+    final base = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData.light().textTheme,
+    );
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
         seedColor: brandPrimary,

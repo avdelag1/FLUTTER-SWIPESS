@@ -49,9 +49,11 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
     if (_type == null || _details.text.trim().isEmpty) return;
     setState(() => _busy = true);
     AppHaptics.medium();
-    
+
     final user = ref.read(currentUserProvider);
-    await ref.read(swipeRepositoryProvider).reportListing(
+    await ref
+        .read(swipeRepositoryProvider)
+        .reportListing(
           reporterId: user?.id,
           listingId: widget.listing.id,
           ownerId: widget.listing.ownerId ?? '',
@@ -103,7 +105,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
               Text(
                 widget.listing.title ?? 'Listing',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: Colors.white,
                   fontSize: 13,
                 ),
               ),
@@ -147,7 +149,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Describe the issue…',
-                  hintStyle: const TextStyle(color: Colors.white38),
+                  hintStyle: const TextStyle(color: Colors.white),
                   filled: true,
                   fillColor: Colors.transparent,
                   border: OutlineInputBorder(
@@ -156,7 +158,10 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Colors.white30, width: 1),
+                    borderSide: const BorderSide(
+                      color: Colors.white30,
+                      width: 1,
+                    ),
                   ),
                 ),
               ),

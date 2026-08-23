@@ -8,15 +8,10 @@ abstract final class AppShare {
   static String eventUrl(String id) => '$_origin/s/event/$id';
 
   static Future<void> text(String text, {String? subject}) async {
-    await SharePlus.instance.share(
-      ShareParams(text: text, subject: subject),
-    );
+    await SharePlus.instance.share(ShareParams(text: text, subject: subject));
   }
 
-  static Future<void> listing({
-    required String id,
-    String? title,
-  }) {
+  static Future<void> listing({required String id, String? title}) {
     final name = (title ?? 'this listing').trim();
     return text(
       'Check out $name on Swipess\n${listingUrl(id)}',
@@ -24,10 +19,7 @@ abstract final class AppShare {
     );
   }
 
-  static Future<void> profile({
-    required String id,
-    String? name,
-  }) {
+  static Future<void> profile({required String id, String? name}) {
     final label = (name ?? 'this Swipess member').trim();
     return text(
       'Connect with $label on Swipess\n${profileUrl(id)}',
@@ -35,10 +27,7 @@ abstract final class AppShare {
     );
   }
 
-  static Future<void> event({
-    required String id,
-    String? title,
-  }) {
+  static Future<void> event({required String id, String? title}) {
     final label = (title ?? 'this event').trim();
     return text(
       'Check out $label on Swipess\n${eventUrl(id)}',

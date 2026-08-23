@@ -10,8 +10,7 @@ class BusinessDashboardScreen extends StatelessWidget {
     return const RoleControlCenter(
       eyebrow: 'Business workspace',
       title: 'Business dashboard',
-      subtitle:
-          'Manage listings, interested clients, messages and business settings from one clean control center.',
+      subtitle: 'Manage listings, interested clients, messages and business settings from one clean control center.',
       statusLabel: 'Business workspace',
       actions: [
         RoleDashboardAction(

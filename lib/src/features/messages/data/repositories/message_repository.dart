@@ -204,7 +204,9 @@ class MessageRepository {
       await _client
           .from('conversations')
           .update({
-            'last_message_at': latest?['created_at'] ?? DateTime.now().toUtc().toIso8601String(),
+            'last_message_at':
+                latest?['created_at'] ??
+                DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', conversationId);
     } catch (_) {}

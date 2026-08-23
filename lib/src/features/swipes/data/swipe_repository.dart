@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Deck-facing swipe repository (feed helpers + marketplace write facade).
 class SwipeRepository {
   SwipeRepository(this._supabase, {cap.SwipeRepository? swipeRepository})
-      : _swipes = swipeRepository ?? cap.SwipeRepository(client: _supabase);
+    : _swipes = swipeRepository ?? cap.SwipeRepository(client: _supabase);
 
   final SupabaseClient _supabase;
   final cap.SwipeRepository _swipes;
@@ -19,19 +19,29 @@ class SwipeRepository {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        var query = _supabase.from('listings').select('*').eq('is_active', true);
-        if (category != 'all' && category != 'recommended' && category != 'popular') {
+        var query = _supabase
+            .from('listings')
+            .select('*')
+            .eq('is_active', true);
+        if (category != 'all' &&
+            category != 'recommended' &&
+            category != 'popular') {
           query = query.eq('category', category);
         }
-        final response = await query.order('created_at', ascending: false).limit(limit);
+        final response = await query
+            .order('created_at', ascending: false)
+            .limit(limit);
         return (response as List).map((row) => Listing.fromJson(row)).toList();
       }
 
-      final response = await _supabase.rpc('get_swipe_feed', params: {
-        'p_user_id': user.id,
-        'p_category': category,
-        'p_limit': limit,
-      });
+      final response = await _supabase.rpc(
+        'get_swipe_feed',
+        params: {
+          'p_user_id': user.id,
+          'p_category': category,
+          'p_limit': limit,
+        },
+      );
       return (response as List).map((row) => Listing.fromJson(row)).toList();
     } catch (_) {
       return [];
@@ -43,7 +53,11 @@ class SwipeRepository {
     await _swipes.likeListing(listingId);
   }
 
-  Future<void> registerSwipeLeft(String userId, String listingId, [num? currentPrice]) async {
+  Future<void> registerSwipeLeft(
+    String userId,
+    String listingId, [
+    num? currentPrice,
+  ]) async {
     assert(userId.isNotEmpty);
     await _swipes.dislikeListing(listingId);
   }
@@ -56,8 +70,7 @@ class SwipeRepository {
   Future<String?> startConversation({
     required String ownerId,
     required String listingId,
-  }) =>
-      _swipes.startConversation(ownerId: ownerId, listingId: listingId);
+  }) => _swipes.startConversation(ownerId: ownerId, listingId: listingId);
 
   Future<bool> checkForMatch(String listingId) =>
       _swipes.checkForMatch(listingId);
@@ -69,18 +82,16 @@ class SwipeRepository {
     required String receiverId,
     required String listingId,
     String message = '',
-  }) =>
-      _swipes.sendDirectRequest(
-        receiverId: receiverId,
-        listingId: listingId,
-        message: message,
-      );
+  }) => _swipes.sendDirectRequest(
+    receiverId: receiverId,
+    listingId: listingId,
+    message: message,
+  );
 
   Future<String?> acceptListingInterest({
     required String likerId,
     required String listingId,
-  }) =>
-      _swipes.acceptListingInterest(likerId: likerId, listingId: listingId);
+  }) => _swipes.acceptListingInterest(likerId: likerId, listingId: listingId);
 
   Future<void> reportListing({
     required String? reporterId,

@@ -31,51 +31,62 @@ abstract final class SwipessTokens {
 
   // Tier Atmospheres & Accent Colors
   static const Color tierStarter = Color(0xFF818CF8); // Soft indigo / violet
-  static const Color tierPlus = Color(0xFFEC4899);    // Hot pink / rose
-  static const Color tierPower = Color(0xFFF59E0B);   // Warm gold / amber
-  static const Color tierMega = Color(0xFFEF4444);    // Coral / red
+  static const Color tierPlus = Color(0xFFEC4899); // Hot pink / rose
+  static const Color tierPower = Color(0xFFF59E0B); // Warm gold / amber
+  static const Color tierMega = Color(0xFFEF4444); // Coral / red
   static const Color tierPremium = Color(0xFFF59E0B); // Premium gold
-  static const Color brandOrange = Color(0xFFFF4D00);  // Swipess primary
+  static const Color brandOrange = Color(0xFFFF4D00); // Swipess primary
 
   // Typography Hierarchy
-  static TextStyle displayItalic({Color color = Colors.white, double fontSize = 24.0}) =>
-      GoogleFonts.plusJakartaSans(
-        color: color,
-        fontWeight: FontWeight.w900,
-        fontStyle: FontStyle.italic,
-        fontSize: fontSize,
-        letterSpacing: -0.8,
-        height: 1.1,
-      );
+  static TextStyle displayItalic({
+    Color color = Colors.white,
+    double fontSize = 24.0,
+  }) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontWeight: FontWeight.w900,
+    fontStyle: FontStyle.italic,
+    fontSize: fontSize,
+    letterSpacing: -0.8,
+    height: 1.1,
+  );
 
-  static TextStyle priceOversized({Color color = Colors.white, double fontSize = 32.0}) =>
-      GoogleFonts.plusJakartaSans(
-        color: color,
-        fontWeight: FontWeight.w900,
-        fontSize: fontSize,
-        letterSpacing: -1.0,
-        height: 1.0,
-        fontFeatures: const [FontFeature.tabularFigures()],
-      );
+  static TextStyle priceOversized({
+    Color color = Colors.white,
+    double fontSize = 32.0,
+  }) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontWeight: FontWeight.w900,
+    fontSize: fontSize,
+    letterSpacing: -1.0,
+    height: 1.0,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
 
-  static TextStyle kickerUppercase({Color color = const Color(0x99FFFFFF), double fontSize = 11.0}) =>
-      GoogleFonts.plusJakartaSans(
-        color: color,
-        fontWeight: FontWeight.w800,
-        fontSize: fontSize,
-        letterSpacing: 1.8,
-      );
+  static TextStyle kickerUppercase({
+    Color color = const Color(0x99FFFFFF),
+    double fontSize = 11.0,
+  }) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontWeight: FontWeight.w800,
+    fontSize: fontSize,
+    letterSpacing: 1.8,
+  );
 
-  static TextStyle bodyClean({Color color = const Color(0xCCFFFFFF), double fontSize = 13.0}) =>
-      GoogleFonts.plusJakartaSans(
-        color: color,
-        fontWeight: FontWeight.w500,
-        fontSize: fontSize,
-        height: 1.35,
-      );
+  static TextStyle bodyClean({
+    Color color = const Color(0xCCFFFFFF),
+    double fontSize = 13.0,
+  }) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontWeight: FontWeight.w500,
+    fontSize: fontSize,
+    height: 1.35,
+  );
 
   // Soft Depth Shadows (No thick outlines)
-  static List<BoxShadow> cardShadow({Color accent = Colors.black, bool isLight = false}) {
+  static List<BoxShadow> cardShadow({
+    Color accent = Colors.black,
+    bool isLight = false,
+  }) {
     if (isLight) {
       return [
         BoxShadow(

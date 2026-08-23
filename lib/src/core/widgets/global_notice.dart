@@ -170,7 +170,8 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                                 const SizedBox(width: 11),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         widget.tokenAwarded
@@ -265,9 +266,7 @@ class _FiveStepProgress extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: i <= completed
-                  ? (i == 5
-                        ? const Color(0xFF7C3AED)
-                        : const Color(0xFF2F80ED))
+                  ? (i == 5 ? const Color(0xFF7C3AED) : const Color(0xFF2F80ED))
                   : Colors.white.withAlpha(18),
             ),
             alignment: Alignment.center,

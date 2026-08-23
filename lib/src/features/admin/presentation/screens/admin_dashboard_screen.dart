@@ -14,8 +14,7 @@ class AdminDashboardScreen extends StatelessWidget {
       child: RoleControlCenter(
         eyebrow: 'Swipess operations',
         title: 'Admin dashboard',
-        subtitle:
-            'Manage platform content, performance, legal operations and high-level controls from one place.',
+        subtitle: 'Manage platform content, performance, legal operations and high-level controls from one place.',
         statusLabel: 'Admin workspace',
         actions: [
           RoleDashboardAction(

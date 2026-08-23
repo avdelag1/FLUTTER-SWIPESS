@@ -86,13 +86,13 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                         const Icon(
                                           Icons.verified_user_rounded,
                                           size: 16,
-                                          color: Colors.white70,
+                                          color: Colors.white,
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           'AUTHORIZED PREVIEW',
                                           style: GoogleFonts.plusJakartaSans(
-                                            color: Colors.white70,
+                                            color: Colors.white,
                                             fontSize: 10,
                                             fontWeight: FontWeight.w900,
                                             letterSpacing: 2.4,
@@ -117,7 +117,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white70,
+                                        color: Colors.white,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -196,7 +196,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                           ? const Color(0xFF34D399)
                                           : pending
                                           ? const Color(0xFFFBBF24)
-                                          : Colors.white38,
+                                          : Colors.white,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
@@ -206,7 +206,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                           ? 'PENDING REVIEW'
                                           : doc.status.toUpperCase(),
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white70,
+                                        color: Colors.white,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w900,
                                         letterSpacing: 1,
@@ -217,7 +217,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                       Text(
                                         '${doc.createdAt!.month}/${doc.createdAt!.day}/${doc.createdAt!.year}',
                                         style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white38,
+                                          color: Colors.white,
                                           fontSize: 9,
                                           fontWeight: FontWeight.w800,
                                           letterSpacing: 1.2,
@@ -294,7 +294,7 @@ class _BlurredImagePreview extends StatelessWidget {
                   'Blurred for privacy. Full document is reviewed by Swipess verification only.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white54,
+                    color: Colors.white,
                     fontSize: 10,
                     height: 1.4,
                   ),
@@ -343,7 +343,7 @@ class _SecureFileFallback extends StatelessWidget {
               Text(
                 'SECURE DOCUMENT ON FILE',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white70,
+                  color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.4,
@@ -356,7 +356,7 @@ class _SecureFileFallback extends StatelessWidget {
                   'PDF and sensitive files are never shown in full on the card.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontSize: 10,
                     height: 1.4,
                   ),

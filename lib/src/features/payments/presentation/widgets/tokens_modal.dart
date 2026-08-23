@@ -29,9 +29,8 @@ class _TokensModalState extends ConsumerState<TokensModal> {
     setState(() => _buyingId = null);
     ref.invalidate(messagingEntitlementsProvider);
     ref.invalidate(directRequestBalanceProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.userMessage)));
     if (result.isSuccess) await AppHaptics.success();
   }
 
@@ -71,7 +70,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                     'Interest is free. Matches chat free. Use a token only when you want priority.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white60,
+                      color: Colors.white,
                       fontSize: 13,
                       height: 1.4,
                       fontWeight: FontWeight.w600,
@@ -175,7 +174,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                               Text(
                                 'Only spent when your request is accepted.',
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
+                                  color: Colors.white,
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -236,7 +235,7 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                       '↩ Declined, cancelled before acceptance, or unanswered? Your reserved token returns automatically.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white60,
+                        color: Colors.white,
                         fontSize: 11.5,
                         height: 1.4,
                         fontWeight: FontWeight.w600,
@@ -260,25 +259,25 @@ class _TokensModalState extends ConsumerState<TokensModal> {
   }
 
   Widget _balance(String label, String value) => Column(
-        children: [
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white38,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: .7,
-            ),
-          ),
-        ],
-      );
+    children: [
+      Text(
+        value,
+        style: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: .7,
+        ),
+      ),
+    ],
+  );
 }

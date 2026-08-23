@@ -182,7 +182,7 @@ class _ShareBtn extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
+                color: Colors.white,
                 fontWeight: FontWeight.w900,
                 fontSize: 10,
                 letterSpacing: 0.8,

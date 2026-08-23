@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -52,9 +53,9 @@ Future<void> showIntelCoreSheet(
   BuildContext context, {
   String initialQuery = '',
 }) async {
-  ProviderScope.containerOf(
-    context,
-  ).read(overlayModalsProvider.notifier).openConcierge(initialQuery);
+  ProviderScope.containerOf(context)
+      .read(overlayModalsProvider.notifier)
+      .openConcierge(initialQuery);
 }
 
 class _IntelCoreSheet extends ConsumerStatefulWidget {
@@ -223,9 +224,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         }
       } on VoiceTranscribeException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(e.message)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (mounted) {
@@ -479,22 +479,19 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         .firstOrNull;
     if (lastUser == null) return const [];
     final out = <({String label, VoidCallback onTap})>[];
-    if (RegExp(
-      r'\b(people|person|seeker|roommate|who.?s looking)\b',
-    ).hasMatch(lastUser)) {
+    if (RegExp(r'\b(people|person|seeker|roommate|who.?s looking)\b')
+        .hasMatch(lastUser)) {
       out.add((label: 'Open Seekers', onTap: () => _openIntent(lastUser)));
     }
-    if (RegExp(
-      r'\b(worker|hire|maintenance|plumber|cleaner)\b',
-    ).hasMatch(lastUser)) {
+    if (RegExp(r'\b(worker|hire|maintenance|plumber|cleaner)\b')
+        .hasMatch(lastUser)) {
       out.add((label: 'Open Workers', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(r'\b(event|party|nightlife|concert)\b').hasMatch(lastUser)) {
       out.add((label: 'Open Events', onTap: () => _openIntent(lastUser)));
     }
-    if (RegExp(
-      r'\b(map|near me|nearby|gps|location|city)\b',
-    ).hasMatch(lastUser)) {
+    if (RegExp(r'\b(map|near me|nearby|gps|location|city)\b')
+        .hasMatch(lastUser)) {
       out.add((label: 'Open Map', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(
@@ -614,9 +611,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         ? parsed!.cleanContent
         : m.content;
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Telemetry Copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Telemetry Copied')));
   }
 
   void _delete(IntelChatBubble m) {
@@ -758,7 +754,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 child: Text(
                                   t(ref, 'flutter.thinking', 'Thinking…'),
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: ink.withAlpha(110),
+                                    color: isLight
+                                        ? ink.withAlpha(110)
+                                        : Colors.white,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -812,7 +810,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: ink.withAlpha(isLight ? 24 : 30)),
+          bottom: BorderSide(color: isLight ? ink.withAlpha(24) : Colors.white),
         ),
       ),
       child: Row(
@@ -845,7 +843,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               Text(
                 online ? 'ONLINE' : 'OFFLINE',
                 style: GoogleFonts.plusJakartaSans(
-                  color: ink.withAlpha(90),
+                  color: isLight ? ink.withAlpha(90) : Colors.white,
                   fontWeight: FontWeight.w800,
                   fontSize: 8,
                   letterSpacing: 1.6,
@@ -880,7 +878,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     Text(
                       persona.$3.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: ink.withAlpha(90),
+                        color: isLight ? ink.withAlpha(90) : Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 7,
                         letterSpacing: 0.6,
@@ -979,7 +977,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                         : const Color(0xFF14141A),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: ink.withAlpha(isLight ? 40 : 200),
+                      color: isLight ? ink.withAlpha(40) : Colors.white,
                       width: 1.2,
                     ),
                   ),
@@ -994,7 +992,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           Icons.timer_outlined,
                           color: _autoSend
                               ? AppTheme.brandPrimary
-                              : ink.withAlpha(120),
+                              : (isLight ? ink.withAlpha(120) : Colors.white),
                           size: 20,
                         ),
                       ),
@@ -1009,7 +1007,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                               : Icons.mic_none_rounded,
                           color: _recording
                               ? AppTheme.brandPrimary
-                              : ink.withAlpha(120),
+                              : (isLight ? ink.withAlpha(120) : Colors.white),
                           size: 20,
                         ),
                       ),
@@ -1036,7 +1034,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                     'flutter.askAnything',
                                     'Ask anything...',
                                   ),
-                            hintStyle: TextStyle(color: ink.withAlpha(100)),
+                            hintStyle: TextStyle(
+                              color: isLight
+                                  ? ink.withAlpha(100)
+                                  : Colors.white,
+                            ),
                           ),
                           onChanged: (value) {
                             setState(() {});
@@ -1060,21 +1062,25 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     color: _controller.text.trim().isEmpty || _loading
                         ? (isLight
                               ? const Color(0xFFE8E8EE)
-                              : Colors.white.withAlpha(18))
+                              : Colors.transparent)
                         : AppTheme.brandPrimary,
+                    border: Border.all(
+                      color: isLight ? ink.withAlpha(40) : Colors.white,
+                      width: 1.2,
+                    ),
                   ),
                   child: _loading
                       ? Padding(
                           padding: const EdgeInsets.all(12),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: ink.withAlpha(160),
+                            color: isLight ? ink.withAlpha(160) : Colors.white,
                           ),
                         )
                       : Icon(
                           Icons.arrow_upward_rounded,
                           color: _controller.text.trim().isEmpty
-                              ? ink.withAlpha(90)
+                              ? (isLight ? ink.withAlpha(90) : Colors.white)
                               : Colors.white,
                         ),
                 ),
@@ -1233,7 +1239,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     Text(
                       'No saved chats yet.',
                       style: GoogleFonts.plusJakartaSans(
-                        color: ink.withAlpha(120),
+                        color: (isLight ? ink.withAlpha(120) : Colors.white),
                       ),
                     ),
                   for (final item in _saved)
@@ -1299,7 +1305,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 child: Text(
                   'PERSONA',
                   style: GoogleFonts.plusJakartaSans(
-                    color: ink.withAlpha(110),
+                    color: isLight ? ink.withAlpha(110) : Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 9,
                     letterSpacing: 1.6,
@@ -1333,7 +1339,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   subtitle: Text(
                     p.$3.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: ink.withAlpha(120),
+                      color: (isLight ? ink.withAlpha(120) : Colors.white),
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                     ),

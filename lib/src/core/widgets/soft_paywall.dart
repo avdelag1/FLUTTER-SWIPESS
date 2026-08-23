@@ -68,7 +68,7 @@ class SoftPaywallPreview extends StatelessWidget {
                       description,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white60,
+                        color: Colors.white,
                         fontSize: 11,
                       ),
                     ),
@@ -165,7 +165,7 @@ class TrialLimitBanner extends StatelessWidget {
                   Text(
                     'Upgrade to continue with unlimited access',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white60,
+                      color: Colors.white,
                       fontSize: 11,
                     ),
                   ),
@@ -293,7 +293,7 @@ class LockedFeatureChip extends StatelessWidget {
                 Text(
                   description,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white54,
+                    color: Colors.white,
                     fontSize: 11,
                   ),
                 ),

@@ -280,7 +280,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                         ),
                         child: Icon(
                           i < _step ? Icons.check_rounded : _steps[i].icon,
-                          color: i <= _step ? Colors.white : Colors.white38,
+                          color: i <= _step ? Colors.white : Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -336,7 +336,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                 step.desc,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white70,
+                  color: Colors.white,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),

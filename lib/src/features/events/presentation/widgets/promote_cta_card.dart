@@ -136,7 +136,7 @@ class PromoteCTACard extends StatelessWidget {
                 Text(
                   'Promote parties, dinners, and brands with photo + video commercials — reviewed in under 24h.',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white60,
+                    color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     height: 1.3,
@@ -188,7 +188,7 @@ class PromoteCTACard extends StatelessWidget {
                               Text(
                                 f.$3,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
+                                  color: Colors.white,
                                   fontSize: 12,
                                   height: 1.3,
                                 ),
@@ -245,7 +245,7 @@ class PromoteCTACard extends StatelessWidget {
                     'Free to apply · From \$4.99/week after approval · Video up to 1 min',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white38,
+                      color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),

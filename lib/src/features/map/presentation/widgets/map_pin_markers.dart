@@ -193,9 +193,7 @@ class MapClusterMarker extends StatelessWidget {
           shape: BoxShape.circle,
           color: const Color(0xE6111318),
           border: Border.all(color: Colors.white, width: 2),
-          boxShadow: const [
-            BoxShadow(color: Colors.black38, blurRadius: 8),
-          ],
+          boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8)],
         ),
         child: Text(
           '$count',

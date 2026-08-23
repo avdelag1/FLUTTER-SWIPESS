@@ -61,9 +61,8 @@ class _SubscriptionPackagesScreenState
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result.userMessage)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result.userMessage)));
     }
   }
 
@@ -76,9 +75,8 @@ class _SubscriptionPackagesScreenState
     ref.invalidate(messagingEntitlementsProvider);
     ref.invalidate(directRequestBalanceProvider);
     ref.invalidate(subscriptionProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.userMessage)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(result.userMessage)));
   }
 
   String _countdown(DateTime? endsAt) {
@@ -98,7 +96,8 @@ class _SubscriptionPackagesScreenState
     final subscription = ref.watch(subscriptionProvider).value;
     final balance = ref.watch(directRequestBalanceProvider).value?.available;
     final freemium = subscription?.isTrialActive == true;
-    final paid = subscription != null &&
+    final paid =
+        subscription != null &&
         subscription.tier != SubscriptionTier.free &&
         !freemium;
 
@@ -111,9 +110,7 @@ class _SubscriptionPackagesScreenState
               padding: const EdgeInsets.fromLTRB(10, 5, 10, 0),
               child: Row(
                 children: [
-                  const CapBackButton(
-                    fallbackPath: AppPaths.clientProfile,
-                  ),
+                  const CapBackButton(fallbackPath: AppPaths.clientProfile),
                   const Spacer(),
                   TextButton(
                     onPressed: _restoring ? null : _restore,
@@ -129,7 +126,10 @@ class _SubscriptionPackagesScreenState
                   Text(
                     '3 MONTHS FREEMIUM.\nTHEN YOU DECIDE.',
                     textAlign: TextAlign.center,
-                    style: SwipessTokens.displayItalic(color: ink, fontSize: 33),
+                    style: SwipessTokens.displayItalic(
+                      color: ink,
+                      fontSize: 33,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -159,8 +159,7 @@ class _SubscriptionPackagesScreenState
                   else
                     _StatusCard(
                       title: 'FREE',
-                      subtitle:
-                          'Browsing, swiping, matched chat and your Virtual / Local ID stay free. AI, Legal, Events and Premium advantages require a plan after Freemium.',
+                      subtitle: 'Browsing, swiping, matched chat and your Virtual / Local ID stay free. AI, Legal, Events and Premium advantages require a plan after Freemium.',
                       icon: Icons.favorite_rounded,
                     ),
                   const SizedBox(height: 26),
@@ -196,14 +195,12 @@ class _SubscriptionPackagesScreenState
                   const SizedBox(height: 6),
                   _InfoCard(
                     title: 'WHAT STAYS FREE FOREVER',
-                    text:
-                        'Browse and swipe. Mutual matches and matched chat. Your Virtual / Local ID card. Direct Requests are separate credits you can earn or buy.',
+                    text: 'Browse and swipe. Mutual matches and matched chat. Your Virtual / Local ID card. Direct Requests are separate credits you can earn or buy.',
                   ),
                   const SizedBox(height: 10),
                   _InfoCard(
                     title: 'WHEN THE 3 MONTHS END',
-                    text:
-                        'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package.',
+                    text: 'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package.',
                   ),
                 ],
               ),
@@ -420,8 +417,8 @@ class _PlanCard extends StatelessWidget {
     final accent = yearly
         ? const Color(0xFFEB4898)
         : offer.popular
-            ? const Color(0xFF6366F1)
-            : ink;
+        ? const Color(0xFF6366F1)
+        : ink;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -525,7 +522,9 @@ class _PlanCard extends StatelessWidget {
                 backgroundColor: accent,
                 foregroundColor: yearly || offer.popular
                     ? Colors.white
-                    : (MatteSurface.isLight(context) ? Colors.white : Colors.black),
+                    : (MatteSurface.isLight(context)
+                          ? Colors.white
+                          : Colors.black),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(17),
                 ),
@@ -647,19 +646,19 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            color: foreground,
-            fontSize: 8,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .65,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      label,
+      style: GoogleFonts.plusJakartaSans(
+        color: foreground,
+        fontSize: 8,
+        fontWeight: FontWeight.w900,
+        letterSpacing: .65,
+      ),
+    ),
+  );
 }

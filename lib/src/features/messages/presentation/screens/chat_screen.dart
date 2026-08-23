@@ -38,9 +38,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   static const _orange = AppTheme.brandPrimary;
   static const _emojis = [
-    '👋', '😊', '😄', '😂', '🥰', '😍', '🤩', '😎',
-    '🙏', '👍', '🔥', '❤️', '🎉', '✨', '💯', '🤝',
-    '💪', '👏', '🥳', '😇', '🤗', '😁', '🌟', '📬',
+    '👋',
+    '😊',
+    '😄',
+    '😂',
+    '🥰',
+    '😍',
+    '🤩',
+    '😎',
+    '🙏',
+    '👍',
+    '🔥',
+    '❤️',
+    '🎉',
+    '✨',
+    '💯',
+    '🤝',
+    '💪',
+    '👏',
+    '🥳',
+    '😇',
+    '🤗',
+    '😁',
+    '🌟',
+    '📬',
   ];
 
   @override
@@ -91,9 +112,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         }
       } on VoiceTranscribeException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message)),
-          );
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (mounted) {
@@ -150,7 +170,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _replyTo(ChatMessage msg) {
     final excerpt = msg.text.trim().replaceAll('\n', ' ');
-    final short = excerpt.length > 80 ? '${excerpt.substring(0, 80)}…' : excerpt;
+    final short = excerpt.length > 80
+        ? '${excerpt.substring(0, 80)}…'
+        : excerpt;
     _controller.text = '↪ $short\n';
     _controller.selection = TextSelection.collapsed(
       offset: _controller.text.length,
@@ -180,16 +202,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(messageRepositoryProvider).unsendMessage(
+      await ref
+          .read(messageRepositoryProvider)
+          .unsendMessage(
             conversationId: widget.conversation.id,
             messageId: msg.id,
           );
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
       ref.invalidate(conversationsProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message unsent')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Message unsent')));
       }
     } catch (_) {
       if (mounted) {
@@ -200,7 +223,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  Future<void> _showMessageActions(ChatMessage msg, {required bool mine}) async {
+  Future<void> _showMessageActions(
+    ChatMessage msg, {
+    required bool mine,
+  }) async {
     AppHaptics.medium();
     await showModalBottomSheet<void>(
       context: context,
@@ -230,7 +256,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    for (final emoji in const ['❤️', '😂', '👍', '🔥', '👏', '🙏'])
+                    for (final emoji in const [
+                      '❤️',
+                      '😂',
+                      '👍',
+                      '🔥',
+                      '👏',
+                      '🙏',
+                    ])
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(sheetContext);
@@ -238,7 +271,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(emoji, style: const TextStyle(fontSize: 25)),
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 25),
+                          ),
                         ),
                       ),
                   ],
@@ -351,13 +387,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ),
                             child: CircleAvatar(
                               radius: 20,
-                              backgroundImage: widget.conversation.avatarUrl != null
+                              backgroundImage:
+                                  widget.conversation.avatarUrl != null
                                   ? NetworkImage(widget.conversation.avatarUrl!)
                                   : null,
                               child: widget.conversation.avatarUrl == null
                                   ? Text(
                                       widget.conversation.name.isNotEmpty
-                                          ? widget.conversation.name[0].toUpperCase()
+                                          ? widget.conversation.name[0]
+                                                .toUpperCase()
                                           : '?',
                                       style: GoogleFonts.plusJakartaSans(
                                         color: Colors.white,
@@ -409,7 +447,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               style: GoogleFonts.plusJakartaSans(
                                 color: online
                                     ? const Color(0xFFA78BFA)
-                                    : Colors.white38,
+                                    : Colors.white,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.5,
@@ -450,8 +488,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Search in this chat…',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(Icons.search, color: _orange, size: 18),
+                  hintStyle: const TextStyle(color: Colors.white),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: _orange,
+                    size: 18,
+                  ),
                   filled: true,
                   fillColor: Colors.white.withAlpha(10),
                   border: OutlineInputBorder(
@@ -480,7 +522,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               error: (e, _) => _ThreadEmpty(
                 icon: Icons.shield_outlined,
                 title: "Couldn't load messages",
-                description: 'The connection stalled. Check your network and try again.',
+                description:
+                    'The connection stalled. Check your network and try again.',
                 actionLabel: 'RETRY',
                 onAction: () => ref.invalidate(
                   conversationMessagesProvider(widget.conversation.id),
@@ -490,13 +533,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final visible = q.isEmpty
                     ? messages
                     : messages
-                        .where((m) => m.text.toLowerCase().contains(q))
-                        .toList();
+                          .where((m) => m.text.toLowerCase().contains(q))
+                          .toList();
                 if (messages.isEmpty) {
                   return const _ThreadEmpty(
                     icon: Icons.auto_awesome_rounded,
                     title: 'Swipes Stream',
-                    description: 'Initialize the connection stream with a greeting',
+                    description:
+                        'Initialize the connection stream with a greeting',
                   );
                 }
                 if (q.isNotEmpty && visible.isEmpty) {
@@ -509,7 +553,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
                 return ListView.builder(
                   controller: _scroll,
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                   itemCount: visible.length,
                   itemBuilder: (context, index) {
@@ -532,7 +577,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             children: [
                               GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onLongPress: () => _showMessageActions(msg, mine: mine),
+                                onLongPress: () =>
+                                    _showMessageActions(msg, mine: mine),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -543,15 +589,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                         ? const LinearGradient(
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
-                                            colors: [_orange, Color(0xFFC0392B)],
+                                            colors: [
+                                              _orange,
+                                              Color(0xFFC0392B),
+                                            ],
                                           )
                                         : null,
-                                    color: mine ? null : const Color(0xFF16161C),
+                                    color: mine
+                                        ? null
+                                        : const Color(0xFF16161C),
                                     borderRadius: BorderRadius.only(
                                       topLeft: const Radius.circular(24),
                                       topRight: const Radius.circular(24),
-                                      bottomLeft: Radius.circular(mine ? 24 : 6),
-                                      bottomRight: Radius.circular(mine ? 6 : 24),
+                                      bottomLeft: Radius.circular(
+                                        mine ? 24 : 6,
+                                      ),
+                                      bottomRight: Radius.circular(
+                                        mine ? 6 : 24,
+                                      ),
                                     ),
                                     boxShadow: mine
                                         ? const [
@@ -578,7 +633,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               ),
                               const SizedBox(height: 4),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -592,7 +649,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                     ),
                                     const SizedBox(width: 4),
                                     GestureDetector(
-                                      onTap: () => _showMessageActions(msg, mine: mine),
+                                      onTap: () =>
+                                          _showMessageActions(msg, mine: mine),
                                       child: const Icon(
                                         Icons.more_horiz_rounded,
                                         color: Colors.white30,
@@ -646,7 +704,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 width: 40,
                                 height: 40,
                                 child: Center(
-                                  child: Text(e, style: const TextStyle(fontSize: 22)),
+                                  child: Text(
+                                    e,
+                                    style: const TextStyle(fontSize: 22),
+                                  ),
                                 ),
                               ),
                             ),
@@ -688,17 +749,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               'Type a message...',
                               'Escribe un mensaje...',
                             ),
-                            hintStyle: const TextStyle(color: Colors.white38),
+                            hintStyle: const TextStyle(color: Colors.white),
                             filled: true,
                             fillColor: Colors.white.withAlpha(10),
-                            contentPadding: const EdgeInsets.fromLTRB(16, 13, 14, 13),
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              16,
+                              13,
+                              14,
+                              13,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
-                              borderSide: const BorderSide(color: Color(0x66EB4898)),
+                              borderSide: const BorderSide(
+                                color: Color(0x66EB4898),
+                              ),
                             ),
                           ),
                           onSubmitted: (_) => _send(),
@@ -706,7 +774,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
                       const SizedBox(width: 6),
                       _RoundIcon(
-                        icon: _recording ? Icons.mic_rounded : Icons.mic_none_rounded,
+                        icon: _recording
+                            ? Icons.mic_rounded
+                            : Icons.mic_none_rounded,
                         active: _recording || _transcribing,
                         onTap: _transcribing ? () {} : _toggleVoice,
                       ),
@@ -724,7 +794,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             gradient: _controller.text.trim().isNotEmpty
                                 ? const LinearGradient(
                                     begin: Alignment.topLeft,
-                                    colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                                    colors: [
+                                      Color(0xFFFF4D00),
+                                      Color(0xFFEB4898),
+                                    ],
                                   )
                                 : null,
                             color: _controller.text.trim().isEmpty
@@ -874,7 +947,7 @@ class _ThreadEmpty extends StatelessWidget {
               description,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: Colors.white,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 height: 1.5,
@@ -914,7 +987,11 @@ class _DocumentBubble extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.description_rounded, color: Colors.white, size: 18),
+                const Icon(
+                  Icons.description_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
@@ -932,7 +1009,7 @@ class _DocumentBubble extends StatelessWidget {
         Text(
           docs.first.status.toUpperCase(),
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white70,
+            color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.w700,
           ),

@@ -318,9 +318,8 @@ class SettingsScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not send reset: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not send reset: $e')));
       }
     }
   }
@@ -334,7 +333,7 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Sign out?', style: TextStyle(color: Colors.white)),
         content: const Text(
           'You can sign back in anytime. Your listings and messages stay on your account.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
@@ -367,7 +366,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         content: const Text(
           'This permanently deletes your Swipess account, profile, listings, messages, and stored files. This cannot be undone.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
@@ -574,10 +573,7 @@ class _GradTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.white70,
-                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white),
                 ],
               ),
             ),

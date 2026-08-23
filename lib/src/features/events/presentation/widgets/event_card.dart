@@ -51,8 +51,7 @@ class EventCard extends StatelessWidget {
             children: [
               // Background Image
               Image.network(
-                event.imageUrl ??
-                    'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
+                event.imageUrl ?? 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
@@ -60,7 +59,7 @@ class EventCard extends StatelessWidget {
                     child: const Center(
                       child: Icon(
                         Icons.celebration_rounded,
-                        color: Colors.white38,
+                        color: Colors.white,
                         size: 48,
                       ),
                     ),

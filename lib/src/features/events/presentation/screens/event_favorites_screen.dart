@@ -56,7 +56,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                         Text(
                           'Your curated social calendar',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
+                            color: Colors.white,
                             fontSize: 12,
                           ),
                         ),
@@ -66,7 +66,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   IconButton(
                     onPressed: () =>
                         ref.read(favoritedEventsProvider.notifier).refresh(),
-                    icon: const Icon(Icons.sync_rounded, color: Colors.white70),
+                    icon: const Icon(Icons.sync_rounded, color: Colors.white),
                   ),
                 ],
               ),
@@ -85,7 +85,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   children: [
                     const Icon(
                       Icons.search_rounded,
-                      color: Colors.white54,
+                      color: Colors.white,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -101,7 +101,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                           border: InputBorder.none,
                           hintText: 'Search title or location...',
                           hintStyle: TextStyle(
-                            color: Colors.white38,
+                            color: Colors.white,
                             fontSize: 13,
                           ),
                         ),
@@ -184,7 +184,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                               'Your favorite experiences are waiting. Start browsing events to curate your calendar.',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -304,7 +304,7 @@ class _FavCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
+                          color: Colors.white,
                           fontSize: 12,
                         ),
                       ),
@@ -316,7 +316,7 @@ class _FavCard extends StatelessWidget {
                 onPressed: onRemove,
                 icon: const Icon(
                   Icons.delete_outline_rounded,
-                  color: Colors.white38,
+                  color: Colors.white,
                 ),
               ),
             ],

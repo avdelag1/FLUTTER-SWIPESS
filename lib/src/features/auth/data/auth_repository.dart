@@ -129,9 +129,9 @@ class SupabaseAuthRepository implements AuthRepository {
           'oauth_popup': '1',
           if (referral != null) 'ref': referral,
         };
-        final redirectTo = Uri.parse(
-          Uri.base.origin,
-        ).replace(queryParameters: query).toString();
+        final redirectTo = Uri.parse(Uri.base.origin)
+            .replace(queryParameters: query)
+            .toString();
         final queryParams = provider == OAuthProvider.google
             ? const {'prompt': 'select_account'}
             : null;

@@ -74,9 +74,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_enhancing) return;
     final raw = _bioController.text.trim();
     if (raw.length < 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Write a short bio first')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Write a short bio first')));
       return;
     }
     setState(() => _enhancing = true);
@@ -126,9 +126,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       context.pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to update: $e')));
       setState(() => _isSaving = false);
     }
   }
@@ -207,12 +206,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     CircleAvatar(
                       radius: 52,
                       backgroundColor: Colors.white10,
-                      backgroundImage:
-                          avatarUrl == null ? null : NetworkImage(avatarUrl),
+                      backgroundImage: avatarUrl == null
+                          ? null
+                          : NetworkImage(avatarUrl),
                       child: avatarUrl == null
                           ? const Icon(
                               Icons.person_rounded,
-                              color: Colors.white38,
+                              color: Colors.white,
                               size: 46,
                             )
                           : null,
@@ -226,13 +226,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         child: IconButton(
                           tooltip: 'Change profile photo',
                           onPressed: () async {
-                            final url = await Navigator.of(context).push<String>(
-                              MaterialPageRoute(
-                                builder: (_) => const ProfileCameraScreen(
-                                  mode: ProfileCameraMode.selfie,
-                                ),
-                              ),
-                            );
+                            final url = await Navigator.of(context)
+                                .push<String>(
+                                  MaterialPageRoute(
+                                    builder: (_) => const ProfileCameraScreen(
+                                      mode: ProfileCameraMode.selfie,
+                                    ),
+                                  ),
+                                );
                             if (url != null) {
                               ref.invalidate(currentProfileProvider);
                             }
@@ -338,7 +339,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     Text(
                                       'Turn this on only when you want to appear in roommate discovery.',
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white60,
+                                        color: Colors.white,
                                         fontSize: 11.5,
                                         height: 1.35,
                                       ),
@@ -363,9 +364,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               controller: _roommateBudgetController,
                               hint: 'Example: 1200',
                               icon: Icons.payments_outlined,
-                              keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                             ),
                           ],
                         ],
@@ -395,7 +397,7 @@ class _Label extends StatelessWidget {
     return Text(
       text,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white54,
+        color: Colors.white,
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.4,

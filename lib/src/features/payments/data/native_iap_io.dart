@@ -89,10 +89,14 @@ class NativeIap {
 
       if (purchase.status == PurchaseStatus.purchased) {
         validationPassed = await _validate(purchase);
-        result = validationPassed ? CheckoutResult.purchased : CheckoutResult.error;
+        result = validationPassed
+            ? CheckoutResult.purchased
+            : CheckoutResult.error;
       } else if (purchase.status == PurchaseStatus.restored) {
         validationPassed = await _validate(purchase);
-        result = validationPassed ? CheckoutResult.restored : CheckoutResult.error;
+        result = validationPassed
+            ? CheckoutResult.restored
+            : CheckoutResult.error;
       } else if (purchase.status == PurchaseStatus.canceled) {
         result = CheckoutResult.cancelled;
         validationPassed = true;

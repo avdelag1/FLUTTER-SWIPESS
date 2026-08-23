@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 /// Shows a bottom sheet with a frosted glass background overlay.
@@ -35,9 +36,8 @@ Future<T?> showGlassModal<T>({
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.54),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.54),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),

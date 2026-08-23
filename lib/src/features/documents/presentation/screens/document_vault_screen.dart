@@ -115,7 +115,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                             children: [
                               const Icon(
                                 Icons.folder_open_rounded,
-                                color: Colors.white38,
+                                color: Colors.white,
                                 size: 48,
                               ),
                               const SizedBox(height: 12),
@@ -123,7 +123,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                                 'Upload IDs, contracts, and fideicomiso files for verification.',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white70,
+                                  color: Colors.white,
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -218,15 +218,13 @@ class DocumentVaultScreen extends ConsumerWidget {
           );
       await ref.read(documentsProvider.notifier).refresh();
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Document uploaded')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Document uploaded')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     }
   }

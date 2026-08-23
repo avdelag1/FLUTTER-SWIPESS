@@ -19,8 +19,8 @@ Future<void> openNotificationTarget(
     final uri = Uri.tryParse(link);
     if (uri != null) {
       final path = uri.path;
-      final directRequestMatch =
-          RegExp(r'/direct-request/([^/]+)').firstMatch(path);
+      final directRequestMatch = RegExp(r'/direct-request/([^/]+)')
+          .firstMatch(path);
       if (directRequestMatch != null) {
         await Navigator.of(context).push(
           MaterialPageRoute(

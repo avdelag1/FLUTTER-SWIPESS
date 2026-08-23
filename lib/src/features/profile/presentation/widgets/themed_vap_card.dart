@@ -57,26 +57,26 @@ class ThemedVapCard extends StatelessWidget {
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _IdentitySection(
-              theme: t,
-              data: data,
-              idNumber: idNumber,
-              validationUrl: validationUrl,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _IdentitySection(
+                  theme: t,
+                  data: data,
+                  idNumber: idNumber,
+                  validationUrl: validationUrl,
+                ),
+                const SizedBox(height: 18),
+                Divider(color: t.tagBorder, height: 1),
+                const SizedBox(height: 18),
+                _DocumentsSection(
+                  theme: t,
+                  docsAsync: docsAsync,
+                  onPreview: onPreview,
+                  onManageDocuments: onManageDocuments,
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-            Divider(color: t.tagBorder, height: 1),
-            const SizedBox(height: 18),
-            _DocumentsSection(
-              theme: t,
-              docsAsync: docsAsync,
-              onPreview: onPreview,
-              onManageDocuments: onManageDocuments,
-            ),
-          ],
-        ),
           ),
         ),
       ),
@@ -136,7 +136,8 @@ class _IdentitySection extends StatelessWidget {
                   ? Image.network(
                       data.displayPhotoUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _Initials(data: data, theme: t),
+                      errorBuilder: (_, _, _) =>
+                          _Initials(data: data, theme: t),
                     )
                   : _Initials(data: data, theme: t),
             ),
@@ -209,12 +210,18 @@ class _IdentitySection extends StatelessWidget {
                 value: data.nationality ?? data.country ?? '—',
                 theme: t,
               ),
-              _Field(label: 'AGE', value: data.age?.toString() ?? '—', theme: t),
+              _Field(
+                label: 'AGE',
+                value: data.age?.toString() ?? '—',
+                theme: t,
+              ),
               _Field(label: 'CITY', value: data.city ?? '—', theme: t),
               _Field(label: 'COUNTRY', value: data.country ?? '—', theme: t),
               _Field(
                 label: 'LOCAL SINCE',
-                value: data.yearsInCity == null ? '—' : '${data.yearsInCity} years',
+                value: data.yearsInCity == null
+                    ? '—'
+                    : '${data.yearsInCity} years',
                 theme: t,
               ),
               _Field(label: 'MEMBER SINCE', value: memberSince, theme: t),
@@ -374,7 +381,9 @@ class _DocumentRow extends StatelessWidget {
     final t = theme;
     final uploaded = doc != null && doc!.fileName.isNotEmpty;
     return Material(
-      color: t.isDark ? Colors.white.withAlpha(18) : Colors.white.withAlpha(210),
+      color: t.isDark
+          ? Colors.white.withAlpha(18)
+          : Colors.white.withAlpha(210),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: uploaded ? () => onPreview(doc!) : onManageDocuments,
@@ -410,7 +419,9 @@ class _DocumentRow extends StatelessWidget {
                 ),
               ),
               Icon(
-                uploaded ? Icons.open_in_new_rounded : Icons.upload_file_rounded,
+                uploaded
+                    ? Icons.open_in_new_rounded
+                    : Icons.upload_file_rounded,
                 color: uploaded ? t.accent : t.textTertiary,
                 size: 17,
               ),
@@ -447,7 +458,11 @@ class _DocThumb extends ConsumerWidget {
           ? Icon(Icons.description_outlined, color: t.textTertiary, size: 17)
           : urlAsync.when(
               data: (url) => url == null || url.isEmpty
-                  ? Icon(Icons.description_outlined, color: t.textTertiary, size: 17)
+                  ? Icon(
+                      Icons.description_outlined,
+                      color: t.textTertiary,
+                      size: 17,
+                    )
                   : Image.network(
                       url,
                       fit: BoxFit.cover,
@@ -532,7 +547,11 @@ class _Field extends StatelessWidget {
 }
 
 class _MiniLine extends StatelessWidget {
-  const _MiniLine({required this.icon, required this.text, required this.color});
+  const _MiniLine({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
 
   final IconData icon;
   final String text;

@@ -49,9 +49,8 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error sending message: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error sending message: $e')));
       }
     } finally {
       setState(() {

@@ -116,9 +116,8 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     }
     final me = ref.read(currentUserProvider)?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This is your listing')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
 
@@ -198,15 +197,19 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     ref.read(chromeRevealProvider.notifier).reveal();
 
     unawaited(
-      ref.read(swipeRepositoryProvider).undoSwipe(last.id).then((_) {
-        _invalidateDecisionCaches();
-      }).catchError((_) {
-        if (!mounted) return;
-        setState(() => _deck?.removeWhere((l) => l.id == last.id));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not undo that decision.')),
-        );
-      }),
+      ref
+          .read(swipeRepositoryProvider)
+          .undoSwipe(last.id)
+          .then((_) {
+            _invalidateDecisionCaches();
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            setState(() => _deck?.removeWhere((l) => l.id == last.id));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not undo that decision.')),
+            );
+          }),
     );
   }
 
@@ -233,9 +236,8 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       },
       onOpenFilters: () => FilterBottomSheet.show(context),
       onOpenMap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LiveMapScreen()),
-        );
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const LiveMapScreen()));
       },
       onOpenAi: () => showMagicAiProfileSheet(context),
       onCategoryChange: (cat) {
@@ -272,7 +274,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     if (direction == SwipeDirection.right && mounted) {
       var matched = false;
       if (authUser != null) {
-        matched = await ref.read(swipeRepositoryProvider).checkForMatch(listing.id);
+        matched = await ref
+            .read(swipeRepositoryProvider)
+            .checkForMatch(listing.id);
       } else if (!_demoMatchShown) {
         matched = true;
         _demoMatchShown = true;
@@ -283,7 +287,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
           context,
           clientName: listing.title ?? 'this listing',
           clientImageUrl: profile?.avatarUrl,
-          ownerImageUrl: listing.images.isNotEmpty ? listing.images.first : null,
+          ownerImageUrl: listing.images.isNotEmpty
+              ? listing.images.first
+              : null,
           onMessage: () => _message(listing),
         );
       }
@@ -345,14 +351,20 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                               onUndo: _undo,
                               onBack: _goDashboard,
                               onSummonChrome: () {
-                                ref.read(chromeRevealProvider.notifier).toggle();
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .toggle();
                               },
                               onOpenAi: () {
-                                ref.read(chromeRevealProvider.notifier).reveal();
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .reveal();
                                 showIntelCoreSheet(context);
                               },
                               onOpenMap: () {
-                                ref.read(chromeRevealProvider.notifier).reveal();
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .reveal();
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => const LiveMapScreen(),
@@ -360,7 +372,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                                 );
                               },
                               onInsights: (listing) {
-                                ref.read(chromeRevealProvider.notifier).reveal();
+                                ref
+                                    .read(chromeRevealProvider.notifier)
+                                    .reveal();
                                 showListingInsightsSheet(
                                   context,
                                   listing: listing,

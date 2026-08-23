@@ -293,8 +293,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                         variant: CapEmptyVariant.likes,
                         icon: Icons.favorite_border_rounded,
                         title: 'Network Empty.',
-                        description:
-                            'Your matches will appear here. Start scanning to find talent.',
+                        description: 'Your matches will appear here. Start scanning to find talent.',
                         actionLabel: 'EXPLORE',
                         onAction: () => Navigator.of(context).maybePop(),
                       ),
@@ -398,8 +397,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                         variant: CapEmptyVariant.likes,
                         icon: Icons.favorite_border_rounded,
                         title: 'Pure Potential.',
-                        description:
-                            'Your favorite listings will appear here. Start swiping to fill your world.',
+                        description: 'Your favorite listings will appear here. Start swiping to fill your world.',
                         actionLabel: 'EXPLORE WORLD',
                         onAction: () => Navigator.of(context).maybePop(),
                       ),

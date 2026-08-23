@@ -60,10 +60,8 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 actions: [
                   IconButton(
                     tooltip: 'Share listing',
-                    onPressed: () => AppShare.listing(
-                      id: listing.id,
-                      title: listing.title,
-                    ),
+                    onPressed: () =>
+                        AppShare.listing(id: listing.id, title: listing.title),
                     icon: const Icon(Icons.ios_share_rounded),
                   ),
                 ],

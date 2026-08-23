@@ -146,7 +146,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                       size: 14,
                                       color: _tab == i
                                           ? const Color(0xFFF43F5E)
-                                          : Colors.white70,
+                                          : Colors.white,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -154,7 +154,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                                       style: GoogleFonts.plusJakartaSans(
                                         color: _tab == i
                                             ? Colors.black
-                                            : Colors.white70,
+                                            : Colors.white,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 10,
                                         letterSpacing: 0.8,
@@ -312,8 +312,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                         _EmptyPane(
                           icon: Icons.inbox_rounded,
                           title: 'Promo inbox is quiet',
-                          body:
-                              'Partner codes and resident drops will land here.',
+                          body: 'Partner codes and resident drops will land here.',
                         ),
                       if (_tab == 2) ...[
                         Text(
@@ -332,8 +331,7 @@ class _PerksScreenState extends ConsumerState<PerksScreen> {
                         _EmptyPane(
                           icon: Icons.history_rounded,
                           title: 'No redemptions yet',
-                          body:
-                              'Show your resident QR at partners to build history.',
+                          body: 'Show your resident QR at partners to build history.',
                         ),
                     ],
                   ),

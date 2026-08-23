@@ -171,9 +171,8 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
     }
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
     setState(() => _messaging = true);
@@ -385,7 +384,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 child: Text(
                                   listing.formattedLocation,
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white70,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
                                   ),
@@ -420,7 +419,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           Text(
                             _story,
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
+                              color: Colors.white,
                               height: 1.5,
                               fontSize: 14,
                             ),
@@ -475,7 +474,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 ? '${listing.neighborhood} · ${listing.city ?? listing.formattedLocation}. Walk the area on the live map after you match, or drop a pin from Intel Core.'
                                 : '${listing.formattedLocation}. Open the live map from the dashboard globe to fly the radius around this pin.',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
+                              color: Colors.white,
                               height: 1.5,
                               fontSize: 14,
                             ),
@@ -486,20 +485,17 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           const _Bullet(
                             icon: Icons.swipe_rounded,
                             title: '1 · Swipe the deck',
-                            body:
-                                'Keep cards you want. A mutual like opens the thread — no spam DMs.',
+                            body: 'Keep cards you want. A mutual like opens the thread — no spam DMs.',
                           ),
                           const _Bullet(
                             icon: Icons.chat_bubble_rounded,
                             title: '2 · Message the host',
-                            body:
-                                'Ask for a tour, documents, or a hold. Share vault files in-chat.',
+                            body: 'Ask for a tour, documents, or a hold. Share vault files in-chat.',
                           ),
                           const _Bullet(
                             icon: Icons.verified_user_outlined,
                             title: '3 · Close on SWIPESS',
-                            body:
-                                'PEARL ID, contracts, and escrow stay inside the app. Never wire off-platform.',
+                            body: 'PEARL ID, contracts, and escrow stay inside the app. Never wire off-platform.',
                           ),
                           const SizedBox(height: 26),
                           const _Kicker('SAFETY'),
@@ -507,7 +503,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           Text(
                             'Report anything off. Never send deposits outside SWIPESS. Hosts with a violet Verified pill have documents in the vault.',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
+                              color: Colors.white,
                               height: 1.5,
                               fontSize: 14,
                             ),
@@ -818,7 +814,7 @@ class _Kicker extends StatelessWidget {
     return Text(
       label,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white38,
+        color: Colors.white,
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
@@ -882,7 +878,7 @@ class _SpecTile extends StatelessWidget {
                 Text(
                   label.toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white38,
+                    color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
@@ -947,7 +943,7 @@ class _Bullet extends StatelessWidget {
                 Text(
                   body,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white60,
+                    color: Colors.white,
                     height: 1.4,
                     fontSize: 13,
                   ),

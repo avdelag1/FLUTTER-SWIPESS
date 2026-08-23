@@ -200,9 +200,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/listing/:id',
-        builder: (ctx, state) => SafeListingDetailRoute(
-          listingId: state.pathParameters['id']!,
-        ),
+        builder: (ctx, state) =>
+            SafeListingDetailRoute(listingId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/profile/:id',

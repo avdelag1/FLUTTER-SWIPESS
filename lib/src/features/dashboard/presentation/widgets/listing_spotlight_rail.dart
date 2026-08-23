@@ -152,7 +152,7 @@ class _SpotlightCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white70,
+                            color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 11,
                           ),

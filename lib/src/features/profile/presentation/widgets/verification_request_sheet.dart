@@ -92,7 +92,7 @@ class _VerificationSheetState extends ConsumerState<_VerificationSheet> {
             _done
                 ? 'Submitted. Status is pending review.'
                 : 'Upload a deed, fideicomiso, or rental license.',
-            style: GoogleFonts.plusJakartaSans(color: Colors.white70),
+            style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
           if (!_done) ...[
             const SizedBox(height: 16),
@@ -124,7 +124,7 @@ class _VerificationSheetState extends ConsumerState<_VerificationSheet> {
                               : Icons.radio_button_off_rounded,
                           color: _type == t.$1
                               ? AppTheme.brandPrimary
-                              : Colors.white54,
+                              : Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 10),

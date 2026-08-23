@@ -384,14 +384,19 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   top: 16,
                   left: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: widget.listing.reappearedReason == 'price_dropped'
                           ? const Color(0xFF34D399).withAlpha(200)
                           : Colors.white.withAlpha(50),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(color: Colors.white.withAlpha(50)),
-                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black26, blurRadius: 8),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -481,9 +486,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(
-                                      0xFF8B5CF6,
-                                    ).withAlpha(100),
+                                    color: const Color(0xFF8B5CF6)
+                                        .withAlpha(100),
                                     blurRadius: 16,
                                   ),
                                 ],
@@ -664,7 +668,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             Text(
                               '  (${widget.listing.likes ?? 0})',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
+                                color: Colors.white,
                                 fontSize: 11,
                               ),
                             ),
@@ -712,7 +716,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                               Text(
                                 widget.listing.propertyType!,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
+                                  color: Colors.white,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                 ),

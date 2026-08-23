@@ -122,10 +122,7 @@ class HolographicIDCard extends StatelessWidget {
                             color: theme.textPrimary,
                           ),
                         )
-                      : _Initials(
-                          initials: initials,
-                          color: theme.textPrimary,
-                        ),
+                      : _Initials(initials: initials, color: theme.textPrimary),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -161,7 +158,9 @@ class HolographicIDCard extends StatelessWidget {
                       const SizedBox(height: 9),
                       _InfoLine(
                         icon: Icons.location_on_outlined,
-                        text: location.trim().isEmpty ? 'Location not set' : location,
+                        text: location.trim().isEmpty
+                            ? 'Location not set'
+                            : location,
                         color: theme.textSecondary,
                       ),
                       if (years.trim().isNotEmpty) ...[

@@ -134,7 +134,7 @@ class BlockedUsersSection extends ConsumerWidget {
         Text(
           'BLOCKED USERS',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white38,
+            color: Colors.white,
             fontSize: 10,
             fontWeight: FontWeight.w900,
             letterSpacing: 2,
@@ -145,7 +145,7 @@ class BlockedUsersSection extends ConsumerWidget {
           loading: () => Text(
             'Loading…',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
+              color: Colors.white,
               fontSize: 13,
             ),
           ),
@@ -155,7 +155,7 @@ class BlockedUsersSection extends ConsumerWidget {
               Text(
                 'Could not load blocked users.',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: Colors.white,
                   fontSize: 13,
                 ),
               ),
@@ -171,7 +171,7 @@ class BlockedUsersSection extends ConsumerWidget {
               return Text(
                 "You haven't blocked anyone.",
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white54,
+                  color: Colors.white,
                   fontSize: 13,
                 ),
               );
@@ -230,7 +230,7 @@ class _BlockedTile extends StatelessWidget {
             child: user.avatarUrl == null
                 ? const Icon(
                     Icons.person_off_rounded,
-                    color: Colors.white38,
+                    color: Colors.white,
                     size: 18,
                   )
                 : null,
@@ -252,7 +252,7 @@ class _BlockedTile extends StatelessWidget {
             onPressed: onUnblock,
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
-              side: const BorderSide(color: Colors.white54),
+              side: const BorderSide(color: Colors.white),
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),

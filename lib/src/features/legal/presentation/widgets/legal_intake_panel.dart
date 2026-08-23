@@ -505,7 +505,7 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
   InputDecoration _field(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54),
+      labelStyle: const TextStyle(color: Colors.white),
       filled: true,
       fillColor: const Color(0xFF10141B),
       enabledBorder: OutlineInputBorder(

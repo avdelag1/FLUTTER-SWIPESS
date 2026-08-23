@@ -239,8 +239,8 @@ class IapOffer {
 
   String get storeProductId =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-          ? (googleProductId ?? appleProductId)
-          : appleProductId;
+      ? (googleProductId ?? appleProductId)
+      : appleProductId;
 
   bool get isSubscription =>
       IapCatalog.subscriptionIds.contains(appleProductId) ||

@@ -46,8 +46,7 @@ class LegalHubScreen extends StatelessWidget {
 
             _PremiumActionCard(
               title: 'DocuSign Contracts',
-              subtitle:
-                  'Draft, send, and sign legally binding leases and agreements directly on your device.',
+              subtitle: 'Draft, send, and sign legally binding leases and agreements directly on your device.',
               icon: Icons.draw_rounded,
               color: const Color(0xFF00C6FF),
               onTap: () {
@@ -60,8 +59,7 @@ class LegalHubScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _PremiumActionCard(
               title: 'Hire a Lawyer',
-              subtitle:
-                  'Video call or WhatsApp our network of verified attorneys. Purchase flat-fee legal packages.',
+              subtitle: 'Video call or WhatsApp our network of verified attorneys. Purchase flat-fee legal packages.',
               icon: Icons.gavel_rounded,
               color: const Color(0xFF6366F1),
               onTap: () {

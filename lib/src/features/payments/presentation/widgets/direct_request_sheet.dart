@@ -37,7 +37,8 @@ class _DirectRequestSheet extends ConsumerStatefulWidget {
   final String listingTitle;
 
   @override
-  ConsumerState<_DirectRequestSheet> createState() => _DirectRequestSheetState();
+  ConsumerState<_DirectRequestSheet> createState() =>
+      _DirectRequestSheetState();
 }
 
 class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
@@ -56,10 +57,8 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const FractionallySizedBox(
-        heightFactor: .9,
-        child: TokensModal(),
-      ),
+      builder: (_) =>
+          const FractionallySizedBox(heightFactor: .9, child: TokensModal()),
     );
     ref.invalidate(directRequestBalanceProvider);
   }
@@ -72,7 +71,9 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
     });
     AppHaptics.medium();
     try {
-      await ref.read(directRequestRepositoryProvider).create(
+      await ref
+          .read(directRequestRepositoryProvider)
+          .create(
             receiverId: widget.receiverId,
             listingId: widget.listingId,
             message: _message.text,
@@ -274,15 +275,15 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
   }
 
   Widget _rule(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 7),
-        child: Text(
-          text,
-          style: GoogleFonts.plusJakartaSans(
-            color: MatteSurface.ink(context),
-            fontSize: 12.5,
-            height: 1.3,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 7),
+    child: Text(
+      text,
+      style: GoogleFonts.plusJakartaSans(
+        color: MatteSurface.ink(context),
+        fontSize: 12.5,
+        height: 1.3,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
 }
