@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/role_control_center.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_identity_documents_panel.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -54,6 +55,7 @@ class AdminDashboardScreen extends StatelessWidget {
             path: AppPaths.clientDashboard,
           ),
         ],
+        footer: AdminIdentityDocumentsPanel(),
       ),
     );
   }
