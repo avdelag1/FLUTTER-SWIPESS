@@ -67,24 +67,58 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
 
   Color get _ink => widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
 
+  bool _hasStructuredPayload(ConciergeParse? parsed) {
+    if (parsed == null) return false;
+    return parsed.listings.isNotEmpty ||
+        parsed.profiles.isNotEmpty ||
+        parsed.events.isNotEmpty ||
+        parsed.navPaths.isNotEmpty ||
+        parsed.filterAction != null ||
+        parsed.passportAction != null ||
+        parsed.passportCity != null;
+  }
+
+  String _assistantDisplayText(String raw, ConciergeParse? parsed) {
+    final clean = parsed?.cleanContent.trim() ?? '';
+    if (clean.isNotEmpty) return clean;
+
+    if (parsed != null && _hasStructuredPayload(parsed)) {
+      if (parsed.listings.isNotEmpty) {
+        return 'I found matching listings for you.';
+      }
+      if (parsed.profiles.isNotEmpty) {
+        return 'I found matching people for you.';
+      }
+      if (parsed.events.isNotEmpty) {
+        return 'I found matching events for you.';
+      }
+      return 'Done — I prepared that action for you.';
+    }
+
+    final trimmed = raw.trim();
+    final looksTechnical =
+        trimmed.startsWith('[') ||
+        trimmed.startsWith('{') ||
+        trimmed.startsWith('data:') ||
+        RegExp(
+          r'(font-family|rgba\(|<html|<!doctype|class=|style=|choices|delta|content)',
+          caseSensitive: false,
+        ).hasMatch(trimmed);
+
+    if (looksTechnical) {
+      return 'I found results, but the answer came back without a clean sentence.';
+    }
+
+    return trimmed;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUser = widget.message.isUser;
     final parsed = isUser ? null : ConciergeParse.of(widget.message.content);
-
-    final hasData =
-        (parsed?.listings.isNotEmpty == true) ||
-        (parsed?.profiles.isNotEmpty == true) ||
-        (parsed?.events.isNotEmpty == true);
-
-    String text;
-    if (parsed != null && parsed.cleanContent.trim().isNotEmpty) {
-      text = parsed.cleanContent.trim();
-    } else if (hasData) {
-      text = 'Here is what I found:';
-    } else {
-      text = widget.message.content;
-    }
+    final text = isUser
+        ? widget.message.content
+        : _assistantDisplayText(widget.message.content, parsed);
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
