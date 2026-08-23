@@ -34,8 +34,11 @@ class Listing {
   final int? likes;
   final int? views;
 
-  /// Cap `has_verified_documents` — drives the violet Verified pill on swipe.
+  /// True only when the listing's legal docs were approved.
+  /// This drives the public verified-owner badge on swipe/details UI.
   final bool hasVerifiedDocuments;
+  final String verificationStatus;
+  final DateTime? ownerVerifiedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   // Vehicle fields
@@ -81,6 +84,8 @@ class Listing {
     this.likes,
     this.views,
     this.hasVerifiedDocuments = false,
+    this.verificationStatus = 'unverified',
+    this.ownerVerifiedAt,
     this.createdAt,
     this.updatedAt,
     this.vehicleBrand,
@@ -95,6 +100,14 @@ class Listing {
 
   /// Parse from Supabase JSON row.
   factory Listing.fromJson(Map<String, dynamic> json) {
+    final rawVerificationStatus =
+        json['verification_status']?.toString() ?? 'unverified';
+    final approved = rawVerificationStatus == 'approved';
+    final hasApprovedDocuments =
+        approved ||
+        json['has_verified_documents'] == true ||
+        json['background_check_verified'] == true ||
+        json['insurance_verified'] == true;
     return Listing(
       id: json['id']?.toString() ?? '',
       ownerId: json['owner_id']?.toString(),
@@ -126,10 +139,11 @@ class Listing {
       isActive: json['is_active'] as bool?,
       likes: (json['likes'] as num?)?.toInt(),
       views: (json['views'] as num?)?.toInt(),
-      hasVerifiedDocuments:
-          json['has_verified_documents'] == true ||
-          json['background_check_verified'] == true ||
-          json['insurance_verified'] == true,
+      hasVerifiedDocuments: hasApprovedDocuments,
+      verificationStatus: hasApprovedDocuments ? 'approved' : rawVerificationStatus,
+      ownerVerifiedAt: json['owner_verified_at'] != null
+          ? DateTime.tryParse(json['owner_verified_at'] as String)
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
@@ -169,10 +183,12 @@ class Listing {
   List<String> get quickTags {
     final tags = <String>[];
     if (beds != null && beds! > 0) tags.add('$beds bed');
-    if (baths != null && baths! > 0)
+    if (baths != null && baths! > 0) {
       tags.add('${baths!.toStringAsFixed(baths! % 1 == 0 ? 0 : 1)} bath');
-    if (squareFootage != null && squareFootage! > 0)
+    }
+    if (squareFootage != null && squareFootage! > 0) {
       tags.add('${squareFootage!.toStringAsFixed(0)} sqft');
+    }
     if (furnished == true) tags.add('Furnished');
     if (petFriendly == true) tags.add('Pet Friendly');
     return tags;
