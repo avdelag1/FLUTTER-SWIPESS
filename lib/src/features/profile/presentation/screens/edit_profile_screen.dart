@@ -24,8 +24,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _bioController;
   late final TextEditingController _cityController;
+  late final TextEditingController _roommateBudgetController;
   bool _isSaving = false;
   bool _enhancing = false;
+  bool _roommateAvailable = false;
+  bool _loadingRoommatePrefs = true;
 
   @override
   void initState() {
@@ -34,11 +37,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nameController = TextEditingController(text: profile?.name ?? '');
     _bioController = TextEditingController(text: profile?.bio ?? '');
     _cityController = TextEditingController(text: profile?.city ?? '');
+    _roommateBudgetController = TextEditingController();
 
-    // This page has its own app bar. Hide the persistent dashboard header/dock
-    // while it is open so the two navigation layers can never overlap.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(chromeVisibilityProvider.notifier).hide();
+      if (!mounted) return;
+      ref.read(chromeVisibilityProvider.notifier).hide();
+      _loadRoommatePreferences();
+    });
+  }
+
+  Future<void> _loadRoommatePreferences() async {
+    final prefs = await ref
+        .read(profileRepositoryProvider)
+        .fetchRoommatePreferences();
+    if (!mounted) return;
+    setState(() {
+      _roommateAvailable = prefs.available;
+      _roommateBudgetController.text = prefs.monthlyBudget == null
+          ? ''
+          : prefs.monthlyBudget!.toStringAsFixed(0);
+      _loadingRoommatePrefs = false;
     });
   }
 
@@ -47,7 +65,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nameController.dispose();
     _bioController.dispose();
     _cityController.dispose();
-    // Restore shell chrome after returning to Profile.
+    _roommateBudgetController.dispose();
     ref.read(chromeVisibilityProvider.notifier).show();
     super.dispose();
   }
@@ -79,13 +97,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (_isSaving) return;
+    final parsedBudget = double.tryParse(
+      _roommateBudgetController.text.trim().replaceAll(',', ''),
+    );
+    if (_roommateAvailable &&
+        _roommateBudgetController.text.trim().isNotEmpty &&
+        (parsedBudget == null || parsedBudget < 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid monthly roommate budget')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
-      await ref.read(profileRepositoryProvider).updateProfile(
-            displayName: _nameController.text.trim(),
-            bio: _bioController.text.trim(),
-            city: _cityController.text.trim(),
-          );
+      final repo = ref.read(profileRepositoryProvider);
+      await repo.updateProfile(
+        displayName: _nameController.text.trim(),
+        bio: _bioController.text.trim(),
+        city: _cityController.text.trim(),
+      );
+      await repo.updateRoommatePreferences(
+        available: _roommateAvailable,
+        monthlyBudget: parsedBudget,
+      );
       ref.invalidate(currentProfileProvider);
       if (!mounted) return;
       context.pop();
@@ -214,7 +249,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-              _Label('DISPLAY NAME'),
+              const _Label('DISPLAY NAME'),
               const SizedBox(height: 8),
               GlassTextField(
                 controller: _nameController,
@@ -222,7 +257,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 icon: Icons.person_outline_rounded,
               ),
               const SizedBox(height: 18),
-              _Label('CITY'),
+              const _Label('CITY'),
               const SizedBox(height: 8),
               GlassTextField(
                 controller: _cityController,
@@ -256,6 +291,85 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 hint: 'Bio',
                 icon: Icons.notes_rounded,
                 maxLines: 4,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withAlpha(32)),
+                ),
+                child: _loadingRoommatePrefs
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(10),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.brandPrimary,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.bedroom_parent_outlined,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ROOMMATE MODE',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: .8,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      'Turn this on only when you want to appear in roommate discovery.',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white60,
+                                        fontSize: 11.5,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _roommateAvailable,
+                                onChanged: (value) {
+                                  AppHaptics.selection();
+                                  setState(() => _roommateAvailable = value);
+                                },
+                              ),
+                            ],
+                          ),
+                          if (_roommateAvailable) ...[
+                            const SizedBox(height: 16),
+                            const _Label('MONTHLY BUDGET'),
+                            const SizedBox(height: 8),
+                            GlassTextField(
+                              controller: _roommateBudgetController,
+                              hint: 'Example: 1200',
+                              icon: Icons.payments_outlined,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
               ),
               const SizedBox(height: 28),
               BrandPrimaryButton(
