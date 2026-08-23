@@ -1,0 +1,49 @@
+name: One-time Virtual ID photo preservation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one_time_vap_preserve_id_photo.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve latest ID photo when saving card fields
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/src/features/profile/presentation/widgets/vap_id_modal.dart')
+          s = p.read_text()
+          old = """                      await ref.read(vapIdProvider.notifier).save(\n                            card.copyWith(\n                              name: name.text.trim(),\n                              occupation: occupation.text.trim(),\n                              city: city.text.trim(),\n                              country: country.text.trim(),\n                              bio: bio.text.trim(),\n                            ),\n                          );"""
+          new = """                      final latest = ref.read(vapIdProvider).value ?? card;\n                      await ref.read(vapIdProvider.notifier).save(\n                            latest.copyWith(\n                              name: name.text.trim(),\n                              occupation: occupation.text.trim(),\n                              city: city.text.trim(),\n                              country: country.text.trim(),\n                              bio: bio.text.trim(),\n                            ),\n                          );"""
+          assert old in s, 'modal save target not found'
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path('lib/src/features/profile/presentation/screens/vap_id_screen.dart')
+          s = p.read_text()
+          old = """                        await ref.read(vapIdProvider.notifier).save(\n                              VapIdCard(\n                                userId: card.userId,\n                                name: name.text.trim(),\n                                occupation: occupation.text.trim(),\n                                city: city.text.trim(),\n                                country: country.text.trim(),\n                                bio: bio.text.trim(),\n                                yearsInCity: int.tryParse(years.text),\n                                avatarUrl: card.avatarUrl,\n                                languages: card.languages,\n                                interests: card.interests,\n                                age: card.age,\n                                nationality: card.nationality,\n                              ),\n                            );"""
+          new = """                        final latest = ref.read(vapIdProvider).value ?? card;\n                        await ref.read(vapIdProvider.notifier).save(\n                              latest.copyWith(\n                                name: name.text.trim(),\n                                occupation: occupation.text.trim(),\n                                city: city.text.trim(),\n                                country: country.text.trim(),\n                                bio: bio.text.trim(),\n                                yearsInCity: int.tryParse(years.text),\n                              ),\n                            );"""
+          assert old in s, 'standalone save target not found'
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          Path('.github/workflows/one_time_vap_preserve_id_photo.yml').unlink()
+          PY
+      - name: Commit preservation fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Preserve dedicated ID photo when saving Virtual ID'
+          git push origin HEAD:main
