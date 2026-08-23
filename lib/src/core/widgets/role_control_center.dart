@@ -28,6 +28,7 @@ class RoleControlCenter extends StatelessWidget {
     required this.subtitle,
     required this.actions,
     this.statusLabel = 'Workspace active',
+    this.footer,
   });
 
   final String eyebrow;
@@ -35,6 +36,7 @@ class RoleControlCenter extends StatelessWidget {
   final String subtitle;
   final List<RoleDashboardAction> actions;
   final String statusLabel;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +182,10 @@ class RoleControlCenter extends StatelessWidget {
                       );
                     },
                   ),
+                  if (footer != null) ...[
+                    const SizedBox(height: 18),
+                    footer!,
+                  ],
                 ],
               ),
             ),
