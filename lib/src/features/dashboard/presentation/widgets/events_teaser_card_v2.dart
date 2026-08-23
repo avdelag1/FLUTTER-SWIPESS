@@ -11,12 +11,11 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Dashboard Events is a moving reel, never a photo card.
+/// Dashboard Events is a stable moving-video preview.
 ///
-/// Published/approved teaser videos come from a dedicated lightweight feed,
-/// rotate every four seconds, preload ahead, and transition video -> video with
-/// a dissolve/slide/scale effect. The full Events section remains independently
-/// Premium-gated by navigation and backend access rules.
+/// Published/approved teaser videos come from the live event feed. The current
+/// event stays selected until the user deliberately swipes the preview or opens
+/// Events. We still preload the next clip so a manual swipe feels immediate.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -29,7 +28,6 @@ class EventsTeaserCard extends ConsumerStatefulWidget {
 class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   VideoPlayerController? _current;
   VideoPlayerController? _preloaded;
-  Timer? _rotation;
   int _index = 0;
   bool _loading = false;
   bool _switching = false;
@@ -53,9 +51,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     _routeActive = active;
     if (active) {
       _current?.play();
-      _startRotation();
     } else {
-      _rotation?.cancel();
       _current?.pause();
       _preloaded?.pause();
     }
@@ -63,7 +59,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
 
   @override
   void dispose() {
-    _rotation?.cancel();
     _current?.dispose();
     _preloaded?.dispose();
     super.dispose();
@@ -108,22 +103,12 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         await _applySound();
         if (_routeActive) await controller.play();
         setState(() {});
-        _startRotation();
         unawaited(_preloadNext(videos));
         return;
       }
     } finally {
       _loading = false;
     }
-  }
-
-  void _startRotation() {
-    _rotation?.cancel();
-    final videos = _videos;
-    if (!_routeActive || videos.length < 2 || _current == null) return;
-    _rotation = Timer.periodic(const Duration(seconds: 4), (_) {
-      unawaited(_advance(1));
-    });
   }
 
   Future<void> _preloadNext(List<Event> videos) async {
@@ -164,9 +149,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       if (_routeActive) await next.play();
       if (mounted) setState(() {});
 
-      // Keep the outgoing controller alive until the transition is over. This
-      // guarantees a real moving-video -> moving-video transition with no image
-      // or blank frame inserted between clips.
       if (previous != null) {
         Future<void>.delayed(const Duration(milliseconds: 760), () async {
           try {
@@ -385,7 +367,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                         const SizedBox(height: 4),
                         Text(
                           videos.length > 1
-                              ? 'New video every 4 seconds'
+                              ? 'Swipe to preview another event'
                               : 'Tap to explore events',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white70,
