@@ -40,6 +40,16 @@ class VapIdScreen extends ConsumerStatefulWidget {
 
 class _VapIdScreenState extends ConsumerState<VapIdScreen> {
   bool _handledEditRequest = false;
+  bool _editing = false;
+  bool _saving = false;
+  bool _seeded = false;
+
+  final _name = TextEditingController();
+  final _occupation = TextEditingController();
+  final _city = TextEditingController();
+  final _country = TextEditingController();
+  final _bio = TextEditingController();
+  final _years = TextEditingController();
 
   @override
   void initState() {
@@ -50,7 +60,64 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
   @override
   void dispose() {
     PrivacyScreen.disable();
+    _name.dispose();
+    _occupation.dispose();
+    _city.dispose();
+    _country.dispose();
+    _bio.dispose();
+    _years.dispose();
     super.dispose();
+  }
+
+  void _seedEditors(VapIdCard card) {
+    if (_seeded) return;
+    _seeded = true;
+    _name.text = card.name ?? '';
+    _occupation.text = card.occupation ?? '';
+    _city.text = card.city ?? '';
+    _country.text = card.country ?? '';
+    _bio.text = card.bio ?? '';
+    _years.text = card.yearsInCity?.toString() ?? '';
+  }
+
+  void _startEdit(VapIdCard card) {
+    _seeded = false;
+    _seedEditors(card);
+    if (!_editing) setState(() => _editing = true);
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editing = false;
+      _seeded = false;
+    });
+  }
+
+  Future<void> _saveEdit(VapIdCard card) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final latest = ref.read(vapIdProvider).value ?? card;
+      await ref
+          .read(vapIdProvider.notifier)
+          .save(
+            latest.copyWith(
+              name: _name.text.trim(),
+              occupation: _occupation.text.trim(),
+              city: _city.text.trim(),
+              country: _country.text.trim(),
+              bio: _bio.text.trim(),
+              yearsInCity: int.tryParse(_years.text),
+            ),
+          );
+      if (!mounted) return;
+      setState(() {
+        _editing = false;
+        _seeded = false;
+      });
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -62,11 +129,11 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFF08090D),
       body: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: ColoredBox(
-          color: Colors.black.withAlpha(140),
+          color: const Color(0xFF08090D),
           child: async.when(
             loading: () => const Center(
               child: CircularProgressIndicator(
@@ -95,8 +162,18 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               if (editRequested && !_handledEditRequest) {
                 _handledEditRequest = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) _edit(context, ref, data);
+                  if (mounted) _startEdit(data);
                 });
+              }
+
+              if (_editing) {
+                _seedEditors(data);
+                return _buildEditor(
+                  context,
+                  data,
+                  top: top,
+                  bottom: bottom,
+                );
               }
 
               return Column(
@@ -127,7 +204,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         _PearlRoundBtn(
                           icon: Icons.edit_outlined,
                           tooltip: 'Edit Virtual ID',
-                          onTap: () => _edit(context, ref, data),
+                          onTap: () => _startEdit(data),
                         ),
                         const SizedBox(width: 6),
                         _PearlRoundBtn(
@@ -168,6 +245,151 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
     );
   }
 
+  Widget _buildEditor(
+    BuildContext context,
+    VapIdCard card, {
+    required double top,
+    required double bottom,
+  }) {
+    return SafeArea(
+      top: false,
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(20, top + 12, 20, bottom + 32),
+        children: [
+          Row(
+            children: [
+              _PearlRoundBtn(
+                icon: Icons.arrow_back_ios_new_rounded,
+                tooltip: 'Back to card',
+                onTap: _cancelEdit,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PEARL / VIRTUAL ID',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.7,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'EDIT YOUR ID',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _PearlRoundBtn(
+                icon: Icons.folder_copy_outlined,
+                tooltip: 'Documents',
+                onTap: () => _openDocuments(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Text(
+            'IDENTITY PHOTO',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          VapIdPhotoPicker(card: card),
+          const SizedBox(height: 22),
+          Text(
+            'CARD INFORMATION',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: _name,
+            hint: 'Name',
+            icon: Icons.person_rounded,
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: _occupation,
+            hint: 'Occupation',
+            icon: Icons.work_rounded,
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: _city,
+            hint: 'City',
+            icon: Icons.location_city_rounded,
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: _country,
+            hint: 'Country',
+            icon: Icons.public_rounded,
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: _years,
+            hint: 'Years in city',
+            keyboardType: TextInputType.number,
+            icon: Icons.timelapse_rounded,
+          ),
+          const SizedBox(height: 10),
+          GlassTextField(
+            controller: _bio,
+            hint: 'Bio',
+            icon: Icons.notes_rounded,
+            maxLines: 3,
+          ),
+          const SizedBox(height: 18),
+          BrandPrimaryButton(
+            label: _saving
+                ? t(ref, 'flutter.saving', 'SAVING…')
+                : t(ref, 'flutter.vapSave', 'SAVE CARD'),
+            loading: _saving,
+            onPressed: _saving ? null : () => _saveEdit(card),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: () => _openDocuments(context),
+              icon: const Icon(Icons.upload_file_rounded),
+              label: const Text('UPLOAD / MANAGE DOCUMENTS'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Your Virtual ID photo is separate from your normal profile photo. Uploaded verification documents remain private.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 11,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _openDocuments(BuildContext context) async {
     final rootNavigator = Navigator.of(context, rootNavigator: true);
     await rootNavigator.push<void>(
@@ -178,178 +400,6 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
     );
     if (mounted) {
       await ref.read(documentsProvider.notifier).refresh();
-    }
-  }
-
-  Future<void> _edit(
-    BuildContext context,
-    WidgetRef ref,
-    VapIdCard card,
-  ) async {
-    final name = TextEditingController(text: card.name ?? '');
-    final occupation = TextEditingController(text: card.occupation ?? '');
-    final city = TextEditingController(text: card.city ?? '');
-    final country = TextEditingController(text: card.country ?? '');
-    final bio = TextEditingController(text: card.bio ?? '');
-    final years = TextEditingController(
-      text: card.yearsInCity?.toString() ?? '',
-    );
-
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        useRootNavigator: true,
-        useSafeArea: true,
-        isScrollControlled: true,
-        backgroundColor: const Color(0xFF101116),
-        barrierColor: Colors.black.withAlpha(210),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        builder: (sheetContext) {
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              18,
-              20,
-              MediaQuery.viewInsetsOf(sheetContext).bottom + 24,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          t(ref, 'flutter.vapEdit', 'EDIT ID'),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Documents',
-                        onPressed: () async {
-                          Navigator.of(
-                            sheetContext,
-                            rootNavigator: true,
-                          ).pop();
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 80),
-                          );
-                          if (mounted) await _openDocuments(context);
-                        },
-                        icon: const Icon(
-                          Icons.folder_copy_outlined,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  VapIdPhotoPicker(card: card),
-                  const SizedBox(height: 12),
-                  GlassTextField(
-                    controller: name,
-                    hint: 'Name',
-                    icon: Icons.person_rounded,
-                  ),
-                  const SizedBox(height: 10),
-                  GlassTextField(
-                    controller: occupation,
-                    hint: 'Occupation',
-                    icon: Icons.work_rounded,
-                  ),
-                  const SizedBox(height: 10),
-                  GlassTextField(
-                    controller: city,
-                    hint: 'City',
-                    icon: Icons.location_city_rounded,
-                  ),
-                  const SizedBox(height: 10),
-                  GlassTextField(
-                    controller: country,
-                    hint: 'Country',
-                    icon: Icons.public_rounded,
-                  ),
-                  const SizedBox(height: 10),
-                  GlassTextField(
-                    controller: years,
-                    hint: 'Years in city',
-                    keyboardType: TextInputType.number,
-                    icon: Icons.timelapse_rounded,
-                  ),
-                  const SizedBox(height: 10),
-                  GlassTextField(
-                    controller: bio,
-                    hint: 'Bio',
-                    icon: Icons.notes_rounded,
-                  ),
-                  const SizedBox(height: 20),
-                  BrandPrimaryButton(
-                    label: t(ref, 'flutter.vapSave', 'SAVE CARD'),
-                    onPressed: () async {
-                      final latest = ref.read(vapIdProvider).value ?? card;
-                      await ref
-                          .read(vapIdProvider.notifier)
-                          .save(
-                            latest.copyWith(
-                              name: name.text.trim(),
-                              occupation: occupation.text.trim(),
-                              city: city.text.trim(),
-                              country: country.text.trim(),
-                              bio: bio.text.trim(),
-                              yearsInCity: int.tryParse(years.text),
-                            ),
-                          );
-                      if (sheetContext.mounted) {
-                        Navigator.of(sheetContext, rootNavigator: true).pop();
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        Navigator.of(
-                          sheetContext,
-                          rootNavigator: true,
-                        ).pop();
-                        await Future<void>.delayed(
-                          const Duration(milliseconds: 80),
-                        );
-                        if (mounted) await _openDocuments(context);
-                      },
-                      icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text('UPLOAD / MANAGE DOCUMENTS'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    } finally {
-      name.dispose();
-      occupation.dispose();
-      city.dispose();
-      country.dispose();
-      bio.dispose();
-      years.dispose();
     }
   }
 }
