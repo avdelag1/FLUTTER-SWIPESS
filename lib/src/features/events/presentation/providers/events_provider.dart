@@ -30,7 +30,7 @@ class EventsNotifier extends AsyncNotifier<List<Event>> {
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(
-      () => ref.read(eventRepositoryProvider).fetchEvents(),
+      () => ref.read(eventRepositoryProvider).fetchEvents(forceRefresh: true),
     );
   }
 
