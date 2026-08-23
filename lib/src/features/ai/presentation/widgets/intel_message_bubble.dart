@@ -158,7 +158,9 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                   border: Border.all(
                     color: isUser
                         ? AppTheme.brandPrimary
-                        : _ink.withAlpha(widget.isLight ? 220 : 200),
+                        : (widget.isLight
+                              ? _ink.withAlpha(220)
+                              : Colors.transparent),
                     width: 1.4,
                   ),
                 ),
