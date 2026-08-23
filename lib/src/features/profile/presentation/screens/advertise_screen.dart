@@ -434,7 +434,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('PROMOTE', style: NexusTheme.sectionLabel),
+                Text(
+                  'PROMOTE',
+                  style: NexusTheme.sectionLabel.copyWith(color: Colors.white),
+                ),
                 Text(
                   _step == 5
                       ? 'Complete purchase'
@@ -515,7 +518,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
               child: Container(
                 height: 1,
                 margin: const EdgeInsets.symmetric(horizontal: 5),
-                color: i <= active ? Colors.white : Colors.white12,
+                color: Colors.white,
               ),
             ),
           Column(
@@ -526,7 +529,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: i <= active ? Colors.white : Colors.white10,
+                  color: i <= active ? Colors.white : const Color(0xFF171A20),
                 ),
                 child: Icon(
                   icons[i],
@@ -557,7 +560,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(10),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: Colors.transparent),
       ),
       child: Row(
         children: [
@@ -604,7 +607,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
                   color: _type == t.$1 ? Colors.white : NexusTheme.cardDark,
-                  border: Border.all(color: Colors.white24),
+                  border: Border.all(color: Colors.transparent),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -838,7 +841,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       _primaryBtn(label: 'Refresh approval status', onPressed: _loadStatus),
       const SizedBox(height: 8),
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(AppPaths.clientProfile);
+          }
+        },
         child: const Text('Done'),
       ),
     ];
@@ -975,7 +984,16 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             : 'APPROVED · PAYMENT VERIFIED · LIVE',
       ),
       const SizedBox(height: 18),
-      _primaryBtn(label: 'Done', onPressed: () => Navigator.pop(context)),
+      _primaryBtn(
+        label: 'Done',
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(AppPaths.clientProfile);
+          }
+        },
+      ),
       const SizedBox(height: 8),
       TextButton(
         onPressed: _resetForNew,
@@ -992,12 +1010,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: selected && selectable ? Colors.white : Colors.transparent,
+          color: selected && selectable
+              ? Colors.white
+              : const Color(0xFF111319),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected && selectable ? Colors.white : Colors.white24,
-            width: selected && selectable ? 2 : 1,
-          ),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1020,7 +1037,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                   Text(
                     'POPULAR',
                     style: GoogleFonts.plusJakartaSans(
-                      color: selected && selectable ? Colors.black54 : p.color,
+                      color: selected && selectable ? Colors.black : p.color,
                       fontWeight: FontWeight.w900,
                       fontSize: 9,
                       letterSpacing: 1,
@@ -1044,7 +1061,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                     text: ' ${p.durationLabel}',
                     style: GoogleFonts.plusJakartaSans(
                       color: selected && selectable
-                          ? Colors.black54
+                          ? Colors.black
                           : Colors.white,
                       fontSize: 13,
                     ),
@@ -1056,7 +1073,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             Text(
               p.tagline,
               style: GoogleFonts.plusJakartaSans(
-                color: selected && selectable ? Colors.black54 : Colors.white,
+                color: selected && selectable ? Colors.black : Colors.white,
                 fontSize: 11.5,
               ),
             ),
@@ -1078,7 +1095,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                         perk,
                         style: GoogleFonts.plusJakartaSans(
                           color: selected && selectable
-                              ? Colors.black87
+                              ? Colors.black
                               : Colors.white,
                           fontSize: 11.5,
                         ),

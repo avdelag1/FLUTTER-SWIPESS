@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Domain model for a listing in the Swipess ecosystem.
 ///
 /// Maps directly to the Supabase `listings` table, using only the fields
@@ -100,6 +102,10 @@ class Listing {
 
   /// Parse from Supabase JSON row.
   factory Listing.fromJson(Map<String, dynamic> json) {
+    final parsedId = json['id']?.toString() ?? '';
+    if (parsedId.isEmpty) {
+      debugPrint('[Listing.fromJson] Missing listing id; keys=${json.keys.toList()}');
+    }
     final rawVerificationStatus =
         json['verification_status']?.toString() ?? 'unverified';
     final approved = rawVerificationStatus == 'approved';
@@ -109,7 +115,7 @@ class Listing {
         json['background_check_verified'] == true ||
         json['insurance_verified'] == true;
     return Listing(
-      id: json['id']?.toString() ?? '',
+      id: parsedId,
       ownerId: json['owner_id']?.toString(),
       title: json['title'] as String?,
       description: json['description'] as String?,

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class RoommateProfile {
   const RoommateProfile({
     required this.userId,
@@ -21,11 +23,17 @@ class RoommateProfile {
 
   factory RoommateProfile.fromJson(Map<String, dynamic> json) {
     final images = json['profile_images'];
+    final userId = json['user_id']?.toString() ?? json['id']?.toString() ?? '';
+    final rawName = json['name']?.toString().trim() ?? '';
+    if (userId.isEmpty) {
+      debugPrint('[RoommateProfile.fromJson] Missing user id; keys=${json.keys.toList()}');
+    }
+    if (rawName.isEmpty) {
+      debugPrint('[RoommateProfile.fromJson] Missing name for user=$userId');
+    }
     return RoommateProfile(
-      userId: json['user_id'] as String,
-      name: (json['name'] as String?)?.trim().isNotEmpty == true
-          ? json['name'] as String
-          : 'Swipess member',
+      userId: userId,
+      name: rawName.isNotEmpty ? rawName : 'Swipess member',
       bio: json['bio'] as String? ?? json['vap_bio'] as String?,
       city: json['city'] as String? ?? json['vap_city'] as String?,
       age: (json['age'] as num?)?.toInt(),

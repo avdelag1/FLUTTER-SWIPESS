@@ -137,7 +137,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               PageView.builder(
                 controller: _pages,
                 scrollDirection: Axis.vertical,
-                allowImplicitScrolling: true,
+                physics: const PageScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
+                allowImplicitScrolling: false,
                 itemCount: events.length + 1,
                 onPageChanged: (i) {
                   AppHaptics.selection();

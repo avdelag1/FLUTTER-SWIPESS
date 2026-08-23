@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +28,6 @@ import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_se
 import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_interested_clients_screen.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/profile_activity_feed.dart';
@@ -38,7 +38,6 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/profi
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_section.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
@@ -46,12 +45,10 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_s
 import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/holographic_id_card.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
-import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -163,23 +160,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       shape: BoxShape.circle,
                                       color: Color(0xFF080C14),
                                     ),
-                                    child: ClipOval(
-                                      child: avatar != null
-                                          ? Image.network(
-                                              avatar,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, _, _) =>
-                                                  const Icon(
-                                                    Icons.person_rounded,
-                                                    color: Colors.white24,
-                                                    size: 56,
-                                                  ),
-                                            )
-                                          : const Icon(
-                                              Icons.person_rounded,
-                                              color: Colors.white24,
-                                              size: 56,
-                                            ),
+                                    child: FunAvatar(
+                                      seed:
+                                          profile?.userId ??
+                                          Supabase.instance.client.auth.currentUser?.id ??
+                                          email,
+                                      imageUrl: avatar,
+                                      size: 126,
+                                      semanticLabel: '$headline profile avatar',
                                     ),
                                   ),
                                 ),
@@ -267,14 +255,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               value: likes,
                               label: 'Likes',
                               onTap: () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const WhoLikedYouScreen(),
-                                    ),
-                                  ),
+                                  context.push(AppPaths.clientWhoLikedYou),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -364,14 +345,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
                               ),
                               onTap: () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const AdvertiseScreen(),
-                                    ),
-                                  ),
+                                  context.push(AppPaths.clientAdvertise),
                             ),
                           ),
                         ],
@@ -419,19 +393,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF475569), Color(0xFF334155)],
                               ),
-                              onTap: () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => SettingsScreen(
-                                        audience: profile?.role == 'owner'
-                                            ? 'owner'
-                                            : 'client',
-                                      ),
-                                    ),
-                                  ),
+                              onTap: () => context.push(
+                                profile?.role == 'owner'
+                                    ? AppPaths.ownerSettings
+                                    : AppPaths.clientSettings,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -466,12 +432,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         isFullWidth: true,
                         height: 64,
                         onTap: () =>
-                            Navigator.of(context, rootNavigator: true).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const SubscriptionPackagesScreen(),
-                              ),
-                            ),
+                            context.push(AppPaths.subscriptionPackages),
                       ),
                       const SizedBox(height: 18),
 
@@ -790,18 +751,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _submitFeedback() async {
     final msg = _feedbackCtrl.text.trim();
     final cat = _feedbackCategory;
-    if (msg.isEmpty || cat == null) return;
+    if (msg.isEmpty || cat == null || _feedbackSending) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to send feedback.')),
+      );
+      return;
+    }
+
     setState(() => _feedbackSending = true);
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      await Supabase.instance.client.from('user_feedback').insert({
-        'user_id': user?.id,
-        'email': user?.email,
-        'category': cat,
+      final role =
+          user.appMetadata['role']?.toString() ??
+          user.userMetadata?['role']?.toString() ??
+          'client';
+      await Supabase.instance.client.from('support_tickets').insert({
+        'user_id': user.id,
+        'subject': 'Feedback · $cat',
         'message': msg,
+        'category': 'feedback_$cat',
+        'priority': 'low',
+        'user_email': user.email ?? '',
+        'user_role': role,
+        'source': 'profile_feedback',
       });
-    } catch (_) {
-      // Best-effort like Capacitor — still show thank you.
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _feedbackSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not send feedback: $error')),
+      );
+      return;
     }
     if (!mounted) return;
     setState(() {
