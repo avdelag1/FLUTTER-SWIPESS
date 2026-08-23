@@ -124,9 +124,9 @@ class _IdentitySection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: t.isDark ? null : Border.all(color: t.tagBorder),
               ),
-              child: data.avatarUrl != null
+              child: data.displayPhotoUrl != null
                   ? Image.network(
-                      data.avatarUrl!,
+                      data.displayPhotoUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => _Initials(data: data, theme: t),
                     )

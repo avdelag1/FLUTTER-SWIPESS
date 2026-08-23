@@ -37,8 +37,8 @@ class AppTheme {
   static const Color nexusGlass = NexusTheme.glass;
 
   static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFD7DDE7);
-  static const Color textTertiary = Color(0xFFA8B1C0);
+  static const Color textSecondary = Color(0xFFFFFFFF);
+  static const Color textTertiary = Color(0xFFFFFFFF);
 
   static const Color brandPrimary2 = Color(0xFFFF6B35);
   static const Color glassBg = Color(0x24FFFFFF);

@@ -15,6 +15,7 @@ import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.da
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_photo_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -246,6 +247,8 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    VapIdPhotoPicker(card: card),
+                    const SizedBox(height: 12),
                     GlassTextField(
                       controller: name,
                       hint: 'Name',

@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.da
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_card_theme_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_photo_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `VapIdCardModal` — genie overlay from the dock, not a route.
@@ -240,6 +241,8 @@ class _VapIdModalBody extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
+                VapIdPhotoPicker(card: card),
+                const SizedBox(height: 12),
                 GlassTextField(controller: name, hint: 'Name'),
                 const SizedBox(height: 10),
                 GlassTextField(controller: occupation, hint: 'Occupation'),
