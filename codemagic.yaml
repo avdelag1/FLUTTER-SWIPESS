@@ -123,8 +123,7 @@ workflows:
         # - KEY_ALIAS
         # - KEY_PASSWORD
         # - GOOGLE_PLAY_CREDENTIALS (base64 encoded service account json)
-        - android_keystore
-        - google_play_credentials
+                - google_play_credentials
       vars:
         PACKAGE_NAME: com.swipess.mobile
         SUPABASE_URL: https://vplgtcguxujxwrgguxqq.supabase.co
