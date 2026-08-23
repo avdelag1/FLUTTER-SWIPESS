@@ -45,15 +45,13 @@ class SessionGamificationService {
 
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     _isForeground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
-    _lastInteractionAt ??= DateTime.now();
 
     if (_lifecycleObserver == null) {
       _lifecycleObserver = _GamificationLifecycleObserver(
         onStateChanged: (state) {
           if (state == AppLifecycleState.resumed) {
             _isForeground = true;
-            // Do not retroactively credit background time. A fresh interaction
-            // is required before active time starts accumulating again.
+            // A fresh interaction is required after returning to Swipess.
             _lastInteractionAt = null;
             final ctx = _context;
             if (ctx != null) _startForegroundTimer(ctx);
