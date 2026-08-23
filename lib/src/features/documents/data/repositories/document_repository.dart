@@ -19,7 +19,7 @@ class DocumentRepository {
     if (userId == null) return const [];
     try {
       final data = await _client
-          .from('legal_documents')
+          .from('user_identity_documents')
           .select(
             'id, file_name, file_path, document_type, status, created_at, file_size, mime_type',
           )
@@ -29,7 +29,6 @@ class DocumentRepository {
           .map((row) => LegalDocument.fromJson(row as Map<String, dynamic>))
           .toList();
     } catch (_) {
-      // Missing table / RLS still shows empty PEARL slots, not a hard error.
       return const [];
     }
   }
@@ -45,6 +44,7 @@ class DocumentRepository {
     if (bytes.length > 10 * 1024 * 1024) {
       throw Exception('Max 10MB');
     }
+
     final path = '$userId/${DateTime.now().millisecondsSinceEpoch}-$fileName';
     await _client.storage
         .from('legal-documents')
@@ -56,15 +56,27 @@ class DocumentRepository {
             upsert: true,
           ),
         );
-    await _client.from('legal_documents').insert({
-      'user_id': userId,
-      'file_name': fileName,
-      'file_path': path,
-      'mime_type': mimeType,
-      'file_size': bytes.length,
-      'document_type': documentType,
-      'status': 'pending',
-    });
+
+    try {
+      await _client.from('user_identity_documents').insert({
+        'user_id': userId,
+        'file_name': fileName,
+        'file_path': path,
+        'mime_type': mimeType,
+        'file_size': bytes.length,
+        'document_type': documentType,
+        // Launch phase: uploads are trusted immediately. Keeping the status
+        // column lets Admin switch to pending/review later without redesigning
+        // the card or document model.
+        'status': 'approved',
+      });
+    } catch (_) {
+      // Do not leave an orphaned private file if metadata creation fails.
+      try {
+        await _client.storage.from('legal-documents').remove([path]);
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   /// Cap `VerificationRequestFlow` owner stamp.
@@ -95,7 +107,7 @@ class DocumentRepository {
         await _client.storage.from('legal-documents').remove([doc.filePath]);
       } catch (_) {}
     }
-    await _client.from('legal_documents').delete().eq('id', doc.id);
+    await _client.from('user_identity_documents').delete().eq('id', doc.id);
   }
 
   Future<String> signedUrl(LegalDocument doc, {int expiresIn = 120}) {
