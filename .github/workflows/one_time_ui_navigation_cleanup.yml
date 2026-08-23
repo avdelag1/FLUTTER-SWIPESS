@@ -17,21 +17,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
       - name: Fix shell overlap, back navigation and VAP web hover
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          # 1) Profile secondary pages must be pushed above the dashboard shell.
           p = Path('lib/src/features/profile/presentation/screens/profile_screen.dart')
           s = p.read_text()
           s = s.replace('Navigator.of(context).push<String>(', 'Navigator.of(context, rootNavigator: true).push<String>(')
           s = s.replace('Navigator.of(context).push(', 'Navigator.of(context, rootNavigator: true).push(')
-          # Guard the requested Likes icon explicitly.
           s = s.replace('icon: Icons.thumb_up_alt_outlined,\n                              iconColor:', 'icon: Icons.local_fire_department_rounded,\n                              iconColor:')
           p.write_text(s)
 
-          # 2) Shared security back button must never be a dead raw pop.
           p = Path('lib/src/features/profile/presentation/screens/security_screen.dart')
           s = p.read_text()
           if "package:flutter_swipes/src/core/routing/app_paths.dart" not in s:
@@ -39,7 +40,6 @@ jobs:
           s = s.replace('CapBackButton(onTap: () => Navigator.pop(context))', 'const CapBackButton(fallbackPath: AppPaths.clientSettings)')
           p.write_text(s)
 
-          # 3) Promote/Event page uses the shared robust back control.
           p = Path('lib/src/features/profile/presentation/screens/advertise_screen.dart')
           s = p.read_text()
           if "package:flutter_swipes/src/core/routing/app_paths.dart" not in s:
@@ -50,7 +50,6 @@ jobs:
           s = s.replace(old, new, 1)
           p.write_text(s)
 
-          # 4) Premium page back also has a fallback instead of a dead pop.
           p = Path('lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart')
           s = p.read_text()
           if "package:flutter_swipes/src/core/routing/app_paths.dart" not in s:
@@ -61,7 +60,6 @@ jobs:
           s = s.replace(old, new, 1)
           p.write_text(s)
 
-          # 5) Remove Tooltip/hover state from PEARL overlay controls on web.
           p = Path('lib/src/features/profile/presentation/widgets/vap_id_modal.dart')
           s = p.read_text()
           marker = 'class _Round extends StatefulWidget {'
@@ -107,7 +105,6 @@ jobs:
           '''
           p.write_text(head + tail)
 
-          # 6) Same fix for standalone PEARL controls.
           p = Path('lib/src/features/profile/presentation/screens/vap_id_screen.dart')
           s = p.read_text()
           marker = 'class _PearlRoundBtn extends StatelessWidget {'
@@ -147,7 +144,6 @@ jobs:
           '''
           p.write_text(head + tail)
 
-          # 7) PEARL text must not inherit selection/underline/highlight decorations.
           p = Path('lib/src/features/profile/presentation/widgets/themed_vap_card.dart')
           s = p.read_text()
           old = """      child: SingleChildScrollView(\n        padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),"""
@@ -160,7 +156,6 @@ jobs:
           s = s.replace(old_close, new_close, 1)
           p.write_text(s)
 
-          # Remove one-time workflow from the final tree.
           Path('.github/workflows/one_time_ui_navigation_cleanup.yml').unlink()
           PY
       - name: Format touched Dart files
