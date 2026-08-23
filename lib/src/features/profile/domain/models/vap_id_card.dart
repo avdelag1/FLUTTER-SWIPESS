@@ -39,9 +39,7 @@ class VapIdCard {
 
   String? get displayPhotoUrl {
     final id = idPhotoUrl?.trim();
-    if (id != null && id.isNotEmpty) return id;
-    final profile = avatarUrl?.trim();
-    return profile != null && profile.isNotEmpty ? profile : null;
+    return id != null && id.isNotEmpty ? id : null;
   }
 
   String get displayName =>

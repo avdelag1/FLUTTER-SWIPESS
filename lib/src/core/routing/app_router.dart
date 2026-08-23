@@ -98,7 +98,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (_isPaidLegalLocation(location) && !tier.canUseLegal) {
             return AppPaths.subscriptionPackages;
           }
-          if (location == AppPaths.clientVapId && !tier.canUseVirtualCard) {
+          if ((location == AppPaths.clientVapId ||
+                  location == AppPaths.clientVapIdEdit) &&
+              !tier.canUseVirtualCard) {
             return AppPaths.subscriptionPackages;
           }
         }
@@ -197,6 +199,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/vap-validate/:id',
         builder: (ctx, state) =>
             VapValidateScreen(userId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: AppPaths.clientVapIdEdit,
+        builder: (ctx, _) => const VapIdScreen(initialEdit: true),
       ),
       GoRoute(
         path: '/listing/:id',

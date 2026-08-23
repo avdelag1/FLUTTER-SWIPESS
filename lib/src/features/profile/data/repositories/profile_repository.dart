@@ -36,7 +36,7 @@ class ProfileRepository {
           imageCount: imageList.length,
           avatarUrl: imageList.isNotEmpty
               ? imageList.first.toString()
-              : user.userMetadata?['avatar_url'] as String?,
+              : null,
           email: user.email,
           role: 'client',
         );
@@ -72,7 +72,7 @@ class ProfileRepository {
           user.userMetadata?['full_name'] as String? ??
           user.email ??
           'Swipess member',
-      avatarUrl: user.userMetadata?['avatar_url'] as String?,
+      avatarUrl: null,
       email: user.email,
     );
   }

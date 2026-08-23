@@ -32,7 +32,9 @@ Future<void> showVapIdModal(BuildContext context) async {
 }
 
 class VapIdScreen extends ConsumerStatefulWidget {
-  const VapIdScreen({super.key});
+  const VapIdScreen({super.key, this.initialEdit = false});
+
+  final bool initialEdit;
 
   @override
   ConsumerState<VapIdScreen> createState() => _VapIdScreenState();
@@ -158,6 +160,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               final validationUrl = 'https://swipess.com/vap-validate/$userId';
 
               final editRequested =
+                  widget.initialEdit ||
                   GoRouterState.of(context).uri.queryParameters['edit'] == '1';
               if (editRequested && !_handledEditRequest) {
                 _handledEditRequest = true;

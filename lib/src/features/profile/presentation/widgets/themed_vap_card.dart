@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
@@ -496,13 +497,10 @@ class _Initials extends StatelessWidget {
   Widget build(BuildContext context) => ColoredBox(
     color: theme.tagBg,
     child: Center(
-      child: Text(
-        data.displayName.isNotEmpty ? data.displayName[0].toUpperCase() : '?',
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 44,
-          fontWeight: FontWeight.w900,
-          color: theme.accent,
-        ),
+      child: FunAvatar(
+        seed: data.userId.isNotEmpty ? data.userId : data.displayName,
+        size: 100,
+        semanticLabel: 'Temporary Virtual ID avatar',
       ),
     ),
   );
