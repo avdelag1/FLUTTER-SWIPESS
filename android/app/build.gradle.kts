@@ -22,7 +22,6 @@ android {
     // from August 31, 2026. Pin both values so a local Flutter SDK default cannot
     // accidentally produce a store build below the policy floor.
     compileSdk = 36
-    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         // flutter_local_notifications schedules with java.time, which needs the
@@ -34,7 +33,7 @@ android {
 
     defaultConfig {
         // Matches the shipped Capacitor app so this build installs as an update.
-        applicationId = "com.swipess.mobile"
+        applicationId = "com.swipess.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
