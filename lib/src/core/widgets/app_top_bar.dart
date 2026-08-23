@@ -31,9 +31,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(58);
 
-  // Keep the visible chrome compact while preserving Apple's 44pt minimum
-  // interaction target around every header action.
-  static const _hudSize = 44.0;
+  // Compact header action slots. Keep enough room for reliable taps while
+  // visually grouping the left and right controls instead of scattering them.
+  static const _hudSize = 39.0;
 
   void _openProfile(BuildContext context) {
     AppHaptics.medium();
@@ -74,7 +74,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     );
 
     final compact = MediaQuery.sizeOf(context).width < 370;
-    final chromeGap = compact ? 1.0 : 3.0;
+    final chromeGap = compact ? 0.0 : 1.0;
 
     return Material(
       type: MaterialType.transparency,
@@ -90,6 +90,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _ProfileAvatarButton(
                   key: const ValueKey('header-profile'),
@@ -111,6 +112,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ],
             ),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _HudButton(
                   key: const ValueKey('header-tokens'),
@@ -132,7 +134,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         size: 21,
                         color: ink,
                       ),
-                      const SizedBox(width: 3),
+                      const SizedBox(width: 2),
                       Text(
                         tokensLabel,
                         style: GoogleFonts.plusJakartaSans(
@@ -263,7 +265,7 @@ class _ProfileAvatarButton extends StatelessWidget {
       );
 }
 
-/// Instagram-style header action: full tap target, zero visible chrome.
+/// Instagram-style header action: compact tap target, zero visible chrome.
 /// The icon itself carries the state — bright white on dark surfaces and
 /// dense black on light surfaces — without circles, pills, glass or borders.
 class _HudButton extends StatelessWidget {
@@ -291,7 +293,7 @@ class _HudButton extends StatelessWidget {
         onTap: onTap,
         child: SizedBox(
           height: AppTopBar._hudSize,
-          width: wide ? (compact ? 48 : 52) : AppTopBar._hudSize,
+          width: wide ? (compact ? 43 : 46) : AppTopBar._hudSize,
           child: Center(child: child),
         ),
       ),
