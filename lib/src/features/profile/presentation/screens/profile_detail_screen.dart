@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
@@ -188,6 +189,13 @@ class _BodyState extends State<_Body> {
     final hero = p.images.isNotEmpty ? p.images.first : null;
     final h = MediaQuery.sizeOf(context).height;
 
+    Widget fallbackAvatar() => FunAvatar(
+          seed: p.userId,
+          size: h * .52,
+          borderRadius: BorderRadius.zero,
+          semanticLabel: '${p.name} temporary profile avatar',
+        );
+
     return Scaffold(
       body: Stack(
         children: [
@@ -200,10 +208,9 @@ class _BodyState extends State<_Body> {
                 ? Image.network(
                     hero,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        const ColoredBox(color: Color(0xFF16161C)),
+                    errorBuilder: (_, _, _) => fallbackAvatar(),
                   )
-                : const ColoredBox(color: Color(0xFF16161C)),
+                : fallbackAvatar(),
           ),
           Positioned(
             top: 0,
@@ -278,7 +285,7 @@ class _BodyState extends State<_Body> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.transparent,
                         border: Border(
                           top: BorderSide(color: Colors.white, width: 1),
@@ -426,12 +433,11 @@ class _BodyState extends State<_Body> {
                                             )
                                           : Text(
                                               'MESSAGE',
-                                              style:
-                                                  GoogleFonts.plusJakartaSans(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w900,
-                                                    letterSpacing: 1.4,
-                                                  ),
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: 1.4,
+                                              ),
                                             ),
                                     ),
                                   ),
