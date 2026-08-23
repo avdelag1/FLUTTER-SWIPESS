@@ -1,0 +1,114 @@
+name: Apply pending release fixes now
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[release-fixes-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Sync main
+        run: git pull --rebase origin main
+
+      - name: Apply pending fixes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def patch(path, old, new, count=1):
+              p = Path(path)
+              if not p.exists():
+                  print(f'skip missing {path}')
+                  return False
+              text = p.read_text()
+              if old not in text:
+                  print(f'skip already changed: {path}')
+                  return False
+              p.write_text(text.replace(old, new, count))
+              print(f'patched {path}')
+              return True
+
+          # Profile full-page actions must use registered GoRouter routes so the
+          # dashboard header/dock cannot overlap Promote, Premium, Settings, etc.
+          profile = 'lib/src/features/profile/presentation/screens/profile_screen.dart'
+          for imp in [
+              "import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';\n",
+              "import 'package:flutter_swipes/src/features/profile/presentation/screens/advertise_screen.dart';\n",
+              "import 'package:flutter_swipes/src/features/profile/presentation/screens/settings_screen.dart';\n",
+              "import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';\n",
+          ]:
+              patch(profile, imp, '')
+
+          patch(profile, '''                              onTap: () =>\n                                  Navigator.of(\n                                    context,\n                                    rootNavigator: true,\n                                  ).push(\n                                    MaterialPageRoute(\n                                      builder: (_) => const WhoLikedYouScreen(),\n                                    ),\n                                  ),''', '''                              onTap: () =>\n                                  context.push(AppPaths.clientWhoLikedYou),''')
+
+          patch(profile, '''                              onTap: () =>\n                                  Navigator.of(\n                                    context,\n                                    rootNavigator: true,\n                                  ).push(\n                                    MaterialPageRoute(\n                                      builder: (_) => const AdvertiseScreen(),\n                                    ),\n                                  ),''', '''                              onTap: () =>\n                                  context.push(AppPaths.clientAdvertise),''')
+
+          patch(profile, '''                              onTap: () =>\n                                  Navigator.of(\n                                    context,\n                                    rootNavigator: true,\n                                  ).push(\n                                    MaterialPageRoute(\n                                      builder: (_) => SettingsScreen(\n                                        audience: profile?.role == 'owner'\n                                            ? 'owner'\n                                            : 'client',\n                                      ),\n                                    ),\n                                  ),''', '''                              onTap: () => context.push(\n                                profile?.role == 'owner'\n                                    ? AppPaths.ownerSettings\n                                    : AppPaths.clientSettings,\n                              ),''')
+
+          patch(profile, '''                        onTap: () =>\n                            Navigator.of(context, rootNavigator: true).push(\n                              MaterialPageRoute(\n                                builder: (_) =>\n                                    const SubscriptionPackagesScreen(),\n                              ),\n                            ),''', '''                        onTap: () =>\n                            context.push(AppPaths.subscriptionPackages),''')
+
+          # Profile feedback uses the existing support_tickets backend and no
+          # longer reports fake success when persistence fails.
+          patch(profile, '''  Future<void> _submitFeedback() async {\n    final msg = _feedbackCtrl.text.trim();\n    final cat = _feedbackCategory;\n    if (msg.isEmpty || cat == null) return;\n    setState(() => _feedbackSending = true);\n    try {\n      final user = Supabase.instance.client.auth.currentUser;\n      await Supabase.instance.client.from('user_feedback').insert({\n        'user_id': user?.id,\n        'email': user?.email,\n        'category': cat,\n        'message': msg,\n      });\n    } catch (_) {\n      // Best-effort like Capacitor — still show thank you.\n    }\n    if (!mounted) return;\n    setState(() {\n      _feedbackSending = false;\n      _feedbackDone = true;\n    });\n  }''', '''  Future<void> _submitFeedback() async {\n    final msg = _feedbackCtrl.text.trim();\n    final cat = _feedbackCategory;\n    if (msg.isEmpty || cat == null || _feedbackSending) return;\n    final user = Supabase.instance.client.auth.currentUser;\n    if (user == null) {\n      ScaffoldMessenger.of(context).showSnackBar(\n        const SnackBar(content: Text('Please sign in to send feedback.')),\n      );\n      return;\n    }\n\n    setState(() => _feedbackSending = true);\n    try {\n      final role =\n          user.appMetadata['role']?.toString() ??\n          user.userMetadata?['role']?.toString() ??\n          'client';\n      await Supabase.instance.client.from('support_tickets').insert({\n        'user_id': user.id,\n        'subject': 'Feedback · $cat',\n        'message': msg,\n        'category': 'feedback_$cat',\n        'priority': 'low',\n        'user_email': user.email ?? '',\n        'user_role': role,\n        'source': 'profile_feedback',\n      });\n    } catch (error) {\n      if (!mounted) return;\n      setState(() => _feedbackSending = false);\n      ScaffoldMessenger.of(context).showSnackBar(\n        SnackBar(content: Text('Could not send feedback: $error')),\n      );\n      return;\n    }\n    if (!mounted) return;\n    setState(() {\n      _feedbackSending = false;\n      _feedbackDone = true;\n    });\n  }''')
+
+          # Own profile gets the same deterministic fallback avatars as other users.
+          patch(profile, "import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';", "import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';\nimport 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';")
+          patch(profile, '''                                    child: ClipOval(\n                                      child: avatar != null\n                                          ? Image.network(\n                                              avatar,\n                                              fit: BoxFit.cover,\n                                              errorBuilder: (_, _, _) =>\n                                                  const Icon(\n                                                    Icons.person_rounded,\n                                                    color: Colors.white24,\n                                                    size: 56,\n                                                  ),\n                                            )\n                                          : const Icon(\n                                              Icons.person_rounded,\n                                              color: Colors.white24,\n                                              size: 56,\n                                            ),\n                                    ),''', '''                                    child: FunAvatar(\n                                      seed:\n                                          profile?.userId ??\n                                          Supabase.instance.client.auth.currentUser?.id ??\n                                          email,\n                                      imageUrl: avatar,\n                                      size: 126,\n                                      semanticLabel: '$headline profile avatar',\n                                    ),''')
+
+          # Promote Event: bright foregrounds, no gray perimeter frames, reliable Done.
+          advertise = 'lib/src/features/profile/presentation/screens/advertise_screen.dart'
+          patch(advertise, "Text('PROMOTE', style: NexusTheme.sectionLabel),", "Text(\n                  'PROMOTE',\n                  style: NexusTheme.sectionLabel.copyWith(color: Colors.white),\n                ),")
+          patch(advertise, 'color: i <= active ? Colors.white : Colors.white12,', 'color: Colors.white,')
+          patch(advertise, 'color: i <= active ? Colors.white : Colors.white10,', "color: i <= active ? Colors.white : const Color(0xFF171A20),")
+          patch(advertise, 'border: Border.all(color: Colors.white24),', 'border: Border.all(color: Colors.transparent),', 2)
+          patch(advertise, '''          color: selected && selectable ? Colors.white : Colors.transparent,\n          borderRadius: BorderRadius.circular(20),\n          border: Border.all(\n            color: selected && selectable ? Colors.white : Colors.white24,\n            width: selected && selectable ? 2 : 1,\n          ),''', '''          color: selected && selectable\n              ? Colors.white\n              : const Color(0xFF111319),\n          borderRadius: BorderRadius.circular(20),\n          border: Border.all(color: Colors.transparent),''')
+          patch(advertise, 'selected && selectable ? Colors.black54 : p.color', 'selected && selectable ? Colors.black : p.color')
+          patch(advertise, '? Colors.black54\n                          : Colors.white,', '? Colors.black\n                          : Colors.white,')
+          patch(advertise, 'color: selected && selectable ? Colors.black54 : Colors.white,', 'color: selected && selectable ? Colors.black : Colors.white,')
+          patch(advertise, '? Colors.black87\n                              : Colors.white,', '? Colors.black\n                              : Colors.white,')
+          patch(advertise, "onPressed: () => Navigator.pop(context),\n        child: const Text('Done'),", "onPressed: () {\n          if (context.canPop()) {\n            context.pop();\n          } else {\n            context.go(AppPaths.clientProfile);\n          }\n        },\n        child: const Text('Done'),")
+          patch(advertise, "_primaryBtn(label: 'Done', onPressed: () => Navigator.pop(context)),", "_primaryBtn(\n        label: 'Done',\n        onPressed: () {\n          if (context.canPop()) {\n            context.pop();\n          } else {\n            context.go(AppPaths.clientProfile);\n          }\n        },\n      ),")
+
+          # Events: page snapping without iOS-style bounce/wobble on the vertical feed.
+          events = 'lib/src/features/events/presentation/screens/events_screen.dart'
+          patch(events, '''                scrollDirection: Axis.vertical,\n                allowImplicitScrolling: true,''', '''                scrollDirection: Axis.vertical,\n                physics: const PageScrollPhysics(\n                  parent: ClampingScrollPhysics(),\n                ),\n                allowImplicitScrolling: false,''')
+
+          # JSON edge cases: log critical missing identifiers instead of silently masking them.
+          listing = 'lib/src/features/swipes/domain/models/listing.dart'
+          patch(listing, '/// Domain model for a listing in the Swipess ecosystem.', "import 'package:flutter/foundation.dart';\n\n/// Domain model for a listing in the Swipess ecosystem.")
+          patch(listing, '''  factory Listing.fromJson(Map<String, dynamic> json) {\n    final rawVerificationStatus =''', '''  factory Listing.fromJson(Map<String, dynamic> json) {\n    final parsedId = json['id']?.toString() ?? '';\n    if (parsedId.isEmpty) {\n      debugPrint('[Listing.fromJson] Missing listing id; keys=${json.keys.toList()}');\n    }\n    final rawVerificationStatus =''')
+          patch(listing, "      id: json['id']?.toString() ?? '',", '      id: parsedId,')
+
+          roommate = 'lib/src/features/roommates/domain/roommate_profile.dart'
+          patch(roommate, 'class RoommateProfile {', "import 'package:flutter/foundation.dart';\n\nclass RoommateProfile {")
+          patch(roommate, '''  factory RoommateProfile.fromJson(Map<String, dynamic> json) {\n    final images = json['profile_images'];\n    return RoommateProfile(\n      userId: json['user_id'] as String,\n      name: (json['name'] as String?)?.trim().isNotEmpty == true\n          ? json['name'] as String\n          : 'Swipess member',''', '''  factory RoommateProfile.fromJson(Map<String, dynamic> json) {\n    final images = json['profile_images'];\n    final userId = json['user_id']?.toString() ?? json['id']?.toString() ?? '';\n    final rawName = json['name']?.toString().trim() ?? '';\n    if (userId.isEmpty) {\n      debugPrint('[RoommateProfile.fromJson] Missing user id; keys=${json.keys.toList()}');\n    }\n    if (rawName.isEmpty) {\n      debugPrint('[RoommateProfile.fromJson] Missing name for user=$userId');\n    }\n    return RoommateProfile(\n      userId: userId,\n      name: rawName.isNotEmpty ? rawName : 'Swipess member',''')
+
+          # Remove both temporary workflows from the final tree.
+          Path('.github/workflows/one_time_release_cleanup_20260823.yml').unlink(missing_ok=True)
+          Path('.github/workflows/apply_pending_release_fixes_now.yml').unlink(missing_ok=True)
+          PY
+
+      - name: Commit directly to main
+        shell: bash
+        run: |
+          git config user.name "Swipess Release Fixes"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing pending"
+            exit 0
+          fi
+          git commit -m "fix: apply pending release fixes [release-fixes-applied]"
+          git pull --rebase origin main
+          git push origin HEAD:main
