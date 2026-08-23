@@ -1,3 +1,4 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/profile/data/repositories/vap_id_repository.dart';
@@ -20,6 +21,18 @@ class VapIdNotifier extends AsyncNotifier<VapIdCard?> {
   Future<void> save(VapIdCard card) async {
     await ref.read(vapIdRepositoryProvider).save(card);
     await refresh();
+  }
+
+  /// Uploads and saves a photo used only by the Virtual ID/PEARL card.
+  Future<String> setIdPhoto(XFile file) async {
+    final repo = ref.read(vapIdRepositoryProvider);
+    final current = state.value ?? await repo.fetch();
+    if (current == null) throw Exception('Could not load Virtual ID');
+
+    final url = await repo.uploadIdPhoto(file);
+    await repo.save(current.copyWith(idPhotoUrl: url));
+    await refresh();
+    return url;
   }
 }
 
