@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -40,17 +41,19 @@ class GlowSearchBar extends StatefulWidget {
 
 class _GlowSearchBarState extends State<GlowSearchBar>
     with SingleTickerProviderStateMixin {
+  final math.Random _random = math.Random();
+  final FocusNode _focusNode = FocusNode();
   Timer? _promptTimer;
-  Timer? _glintTimer;
   int _promptIndex = 0;
   late final AnimationController _glintController;
 
   bool get _isEditableSearch => widget.controller != null;
-  bool get _isTapOnly =>
-      widget.onTap != null &&
-      !_isEditableSearch &&
-      widget.onChanged == null &&
-      widget.onSubmitted == null;
+
+  bool get _showPrompt {
+    if (!_isEditableSearch) return true;
+    return (widget.controller?.text.trim().isEmpty ?? true) &&
+        !_focusNode.hasFocus;
+  }
 
   String get _place {
     final value = widget.locationLabel.trim();
@@ -61,15 +64,17 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final place = _place;
     return <String>[
       'What are you looking for today?',
-      'Find something worth your time',
       'Show me something nearby',
-      'Need a trusted mechanic?',
-      'Find a great place to eat',
-      'Show me homes for rent',
-      'Find trusted workers',
+      'Find a beautiful property in $place',
       'What’s happening around $place tonight?',
+      'Find trusted workers near me',
+      'Show me homes for rent',
+      'Find a trusted mechanic',
+      'Show me yachts nearby',
+      'Find motorcycles around $place',
       'Need local legal help in $place?',
       'What’s popular around $place right now?',
+      'Show me something worth swiping',
     ];
   }
 
@@ -78,55 +83,60 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     super.initState();
     _glintController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 820),
+      duration: const Duration(milliseconds: 900),
     );
-    _startPromptRotation();
-    _startGlint();
+    _focusNode.addListener(_handleFocusChanged);
+    widget.controller?.addListener(_handleControllerChanged);
+    _scheduleNextPrompt();
   }
 
   @override
   void didUpdateWidget(covariant GlowSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final wasTapOnly =
-        oldWidget.onTap != null &&
-        oldWidget.controller == null &&
-        oldWidget.onChanged == null &&
-        oldWidget.onSubmitted == null;
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.removeListener(_handleControllerChanged);
+      widget.controller?.addListener(_handleControllerChanged);
+    }
     if (oldWidget.locationLabel != widget.locationLabel) {
       _promptIndex = 0;
-    }
-    if (_isTapOnly != wasTapOnly) {
-      _startPromptRotation();
-      _startGlint();
+      if (mounted) _glintController.forward(from: 0);
     }
   }
 
-  void _startPromptRotation() {
+  void _handleFocusChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _handleControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _scheduleNextPrompt() {
     _promptTimer?.cancel();
-    if (!_isTapOnly) return;
-    _promptTimer = Timer.periodic(const Duration(seconds: 9), (_) {
+    final delay = Duration(milliseconds: 6000 + _random.nextInt(2001));
+    _promptTimer = Timer(delay, () {
       if (!mounted) return;
-      final prompts = _rotatingPrompts;
-      setState(() => _promptIndex = (_promptIndex + 1) % prompts.length);
-    });
-  }
-
-  void _startGlint() {
-    _glintTimer?.cancel();
-    _glintController.stop();
-    _glintController.value = 0;
-    if (!_isTapOnly) return;
-
-    _glintTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      if (!mounted || _glintController.isAnimating) return;
-      _glintController.forward(from: 0);
+      if (_showPrompt) {
+        final prompts = _rotatingPrompts;
+        if (prompts.length > 1) {
+          var next = _random.nextInt(prompts.length);
+          while (next == _promptIndex) {
+            next = _random.nextInt(prompts.length);
+          }
+          setState(() => _promptIndex = next);
+          _glintController.forward(from: 0);
+        }
+      }
+      _scheduleNextPrompt();
     });
   }
 
   @override
   void dispose() {
     _promptTimer?.cancel();
-    _glintTimer?.cancel();
+    widget.controller?.removeListener(_handleControllerChanged);
+    _focusNode.removeListener(_handleFocusChanged);
+    _focusNode.dispose();
     _glintController.dispose();
     super.dispose();
   }
@@ -145,27 +155,43 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final q = _normalize(input);
     bool has(String pattern) => RegExp(pattern).hasMatch(q);
 
-    if (has(r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b')) {
+    if (has(
+      r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b',
+    )) {
       context.go(AppPaths.exploreEvents);
-    } else if (has(r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b')) {
+    } else if (has(
+      r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b',
+    )) {
       context.go(AppPaths.documents);
-    } else if (has(r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b')) {
+    } else if (has(
+      r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b',
+    )) {
       context.go(AppPaths.clientLegalServices);
-    } else if (has(r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b')) {
+    } else if (has(
+      r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b',
+    )) {
       context.go(AppPaths.clientServices);
-    } else if (has(r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b')) {
+    } else if (has(
+      r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b',
+    )) {
       context.go(AppPaths.exploreSeekers);
     } else if (has(r'\b(messages?|chat|inbox)\b')) {
       context.go(AppPaths.messages);
-    } else if (has(r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b')) {
+    } else if (has(
+      r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b',
+    )) {
       context.go(AppPaths.map);
-    } else if (has(r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b')) {
+    } else if (has(
+      r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'yacht',
         categoryTitle: 'YACHTS',
       );
-    } else if (has(r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b')) {
+    } else if (has(
+      r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'motorcycle',
@@ -177,7 +203,9 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         categoryId: 'bicycle',
         categoryTitle: 'BICYCLES',
       );
-    } else if (has(r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b')) {
+    } else if (has(
+      r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'property',
@@ -199,7 +227,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     required bool isLight,
     required Key key,
   }) {
-    final base = ink.withAlpha(225);
+    final base = ink.withAlpha(isLight ? 190 : 225);
     final highlight = isLight ? const Color(0xFF6D9FEA) : Colors.white;
 
     return AnimatedBuilder(
@@ -210,16 +238,14 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
+          color: ink,
           fontWeight: FontWeight.w600,
           fontSize: 14.5,
           letterSpacing: .02,
         ),
       ),
       builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(
-          _glintController.value,
-        );
+        final progress = Curves.easeInOutCubic.transform(_glintController.value);
         final x = -2.2 + (progress * 4.4);
         return ShaderMask(
           blendMode: BlendMode.srcIn,
@@ -235,13 +261,61 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     );
   }
 
+  Widget _promptSwitcher({
+    required String text,
+    required Color ink,
+    required bool isLight,
+    required int index,
+  }) {
+    return RepaintBoundary(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 620),
+        reverseDuration: const Duration(milliseconds: 420),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        ),
+        transitionBuilder: (child, animation) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, .16),
+                end: Offset.zero,
+              ).animate(curved),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: .985, end: 1).animate(curved),
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: _animatedPrompt(
+          text: text,
+          ink: ink,
+          isLight: isLight,
+          key: ValueKey<String>('${widget.locationLabel}:$index:$text'),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
     final prompts = _rotatingPrompts;
     final safeIndex = _promptIndex % prompts.length;
-    final displayHint = _isTapOnly ? prompts[safeIndex] : widget.hint;
+    final displayHint = prompts[safeIndex];
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -253,89 +327,91 @@ class _GlowSearchBarState extends State<GlowSearchBar>
             onTap: _isEditableSearch ? null : widget.onTap,
             child: Container(
               height: 44,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.only(left: 16, right: 5),
               decoration: BoxDecoration(
                 color: isLight
                     ? Colors.white.withAlpha(205)
                     : const Color(0xFF121822).withAlpha(230),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: const Color(0xFF60A5FA).withAlpha(isLight ? 125 : 145),
+                  color: const Color(
+                    0xFF60A5FA,
+                  ).withAlpha(isLight ? 125 : 145),
                   width: .9,
                 ),
               ),
               alignment: Alignment.centerLeft,
-              child: _isTapOnly
-                  ? RepaintBoundary(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 520),
-                        reverseDuration: const Duration(milliseconds: 360),
-                        switchInCurve: Curves.easeOut,
-                        switchOutCurve: Curves.easeIn,
-                        layoutBuilder: (currentChild, previousChildren) =>
-                            Stack(
-                              alignment: Alignment.centerLeft,
-                              children: [
-                                ...previousChildren,
-                                if (currentChild != null) currentChild,
-                              ],
+              child: _isEditableSearch
+                  ? Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        if (_showPrompt)
+                          Positioned.fill(
+                            right: 42,
+                            child: IgnorePointer(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: _promptSwitcher(
+                                  text: displayHint,
+                                  ink: ink,
+                                  isLight: isLight,
+                                  index: safeIndex,
+                                ),
+                              ),
                             ),
-                        transitionBuilder: (child, animation) =>
-                            FadeTransition(opacity: animation, child: child),
-                        child: _animatedPrompt(
-                          text: displayHint,
-                          ink: ink,
-                          isLight: isLight,
-                          key: ValueKey<String>(
-                            '${widget.locationLabel}:$safeIndex:$displayHint',
+                          ),
+                        TextField(
+                          focusNode: _focusNode,
+                          controller: widget.controller,
+                          onChanged: widget.onChanged,
+                          onSubmitted: _runDirectSearch,
+                          textInputAction: TextInputAction.search,
+                          autofocus: false,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.5,
+                          ),
+                          cursorColor: const Color(0xFF60A5FA),
+                          decoration: InputDecoration(
+                            suffixIcon: IconButton(
+                              tooltip: 'Search',
+                              onPressed: () => _runDirectSearch(
+                                widget.controller?.text ?? '',
+                              ),
+                              icon: Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 19,
+                                color: ink,
+                              ),
+                            ),
+                            suffixIconConstraints: const BoxConstraints(
+                              minWidth: 38,
+                              minHeight: 38,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            filled: false,
+                            fillColor: Colors.transparent,
+                            hoverColor: Colors.transparent,
+                            focusColor: Colors.transparent,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 11,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     )
-                  : TextField(
-                      controller: widget.controller,
-                      onChanged: widget.onChanged,
-                      onSubmitted: _isEditableSearch
-                          ? _runDirectSearch
-                          : widget.onSubmitted,
-                      textInputAction: TextInputAction.search,
-                      autofocus: false,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: ink,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14.5,
-                      ),
-                      cursorColor: const Color(0xFF60A5FA),
-                      decoration: InputDecoration(
-                        hintText: widget.hint,
-                        hintStyle: GoogleFonts.plusJakartaSans(
-                          color: ink.withAlpha(130),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14.5,
-                        ),
-                        suffixIcon: _isEditableSearch
-                            ? IconButton(
-                                tooltip: 'Search',
-                                onPressed: () => _runDirectSearch(
-                                  widget.controller?.text ?? '',
-                                ),
-                                icon: const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 19,
-                                  color: Color(0xFF60A5FA),
-                                ),
-                              )
-                            : null,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        filled: false,
-                        fillColor: Colors.transparent,
-                        hoverColor: Colors.transparent,
-                        focusColor: Colors.transparent,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                  : Padding(
+                      padding: const EdgeInsets.only(right: 11),
+                      child: _promptSwitcher(
+                        text: displayHint,
+                        ink: ink,
+                        isLight: isLight,
+                        index: safeIndex,
                       ),
                     ),
             ),
@@ -343,28 +419,16 @@ class _GlowSearchBarState extends State<GlowSearchBar>
           const SizedBox(height: 5),
           Align(
             alignment: Alignment.centerLeft,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.travel_explore_rounded,
-                  size: 12,
-                  color: const Color(0xFF60A5FA).withAlpha(210),
-                ),
-                const SizedBox(width: 5),
-                Flexible(
-                  child: Text(
-                    'Smart search · direct results',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: ink.withAlpha(125),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 10.5,
-                    ),
-                  ),
-                ),
-              ],
+            child: Text(
+              'Powered by Gemini · AI can make mistakes.',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: ink.withAlpha(isLight ? 135 : 170),
+                fontWeight: FontWeight.w500,
+                fontSize: 10.5,
+                letterSpacing: .02,
+              ),
             ),
           ),
           const SizedBox(height: 7),
@@ -422,9 +486,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
             : const Color(0xFF171C25).withAlpha(235),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isLight
-              ? Colors.black.withAlpha(20)
-              : Colors.white.withAlpha(34),
+          color: isLight ? Colors.black.withAlpha(20) : Colors.transparent,
           width: .6,
         ),
       ),
