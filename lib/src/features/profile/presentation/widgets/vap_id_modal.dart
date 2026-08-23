@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -44,6 +43,7 @@ class VapIdModal extends ConsumerWidget {
 class _VapIdModalBody extends ConsumerWidget {
   const _VapIdModalBody({required this.onClose});
   final VoidCallback onClose;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(vapIdProvider);
@@ -93,7 +93,10 @@ class _VapIdModalBody extends ConsumerWidget {
                   const SizedBox(width: 8),
                   _Round(
                     icon: Icons.edit_outlined,
-                    onTap: () => _edit(context, ref, data),
+                    onTap: () {
+                      AppHaptics.selection();
+                      _edit(context, ref, data);
+                    },
                   ),
                   const SizedBox(width: 8),
                   _Round(icon: Icons.close_rounded, onTap: onClose),
@@ -126,10 +129,17 @@ class _VapIdModalBody extends ConsumerWidget {
     final city = TextEditingController(text: card.city ?? '');
     final country = TextEditingController(text: card.country ?? '');
     final bio = TextEditingController(text: card.bio ?? '');
+
+    // VAP is itself a root overlay. The editor must use the root navigator too;
+    // otherwise Flutter can place the bottom sheet behind the PEARL/Genie layer
+    // and the pencil appears to do nothing.
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF121218),
+      barrierColor: Colors.black.withAlpha(190),
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.fromLTRB(
@@ -168,7 +178,7 @@ class _VapIdModalBody extends ConsumerWidget {
                             bio: bio.text.trim(),
                           ),
                         );
-                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (ctx.mounted) Navigator.of(ctx).pop();
                   },
                   child: const Text('SAVE'),
                 ),
@@ -178,6 +188,7 @@ class _VapIdModalBody extends ConsumerWidget {
         );
       },
     );
+
     name.dispose();
     occupation.dispose();
     city.dispose();
@@ -193,16 +204,15 @@ class _Round extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white24),
-        ),
-        child: Icon(icon, color: Colors.white, size: 18),
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: IconButton(
+        onPressed: onTap,
+        padding: EdgeInsets.zero,
+        splashRadius: 20,
+        color: Colors.white,
+        icon: Icon(icon, size: 19),
       ),
     );
   }
