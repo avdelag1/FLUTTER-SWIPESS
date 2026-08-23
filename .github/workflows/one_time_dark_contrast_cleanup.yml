@@ -1,0 +1,149 @@
+name: One-time global dark contrast cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one_time_dark_contrast_cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Enforce bright dark-mode foregrounds
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Remove the common dim white foreground constants app-wide.
+          for p in Path('lib').rglob('*.dart'):
+              s = p.read_text()
+              old = s
+              for src in ('Colors.white38', 'Colors.white54', 'Colors.white60', 'Colors.white70'):
+                  s = s.replace(src, 'Colors.white')
+              if s != old:
+                  p.write_text(s)
+
+          # Strengthen the global dark theme for normal text/icons/interactive controls.
+          p = Path('lib/src/core/theme/app_theme.dart')
+          s = p.read_text()
+          old = """      colorScheme: ColorScheme.fromSeed(\n        seedColor: brandPrimary,\n        brightness: Brightness.dark,\n        surface: dashWell,\n        primary: brandPrimary,\n        secondary: brandAccent,\n      ),"""
+          new = """      colorScheme: ColorScheme.fromSeed(\n        seedColor: brandPrimary,\n        brightness: Brightness.dark,\n        surface: dashWell,\n        primary: brandPrimary,\n        secondary: brandAccent,\n      ).copyWith(\n        onSurface: Colors.white,\n        onSurfaceVariant: Colors.white,\n        outline: Colors.white,\n        outlineVariant: Colors.white,\n      ),"""
+          assert old in s, 'dark colorScheme target not found'
+          s = s.replace(old, new, 1)
+          s = s.replace(
+              """        enabledBorder: OutlineInputBorder(\n          borderRadius: BorderRadius.circular(18),\n          borderSide: BorderSide.none,\n        ),\n        focusedBorder: OutlineInputBorder(\n          borderRadius: BorderRadius.circular(18),\n          borderSide: BorderSide.none,\n        ),""",
+              """        enabledBorder: OutlineInputBorder(\n          borderRadius: BorderRadius.circular(18),\n          borderSide: const BorderSide(color: Colors.white, width: 1.15),\n        ),\n        focusedBorder: OutlineInputBorder(\n          borderRadius: BorderRadius.circular(18),\n          borderSide: const BorderSide(color: Colors.white, width: 1.5),\n        ),""",
+              1,
+          )
+          s = s.replace('disabledForegroundColor: Colors.white54,', 'disabledForegroundColor: Colors.white,')
+          s = s.replace('disabledForegroundColor: Colors.white38,', 'disabledForegroundColor: Colors.white,')
+          s = s.replace(
+              """          side: BorderSide.none,\n          backgroundColor: dashElevated,""",
+              """          side: const BorderSide(color: Colors.white, width: 1.15),\n          backgroundColor: dashElevated,""",
+              1,
+          )
+          s = s.replace(
+              """          highlightColor: Colors.white.withAlpha(18),\n          hoverColor: Colors.white.withAlpha(12),""",
+              """          highlightColor: Colors.transparent,\n          hoverColor: Colors.transparent,""",
+              1,
+          )
+          p.write_text(s)
+
+          # AI disclosure: dark mode should never dim informational text/icons.
+          p = Path('lib/src/features/ai/presentation/widgets/ai_disclosure.dart')
+          s = p.read_text()
+          s = s.replace(
+              'Color get _muted => isLight ? Colors.black45 : Colors.white;',
+              'Color get _muted => isLight ? Colors.black45 : Colors.white;',
+          )
+          # In case pre-cleanup source still had white54.
+          s = s.replace(
+              'Color get _muted => isLight ? Colors.black45 : Colors.white54;',
+              'Color get _muted => isLight ? Colors.black45 : Colors.white;',
+          )
+          s = s.replace(
+              'color: isLight ? Colors.black.withAlpha(26) : Colors.white24,',
+              'color: isLight ? Colors.black.withAlpha(26) : Colors.white,',
+          )
+          s = s.replace('color: _ink.withAlpha(200),', 'color: isLight ? _ink.withAlpha(200) : Colors.white,')
+          s = s.replace('color: _ink.withAlpha(210),', 'color: isLight ? _ink.withAlpha(210) : Colors.white,')
+          p.write_text(s)
+
+          # AI welcome state: full white foreground and interactive strokes in dark mode.
+          p = Path('lib/src/features/ai/presentation/widgets/intel_welcome_grid.dart')
+          s = p.read_text()
+          s = s.replace('final muted = ink.withAlpha(120);', 'final muted = isLight ? ink.withAlpha(120) : Colors.white;')
+          s = s.replace(
+              """    final border = isLight\n        ? Colors.black.withAlpha(22)\n        : Colors.white.withAlpha(28);""",
+              """    final border = isLight ? Colors.black.withAlpha(22) : Colors.white;""",
+          )
+          p.write_text(s)
+
+          # AI chat messages: speaker/provider labels remain bright on black.
+          p = Path('lib/src/features/ai/presentation/widgets/intel_message_bubble.dart')
+          s = p.read_text()
+          s = s.replace(
+              ': _ink.withAlpha(90),',
+              ': (widget.isLight ? _ink.withAlpha(90) : Colors.white),',
+          )
+          s = s.replace(
+              'color: _ink.withAlpha(100),',
+              'color: widget.isLight ? _ink.withAlpha(100) : Colors.white,',
+          )
+          p.write_text(s)
+
+          # AI core composer/header: explicit dark-mode white for mic/send/hints/status/strokes.
+          p = Path('lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart')
+          s = p.read_text()
+          replacements = {
+              'color: ink.withAlpha(110),': 'color: isLight ? ink.withAlpha(110) : Colors.white,',
+              'bottom: BorderSide(color: ink.withAlpha(isLight ? 24 : 30)),': 'bottom: BorderSide(color: isLight ? ink.withAlpha(24) : Colors.white),',
+              'color: ink.withAlpha(90),': 'color: isLight ? ink.withAlpha(90) : Colors.white,',
+              ': ink.withAlpha(120),': ': (isLight ? ink.withAlpha(120) : Colors.white),',
+              'hintStyle: TextStyle(color: ink.withAlpha(100)),': 'hintStyle: TextStyle(color: isLight ? ink.withAlpha(100) : Colors.white),',
+              'color: ink.withAlpha(160),': 'color: isLight ? ink.withAlpha(160) : Colors.white,',
+          }
+          for a,b in replacements.items():
+              s = s.replace(a,b)
+          # Dark composer border should be true white, not translucent gray.
+          s = s.replace(
+              'color: ink.withAlpha(isLight ? 40 : 200),',
+              'color: isLight ? ink.withAlpha(40) : Colors.white,',
+          )
+          # Send button gets a visible white stroke and white arrow even before typing.
+          old = """                  decoration: BoxDecoration(\n                    shape: BoxShape.circle,\n                    color: _controller.text.trim().isEmpty || _loading\n                        ? (isLight\n                              ? const Color(0xFFE8E8EE)\n                              : Colors.white.withAlpha(18))\n                        : AppTheme.brandPrimary,\n                  ),"""
+          new = """                  decoration: BoxDecoration(\n                    shape: BoxShape.circle,\n                    color: _controller.text.trim().isEmpty || _loading\n                        ? (isLight\n                              ? const Color(0xFFE8E8EE)\n                              : Colors.transparent)\n                        : AppTheme.brandPrimary,\n                    border: Border.all(\n                      color: isLight ? ink.withAlpha(40) : Colors.white,\n                      width: 1.2,\n                    ),\n                  ),"""
+          assert old in s, 'AI send button target not found'
+          s = s.replace(old, new, 1)
+          s = s.replace(
+              """                          color: _controller.text.trim().isEmpty\n                              ? ink.withAlpha(90)\n                              : Colors.white,""",
+              """                          color: _controller.text.trim().isEmpty\n                              ? (isLight ? ink.withAlpha(90) : Colors.white)\n                              : Colors.white,""",
+              1,
+          )
+          p.write_text(s)
+
+          Path('.github/workflows/one_time_dark_contrast_cleanup.yml').unlink()
+          PY
+      - name: Format Dart sources
+        run: dart format lib
+      - name: Static analysis
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Commit contrast cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Enforce bright white dark-mode UI contrast globally'
+          git push origin HEAD:main
