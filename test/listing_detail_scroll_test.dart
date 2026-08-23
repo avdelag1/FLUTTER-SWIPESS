@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_swipes/src/features/dashboard/data/spotlight_listings.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 
-Listing _sample() => spotlightListings.first;
+Listing _sample() => const Listing(
+  id: 'test-listing',
+  title: 'Test listing',
+  description: 'Test description for the listing detail screen.',
+  category: 'property',
+  listingType: 'rent',
+  propertyType: 'house',
+  price: 2500,
+  currency: 'USD',
+  city: 'Test City',
+  neighborhood: 'Test Neighborhood',
+  bedrooms: 2,
+  beds: 2,
+  bathrooms: 2,
+  baths: 2,
+  amenities: ['Wi-Fi', 'Kitchen'],
+  images: [],
+);
 
 void main() {
   Future<void> pumpListing(WidgetTester tester) async {
@@ -25,7 +41,7 @@ void main() {
   ) async {
     await pumpListing(tester);
 
-    expect(find.textContaining('JUNGLE SUITE'), findsOneWidget);
+    expect(find.textContaining('TEST LISTING'), findsOneWidget);
     expect(find.text('ABOUT THIS LISTING'), findsOneWidget);
     expect(find.text('HIGHLIGHTS'), findsOneWidget);
     expect(find.text('NEIGHBORHOOD'), findsOneWidget);
