@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
@@ -12,6 +11,8 @@ Future<void> showCreateListingChooser(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withAlpha(190),
     builder: (context) => const _CreateListingChooser(),
   );
 }
@@ -36,7 +37,6 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
       decoration: const BoxDecoration(
         color: Color(0xFF0A0A0D),
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
       ),
       child: SafeArea(
         top: false,
@@ -107,7 +107,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
               const SizedBox(height: 18),
               Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.transparent)),
+                  const Expanded(child: Divider(color: Colors.transparent)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
@@ -120,7 +120,7 @@ class _CreateListingChooserState extends State<_CreateListingChooser> {
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: Colors.transparent)),
+                  const Expanded(child: Divider(color: Colors.transparent)),
                 ],
               ),
               const SizedBox(height: 14),
@@ -264,14 +264,13 @@ class _ModeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF16161C),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white, width: 1.5),
         ),
         child: Row(
           children: [
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.transparent,
                 shape: BoxShape.circle,
               ),
@@ -325,7 +324,6 @@ class _MagicCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: const Color(0x669B5DE5)),
         ),
         child: Row(
           children: [
@@ -362,22 +360,12 @@ class _MagicCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          'FASTEST',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFFB8D9FF),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                          ),
+                      Text(
+                        'FASTEST',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFFB8D9FF),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
                     ],
@@ -437,7 +425,6 @@ class _ManualTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF16161C),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: Row(
                 children: [
@@ -512,17 +499,17 @@ class _Close extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
+    return Tooltip(
+      message: 'Close',
+      child: InkResponse(
+        onTap: onTap,
+        radius: 20,
+        highlightShape: BoxShape.circle,
+        child: const SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(Icons.close_rounded, color: Colors.white, size: 19),
         ),
-        child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
       ),
     );
   }
