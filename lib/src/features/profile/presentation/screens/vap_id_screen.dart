@@ -39,6 +39,8 @@ class VapIdScreen extends ConsumerStatefulWidget {
 }
 
 class _VapIdScreenState extends ConsumerState<VapIdScreen> {
+  bool _handledEditRequest = false;
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +90,15 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               final idNumber = 'NX-${slice.toUpperCase()}';
               final validationUrl = 'https://swipess.com/vap-validate/$userId';
 
+              final editRequested =
+                  GoRouterState.of(context).uri.queryParameters['edit'] == '1';
+              if (editRequested && !_handledEditRequest) {
+                _handledEditRequest = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _edit(context, ref, data);
+                });
+              }
+
               return Column(
                 children: [
                   Padding(
@@ -96,7 +107,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'STARK',
+                            'PEARL',
                             textAlign: TextAlign.left,
                             maxLines: 1,
                             style: GoogleFonts.plusJakartaSans(
@@ -115,7 +126,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         const SizedBox(width: 6),
                         _PearlRoundBtn(
                           icon: Icons.edit_outlined,
-                          tooltip: 'Edit VIP card',
+                          tooltip: 'Edit Virtual ID',
                           onTap: () => _edit(context, ref, data),
                         ),
                         const SizedBox(width: 6),
@@ -190,128 +201,143 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
         useRootNavigator: true,
         useSafeArea: true,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        barrierColor: Colors.black.withAlpha(180),
+        backgroundColor: const Color(0xFF101116),
+        barrierColor: Colors.black.withAlpha(210),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
         builder: (sheetContext) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF101116),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              18,
+              20,
+              MediaQuery.viewInsetsOf(sheetContext).bottom + 24,
             ),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                18,
-                20,
-                MediaQuery.viewInsetsOf(sheetContext).bottom + 24,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(99),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            t(ref, 'flutter.vapEdit', 'EDIT ID'),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Documents',
-                          onPressed: () async {
-                            Navigator.of(
-                              sheetContext,
-                              rootNavigator: true,
-                            ).pop();
-                            await Future<void>.delayed(
-                              const Duration(milliseconds: 80),
-                            );
-                            if (mounted) await _openDocuments(context);
-                          },
-                          icon: const Icon(
-                            Icons.folder_copy_outlined,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          t(ref, 'flutter.vapEdit', 'EDIT ID'),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
                             color: Colors.white,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    VapIdPhotoPicker(card: card),
-                    const SizedBox(height: 12),
-                    GlassTextField(
-                      controller: name,
-                      hint: 'Name',
-                      icon: Icons.person_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: occupation,
-                      hint: 'Occupation',
-                      icon: Icons.work_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: city,
-                      hint: 'City',
-                      icon: Icons.location_city_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: country,
-                      hint: 'Country',
-                      icon: Icons.public_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: years,
-                      hint: 'Years in city',
-                      keyboardType: TextInputType.number,
-                      icon: Icons.timelapse_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: bio,
-                      hint: 'Bio',
-                      icon: Icons.notes_rounded,
-                    ),
-                    const SizedBox(height: 20),
-                    BrandPrimaryButton(
-                      label: t(ref, 'flutter.vapSave', 'SAVE CARD'),
+                      ),
+                      IconButton(
+                        tooltip: 'Documents',
+                        onPressed: () async {
+                          Navigator.of(
+                            sheetContext,
+                            rootNavigator: true,
+                          ).pop();
+                          await Future<void>.delayed(
+                            const Duration(milliseconds: 80),
+                          );
+                          if (mounted) await _openDocuments(context);
+                        },
+                        icon: const Icon(
+                          Icons.folder_copy_outlined,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  VapIdPhotoPicker(card: card),
+                  const SizedBox(height: 12),
+                  GlassTextField(
+                    controller: name,
+                    hint: 'Name',
+                    icon: Icons.person_rounded,
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: occupation,
+                    hint: 'Occupation',
+                    icon: Icons.work_rounded,
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: city,
+                    hint: 'City',
+                    icon: Icons.location_city_rounded,
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: country,
+                    hint: 'Country',
+                    icon: Icons.public_rounded,
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: years,
+                    hint: 'Years in city',
+                    keyboardType: TextInputType.number,
+                    icon: Icons.timelapse_rounded,
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: bio,
+                    hint: 'Bio',
+                    icon: Icons.notes_rounded,
+                  ),
+                  const SizedBox(height: 20),
+                  BrandPrimaryButton(
+                    label: t(ref, 'flutter.vapSave', 'SAVE CARD'),
+                    onPressed: () async {
+                      final latest = ref.read(vapIdProvider).value ?? card;
+                      await ref
+                          .read(vapIdProvider.notifier)
+                          .save(
+                            latest.copyWith(
+                              name: name.text.trim(),
+                              occupation: occupation.text.trim(),
+                              city: city.text.trim(),
+                              country: country.text.trim(),
+                              bio: bio.text.trim(),
+                              yearsInCity: int.tryParse(years.text),
+                            ),
+                          );
+                      if (sheetContext.mounted) {
+                        Navigator.of(sheetContext, rootNavigator: true).pop();
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () async {
-                        final latest = ref.read(vapIdProvider).value ?? card;
-                        await ref
-                            .read(vapIdProvider.notifier)
-                            .save(
-                              latest.copyWith(
-                                name: name.text.trim(),
-                                occupation: occupation.text.trim(),
-                                city: city.text.trim(),
-                                country: country.text.trim(),
-                                bio: bio.text.trim(),
-                                yearsInCity: int.tryParse(years.text),
-                              ),
-                            );
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext, rootNavigator: true).pop();
-                        }
+                        Navigator.of(
+                          sheetContext,
+                          rootNavigator: true,
+                        ).pop();
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 80),
+                        );
+                        if (mounted) await _openDocuments(context);
                       },
+                      icon: const Icon(Icons.upload_file_rounded),
+                      label: const Text('UPLOAD / MANAGE DOCUMENTS'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -352,7 +378,9 @@ class _PearlRoundBtn extends StatelessWidget {
           child: SizedBox(
             width: 40,
             height: 40,
-            child: Icon(icon, size: 18, color: Colors.white),
+            child: Center(
+              child: Icon(icon, size: 18, color: Colors.white),
+            ),
           ),
         ),
       ),
