@@ -15,7 +15,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'dart:ui'; // Ensure dart:ui is available for ImageFilter
+import 'dart:ui';
 
 Future<void> showVapIdModal(BuildContext context) async {
   await showGeneralDialog<void>(
@@ -37,9 +37,6 @@ class VapIdScreen extends ConsumerStatefulWidget {
 }
 
 class _VapIdScreenState extends ConsumerState<VapIdScreen> {
-  // Cap `VapIdCardModal` enables the privacy screen while the card is open: it
-  // carries identity documents, so it stays out of screenshots, screen
-  // recordings and the task-switcher thumbnail.
   @override
   void initState() {
     super.initState();
@@ -97,7 +94,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            'STARK', // Just a label now
+                            'STARK',
                             textAlign: TextAlign.left,
                             maxLines: 1,
                             style: GoogleFonts.plusJakartaSans(
@@ -110,11 +107,13 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         ),
                         _PearlRoundBtn(
                           icon: Icons.edit_outlined,
+                          tooltip: 'Edit VIP card',
                           onTap: () => _edit(context, ref, data),
                         ),
                         const SizedBox(width: 8),
                         _PearlRoundBtn(
                           icon: Icons.close_rounded,
+                          tooltip: 'Close',
                           onTap: () {
                             if (context.canPop()) {
                               context.pop();
@@ -163,124 +162,165 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
       text: card.yearsInCity?.toString() ?? '',
     );
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.black, // Stark background
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        side: BorderSide(color: Colors.white, width: 1.5), // Stark border
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            24,
-            20,
-            MediaQuery.viewInsetsOf(context).bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  t(ref, 'flutter.vapEdit', 'EDIT ID'),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    fontStyle: FontStyle.italic,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GlassTextField(
-                  controller: name,
-                  hint: 'Name',
-                  icon: Icons.person_rounded,
-                ),
-                const SizedBox(height: 10),
-                GlassTextField(
-                  controller: occupation,
-                  hint: 'Occupation',
-                  icon: Icons.work_rounded,
-                ),
-                const SizedBox(height: 10),
-                GlassTextField(
-                  controller: city,
-                  hint: 'City',
-                  icon: Icons.location_city_rounded,
-                ),
-                const SizedBox(height: 10),
-                GlassTextField(
-                  controller: country,
-                  hint: 'Country',
-                  icon: Icons.public_rounded,
-                ),
-                const SizedBox(height: 10),
-                GlassTextField(
-                  controller: years,
-                  hint: 'Years in city',
-                  keyboardType: TextInputType.number,
-                  icon: Icons.timelapse_rounded,
-                ),
-                const SizedBox(height: 10),
-                GlassTextField(
-                  controller: bio,
-                  hint: 'Bio',
-                  icon: Icons.notes_rounded,
-                ),
-                const SizedBox(height: 20),
-                BrandPrimaryButton(
-                  label: t(ref, 'flutter.vapSave', 'Save card'),
-                  onPressed: () async {
-                    await ref
-                        .read(vapIdProvider.notifier)
-                        .save(
-                          VapIdCard(
-                            userId: card.userId,
-                            name: name.text.trim(),
-                            occupation: occupation.text.trim(),
-                            city: city.text.trim(),
-                            country: country.text.trim(),
-                            bio: bio.text.trim(),
-                            yearsInCity: int.tryParse(years.text),
-                            avatarUrl: card.avatarUrl,
-                            languages: card.languages,
-                            interests: card.interests,
-                            age: card.age,
-                            nationality: card.nationality,
-                          ),
-                        );
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-              ],
+    try {
+      // This screen lives inside DashboardShell. Push the editor on the root
+      // navigator so it cannot be hidden behind shell chrome/overlay layers.
+      await showModalBottomSheet<void>(
+        context: context,
+        useRootNavigator: true,
+        useSafeArea: true,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black.withAlpha(180),
+        builder: (sheetContext) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border(
+                top: BorderSide(color: Colors.white, width: 1.5),
+                left: BorderSide(color: Colors.white, width: 1.5),
+                right: BorderSide(color: Colors.white, width: 1.5),
+              ),
             ),
-          ),
-        );
-      },
-    );
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                18,
+                20,
+                MediaQuery.viewInsetsOf(sheetContext).bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white38,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      t(ref, 'flutter.vapEdit', 'EDIT ID'),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GlassTextField(
+                      controller: name,
+                      hint: 'Name',
+                      icon: Icons.person_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    GlassTextField(
+                      controller: occupation,
+                      hint: 'Occupation',
+                      icon: Icons.work_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    GlassTextField(
+                      controller: city,
+                      hint: 'City',
+                      icon: Icons.location_city_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    GlassTextField(
+                      controller: country,
+                      hint: 'Country',
+                      icon: Icons.public_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    GlassTextField(
+                      controller: years,
+                      hint: 'Years in city',
+                      keyboardType: TextInputType.number,
+                      icon: Icons.timelapse_rounded,
+                    ),
+                    const SizedBox(height: 10),
+                    GlassTextField(
+                      controller: bio,
+                      hint: 'Bio',
+                      icon: Icons.notes_rounded,
+                    ),
+                    const SizedBox(height: 20),
+                    BrandPrimaryButton(
+                      label: t(ref, 'flutter.vapSave', 'Save card'),
+                      onPressed: () async {
+                        await ref
+                            .read(vapIdProvider.notifier)
+                            .save(
+                              VapIdCard(
+                                userId: card.userId,
+                                name: name.text.trim(),
+                                occupation: occupation.text.trim(),
+                                city: city.text.trim(),
+                                country: country.text.trim(),
+                                bio: bio.text.trim(),
+                                yearsInCity: int.tryParse(years.text),
+                                avatarUrl: card.avatarUrl,
+                                languages: card.languages,
+                                interests: card.interests,
+                                age: card.age,
+                                nationality: card.nationality,
+                              ),
+                            );
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext, rootNavigator: true).pop();
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      name.dispose();
+      occupation.dispose();
+      city.dispose();
+      country.dispose();
+      bio.dispose();
+      years.dispose();
+    }
   }
 }
 
 class _PearlRoundBtn extends StatelessWidget {
-  const _PearlRoundBtn({required this.icon, required this.onTap});
+  const _PearlRoundBtn({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+  });
+
   final IconData icon;
   final VoidCallback onTap;
+  final String tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.transparent,
-          border: Border.all(color: Colors.white, width: 1.5),
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onTap,
+        padding: EdgeInsets.zero,
+        style: IconButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          side: const BorderSide(color: Colors.white, width: 1.5),
+          shape: const CircleBorder(),
         ),
-        child: Icon(icon, color: Colors.white, size: 18),
+        icon: Icon(icon, size: 18),
       ),
     );
   }
