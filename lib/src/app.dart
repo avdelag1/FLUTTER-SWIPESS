@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -33,8 +34,6 @@ class NativeSwipeApp extends ConsumerWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
-        // Spelled out instead of `routerConfig:` so the Android Back key runs
-        // through our dispatcher (Cap `useGlobalBackButton`) before GoRouter.
         routeInformationProvider: router.routeInformationProvider,
         routeInformationParser: router.routeInformationParser,
         routerDelegate: router.routerDelegate,
@@ -49,10 +48,6 @@ class NativeSwipeApp extends ConsumerWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         builder: (context, child) {
-          // Engagement tracking must live *under* MaterialApp so its context
-          // can reach the global ScaffoldMessenger. Previously it was above
-          // MaterialApp, which meant earned-step/token SnackBars were silently
-          // dropped even though the backend reward was recorded.
           return _EngagementTrackingBootstrap(
             child: SystemChromeSync(
               child: ConnectivityWatcher(
@@ -74,8 +69,8 @@ class NativeSwipeApp extends ConsumerWidget {
   }
 }
 
-/// Keeps foreground reward tracking alive across every route, including map,
-/// listing/profile detail screens, messages and other pages outside DashboardShell.
+/// Keeps engagement tracking alive across every route and reports actual
+/// interaction to the reward service. Foreground presence alone is not enough.
 class _EngagementTrackingBootstrap extends ConsumerStatefulWidget {
   const _EngagementTrackingBootstrap({required this.child});
 
@@ -97,6 +92,10 @@ class _EngagementTrackingBootstrapState
     });
   }
 
+  void _markActivity() {
+    ref.read(sessionGamificationProvider).markActivity();
+  }
+
   @override
   void dispose() {
     ref.read(sessionGamificationProvider).stopTracking();
@@ -104,5 +103,21 @@ class _EngagementTrackingBootstrapState
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _markActivity(),
+      onPointerMove: (_) => _markActivity(),
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) _markActivity();
+      },
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (_) {
+          _markActivity();
+          return false;
+        },
+        child: widget.child,
+      ),
+    );
+  }
 }
