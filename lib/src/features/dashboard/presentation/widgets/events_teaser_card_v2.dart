@@ -11,11 +11,11 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Dashboard Events is a stable moving-video preview.
+/// Dashboard Events is a continuous moving-video preview.
 ///
-/// Published/approved teaser videos come from the live event feed. The current
-/// event stays selected until the user deliberately swipes the preview or opens
-/// Events. We still preload the next clip so a manual swipe feels immediate.
+/// Each published/approved teaser plays all the way to completion. Only after
+/// that clip ends do we dissolve/slide/scale into the next preloaded event.
+/// There is no fixed timer, so short and long videos both get their full runtime.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -75,13 +75,39 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
     );
     try {
       await controller.initialize();
-      await controller.setLooping(true);
+      await controller.setLooping(false);
       await controller.setVolume(0);
       return controller;
     } catch (_) {
       await controller.dispose();
       return null;
     }
+  }
+
+  void _armEndAdvance(VideoPlayerController controller) {
+    var handled = false;
+    controller.addListener(() {
+      if (handled ||
+          !mounted ||
+          !_routeActive ||
+          _switching ||
+          !identical(_current, controller)) {
+        return;
+      }
+      final value = controller.value;
+      if (!value.isInitialized || value.duration <= Duration.zero) return;
+
+      // video_player reports the final frame with playback stopped. Waiting for
+      // that state prevents the dashboard from cutting a clip short.
+      final nearFinalFrame =
+          value.position >= value.duration - const Duration(milliseconds: 120);
+      if (value.isPlaying || !nearFinalFrame) return;
+
+      handled = true;
+      if (_videos.length > 1) {
+        unawaited(_advance(1));
+      }
+    });
   }
 
   Future<void> _ensureVideo() async {
@@ -100,6 +126,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
         if (controller == null) continue;
         _index = candidateIndex;
         _current = controller;
+        if (videos.length == 1) {
+          await controller.setLooping(true);
+        } else {
+          _armEndAdvance(controller);
+        }
         await _applySound();
         if (_routeActive) await controller.play();
         setState(() {});
@@ -145,10 +176,14 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       final previous = _current;
       _current = next;
       _index = targetIndex;
+      _armEndAdvance(next);
+      await next.seekTo(Duration.zero);
       await _applySound();
       if (_routeActive) await next.play();
       if (mounted) setState(() {});
 
+      // Keep the completed outgoing frame underneath the incoming moving video
+      // for the full transition so there is never a black/empty flash.
       if (previous != null) {
         Future<void>.delayed(const Duration(milliseconds: 760), () async {
           try {
@@ -367,7 +402,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
                         const SizedBox(height: 4),
                         Text(
                           videos.length > 1
-                              ? 'Swipe to preview another event'
+                              ? 'Next event plays when this video ends'
                               : 'Tap to explore events',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white70,
