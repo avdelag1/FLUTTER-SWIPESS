@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
@@ -22,8 +22,6 @@ class VapIdModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Cap `VapIdCardModal` calls enablePrivacyScreen on mount: the card carries
-    // identity documents, so it stays out of screenshots and the app switcher.
     return PrivacyScreenGuard(
       child: GeniePanel(
         onDismissed: () =>
@@ -43,6 +41,7 @@ class VapIdModal extends ConsumerWidget {
 
 class _VapIdModalBody extends ConsumerWidget {
   const _VapIdModalBody({required this.onClose});
+
   final VoidCallback onClose;
 
   @override
@@ -69,10 +68,11 @@ class _VapIdModalBody extends ConsumerWidget {
         final slice = userId.length >= 8 ? userId.substring(0, 8) : userId;
         final idNumber = 'NX-${slice.toUpperCase()}';
         final validationUrl = 'https://swipess.com/vap-validate/$userId';
+
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+              padding: const EdgeInsets.fromLTRB(12, 4, 6, 8),
               child: Row(
                 children: [
                   Expanded(
@@ -91,14 +91,16 @@ class _VapIdModalBody extends ConsumerWidget {
                     tooltip: 'Documents',
                     onTap: () => _openDocuments(context, ref),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   _Round(
                     icon: Icons.palette_outlined,
                     tooltip: 'Card style',
-                    onTap: () =>
-                        ref.read(vapCardThemeIndexProvider.notifier).cycle(),
+                    onTap: () {
+                      AppHaptics.selection();
+                      ref.read(vapCardThemeIndexProvider.notifier).cycle();
+                    },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   _Round(
                     icon: Icons.edit_outlined,
                     tooltip: 'Edit card',
@@ -107,7 +109,7 @@ class _VapIdModalBody extends ConsumerWidget {
                       _edit(context, ref, data);
                     },
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   _Round(
                     icon: Icons.close_rounded,
                     tooltip: 'Close',
@@ -138,6 +140,7 @@ class _VapIdModalBody extends ConsumerWidget {
     ref.read(overlayModalsProvider.notifier).closeVapId();
     await Future<void>.delayed(const Duration(milliseconds: 80));
     if (!rootNavigator.mounted) return;
+
     await rootNavigator.push<void>(
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -158,8 +161,8 @@ class _VapIdModalBody extends ConsumerWidget {
     final country = TextEditingController(text: card.country ?? '');
     final bio = TextEditingController(text: card.bio ?? '');
 
-    // The PEARL card is itself rendered in a root overlay. Close that overlay
-    // before opening the editor so the sheet can never render behind it.
+    // PEARL is itself a root overlay. Close it first so the editor can never
+    // be hidden behind the card on web/iOS/Android.
     ref.read(overlayModalsProvider.notifier).closeVapId();
     await Future<void>.delayed(const Duration(milliseconds: 80));
 
@@ -254,9 +257,7 @@ class _VapIdModalBody extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () async {
                       AppHaptics.selection();
-                      await ref
-                          .read(vapIdProvider.notifier)
-                          .save(
+                      await ref.read(vapIdProvider.notifier).save(
                             card.copyWith(
                               name: name.text.trim(),
                               occupation: occupation.text.trim(),
@@ -307,7 +308,13 @@ class _VapIdModalBody extends ConsumerWidget {
   }
 }
 
-class _Round extends StatelessWidget {
+/// Compact PEARL header action.
+///
+/// This intentionally avoids Material [IconButton] because the app-level
+/// button state layer can render a rectangular hover/focus surface on Flutter
+/// web. The visible interaction surface is clipped to a circle here, so the
+/// header stays clean on web while preserving a generous pointer target.
+class _Round extends StatefulWidget {
   const _Round({
     required this.icon,
     required this.onTap,
@@ -319,17 +326,58 @@ class _Round extends StatelessWidget {
   final String tooltip;
 
   @override
+  State<_Round> createState() => _RoundState();
+}
+
+class _RoundState extends State<_Round> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onTap,
-        padding: EdgeInsets.zero,
-        splashRadius: 20,
-        color: Colors.white,
-        icon: Icon(icon, size: 19),
+    final active = _hovered || _pressed;
+
+    return Semantics(
+      button: true,
+      label: widget.tooltip,
+      child: Tooltip(
+        message: widget.tooltip,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTapUp: (_) => setState(() => _pressed = false),
+            onTap: widget.onTap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOutCubic,
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: active
+                        ? Colors.white.withAlpha(_pressed ? 28 : 16)
+                        : Colors.transparent,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    widget.icon,
+                    size: 18,
+                    color: Colors.white.withAlpha(active ? 255 : 235),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
