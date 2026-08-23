@@ -83,11 +83,11 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
     if (clean.isNotEmpty) return clean;
 
     if (parsed != null && _hasStructuredPayload(parsed)) {
-      if (parsed.listings.isNotEmpty) {
-        return 'I found matching listings for you.';
-      }
       if (parsed.profiles.isNotEmpty) {
         return 'I found matching people for you.';
+      }
+      if (parsed.listings.isNotEmpty) {
+        return 'I found matching listings for you.';
       }
       if (parsed.events.isNotEmpty) {
         return 'I found matching events for you.';
@@ -119,6 +119,7 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
     final text = isUser
         ? widget.message.content
         : _assistantDisplayText(widget.message.content, parsed);
+    final preferProfiles = parsed?.profiles.isNotEmpty == true;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -221,11 +222,12 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                 ),
               ),
             if (!isUser && parsed != null) ...[
-              for (final listing in parsed.listings)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: IntelListingCard(data: listing),
-                ),
+              if (!preferProfiles)
+                for (final listing in parsed.listings)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: IntelListingCard(data: listing),
+                  ),
               for (final profile in parsed.profiles)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
