@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
@@ -31,8 +32,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(58);
 
-  // Compact header action slots. Keep enough room for reliable taps while
-  // visually grouping the left and right controls instead of scattering them.
   static const _hudSize = 39.0;
 
   void _openProfile(BuildContext context) {
@@ -58,10 +57,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF050608) : Colors.white;
 
-    // The Tokens modal displays Direct Request inventory, so the header must
-    // read from the exact same source of truth. The legacy token balance can be
-    // zero even while a user owns Direct Requests, which made the header show
-    // an incorrect 0 next to a modal balance such as 6.
     final directRequests = ref.watch(directRequestBalanceProvider);
     final tokensLabel = directRequests.when(
       data: (balance) => '${balance.available}',
@@ -95,7 +90,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _ProfileAvatarButton(
                   key: const ValueKey('header-profile'),
                   avatarUrl: avatarUrl,
-                  ink: ink,
+                  seed: firstName ?? avatarUrl ?? 'swipess-you',
                   semanticLabel: 'Open profile, $_label',
                   onTap: () => _openProfile(context),
                 ),
@@ -193,9 +188,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         size: 23,
                         color: ink,
                       ),
-                      ref
-                          .watch(unreadNotificationsProvider)
-                          .when(
+                      ref.watch(unreadNotificationsProvider).when(
                             data: (count) => count <= 0
                                 ? const SizedBox.shrink()
                                 : const Positioned(
@@ -227,49 +220,40 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 class _ProfileAvatarButton extends StatelessWidget {
   const _ProfileAvatarButton({
     super.key,
-    required this.ink,
     required this.onTap,
+    required this.seed,
     this.avatarUrl,
     this.semanticLabel,
   });
 
   final String? avatarUrl;
-  final Color ink;
+  final String seed;
   final VoidCallback onTap;
   final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: semanticLabel,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: AppTopBar._hudSize,
-        height: AppTopBar._hudSize,
-        child: Center(
-          child: avatarUrl == null
-              ? Icon(Icons.person_rounded, size: 23, color: ink)
-              : ClipOval(
-                  child: Image.network(
-                    avatarUrl!,
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Icon(Icons.person_rounded, size: 23, color: ink),
-                  ),
-                ),
+        button: true,
+        label: semanticLabel,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: AppTopBar._hudSize,
+            height: AppTopBar._hudSize,
+            child: Center(
+              child: FunAvatar(
+                seed: seed,
+                imageUrl: avatarUrl,
+                size: 32,
+                semanticLabel: semanticLabel,
+              ),
+            ),
+          ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
-/// Instagram-style header action: compact tap target, zero visible chrome.
-/// The icon itself carries the state — bright white on dark surfaces and
-/// dense black on light surfaces — without circles, pills, glass or borders.
 class _HudButton extends StatelessWidget {
   const _HudButton({
     super.key,
