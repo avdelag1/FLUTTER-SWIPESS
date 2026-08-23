@@ -147,7 +147,9 @@ class _VapIdModalBody extends ConsumerWidget {
     AppHaptics.selection();
     ref.read(overlayModalsProvider.notifier).closeVapId();
     await Future<void>.delayed(const Duration(milliseconds: 70));
-    await ref.read(appRouterProvider).push<void>(AppPaths.clientVapIdEdit);
+    await ref
+        .read(appRouterProvider)
+        .push<void>('${AppPaths.clientVapId}?edit=1');
   }
 }
 
