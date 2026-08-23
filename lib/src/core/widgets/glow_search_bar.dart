@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class GlowSearchBar extends StatefulWidget {
@@ -42,7 +45,12 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   int _promptIndex = 0;
   late final AnimationController _glintController;
 
-  bool get _isTapOnly => widget.onTap != null && widget.onChanged == null;
+  bool get _isEditableSearch => widget.controller != null;
+  bool get _isTapOnly =>
+      widget.onTap != null &&
+      !_isEditableSearch &&
+      widget.onChanged == null &&
+      widget.onSubmitted == null;
 
   String get _place {
     final value = widget.locationLabel.trim();
@@ -79,7 +87,11 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   @override
   void didUpdateWidget(covariant GlowSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final wasTapOnly = oldWidget.onTap != null && oldWidget.onChanged == null;
+    final wasTapOnly =
+        oldWidget.onTap != null &&
+        oldWidget.controller == null &&
+        oldWidget.onChanged == null &&
+        oldWidget.onSubmitted == null;
     if (oldWidget.locationLabel != widget.locationLabel) {
       _promptIndex = 0;
     }
@@ -117,6 +129,68 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     _glintTimer?.cancel();
     _glintController.dispose();
     super.dispose();
+  }
+
+  String _normalize(String input) {
+    return input
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9áéíóúñü\s-]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  void _runDirectSearch(String raw) {
+    final input = raw.trim();
+    if (input.isEmpty) return;
+    final q = _normalize(input);
+    bool has(String pattern) => RegExp(pattern).hasMatch(q);
+
+    if (has(r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b')) {
+      context.go(AppPaths.exploreEvents);
+    } else if (has(r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b')) {
+      context.go(AppPaths.documents);
+    } else if (has(r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b')) {
+      context.go(AppPaths.clientLegalServices);
+    } else if (has(r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b')) {
+      context.go(AppPaths.clientServices);
+    } else if (has(r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b')) {
+      context.go(AppPaths.exploreSeekers);
+    } else if (has(r'\b(messages?|chat|inbox)\b')) {
+      context.go(AppPaths.messages);
+    } else if (has(r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b')) {
+      context.go(AppPaths.map);
+    } else if (has(r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b')) {
+      openClientSwipeDeck(
+        context,
+        categoryId: 'yacht',
+        categoryTitle: 'YACHTS',
+      );
+    } else if (has(r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b')) {
+      openClientSwipeDeck(
+        context,
+        categoryId: 'motorcycle',
+        categoryTitle: 'MOTORCYCLES',
+      );
+    } else if (has(r'\b(bicycles?|bikes?|bicis?|bicicletas?)\b')) {
+      openClientSwipeDeck(
+        context,
+        categoryId: 'bicycle',
+        categoryTitle: 'BICYCLES',
+      );
+    } else if (has(r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b')) {
+      openClientSwipeDeck(
+        context,
+        categoryId: 'property',
+        categoryTitle: 'PROPERTIES',
+      );
+    } else {
+      context.go(
+        '${AppPaths.clientFilters}?q=${Uri.encodeQueryComponent(input)}',
+      );
+    }
+
+    widget.controller?.clear();
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   Widget _animatedPrompt({
@@ -169,8 +243,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final safeIndex = _promptIndex % prompts.length;
     final displayHint = _isTapOnly ? prompts[safeIndex] : widget.hint;
 
-    // Keep a deliberate air gap below the persistent header. This prevents
-    // the AI field frame from ever visually colliding with header controls.
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Column(
@@ -178,7 +250,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         children: [
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: widget.onTap,
+            onTap: _isEditableSearch ? null : widget.onTap,
             child: Container(
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -223,8 +295,11 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                   : TextField(
                       controller: widget.controller,
                       onChanged: widget.onChanged,
-                      onSubmitted: widget.onSubmitted,
+                      onSubmitted: _isEditableSearch
+                          ? _runDirectSearch
+                          : widget.onSubmitted,
                       textInputAction: TextInputAction.search,
+                      autofocus: false,
                       style: GoogleFonts.plusJakartaSans(
                         color: ink,
                         fontWeight: FontWeight.w600,
@@ -238,6 +313,19 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                           fontWeight: FontWeight.w500,
                           fontSize: 14.5,
                         ),
+                        suffixIcon: _isEditableSearch
+                            ? IconButton(
+                                tooltip: 'Search',
+                                onPressed: () => _runDirectSearch(
+                                  widget.controller?.text ?? '',
+                                ),
+                                icon: const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 19,
+                                  color: Color(0xFF60A5FA),
+                                ),
+                              )
+                            : null,
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -247,7 +335,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                         hoverColor: Colors.transparent,
                         focusColor: Colors.transparent,
                         isDense: true,
-                        contentPadding: EdgeInsets.zero,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 11),
                       ),
                     ),
             ),
@@ -259,14 +347,14 @@ class _GlowSearchBarState extends State<GlowSearchBar>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.auto_awesome_rounded,
+                  Icons.travel_explore_rounded,
                   size: 12,
                   color: const Color(0xFF60A5FA).withAlpha(210),
                 ),
                 const SizedBox(width: 5),
                 Flexible(
                   child: Text(
-                    'Powered by Gemini · AI may make mistakes.',
+                    'Smart search · direct results',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
