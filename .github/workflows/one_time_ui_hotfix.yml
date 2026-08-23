@@ -1,0 +1,68 @@
+name: One-time UI hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one_time_ui_hotfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply surgical UI fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Profile: flame for Likes + remove dark-mode white perimeter frames.
+          p = Path('lib/src/features/profile/presentation/screens/profile_screen.dart')
+          s = p.read_text()
+          old = 'icon: Icons.thumb_up_alt_outlined,'
+          assert old in s, 'profile Likes icon target not found'
+          s = s.replace(old, 'icon: Icons.local_fire_department_rounded,', 1)
+          s = s.replace(
+              'border: Border.all(color: Colors.white.withAlpha(42), width: 1.15),',
+              'border: Border.all(color: Colors.transparent),'
+          )
+          s = s.replace(
+              'border: Border.all(color: Colors.white, width: 1.5),',
+              'border: Border.all(color: Colors.transparent),'
+          )
+          p.write_text(s)
+
+          # Settings: reserve a real leading column for back navigation and make
+          # the fallback deterministic when there is no navigator history.
+          p = Path('lib/src/features/profile/presentation/screens/settings_screen.dart')
+          s = p.read_text()
+          header = """              Row(\n                children: [\n                  _RoundBack(onTap: () => Navigator.pop(context)),\n                  const SizedBox(width: 14),"""
+          replacement = """              Row(\n                crossAxisAlignment: CrossAxisAlignment.start,\n                children: [\n                  SizedBox(\n                    width: 52,\n                    height: 56,\n                    child: Align(\n                      alignment: Alignment.topLeft,\n                      child: _RoundBack(\n                        onTap: () {\n                          if (context.canPop()) {\n                            context.pop();\n                          } else {\n                            context.go(\n                              _isOwner\n                                  ? AppPaths.ownerDashboard\n                                  : AppPaths.clientProfile,\n                            );\n                          }\n                        },\n                      ),\n                    ),\n                  ),\n                  const SizedBox(width: 10),"""
+          assert header in s, 'settings header target not found'
+          s = s.replace(header, replacement, 1)
+          s = s.replace(
+              'border: Border.all(color: Colors.white.withAlpha(26)),',
+              'border: Border.all(color: Colors.transparent),'
+          )
+          old_back = """        decoration: BoxDecoration(\n          color: Colors.transparent,\n          shape: BoxShape.circle,\n          border: Border.all(color: MatteSurface.ink(context), width: 1.5),\n        ),"""
+          new_back = """        decoration: BoxDecoration(\n          color: Theme.of(context).brightness == Brightness.dark\n              ? Colors.white.withAlpha(20)\n              : Colors.white,\n          shape: BoxShape.circle,\n        ),"""
+          assert old_back in s, 'settings back style target not found'
+          s = s.replace(old_back, new_back, 1)
+          p.write_text(s)
+
+          # Remove this one-time workflow from the resulting commit.
+          Path('.github/workflows/one_time_ui_hotfix.yml').unlink()
+          PY
+      - name: Commit hotfix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix dark profile and settings navigation UI'
+          git push origin HEAD:main
