@@ -90,6 +90,40 @@ class ProfileRepository {
     );
   }
 
+  Future<({bool available, double? monthlyBudget})>
+  fetchRoommatePreferences() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return (available: false, monthlyBudget: null);
+    try {
+      final row = await _client
+          .from('client_profiles')
+          .select('roommate_available, monthly_budget')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      return (
+        available: row?['roommate_available'] == true,
+        monthlyBudget: (row?['monthly_budget'] as num?)?.toDouble(),
+      );
+    } catch (_) {
+      return (available: false, monthlyBudget: null);
+    }
+  }
+
+  Future<void> updateRoommatePreferences({
+    required bool available,
+    double? monthlyBudget,
+  }) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+    await _client
+        .from('client_profiles')
+        .update({
+          'roommate_available': available,
+          'monthly_budget': available ? monthlyBudget : null,
+        })
+        .eq('user_id', user.id);
+  }
+
   /// Cap `persistClientProfileGps`. Stamps `location_source = 'device'` so the
   /// Passport map can tell a real phone position from a city-centroid backfill,
   /// and falls back to plain coordinates on a database that predates those two
