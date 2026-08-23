@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/seekers/domain/seeker_request.dart';
@@ -208,6 +209,7 @@ class _CatChip extends StatelessWidget {
   final Color color;
   final bool selected;
   final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
@@ -249,6 +251,7 @@ class _SeekerCard extends StatelessWidget {
   final SeekerRequest request;
   final VoidCallback onPass;
   final VoidCallback onInterested;
+
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
@@ -272,22 +275,11 @@ class _SeekerCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: accent.withAlpha(40),
-                backgroundImage: request.seekerAvatar != null
-                    ? NetworkImage(request.seekerAvatar!)
-                    : null,
-                child: request.seekerAvatar == null
-                    ? Text(
-                        request.initials,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: accent,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                        ),
-                      )
-                    : null,
+              FunAvatar(
+                seed: request.ownerId ?? request.seekerName,
+                imageUrl: request.seekerAvatar,
+                size: 44,
+                semanticLabel: '${request.seekerName} profile avatar',
               ),
               const SizedBox(width: 10),
               Expanded(
