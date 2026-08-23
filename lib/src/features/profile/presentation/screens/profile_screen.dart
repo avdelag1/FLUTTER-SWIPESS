@@ -266,7 +266,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               iconColor: const Color(0xFFFF4D00),
                               value: likes,
                               label: 'Likes',
-                              onTap: () => Navigator.of(context).push(
+                              onTap: () => Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (_) => const WhoLikedYouScreen(),
                                 ),
@@ -340,7 +340,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFF4E50), Color(0xFFF9D423)],
                               ),
-                              onTap: () => Navigator.of(context).push(
+                              onTap: () => Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (_) => const EditProfileScreen(),
                                 ),
@@ -355,7 +355,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
                               ),
-                              onTap: () => Navigator.of(context).push(
+                              onTap: () => Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (_) => const AdvertiseScreen(),
                                 ),
@@ -407,7 +407,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF475569), Color(0xFF334155)],
                               ),
-                              onTap: () => Navigator.of(context).push(
+                              onTap: () => Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (_) => SettingsScreen(
                                     audience: profile?.role == 'owner'
@@ -449,7 +449,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                         isFullWidth: true,
                         height: 64,
-                        onTap: () => Navigator.of(context).push(
+                        onTap: () => Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (_) => const SubscriptionPackagesScreen(),
                           ),
@@ -1321,14 +1321,14 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.home_work_outlined,
         'My listings',
-        () => Navigator.of(context).push(
+        () => Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
         ),
       ),
       (
         Icons.how_to_reg_outlined,
         'Interested clients',
-        () => Navigator.of(context).push(
+        () => Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
             builder: (_) => const OwnerInterestedClientsScreen(),
           ),
@@ -1370,7 +1370,7 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.account_balance_wallet_outlined,
         'Escrow',
-        () => Navigator.of(context).push(
+        () => Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
         ),
       ),
@@ -1391,7 +1391,7 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.work_outline_rounded,
         'Worker discovery',
-        () => Navigator.of(context).push(
+        () => Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(builder: (_) => const WorkerDiscoveryScreen()),
         ),
       ),
@@ -1426,7 +1426,7 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.people_outline_rounded,
         'Roommates',
-        () => Navigator.of(context).push(
+        () => Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
         ),
       ),
@@ -1447,7 +1447,7 @@ class _MoreToolsGrid extends StatelessWidget {
       (
         Icons.handyman_outlined,
         'Maintenance',
-        () => Navigator.of(context).push(
+        () => Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(builder: (_) => const MaintenanceRequestsScreen()),
         ),
       ),

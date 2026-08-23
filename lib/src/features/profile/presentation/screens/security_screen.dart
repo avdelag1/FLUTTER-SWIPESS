@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -90,7 +91,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             children: [
               Row(
                 children: [
-                  CapBackButton(onTap: () => Navigator.pop(context)),
+                  const CapBackButton(fallbackPath: AppPaths.clientSettings),
                   SizedBox(width: 12),
                   Expanded(
                     child: Column(

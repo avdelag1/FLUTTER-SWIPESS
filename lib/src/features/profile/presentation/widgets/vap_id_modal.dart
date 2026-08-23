@@ -311,7 +311,7 @@ class _VapIdModalBody extends ConsumerWidget {
   }
 }
 
-class _Round extends StatefulWidget {
+class _Round extends StatelessWidget {
   const _Round({
     required this.icon,
     required this.onTap,
@@ -323,54 +323,23 @@ class _Round extends StatefulWidget {
   final String tooltip;
 
   @override
-  State<_Round> createState() => _RoundState();
-}
-
-class _RoundState extends State<_Round> {
-  bool _hovered = false;
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final active = _hovered || _pressed;
-
     return Semantics(
       button: true,
-      label: widget.tooltip,
-      child: Tooltip(
-        message: widget.tooltip,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapCancel: () => setState(() => _pressed = false),
-            onTapUp: (_) => setState(() => _pressed = false),
-            onTap: widget.onTap,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  curve: Curves.easeOutCubic,
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: active
-                        ? Colors.white.withAlpha(_pressed ? 28 : 16)
-                        : Colors.transparent,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    widget.icon,
-                    size: 18,
-                    color: Colors.white.withAlpha(active ? 255 : 235),
-                  ),
-                ),
+      label: tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: Icon(icon, size: 18, color: Colors.white),
               ),
             ),
           ),

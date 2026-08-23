@@ -336,16 +336,19 @@ class _PearlRoundBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 20,
-        highlightShape: BoxShape.circle,
-        child: SizedBox(
-          width: 38,
-          height: 38,
-          child: Icon(icon, size: 18, color: Colors.white),
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(icon, size: 18, color: Colors.white),
+          ),
         ),
       ),
     );

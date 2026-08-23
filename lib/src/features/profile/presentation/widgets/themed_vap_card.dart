@@ -49,8 +49,14 @@ class ThemedVapCard extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
+      child: SelectionContainer.disabled(
+        child: DefaultTextStyle.merge(
+          style: const TextStyle(
+            decoration: TextDecoration.none,
+            decorationColor: Colors.transparent,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -70,6 +76,8 @@ class ThemedVapCard extends StatelessWidget {
               onManageDocuments: onManageDocuments,
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

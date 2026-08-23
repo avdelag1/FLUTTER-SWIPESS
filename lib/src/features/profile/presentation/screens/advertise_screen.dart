@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -416,16 +418,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       padding: const EdgeInsets.fromLTRB(8, 4, 16, 6),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () {
-              if (_step >= 4 || _step == 0) {
-                Navigator.pop(context);
-              } else {
-                setState(() => _step--);
-              }
-            },
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-          ),
+          _step >= 4 || _step == 0
+              ? const CapBackButton(fallbackPath: AppPaths.clientProfile)
+              : CapBackButton(onTap: () => setState(() => _step--)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
