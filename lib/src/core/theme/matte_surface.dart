@@ -20,16 +20,18 @@ abstract final class MatteSurface {
   static Color ink(BuildContext context) =>
       isLight(context) ? const Color(0xFF0A0A0D) : Colors.white;
 
+  /// Dark-mode secondary text is intentionally bright. The old gray values
+  /// made labels and metadata disappear against the black surfaces.
   static Color muted(BuildContext context) =>
-      isLight(context) ? const Color(0xFF5C5C66) : AppTheme.textSecondary;
+      isLight(context) ? const Color(0xFF5C5C66) : Colors.white;
 
-  /// Tertiary / placeholder ink.
+  /// Tertiary / placeholder ink. Keep dark mode bright enough to read.
   static Color faint(BuildContext context) =>
-      isLight(context) ? const Color(0xFF8A8A96) : const Color(0x99FFFFFF);
+      isLight(context) ? const Color(0xFF8A8A96) : Colors.white;
 
-  /// Cap soft hairline — `border-white/10` dark, not solid white.
+  /// Cap soft hairline — dark mode uses no white perimeter strokes.
   static Color hairline(BuildContext context) =>
-      isLight(context) ? Colors.black.withAlpha(28) : NexusTheme.border;
+      isLight(context) ? Colors.black.withAlpha(28) : Colors.transparent;
 
   /// Cap soft panel fill — `#141418` dark / white light.
   static Color cardFill(BuildContext context) =>
