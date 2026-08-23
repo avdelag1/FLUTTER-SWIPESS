@@ -38,9 +38,29 @@ class SettingsScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _RoundBack(onTap: () => Navigator.pop(context)),
-                  const SizedBox(width: 14),
+                  SizedBox(
+                    width: 52,
+                    height: 56,
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: _RoundBack(
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go(
+                              _isOwner
+                                  ? AppPaths.ownerDashboard
+                                  : AppPaths.clientProfile,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +454,7 @@ class _SettingsRow extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 gradient: LinearGradient(colors: colors),
-                border: Border.all(color: Colors.white.withAlpha(26)),
+                border: Border.all(color: Colors.transparent),
               ),
               child: Icon(icon, color: Colors.white, size: 20),
             ),
@@ -580,9 +600,10 @@ class _RoundBack extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.transparent,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withAlpha(20)
+              : Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: MatteSurface.ink(context), width: 1.5),
         ),
         child: Icon(
           Icons.arrow_back_ios_new_rounded,

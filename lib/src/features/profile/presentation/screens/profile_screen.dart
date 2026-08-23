@@ -262,7 +262,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         children: [
                           Expanded(
                             child: _StatTile(
-                              icon: Icons.thumb_up_alt_outlined,
+                              icon: Icons.local_fire_department_rounded,
                               iconColor: const Color(0xFFFF4D00),
                               value: likes,
                               label: 'Likes',
@@ -823,7 +823,7 @@ class _Panel extends StatelessWidget {
           decoration: BoxDecoration(
             color: MatteSurface.elevated(context),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withAlpha(42), width: 1.15),
+            border: Border.all(color: Colors.transparent),
           ),
           child: child,
         ),
@@ -861,7 +861,7 @@ class _StatTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: MatteSurface.elevated(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withAlpha(42), width: 1.15),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Column(
           children: [
@@ -943,7 +943,7 @@ class _DailyQuests extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.5),
+                  border: Border.all(color: Colors.transparent),
                 ),
                 child: Text(
                   async.isLoading
