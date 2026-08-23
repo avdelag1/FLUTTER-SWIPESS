@@ -259,8 +259,9 @@ class _VapIdModalBody extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () async {
                       AppHaptics.selection();
+                      final latest = ref.read(vapIdProvider).value ?? card;
                       await ref.read(vapIdProvider.notifier).save(
-                            card.copyWith(
+                            latest.copyWith(
                               name: name.text.trim(),
                               occupation: occupation.text.trim(),
                               city: city.text.trim(),

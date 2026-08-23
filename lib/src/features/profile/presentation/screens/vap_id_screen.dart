@@ -289,20 +289,15 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                     BrandPrimaryButton(
                       label: t(ref, 'flutter.vapSave', 'SAVE CARD'),
                       onPressed: () async {
+                        final latest = ref.read(vapIdProvider).value ?? card;
                         await ref.read(vapIdProvider.notifier).save(
-                              VapIdCard(
-                                userId: card.userId,
+                              latest.copyWith(
                                 name: name.text.trim(),
                                 occupation: occupation.text.trim(),
                                 city: city.text.trim(),
                                 country: country.text.trim(),
                                 bio: bio.text.trim(),
                                 yearsInCity: int.tryParse(years.text),
-                                avatarUrl: card.avatarUrl,
-                                languages: card.languages,
-                                interests: card.interests,
-                                age: card.age,
-                                nationality: card.nationality,
                               ),
                             );
                         if (sheetContext.mounted) {
