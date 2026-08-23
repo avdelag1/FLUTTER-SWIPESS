@@ -103,7 +103,7 @@ class AiEdgeRepository {
       if (character != null && character.isNotEmpty) 'character': character,
       if (locationContext != null && locationContext.isNotEmpty)
         'locationContext': locationContext,
-      'preferredIntent': ?intent,
+      if (intent != null) 'preferredIntent': intent,
     };
 
     String? reply;
@@ -125,13 +125,99 @@ class AiEdgeRepository {
     }
 
     final cleaned = _normalizeReply(reply ?? '');
-    if (cleaned.isEmpty) {
-      throw lastError ??
-          AiUnavailableException(
-            'AI is temporarily unavailable. Try again in a moment.',
-          );
+    if (cleaned.isNotEmpty) return cleaned;
+
+    // A live marketplace request must not be reported as an AI outage merely
+    // because an upstream model returned an empty body. Query the same Swipess
+    // listings directly and return the structured card tag the chat UI already
+    // understands. This also makes property discovery independent of model luck.
+    final marketplaceFallback = await _structuredMarketplaceFallback(lastUser);
+    if (marketplaceFallback != null && marketplaceFallback.isNotEmpty) {
+      return marketplaceFallback;
     }
-    return cleaned;
+
+    throw lastError ??
+        AiUnavailableException(
+          'AI is temporarily unavailable. Try again in a moment.',
+        );
+  }
+
+  Future<String?> _structuredMarketplaceFallback(String? userText) async {
+    final raw = userText?.trim() ?? '';
+    if (raw.isEmpty) return null;
+    final q = raw.toLowerCase();
+    String? category;
+    String label = 'listings';
+
+    if (RegExp(
+      r'\b(property|properties|home|homes|house|houses|apartment|apartments|room|rooms|studio|studios|villa|villas|condo|condos|rent|rental|buy|sale|casa|casas|departamento|departamentos|renta)\b',
+    ).hasMatch(q)) {
+      category = 'property';
+      label = 'properties';
+    } else if (RegExp(r'\b(yacht|yachts|boat|boats|yate|yates)\b').hasMatch(q)) {
+      category = 'yacht';
+      label = 'yachts';
+    } else if (RegExp(
+      r'\b(motorcycle|motorcycles|motorbike|motorbikes|moto|motos|scooter|scooters)\b',
+    ).hasMatch(q)) {
+      category = 'motorcycle';
+      label = 'motorcycles';
+    } else if (RegExp(r'\b(bicycle|bicycles|bike|bikes|bici|bicicleta)\b').hasMatch(q)) {
+      category = 'bicycle';
+      label = 'bicycles';
+    } else if (RegExp(
+      r'\b(worker|workers|service|services|cleaner|chef|driver|plumber|electrician|handyman|mechanic)\b',
+    ).hasMatch(q)) {
+      category = 'worker';
+      label = 'workers';
+    }
+
+    if (category == null) return null;
+
+    try {
+      final rows = await _client
+          .from('listings')
+          .select(
+            'id,title,price,currency,listing_type,city,neighborhood,category,images',
+          )
+          .eq('is_active', true)
+          .eq('status', 'active')
+          .eq('category', category)
+          .order('updated_at', ascending: false)
+          .limit(3);
+
+      final structured = <Map<String, dynamic>>[];
+      for (final rawRow in rows as List) {
+        final row = Map<String, dynamic>.from(rawRow as Map);
+        String image = '';
+        final images = row['images'];
+        if (images is List && images.isNotEmpty) {
+          final first = images.first;
+          if (first is String) {
+            image = first;
+          } else if (first is Map) {
+            image = first['url']?.toString() ?? first['src']?.toString() ?? '';
+          }
+        }
+        structured.add({
+          'id': row['id'],
+          'title': row['title'],
+          'price': row['price'],
+          'currency': row['currency'] ?? 'USD',
+          'listing_type': row['listing_type'] ?? 'rent',
+          'city': row['neighborhood'] ?? row['city'] ?? '',
+          'category': row['category'] ?? category,
+          'image': image,
+        });
+      }
+
+      if (structured.isEmpty) {
+        return 'No matching $label are live right now. Try another location or filter.';
+      }
+      return 'I found matching $label for you.\n[LISTINGS:${jsonEncode(structured)}]';
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Cap `AIListingWizard` → `ai-listing-extract`.
@@ -431,7 +517,9 @@ class AiEdgeRepository {
     return cleaned;
   }
 
-  /// Cap `useConciergeAI` token loop — yields SSE deltas as they arrive.
+  /// Cap `useConciergeAI` token loop. If a browser stream is interrupted or
+  /// produces zero usable deltas, transparently retry the exact request through
+  /// the reliable non-streaming path instead of surfacing a fake outage.
   Stream<String> chatConciergeTokens({
     required List<AiChatMessage> messages,
     String? character,
@@ -461,59 +549,78 @@ class AiEdgeRepository {
       if (character != null && character.isNotEmpty) 'character': character,
       if (locationContext != null && locationContext.isNotEmpty)
         'locationContext': locationContext,
-      'preferredIntent': ?intent,
+      if (intent != null) 'preferredIntent': intent,
     };
 
-    final url = Uri.parse(
-      '${SupabaseService.supabaseUrl}/functions/v1/ai-concierge',
-    );
-    final token =
-        _client.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
-    final request = http.Request('POST', url)
-      ..headers.addAll({
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-        'apikey': SupabaseService.anonKey,
-        'Accept': 'text/event-stream',
-      })
-      ..body = jsonEncode(payload);
-
-    late http.StreamedResponse resp;
+    var yieldedAny = false;
     try {
-      resp = await _http.send(request).timeout(_timeout);
+      final url = Uri.parse(
+        '${SupabaseService.supabaseUrl}/functions/v1/ai-concierge',
+      );
+      final token =
+          _client.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
+      final request = http.Request('POST', url)
+        ..headers.addAll({
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'apikey': SupabaseService.anonKey,
+          'Accept': 'text/event-stream',
+        })
+        ..body = jsonEncode(payload);
+
+      final resp = await _http.send(request).timeout(_timeout);
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        final body = await resp.stream.bytesToString();
+        throw AiUnavailableException(
+          _httpErrorMessage(
+            http.Response(body, resp.statusCode, headers: resp.headers),
+          ),
+        );
+      }
+
+      final contentType = resp.headers['content-type'] ?? '';
+      var carry = '';
+      await for (final chunk in resp.stream.transform(utf8.decoder)) {
+        carry += chunk;
+        if (contentType.contains('text/event-stream') ||
+            carry.trimLeft().startsWith('data:')) {
+          final parsed = _consumeSse(carry);
+          carry = parsed.rest;
+          if (parsed.delta.isNotEmpty) {
+            yieldedAny = true;
+            yield parsed.delta;
+          }
+        }
+      }
+      if (carry.trim().isNotEmpty) {
+        if (carry.trimLeft().startsWith('data:')) {
+          final parsed = _consumeSse('$carry\n');
+          if (parsed.delta.isNotEmpty) {
+            yieldedAny = true;
+            yield parsed.delta;
+          }
+        } else {
+          final reply = _parseConciergeReply(_tryJson(carry) ?? carry);
+          if (reply != null && reply.isNotEmpty) {
+            yieldedAny = true;
+            yield reply;
+          }
+        }
+      }
     } catch (_) {
-      throw AiUnavailableException(
-        'AI is temporarily unavailable. Try again in a moment.',
-      );
-    }
-    if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      final body = await resp.stream.bytesToString();
-      throw AiUnavailableException(
-        _httpErrorMessage(
-          http.Response(body, resp.statusCode, headers: resp.headers),
-        ),
-      );
+      // Fall through to the non-streaming request below when nothing reached UI.
+      if (yieldedAny) return;
     }
 
-    final contentType = resp.headers['content-type'] ?? '';
-    var carry = '';
-    await for (final chunk in resp.stream.transform(utf8.decoder)) {
-      carry += chunk;
-      if (contentType.contains('text/event-stream') ||
-          carry.trimLeft().startsWith('data:')) {
-        final parsed = _consumeSse(carry);
-        carry = parsed.rest;
-        if (parsed.delta.isNotEmpty) yield parsed.delta;
-      }
-    }
-    if (carry.trim().isNotEmpty) {
-      if (carry.trimLeft().startsWith('data:')) {
-        final parsed = _consumeSse('$carry\n');
-        if (parsed.delta.isNotEmpty) yield parsed.delta;
-      } else {
-        final reply = _parseConciergeReply(_tryJson(carry) ?? carry);
-        if (reply != null && reply.isNotEmpty) yield reply;
-      }
+    if (!yieldedAny) {
+      final fallback = await chatConcierge(
+        messages: messages,
+        character: character,
+        locationContext: locationContext,
+        preferredIntent: preferredIntent,
+        stream: false,
+      );
+      if (fallback.trim().isNotEmpty) yield fallback;
     }
   }
 
