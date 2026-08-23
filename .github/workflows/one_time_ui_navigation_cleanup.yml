@@ -1,0 +1,181 @@
+name: One-time global UI navigation cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one_time_ui_navigation_cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fix shell overlap, back navigation and VAP web hover
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # 1) Profile secondary pages must be pushed above the dashboard shell.
+          p = Path('lib/src/features/profile/presentation/screens/profile_screen.dart')
+          s = p.read_text()
+          s = s.replace('Navigator.of(context).push<String>(', 'Navigator.of(context, rootNavigator: true).push<String>(')
+          s = s.replace('Navigator.of(context).push(', 'Navigator.of(context, rootNavigator: true).push(')
+          # Guard the requested Likes icon explicitly.
+          s = s.replace('icon: Icons.thumb_up_alt_outlined,\n                              iconColor:', 'icon: Icons.local_fire_department_rounded,\n                              iconColor:')
+          p.write_text(s)
+
+          # 2) Shared security back button must never be a dead raw pop.
+          p = Path('lib/src/features/profile/presentation/screens/security_screen.dart')
+          s = p.read_text()
+          if "package:flutter_swipes/src/core/routing/app_paths.dart" not in s:
+              s = s.replace("import 'package:flutter_swipes/src/core/theme/matte_surface.dart';", "import 'package:flutter_swipes/src/core/theme/matte_surface.dart';\nimport 'package:flutter_swipes/src/core/routing/app_paths.dart';")
+          s = s.replace('CapBackButton(onTap: () => Navigator.pop(context))', 'const CapBackButton(fallbackPath: AppPaths.clientSettings)')
+          p.write_text(s)
+
+          # 3) Promote/Event page uses the shared robust back control.
+          p = Path('lib/src/features/profile/presentation/screens/advertise_screen.dart')
+          s = p.read_text()
+          if "package:flutter_swipes/src/core/routing/app_paths.dart" not in s:
+              s = s.replace("import 'package:flutter_swipes/src/core/theme/app_theme.dart';", "import 'package:flutter_swipes/src/core/theme/app_theme.dart';\nimport 'package:flutter_swipes/src/core/routing/app_paths.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';")
+          old = """          IconButton(\n            onPressed: () {\n              if (_step >= 4 || _step == 0) {\n                Navigator.pop(context);\n              } else {\n                setState(() => _step--);\n              }\n            },\n            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),\n          ),"""
+          new = """          _step >= 4 || _step == 0\n              ? const CapBackButton(fallbackPath: AppPaths.clientProfile)\n              : CapBackButton(onTap: () => setState(() => _step--)),"""
+          assert old in s, 'advertise back target not found'
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # 4) Premium page back also has a fallback instead of a dead pop.
+          p = Path('lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart')
+          s = p.read_text()
+          if "package:flutter_swipes/src/core/routing/app_paths.dart" not in s:
+              s = s.replace("import 'package:flutter_swipes/src/core/theme/matte_surface.dart';", "import 'package:flutter_swipes/src/core/theme/matte_surface.dart';\nimport 'package:flutter_swipes/src/core/routing/app_paths.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';")
+          old = """                  IconButton(\n                    onPressed: () => Navigator.of(context).pop(),\n                    icon: const Icon(Icons.arrow_back_ios_new_rounded),\n                  ),"""
+          new = """                  const CapBackButton(\n                    fallbackPath: AppPaths.clientProfile,\n                  ),"""
+          assert old in s, 'premium back target not found'
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # 5) Remove Tooltip/hover state from PEARL overlay controls on web.
+          p = Path('lib/src/features/profile/presentation/widgets/vap_id_modal.dart')
+          s = p.read_text()
+          marker = 'class _Round extends StatefulWidget {'
+          assert marker in s, 'VAP modal round control marker not found'
+          head = s.split(marker, 1)[0]
+          tail = r'''class _Round extends StatelessWidget {
+            const _Round({
+              required this.icon,
+              required this.onTap,
+              required this.tooltip,
+            });
+
+            final IconData icon;
+            final VoidCallback onTap;
+            final String tooltip;
+
+            @override
+            Widget build(BuildContext context) {
+              return Semantics(
+                button: true,
+                label: tooltip,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onTap,
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Center(
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: Icon(icon, size: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+          '''
+          p.write_text(head + tail)
+
+          # 6) Same fix for standalone PEARL controls.
+          p = Path('lib/src/features/profile/presentation/screens/vap_id_screen.dart')
+          s = p.read_text()
+          marker = 'class _PearlRoundBtn extends StatelessWidget {'
+          assert marker in s, 'standalone PEARL control marker not found'
+          head = s.split(marker, 1)[0]
+          tail = r'''class _PearlRoundBtn extends StatelessWidget {
+            const _PearlRoundBtn({
+              required this.icon,
+              required this.onTap,
+              required this.tooltip,
+            });
+
+            final IconData icon;
+            final VoidCallback onTap;
+            final String tooltip;
+
+            @override
+            Widget build(BuildContext context) {
+              return Semantics(
+                button: true,
+                label: tooltip,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onTap,
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(icon, size: 18, color: Colors.white),
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+          '''
+          p.write_text(head + tail)
+
+          # 7) PEARL text must not inherit selection/underline/highlight decorations.
+          p = Path('lib/src/features/profile/presentation/widgets/themed_vap_card.dart')
+          s = p.read_text()
+          old = """      child: SingleChildScrollView(\n        padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),"""
+          new = """      child: SelectionContainer.disabled(\n        child: DefaultTextStyle.merge(\n          style: const TextStyle(\n            decoration: TextDecoration.none,\n            decorationColor: Colors.transparent,\n          ),\n          child: SingleChildScrollView(\n            padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),"""
+          assert old in s, 'PEARL card child target not found'
+          s = s.replace(old, new, 1)
+          old_close = """            ),\n          ],\n        ),\n      ),\n    );\n  }\n}"""
+          new_close = """            ),\n          ],\n        ),\n          ),\n        ),\n      ),\n    );\n  }\n}"""
+          assert old_close in s, 'PEARL card wrapper close target not found'
+          s = s.replace(old_close, new_close, 1)
+          p.write_text(s)
+
+          # Remove one-time workflow from the final tree.
+          Path('.github/workflows/one_time_ui_navigation_cleanup.yml').unlink()
+          PY
+      - name: Format touched Dart files
+        run: dart format \
+          lib/src/features/profile/presentation/screens/profile_screen.dart \
+          lib/src/features/profile/presentation/screens/security_screen.dart \
+          lib/src/features/profile/presentation/screens/advertise_screen.dart \
+          lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart \
+          lib/src/features/profile/presentation/widgets/vap_id_modal.dart \
+          lib/src/features/profile/presentation/screens/vap_id_screen.dart \
+          lib/src/features/profile/presentation/widgets/themed_vap_card.dart
+      - name: Commit cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix global secondary-page navigation and PEARL web UI'
+          git push origin HEAD:main
