@@ -96,6 +96,12 @@ class _AdminGeoMarketsScreenState extends ConsumerState<AdminGeoMarketsScreen> {
       Icons.translate_rounded,
     ),
     _GeoCategory(
+      'language_teachers',
+      'Language Tutors & Polyglots',
+      'workers',
+      Icons.language_rounded,
+    ),
+    _GeoCategory(
       'chefs',
       'Private Chefs',
       'workers',
@@ -248,6 +254,7 @@ class _AdminGeoMarketsScreenState extends ConsumerState<AdminGeoMarketsScreen> {
         'bartenders': true,
         'chauffeurs': true,
         'photographers': true,
+        'language_teachers': true,
       };
 
       final n = city.name;
