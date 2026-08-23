@@ -12,6 +12,7 @@ class VapIdCard {
     this.languages = const [],
     this.interests = const [],
     this.avatarUrl,
+    this.idPhotoUrl,
     this.createdAt,
   });
 
@@ -26,8 +27,22 @@ class VapIdCard {
   final int? yearsInCity;
   final List<String> languages;
   final List<String> interests;
+
+  /// Normal profile avatar. Kept for backwards compatibility/fallback only.
   final String? avatarUrl;
+
+  /// Dedicated photo shown on the Virtual ID/PEARL card.
+  /// Uploading this does not change the user's normal profile avatar.
+  final String? idPhotoUrl;
+
   final DateTime? createdAt;
+
+  String? get displayPhotoUrl {
+    final id = idPhotoUrl?.trim();
+    if (id != null && id.isNotEmpty) return id;
+    final profile = avatarUrl?.trim();
+    return profile != null && profile.isNotEmpty ? profile : null;
+  }
 
   String get displayName =>
       (name != null && name!.trim().isNotEmpty) ? name!.trim() : 'Resident';
@@ -57,6 +72,7 @@ class VapIdCard {
     List<String>? languages,
     List<String>? interests,
     String? avatarUrl,
+    String? idPhotoUrl,
   }) {
     return VapIdCard(
       userId: userId,
@@ -71,6 +87,7 @@ class VapIdCard {
       languages: languages ?? this.languages,
       interests: interests ?? this.interests,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      idPhotoUrl: idPhotoUrl ?? this.idPhotoUrl,
       createdAt: createdAt,
     );
   }
@@ -93,6 +110,7 @@ class VapIdCard {
       languages: _strings(json['languages'] ?? json['vap_languages']),
       interests: _strings(json['interests'] ?? json['vap_interests']),
       avatarUrl: json['avatar_url'] as String? ?? json['vap_avatar'] as String?,
+      idPhotoUrl: json['id_photo_url'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
