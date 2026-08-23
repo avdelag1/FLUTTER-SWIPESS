@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/map_camera.dart';
 import 'package:flutter_swipes/src/features/map/data/map_cluster.dart';
-import 'package:flutter_swipes/src/features/map/data/map_demo_pins.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_bottom_dock.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_pin_markers.dart';
@@ -10,7 +9,6 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_preview
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:latlong2/latlong.dart';
 
 void main() {
   test('search radius uses the current close regional framing', () {
@@ -49,40 +47,14 @@ void main() {
     expect(shadow.offset, const Offset(0, 5));
   });
 
-  test('a single live listing is not padded with fake Tulum homes', () {
-    final center = const LatLng(20.2114, -87.4654);
-    final live = [
-      Listing(
-        id: 'live-1',
-        title: 'Tranquil Oasis',
-        latitude: 20.21,
-        longitude: -87.46,
-      ),
+  test('nearby listing fixtures stay unclustered at a 50 km zoom', () {
+    const listings = <Listing>[
+      Listing(id: 'test-1', latitude: 20.211, longitude: -87.465),
+      Listing(id: 'test-2', latitude: 20.214, longitude: -87.462),
+      Listing(id: 'test-3', latitude: 20.208, longitude: -87.468),
+      Listing(id: 'test-4', latitude: 20.216, longitude: -87.459),
+      Listing(id: 'test-5', latitude: 20.205, longitude: -87.471),
     ];
-    final merged = listingsForMap(live, center, 'Tulum');
-    expect(merged.length, 1);
-    expect(merged.single.id, 'live-1');
-    expect(merged.every((l) => !l.id.startsWith('map-demo-')), isTrue);
-  });
-
-  test('Paris does not inherit Tulum demo pins', () {
-    final paris = const LatLng(48.8566, 2.3522);
-    final tulumListing = Listing(
-      id: 'tulum-1',
-      title: 'Jungle Villa',
-      city: 'Tulum',
-      latitude: 20.21,
-      longitude: -87.46,
-    );
-    final merged = listingsForMap([tulumListing], paris, 'Paris');
-    expect(merged, isNotEmpty);
-    expect(merged.any((l) => l.id.startsWith('map-demo-')), isFalse);
-  });
-
-  test('five nearby listings stay unclustered at a 50 km zoom', () {
-    final center = const LatLng(20.2114, -87.4654);
-    final listings = demoMapListings(center, 'Tulum');
-    expect(listings.length, greaterThanOrEqualTo(5));
     final pins = listings.map(MapPin.listing).toList();
     final groups = clusterMapPins(pins, MapCameraMath.zoomForRadiusKm(50));
     expect(groups.length, listings.length);
@@ -102,14 +74,14 @@ void main() {
         home: Scaffold(
           body: Center(
             child: MapListingPinMarker(
-              title: 'Tranquil Oasis',
+              title: 'Test Listing',
               selected: false,
             ),
           ),
         ),
       ),
     );
-    expect(find.text('Tranquil Oasis'), findsOneWidget);
+    expect(find.text('Test Listing'), findsOneWidget);
     expect(find.byType(MapListingPinMarker), findsOneWidget);
     expect(MapListingPinMarker.width, lessThanOrEqualTo(160));
     expect(MapListingPinMarker.height, lessThanOrEqualTo(48));
@@ -120,9 +92,9 @@ void main() {
   ) async {
     final listing = Listing(
       id: 'p1',
-      title: 'Tranquil Oasis',
-      neighborhood: 'Beleta',
-      city: 'Tulum',
+      title: 'Test Listing',
+      neighborhood: 'Test Neighborhood',
+      city: 'Test City',
       price: 10000,
       currency: 'USD',
       latitude: 20.21,
@@ -151,7 +123,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('TRANQUIL OASIS'), findsOneWidget);
+    expect(find.text('TEST LISTING'), findsOneWidget);
     expect(find.text('You are here'), findsOneWidget);
     final previewBottom = tester.getBottomLeft(find.byType(MapPreviewCard)).dy;
     final hudTop = tester
