@@ -126,6 +126,7 @@ class _VapIdModalBody extends ConsumerWidget {
                 validationUrl: validationUrl,
                 docsAsync: docs,
                 onPreview: (doc) => showDocumentPreviewDialog(context, doc),
+                onManageDocuments: () => _openDocuments(context, ref),
               ),
             ),
           ],
@@ -161,8 +162,6 @@ class _VapIdModalBody extends ConsumerWidget {
     final country = TextEditingController(text: card.country ?? '');
     final bio = TextEditingController(text: card.bio ?? '');
 
-    // PEARL is itself a root overlay. Close it first so the editor can never
-    // be hidden behind the card on web/iOS/Android.
     ref.read(overlayModalsProvider.notifier).closeVapId();
     await Future<void>.delayed(const Duration(milliseconds: 80));
 
@@ -308,12 +307,6 @@ class _VapIdModalBody extends ConsumerWidget {
   }
 }
 
-/// Compact PEARL header action.
-///
-/// This intentionally avoids Material [IconButton] because the app-level
-/// button state layer can render a rectangular hover/focus surface on Flutter
-/// web. The visible interaction surface is clipped to a circle here, so the
-/// header stays clean on web while preserving a generous pointer target.
 class _Round extends StatefulWidget {
   const _Round({
     required this.icon,
