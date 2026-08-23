@@ -30,7 +30,7 @@ class GlobalNotice {
     late final OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) => _TopEngagementNotice(
-        step: step.clamp(0, 5),
+        step: step.clamp(0, 5).toInt(),
         tokenAwarded: tokenAwarded,
         onDismissed: () {
           if (_entry == entry) _entry = null;
@@ -100,128 +100,127 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
-    final maxWidth = MediaQuery.sizeOf(context).width > 620 ? 520.0 : double.infinity;
+    final maxWidth = MediaQuery.sizeOf(context).width > 620
+        ? 520.0
+        : double.infinity;
     final completed = widget.tokenAwarded ? 5 : widget.step;
 
     return Positioned(
       top: top + 10,
       left: 12,
       right: 12,
-      child: IgnorePointer(
-        ignoring: false,
-        child: Material(
-          color: Colors.transparent,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: SlideTransition(
-                position: _slide,
-                child: FadeTransition(
-                  opacity: _fade,
-                  child: GestureDetector(
-                    onTap: _dismiss,
-                    onVerticalDragEnd: (details) {
-                      if ((details.primaryVelocity ?? 0) < -120) _dismiss();
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                        child: Container(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 14, 13),
-                          decoration: BoxDecoration(
-                            color: const Color(0xEE11141A),
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x55000000),
-                                blurRadius: 30,
-                                offset: Offset(0, 12),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: widget.tokenAwarded
-                                          ? const Color(0xFF7C3AED).withAlpha(52)
-                                          : const Color(0xFF2F80ED).withAlpha(48),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Icon(
-                                      widget.tokenAwarded
-                                          ? Icons.card_giftcard_rounded
-                                          : Icons.bolt_rounded,
-                                      size: 20,
-                                      color: widget.tokenAwarded
-                                          ? const Color(0xFFC4A7FF)
-                                          : const Color(0xFF8CC4FF),
-                                    ),
+      child: Material(
+        color: Colors.transparent,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: SlideTransition(
+              position: _slide,
+              child: FadeTransition(
+                opacity: _fade,
+                child: GestureDetector(
+                  onTap: _dismiss,
+                  onVerticalDragEnd: (details) {
+                    if ((details.primaryVelocity ?? 0) < -120) _dismiss();
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 14, 13),
+                        decoration: BoxDecoration(
+                          color: const Color(0xEE11141A),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x55000000),
+                              blurRadius: 30,
+                              offset: Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: widget.tokenAwarded
+                                        ? const Color(0xFF7C3AED).withAlpha(52)
+                                        : const Color(0xFF2F80ED).withAlpha(48),
                                   ),
-                                  const SizedBox(width: 11),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          widget.tokenAwarded
-                                              ? 'FREE TOKEN UNLOCKED'
-                                              : 'STEP ${widget.step} OF 5',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: Colors.white,
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: .6,
-                                          ),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    widget.tokenAwarded
+                                        ? Icons.card_giftcard_rounded
+                                        : Icons.bolt_rounded,
+                                    size: 20,
+                                    color: widget.tokenAwarded
+                                        ? const Color(0xFFC4A7FF)
+                                        : const Color(0xFF8CC4FF),
+                                  ),
+                                ),
+                                const SizedBox(width: 11),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        widget.tokenAwarded
+                                            ? 'FREE TOKEN UNLOCKED'
+                                            : 'STEP ${widget.step} OF 5',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: .6,
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          widget.tokenAwarded
-                                              ? 'You earned it. Your free token is ready.'
-                                              : 'Nice. You’re getting closer to a free token.',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: Colors.white.withAlpha(165),
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        widget.tokenAwarded
+                                            ? 'You earned it. Your free token is ready.'
+                                            : 'Nice. You’re getting closer to a free token.',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white.withAlpha(165),
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                  IconButton(
-                                    tooltip: 'Dismiss',
-                                    onPressed: _dismiss,
-                                    visualDensity: VisualDensity.compact,
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints.tightFor(
-                                      width: 32,
-                                      height: 32,
-                                    ),
-                                    icon: Icon(
-                                      Icons.close_rounded,
-                                      color: Colors.white.withAlpha(145),
-                                      size: 17,
-                                    ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Dismiss',
+                                  onPressed: _dismiss,
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints.tightFor(
+                                    width: 32,
+                                    height: 32,
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              _FiveStepProgress(completed: completed),
-                            ],
-                          ),
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.white.withAlpha(145),
+                                    size: 17,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _FiveStepProgress(completed: completed),
+                          ],
                         ),
                       ),
                     ),
