@@ -27,15 +27,22 @@ final roommatesProvider = FutureProvider<List<RoommateProfile>>((ref) async {
     var query = client
         .from('client_profiles')
         .select(
-          'user_id, name, bio, vap_bio, city, vap_city, age, profile_images, vap_avatar, occupation, vap_occupation, budget, monthly_budget',
-        );
+          'user_id, name, bio, vap_bio, city, vap_city, age, profile_images, vap_avatar, occupation, vap_occupation, monthly_budget, roommate_available',
+        )
+        .eq('roommate_available', true);
     if (userId != null) query = query.neq('user_id', userId);
     data = await query.order('updated_at', ascending: false).limit(60) as List;
   } catch (_) {
-    data = await client
+    // Compatibility fallback: keep roommate opt-in mandatory even if an older
+    // database is temporarily missing optional display fields.
+    var query = client
         .from('client_profiles')
-        .select('user_id, name, bio, city, age, profile_images')
-        .limit(60) as List;
+        .select(
+          'user_id, name, bio, city, age, profile_images, occupation, roommate_available',
+        )
+        .eq('roommate_available', true);
+    if (userId != null) query = query.neq('user_id', userId);
+    data = await query.order('updated_at', ascending: false).limit(60) as List;
   }
 
   var profiles = data
