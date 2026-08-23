@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/global_notice.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
@@ -15,54 +16,83 @@ final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
   return service;
 });
 
-/// Foreground engagement heartbeat.
+/// Active-engagement heartbeat.
 ///
-/// The server is authoritative: one 45-minute foreground-use block = one step
-/// and five steps grant one spendable Direct Request token. The user does not
-/// need to upload, swipe or message for this reward; normal active app use is
-/// enough. Background/inactive time never counts.
+/// Time counts only when the app is foregrounded AND the user has interacted
+/// recently. Leaving Swipess open on a table, locking the phone, switching apps,
+/// or leaving it running in the background does not earn time.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
+
+  static const _heartbeatEvery = Duration(seconds: 15);
+  static const _activeWindow = Duration(seconds: 45);
 
   final Ref ref;
   Timer? _timer;
   bool _syncing = false;
   bool _referralChecked = false;
+  bool _isForeground = true;
+  DateTime? _lastInteractionAt;
   _GamificationLifecycleObserver? _lifecycleObserver;
   BuildContext? _context;
   int _trackingClients = 0;
 
   void startTracking(BuildContext context) {
     _trackingClients++;
-    // Prefer a context beneath MaterialApp so a floating reward toast can be
-    // shown when available. The durable Notifications entry is server-backed.
-    if (_context == null || ScaffoldMessenger.maybeOf(context) != null) {
+    if (_context == null || Overlay.maybeOf(context, rootOverlay: true) != null) {
       _context = context;
     }
+
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    _isForeground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
+    _lastInteractionAt ??= DateTime.now();
+
     if (_lifecycleObserver == null) {
       _lifecycleObserver = _GamificationLifecycleObserver(
         onStateChanged: (state) {
           if (state == AppLifecycleState.resumed) {
+            _isForeground = true;
+            // Do not retroactively credit background time. A fresh interaction
+            // is required before active time starts accumulating again.
+            _lastInteractionAt = null;
             final ctx = _context;
             if (ctx != null) _startForegroundTimer(ctx);
           } else if (state == AppLifecycleState.inactive ||
               state == AppLifecycleState.paused ||
               state == AppLifecycleState.detached ||
               state == AppLifecycleState.hidden) {
+            _isForeground = false;
+            _lastInteractionAt = null;
             _pauseForegroundTimer();
           }
         },
       );
       WidgetsBinding.instance.addObserver(_lifecycleObserver!);
     }
-    _startForegroundTimer(_context ?? context);
+
+    if (_isForeground) _startForegroundTimer(_context ?? context);
+  }
+
+  /// Called from the app-level pointer listener. This is intentionally cheap;
+  /// no network request happens here.
+  void markActivity() {
+    if (!_isForeground) return;
+    _lastInteractionAt = DateTime.now();
+  }
+
+  bool get _isActivelyUsingApp {
+    if (!_isForeground) return false;
+    final last = _lastInteractionAt;
+    if (last == null) return false;
+    return DateTime.now().difference(last) <= _activeWindow;
   }
 
   void _startForegroundTimer(BuildContext context) {
-    if (_timer != null) return;
+    if (_timer != null || !_isForeground) return;
     unawaited(_heartbeat(context, 0));
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      unawaited(_heartbeat(context, 60));
+    _timer = Timer.periodic(_heartbeatEvery, (_) {
+      if (!_isActivelyUsingApp) return;
+      unawaited(_heartbeat(context, _heartbeatEvery.inSeconds));
     });
   }
 
@@ -84,6 +114,7 @@ class SessionGamificationService {
     if (observer != null) WidgetsBinding.instance.removeObserver(observer);
     _lifecycleObserver = null;
     _context = null;
+    _lastInteractionAt = null;
   }
 
   void dispose() => _stopCompletely();
@@ -104,14 +135,15 @@ class SessionGamificationService {
       ref.invalidate(notificationsProvider);
       ref.invalidate(unreadNotificationsProvider);
     } catch (_) {
-      // Invalid, self, stale or already-used referral links are intentionally
-      // ignored. The server is authoritative and never grants twice.
+      // Invalid/self/stale/already-used referral links are ignored.
     }
   }
 
   Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
     await _applyPendingReferral();
     if (_syncing || Supabase.instance.client.auth.currentUser == null) return;
+    if (activeSeconds > 0 && !_isActivelyUsingApp) return;
+
     _syncing = true;
     try {
       final raw = await Supabase.instance.client.rpc(
@@ -131,41 +163,15 @@ class SessionGamificationService {
       await ref.read(subscriptionProvider.notifier).refresh();
 
       if (!context.mounted) return;
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      if (messenger == null) return;
       final steps = (data['steps'] as num?)?.toInt() ?? 0;
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Text(
-                tokenAwarded ? '🎉' : '⚡',
-                style: const TextStyle(fontSize: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  tokenAwarded
-                      ? 'Free token unlocked! 5/5 activity steps complete.'
-                      : '45 minutes active · Step $steps/5 unlocked.',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: tokenAwarded
-              ? const Color(0xFF7C3AED)
-              : const Color(0xFF2563EB),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          duration: const Duration(seconds: 4),
-        ),
+      GlobalNotice.showEngagement(
+        context,
+        step: tokenAwarded ? 5 : steps,
+        tokenAwarded: tokenAwarded,
       );
     } catch (_) {
-      // A missed minute is intentionally not backfilled from background time.
+      // Missed heartbeats are never backfilled, so idle/background time cannot
+      // accidentally become rewardable later.
     } finally {
       _syncing = false;
     }
