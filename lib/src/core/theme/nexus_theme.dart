@@ -12,9 +12,11 @@ abstract final class NexusTheme {
   static const Color shell = Color(0xFF0A0A0B);
   static const Color cardDark = Color(0xFF141418);
 
-  /// Cap `NEXUS.glass` / `border`
+  /// Cap `NEXUS.glass` / `border`.
+  /// Dark cards no longer use a white perimeter stroke; separation comes from
+  /// surface contrast, blur and shadow instead.
   static const Color glass = Color(0x0AFFFFFF); // 0.04
-  static const Color border = Color(0x14FFFFFF); // 0.08
+  static const Color border = Colors.transparent;
 
   static const Color glowPrimary = Color(0x99FF4D00); // ~0.6
   static const Color glowAccent = Color(0x80EB4898); // ~0.5
