@@ -3,21 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
-import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
-import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_card_theme_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_photo_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Cap `VapIdCardModal` — genie overlay from the dock, not a route.
+/// PEARL / Virtual ID presentation overlay opened from the persistent dock.
+///
+/// Important: this overlay is hosted above MaterialApp.router's Navigator.
+/// Actions that open real pages therefore route through [appRouterProvider]
+/// instead of calling Navigator.of(context) from this overlay context.
 class VapIdModal extends ConsumerWidget {
   const VapIdModal({super.key});
 
@@ -90,7 +93,7 @@ class _VapIdModalBody extends ConsumerWidget {
                   _Round(
                     icon: Icons.folder_copy_outlined,
                     tooltip: 'Documents',
-                    onTap: () => _openDocuments(context, ref),
+                    onTap: () => _openDocuments(ref),
                   ),
                   const SizedBox(width: 4),
                   _Round(
@@ -105,10 +108,7 @@ class _VapIdModalBody extends ConsumerWidget {
                   _Round(
                     icon: Icons.edit_outlined,
                     tooltip: 'Edit card',
-                    onTap: () {
-                      AppHaptics.selection();
-                      _edit(context, ref, data);
-                    },
+                    onTap: () => _edit(ref),
                   ),
                   const SizedBox(width: 4),
                   _Round(
@@ -127,7 +127,7 @@ class _VapIdModalBody extends ConsumerWidget {
                 validationUrl: validationUrl,
                 docsAsync: docs,
                 onPreview: (doc) => showDocumentPreviewDialog(context, doc),
-                onManageDocuments: () => _openDocuments(context, ref),
+                onManageDocuments: () => _openDocuments(ref),
               ),
             ),
           ],
@@ -136,180 +136,18 @@ class _VapIdModalBody extends ConsumerWidget {
     );
   }
 
-  Future<void> _openDocuments(BuildContext context, WidgetRef ref) async {
+  Future<void> _openDocuments(WidgetRef ref) async {
     AppHaptics.selection();
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
     ref.read(overlayModalsProvider.notifier).closeVapId();
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    if (!rootNavigator.mounted) return;
-
-    await rootNavigator.push<void>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const DocumentVaultScreen(),
-      ),
-    );
+    await Future<void>.delayed(const Duration(milliseconds: 70));
+    await ref.read(appRouterProvider).push<void>(AppPaths.documents);
   }
 
-  Future<void> _edit(
-    BuildContext context,
-    WidgetRef ref,
-    VapIdCard card,
-  ) async {
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
-    final name = TextEditingController(text: card.name ?? '');
-    final occupation = TextEditingController(text: card.occupation ?? '');
-    final city = TextEditingController(text: card.city ?? '');
-    final country = TextEditingController(text: card.country ?? '');
-    final bio = TextEditingController(text: card.bio ?? '');
-
+  Future<void> _edit(WidgetRef ref) async {
+    AppHaptics.selection();
     ref.read(overlayModalsProvider.notifier).closeVapId();
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-
-    if (!rootNavigator.mounted) {
-      name.dispose();
-      occupation.dispose();
-      city.dispose();
-      country.dispose();
-      bio.dispose();
-      return;
-    }
-
-    await showModalBottomSheet<void>(
-      context: rootNavigator.context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF121218),
-      barrierColor: Colors.black.withAlpha(190),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.viewInsetsOf(ctx).bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white30,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'EDIT VIRTUAL CARD',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Documents',
-                      onPressed: () async {
-                        Navigator.of(ctx).pop();
-                        await Future<void>.delayed(
-                          const Duration(milliseconds: 80),
-                        );
-                        if (!rootNavigator.mounted) return;
-                        await rootNavigator.push<void>(
-                          MaterialPageRoute(
-                            fullscreenDialog: true,
-                            builder: (_) => const DocumentVaultScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.folder_copy_outlined,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                VapIdPhotoPicker(card: card),
-                const SizedBox(height: 12),
-                GlassTextField(controller: name, hint: 'Name'),
-                const SizedBox(height: 10),
-                GlassTextField(controller: occupation, hint: 'Occupation'),
-                const SizedBox(height: 10),
-                GlassTextField(controller: city, hint: 'City'),
-                const SizedBox(height: 10),
-                GlassTextField(controller: country, hint: 'Country'),
-                const SizedBox(height: 10),
-                GlassTextField(controller: bio, hint: 'Bio', maxLines: 3),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      AppHaptics.selection();
-                      final latest = ref.read(vapIdProvider).value ?? card;
-                      await ref
-                          .read(vapIdProvider.notifier)
-                          .save(
-                            latest.copyWith(
-                              name: name.text.trim(),
-                              occupation: occupation.text.trim(),
-                              city: city.text.trim(),
-                              country: country.text.trim(),
-                              bio: bio.text.trim(),
-                            ),
-                          );
-                      if (ctx.mounted) Navigator.of(ctx).pop();
-                    },
-                    child: const Text('SAVE'),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      Navigator.of(ctx).pop();
-                      await Future<void>.delayed(
-                        const Duration(milliseconds: 80),
-                      );
-                      if (!rootNavigator.mounted) return;
-                      await rootNavigator.push<void>(
-                        MaterialPageRoute(
-                          fullscreenDialog: true,
-                          builder: (_) => const DocumentVaultScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.upload_file_rounded),
-                    label: const Text('UPLOAD / MANAGE DOCUMENTS'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    name.dispose();
-    occupation.dispose();
-    city.dispose();
-    country.dispose();
-    bio.dispose();
+    await Future<void>.delayed(const Duration(milliseconds: 70));
+    await ref.read(appRouterProvider).push<void>(AppPaths.clientVapIdEdit);
   }
 }
 
