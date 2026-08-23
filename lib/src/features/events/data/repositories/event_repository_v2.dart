@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 
@@ -7,6 +9,7 @@ class EventRepository {
     : _client = client ?? Supabase.instance.client;
 
   final SupabaseClient _client;
+  Future<List<Event>>? _eventsRequest;
 
   static const _full =
       'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, organizer_name, organizer_photo_url, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
@@ -39,14 +42,11 @@ class EventRepository {
     }
   }
 
-  /// Dashboard-only teaser feed.
-  ///
-  /// This intentionally uses a tiny SECURITY DEFINER RPC that exposes only
-  /// published/approved event ids, titles and video URLs. That keeps the moving
-  /// dashboard preview alive even when the full Events section is Premium-gated
-  /// or the browser session is still restoring. Tapping Events is still gated by
-  /// the normal subscription routing.
+  /// Dashboard-only teaser feed. While the visible teaser loads, warm the real
+  /// Events feed too. The same repository instance is shared by Riverpod, so a
+  /// later tap on Events can render from the already-started cached request.
   Future<List<Event>> fetchDashboardVideoTeasers({int limit = 8}) async {
+    unawaited(fetchEvents());
     try {
       final rows = await _client.rpc(
         'rpc_event_video_teasers',
@@ -63,7 +63,12 @@ class EventRepository {
     }
   }
 
-  Future<List<Event>> fetchEvents() async {
+  Future<List<Event>> fetchEvents({bool forceRefresh = false}) {
+    if (forceRefresh) _eventsRequest = null;
+    return _eventsRequest ??= _loadEvents();
+  }
+
+  Future<List<Event>> _loadEvents() async {
     for (final select in eventRepositoryProviderFallbackSelects) {
       try {
         final data = await _withSessionRetry(
@@ -78,8 +83,6 @@ class EventRepository {
             .map((json) => Event.fromJson(json as Map<String, dynamic>))
             .toList();
       } on PostgrestException catch (e) {
-        // If it's a permission denied / RLS error, do NOT try fallbacks.
-        // The table is locked, so all fallbacks will fail and spam the network.
         if (e.code == '42501' ||
             e.message.contains('permission denied') ||
             e.message.contains('Forbidden')) {
