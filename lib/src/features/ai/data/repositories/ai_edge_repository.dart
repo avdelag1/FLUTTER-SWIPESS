@@ -30,6 +30,82 @@ class AiEdgeRepository {
 
   bool get isSignedIn => _client.auth.currentUser != null;
 
+  String? _currentFirstName() {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+    final meta = user.userMetadata ?? const <String, dynamic>{};
+    for (final key in const ['first_name', 'full_name', 'name', 'display_name']) {
+      final raw = meta[key]?.toString().trim();
+      if (raw != null && raw.isNotEmpty) return raw.split(RegExp(r'\s+')).first;
+    }
+    final email = user.email?.trim();
+    if (email != null && email.contains('@')) {
+      final local = email.split('@').first.trim();
+      if (local.isNotEmpty && !local.contains(RegExp(r'\d{3,}'))) return local;
+    }
+    return null;
+  }
+
+  String? _personaStyleDirective(String? character) {
+    if (character == null || character.isEmpty) return null;
+    final firstName = _currentFirstName();
+    final normalizedName = firstName?.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+
+    if (character == 'beaugosse') {
+      final fanny = normalizedName == 'fanny';
+      return '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+          'Stay Beau Gosse: French-Mexican, elegant, handsome-energy, warm, witty, '
+          'polite and playfully flirty without becoming explicit or pushy. Reply '
+          'mainly in the same language as the latest message, but naturally sprinkle '
+          'short French expressions such as "mon amour", "ma belle", "chérie", '
+          '"très bien", "avec plaisir", "bien sûr" and "magnifique" when the tone fits. '
+          'When feminine address is clearly appropriate from the conversation, make '
+          'the charm a little warmer while remaining respectful. '
+          '${fanny ? 'CURRENT FIRST NAME: Fanny. For every reply addressed to Fanny, open with a short affectionate French greeting such as "Bonjour, mon amour" or "Ma belle Fanny", vary it naturally, and treat her with extra queen-like warmth and courtesy. ' : firstName != null ? 'CURRENT FIRST NAME: $firstName. ' : ''}'
+          'Never rename yourself Hugo. Your name is Beau Gosse.]';
+    }
+
+    if (character == 'donajkiin') {
+      return '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+          'Stay Don Aj K\'iin. Keep the main answer in the same language as the latest '
+          'message, but weave in a small amount of Yucatec Maya / Maaya T\'aan from '
+          'this approved phrase set only: "Ma\'alob k\'iin" (good day), "Bix a beel?" '
+          '(how are you/how goes your path), "Yum bo\'otik" (thank you), and "Ko\'ox" '
+          '(let\'s go). Use at most one or two Maya expressions per reply, explain '
+          'their meaning naturally when useful, and never invent Maya words or fake '
+          'translations. Keep the tone grounded, warm and connected to local culture.]';
+    }
+
+    return null;
+  }
+
+  List<Map<String, String>> _buildApiMessages(
+    List<AiChatMessage> messages,
+    String? character,
+  ) {
+    final rows = <Map<String, String>>[
+      for (final m in messages)
+        if (m.content.trim().isNotEmpty)
+          {'role': m.role, 'content': m.content.trim()},
+    ];
+
+    final directive = _personaStyleDirective(character);
+    if (directive != null) {
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (rows[i]['role'] == 'user') {
+          rows[i] = {
+            'role': 'user',
+            'content': '${rows[i]['content']}\n\n$directive',
+          };
+          break;
+        }
+      }
+    }
+
+    if (rows.length > 12) rows.removeRange(0, rows.length - 12);
+    return rows;
+  }
+
   /// Cap `useAIEnhanceText` → `ai-enhance-text`, with concierge fallback.
   Future<String?> enhanceText({
     required String text,
@@ -78,14 +154,7 @@ class AiEdgeRepository {
     String? preferredIntent,
     bool stream = true,
   }) async {
-    final apiMessages = [
-      for (final m in messages)
-        if (m.content.trim().isNotEmpty)
-          {'role': m.role, 'content': m.content.trim()},
-    ];
-    if (apiMessages.length > 12) {
-      apiMessages.removeRange(0, apiMessages.length - 12);
-    }
+    final apiMessages = _buildApiMessages(messages, character);
 
     final lastUser = messages.reversed
         .where((m) => m.role == 'user')
@@ -526,14 +595,7 @@ class AiEdgeRepository {
     Map<String, dynamic>? locationContext,
     String? preferredIntent,
   }) async* {
-    final apiMessages = [
-      for (final m in messages)
-        if (m.content.trim().isNotEmpty)
-          {'role': m.role, 'content': m.content.trim()},
-    ];
-    if (apiMessages.length > 12) {
-      apiMessages.removeRange(0, apiMessages.length - 12);
-    }
+    final apiMessages = _buildApiMessages(messages, character);
     final lastUser = messages.reversed
         .where((m) => m.role == 'user')
         .map((m) => m.content)
