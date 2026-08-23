@@ -1,0 +1,77 @@
+name: One-time Virtual ID photo UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one_time_vap_id_photo_ui.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire dedicated ID photo UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Card display must prefer the dedicated ID photo.
+          p = Path('lib/src/features/profile/presentation/widgets/themed_vap_card.dart')
+          s = p.read_text()
+          old = """              child: data.avatarUrl != null\n                  ? Image.network(\n                      data.avatarUrl!,"""
+          new = """              child: data.displayPhotoUrl != null\n                  ? Image.network(\n                      data.displayPhotoUrl!,"""
+          assert old in s, 'themed VAP photo target not found'
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Main dock VAP editor: add dedicated photo picker above text fields.
+          p = Path('lib/src/features/profile/presentation/widgets/vap_id_modal.dart')
+          s = p.read_text()
+          imp = "import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';"
+          add_imp = imp + "\nimport 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_photo_picker.dart';"
+          assert imp in s and 'vap_id_photo_picker.dart' not in s, 'modal import target not found'
+          s = s.replace(imp, add_imp, 1)
+          target = """                const SizedBox(height: 14),\n                GlassTextField(controller: name, hint: 'Name'),"""
+          repl = """                const SizedBox(height: 14),\n                VapIdPhotoPicker(card: card),\n                const SizedBox(height: 12),\n                GlassTextField(controller: name, hint: 'Name'),"""
+          assert target in s, 'modal picker insertion target not found'
+          s = s.replace(target, repl, 1)
+          p.write_text(s)
+
+          # Standalone/public route VAP editor gets the exact same photo control.
+          p = Path('lib/src/features/profile/presentation/screens/vap_id_screen.dart')
+          s = p.read_text()
+          imp = "import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';"
+          add_imp = imp + "\nimport 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_photo_picker.dart';"
+          assert imp in s and 'vap_id_photo_picker.dart' not in s, 'screen import target not found'
+          s = s.replace(imp, add_imp, 1)
+          target = """                    const SizedBox(height: 16),\n                    GlassTextField(\n                      controller: name,"""
+          repl = """                    const SizedBox(height: 16),\n                    VapIdPhotoPicker(card: card),\n                    const SizedBox(height: 12),\n                    GlassTextField(\n                      controller: name,"""
+          assert target in s, 'screen picker insertion target not found'
+          s = s.replace(target, repl, 1)
+          p.write_text(s)
+
+          # Dark theme: secondary and tertiary text defaults are bright white.
+          p = Path('lib/src/core/theme/app_theme.dart')
+          s = p.read_text()
+          assert 'static const Color textSecondary = Color(0xFFD7DDE7);' in s
+          assert 'static const Color textTertiary = Color(0xFFA8B1C0);' in s
+          s = s.replace('static const Color textSecondary = Color(0xFFD7DDE7);', 'static const Color textSecondary = Color(0xFFFFFFFF);')
+          s = s.replace('static const Color textTertiary = Color(0xFFA8B1C0);', 'static const Color textTertiary = Color(0xFFFFFFFF);')
+          p.write_text(s)
+
+          Path('.github/workflows/one_time_vap_id_photo_ui.yml').unlink()
+          PY
+      - name: Commit UI wiring
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Finish dedicated Virtual ID photo experience'
+          git push origin HEAD:main
