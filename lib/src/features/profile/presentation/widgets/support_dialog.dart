@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Cap `SupportDialog` — Neural Support / Customer Sync ticket sheet.
 Future<void> showSupportDialog(BuildContext context) {
@@ -53,18 +54,49 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
   }
 
   Future<void> _submit() async {
-    if (_subject.text.trim().isEmpty || _message.text.trim().isEmpty) return;
+    final subject = _subject.text.trim();
+    final message = _message.text.trim();
+    if (subject.isEmpty || message.isEmpty || _sending) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to contact support.')),
+      );
+      return;
+    }
+
     AppHaptics.medium();
     setState(() => _sending = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    // Bases: insert into support_tickets via repository.
-    if (!mounted) return;
-    setState(() {
-      _sending = false;
-      _sent = true;
-      _subject.clear();
-      _message.clear();
-    });
+    try {
+      final role =
+          user.appMetadata['role']?.toString() ??
+          user.userMetadata?['role']?.toString() ??
+          'client';
+      await Supabase.instance.client.from('support_tickets').insert({
+        'user_id': user.id,
+        'subject': subject,
+        'message': message,
+        'category': _category,
+        'priority': _priority,
+        'user_email': user.email ?? '',
+        'user_role': role,
+        'source': 'support_dialog',
+      });
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _sent = true;
+        _subject.clear();
+        _message.clear();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not create support ticket: $error')),
+      );
+    }
   }
 
   @override
@@ -74,10 +106,9 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.9,
       ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0D).withAlpha(240),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-        border: Border.all(color: Colors.white, width: 1.5),
+      decoration: const BoxDecoration(
+        color: Color(0xF00A0A0D),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
       ),
       child: ListView(
         padding: EdgeInsets.fromLTRB(24, 18, 24, bottom + 28),
