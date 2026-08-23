@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Cap `PremiumLikedCard` — listing or profile favorite tile.
@@ -353,13 +354,17 @@ class PremiumLikedCard extends StatelessWidget {
   }
 
   Widget _fallback() {
-    return ColoredBox(
+    if (isProfile) {
+      return FunAvatar(
+        seed: title,
+        size: 192,
+        borderRadius: BorderRadius.zero,
+        semanticLabel: '$title temporary profile avatar',
+      );
+    }
+    return const ColoredBox(
       color: Colors.transparent,
-      child: Icon(
-        isProfile ? Icons.person_rounded : Icons.home_outlined,
-        size: 48,
-        color: Colors.white24,
-      ),
+      child: Icon(Icons.home_outlined, size: 48, color: Colors.white),
     );
   }
 }
