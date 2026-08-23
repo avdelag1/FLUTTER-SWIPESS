@@ -11,6 +11,7 @@ class ListingDraft {
     this.mode = ListingMode.rent,
     this.photos = const [],
     this.video,
+    this.legalDocuments = const [],
     this.title = '',
     this.description = '',
     this.price = '',
@@ -59,6 +60,11 @@ class ListingDraft {
 
   /// Optional Cap 10s loop video for the swipe card.
   final XFile? video;
+
+  /// Optional private legal docs for owner/listing verification.
+  /// Properties, yachts and motorcycles can attach these during publish.
+  /// Public users only ever see the resulting verified badge after approval.
+  final List<XFile> legalDocuments;
   final String title;
 
   /// Freeform Airbnb-style description (chips still auto-fill if empty).
@@ -117,6 +123,20 @@ class ListingDraft {
     }
   }
 
+  bool get requiresLegalDocuments {
+    switch (category) {
+      case ListingCategory.property:
+      case ListingCategory.yacht:
+      case ListingCategory.motorcycle:
+        return true;
+      case ListingCategory.bicycle:
+      case ListingCategory.worker:
+        return false;
+    }
+  }
+
+  int get maxLegalDocuments => 6;
+
   String get categoryValue => category.name;
 
   String get modeValue {
@@ -137,6 +157,7 @@ class ListingDraft {
     List<XFile>? photos,
     XFile? video,
     bool clearVideo = false,
+    List<XFile>? legalDocuments,
     String? title,
     String? description,
     String? price,
@@ -185,6 +206,7 @@ class ListingDraft {
       mode: mode ?? this.mode,
       photos: photos ?? this.photos,
       video: clearVideo ? null : (video ?? this.video),
+      legalDocuments: legalDocuments ?? this.legalDocuments,
       title: title ?? this.title,
       description: description ?? this.description,
       price: price ?? this.price,
