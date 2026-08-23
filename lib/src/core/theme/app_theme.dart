@@ -30,7 +30,10 @@ class AppTheme {
 
   static const Color dashGlass = Color(0x8A171C25);
   static const Color dashGlassStrong = Color(0xC21A2029);
-  static const Color dashGlassBorder = Color(0x24FFFFFF);
+
+  // Dark mode deliberately avoids white perimeter strokes. Use contrast,
+  // shadow and blur to separate surfaces instead of outlining everything.
+  static const Color dashGlassBorder = Colors.transparent;
   static const Color nexusBorder = NexusTheme.border;
   static const Color nexusGlass = NexusTheme.glass;
 
@@ -75,7 +78,7 @@ class AppTheme {
   static BoxDecoration get neoNaiveCard => BoxDecoration(
     color: const Color(0xF5141820),
     borderRadius: neoNaiveRadius,
-    border: Border.all(color: const Color(0x44FFFFFF), width: 1),
+    border: Border.all(color: Colors.transparent),
     boxShadow: const [
       BoxShadow(color: Color(0x46000000), blurRadius: 20, offset: Offset(0, 7)),
     ],
@@ -84,7 +87,7 @@ class AppTheme {
   static BoxDecoration get glassCard => BoxDecoration(
     color: glassBg,
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: Colors.white.withAlpha(48), width: 1),
+    border: Border.all(color: Colors.transparent),
   );
 
   static BoxDecoration softSurfaceCard({required bool isLight}) =>
@@ -92,7 +95,7 @@ class AppTheme {
         color: isLight ? Colors.white.withAlpha(220) : dashElevated,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: isLight ? Colors.black.withAlpha(24) : Colors.white.withAlpha(28),
+          color: isLight ? Colors.black.withAlpha(24) : Colors.transparent,
         ),
       );
 
@@ -117,7 +120,7 @@ class AppTheme {
         color: isLight ? const Color(0xFAFFFFFF) : const Color(0xE61A2029),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: isLight ? Colors.black.withAlpha(34) : Colors.white.withAlpha(52),
+          color: isLight ? Colors.black.withAlpha(34) : Colors.transparent,
           width: 1,
         ),
         boxShadow: [
@@ -147,7 +150,7 @@ class AppTheme {
     return BoxDecoration(
       color: glassBg,
       borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: Colors.white.withAlpha(58), width: 1),
+      border: Border.all(color: Colors.transparent),
       boxShadow: [
         if (glowing)
           BoxShadow(
@@ -176,7 +179,7 @@ class AppTheme {
   static BoxDecoration get bottomDockDecoration => BoxDecoration(
     color: dashWell.withAlpha(236),
     borderRadius: BorderRadius.circular(999),
-    border: Border.all(color: Colors.white.withAlpha(34), width: 1),
+    border: Border.all(color: Colors.transparent),
     boxShadow: const [
       BoxShadow(
         color: Color(0x70000000),
@@ -202,7 +205,7 @@ class AppTheme {
       scaffoldBackgroundColor: surfaceColor,
       canvasColor: surfaceColor,
       cardColor: dashElevated,
-      dividerColor: Colors.white.withAlpha(24),
+      dividerColor: Colors.transparent,
       iconTheme: const IconThemeData(color: Colors.white, size: 22),
       textTheme: base.copyWith(
         bodyLarge: base.bodyLarge?.copyWith(color: textPrimary, height: 1.35),
@@ -228,15 +231,15 @@ class AppTheme {
         labelStyle: const TextStyle(color: textSecondary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.white.withAlpha(34)),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.white.withAlpha(34)),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.white.withAlpha(90), width: 1.2),
+          borderSide: BorderSide.none,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -253,10 +256,16 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
           minimumSize: const Size(44, 48),
-          side: BorderSide(color: Colors.white.withAlpha(48)),
+          side: BorderSide.none,
+          backgroundColor: dashElevated,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
+      ),
+      chipTheme: ChipThemeData(
+        side: BorderSide.none,
+        backgroundColor: dashElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
@@ -328,7 +337,7 @@ class AppTheme {
   static BoxDecoration get cinematicGlassDecoration => BoxDecoration(
     color: glassBg,
     borderRadius: BorderRadius.circular(24),
-    border: Border.all(color: Colors.white.withAlpha(48), width: 1),
+    border: Border.all(color: Colors.transparent),
     boxShadow: [
       BoxShadow(
         color: Colors.black.withAlpha(105),
