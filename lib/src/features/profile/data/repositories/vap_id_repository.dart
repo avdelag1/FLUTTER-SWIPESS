@@ -1,3 +1,4 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
@@ -112,6 +113,46 @@ class VapIdRepository {
       'languages': card.languages,
       'interests': card.interests,
       'avatar_url': card.avatarUrl,
+      'id_photo_url': card.idPhotoUrl,
     }, onConflict: 'user_id');
+  }
+
+  /// Uploads a photo used only by the Virtual ID/PEARL card.
+  /// The normal profile avatar is never changed by this operation.
+  Future<String> uploadIdPhoto(XFile file) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) throw Exception('The selected image is empty');
+    if (bytes.length > 8 * 1024 * 1024) {
+      throw Exception('ID photo must be smaller than 8 MB');
+    }
+
+    final mime = (file.mimeType ?? '').toLowerCase();
+    final lowerName = file.name.toLowerCase();
+    final extension = mime.contains('png') || lowerName.endsWith('.png')
+        ? 'png'
+        : mime.contains('webp') || lowerName.endsWith('.webp')
+        ? 'webp'
+        : 'jpg';
+    final contentType = extension == 'png'
+        ? 'image/png'
+        : extension == 'webp'
+        ? 'image/webp'
+        : 'image/jpeg';
+
+    final path =
+        '${user.id}/vap-id/id-photo-${DateTime.now().millisecondsSinceEpoch}.$extension';
+    await _client.storage.from('profile-images').uploadBinary(
+      path,
+      bytes,
+      fileOptions: FileOptions(
+        upsert: false,
+        contentType: contentType,
+        cacheControl: '3600',
+      ),
+    );
+    return _client.storage.from('profile-images').getPublicUrl(path);
   }
 }
