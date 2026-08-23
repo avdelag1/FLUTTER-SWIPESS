@@ -8,36 +8,60 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 
 /// Shared compact back control used across phone pages.
+///
+/// Uses GoRouter history when available. Routes opened with `go()` do not have
+/// a Navigator page to pop, so we fall back to the correct section dashboard
+/// instead of leaving a dead back button on screen.
 class CapBackButton extends ConsumerWidget {
   const CapBackButton({
     super.key,
     this.onTap,
-    this.fallbackPath = AppPaths.clientDashboard,
+    this.fallbackPath,
     this.color = Colors.white,
   });
 
   final VoidCallback? onTap;
-  final String fallbackPath;
+  final String? fallbackPath;
   final Color color;
 
-  Future<void> _handleTap(BuildContext context) async {
+  String _currentPath(BuildContext context) {
+    try {
+      return GoRouterState.of(context).uri.path;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _resolvedFallback(BuildContext context) {
+    if (fallbackPath != null && fallbackPath!.isNotEmpty) return fallbackPath!;
+    final path = _currentPath(context);
+    if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
+    if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
+    if (path.startsWith('/business/')) return AppPaths.businessDashboard;
+    if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
+    return AppPaths.clientDashboard;
+  }
+
+  void _handleTap(BuildContext context) {
     AppHaptics.light();
     if (onTap != null) {
       onTap!();
       return;
     }
-    final navigator = Navigator.of(context);
-    final popped = await navigator.maybePop();
-    if (!popped && context.mounted) context.go(fallbackPath);
+
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+
+    final fallback = _resolvedFallback(context);
+    final current = _currentPath(context);
+    if (current != fallback) context.go(fallback);
   }
 
   bool _followsProfileChrome(BuildContext context) {
-    try {
-      final path = GoRouterState.of(context).uri.path;
-      return path == AppPaths.clientProfile || path == AppPaths.ownerProfile;
-    } catch (_) {
-      return false;
-    }
+    final path = _currentPath(context);
+    return path == AppPaths.clientProfile || path == AppPaths.ownerProfile;
   }
 
   @override
@@ -75,7 +99,7 @@ class CapBackButton extends ConsumerWidget {
                       shape: BoxShape.circle,
                       color: isLight
                           ? Colors.white.withAlpha(178)
-                          : Colors.white.withAlpha(16),
+                          : Colors.white.withAlpha(22),
                       border: isLight
                           ? Border.all(
                               color: Colors.black.withAlpha(18),
@@ -86,7 +110,7 @@ class CapBackButton extends ConsumerWidget {
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: isLight ? const Color(0xFF111318) : color,
-                      size: 17,
+                      size: 18,
                     ),
                   ),
                 ),
