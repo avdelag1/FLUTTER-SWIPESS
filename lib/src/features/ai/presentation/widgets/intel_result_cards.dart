@@ -47,7 +47,6 @@ class IntelListingCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -94,7 +93,7 @@ class IntelListingCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: Colors.white70,
                         fontSize: 11,
                       ),
                     ),
@@ -140,7 +139,6 @@ class IntelProfileCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white, width: 1.5),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -174,7 +172,7 @@ class IntelProfileCard extends StatelessWidget {
                     Text(
                       city,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white54,
+                        color: Colors.white70,
                         fontSize: 11,
                       ),
                     ),
