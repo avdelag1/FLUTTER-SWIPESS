@@ -115,7 +115,7 @@ class _IdentitySection extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('SCAN TO VALIDATE', style: GoogleFonts.plusJakartaSans(color: t.textPrimary, fontWeight: FontWeight.w900, fontSize: 9.5, letterSpacing: 1.2)),
           const SizedBox(height: 3),
-          Text('Identity first · documents below', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 9.5)),
+          Text('Identity first · approved documents below', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 9.5)),
         ])),
         Container(
           width: 72,
@@ -138,11 +138,16 @@ class _DocumentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = theme;
-    final docs = docsAsync.value ?? const <LegalDocument>[];
+    // The card is approval-aware now. During launch uploads enter as approved,
+    // so they appear immediately. When moderation is enabled later, pending or
+    // rejected files automatically stay off the public-facing virtual card.
+    final docs = (docsAsync.value ?? const <LegalDocument>[])
+        .where((doc) => doc.status.toLowerCase() == 'approved')
+        .toList(growable: false);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('DOCUMENTS', style: GoogleFonts.plusJakartaSans(color: t.textPrimary, fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: -.2)),
       const SizedBox(height: 3),
-      Text('Verification files · tap any uploaded document to open it', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 10.5)),
+      Text('Approved verification files · tap any uploaded document to open it', style: GoogleFonts.plusJakartaSans(color: t.textTertiary, fontSize: 10.5)),
       const SizedBox(height: 12),
       if (docsAsync.isLoading && docsAsync.value == null)
         LinearProgressIndicator(color: t.accent, minHeight: 2)
