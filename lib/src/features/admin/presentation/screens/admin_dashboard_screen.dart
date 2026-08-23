@@ -18,6 +18,12 @@ class AdminDashboardScreen extends StatelessWidget {
         statusLabel: 'Admin workspace',
         actions: [
           RoleDashboardAction(
+            title: 'Market Config',
+            subtitle: 'Toggle local features and categories',
+            icon: Icons.public_rounded,
+            path: AppPaths.adminGeoMarkets,
+          ),
+          RoleDashboardAction(
             title: 'Events',
             subtitle: 'Review and manage event content',
             icon: Icons.event_rounded,
