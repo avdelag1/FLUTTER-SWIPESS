@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/role_control_center.dart';
-import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_identity_documents_panel.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -14,15 +13,10 @@ class AdminDashboardScreen extends StatelessWidget {
       child: RoleControlCenter(
         eyebrow: 'Swipess operations',
         title: 'Admin dashboard',
-        subtitle: 'Manage platform content, performance, legal operations and high-level controls from one place.',
+        subtitle:
+            'Manage platform content, performance, legal operations and high-level controls from one place.',
         statusLabel: 'Admin workspace',
         actions: [
-          RoleDashboardAction(
-            title: 'Market Config',
-            subtitle: 'Toggle local features and categories',
-            icon: Icons.public_rounded,
-            path: AppPaths.adminGeoMarkets,
-          ),
           RoleDashboardAction(
             title: 'Events',
             subtitle: 'Review and manage event content',
@@ -60,7 +54,6 @@ class AdminDashboardScreen extends StatelessWidget {
             path: AppPaths.clientDashboard,
           ),
         ],
-        footer: AdminIdentityDocumentsPanel(),
       ),
     );
   }

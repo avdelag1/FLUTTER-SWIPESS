@@ -6,7 +6,6 @@ import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_cat
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_eventos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';
-import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_geo_markets_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_photos_screen.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/app_redirect.dart';
@@ -201,8 +200,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/listing/:id',
-        builder: (ctx, state) =>
-            SafeListingDetailRoute(listingId: state.pathParameters['id']!),
+        builder: (ctx, state) => SafeListingDetailRoute(
+          listingId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: '/profile/:id',
@@ -458,10 +458,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.adminPerformance,
         builder: (ctx, _) => const AdminPerformanceScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.adminGeoMarkets,
-        builder: (ctx, _) => const AdminGeoMarketsScreen(),
       ),
       GoRoute(
         path: '*',
