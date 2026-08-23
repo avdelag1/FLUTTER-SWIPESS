@@ -85,10 +85,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
   }
 
   void _armEndAdvance(VideoPlayerController controller) {
-    var handled = false;
+    var scheduled = false;
     controller.addListener(() {
-      if (handled ||
-          !mounted ||
+      if (!mounted ||
           !_routeActive ||
           _switching ||
           !identical(_current, controller)) {
@@ -97,16 +96,25 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard> {
       final value = controller.value;
       if (!value.isInitialized || value.duration <= Duration.zero) return;
 
-      // video_player reports the final frame with playback stopped. Waiting for
-      // that state prevents the dashboard from cutting a clip short.
-      final nearFinalFrame =
-          value.position >= value.duration - const Duration(milliseconds: 120);
-      if (value.isPlaying || !nearFinalFrame) return;
+      // On Flutter Web the player can jump back to frame zero before the final
+      // `isPlaying == false` state reaches Dart. Schedule the handoff while the
+      // current clip is still in its final fraction, then wait out the exact
+      // remaining duration. This preserves the full video and prevents replay.
+      final remaining = value.duration - value.position;
+      if (scheduled || remaining > const Duration(milliseconds: 700)) return;
 
-      handled = true;
-      if (_videos.length > 1) {
-        unawaited(_advance(1));
-      }
+      scheduled = true;
+      final wait = remaining.isNegative ? Duration.zero : remaining;
+      Future<void>.delayed(wait, () {
+        if (!mounted || !identical(_current, controller)) return;
+        if (!_routeActive) {
+          scheduled = false;
+          return;
+        }
+        if (_videos.length > 1) {
+          unawaited(_advance(1));
+        }
+      });
     });
   }
 
