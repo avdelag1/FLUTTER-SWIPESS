@@ -27,7 +27,6 @@ abstract final class AppPaths {
   static const clientAdvertise = '/client/advertise';
   static const clientPerks = '/client/perks';
   static const clientVapId = '/client/vap-id';
-  static const clientVapIdEdit = '/client/vap-id/edit';
 
   static const ownerDashboard = '/owner/dashboard';
   static const businessDashboard = '/business/dashboard';
