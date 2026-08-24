@@ -14,16 +14,26 @@ final lawyerWorkspaceProvider = FutureProvider<LawyerWorkspace?>((ref) async {
   return ref.read(lawyerWorkspaceRepositoryProvider).fetch();
 });
 
-final lawyerAvailabilitySavingProvider = StateProvider<bool>((ref) => false);
+class LawyerAvailabilitySaving extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final lawyerAvailabilitySavingProvider =
+    NotifierProvider<LawyerAvailabilitySaving, bool>(
+      LawyerAvailabilitySaving.new,
+    );
 
 Future<void> setLawyerAvailability(WidgetRef ref, bool available) async {
-  ref.read(lawyerAvailabilitySavingProvider.notifier).state = true;
+  ref.read(lawyerAvailabilitySavingProvider.notifier).set(true);
   try {
     await ref.read(lawyerWorkspaceRepositoryProvider).setAvailability(available);
     ref.invalidate(lawyerWorkspaceProvider);
     ref.invalidate(appSessionProvider);
     await ref.read(lawyerWorkspaceProvider.future);
   } finally {
-    ref.read(lawyerAvailabilitySavingProvider.notifier).state = false;
+    ref.read(lawyerAvailabilitySavingProvider.notifier).set(false);
   }
 }
