@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/data/market_swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,20 +9,22 @@ final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
   return SwipeRepository(Supabase.instance.client);
 });
 
-/// Family provider to fetch listings by category — respects active Cap filters.
+/// Authenticated discovery follows the active Passport market and the server
+/// feature matrix. Recommended/Popular remain aggregate modes instead of being
+/// silently rewritten to the filter category.
 final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
   ref,
   category,
 ) async {
   final filters = ref.watch(swipeFilterProvider);
-  final repository = ref.read(listingRepositoryProvider);
-  final effectiveCategory =
-      (category == 'all' || category == 'recommended' || category == 'popular')
-      ? filters.category
-      : category;
+  final discovery = ref.watch(discoveryLocationProvider);
+  final repository = ref.read(marketSwipeRepositoryProvider);
+  final effectiveCategory = category == 'all' ? filters.category : category;
 
-  return repository.fetchSwipeFeed(
+  return repository.fetch(
     category: effectiveCategory,
+    marketCity: discovery.city,
+    marketCountry: discovery.country,
     interestType: filters.interestType,
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
@@ -30,7 +33,6 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
     furnished: filters.furnished,
     petFriendly: filters.petFriendly,
     propertyTypes: filters.propertyTypes,
-    city: filters.city,
     limit: 40,
   );
 });
