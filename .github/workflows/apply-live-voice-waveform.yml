@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - .github/waveform-trigger
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,219 +17,183 @@ jobs:
         with:
           ref: main
 
-      - name: Patch Intel Core and dashboard voice UI
+      - name: Apply waveform UI
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
 
           root = Path('.')
-          waveform_path = root / 'lib/src/features/ai/presentation/widgets/live_audio_waveform.dart'
-          waveform_path.parent.mkdir(parents=True, exist_ok=True)
-          waveform_path.write_text(r'''import 'dart:async';
-          import 'dart:math' as math;
+          wave = root / 'lib/src/features/ai/presentation/widgets/live_audio_waveform.dart'
+          wave.parent.mkdir(parents=True, exist_ok=True)
+          wave.write_text("""import 'dart:async';
+import 'dart:math' as math;
 
-          import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
-          /// A compact, continuously scrolling microphone waveform.
-          ///
-          /// New amplitude samples enter on the right and older samples move left,
-          /// so recording always looks alive even between louder syllables. The
-          /// real microphone level still controls the dominant height of each bar.
-          class LiveAudioWaveform extends StatefulWidget {
-            const LiveAudioWaveform({
-              super.key,
-              required this.active,
-              required this.level,
-              required this.color,
-              this.width = 96,
-              this.height = 22,
-              this.samples = 30,
-            });
+class LiveAudioWaveform extends StatefulWidget {
+  const LiveAudioWaveform({
+    super.key,
+    required this.active,
+    required this.level,
+    required this.color,
+    this.width = 84,
+    this.height = 20,
+    this.samples = 28,
+  });
 
-            final bool active;
-            final double level;
-            final Color color;
-            final double width;
-            final double height;
-            final int samples;
+  final bool active;
+  final double level;
+  final Color color;
+  final double width;
+  final double height;
+  final int samples;
 
-            @override
-            State<LiveAudioWaveform> createState() => _LiveAudioWaveformState();
-          }
+  @override
+  State<LiveAudioWaveform> createState() => _LiveAudioWaveformState();
+}
 
-          class _LiveAudioWaveformState extends State<LiveAudioWaveform> {
-            Timer? _timer;
-            late List<double> _history;
-            double _phase = 0;
+class _LiveAudioWaveformState extends State<LiveAudioWaveform> {
+  Timer? _timer;
+  late List<double> _history;
+  double _phase = 0;
 
-            @override
-            void initState() {
-              super.initState();
-              _history = List<double>.filled(math.max(8, widget.samples), .05);
-              _syncTimer();
-            }
+  @override
+  void initState() {
+    super.initState();
+    _history = List<double>.filled(math.max(8, widget.samples), .05);
+    _sync();
+  }
 
-            @override
-            void didUpdateWidget(covariant LiveAudioWaveform oldWidget) {
-              super.didUpdateWidget(oldWidget);
-              if (oldWidget.samples != widget.samples) {
-                final count = math.max(8, widget.samples);
-                final next = List<double>.filled(count, .05);
-                final copy = math.min(count, _history.length);
-                for (var i = 0; i < copy; i++) {
-                  next[count - copy + i] = _history[_history.length - copy + i];
-                }
-                _history = next;
-              }
-              if (oldWidget.active != widget.active) _syncTimer();
-            }
+  @override
+  void didUpdateWidget(covariant LiveAudioWaveform oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.samples != widget.samples) {
+      _history = List<double>.filled(math.max(8, widget.samples), .05);
+    }
+    if (oldWidget.active != widget.active) _sync();
+  }
 
-            void _syncTimer() {
-              _timer?.cancel();
-              _timer = null;
-              if (!widget.active) return;
-              _timer = Timer.periodic(const Duration(milliseconds: 72), (_) => _tick());
-            }
+  void _sync() {
+    _timer?.cancel();
+    _timer = null;
+    if (!widget.active) return;
+    _timer = Timer.periodic(const Duration(milliseconds: 70), (_) {
+      if (!mounted || !widget.active) return;
+      _phase += .67;
+      final live = widget.level.clamp(0.0, 1.0).toDouble();
+      final idle = .06 + ((math.sin(_phase) + 1) * .035);
+      final texture = .72 + ((math.sin(_phase * 1.73) + 1) * .14);
+      final next = (math.max(live, idle) * texture).clamp(.04, 1.0).toDouble();
+      setState(() => _history = [..._history.skip(1), next]);
+    });
+  }
 
-            void _tick() {
-              if (!mounted || !widget.active) return;
-              _phase += .62;
-              final live = widget.level.clamp(0.0, 1.0).toDouble();
-              final quietMotion = .07 + (((math.sin(_phase) + 1) / 2) * .07);
-              final texture = .78 + (((math.sin(_phase * 1.67) + 1) / 2) * .22);
-              final newest = (math.max(live, quietMotion) * texture)
-                  .clamp(.04, 1.0)
-                  .toDouble();
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
-              setState(() {
-                _history.removeAt(0);
-                _history.add(newest);
-              });
-            }
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: CustomPaint(
+        painter: _WavePainter(samples: _history, color: widget.color),
+      ),
+    );
+  }
+}
 
-            @override
-            void dispose() {
-              _timer?.cancel();
-              super.dispose();
-            }
+class _WavePainter extends CustomPainter {
+  const _WavePainter({required this.samples, required this.color});
+  final List<double> samples;
+  final Color color;
 
-            @override
-            Widget build(BuildContext context) {
-              return SizedBox(
-                width: widget.width,
-                height: widget.height,
-                child: CustomPaint(
-                  painter: _WaveformPainter(
-                    samples: _history,
-                    color: widget.color,
-                    active: widget.active,
-                  ),
-                ),
-              );
-            }
-          }
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (samples.isEmpty) return;
+    final step = size.width / samples.length;
+    final barWidth = math.max(1.25, math.min(2.4, step * .52));
+    final center = size.height / 2;
+    final paint = Paint();
+    for (var i = 0; i < samples.length; i++) {
+      final p = Curves.easeOutCubic.transform(samples[i].clamp(0.0, 1.0));
+      final h = 3 + ((size.height - 3) * p);
+      final alpha = (90 + (165 * (i / math.max(1, samples.length - 1)))).round();
+      paint.color = color.withAlpha(alpha.clamp(0, 255));
+      final rect = Rect.fromCenter(
+        center: Offset((i + .5) * step, center),
+        width: barWidth,
+        height: h,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, Radius.circular(barWidth)),
+        paint,
+      );
+    }
+  }
 
-          class _WaveformPainter extends CustomPainter {
-            const _WaveformPainter({
-              required this.samples,
-              required this.color,
-              required this.active,
-            });
+  @override
+  bool shouldRepaint(covariant _WavePainter oldDelegate) => true;
+}
+""", encoding='utf-8')
 
-            final List<double> samples;
-            final Color color;
-            final bool active;
+          def add_import(text, anchor, addition, name):
+            if addition in text:
+              return text
+            if anchor not in text:
+              raise SystemExit(f'Missing import anchor in {name}')
+            return text.replace(anchor, anchor + addition, 1)
 
-            @override
-            void paint(Canvas canvas, Size size) {
-              if (samples.isEmpty || size.width <= 0 || size.height <= 0) return;
+          # Dashboard AI bar: transcription/waveform stays in the field, mic is
+          # on the right, and Enter arrow remains at the far right.
+          path = root / 'lib/src/core/widgets/glow_search_bar.dart'
+          text = path.read_text(encoding='utf-8')
+          text = add_import(
+            text,
+            "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n",
+            "import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';\n",
+            'glow_search_bar.dart',
+          )
+          text = add_import(
+            text,
+            "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n",
+            "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n",
+            'glow_search_bar.dart',
+          )
 
-              final gap = size.width / samples.length;
-              final barWidth = math.max(1.35, math.min(2.8, gap * .54));
-              final centerY = size.height / 2;
-              final maxBarHeight = math.max(4.0, size.height - 2);
-              final paint = Paint()..style = PaintingStyle.fill;
-
-              for (var i = 0; i < samples.length; i++) {
-                final sample = samples[i].clamp(0.0, 1.0).toDouble();
-                final eased = Curves.easeOutCubic.transform(sample);
-                final barHeight = 3.0 + ((maxBarHeight - 3.0) * eased);
-                final x = (i + .5) * gap;
-                final progress = samples.length <= 1 ? 1.0 : i / (samples.length - 1);
-                final alpha = active ? (105 + (145 * progress)).round() : 65;
-                paint.color = color.withAlpha(alpha.clamp(0, 255));
-                final rect = Rect.fromCenter(
-                  center: Offset(x, centerY),
-                  width: barWidth,
-                  height: barHeight,
-                );
-                canvas.drawRRect(
-                  RRect.fromRectAndRadius(rect, Radius.circular(barWidth)),
-                  paint,
-                );
-              }
-            }
-
-            @override
-            bool shouldRepaint(covariant _WaveformPainter oldDelegate) =>
-                oldDelegate.active != active ||
-                oldDelegate.color != color ||
-                oldDelegate.samples != samples;
-          }
-          '''.replace('\n          ', '\n').lstrip(), encoding='utf-8')
-
-          def add_import(text: str, anchor: str, addition: str, label: str) -> str:
-              if addition in text:
-                  return text
-              if anchor not in text:
-                  raise SystemExit(f'Missing import anchor in {label}: {anchor}')
-              return text.replace(anchor, anchor + addition, 1)
-
-          glow_path = root / 'lib/src/core/widgets/glow_search_bar.dart'
-          glow = glow_path.read_text(encoding='utf-8')
-          glow = add_import(glow, "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n", "import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';\n", 'glow_search_bar.dart')
-          glow = add_import(glow, "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n", "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n", 'glow_search_bar.dart')
-
-          old_start = glow.find('  Widget _voiceBars(Color color) {')
-          old_end = glow.find('  Widget _animatedPrompt(', old_start)
+          old_start = text.find('  Widget _voiceBars(Color color) {')
+          old_end = text.find('  Widget _animatedPrompt(', old_start)
           if old_start >= 0 and old_end > old_start:
-              glow = glow[:old_start] + glow[old_end:]
+            text = text[:old_start] + text[old_end:]
 
-          prefix_start = glow.find('                            prefixIcon: _voiceActive')
-          prefix_end = glow.find('                            hintStyle:', prefix_start)
+          prefix_start = text.find('                            prefixIcon: _voiceActive')
+          prefix_end = text.find('                            hintStyle:', prefix_start)
           if prefix_start < 0 or prefix_end < 0:
-              raise SystemExit('Could not find dashboard voice prefix block')
-          glow_prefix = '''                            prefixIcon: _voiceActive
-                                ? Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Center(
-                                      child: LiveAudioWaveform(
-                                        active: _voiceActive,
-                                        level: _voiceLevel,
-                                        color: blue,
-                                        width: 92,
-                                        height: 20,
-                                        samples: 30,
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                            prefixIconConstraints: _voiceActive
-                                ? const BoxConstraints(minWidth: 104, minHeight: 38)
-                                : null,
-                            hintText: _voiceActive ? 'Listening…' : null,
-'''
-          glow = glow[:prefix_start] + glow_prefix + glow[prefix_end:]
+            raise SystemExit('Dashboard voice prefix block not found')
+          text = text[:prefix_start] + "                            hintText: _voiceActive ? 'Listening…' : null,\n" + text[prefix_end:]
 
-          sem_anchor = glow.find("label: _voiceActive\n                                        ? 'Stop recording'")
-          if sem_anchor < 0:
-              raise SystemExit('Could not find dashboard mic semantics block')
-          sem_start = glow.rfind('                                Semantics(', 0, sem_anchor)
-          sem_end = glow.find('                                IconButton(', sem_anchor)
+          sem_anchor = text.find("label: _voiceActive\n                                        ? 'Stop recording'")
+          sem_start = text.rfind('                                Semantics(', 0, sem_anchor)
+          sem_end = text.find('                                IconButton(', sem_anchor)
           if sem_start < 0 or sem_end < 0:
-              raise SystemExit('Could not isolate dashboard mic button')
-          glow_mic = '''                                Semantics(
+            raise SystemExit('Dashboard mic control not found')
+
+          right_controls = """                                if (_voiceActive) ...[
+                                  LiveAudioWaveform(
+                                    active: true,
+                                    level: _voiceLevel,
+                                    color: blue,
+                                    width: 72,
+                                    height: 20,
+                                    samples: 24,
+                                  ),
+                                  const SizedBox(width: 5),
+                                ],
+                                Semantics(
                                   button: true,
                                   label: _voiceActive ? 'Stop recording' : 'Start voice search',
                                   child: GestureDetector(
@@ -243,96 +206,87 @@ jobs:
                                       decoration: BoxDecoration(
                                         color: _voiceActive ? blue : blue.withAlpha(isLight ? 18 : 34),
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: _voiceActive ? blue : blue.withAlpha(90)),
+                                        border: Border.all(
+                                          color: _voiceActive ? blue : blue.withAlpha(90),
+                                        ),
                                         boxShadow: _voiceActive
-                                            ? [BoxShadow(color: blue.withAlpha(55), blurRadius: 12 + (_voiceLevel * 8), spreadRadius: _voiceLevel * 1.5)]
+                                            ? [
+                                                BoxShadow(
+                                                  color: blue.withAlpha(55),
+                                                  blurRadius: 12 + (_voiceLevel * 8),
+                                                  spreadRadius: _voiceLevel * 1.4,
+                                                ),
+                                              ]
                                             : null,
                                       ),
                                       alignment: Alignment.center,
                                       child: _voiceActive
                                           ? BreathingWidget(
-                                              duration: const Duration(milliseconds: 1120),
-                                              minOpacity: .58,
+                                              duration: const Duration(milliseconds: 1100),
+                                              minOpacity: .55,
                                               maxOpacity: 1,
-                                              child: const Icon(Icons.mic_rounded, color: Colors.white, size: 18),
+                                              child: const Icon(
+                                                Icons.mic_rounded,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
                                             )
-                                          : Icon(Icons.mic_rounded, color: blue, size: 18),
+                                          : Icon(
+                                              Icons.mic_rounded,
+                                              color: blue,
+                                              size: 18,
+                                            ),
                                     ),
                                   ),
                                 ),
-'''
-          glow = glow[:sem_start] + glow_mic + glow[sem_end:]
-          glow = glow.replace('Recording · waveform is live · tap Stop to transcribe', 'Listening · waveform moves with your voice · tap mic to stop')
-          glow_path.write_text(glow, encoding='utf-8')
+"""
+          text = text[:sem_start] + right_controls + text[sem_end:]
+          text = text.replace(
+            'Recording · waveform is live · tap Stop to transcribe',
+            'Listening · live voice · tap mic to stop',
+          )
+          path.write_text(text, encoding='utf-8')
 
-          intel_path = root / 'lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart'
-          intel = intel_path.read_text(encoding='utf-8')
-          intel = add_import(intel, "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n", "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n", 'intel_core_sheet.dart')
-
-          tap_anchor = intel.find('                        onTap: _toggleVoice,')
-          if tap_anchor < 0:
-              raise SystemExit('Could not find Intel Core microphone')
-          mic_start = intel.rfind('                      GestureDetector(\n', 0, tap_anchor)
-          spacing = '                      const SizedBox(width: 6),\n'
-          spacing_start = intel.find(spacing, tap_anchor)
-          if mic_start < 0 or spacing_start < 0:
-              raise SystemExit('Could not isolate Intel Core microphone block')
-          mic_end = spacing_start + len(spacing)
-          intel_mic = '''                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _toggleVoice,
-                        child: AnimatedScale(
-                          duration: const Duration(milliseconds: 110),
-                          scale: _recording ? voiceScale : 1,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: voiceActive ? _aiBlue.withAlpha(isLight ? 28 : 48) : Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: voiceActive ? _aiBlueSoft.withAlpha(150) : Colors.transparent),
-                              boxShadow: _recording
-                                  ? [BoxShadow(color: _aiCyan.withAlpha(60), blurRadius: 12 + (_voiceLevel * 14), spreadRadius: _voiceLevel * 2)]
-                                  : null,
-                            ),
-                            alignment: Alignment.center,
-                            child: _recording
-                                ? BreathingWidget(
-                                    duration: const Duration(milliseconds: 1080),
-                                    minOpacity: .55,
-                                    maxOpacity: 1,
-                                    child: Icon(Icons.mic_rounded, color: isLight ? _aiBlue : _aiBlueSoft, size: 19),
-                                  )
-                                : Icon(Icons.mic_none_rounded, color: isLight ? _aiBlue : _aiBlueSoft, size: 19),
-                          ),
-                        ),
-                      ),
-                      if (voiceActive) ...[
+          # Intel Core: add the same real waveform beside its mic.
+          path = root / 'lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart'
+          text = path.read_text(encoding='utf-8')
+          text = add_import(
+            text,
+            "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n",
+            "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n",
+            'intel_core_sheet.dart',
+          )
+          marker = "                      const SizedBox(width: 6),\n                      Expanded(\n                        child: TextField("
+          if marker in text and 'LiveAudioWaveform(\n                          active: _recording' not in text:
+            replacement = """                      if (voiceActive) ...[
                         const SizedBox(width: 4),
                         LiveAudioWaveform(
                           active: _recording,
                           level: _voiceLevel,
                           color: isLight ? _aiBlue : _aiBlueSoft,
-                          width: 92,
+                          width: 88,
                           height: 22,
-                          samples: 30,
+                          samples: 28,
                         ),
                         const SizedBox(width: 8),
                       ] else
                         const SizedBox(width: 6),
-'''
-          intel = intel[:mic_start] + intel_mic + intel[mic_end:]
-          intel_path.write_text(intel, encoding='utf-8')
-          print('Patched live voice waveform UI successfully.')
+                      Expanded(
+                        child: TextField("""
+            text = text.replace(marker, replacement, 1)
+          text = text.replace(
+            "_recording\n                                            ? Icons.graphic_eq_rounded\n                                            : Icons.mic_none_rounded",
+            'Icons.mic_rounded',
+          )
+          path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Commit waveform fix to main
+      - name: Commit to main
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add lib/src/features/ai/presentation/widgets/live_audio_waveform.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
           git diff --cached --check
-          git commit -m "fix(voice): add real scrolling waveform to AI inputs"
+          git commit -m "fix(voice): real waveform with right-side mic"
           git push origin HEAD:main
