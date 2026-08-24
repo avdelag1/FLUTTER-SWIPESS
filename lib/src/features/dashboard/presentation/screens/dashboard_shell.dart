@@ -23,6 +23,7 @@ import 'package:flutter_swipes/src/features/events/presentation/screens/events_s
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/session/domain/app_market_context.dart';
 import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
@@ -272,9 +273,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                         final subscription = ref
                             .watch(subscriptionProvider)
                             .value;
-                        final session = ref.watch(appSessionProvider).value;
+                        final market = ref.watch(appMarketProvider).value;
                         final dockItems = defaultDashboardNavItems
-                            .where((item) => _dockFeatureEnabled(session, item.id))
+                            .where((item) => _dockFeatureEnabled(market, item.id))
                             .toList(growable: false);
                         return DashboardDock(
                           items: dockItems,
@@ -284,9 +285,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
                             final feature = _featureForTab(id);
                             if (feature != null &&
-                                session != null &&
-                                (!session.territoryOpen ||
-                                    !session.featureEnabled(feature))) {
+                                market != null &&
+                                (!market.effectiveOpen ||
+                                    !market.featureEnabled(feature))) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -403,8 +404,8 @@ String? _featureForTab(NavTab tab) => switch (tab) {
       _ => null,
     };
 
-bool _dockFeatureEnabled(dynamic session, NavTab tab) {
+bool _dockFeatureEnabled(AppMarketContext? market, NavTab tab) {
   final feature = _featureForTab(tab);
-  if (feature == null || session == null) return true;
-  return session.territoryOpen == true && session.featureEnabled(feature) == true;
+  if (feature == null || market == null) return true;
+  return market.effectiveOpen && market.featureEnabled(feature);
 }
