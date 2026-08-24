@@ -180,6 +180,151 @@
   </script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
 
+  <script>
+    // ── SwipessSpeech bridge ─────────────────────────────────────────────────
+    // Speech recognition events are pushed into window.SwipessSpeechQueue.
+    // Dart polls this array every 80ms — no allowInterop closures needed.
+    (function () {
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      var recognition = null;
+      var active = false;
+      var intentionalStop = false;
+      var finalText = '';
+      var restartTimer = null;
+
+      // Shared event queue. Dart drains this via polling.
+      window.SwipessSpeechQueue = [];
+
+      function push(type, payload) {
+        window.SwipessSpeechQueue.push({ type: type, payload: payload || '' });
+      }
+
+      function join(a, b) {
+        a = (a || '').trim();
+        b = (b || '').trim();
+        if (!a) return b;
+        if (!b) return a;
+        return a + ' ' + b;
+      }
+
+      function startRecognition() {
+        if (!active || intentionalStop || !SR) return;
+        try {
+          recognition = new SR();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.maxAlternatives = 1;
+          try { recognition.lang = navigator.language || 'en-US'; } catch(e){}
+
+          recognition.onstart = function () {
+            if (!active || intentionalStop) return;
+            push('listening', 'true');
+          };
+
+          recognition.onspeechstart = function () {
+            if (!active || intentionalStop) return;
+            push('listening', 'true');
+          };
+
+          recognition.onresult = function (event) {
+            if (!active || intentionalStop) return;
+            try {
+              var interim = '';
+              var results = event.results;
+              var idx = event.resultIndex || 0;
+              for (var i = idx; i < results.length; i++) {
+                var r = results[i];
+                var t = (r[0] && r[0].transcript) ? r[0].transcript.trim() : '';
+                if (!t) continue;
+                if (r.isFinal) {
+                  finalText = join(finalText, t);
+                } else {
+                  interim = join(interim, t);
+                }
+              }
+              var live = join(finalText, interim);
+              if (live) push('text', live);
+            } catch (e) {}
+          };
+
+          recognition.onerror = function (event) {
+            if (!active || intentionalStop) return;
+            var code = (event.error || '').toLowerCase();
+            if (code.indexOf('not-allowed') >= 0 || code.indexOf('permission') >= 0) {
+              active = false;
+              intentionalStop = true;
+              push('listening', 'false');
+              push('error', 'Microphone permission is blocked. Allow microphone access and try again.');
+              return;
+            }
+            if (code.indexOf('audio-capture') >= 0) {
+              push('error', 'Chrome could not access a microphone on this device.');
+              return;
+            }
+            // no-speech is normal — recognition auto-restarts via onend
+          };
+
+          recognition.onend = function () {
+            if (!active || intentionalStop) {
+              push('listening', 'false');
+              return;
+            }
+            // Chrome closes sessions every ~60s. Restart invisibly.
+            clearTimeout(restartTimer);
+            restartTimer = setTimeout(function () {
+              if (active && !intentionalStop) startRecognition();
+            }, 100);
+          };
+
+          recognition.start();
+        } catch (e) {
+          active = false;
+          push('listening', 'false');
+          push('error', 'Speech recognition failed to start: ' + e);
+        }
+      }
+
+      window.SwipessSpeech = {
+        isSupported: function () {
+          return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+        },
+        start: function () {
+          if (!SR) {
+            push('error', 'Speech recognition not supported in this browser.');
+            return;
+          }
+          intentionalStop = false;
+          finalText = '';
+          window.SwipessSpeechQueue = [];
+          clearTimeout(restartTimer);
+          if (recognition) {
+            try { recognition.abort(); } catch(e) {}
+            recognition = null;
+          }
+          active = true;
+          startRecognition();
+        },
+        stop: function () {
+          intentionalStop = true;
+          active = false;
+          clearTimeout(restartTimer);
+          try { if (recognition) recognition.stop(); } catch(e) {}
+          recognition = null;
+          push('listening', 'false');
+        },
+        abort: function () {
+          intentionalStop = true;
+          active = false;
+          clearTimeout(restartTimer);
+          try { if (recognition) recognition.abort(); } catch(e) {}
+          recognition = null;
+          push('listening', 'false');
+        }
+      };
+    })();
+    // ── end SwipessSpeech bridge ─────────────────────────────────────────────
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

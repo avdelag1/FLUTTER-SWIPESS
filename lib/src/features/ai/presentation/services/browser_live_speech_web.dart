@@ -1,23 +1,43 @@
 import 'dart:async';
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:js' as js;
 
 import 'browser_live_speech_stub.dart';
 
+/// Web-only implementation of [BrowserLiveSpeech].
+///
+/// Uses the [window.SwipessSpeech] bridge defined in [web/index.html].
+/// The JS bridge enqueues events into [window.SwipessSpeechQueue] (a plain
+/// JS array). Dart polls that queue on a tight timer and dispatches events
+/// without needing any [allowInterop] closure — which is unreliable in
+/// Flutter Web release/minified builds.
 class BrowserLiveSpeech {
-  js.JsObject? _recognition;
   bool _active = false;
   bool _intentionalStop = false;
-  Timer? _restartTimer;
-  String _finalText = '';
+  Timer? _pollTimer;
 
   BrowserSpeechTextCallback? _onText;
   BrowserSpeechListeningCallback? _onListening;
   BrowserSpeechErrorCallback? _onError;
 
-  dynamic get _constructor =>
-      js.context['SpeechRecognition'] ?? js.context['webkitSpeechRecognition'];
+  static bool get _bridgeReady {
+    try {
+      return js.context['SwipessSpeech'] != null;
+    } catch (_) {
+      return false;
+    }
+  }
 
-  bool get isSupported => _constructor != null;
+  bool get isSupported {
+    if (!_bridgeReady) return false;
+    try {
+      final result = (js.context['SwipessSpeech'] as js.JsObject)
+          .callMethod('isSupported');
+      return result == true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<bool> start({
     required BrowserSpeechTextCallback onText,
@@ -30,161 +50,92 @@ class BrowserLiveSpeech {
     _onText = onText;
     _onListening = onListening;
     _onError = onError;
-    _finalText = '';
     _intentionalStop = false;
     _active = true;
 
-    return _startRecognition();
+    try {
+      (js.context['SwipessSpeech'] as js.JsObject).callMethod('start');
+    } catch (e) {
+      _active = false;
+      _onError?.call('Speech recognition failed to start.');
+      return false;
+    }
+
+    // Poll the JS event queue every 80ms.
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 80), _poll);
+    return true;
   }
 
-  bool _startRecognition() {
-    if (!_active || _intentionalStop || !isSupported) return false;
-
+  void _poll(Timer _) {
+    if (!_active || _intentionalStop) {
+      _pollTimer?.cancel();
+      return;
+    }
     try {
-      final recognition = js.JsObject(_constructor);
-      _recognition = recognition;
-      recognition['continuous'] = true;
-      recognition['interimResults'] = true;
-      recognition['maxAlternatives'] = 1;
+      final queue = js.context['SwipessSpeechQueue'];
+      if (queue == null) return;
+      final jsQueue = queue as js.JsArray<dynamic>;
+      // Drain all pending events.
+      while (jsQueue.isNotEmpty) {
+        final event = jsQueue.callMethod('shift') as js.JsObject?;
+        if (event == null) continue;
+        final type = event['type']?.toString() ?? '';
+        final payload = event['payload']?.toString() ?? '';
+        _dispatch(type, payload);
+      }
+    } catch (_) {}
+  }
 
-      try {
-        final navigator = js.context['navigator'] as js.JsObject?;
-        final language = navigator?['language']?.toString();
-        if (language != null && language.isNotEmpty) {
-          recognition['lang'] = language;
+  void _dispatch(String type, String payload) {
+    if (_intentionalStop) return;
+    switch (type) {
+      case 'text':
+        if (payload.trim().isNotEmpty) {
+          _onText?.call(payload.trim(), false);
         }
-      } catch (_) {}
-
-      recognition['onstart'] = js.allowInterop((dynamic _) {
-        if (!_active || _intentionalStop) return;
-        _onListening?.call(true);
-      });
-
-      recognition['onspeechstart'] = js.allowInterop((dynamic _) {
-        if (!_active || _intentionalStop) return;
-        _onListening?.call(true);
-      });
-
-      recognition['onresult'] = js.allowInterop((dynamic rawEvent) {
-        if (!_active || _intentionalStop) return;
-        try {
-          final event = rawEvent as js.JsObject;
-          final results = event['results'] as js.JsObject?;
-          if (results == null) return;
-          final resultIndex = (event['resultIndex'] as num?)?.toInt() ?? 0;
-          final length = (results['length'] as num?)?.toInt() ?? 0;
-
-          var interim = '';
-          var receivedFinal = false;
-          for (var i = resultIndex; i < length; i++) {
-            final result = results[i] as js.JsObject?;
-            if (result == null) continue;
-            final alternative = result[0] as js.JsObject?;
-            final transcript = alternative?['transcript']?.toString().trim() ?? '';
-            if (transcript.isEmpty) continue;
-            final isFinal = result['isFinal'] == true;
-            if (isFinal) {
-              _finalText = _join(_finalText, transcript);
-              receivedFinal = true;
-            } else {
-              interim = _join(interim, transcript);
-            }
-          }
-
-          final live = _join(_finalText, interim);
-          if (live.isNotEmpty) {
-            _onText?.call(live, receivedFinal && interim.isEmpty);
-          }
-        } catch (_) {}
-      });
-
-      recognition['onerror'] = js.allowInterop((dynamic rawEvent) {
-        if (!_active || _intentionalStop) return;
-        String code = '';
-        try {
-          code = (rawEvent as js.JsObject)['error']?.toString() ?? '';
-        } catch (_) {}
-        final lower = code.toLowerCase();
-
-        if (lower.contains('not-allowed') ||
-            lower.contains('service-not-allowed') ||
-            lower.contains('permission')) {
-          _active = false;
-          _intentionalStop = true;
-          _onListening?.call(false);
-          _onError?.call(
-            'Microphone permission is blocked. Allow microphone access in Chrome and try again.',
-          );
-          return;
-        }
-
-        if (lower.contains('audio-capture')) {
-          _onError?.call('Chrome could not access a microphone on this device.');
-          return;
-        }
-
-        if (lower.isNotEmpty && !lower.contains('no-speech')) {
-          _onError?.call('Voice recognition stopped. Please try again.');
-        }
-      });
-
-      recognition['onend'] = js.allowInterop((dynamic _) {
-        if (!_active || _intentionalStop) {
-          _onListening?.call(false);
-          return;
-        }
-
-        // Chrome periodically closes long recognition sessions. Restart the
-        // same invisible native recognizer without changing the Flutter UI.
-        _restartTimer?.cancel();
-        _restartTimer = Timer(const Duration(milliseconds: 140), () {
-          if (_active && !_intentionalStop) {
-            _startRecognition();
-          }
-        });
-      });
-
-      recognition.callMethod('start');
-      return true;
-    } catch (_) {
-      _active = false;
-      _onListening?.call(false);
-      return false;
+      case 'listening':
+        _onListening?.call(payload == 'true');
+      case 'error':
+        _onError?.call(payload);
     }
   }
 
   Future<void> stop() async {
-    if (!_active && _recognition == null) return;
     _intentionalStop = true;
     _active = false;
-    _restartTimer?.cancel();
-    _restartTimer = null;
+    _pollTimer?.cancel();
+    _pollTimer = null;
     try {
-      _recognition?.callMethod('stop');
-      // Give Chrome a brief chance to publish its last partial/final result.
-      await Future<void>.delayed(const Duration(milliseconds: 140));
+      if (_bridgeReady) {
+        (js.context['SwipessSpeech'] as js.JsObject).callMethod('stop');
+      }
     } catch (_) {}
     _onListening?.call(false);
-    _recognition = null;
+    _clear();
   }
 
   Future<void> cancel() async {
     _intentionalStop = true;
     _active = false;
-    _restartTimer?.cancel();
-    _restartTimer = null;
+    _pollTimer?.cancel();
+    _pollTimer = null;
     try {
-      _recognition?.callMethod('abort');
+      if (_bridgeReady) {
+        (js.context['SwipessSpeech'] as js.JsObject).callMethod('abort');
+      }
     } catch (_) {}
     _onListening?.call(false);
-    _recognition = null;
+    _clear();
   }
 
-  static String _join(String left, String right) {
-    final a = left.trim();
-    final b = right.trim();
-    if (a.isEmpty) return b;
-    if (b.isEmpty) return a;
-    return '$a $b';
+  void _clear() {
+    _onText = null;
+    _onListening = null;
+    _onError = null;
+    // Drain stale queue so a new session starts clean.
+    try {
+      (js.context['SwipessSpeechQueue'] as js.JsArray?)?.callMethod('splice', [0]);
+    } catch (_) {}
   }
 }
