@@ -9,9 +9,10 @@ enum ListenMode { dictation, search, confirmation }
 
 /// One shared microphone coordinator for every SWIPESS AI entry point.
 ///
-/// Web/Chrome and native clients share the same recorder/transcription flow so
-/// dashboard voice and Intel Core behave identically. The microphone amplitude
-/// stream also drives the visible waveform and the hands-free silence timer.
+/// Chrome/web uses the browser speech recognizer for immediate words while a
+/// MediaRecorder session supplies the live waveform. Native clients keep using
+/// the recorder + transcription fallback. Both paths share the same 4-second
+/// silence contract before the caller renders 3 -> 2 -> 1 and auto-sends.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
@@ -32,12 +33,10 @@ class LiveVoiceInput {
   Object? _owner;
 
   String _committed = '';
-  String _sessionWords = '';
   String _lastPublished = '';
 
   Timer? _silenceFinalizeTimer;
   Timer? _browserSilenceTimer;
-  Timer? _browserPulseTimer;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   bool _segmentHasSpeech = false;
   bool _finalizing = false;
@@ -49,15 +48,9 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  /// Hands-free flow: four seconds of actual silence, then callers render
-  /// their existing 3 -> 2 -> 1 countdown and submit automatically.
   static const silenceBeforeCountdown = Duration(seconds: 4);
-
-  /// `record` reports dBFS. The previous -45 dB gate was sensitive enough for
-  /// room noise / laptop fans to continuously reset the silence timer. -36 dB
-  /// still catches normal close-range speech while allowing real silence to
-  /// complete the four-second timer reliably.
-  static const double _speechGateDb = -36.0;
+  static const double _nativeSpeechGateDb = -36.0;
+  static const double _webSpeechGateDb = -30.0;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -97,8 +90,7 @@ class LiveVoiceInput {
     if (_active && !identical(_owner, owner)) {
       await cancel();
     } else if (_active && identical(_owner, owner)) {
-      if (_usingBrowser) return true;
-      return _nativeVoice.isRecording();
+      return true;
     }
 
     _owner = owner;
@@ -109,14 +101,57 @@ class LiveVoiceInput {
     _onError = onError;
     _listenMode = listenMode;
     _committed = initialText.trim();
-    _sessionWords = '';
     _lastPublished = _committed;
     _intentionalStop = false;
+    _segmentHasSpeech = false;
 
     if (_starting) return false;
     _starting = true;
 
     try {
+      // On Chrome/web use SpeechRecognition for instant words. Keep the record
+      // plugin running only as a waveform source when available.
+      if (kIsWeb && _browser.isSupported) {
+        _active = true;
+        _usingBrowser = true;
+        final browserStarted = await _browser.start(
+          onText: (speech, _) {
+            if (!_active || _intentionalStop || !_usingBrowser) return;
+            final clean = speech.trim();
+            if (clean.isEmpty) return;
+            _segmentHasSpeech = true;
+            final total = _join(_committed, clean);
+            if (total != _lastPublished) {
+              _lastPublished = total;
+              _onText?.call(total);
+            }
+            _armBrowserSilence();
+          },
+          onListening: (listening) {
+            if (!_active || _intentionalStop) return;
+            _publishListening(listening);
+          },
+          onError: (message) {
+            if (!_active || _intentionalStop) return;
+            _onError?.call(message);
+          },
+        );
+
+        if (browserStarted) {
+          try {
+            final recorderStarted = await _nativeVoice.start();
+            if (recorderStarted) _listenToAmplitude();
+          } catch (_) {
+            // Browser transcription still works even if waveform capture fails.
+          }
+          _publishListening(true);
+          return true;
+        }
+
+        _active = false;
+        _usingBrowser = false;
+      }
+
       final started = await _nativeVoice.start();
       if (!started) {
         _onError?.call(
@@ -127,6 +162,7 @@ class LiveVoiceInput {
       }
 
       _active = true;
+      _usingBrowser = false;
       _segmentHasSpeech = false;
       _listenToAmplitude();
       _publishListening(true);
@@ -142,22 +178,40 @@ class LiveVoiceInput {
     }
   }
 
+  void _armBrowserSilence() {
+    if (!_active || !_usingBrowser || !_segmentHasSpeech) return;
+    _browserSilenceTimer?.cancel();
+    _browserSilenceTimer = Timer(silenceBeforeCountdown, () {
+      _browserSilenceTimer = null;
+      if (!_active || _intentionalStop || !_usingBrowser || !_segmentHasSpeech) {
+        return;
+      }
+      _onSilence?.call();
+    });
+  }
+
   void _listenToAmplitude() {
     unawaited(_amplitudeSubscription?.cancel());
     _amplitudeSubscription = _nativeVoice
-        .amplitudeStream(interval: const Duration(milliseconds: 90))
+        .amplitudeStream(interval: const Duration(milliseconds: 80))
         .listen(
           (amplitude) {
-            if (!_active || _intentionalStop || _finalizing || _usingBrowser) {
-              return;
-            }
+            if (!_active || _intentionalStop || _finalizing) return;
 
             final level = amplitude.current.isFinite
                 ? amplitude.current
                 : -60.0;
             _publishSoundLevel(level);
 
-            if (level > _speechGateDb) {
+            if (_usingBrowser) {
+              if (level > _webSpeechGateDb) {
+                _segmentHasSpeech = true;
+                _armBrowserSilence();
+              }
+              return;
+            }
+
+            if (level > _nativeSpeechGateDb) {
               _segmentHasSpeech = true;
               _silenceFinalizeTimer?.cancel();
               _silenceFinalizeTimer = Timer(
@@ -215,7 +269,6 @@ class LiveVoiceInput {
 
     if (text.isNotEmpty) {
       final total = _join(_committed, text);
-      _sessionWords = text;
       _lastPublished = total;
       _committed = total;
       _onText?.call(total);
@@ -225,8 +278,6 @@ class LiveVoiceInput {
 
     if (!_active || _intentionalStop) return;
 
-    // Trigger the UI countdown only after this spoken segment is finalized, so
-    // the text is already available when 3 -> 2 -> 1 reaches auto-send.
     if (triggerSilence && shouldTranscribe) {
       _onSilence?.call();
     }
@@ -249,19 +300,16 @@ class LiveVoiceInput {
     _intentionalStop = true;
     _active = false;
     _browserSilenceTimer?.cancel();
-    _browserPulseTimer?.cancel();
     _silenceFinalizeTimer?.cancel();
+    _browserSilenceTimer = null;
     _silenceFinalizeTimer = null;
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
     _publishSoundLevel(0);
 
     try {
-      if (_usingBrowser) {
-        await _browser.cancel();
-      } else if (_voice != null) {
-        await _nativeVoice.cancel();
-      }
+      if (_usingBrowser) await _browser.cancel();
+      if (_voice != null) await _nativeVoice.cancel();
     } catch (_) {}
 
     _publishListening(false);
@@ -274,11 +322,16 @@ class LiveVoiceInput {
 
     _intentionalStop = true;
     _browserSilenceTimer?.cancel();
-    _browserPulseTimer?.cancel();
+    _silenceFinalizeTimer?.cancel();
+    await _amplitudeSubscription?.cancel();
+    _amplitudeSubscription = null;
 
     if (_usingBrowser) {
       try {
         await _browser.stop();
+      } catch (_) {}
+      try {
+        if (_voice != null) await _nativeVoice.cancel();
       } catch (_) {}
       _active = false;
       _publishSoundLevel(0);
@@ -300,10 +353,8 @@ class LiveVoiceInput {
 
   void _clearSession({required bool keepOwner}) {
     _browserSilenceTimer?.cancel();
-    _browserPulseTimer?.cancel();
     _silenceFinalizeTimer?.cancel();
     _browserSilenceTimer = null;
-    _browserPulseTimer = null;
     _silenceFinalizeTimer = null;
     _active = false;
     _starting = false;
@@ -312,7 +363,6 @@ class LiveVoiceInput {
     _segmentHasSpeech = false;
     _finalizing = false;
     if (!keepOwner) _owner = null;
-    _sessionWords = '';
     _lastPublished = '';
     _committed = '';
     _onText = null;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';
 
@@ -150,9 +151,63 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                   child: widget.child,
                                 ),
                               ),
-                              // Keep the live waveform on the right side of the
-                              // Intel composer. The previous left-side overlay
-                              // sat directly on top of the `Listening…` text.
+                              // Intel Core keeps a visible breathing microphone
+                              // while recording instead of swapping it for EQ or
+                              // making the control appear to disappear.
+                              Positioned(
+                                left: 23,
+                                bottom: m.padding.bottom + 22,
+                                child: IgnorePointer(
+                                  child: ValueListenableBuilder<bool>(
+                                    valueListenable: voice.listeningNotifier,
+                                    builder: (context, listening, _) {
+                                      if (!listening) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return ValueListenableBuilder<double>(
+                                        valueListenable: voice.levelNotifier,
+                                        builder: (context, level, _) {
+                                          return BreathingWidget(
+                                            duration: const Duration(
+                                              milliseconds: 1100,
+                                            ),
+                                            minOpacity: .55,
+                                            maxOpacity: 1,
+                                            child: Container(
+                                              width: 38,
+                                              height: 38,
+                                              decoration: BoxDecoration(
+                                                color: waveformColor,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white.withAlpha(
+                                                    isLight ? 150 : 90,
+                                                  ),
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: waveformColor.withAlpha(
+                                                      70,
+                                                    ),
+                                                    blurRadius: 12 + (level * 12),
+                                                    spreadRadius: level * 2,
+                                                  ),
+                                                ],
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.mic_rounded,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
                               Positioned(
                                 right: 82,
                                 bottom: m.padding.bottom + 31,
