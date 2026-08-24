@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/role_control_center.dart';
 import 'package:flutter_swipes/src/features/business/domain/business_workspace.dart';
 import 'package:flutter_swipes/src/features/business/presentation/providers/business_workspace_provider.dart';
+import 'package:flutter_swipes/src/features/business/presentation/screens/business_member_scan_screen.dart';
 import 'package:intl/intl.dart';
 
 class PartnerBusinessDashboardScreen extends ConsumerWidget {
@@ -41,12 +42,6 @@ class PartnerBusinessDashboardScreen extends ConsumerWidget {
               'Live partner operations from the same SWIPESS backend used by the Business portal.',
           statusLabel: 'Business active',
           actions: const [
-            RoleDashboardAction(
-              title: 'Scan member',
-              subtitle: 'Validate Local ID, log visits and apply discounts',
-              icon: Icons.qr_code_scanner_rounded,
-              path: AppPaths.businessScan,
-            ),
             RoleDashboardAction(
               title: 'Messages',
               subtitle: 'Continue customer conversations',
@@ -91,6 +86,21 @@ class _BusinessLivePanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const BusinessMemberScanScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.qr_code_scanner_rounded),
+            label: const Text('SCAN SWIPESS MEMBER'),
+          ),
+        ),
+        const SizedBox(height: 18),
         _sectionLabel(context, 'LIVE OPERATIONS'),
         const SizedBox(height: 10),
         GridView.count(
