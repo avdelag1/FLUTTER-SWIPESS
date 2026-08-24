@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/role_control_center.dart';
 import 'package:flutter_swipes/src/features/legal/domain/lawyer_workspace.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/providers/lawyer_workspace_provider.dart';
+import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_intake_screen.dart';
 import 'package:intl/intl.dart';
 
 class LawyerDashboardScreen extends ConsumerWidget {
@@ -95,6 +96,25 @@ class _LawyerLivePanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const LawyerIntakeScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.inbox_rounded),
+            label: Text(
+              workspace.availableRequests > 0
+                  ? 'OPEN LEGAL INTAKE · ${workspace.availableRequests} NEW'
+                  : 'OPEN LEGAL INTAKE',
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -105,7 +125,10 @@ class _LawyerLivePanel extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Availability', style: TextStyle(fontWeight: FontWeight.w900)),
+                    Text(
+                      'Availability',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
                     SizedBox(height: 3),
                     Text(
                       'Controls whether clients can see you as available.',
@@ -129,7 +152,11 @@ class _LawyerLivePanel extends ConsumerWidget {
                     } catch (error) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Could not update availability: $error')),
+                        SnackBar(
+                          content: Text(
+                            'Could not update availability: $error',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -146,12 +173,28 @@ class _LawyerLivePanel extends ConsumerWidget {
           crossAxisSpacing: 10,
           childAspectRatio: 1.45,
           children: [
-            _Metric(label: 'Pending requests', value: '${workspace.pendingRequests}'),
+            _Metric(
+              label: 'Available intake',
+              value: '${workspace.availableRequests}',
+            ),
+            _Metric(
+              label: 'Pending requests',
+              value: '${workspace.pendingRequests}',
+            ),
             _Metric(label: 'Active clients', value: '${workspace.activeClients}'),
             _Metric(label: 'Open cases', value: '${workspace.openCases}'),
-            _Metric(label: 'Appointments', value: '${workspace.upcomingAppointments}'),
-            _Metric(label: 'Earned · 30d', value: money.format(workspace.grossEarned30d)),
-            _Metric(label: 'Commission · 30d', value: money.format(workspace.commission30d)),
+            _Metric(
+              label: 'Appointments',
+              value: '${workspace.upcomingAppointments}',
+            ),
+            _Metric(
+              label: 'Earned · 30d',
+              value: money.format(workspace.grossEarned30d),
+            ),
+            _Metric(
+              label: 'Commission · 30d',
+              value: money.format(workspace.commission30d),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -160,7 +203,8 @@ class _LawyerLivePanel extends ConsumerWidget {
           lines: [
             if (workspace.specialization != null)
               'Specialization · ${workspace.specialization}',
-            if (workspace.barNumber != null) 'Professional ID · ${workspace.barNumber}',
+            if (workspace.barNumber != null)
+              'Professional ID · ${workspace.barNumber}',
             'Commission rate · ${workspace.commissionRate.toStringAsFixed(1)}%',
             'Templates available · ${workspace.templatesAvailable}',
             'Service packages · ${workspace.servicePackagesAvailable}',
@@ -200,7 +244,9 @@ class _LawyerLivePanel extends ConsumerWidget {
         color: isLight ? Colors.white.withAlpha(225) : AppTheme.dashGlassStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isLight ? Colors.black.withAlpha(18) : Colors.white.withAlpha(30),
+          color: isLight
+              ? Colors.black.withAlpha(18)
+              : Colors.white.withAlpha(30),
         ),
       );
 }
@@ -311,19 +357,27 @@ class _LawyerState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               if (message != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   message!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
               if (onRetry != null) ...[
                 const SizedBox(height: 18),
-                FilledButton(onPressed: onRetry, child: const Text('Try again')),
+                FilledButton(
+                  onPressed: onRetry,
+                  child: const Text('Try again'),
+                ),
               ],
             ],
           ),
