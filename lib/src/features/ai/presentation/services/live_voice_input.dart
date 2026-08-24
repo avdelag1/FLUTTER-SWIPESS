@@ -9,10 +9,9 @@ enum ListenMode { dictation, search, confirmation }
 
 /// One shared microphone coordinator for every SWIPESS AI entry point.
 ///
-/// Web/Chrome uses the browser's native SpeechRecognition API so partial words
-/// can appear in the visible Flutter TextField while the user is still talking.
-/// It does not mount MediaRecorder/audio platform elements on web. Native apps
-/// keep the recorder + Supabase transcription path as the reliable fallback.
+/// Web/Chrome and native clients share the same recorder/transcription flow so
+/// dashboard voice and Intel Core behave identically. The microphone amplitude
+/// stream also drives the visible waveform and the hands-free silence timer.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
@@ -50,7 +49,15 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
+  /// Hands-free flow: four seconds of actual silence, then callers render
+  /// their existing 3 -> 2 -> 1 countdown and submit automatically.
   static const silenceBeforeCountdown = Duration(seconds: 4);
+
+  /// `record` reports dBFS. The previous -45 dB gate was sensitive enough for
+  /// room noise / laptop fans to continuously reset the silence timer. -36 dB
+  /// still catches normal close-range speech while allowing real silence to
+  /// complete the four-second timer reliably.
+  static const double _speechGateDb = -36.0;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -109,10 +116,6 @@ class LiveVoiceInput {
     if (_starting) return false;
     _starting = true;
 
-    // We use the native record package path for all platforms including Web.
-    // The previous gray overlay bug was caused by Flutter Web Tooltip
-    // rendering, not package:record. Using the native path restores
-    // real microphone amplitude visualization and accurate silence detection.
     try {
       final started = await _nativeVoice.start();
       if (!started) {
@@ -148,10 +151,13 @@ class LiveVoiceInput {
             if (!_active || _intentionalStop || _finalizing || _usingBrowser) {
               return;
             }
-            final level = amplitude.current.isFinite ? amplitude.current : -60.0;
+
+            final level = amplitude.current.isFinite
+                ? amplitude.current
+                : -60.0;
             _publishSoundLevel(level);
 
-            if (level > -45.0) {
+            if (level > _speechGateDb) {
               _segmentHasSpeech = true;
               _silenceFinalizeTimer?.cancel();
               _silenceFinalizeTimer = Timer(
@@ -219,6 +225,8 @@ class LiveVoiceInput {
 
     if (!_active || _intentionalStop) return;
 
+    // Trigger the UI countdown only after this spoken segment is finalized, so
+    // the text is already available when 3 -> 2 -> 1 reaches auto-send.
     if (triggerSilence && shouldTranscribe) {
       _onSilence?.call();
     }

@@ -150,8 +150,11 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                   child: widget.child,
                                 ),
                               ),
+                              // Keep the live waveform on the right side of the
+                              // Intel composer. The previous left-side overlay
+                              // sat directly on top of the `Listening…` text.
                               Positioned(
-                                left: 66,
+                                right: 82,
                                 bottom: m.padding.bottom + 31,
                                 child: IgnorePointer(
                                   child: ValueListenableBuilder<bool>(
@@ -167,9 +170,9 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                             active: listening,
                                             level: level,
                                             color: waveformColor,
-                                            width: 104,
-                                            height: 23,
-                                            samples: 32,
+                                            width: 88,
+                                            height: 21,
+                                            samples: 28,
                                           );
                                         },
                                       );

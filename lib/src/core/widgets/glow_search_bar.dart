@@ -247,6 +247,11 @@ class _GlowSearchBarState extends State<GlowSearchBar>
       },
       onSoundLevel: (level) {
         if (!mounted) return;
+        // If the user speaks again during 3 -> 2 -> 1, cancel immediately
+        // from microphone amplitude instead of waiting for transcription.
+        if (_countdown != null && level > -36.0) {
+          _cancelCountdown();
+        }
         final normalized = ((level + 45) / 45).clamp(0.0, 1.0);
         setState(() => _voiceLevel = normalized);
       },
@@ -302,14 +307,9 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     }
 
     if (!_runDirectSearch(input)) {
-      // First conversational question is answered directly under the dashboard
-      // field. A second free-form question means the user is continuing the
-      // conversation, so expand into Intel Core through the existing callback.
-      if (_inlineAnswer != null && !_inlineAiLoading) {
-        widget.onSubmitted?.call(input);
-      } else {
-        unawaited(_runInlineAi(input));
-      }
+      // Dashboard Enter and voice auto-send always answer inline first.
+      // Intel Core opens only from the explicit Continue action below.
+      unawaited(_runInlineAi(input));
     }
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -387,9 +387,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     if (input.isEmpty) return false;
     final q = _normalize(input);
 
-    // If the query is clearly a conversational question, answer it with AI
-    // instead of routing to a screen. Short keyword lookups (e.g. "events",
-    // "motorcycles near me") still hit the direct routes below.
     final isQuestion = q.contains('?') ||
         RegExp(
           r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b',
@@ -643,7 +640,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                 Row(
                   children: [
                     Text(
-                      'Ask another question to continue in chat',
+                      'Answer stays here · open chat only if you want',
                       style: GoogleFonts.plusJakartaSans(
                         color: ink.withAlpha(120),
                         fontSize: 9.5,
@@ -862,14 +859,14 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                                               right: -4,
                                               top: -5,
                                               child: Container(
-                                                width: 16,
-                                                height: 16,
+                                                width: 18,
+                                                height: 18,
                                                 decoration: BoxDecoration(
                                                   color: Colors.white,
                                                   shape: BoxShape.circle,
                                                   border: Border.all(
                                                     color: blue,
-                                                    width: 1.2,
+                                                    width: 1.3,
                                                   ),
                                                 ),
                                                 alignment: Alignment.center,
@@ -878,7 +875,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                                                   style: GoogleFonts
                                                       .plusJakartaSans(
                                                     color: blue,
-                                                    fontSize: 8,
+                                                    fontSize: 9,
                                                     fontWeight: FontWeight.w900,
                                                     height: 1,
                                                   ),
@@ -938,17 +935,43 @@ class _GlowSearchBarState extends State<GlowSearchBar>
             const SizedBox(height: 5),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                _countdown != null
-                    ? 'Sending in $_countdown · speak again to keep recording'
-                    : 'Listening · live waveform · tap mic to stop',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
-                  color: blue,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 10.5,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_countdown != null) ...[
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$_countdown',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                  ],
+                  Text(
+                    _countdown != null
+                        ? 'Sending automatically · speak again to keep recording'
+                        : 'Listening · 4 seconds of silence starts auto-send',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: blue,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
