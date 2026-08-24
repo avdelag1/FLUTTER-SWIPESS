@@ -64,6 +64,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _velocityThreshold = 900.0;
   static const _maxVisibleCards = 3;
   static const _prefetchCards = 4;
+  static const _topGalleryWarmCount = 12;
+  static const _backGalleryWarmCount = 2;
 
   @override
   void initState() {
@@ -92,28 +94,87 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
   }
 
+  int _displayCacheWidth() =>
+      (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
+
+  void _precacheListingImage(String rawUrl, int cacheWidth) {
+    final url = rawUrl.trim();
+    final uri = Uri.tryParse(url);
+    final cacheKey = '$cacheWidth:$url';
+    if (url.isEmpty ||
+        uri == null ||
+        !(uri.scheme == 'https' || uri.scheme == 'http') ||
+        !_prefetchedImages.add(cacheKey)) {
+      return;
+    }
+
+    // Match Image.network(cacheWidth: ...) exactly. Warming an un-resized
+    // NetworkImage uses a different cache key and still forces a decode after
+    // the user taps to the next photo.
+    final provider = ResizeImage.resizeIfNeeded(
+      cacheWidth,
+      null,
+      NetworkImage(url),
+    );
+    unawaited(
+      precacheImage(provider, context).catchError((_) {
+        // A failed image should be retryable when the card becomes active.
+        _prefetchedImages.remove(cacheKey);
+      }),
+    );
+  }
+
   void _prefetchUpcomingImages() {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final cacheWidth = _displayCacheWidth();
       final count = min(_prefetchCards, widget.listings.length);
       for (var i = 0; i < count; i++) {
         final listing = widget.listings[i];
-        if (listing.images.isEmpty) continue;
-        final url = listing.images.first.trim();
-        final uri = Uri.tryParse(url);
-        if (url.isEmpty ||
-            uri == null ||
-            !(uri.scheme == 'https' || uri.scheme == 'http') ||
-            !_prefetchedImages.add(url)) {
-          continue;
+        final images = listing.images;
+        if (images.isEmpty) continue;
+
+        if (i == 0) {
+          // The active gallery is the interaction hot path. Warm essentially
+          // the whole normal gallery, including the last photos so a left tap
+          // from photo #1 is instant too.
+          if (images.length <= _topGalleryWarmCount) {
+            for (final url in images) {
+              _precacheListingImage(url, cacheWidth);
+            }
+          } else {
+            for (final url in images.take(_topGalleryWarmCount - 2)) {
+              _precacheListingImage(url, cacheWidth);
+            }
+            for (final url in images.skip(images.length - 2)) {
+              _precacheListingImage(url, cacheWidth);
+            }
+          }
+        } else {
+          // Back-stack cards need enough media ready to appear immediately but
+          // should not consume the same memory budget as the active gallery.
+          for (final url in images.take(_backGalleryWarmCount)) {
+            _precacheListingImage(url, cacheWidth);
+          }
         }
-        unawaited(
-          precacheImage(NetworkImage(url), context).catchError((_) {
-            // A failed image should be retryable when the card becomes active.
-            _prefetchedImages.remove(url);
-          }),
-        );
+      }
+    });
+  }
+
+  void _prefetchTopNeighbors(int photoIndex) {
+    if (!mounted || widget.listings.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.listings.isEmpty) return;
+      final images = widget.listings.first.images;
+      if (images.length < 2) return;
+      final cacheWidth = _displayCacheWidth();
+
+      // Keep the next/previous neighborhood hot even for unusually large
+      // galleries that exceed the initial warm set.
+      for (final delta in const [-2, -1, 1, 2, 3]) {
+        final index = (photoIndex + delta) % images.length;
+        _precacheListingImage(images[index], cacheWidth);
       }
     });
   }
@@ -343,6 +404,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
               onOpenAi: widget.onOpenAi,
               onOpenMap: widget.onOpenMap,
               onSummonChrome: widget.onSummonChrome,
+              onPhotoIndexChanged: _prefetchTopNeighbors,
               onZoomChanged: (active) {
                 if (mounted) setState(() => _zoomLocksDrag = active);
               },
