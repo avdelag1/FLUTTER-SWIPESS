@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';
 
 class ConciergeSheetHost extends ConsumerStatefulWidget {
   const ConciergeSheetHost({
@@ -12,6 +11,7 @@ class ConciergeSheetHost extends ConsumerStatefulWidget {
     required this.onClose,
     required this.child,
   });
+
   final VoidCallback onClose;
   final Widget child;
 
@@ -56,7 +56,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
     final m = MediaQuery.of(context);
     final isLight = Theme.of(context).brightness == Brightness.light;
     final voice = LiveVoiceInput.instance;
-    final waveformColor = isLight
+    final micColor = isLight
         ? const Color(0xFF2563EB)
         : const Color(0xFF60A5FA);
 
@@ -75,13 +75,12 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
           top: m.padding.top + 4,
           bottom: m.padding.bottom + 4,
           child: SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(0, 1.08),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(parent: _slide, curve: Curves.easeOutCubic),
-                ),
+            position: Tween<Offset>(
+              begin: const Offset(0, 1.08),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: _slide, curve: Curves.easeOutCubic),
+            ),
             child: FadeTransition(
               opacity: _slide,
               child: Transform.translate(
@@ -151,9 +150,8 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                   child: widget.child,
                                 ),
                               ),
-                              // Intel Core keeps a visible breathing microphone
-                              // while recording instead of swapping it for EQ or
-                              // making the control appear to disappear.
+                              // One persistent mic visual only. No waveform is
+                              // painted over the composer anymore.
                               Positioned(
                                 left: 23,
                                 bottom: m.padding.bottom + 22,
@@ -177,7 +175,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                               width: 38,
                                               height: 38,
                                               decoration: BoxDecoration(
-                                                color: waveformColor,
+                                                color: micColor,
                                                 shape: BoxShape.circle,
                                                 border: Border.all(
                                                   color: Colors.white.withAlpha(
@@ -186,9 +184,7 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                                 ),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: waveformColor.withAlpha(
-                                                      70,
-                                                    ),
+                                                    color: micColor.withAlpha(70),
                                                     blurRadius: 12 + (level * 12),
                                                     spreadRadius: level * 2,
                                                   ),
@@ -201,33 +197,6 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                                 size: 20,
                                               ),
                                             ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                right: 82,
-                                bottom: m.padding.bottom + 31,
-                                child: IgnorePointer(
-                                  child: ValueListenableBuilder<bool>(
-                                    valueListenable: voice.listeningNotifier,
-                                    builder: (context, listening, _) {
-                                      if (!listening) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return ValueListenableBuilder<double>(
-                                        valueListenable: voice.levelNotifier,
-                                        builder: (context, level, _) {
-                                          return LiveAudioWaveform(
-                                            active: listening,
-                                            level: level,
-                                            color: waveformColor,
-                                            width: 88,
-                                            height: 21,
-                                            samples: 28,
                                           );
                                         },
                                       );

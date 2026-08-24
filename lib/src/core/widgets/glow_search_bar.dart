@@ -9,11 +9,15 @@ import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Dashboard AI field.
+///
+/// Contract: mic is always the first control on the LEFT. Voice transcription
+/// appears as real text in the field. No waveform is rendered here. Enter and
+/// the send arrow answer on the dashboard; Intel Core opens only from Continue.
 class GlowSearchBar extends StatefulWidget {
   const GlowSearchBar({
     super.key,
@@ -46,9 +50,11 @@ class GlowSearchBar extends StatefulWidget {
   State<GlowSearchBar> createState() => _GlowSearchBarState();
 }
 
-class _GlowSearchBarState extends State<GlowSearchBar>
-    with SingleTickerProviderStateMixin {
-  final math.Random _random = math.Random();
+class _GlowSearchBarState extends State<GlowSearchBar> {
+  final _random = math.Random();
+  final _voice = LiveVoiceInput.instance;
+  final _ai = AiEdgeRepository();
+
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
       if (event is KeyDownEvent &&
@@ -60,8 +66,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
       return KeyEventResult.ignored;
     },
   );
-  final LiveVoiceInput _voice = LiveVoiceInput.instance;
-  final AiEdgeRepository _ai = AiEdgeRepository();
+
   Timer? _promptTimer;
   Timer? _countdownTimer;
   int _promptIndex = 0;
@@ -72,92 +77,54 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   bool _inlineAiLoading = false;
   String? _inlineQuestion;
   String? _inlineAnswer;
-  late final AnimationController _glintController;
 
   bool get _isEditableSearch => widget.controller != null;
 
-  bool get _showPrompt {
-    if (!_isEditableSearch) return true;
-    return (widget.controller?.text.trim().isEmpty ?? true) &&
-        !_focusNode.hasFocus &&
-        !_voiceActive &&
-        !_inlineAiLoading;
-  }
+  bool get _showPrompt =>
+      _isEditableSearch &&
+      (widget.controller?.text.trim().isEmpty ?? true) &&
+      !_focusNode.hasFocus &&
+      !_voiceActive &&
+      !_inlineAiLoading;
 
   String get _place {
     final value = widget.locationLabel.trim();
     return value.isEmpty ? 'your area' : value;
   }
 
-  List<String> get _rotatingPrompts {
-    final place = _place;
-    return <String>[
-      'What are you looking for today?',
-      'Show me something nearby',
-      'Find a beautiful property in $place',
-      'What’s happening around $place tonight?',
-      'Find trusted workers near me',
-      'Show me homes for rent',
-      'Find a trusted mechanic',
-      'Show me yachts nearby',
-      'Find motorcycles around $place',
-      'Need local legal help in $place?',
-      'What’s popular around $place right now?',
-      'Show me something worth swiping',
-    ];
-  }
+  List<String> get _rotatingPrompts => <String>[
+        'What are you looking for today?',
+        'Show me something nearby',
+        'Find a beautiful property in $_place',
+        'What’s happening around $_place tonight?',
+        'Find trusted workers near me',
+        'Show me homes for rent',
+        'Find a trusted mechanic',
+        'Show me yachts nearby',
+        'Find motorcycles around $_place',
+        'Need local legal help in $_place?',
+        'What’s popular around $_place right now?',
+        'Show me something worth swiping',
+      ];
 
   @override
   void initState() {
     super.initState();
-    _glintController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _focusNode.addListener(_handleFocusChanged);
-    widget.controller?.addListener(_handleControllerChanged);
-    _scheduleNextPrompt();
+    _focusNode.addListener(_refresh);
+    widget.controller?.addListener(_refresh);
+    _schedulePrompt();
   }
 
   @override
   void didUpdateWidget(covariant GlowSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller?.removeListener(_handleControllerChanged);
-      widget.controller?.addListener(_handleControllerChanged);
+      oldWidget.controller?.removeListener(_refresh);
+      widget.controller?.addListener(_refresh);
     }
-    if (oldWidget.locationLabel != widget.locationLabel) {
-      _promptIndex = 0;
-      if (mounted) _glintController.forward(from: 0);
+    if (oldWidget.locationLabel != widget.locationLabel && mounted) {
+      setState(() => _promptIndex = 0);
     }
-  }
-
-  void _handleFocusChanged() {
-    if (mounted) setState(() {});
-  }
-
-  void _handleControllerChanged() {
-    if (mounted) setState(() {});
-  }
-
-  void _scheduleNextPrompt() {
-    _promptTimer?.cancel();
-    final delay = Duration(milliseconds: 6000 + _random.nextInt(2001));
-    _promptTimer = Timer(delay, () {
-      if (!mounted) return;
-      if (_showPrompt) {
-        final prompts = _rotatingPrompts;
-        if (prompts.length > 1) {
-          var next = _random.nextInt(prompts.length);
-          while (next == _promptIndex) {
-            next = _random.nextInt(prompts.length);
-          }
-          setState(() => _promptIndex = next);
-          _glintController.forward(from: 0);
-        }
-      }
-      _scheduleNextPrompt();
-    });
   }
 
   @override
@@ -165,11 +132,30 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     _promptTimer?.cancel();
     _countdownTimer?.cancel();
     unawaited(_voice.cancel(owner: this));
-    widget.controller?.removeListener(_handleControllerChanged);
-    _focusNode.removeListener(_handleFocusChanged);
+    widget.controller?.removeListener(_refresh);
+    _focusNode.removeListener(_refresh);
     _focusNode.dispose();
-    _glintController.dispose();
     super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  void _schedulePrompt() {
+    _promptTimer?.cancel();
+    _promptTimer = Timer(Duration(milliseconds: 6000 + _random.nextInt(2001)), () {
+      if (!mounted) return;
+      if (_showPrompt) {
+        final prompts = _rotatingPrompts;
+        var next = _random.nextInt(prompts.length);
+        while (next == _promptIndex && prompts.length > 1) {
+          next = _random.nextInt(prompts.length);
+        }
+        setState(() => _promptIndex = next);
+      }
+      _schedulePrompt();
+    });
   }
 
   void _cancelCountdown() {
@@ -180,8 +166,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
 
   void _beginCountdown() {
     if (!mounted || _submittingVoice) return;
-    final text = widget.controller?.text.trim() ?? '';
-    if (text.isEmpty) return;
+    if ((widget.controller?.text.trim() ?? '').isEmpty) return;
     _countdownTimer?.cancel();
     setState(() => _countdown = 3);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -247,12 +232,10 @@ class _GlowSearchBarState extends State<GlowSearchBar>
       },
       onSoundLevel: (level) {
         if (!mounted) return;
-        // If the user speaks again during 3 -> 2 -> 1, cancel immediately
-        // from microphone amplitude instead of waiting for transcription.
-        if (_countdown != null && level > -36.0) {
-          _cancelCountdown();
-        }
-        final normalized = ((level + 45) / 45).clamp(0.0, 1.0);
+        // Real speech during the visible countdown cancels auto-send. Keep the
+        // threshold high enough that ordinary room noise does not reset it.
+        if (_countdown != null && level > -24.0) _cancelCountdown();
+        final normalized = ((level + 45) / 45).clamp(0.0, 1.0).toDouble();
         setState(() => _voiceLevel = normalized);
       },
       onError: (message) {
@@ -261,9 +244,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
           _voiceActive = false;
           _voiceLevel = 0;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       },
     );
 
@@ -291,24 +272,12 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     _submittingVoice = false;
   }
 
-  String _normalize(String input) {
-    return input
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9áéíóúñü\s-]'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-  }
-
   void _submitSearch(String raw) {
     final input = raw.trim();
-    if (input.isEmpty) {
-      widget.onTap?.call();
-      return;
-    }
+    // Never open Intel Core because Enter/arrow was pressed on an empty field.
+    if (input.isEmpty) return;
 
     if (!_runDirectSearch(input)) {
-      // Dashboard Enter and voice auto-send always answer inline first.
-      // Intel Core opens only from the explicit Continue action below.
       unawaited(_runInlineAi(input));
     }
     FocusManager.instance.primaryFocus?.unfocus();
@@ -330,8 +299,8 @@ class _GlowSearchBarState extends State<GlowSearchBar>
             role: 'system',
             content:
                 'This reply is shown in the compact SWIPESS dashboard search area. '
-                'Answer in 1-3 short sentences. Be useful and direct. Do not mention '
-                'that this is a compact UI. Preserve any useful SWIPESS action tags.',
+                'Answer in 1-3 short sentences. Be useful and direct. Preserve useful '
+                'SWIPESS action tags when needed.',
           ),
           AiChatMessage(role: 'user', content: input),
         ],
@@ -366,10 +335,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
 
   void _continueInChat() {
     final question = _inlineQuestion?.trim();
-    if (question == null || question.isEmpty) {
-      widget.onTap?.call();
-      return;
-    }
+    if (question == null || question.isEmpty) return;
     widget.onSubmitted?.call(question);
   }
 
@@ -382,58 +348,40 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     });
   }
 
+  String _normalize(String input) => input
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9áéíóúñü\s-]'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
   bool _runDirectSearch(String raw) {
-    final input = raw.trim();
-    if (input.isEmpty) return false;
-    final q = _normalize(input);
+    final q = _normalize(raw);
+    if (q.isEmpty) return false;
 
     final isQuestion = q.contains('?') ||
-        RegExp(
-          r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b',
-        ).hasMatch(q);
-    if (isQuestion && q.split(' ').length > 2) {
-      return false;
-    }
+        RegExp(r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b')
+            .hasMatch(q);
+    if (isQuestion && q.split(' ').length > 2) return false;
 
     bool has(String pattern) => RegExp(pattern).hasMatch(q);
 
-    if (has(
-      r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b',
-    )) {
+    if (has(r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b')) {
       context.go(AppPaths.exploreEvents);
-    } else if (has(
-      r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b',
-    )) {
+    } else if (has(r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b')) {
       context.go(AppPaths.documents);
-    } else if (has(
-      r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b',
-    )) {
+    } else if (has(r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b')) {
       context.go(AppPaths.clientLegalServices);
-    } else if (has(
-      r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b',
-    )) {
+    } else if (has(r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b')) {
       context.go(AppPaths.clientServices);
-    } else if (has(
-      r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b',
-    )) {
+    } else if (has(r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b')) {
       context.go(AppPaths.exploreSeekers);
     } else if (has(r'\b(messages?|chat|inbox)\b')) {
       context.go(AppPaths.messages);
-    } else if (has(
-      r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b',
-    )) {
+    } else if (has(r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b')) {
       context.go(AppPaths.map);
-    } else if (has(
-      r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b',
-    )) {
-      openClientSwipeDeck(
-        context,
-        categoryId: 'yacht',
-        categoryTitle: 'YACHTS',
-      );
-    } else if (has(
-      r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b',
-    )) {
+    } else if (has(r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b')) {
+      openClientSwipeDeck(context, categoryId: 'yacht', categoryTitle: 'YACHTS');
+    } else if (has(r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b')) {
       openClientSwipeDeck(
         context,
         categoryId: 'motorcycle',
@@ -445,9 +393,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         categoryId: 'bicycle',
         categoryTitle: 'BICYCLES',
       );
-    } else if (has(
-      r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b',
-    )) {
+    } else if (has(r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b')) {
       openClientSwipeDeck(
         context,
         categoryId: 'property',
@@ -461,91 +407,82 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     return true;
   }
 
-  Widget _animatedPrompt({
-    required String text,
-    required Color ink,
-    required bool isLight,
-    required Key key,
-  }) {
-    final base = ink.withAlpha(isLight ? 190 : 225);
-    final highlight = isLight ? const Color(0xFF6D9FEA) : Colors.white;
-
-    return AnimatedBuilder(
-      animation: _glintController,
-      child: Text(
-        text,
-        key: key,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.plusJakartaSans(
-          color: ink,
-          fontWeight: FontWeight.w600,
-          fontSize: 14.5,
-          letterSpacing: .02,
-        ),
-      ),
-      builder: (context, child) {
-        final progress = Curves.easeInOutCubic.transform(
-          _glintController.value,
-        );
-        final x = -2.2 + (progress * 4.4);
-        return ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (bounds) => LinearGradient(
-            begin: Alignment(x - .8, 0),
-            end: Alignment(x + .8, 0),
-            colors: [base, base, highlight, base, base],
-            stops: const [0, .30, .50, .70, 1],
-          ).createShader(bounds),
-          child: child,
-        );
-      },
-    );
-  }
-
-  Widget _promptSwitcher({
-    required String text,
-    required Color ink,
-    required bool isLight,
-    required int index,
-  }) {
-    return RepaintBoundary(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 620),
-        reverseDuration: const Duration(milliseconds: 420),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        layoutBuilder: (currentChild, previousChildren) => Stack(
-          alignment: Alignment.centerLeft,
-          children: [
-            ...previousChildren,
-            if (currentChild != null) currentChild,
-          ],
-        ),
-        transitionBuilder: (child, animation) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-          );
-          return FadeTransition(
-            opacity: curved,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, .16),
-                end: Offset.zero,
-              ).animate(curved),
-              child: ScaleTransition(
-                scale: Tween<double>(begin: .985, end: 1).animate(curved),
-                child: child,
+  Widget _micButton({required bool isLight, required Color blue}) {
+    final pulse = 1.0 + (_voiceLevel * .08);
+    return Semantics(
+      button: true,
+      label: _voiceActive ? 'Stop recording' : 'Start voice search',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _toggleVoice,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 110),
+          scale: _voiceActive ? pulse : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _voiceActive ? blue : blue.withAlpha(isLight ? 18 : 34),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _voiceActive ? blue : blue.withAlpha(90),
               ),
+              boxShadow: _voiceActive
+                  ? [
+                      BoxShadow(
+                        color: blue.withAlpha(58),
+                        blurRadius: 11 + (_voiceLevel * 9),
+                        spreadRadius: _voiceLevel * 1.3,
+                      ),
+                    ]
+                  : null,
             ),
-          );
-        },
-        child: _animatedPrompt(
-          text: text,
-          ink: ink,
-          isLight: isLight,
-          key: ValueKey<String>('${widget.locationLabel}:$index:$text'),
+            alignment: Alignment.center,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                if (_voiceActive)
+                  BreathingWidget(
+                    duration: const Duration(milliseconds: 1050),
+                    minOpacity: .55,
+                    maxOpacity: 1,
+                    child: const Icon(
+                      Icons.mic_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  )
+                else
+                  Icon(Icons.mic_rounded, color: blue, size: 18),
+                if (_countdown != null)
+                  Positioned(
+                    right: -5,
+                    top: -5,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: blue, width: 1.3),
+                      ),
+                      child: Text(
+                        '$_countdown',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: blue,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -577,10 +514,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                 SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: blue,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: blue),
                 ),
                 const SizedBox(width: 9),
                 Text(
@@ -598,8 +532,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.auto_awesome_rounded, color: blue, size: 14),
-                    const SizedBox(width: 5),
                     Text(
                       'SWIPESS AI',
                       style: GoogleFonts.plusJakartaSans(
@@ -639,46 +571,33 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Text(
-                      'Answer stays here · open chat only if you want',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: ink.withAlpha(120),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        'Answer stays on Dashboard',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink.withAlpha(120),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const Spacer(),
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: _continueInChat,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: blue.withAlpha(isLight ? 18 : 32),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(color: blue.withAlpha(75)),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Continue',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: blue,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            Icon(
-                              Icons.arrow_outward_rounded,
-                              color: blue,
-                              size: 13,
-                            ),
-                          ],
+                        child: Text(
+                          'Continue in chat',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: blue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
@@ -695,283 +614,149 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
     final blue = isLight ? const Color(0xFF2563EB) : const Color(0xFF60A5FA);
     final prompts = _rotatingPrompts;
-    final safeIndex = _promptIndex % prompts.length;
-    final displayHint = prompts[safeIndex];
+    final displayHint = prompts[_promptIndex % prompts.length];
     final voiceVisible = _voiceActive || _countdown != null;
+
+    if (!_isEditableSearch) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: Container(
+            height: 44,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: isLight ? Colors.white.withAlpha(205) : const Color(0xFF121822),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: blue.withAlpha(130)),
+            ),
+            child: Text(displayHint, style: GoogleFonts.plusJakartaSans(color: ink)),
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _isEditableSearch ? null : widget.onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              height: 44,
-              padding: const EdgeInsets.only(left: 12, right: 3),
-              decoration: BoxDecoration(
-                color: isLight
-                    ? Colors.white.withAlpha(205)
-                    : const Color(0xFF121822).withAlpha(230),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: voiceVisible
-                      ? blue
-                      : const Color(0xFF60A5FA).withAlpha(
-                          isLight ? 125 : 145,
-                        ),
-                  width: voiceVisible ? 1.5 : .9,
-                ),
-                boxShadow: voiceVisible
-                    ? [
-                        BoxShadow(
-                          color: blue.withAlpha(38),
-                          blurRadius: 16 + (_voiceLevel * 10),
-                          spreadRadius: -2,
-                        ),
-                      ]
-                    : null,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 44,
+            padding: const EdgeInsets.fromLTRB(6, 0, 3, 0),
+            decoration: BoxDecoration(
+              color: isLight
+                  ? Colors.white.withAlpha(205)
+                  : const Color(0xFF121822).withAlpha(230),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: voiceVisible ? blue : blue.withAlpha(isLight ? 125 : 145),
+                width: voiceVisible ? 1.5 : .9,
               ),
-              alignment: Alignment.centerLeft,
-              child: _isEditableSearch
-                  ? Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        if (_showPrompt)
-                          Positioned.fill(
-                            right: 84,
-                            child: IgnorePointer(
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: _promptSwitcher(
-                                  text: displayHint,
-                                  ink: ink,
-                                  isLight: isLight,
-                                  index: safeIndex,
+              boxShadow: voiceVisible
+                  ? [
+                      BoxShadow(
+                        color: blue.withAlpha(38),
+                        blurRadius: 15 + (_voiceLevel * 8),
+                        spreadRadius: -2,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                _micButton(isLight: isLight, blue: blue),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      if (_showPrompt)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 380),
+                                child: Text(
+                                  displayHint,
+                                  key: ValueKey<String>(displayHint),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: ink.withAlpha(isLight ? 190 : 225),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14.5,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        TextField(
-                          focusNode: _focusNode,
-                          controller: widget.controller,
-                          onChanged: (value) {
-                            _cancelCountdown();
-                            widget.onChanged?.call(value);
-                          },
-                          onSubmitted: _submitSearch,
-                          textInputAction: TextInputAction.search,
-                          autofocus: false,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: ink,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14.5,
-                          ),
-                          cursorColor: const Color(0xFF60A5FA),
-                          decoration: InputDecoration(
-                            hintText: _voiceActive &&
-                                    (widget.controller?.text.trim().isEmpty ?? true)
-                                ? 'Listening…'
-                                : null,
-                            hintStyle: GoogleFonts.plusJakartaSans(
-                              color: blue.withAlpha(190),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
-                            ),
-                            suffixIcon: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (_voiceActive) ...[
-                                  LiveAudioWaveform(
-                                    active: true,
-                                    level: _voiceLevel,
-                                    color: blue,
-                                    width: 74,
-                                    height: 20,
-                                    samples: 24,
-                                  ),
-                                  const SizedBox(width: 5),
-                                ],
-                                Semantics(
-                                  button: true,
-                                  label: _voiceActive
-                                      ? 'Stop recording'
-                                      : 'Start voice search',
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: _toggleVoice,
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 150),
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: _voiceActive
-                                            ? blue
-                                            : blue.withAlpha(
-                                                isLight ? 18 : 34,
-                                              ),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: _voiceActive
-                                              ? blue
-                                              : blue.withAlpha(90),
-                                        ),
-                                        boxShadow: _voiceActive
-                                            ? [
-                                                BoxShadow(
-                                                  color: blue.withAlpha(55),
-                                                  blurRadius:
-                                                      12 + (_voiceLevel * 8),
-                                                  spreadRadius:
-                                                      _voiceLevel * 1.4,
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Stack(
-                                        clipBehavior: Clip.none,
-                                        alignment: Alignment.center,
-                                        children: [
-                                          if (_voiceActive)
-                                            BreathingWidget(
-                                              duration: const Duration(
-                                                milliseconds: 1100,
-                                              ),
-                                              minOpacity: .55,
-                                              maxOpacity: 1,
-                                              child: const Icon(
-                                                Icons.mic_rounded,
-                                                color: Colors.white,
-                                                size: 18,
-                                              ),
-                                            )
-                                          else
-                                            Icon(
-                                              Icons.mic_rounded,
-                                              color: blue,
-                                              size: 18,
-                                            ),
-                                          if (_countdown != null)
-                                            Positioned(
-                                              right: -4,
-                                              top: -5,
-                                              child: Container(
-                                                width: 18,
-                                                height: 18,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  shape: BoxShape.circle,
-                                                  border: Border.all(
-                                                    color: blue,
-                                                    width: 1.3,
-                                                  ),
-                                                ),
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  '$_countdown',
-                                                  style: GoogleFonts
-                                                      .plusJakartaSans(
-                                                    color: blue,
-                                                    fontSize: 9,
-                                                    fontWeight: FontWeight.w900,
-                                                    height: 1,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () => _submitSearch(
-                                    widget.controller?.text ?? '',
-                                  ),
-                                  icon: Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 19,
-                                    color: ink,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            suffixIconConstraints: const BoxConstraints(
-                              minWidth: 76,
-                              minHeight: 38,
-                            ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            filled: false,
-                            fillColor: Colors.transparent,
-                            hoverColor: Colors.transparent,
-                            focusColor: Colors.transparent,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 11,
-                            ),
-                          ),
                         ),
-                      ],
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.only(right: 11),
-                      child: _promptSwitcher(
-                        text: displayHint,
-                        ink: ink,
-                        isLight: isLight,
-                        index: safeIndex,
+                      TextField(
+                        focusNode: _focusNode,
+                        controller: widget.controller,
+                        onChanged: (value) {
+                          _cancelCountdown();
+                          widget.onChanged?.call(value);
+                        },
+                        onSubmitted: _submitSearch,
+                        textInputAction: TextInputAction.search,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
+                        ),
+                        cursorColor: blue,
+                        decoration: InputDecoration(
+                          hintText: _voiceActive &&
+                                  (widget.controller?.text.trim().isEmpty ?? true)
+                              ? 'Listening…'
+                              : null,
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            color: blue.withAlpha(210),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Send',
+                  onPressed: () => _submitSearch(widget.controller?.text ?? ''),
+                  icon: Icon(Icons.arrow_forward_rounded, size: 19, color: ink),
+                ),
+              ],
             ),
           ),
           if (voiceVisible) ...[
             const SizedBox(height: 5),
             Align(
               alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_countdown != null) ...[
-                    Container(
-                      width: 22,
-                      height: 22,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: blue,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        '$_countdown',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 7),
-                  ],
-                  Text(
-                    _countdown != null
-                        ? 'Sending automatically · speak again to keep recording'
-                        : 'Listening · 4 seconds of silence starts auto-send',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: blue,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10.5,
-                    ),
-                  ),
-                ],
+              child: Text(
+                _countdown != null
+                    ? 'Sending in $_countdown · speak again to keep recording'
+                    : 'Listening · your words appear above',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  color: blue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10.5,
+                ),
               ),
             ),
           ],
@@ -981,13 +766,10 @@ class _GlowSearchBarState extends State<GlowSearchBar>
             alignment: Alignment.centerLeft,
             child: Text(
               'Swipess AI · can make mistakes.',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.plusJakartaSans(
                 color: ink.withAlpha(isLight ? 135 : 170),
                 fontWeight: FontWeight.w500,
                 fontSize: 10.5,
-                letterSpacing: .02,
               ),
             ),
           ),

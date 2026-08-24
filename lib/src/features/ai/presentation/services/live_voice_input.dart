@@ -9,10 +9,9 @@ enum ListenMode { dictation, search, confirmation }
 
 /// One shared microphone coordinator for every SWIPESS AI entry point.
 ///
-/// Chrome/web uses the browser speech recognizer for immediate words while a
-/// MediaRecorder session supplies the live waveform. Native clients keep using
-/// the recorder + transcription fallback. Both paths share the same 4-second
-/// silence contract before the caller renders 3 -> 2 -> 1 and auto-sends.
+/// Chrome/web uses browser speech recognition for immediate live words. Native
+/// clients keep using recorder + transcription. Both paths share the same
+/// four-second silence contract before callers render 3 -> 2 -> 1 and send.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
@@ -50,7 +49,6 @@ class LiveVoiceInput {
 
   static const silenceBeforeCountdown = Duration(seconds: 4);
   static const double _nativeSpeechGateDb = -36.0;
-  static const double _webSpeechGateDb = -30.0;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -109,8 +107,6 @@ class LiveVoiceInput {
     _starting = true;
 
     try {
-      // On Chrome/web use SpeechRecognition for instant words. Keep the record
-      // plugin running only as a waveform source when available.
       if (kIsWeb && _browser.isSupported) {
         _active = true;
         _usingBrowser = true;
@@ -125,6 +121,8 @@ class LiveVoiceInput {
               _lastPublished = total;
               _onText?.call(total);
             }
+            // Browser silence is based on the last transcript update, not raw
+            // room amplitude. Background noise can no longer reset this forever.
             _armBrowserSilence();
           },
           onListening: (listening) {
@@ -142,7 +140,7 @@ class LiveVoiceInput {
             final recorderStarted = await _nativeVoice.start();
             if (recorderStarted) _listenToAmplitude();
           } catch (_) {
-            // Browser transcription still works even if waveform capture fails.
+            // Live words remain available even if amplitude capture fails.
           }
           _publishListening(true);
           return true;
@@ -203,13 +201,10 @@ class LiveVoiceInput {
                 : -60.0;
             _publishSoundLevel(level);
 
-            if (_usingBrowser) {
-              if (level > _webSpeechGateDb) {
-                _segmentHasSpeech = true;
-                _armBrowserSilence();
-              }
-              return;
-            }
+            // On web amplitude is visual feedback only. It must never re-arm
+            // the four-second silence timer because room noise kept auto-send
+            // stuck in LISTENING indefinitely.
+            if (_usingBrowser) return;
 
             if (level > _nativeSpeechGateDb) {
               _segmentHasSpeech = true;
