@@ -73,6 +73,75 @@ function textFromOpenAI(data: any): string {
   return data?.choices?.[0]?.message?.content?.toString().trim() || "";
 }
 
+function textFromAnyChunk(data: any): string {
+  if (typeof data === "string") return data.trim();
+  return (
+    data?.choices?.[0]?.delta?.content?.toString() ||
+    data?.choices?.[0]?.message?.content?.toString() ||
+    data?.content?.toString() ||
+    data?.reply?.toString() ||
+    data?.text?.toString() ||
+    ""
+  );
+}
+
+function extractPrimaryText(raw: string, contentType: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  if (contentType.includes("text/event-stream") || trimmed.startsWith("data:")) {
+    let output = "";
+    for (const line of raw.split(/\r?\n/)) {
+      const clean = line.trim();
+      if (!clean.startsWith("data:")) continue;
+      const payload = clean.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        output += textFromAnyChunk(JSON.parse(payload));
+      } catch {
+        // Ignore malformed/incomplete SSE fragments; valid chunks still survive.
+      }
+    }
+    return output.trim();
+  }
+
+  try {
+    return textFromAnyChunk(JSON.parse(trimmed)).trim();
+  } catch {
+    return trimmed;
+  }
+}
+
+async function recoverFromPrimary(req: Request, body: any, history: any[]) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error("Supabase unavailable");
+  const authorization = req.headers.get("authorization") || "";
+  const apiKey = req.headers.get("apikey") || SUPABASE_ANON_KEY;
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-concierge`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": authorization,
+      "apikey": apiKey,
+      "Accept": "application/json, text/event-stream",
+    },
+    body: JSON.stringify({
+      ...body,
+      messages: history,
+      stream: false,
+    }),
+  });
+
+  const raw = await response.text();
+  if (!response.ok) {
+    throw new Error(`Primary concierge ${response.status}`);
+  }
+
+  const text = extractPrimaryText(raw, response.headers.get("content-type") || "");
+  if (!text) throw new Error("Primary concierge returned no usable text");
+  return text;
+}
+
 async function groq(messages: any[]) {
   if (!GROQ_API_KEY) throw new Error("Groq unavailable");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -194,6 +263,23 @@ Deno.serve(async (req) => {
       return json(400, { error: "At least one user message is required" });
     }
 
+    // The browser client can lose otherwise-valid SSE deltas. Before spending a
+    // second provider request, re-run the same primary concierge server-side and
+    // normalize either SSE or JSON into one simple JSON response for Flutter.
+    try {
+      const recovered = await recoverFromPrimary(req, body, history);
+      return json(
+        200,
+        { choices: [{ message: { content: recovered } }] },
+        "primary-recovery",
+      );
+    } catch (primaryError) {
+      console.error(
+        "[ai-concierge-fallback] primary recovery failed",
+        primaryError instanceof Error ? primaryError.message : String(primaryError),
+      );
+    }
+
     const system = systemPrompt(body);
     const openAiMessages = [
       { role: "system", content: system },
@@ -222,7 +308,10 @@ Deno.serve(async (req) => {
     console.error("[ai-concierge-fallback] all providers failed", errors.join(" | "));
     return json(503, { error: "AI temporarily unavailable. Please try again." });
   } catch (error) {
-    console.error("[ai-concierge-fallback]", error instanceof Error ? error.message : String(error));
+    console.error(
+      "[ai-concierge-fallback]",
+      error instanceof Error ? error.message : String(error),
+    );
     return json(500, { error: "AI temporarily unavailable. Please try again." });
   }
 });
