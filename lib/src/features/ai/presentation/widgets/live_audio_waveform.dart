@@ -125,7 +125,7 @@ class _LiveAudioWaveformPainter extends CustomPainter {
       final barHeight = 3 + ((size.height - 3) * level);
       final progress = samples.length <= 1 ? 1.0 : i / (samples.length - 1);
       final alpha = active ? (85 + (170 * progress)).round() : 55;
-      paint.color = color.withAlpha(alpha.clamp(0, 255));
+      paint.color = color.withAlpha(alpha.clamp(0, 255).toInt());
 
       final rect = Rect.fromCenter(
         center: Offset((i + .5) * step, centerY),
