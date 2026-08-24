@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -30,7 +31,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(home: ListingDetailScreen(listingData: _sample())),
+      ProviderScope(
+        child: MaterialApp(home: ListingDetailScreen(listingData: _sample())),
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));

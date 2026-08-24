@@ -25,7 +25,7 @@ void main() {
     expect(search.hint, 'What are you looking for?');
 
     expect(find.text('PROPERTIES'), findsWidgets);
-    expect(find.text('EVENTS LIVE'), findsWidgets);
+    expect(find.text('EVENTS  •  LIVE'), findsWidgets);
     expect(find.text('WORKERS'), findsWidgets);
     expect(find.text('RECOMMENDED FOR YOU'), findsWidgets);
   });

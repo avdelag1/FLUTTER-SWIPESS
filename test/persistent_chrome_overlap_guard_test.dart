@@ -85,6 +85,7 @@ void main() {
       );
       expect(
         source.contains('Navigator.pop(context)') ||
+            source.contains('context.pop()') ||
             source.contains('CapBackButton'),
         isTrue,
         reason: '$path must expose an independent back control',
