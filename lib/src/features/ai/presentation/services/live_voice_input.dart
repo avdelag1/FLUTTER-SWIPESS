@@ -35,7 +35,6 @@ class LiveVoiceInput {
   String _lastPublished = '';
 
   Timer? _silenceTimer;
-  Timer? _silenceTimer;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   bool _segmentHasSpeech = false;
   bool _finalizing = false;
@@ -280,8 +279,6 @@ class LiveVoiceInput {
     _intentionalStop = true;
     _active = false;
     _silenceTimer?.cancel();
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
     _silenceTimer = null;
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
@@ -301,7 +298,6 @@ class LiveVoiceInput {
     if (!_active && !_usingBrowser) return;
 
     _intentionalStop = true;
-    _silenceTimer?.cancel();
     _silenceTimer?.cancel();
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
@@ -333,8 +329,6 @@ class LiveVoiceInput {
 
   void _clearSession({required bool keepOwner}) {
     _silenceTimer?.cancel();
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
     _silenceTimer = null;
     _active = false;
     _starting = false;
