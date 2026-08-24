@@ -22,8 +22,11 @@ import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
 /// Full-screen, Reels-style event deck.
-/// App chrome and event controls start hidden, reveal briefly on demand, then
-/// fade away again so the media owns the screen.
+///
+/// Events enters with all controls visible. In automatic mode they fade away
+/// after seven seconds of inactivity, matching the listing swipe-deck rhythm.
+/// The eye control is a deliberate pin: first tap keeps every control visible
+/// indefinitely; the second tap releases the pin and hides them immediately.
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
 
@@ -32,12 +35,13 @@ class EventsScreen extends ConsumerStatefulWidget {
 }
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
-  static const _chromeVisibleDuration = Duration(milliseconds: 2100);
+  static const _chromeVisibleDuration = Duration(seconds: 7);
 
   final _pages = PageController();
   int _index = 0;
   String _category = 'All';
-  bool _eventChromeVisible = false;
+  bool _eventChromeVisible = true;
+  bool _chromePinned = false;
   String? _handoffEventId;
   Duration? _handoffPosition;
   bool _handoffPageApplied = false;
@@ -49,9 +53,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final handoff = EventPreviewHandoff.take();
     _handoffEventId = handoff?.eventId;
     _handoffPosition = handoff?.position;
-    // Match the swipe deck: enter Events in immersive mode instead of briefly
-    // flashing the global header/dock and the event action rail.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _hideChrome());
+    // A fresh visit always starts usable: header, bottom dock, event topic rail
+    // and right-side event actions are visible before the idle fade begins.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _enterEvents());
   }
 
   @override
@@ -61,16 +65,26 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     super.dispose();
   }
 
-  void _revealChrome({bool autoHide = true}) {
+  void _enterEvents() {
+    if (!mounted) return;
+    _chromePinned = false;
+    _showChrome(scheduleHide: true);
+  }
+
+  void _showChrome({bool scheduleHide = true}) {
     if (!mounted) return;
     _chromeAutoHide?.cancel();
     if (!_eventChromeVisible) setState(() => _eventChromeVisible = true);
     ref.read(chromeVisibilityProvider.notifier).show();
-    if (autoHide) {
-      _chromeAutoHide = Timer(_chromeVisibleDuration, () {
-        if (mounted) _hideChrome();
-      });
-    }
+    if (scheduleHide && !_chromePinned) _scheduleAutoHide();
+  }
+
+  void _scheduleAutoHide() {
+    _chromeAutoHide?.cancel();
+    if (_chromePinned || !_eventChromeVisible) return;
+    _chromeAutoHide = Timer(_chromeVisibleDuration, () {
+      if (mounted && !_chromePinned) _hideChrome();
+    });
   }
 
   void _hideChrome() {
@@ -80,13 +94,44 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     ref.read(chromeVisibilityProvider.notifier).hide();
   }
 
-  void _toggleChrome() {
+  /// Eye behavior is intentionally different from a normal surface tap.
+  /// It is a persistent user choice for the current Events visit.
+  void _toggleChromePin() {
+    AppHaptics.light();
+    if (_chromePinned) {
+      _chromePinned = false;
+      _hideChrome();
+      return;
+    }
+    _chromePinned = true;
+    _showChrome(scheduleHide: false);
+  }
+
+  /// Preserve the old focus gesture without allowing it to override an eye pin.
+  void _handleSurfaceTap() {
+    if (_chromePinned) return;
     AppHaptics.light();
     if (_eventChromeVisible) {
       _hideChrome();
     } else {
-      _revealChrome();
+      _showChrome(scheduleHide: true);
     }
+  }
+
+  /// Activity while controls are already visible restarts the idle window.
+  /// Swiping after they have faded does not unexpectedly bring them back.
+  void _registerChromeActivity() {
+    if (_chromePinned) {
+      _showChrome(scheduleHide: false);
+    } else if (_eventChromeVisible) {
+      _scheduleAutoHide();
+    }
+  }
+
+  void _prepareToLeaveEvents() {
+    _chromeAutoHide?.cancel();
+    _chromePinned = false;
+    ref.read(chromeVisibilityProvider.notifier).show();
   }
 
   @override
@@ -168,9 +213,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       onPageChanged: (i) {
                         AppHaptics.selection();
                         setState(() => _index = i);
-                        // Keep vertical discovery immersive. Navigation comes
-                        // back only when the user explicitly asks for it.
-                        _hideChrome();
+                        // Scrolling keeps a visible automatic session alive,
+                        // but never cancels an eye pin and never revives chrome
+                        // that already faded away.
+                        _registerChromeActivity();
                       },
                       itemBuilder: (context, i) {
                         if (i == events.length) {
@@ -191,142 +237,144 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           initialPosition: event.id == _handoffEventId
                               ? _handoffPosition
                               : null,
-                          onToggleChrome: _toggleChrome,
-                          onChromeInteraction: _revealChrome,
+                          onToggleChrome: _handleSurfaceTap,
+                          onChromeInteraction: _registerChromeActivity,
                           onOpen: () {
-                            _revealChrome(autoHide: false);
+                            _registerChromeActivity();
                             context.push(AppPaths.exploreEvent(event.id));
                           },
                         );
                       },
                     ),
-                    if (_eventChromeVisible)
-                      Positioned.fill(
-                        child: Stack(
-                          children: [
-                            // Edge-to-edge category rail. It sits against the
-                            // media frame and softly dissolves at both ends as
-                            // categories scroll in/out instead of using story
-                            // progress bars.
-                            Positioned(
-                              top: 4,
-                              left: 4,
-                              right: 0,
-                              height: 66,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    left: 0,
-                                    top: 3,
-                                    child: _TopIcon(
-                                      icon: Icons.arrow_back_rounded,
-                                      color: Colors.white,
-                                      onTap: () {
-                                        _revealChrome(autoHide: false);
-                                        if (context.canPop()) {
-                                          context.pop();
-                                        } else {
-                                          context.go(
-                                            AppPaths.clientDashboard,
-                                          );
-                                        }
-                                      },
+                    AnimatedOpacity(
+                      opacity: _eventChromeVisible ? 1 : 0,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      child: IgnorePointer(
+                        ignoring: !_eventChromeVisible,
+                        child: Positioned.fill(
+                          child: Stack(
+                            children: [
+                              Positioned(
+                                top: 4,
+                                left: 4,
+                                right: 0,
+                                height: 66,
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      left: 0,
+                                      top: 3,
+                                      child: _TopIcon(
+                                        icon: Icons.arrow_back_rounded,
+                                        color: Colors.white,
+                                        onTap: () {
+                                          _prepareToLeaveEvents();
+                                          if (context.canPop()) {
+                                            context.pop();
+                                          } else {
+                                            context.go(
+                                              AppPaths.clientDashboard,
+                                            );
+                                          }
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  Positioned(
-                                    left: 46,
-                                    right: 0,
-                                    top: 0,
-                                    bottom: 0,
-                                    child: ShaderMask(
-                                      blendMode: BlendMode.dstIn,
-                                      shaderCallback: (bounds) =>
-                                          const LinearGradient(
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black,
-                                              Colors.black,
-                                              Colors.transparent,
-                                            ],
-                                            stops: [0, 0.07, 0.91, 1],
-                                          ).createShader(bounds),
-                                      child: ListView(
-                                        scrollDirection: Axis.horizontal,
-                                        physics: const BouncingScrollPhysics(
-                                          parent:
-                                              AlwaysScrollableScrollPhysics(),
-                                        ),
-                                        padding: const EdgeInsets.only(
-                                          left: 10,
-                                          right: 22,
-                                        ),
-                                        children: [
-                                          for (final c in ref.watch(
-                                            eventCategoriesProvider,
-                                          ))
+                                    Positioned(
+                                      left: 46,
+                                      right: 0,
+                                      top: 0,
+                                      bottom: 0,
+                                      child: ShaderMask(
+                                        blendMode: BlendMode.dstIn,
+                                        shaderCallback: (bounds) =>
+                                            const LinearGradient(
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                              colors: [
+                                                Colors.transparent,
+                                                Colors.black,
+                                                Colors.black,
+                                                Colors.transparent,
+                                              ],
+                                              stops: [0, 0.07, 0.91, 1],
+                                            ).createShader(bounds),
+                                        child: ListView(
+                                          scrollDirection: Axis.horizontal,
+                                          physics: const BouncingScrollPhysics(
+                                            parent:
+                                                AlwaysScrollableScrollPhysics(),
+                                          ),
+                                          padding: const EdgeInsets.only(
+                                            left: 10,
+                                            right: 22,
+                                          ),
+                                          children: [
+                                            for (final c in ref.watch(
+                                              eventCategoriesProvider,
+                                            ))
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 7,
+                                                ),
+                                                child: _EventCategoryRing(
+                                                  category: c,
+                                                  active: _category == c.key,
+                                                  onTap: () {
+                                                    AppHaptics.light();
+                                                    _registerChromeActivity();
+                                                    setState(() {
+                                                      _category = c.key;
+                                                      _index = 0;
+                                                    });
+                                                    ref
+                                                        .read(
+                                                          selectedCategoryProvider
+                                                              .notifier,
+                                                        )
+                                                        .setCategory(c.key);
+                                                    if (_pages.hasClients) {
+                                                      _pages.jumpToPage(0);
+                                                    }
+                                                  },
+                                                ),
+                                              ),
                                             Padding(
                                               padding: const EdgeInsets.only(
-                                                right: 7,
+                                                right: 10,
                                               ),
                                               child: _EventCategoryRing(
-                                                category: c,
-                                                active: _category == c.key,
+                                                category:
+                                                    const EventFeedCategory(
+                                                      key: 'likes',
+                                                      label: 'My Likes',
+                                                      icon: Icons.favorite_rounded,
+                                                      image:
+                                                          'assets/filters/events.jpg',
+                                                      color: Color(0xFFEC4899),
+                                                    ),
+                                                active: false,
                                                 onTap: () {
                                                   AppHaptics.light();
-                                                  _revealChrome();
-                                                  setState(() {
-                                                    _category = c.key;
-                                                    _index = 0;
-                                                  });
-                                                  ref
-                                                      .read(
-                                                        selectedCategoryProvider
-                                                            .notifier,
-                                                      )
-                                                      .setCategory(c.key);
-                                                  if (_pages.hasClients) {
-                                                    _pages.jumpToPage(0);
-                                                  }
+                                                  _registerChromeActivity();
+                                                  context.push(
+                                                    AppPaths.exploreEventsLikes,
+                                                  );
                                                 },
                                               ),
                                             ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 10,
-                                            ),
-                                            child: _EventCategoryRing(
-                                              category: const EventFeedCategory(
-                                                key: 'likes',
-                                                label: 'My Likes',
-                                                icon: Icons.favorite_rounded,
-                                                image:
-                                                    'assets/filters/events.jpg',
-                                                color: Color(0xFFEC4899),
-                                              ),
-                                              active: false,
-                                              onTap: () {
-                                                AppHaptics.light();
-                                                _revealChrome(
-                                                  autoHide: false,
-                                                );
-                                                context.push(
-                                                  AppPaths.exploreEventsLikes,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
+                    ),
                   ],
                 );
               },
@@ -337,7 +385,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             bottom: bottomSafe + 18,
             child: _FocusOrb(
               controlsVisible: _eventChromeVisible,
-              onTap: _toggleChrome,
+              pinned: _chromePinned,
+              onTap: _toggleChromePin,
             ),
           ),
         ],
@@ -347,17 +396,22 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 }
 
 class _FocusOrb extends StatelessWidget {
-  const _FocusOrb({required this.controlsVisible, required this.onTap});
+  const _FocusOrb({
+    required this.controlsVisible,
+    required this.pinned,
+    required this.onTap,
+  });
   final bool controlsVisible;
+  final bool pinned;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: controlsVisible
-          ? 'Hide event controls and navigation'
-          : 'Show event controls and navigation',
+      label: pinned
+          ? 'Hide event controls and release focus lock'
+          : 'Keep event controls visible',
       child: BreathingWidget(
         duration: const Duration(milliseconds: 1800),
         minOpacity: .48,
@@ -367,19 +421,24 @@ class _FocusOrb extends StatelessWidget {
           child: ClipOval(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(54),
+                  color: pinned
+                      ? Colors.white.withAlpha(45)
+                      : Colors.black.withAlpha(54),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withAlpha(72),
-                    width: .7,
+                    color: pinned
+                        ? Colors.white.withAlpha(150)
+                        : Colors.white.withAlpha(72),
+                    width: pinned ? 1 : .7,
                   ),
                 ),
                 child: Icon(
-                  controlsVisible
+                  pinned || controlsVisible
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   color: Colors.white,
@@ -756,189 +815,199 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
               ),
             ),
           ),
-          if (widget.chromeVisible)
-            Stack(
-              fit: StackFit.expand,
-              children: [
-                Positioned(
-                  right: 12,
-                  bottom: bottom + 110,
-                  child: Column(
-                    children: [
-                      _RailBtn(
-                        icon: favorited
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        color: favorited
-                            ? const Color(0xFFF43F5E)
-                            : Colors.white,
-                        onTap: _toggleFavorite,
-                      ),
-                      const SizedBox(height: 10),
-                      EventMuteButton(
-                        soundOn: ref.watch(deckSoundOnProvider),
-                        onToggle: () {
-                          widget.onChromeInteraction();
-                          final next = !ref.read(deckSoundOnProvider);
-                          ref
-                              .read(deckSoundOnProvider.notifier)
-                              .setSoundOn(next);
-                          _player?.setVolume(next ? 1 : 0);
-                          if (next) _player?.play();
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 6,
-                          horizontal: 4,
+          IgnorePointer(
+            ignoring: !widget.chromeVisible,
+            child: AnimatedOpacity(
+              opacity: widget.chromeVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Positioned(
+                    right: 12,
+                    bottom: bottom + 110,
+                    child: Column(
+                      children: [
+                        _RailBtn(
+                          icon: favorited
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          color: favorited
+                              ? const Color(0xFFF43F5E)
+                              : Colors.white,
+                          onTap: _toggleFavorite,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(86),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withAlpha(44),
-                            width: .7,
+                        const SizedBox(height: 10),
+                        EventMuteButton(
+                          soundOn: ref.watch(deckSoundOnProvider),
+                          onToggle: () {
+                            widget.onChromeInteraction();
+                            final next = !ref.read(deckSoundOnProvider);
+                            ref
+                                .read(deckSoundOnProvider.notifier)
+                                .setSoundOn(next);
+                            _player?.setVolume(next ? 1 : 0);
+                            if (next) _player?.play();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(86),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: Colors.white.withAlpha(44),
+                              width: .7,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              _RailBtn(
+                                icon: Icons.info_outline_rounded,
+                                size: 42,
+                                onTap: widget.onOpen,
+                              ),
+                              _RailBtn(
+                                icon: Icons.chat_rounded,
+                                size: 42,
+                                onTap: _whatsApp,
+                              ),
+                              _RailBtn(
+                                icon: Icons.share_rounded,
+                                size: 42,
+                                onTap: _share,
+                              ),
+                            ],
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            _RailBtn(
-                              icon: Icons.info_outline_rounded,
-                              size: 42,
-                              onTap: widget.onOpen,
-                            ),
-                            _RailBtn(
-                              icon: Icons.chat_rounded,
-                              size: 42,
-                              onTap: _whatsApp,
-                            ),
-                            _RailBtn(
-                              icon: Icons.share_rounded,
-                              size: 42,
-                              onTap: _share,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                Positioned(
-                  left: 20,
-                  right: 88,
-                  bottom: bottom + 28,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          _Pill(
-                            label: event.category.toUpperCase(),
-                            color: AppTheme.brandPrimary,
-                          ),
-                          if (event.isFree) ...[
-                            const SizedBox(width: 6),
-                            const _Pill(
-                              label: 'FREE',
-                              color: Color(0xFF34D399),
-                            ),
-                          ],
-                          if (_hasVideo) ...[
-                            const SizedBox(width: 6),
-                            const _Pill(
-                              label: 'VIDEO',
-                              color: Color(0xFF38BDF8),
-                            ),
-                          ],
-                          if (event.discountTag != null) ...[
-                            const SizedBox(width: 6),
+                  Positioned(
+                    left: 20,
+                    right: 88,
+                    bottom: bottom + 28,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
                             _Pill(
-                              label: event.discountTag!.toUpperCase(),
-                              color: const Color(0xFFFBBF24),
+                              label: event.category.toUpperCase(),
+                              color: AppTheme.brandPrimary,
                             ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        event.title,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 26,
-                          height: 1.05,
-                          letterSpacing: -0.6,
-                          shadows: const [
-                            Shadow(blurRadius: 12, color: Colors.black),
+                            if (event.isFree) ...[
+                              const SizedBox(width: 6),
+                              const _Pill(
+                                label: 'FREE',
+                                color: Color(0xFF34D399),
+                              ),
+                            ],
+                            if (_hasVideo) ...[
+                              const SizedBox(width: 6),
+                              const _Pill(
+                                label: 'VIDEO',
+                                color: Color(0xFF38BDF8),
+                              ),
+                            ],
+                            if (event.discountTag != null) ...[
+                              const SizedBox(width: 6),
+                              _Pill(
+                                label: event.discountTag!.toUpperCase(),
+                                color: const Color(0xFFFBBF24),
+                              ),
+                            ],
                           ],
                         ),
-                      ),
-                      if (event.organizerName != null) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 10),
                         Text(
-                          'by ${event.organizerName}',
+                          event.title,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 26,
+                            height: 1.05,
+                            letterSpacing: -0.6,
+                            shadows: const [
+                              Shadow(blurRadius: 12, color: Colors.black),
+                            ],
+                          ),
+                        ),
+                        if (event.organizerName != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'by ${event.organizerName}',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                        if (event.promoText != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            event.promoText!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white.withAlpha(220),
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (event.eventDate != null)
+                              _MetaChip(
+                                icon: Icons.calendar_today_rounded,
+                                label: DateFormat('MMM d · h:mm a')
+                                    .format(event.eventDate!.toLocal()),
+                              ),
+                            if (event.location != null)
+                              _MetaChip(
+                                icon: Icons.location_on_rounded,
+                                label: event.location!,
+                              ),
+                            if (!event.isFree && event.priceText != null)
+                              _MetaChip(
+                                icon: Icons.confirmation_number_rounded,
+                                label: event.priceText!,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _chromePinnedHelp,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
-                      if (event.promoText != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          event.promoText!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white.withAlpha(220),
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (event.eventDate != null)
-                            _MetaChip(
-                              icon: Icons.calendar_today_rounded,
-                              label: DateFormat('MMM d · h:mm a')
-                                  .format(event.eventDate!.toLocal()),
-                            ),
-                          if (event.location != null)
-                            _MetaChip(
-                              icon: Icons.location_on_rounded,
-                              label: event.location!,
-                            ),
-                          if (!event.isFree && event.priceText != null)
-                            _MetaChip(
-                              icon: Icons.confirmation_number_rounded,
-                              label: event.priceText!,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Swipe up for next · tap video for focus controls',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+          ),
         ],
       ),
     );
   }
+
+  static const _chromePinnedHelp =
+      'Swipe up for next · eye keeps controls visible';
 }
 
 class _RailBtn extends StatelessWidget {
