@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +48,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   final math.Random _random = math.Random();
   final FocusNode _focusNode = FocusNode();
   final LiveVoiceInput _voice = LiveVoiceInput.instance;
+  final AiEdgeRepository _ai = AiEdgeRepository();
   Timer? _promptTimer;
   Timer? _countdownTimer;
   int _promptIndex = 0;
@@ -53,6 +56,9 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   double _voiceLevel = 0;
   bool _voiceActive = false;
   bool _submittingVoice = false;
+  bool _inlineAiLoading = false;
+  String? _inlineQuestion;
+  String? _inlineAnswer;
   late final AnimationController _glintController;
 
   bool get _isEditableSearch => widget.controller != null;
@@ -61,7 +67,8 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     if (!_isEditableSearch) return true;
     return (widget.controller?.text.trim().isEmpty ?? true) &&
         !_focusNode.hasFocus &&
-        !_voiceActive;
+        !_voiceActive &&
+        !_inlineAiLoading;
   }
 
   String get _place {
@@ -282,16 +289,84 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     }
 
     if (!_runDirectSearch(input)) {
-      if (widget.onSubmitted != null) {
-        widget.onSubmitted!(input);
+      // First conversational question is answered directly under the dashboard
+      // field. A second free-form question means the user is continuing the
+      // conversation, so expand into Intel Core through the existing callback.
+      if (_inlineAnswer != null && !_inlineAiLoading) {
+        widget.onSubmitted?.call(input);
       } else {
-        context.go(
-          '${AppPaths.clientFilters}?q=${Uri.encodeQueryComponent(input)}',
-        );
-        widget.controller?.clear();
+        unawaited(_runInlineAi(input));
       }
     }
     FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  Future<void> _runInlineAi(String input) async {
+    if (_inlineAiLoading) return;
+    setState(() {
+      _inlineAiLoading = true;
+      _inlineQuestion = input;
+      _inlineAnswer = null;
+    });
+    widget.controller?.clear();
+
+    try {
+      final reply = await _ai.chatConcierge(
+        messages: [
+          const AiChatMessage(
+            role: 'system',
+            content:
+                'This reply is shown in the compact SWIPESS dashboard search area. '
+                'Answer in 1-3 short sentences. Be useful and direct. Do not mention '
+                'that this is a compact UI. Preserve any useful SWIPESS action tags.',
+          ),
+          AiChatMessage(role: 'user', content: input),
+        ],
+        locationContext: {
+          'passportMode': true,
+          'passportLabel': widget.locationLabel,
+          'radiusKm': 50,
+        },
+        stream: false,
+      );
+      if (!mounted) return;
+      final parsed = ConciergeParse.of(reply);
+      final clean = parsed.cleanContent.trim();
+      setState(() {
+        _inlineAiLoading = false;
+        _inlineAnswer = clean.isNotEmpty ? clean : reply.trim();
+      });
+    } on AiUnavailableException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _inlineAiLoading = false;
+        _inlineAnswer = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _inlineAiLoading = false;
+        _inlineAnswer = 'AI is temporarily unavailable. Try again.';
+      });
+    }
+  }
+
+  void _continueInChat() {
+    final question = _inlineQuestion?.trim();
+    if (question == null || question.isEmpty) {
+      widget.onTap?.call();
+      return;
+    }
+    widget.onSubmitted?.call(question);
+  }
+
+  void _dismissInlineAi() {
+    if (!mounted) return;
+    setState(() {
+      _inlineQuestion = null;
+      _inlineAnswer = null;
+      _inlineAiLoading = false;
+    });
   }
 
   bool _runDirectSearch(String raw) {
@@ -480,6 +555,144 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     );
   }
 
+  Widget _inlineAiPanel({
+    required bool isLight,
+    required Color ink,
+    required Color blue,
+  }) {
+    final answer = _inlineAnswer;
+    if (!_inlineAiLoading && (answer == null || answer.trim().isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 7),
+      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: isLight ? blue.withAlpha(10) : blue.withAlpha(20),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: blue.withAlpha(isLight ? 70 : 90)),
+      ),
+      child: _inlineAiLoading
+          ? Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: blue,
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Text(
+                  'Swipess AI is thinking…',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink.withAlpha(180),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: blue, size: 14),
+                    const SizedBox(width: 5),
+                    Text(
+                      'SWIPESS AI',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: blue,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _dismissInlineAi,
+                      child: Padding(
+                        padding: const EdgeInsets.all(3),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 16,
+                          color: ink.withAlpha(120),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  answer!,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink,
+                    fontSize: 12.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      'Ask another question to continue in chat',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink.withAlpha(120),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _continueInChat,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: blue.withAlpha(isLight ? 18 : 32),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: blue.withAlpha(75)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Continue',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: blue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.arrow_outward_rounded,
+                              color: blue,
+                              size: 13,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
@@ -575,7 +788,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                                   )
                                 : null,
                             hintText: _voiceActive
-                                ? 'Speak now — words appear here…'
+                                ? 'Recording — tap Stop when finished'
                                 : null,
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: blue.withAlpha(190),
@@ -701,7 +914,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
               child: Text(
                 _countdown != null
                     ? 'Sending in $_countdown · speak again to keep recording'
-                    : 'Listening · tap the blue stop button to finish',
+                    : 'Recording · waveform is live · tap Stop to transcribe',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
@@ -711,23 +924,23 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                 ),
               ),
             ),
-          ] else ...[
-            const SizedBox(height: 5),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Powered by Gemini · AI can make mistakes.',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
-                  color: ink.withAlpha(isLight ? 135 : 170),
-                  fontWeight: FontWeight.w500,
-                  fontSize: 10.5,
-                  letterSpacing: .02,
-                ),
+          ],
+          _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
+          const SizedBox(height: 5),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Swipess AI · can make mistakes.',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.plusJakartaSans(
+                color: ink.withAlpha(isLight ? 135 : 170),
+                fontWeight: FontWeight.w500,
+                fontSize: 10.5,
+                letterSpacing: .02,
               ),
             ),
-          ],
+          ),
           const SizedBox(height: 7),
           Row(
             children: [
