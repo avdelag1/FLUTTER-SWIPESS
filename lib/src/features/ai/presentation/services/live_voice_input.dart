@@ -18,7 +18,9 @@ class LiveVoiceInput {
 
   static final LiveVoiceInput instance = LiveVoiceInput._();
 
-  final VoiceTranscribeRepository _voice = VoiceTranscribeRepository();
+  VoiceTranscribeRepository? _voice;
+  VoiceTranscribeRepository get _nativeVoice =>
+      _voice ??= VoiceTranscribeRepository();
   final BrowserLiveSpeech _browser = BrowserLiveSpeech();
 
   bool _active = false;
@@ -64,7 +66,7 @@ class LiveVoiceInput {
       await cancel();
     } else if (_active && identical(_owner, owner)) {
       if (_usingBrowser) return true;
-      return _voice.isRecording();
+      return _nativeVoice.isRecording();
     }
 
     _owner = owner;
@@ -82,11 +84,11 @@ class LiveVoiceInput {
     if (_starting) return false;
     _starting = true;
 
-    // IMPORTANT: never start package:record on Flutter Web. The production
-    // Chrome failure showed a page-sized gray platform surface while recording.
-    // Native browser recognition needs no visible DOM/platform-view surface and
-    // provides true interim transcription instead of waiting for a full audio
-    // segment to upload.
+    // IMPORTANT: never instantiate or start package:record on Flutter Web. The
+    // production Chrome failure showed a page-sized gray platform surface while
+    // recording. Native browser recognition needs no visible DOM/platform-view
+    // surface and provides true interim transcription instead of waiting for a
+    // full audio segment to upload.
     if (kIsWeb) {
       try {
         if (!_browser.isSupported) {
@@ -172,7 +174,7 @@ class LiveVoiceInput {
     // Supabase transcription endpoint. This path is intentionally never used
     // by Flutter Web.
     try {
-      final started = await _voice.start();
+      final started = await _nativeVoice.start();
       if (!started) {
         _onError?.call(
           'Microphone permission is blocked. Allow microphone access and try again.',
@@ -199,7 +201,7 @@ class LiveVoiceInput {
 
   void _listenToAmplitude() {
     unawaited(_amplitudeSubscription?.cancel());
-    _amplitudeSubscription = _voice
+    _amplitudeSubscription = _nativeVoice
         .amplitudeStream(interval: const Duration(milliseconds: 90))
         .listen(
           (amplitude) {
@@ -257,9 +259,9 @@ class LiveVoiceInput {
     String text = '';
     try {
       if (shouldTranscribe) {
-        text = await _voice.stop();
+        text = await _nativeVoice.stop();
       } else {
-        await _voice.cancel();
+        await _nativeVoice.cancel();
       }
     } catch (e) {
       _onError?.call(e.toString());
@@ -283,7 +285,7 @@ class LiveVoiceInput {
 
     if (restart && _active) {
       try {
-        await _voice.start();
+        await _nativeVoice.start();
         _segmentHasSpeech = false;
         _listenToAmplitude();
       } catch (_) {
@@ -309,8 +311,8 @@ class LiveVoiceInput {
     try {
       if (_usingBrowser) {
         await _browser.cancel();
-      } else {
-        await _voice.cancel();
+      } else if (_voice != null) {
+        await _nativeVoice.cancel();
       }
     } catch (_) {}
 
