@@ -191,6 +191,7 @@
       var intentionalStop = false;
       var finalText = '';
       var restartTimer = null;
+      var selectedLang = null;
 
       // Shared event queue. Dart drains this via polling.
       window.SwipessSpeechQueue = [];
@@ -215,11 +216,18 @@
           recognition.interimResults = true;
           // More alternatives = browser picks the best transcript.
           recognition.maxAlternatives = 3;
-          // Prefer the user's OS language; fall back to en-US.
+          // Prefer selected language; fallback to OS language; fallback to en-US.
           try {
-            var lang = navigator.language || 'en-US';
+            var lang = selectedLang || navigator.language || 'en-US';
             // Normalize: 'en' → 'en-US', 'es' → 'es-ES', etc.
-            if (lang.indexOf('-') === -1) lang = lang + '-' + lang.toUpperCase();
+            if (lang.indexOf('-') === -1) {
+              if (lang.toLowerCase() === 'en') lang = 'en-US';
+              else if (lang.toLowerCase() === 'es') lang = 'es-ES';
+              else if (lang.toLowerCase() === 'fr') lang = 'fr-FR';
+              else if (lang.toLowerCase() === 'pt') lang = 'pt-BR';
+              else if (lang.toLowerCase() === 'zh') lang = 'zh-CN';
+              else lang = lang + '-' + lang.toUpperCase();
+            }
             recognition.lang = lang;
           } catch(e){}
 
@@ -300,6 +308,9 @@
       }
 
       window.SwipessSpeech = {
+        setLanguage: function(lang) {
+          selectedLang = lang;
+        },
         isSupported: function () {
           return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
         },

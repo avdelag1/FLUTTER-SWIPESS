@@ -13,6 +13,8 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/concierge_sheet_host.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
@@ -248,6 +250,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
     AppHaptics.light();
     final started = await _voice.start(
+      languageCode: ref.read(voiceLanguageProvider).localeCode,
       owner: this,
       initialText: _controller.text,
       onText: (text) {
@@ -1119,6 +1122,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           ),
                         ),
                       const SizedBox(width: 6),
+                      if (voiceActive) ...[
+                        VoiceLanguageSelector(isLight: isLight),
+                        const SizedBox(width: 4),
+                      ],
                       Expanded(
                         child: TextField(
                           focusNode: _focusNode,

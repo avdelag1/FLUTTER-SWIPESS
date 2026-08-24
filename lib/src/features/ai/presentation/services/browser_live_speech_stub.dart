@@ -4,6 +4,7 @@ typedef BrowserSpeechErrorCallback = void Function(String message);
 
 class BrowserLiveSpeech {
   bool get isSupported => false;
+  void setLanguage(String langCode) {}
 
   Future<bool> start({
     required BrowserSpeechTextCallback onText,

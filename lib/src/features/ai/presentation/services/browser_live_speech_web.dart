@@ -39,6 +39,15 @@ class BrowserLiveSpeech {
     }
   }
 
+  void setLanguage(String langCode) {
+    if (!_bridgeReady) return;
+    try {
+      (js.context['SwipessSpeech'] as js.JsObject)
+          .callMethod('setLanguage', [langCode]);
+    } catch (_) {}
+  }
+
+
   Future<bool> start({
     required BrowserSpeechTextCallback onText,
     required BrowserSpeechListeningCallback onListening,

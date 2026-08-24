@@ -74,6 +74,14 @@ class LiveVoiceInput {
     if (levelNotifier.value != 0) levelNotifier.value = 0;
   }
 
+  void setLanguage(String langCode) {
+    if (kIsWeb) {
+      _browser.setLanguage(langCode);
+    }
+    // Native VoiceTranscribeRepository (iOS/Android plugin) handles its own
+    // locale via speech_to_text if implemented. This fixes the web implementation.
+  }
+
   Future<bool> start({
     required Object owner,
     required String initialText,
@@ -83,7 +91,10 @@ class LiveVoiceInput {
     ValueChanged<double>? onSoundLevel,
     ValueChanged<String>? onError,
     ListenMode listenMode = ListenMode.dictation,
+    String? languageCode,
   }) async {
+    if (languageCode != null) setLanguage(languageCode);
+
     if (_active && !identical(_owner, owner)) {
       await cancel();
     } else if (_active && identical(_owner, owner)) {

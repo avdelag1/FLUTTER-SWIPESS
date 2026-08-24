@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -207,6 +208,7 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
     AppHaptics.light();
     _focusNode.requestFocus();
     final started = await _voice.start(
+      languageCode: ref.read(voiceLanguageProvider).localeCode,
       owner: this,
       initialText: widget.controller?.text ?? '',
       onText: (text) {
@@ -655,6 +657,10 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
             child: Row(
               children: [
                 _micButton(isLight: isLight, blue: blue),
+                if (_voiceActive) ...[
+                  const SizedBox(width: 4),
+                  VoiceLanguageSelector(isLight: isLight),
+                ],
                 const SizedBox(width: 7),
                 Expanded(
                   child: Stack(
