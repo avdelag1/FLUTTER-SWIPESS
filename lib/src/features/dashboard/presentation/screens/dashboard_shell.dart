@@ -19,7 +19,6 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
-import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
@@ -221,53 +220,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ),
             ),
           ),
-          if (isEvents)
-            Positioned(
-              top: safe.top + 132,
-              right: 14,
-              child: IgnorePointer(
-                ignoring: !persistentChromeVisible,
-                child: AnimatedOpacity(
-                  opacity: persistentChromeVisible ? 1 : 0,
-                  duration: chromeMotionDuration,
-                  curve: Curves.easeOutCubic,
-                  child: AnimatedSlide(
-                    offset: persistentChromeVisible
-                        ? Offset.zero
-                        : const Offset(0.16, 0),
-                    duration: chromeMotionDuration,
-                    curve: Curves.easeOutCubic,
-                    child: ClipOval(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: Material(
-                          color: Colors.black.withAlpha(72),
-                          shape: CircleBorder(
-                            side: BorderSide(
-                              color: Colors.white.withAlpha(58),
-                              width: .8,
-                            ),
-                          ),
-                          child: IconButton(
-                            tooltip: 'Saved events',
-                            icon: const Icon(
-                              Icons.favorite_rounded,
-                              color: Color(0xFFFF4D8D),
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              AppHaptics.light();
-                              ref.invalidate(favoritedEventsProvider);
-                              context.push(AppPaths.exploreEventsLikes);
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           if (showShellBack)
             Positioned(
               top: MediaQuery.paddingOf(context).top + _headerInset,
