@@ -571,6 +571,13 @@ class AiEdgeRepository {
       }
     }
     final data = _asMap(raw);
+    if (data.containsKey('error')) {
+      final err = data['error'];
+      final msg = err is Map ? err['message']?.toString() : err?.toString();
+      if (msg != null && msg.isNotEmpty) {
+        throw AiUnavailableException(msg);
+      }
+    }
     final reply = data['reply']?.toString().trim();
     if (reply != null && reply.isNotEmpty) return reply;
     final choices = data['choices'];
@@ -674,6 +681,7 @@ class AiEdgeRepository {
       var carry = '';
       await for (final chunk in resp.stream.transform(utf8.decoder)) {
         carry += chunk;
+        if (carry.trimLeft().startsWith('{')) continue;
         if (contentType.contains('text/event-stream') ||
             carry.trimLeft().startsWith('data:')) {
           final parsed = _consumeSse(carry);
@@ -721,7 +729,7 @@ class AiEdgeRepository {
     final lines = raw.split('\n');
     final incomplete = !raw.endsWith('\n');
     final complete = incomplete ? lines.sublist(0, lines.length - 1) : lines;
-    final rest = incomplete ? lines.last : '';
+    var rest = incomplete ? lines.last : '';
     for (var line in complete) {
       if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
       if (line.startsWith(':') || line.trim().isEmpty) continue;
@@ -733,7 +741,7 @@ class AiEdgeRepository {
         final delta = _deltaFromChunk(parsed);
         if (delta != null && delta.isNotEmpty) buf.write(delta);
       } catch (_) {
-        // Keep incomplete JSON in rest by prepending — skip for now.
+        rest = '$line\n$rest';
       }
     }
     return (delta: buf.toString(), rest: rest);

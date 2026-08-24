@@ -373,6 +373,12 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final input = raw.trim();
     if (input.isEmpty) return false;
     final q = _normalize(input);
+    
+    // If it looks like a conversational question, skip direct routing so the AI can answer inline.
+    if (q.split(' ').length > 4 || RegExp(r'\b(what|how|why|can|could|would|please|tell|give)\b').hasMatch(q)) {
+      return false;
+    }
+
     bool has(String pattern) => RegExp(pattern).hasMatch(q);
 
     if (has(
