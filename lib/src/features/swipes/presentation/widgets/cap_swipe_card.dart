@@ -73,9 +73,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   VideoPlayerController? _video;
   String? _boundVideo;
 
-  static const _holdDelay = Duration(milliseconds: 120);
+  // A normal tap should always win. Zoom only begins after a clearly deliberate
+  // press, while tiny movement cancels the pending hold quickly so card swipes
+  // remain immediate.
+  static const _holdDelay = Duration(milliseconds: 360);
   static const _zoomScale = 3.2;
-  static const _cancelMovePx = 25.0;
+  static const _cancelMovePx = 10.0;
+  static const _tapMovePx = 12.0;
 
   List<String> get _media {
     final images = widget.listing.images;
@@ -111,7 +115,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return;
     }
     if (oldWidget.listing.id != widget.listing.id || !oldWidget.isTop) {
-      _syncVideo();
+      unawaited(_syncVideo());
     }
   }
 
@@ -131,9 +135,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   void _setPhoto(int index) {
     final media = _media;
     if (media.isEmpty) return;
-    setState(() => _photoIndex = index % media.length);
-    widget.onPhotoIndexChanged?.call(_photoIndex);
-    _syncVideo();
+    final normalized = ((index % media.length) + media.length) % media.length;
+    if (normalized == _photoIndex) return;
+
+    // The UI index and the already-prefetched image swap happen in the same
+    // frame. Video setup can continue asynchronously without delaying taps.
+    setState(() => _photoIndex = normalized);
+    widget.onPhotoIndexChanged?.call(normalized);
+    unawaited(_syncVideo());
   }
 
   Future<void> _syncVideo() async {
@@ -146,8 +155,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (media.isEmpty) return;
     final url = media[_photoIndex % media.length];
     if (!_isVideo(url)) {
-      _disposeVideo();
-      if (mounted) setState(() {});
+      // An image is already visible because _setPhoto rebuilt synchronously;
+      // avoid a redundant second rebuild when leaving video media.
+      if (_video != null || _boundVideo != null) _disposeVideo();
       return;
     }
     if (url == _boundVideo && _video != null) return;
@@ -196,6 +206,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   void _endZoom() {
     _holdTimer?.cancel();
     _holdPending = false;
+    _pointerStart = null;
+    _movedPastCancel = false;
     if (_zoomed) {
       setState(() {
         _zoomed = false;
@@ -252,10 +264,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
     if (pending && start != null) {
       final dist = (e.localPosition - start).distance;
-      if (dist < 12) {
+      if (dist < _tapMovePx) {
         _handleTap(e.localPosition);
       }
     }
+    _movedPastCancel = false;
   }
 
   void _handleTap(Offset local) {
@@ -266,32 +279,37 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     final x = local.dx;
     final y = local.dy;
 
-    // Top strip summons chrome (Cap ChromeSummonZones).
+    // Top strip summons all shared chrome: header, bottom dock and the card rail.
     if (y < 56) {
+      AppHaptics.light();
       widget.onSummonChrome?.call();
       return;
     }
 
+    // Edge taps are intentionally checked before the center action so they can
+    // flip photos at full tap speed without waiting on any zoom recognizer.
     final media = _media;
     if (media.length > 1 && x < w * 0.28) {
       AppHaptics.selection();
-      _setPhoto((_photoIndex - 1 + media.length) % media.length);
+      _setPhoto(_photoIndex - 1);
       return;
     }
     if (media.length > 1 && x > w * 0.72) {
       AppHaptics.selection();
-      _setPhoto((_photoIndex + 1) % media.length);
+      _setPhoto(_photoIndex + 1);
       return;
     }
 
-    // Center tap → Insights
+    // Center tap → Insights.
     if (y > h * 0.25 && y < h * 0.75) {
       AppHaptics.light();
       widget.onInsights?.call();
     }
   }
 
-  bool get interceptsDrag => _zoomed || _holdPending;
+  // A pending hold must never steal the parent card's horizontal drag. Only an
+  // already-activated deliberate zoom locks the swipe gesture.
+  bool get interceptsDrag => _zoomed;
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +327,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         current != null &&
         _isVideo(current)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && widget.isTop) _syncVideo();
+        if (mounted && widget.isTop) unawaited(_syncVideo());
       });
     }
 
@@ -319,6 +337,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: Listener(
+        behavior: HitTestBehavior.translucent,
         onPointerDown: _onPointerDown,
         onPointerMove: _onPointerMove,
         onPointerUp: _onPointerUp,
@@ -332,7 +351,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
               AnimatedContainer(
                 duration: _zoomed
                     ? Duration.zero
-                    : const Duration(milliseconds: 220),
+                    : const Duration(milliseconds: 120),
+                curve: Curves.easeOutCubic,
                 transformAlignment: Alignment.center,
                 transform: Matrix4.identity()
                   ..translateByDouble(_zoomPan.dx, _zoomPan.dy, 0, 1)
@@ -352,12 +372,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         alignment: const Alignment(0, -0.12),
                         width: double.infinity,
                         height: double.infinity,
-                        // Decode near display size — full Unsplash
-                        // bitmaps crush Flutter web FPS.
+                        // Decode near display size — full remote bitmaps crush
+                        // Flutter FPS. SwipeableCardStack precaches using this
+                        // exact resized key so edge taps display immediately.
                         cacheWidth: (MediaQuery.sizeOf(context).width * 2)
                             .round()
                             .clamp(480, 1600),
-                        filterQuality: FilterQuality.medium,
+                        filterQuality: FilterQuality.low,
                         gaplessPlayback: true,
                         errorBuilder: (_, _, _) => _fallback(),
                       ),
@@ -425,7 +446,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
 
-              // UI overlaysegments
+              // Photo index feedback is intentionally fast so it lands in the
+              // same visual beat as the already-cached image swap.
               if (!_zoomed && media.length > 1)
                 Positioned(
                   top: 14,
@@ -437,7 +459,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       for (var i = 0; i < media.length; i++) ...[
                         if (i > 0) const SizedBox(width: 4),
                         AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
+                          duration: const Duration(milliseconds: 90),
+                          curve: Curves.easeOutCubic,
                           width: i == _photoIndex ? 22 : 6,
                           height: 6,
                           decoration: BoxDecoration(
