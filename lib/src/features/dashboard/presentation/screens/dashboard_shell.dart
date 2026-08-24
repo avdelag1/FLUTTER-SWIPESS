@@ -61,6 +61,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     super.dispose();
   }
 
+  /// Reserve real layout space for persistent header/dock chrome.
+  ///
+  /// Previously this only changed MediaQuery.padding. Any child that used fixed
+  /// padding or a Scaffold without SafeArea could still render underneath the
+  /// floating header. Physical padding makes the no-overlap contract global.
   Widget _withPersistentChromeInsets(
     BuildContext context,
     Widget child, {
@@ -68,16 +73,46 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   }) {
     final media = MediaQuery.of(context);
     final padding = media.padding;
-    return MediaQuery(
-      data: media.copyWith(
-        padding: padding.copyWith(
-          top:
-              padding.top + _headerInset + (reserveBackRow ? _backRowInset : 0),
-          bottom: padding.bottom + _dockInset,
-        ),
+    final topInset =
+        padding.top + _headerInset + (reserveBackRow ? _backRowInset : 0);
+    final bottomInset = padding.bottom + _dockInset;
+
+    return Padding(
+      padding: EdgeInsets.only(top: topInset, bottom: bottomInset),
+      child: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        removeBottom: true,
+        child: child,
       ),
-      child: child,
     );
+  }
+
+  void _goBackOrDashboard() {
+    AppHaptics.light();
+    ref.read(chromeVisibilityProvider.notifier).show();
+
+    final nearest = Navigator.of(context);
+    if (nearest.canPop()) {
+      nearest.pop();
+      return;
+    }
+
+    final root = Navigator.of(context, rootNavigator: true);
+    if (root.canPop()) {
+      root.pop();
+      return;
+    }
+
+    try {
+      final router = GoRouter.of(context);
+      if (router.canPop()) {
+        router.pop();
+        return;
+      }
+    } catch (_) {}
+
+    context.go(AppPaths.clientDashboard);
   }
 
   @override
@@ -243,16 +278,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                       icon: const Icon(Icons.arrow_back_ios_new_rounded),
                       iconSize: 18,
                       color: isLight ? Colors.black : Colors.white,
-                      onPressed: () {
-                        AppHaptics.light();
-                        ref.read(chromeVisibilityProvider.notifier).show();
-                        final navigator = Navigator.of(context);
-                        if (navigator.canPop()) {
-                          navigator.pop();
-                          return;
-                        }
-                        context.go(AppPaths.clientDashboard);
-                      },
+                      onPressed: _goBackOrDashboard,
                     ),
                   ),
                 ),
