@@ -23,6 +23,7 @@ import 'package:flutter_swipes/src/features/events/presentation/screens/events_s
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
@@ -271,11 +272,30 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                         final subscription = ref
                             .watch(subscriptionProvider)
                             .value;
+                        final session = ref.watch(appSessionProvider).value;
+                        final dockItems = defaultDashboardNavItems
+                            .where((item) => _dockFeatureEnabled(session, item.id))
+                            .toList(growable: false);
                         return DashboardDock(
-                          items: defaultDashboardNavItems,
+                          items: dockItems,
                           selectedTab: dockSelected,
                           onTabSelected: (id) {
                             ref.read(chromeVisibilityProvider.notifier).show();
+
+                            final feature = _featureForTab(id);
+                            if (feature != null &&
+                                session != null &&
+                                (!session.territoryOpen ||
+                                    !session.featureEnabled(feature))) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'This module is not active in your current SWIPESS market.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
 
                             if (id == NavTab.filter) {
                               FilterBottomSheet.show(context);
@@ -372,4 +392,19 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       ),
     );
   }
+}
+
+String? _featureForTab(NavTab tab) => switch (tab) {
+      NavTab.ai => 'ai',
+      NavTab.idCard => 'local_id',
+      NavTab.seekers => 'seekers',
+      NavTab.legal => 'legal',
+      NavTab.events => 'events',
+      _ => null,
+    };
+
+bool _dockFeatureEnabled(dynamic session, NavTab tab) {
+  final feature = _featureForTab(tab);
+  if (feature == null || session == null) return true;
+  return session.territoryOpen == true && session.featureEnabled(feature) == true;
 }
