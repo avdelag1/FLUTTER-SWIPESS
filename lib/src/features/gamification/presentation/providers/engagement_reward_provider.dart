@@ -36,7 +36,7 @@ class EngagementRewardProgress {
 
     final stepMinutes = readInt('step_minutes', 35);
     return EngagementRewardProgress(
-      steps: readInt('steps', 0).clamp(0, 5),
+      steps: readInt('steps', 0).clamp(0, 5).toInt(),
       stepsNeeded: readInt('steps_needed', 5),
       stepMinutes: stepMinutes,
       activeSecondsRemainder: readInt('active_seconds_remainder', 0),
