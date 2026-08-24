@@ -122,6 +122,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     ('ezriyah', 'Ezriyah', 'Integration Coach', Color(0xFF14B8A6)),
   ];
 
+  @override
+  void initState() {
+    super.initState();
     _loadPrivacy();
     _loadSaved();
     final seed = widget.initialQuery.trim();
