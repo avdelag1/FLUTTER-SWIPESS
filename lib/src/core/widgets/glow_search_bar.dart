@@ -374,8 +374,12 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     if (input.isEmpty) return false;
     final q = _normalize(input);
     
-    // If it looks like a conversational question, skip direct routing so the AI can answer inline.
-    if (q.split(' ').length > 4 || RegExp(r'\b(what|how|why|can|could|would|please|tell|give)\b').hasMatch(q)) {
+    // If the query is clearly a conversational question, answer it with AI
+    // instead of routing to a screen. Short keyword lookups (e.g. "events",
+    // "motorcycles near me") still hit the direct routes below.
+    final isQuestion = q.contains('?') ||
+        RegExp(r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b').hasMatch(q);
+    if (isQuestion && q.split(' ').length > 2) {
       return false;
     }
 

@@ -729,7 +729,7 @@ class AiEdgeRepository {
     final lines = raw.split('\n');
     final incomplete = !raw.endsWith('\n');
     final complete = incomplete ? lines.sublist(0, lines.length - 1) : lines;
-    var rest = incomplete ? lines.last : '';
+    final rest = incomplete ? lines.last : '';
     for (var line in complete) {
       if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
       if (line.startsWith(':') || line.trim().isEmpty) continue;
@@ -741,7 +741,7 @@ class AiEdgeRepository {
         final delta = _deltaFromChunk(parsed);
         if (delta != null && delta.isNotEmpty) buf.write(delta);
       } catch (_) {
-        rest = '$line\n$rest';
+        // Incomplete JSON chunk — skip.
       }
     }
     return (delta: buf.toString(), rest: rest);
