@@ -32,7 +32,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(58);
 
-  static const _hudSize = 39.0;
+  static const _hudSize = 44.0;
 
   void _openProfile(BuildContext context) {
     AppHaptics.medium();
@@ -279,7 +279,7 @@ class _HudButton extends StatelessWidget {
         onTap: onTap,
         child: SizedBox(
           height: AppTopBar._hudSize,
-          width: wide ? (compact ? 43 : 46) : AppTopBar._hudSize,
+          width: wide ? (compact ? 44 : 48) : AppTopBar._hudSize,
           child: Center(child: child),
         ),
       ),

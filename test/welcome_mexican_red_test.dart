@@ -98,7 +98,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     final field = tester.widget<TextField>(find.byType(TextField));
-    expect(field.decoration?.hintText, 'Ask AI to find anything...');
+    expect(
+      field.decoration?.hintText,
+      'Search properties, workers, people, events...',
+    );
     expect(find.byType(SearchFrameShine), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
   });
