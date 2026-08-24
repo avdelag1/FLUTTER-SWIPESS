@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/doc_type_specimen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DocumentVaultScreen extends ConsumerWidget {
@@ -45,7 +47,15 @@ class DocumentVaultScreen extends ConsumerWidget {
                   children: [
                     if (!embedded)
                       IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        tooltip: 'Back to dashboard',
+                        onPressed: () {
+                          AppHaptics.light();
+                          // /documents is commonly opened with GoRouter.go(),
+                          // so there may be nothing in Navigator history to pop.
+                          // Route explicitly to the client dashboard so this
+                          // control can never become a dead back button on web.
+                          context.go(AppPaths.clientDashboard);
+                        },
                         icon: const Icon(
                           Icons.arrow_back_ios_new_rounded,
                           color: Colors.white,
