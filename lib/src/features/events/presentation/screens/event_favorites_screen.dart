@@ -287,175 +287,187 @@ class _LikedEventCard extends StatelessWidget {
         ? 'TBA'
         : DateFormat('MMM d · h:mm a').format(event.eventDate!.toLocal());
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          height: 132,
-          decoration: BoxDecoration(
-            color: const Color(0xFF15171D),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 620;
+        final mediaWidth = compact ? 112.0 : 176.0;
+        final cardHeight = compact ? 136.0 : 152.0;
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onOpen,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(65),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+            child: Ink(
+              height: cardHeight,
+              decoration: BoxDecoration(
+                color: const Color(0xFF15171D),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withAlpha(12)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(65),
+                    blurRadius: 22,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: 135,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _SavedEventPreview(event: event),
-                      const DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Colors.transparent,
-                              Color(0x77000000),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (event.videoUrl?.trim().isNotEmpty == true)
-                        Positioned(
-                          left: 10,
-                          bottom: 10,
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(125),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3B82F6).withAlpha(30),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            event.category.toUpperCase(),
-                            maxLines: 1,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF60A5FA),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 9,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          event.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                            height: 1.2,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          date,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white.withAlpha(185),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          event.location ?? event.category,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white.withAlpha(120),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Center(
-                    child: Tooltip(
-                      message: 'Remove from likes',
-                      child: InkWell(
-                        onTap: onRemove,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 52,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3B82F6).withAlpha(24),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.thumb_up_alt_rounded,
-                                color: Color(0xFF60A5FA),
-                                size: 20,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'LIKED',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF93C5FD),
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Media is intentionally a completely isolated paint zone.
+                    // ClipRect prevents Flutter web video/image paint from ever
+                    // escaping underneath the event copy.
+                    SizedBox(
+                      width: mediaWidth,
+                      child: ClipRect(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            _SavedEventPreview(event: event),
+                            if (event.videoUrl?.trim().isNotEmpty == true)
+                              Positioned(
+                                left: 12,
+                                bottom: 12,
+                                child: Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(150),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withAlpha(45),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 19,
+                                  ),
                                 ),
                               ),
-                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(vertical: 14),
+                      color: Colors.white.withAlpha(18),
+                    ),
+                    SizedBox(width: compact ? 14 : 20),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: compact ? 13 : 16,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              event.category.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF60A5FA),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 9,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              event.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: compact ? 15 : 17,
+                                height: 1.15,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              date,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withAlpha(190),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              event.location ?? event.category,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withAlpha(125),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: compact ? 8 : 16),
+                    Padding(
+                      padding: EdgeInsets.only(right: compact ? 10 : 14),
+                      child: Center(
+                        child: Tooltip(
+                          message: 'Remove from likes',
+                          child: InkWell(
+                            onTap: onRemove,
+                            borderRadius: BorderRadius.circular(18),
+                            child: Container(
+                              width: compact ? 44 : 50,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3B82F6).withAlpha(24),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: const Color(0xFF60A5FA).withAlpha(28),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.thumb_up_alt_rounded,
+                                    color: Color(0xFF60A5FA),
+                                    size: 20,
+                                  ),
+                                  if (!compact) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'LIKED',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFF93C5FD),
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -528,21 +540,30 @@ class _SavedEventPreviewState extends State<_SavedEventPreview> {
   Widget build(BuildContext context) {
     final still = _still;
     if (still != null) {
-      return Image.network(
-        still,
-        fit: BoxFit.cover,
-        cacheWidth: 420,
-        errorBuilder: (_, _, _) => _fallback(),
+      return SizedBox.expand(
+        child: Image.network(
+          still,
+          fit: BoxFit.cover,
+          cacheWidth: 520,
+          errorBuilder: (_, _, _) => _fallback(),
+        ),
       );
     }
+
     final player = _video;
     if (player != null && player.value.isInitialized) {
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: player.value.size.width,
-          height: player.value.size.height,
-          child: VideoPlayer(player),
+      final size = player.value.size;
+      return SizedBox.expand(
+        child: ClipRect(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: VideoPlayer(player),
+            ),
+          ),
         ),
       );
     }
@@ -550,19 +571,21 @@ class _SavedEventPreviewState extends State<_SavedEventPreview> {
   }
 
   Widget _fallback() {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF22304A), Color(0xFF111318)],
+    return const SizedBox.expand(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF22304A), Color(0xFF111318)],
+          ),
         ),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.celebration_rounded,
-          color: Color(0xFF60A5FA),
-          size: 32,
+        child: Center(
+          child: Icon(
+            Icons.celebration_rounded,
+            color: Color(0xFF60A5FA),
+            size: 32,
+          ),
         ),
       ),
     );
