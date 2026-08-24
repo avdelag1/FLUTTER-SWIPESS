@@ -217,6 +217,22 @@ class AiEdgeRepository {
       return marketplaceFallback;
     }
 
+    // Final rescue path: a deliberately simple, authenticated, non-streaming
+    // Edge Function. The primary concierge keeps all marketplace intelligence,
+    // personas, memory and structured tags. This function exists only so an
+    // empty/malformed SSE response can never masquerade as a total AI outage.
+    try {
+      final rescueRaw = await _postEdge(
+        'ai-concierge-fallback',
+        {...payload, 'stream': false},
+        stream: false,
+      );
+      final rescue = _normalizeReply(_parseConciergeReply(rescueRaw) ?? '');
+      if (rescue.isNotEmpty) return rescue;
+    } on AiUnavailableException catch (e) {
+      lastError = e;
+    }
+
     throw lastError ??
         AiUnavailableException(
           'AI is temporarily unavailable. Try again in a moment.',
