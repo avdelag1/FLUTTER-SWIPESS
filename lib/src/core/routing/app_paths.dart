@@ -31,6 +31,7 @@ abstract final class AppPaths {
 
   static const ownerDashboard = '/owner/dashboard';
   static const businessDashboard = '/business/dashboard';
+  static const businessScan = '/business/scan';
   static const ownerProfile = '/owner/profile';
   static const ownerSettings = '/owner/settings';
   static const ownerProperties = '/owner/properties';
