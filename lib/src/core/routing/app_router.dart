@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_
 import 'package:flutter_swipes/src/features/auth/presentation/screens/not_found_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/welcome_screen.dart';
+import 'package:flutter_swipes/src/features/business/presentation/screens/partner_business_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/business_dashboard_screen.dart';
@@ -61,6 +62,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_val
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
+import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/safe_listing_detail_route.dart';
@@ -87,11 +89,46 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
       if (baseRedirect != null) return baseRedirect;
 
-      if (signedIn && state.matchedLocation != AppPaths.subscriptionPackages) {
+      final location = state.matchedLocation;
+      if (signedIn) {
+        final sessionAsync = ref.read(appSessionProvider);
+        final session = sessionAsync.value;
+
+        // Privileged workspaces fail closed. While the authenticated session
+        // contract is still loading, let the role screen render its loading
+        // state instead of bouncing a legitimate staff member away.
+        if (!sessionAsync.isLoading) {
+          if (_isGeneralAdminLocation(location) &&
+              session?.canUseAdminPortal != true) {
+            return AppPaths.clientDashboard;
+          }
+          if (location == AppPaths.legalAdminDashboard &&
+              session?.canUseLegalAdmin != true) {
+            return AppPaths.clientDashboard;
+          }
+          if (location == AppPaths.businessDashboard &&
+              session?.businessActive != true) {
+            return AppPaths.clientDashboard;
+          }
+          if (location == AppPaths.lawyerDashboard &&
+              session?.lawyerActive != true) {
+            return AppPaths.clientDashboard;
+          }
+        }
+
+        if (session != null) {
+          final feature = _marketFeatureForLocation(location);
+          if (feature != null &&
+              (!session.territoryOpen || !session.featureEnabled(feature))) {
+            return AppPaths.clientDashboard;
+          }
+        }
+      }
+
+      if (signedIn && location != AppPaths.subscriptionPackages) {
         final subscription = ref.read(subscriptionProvider).value;
         if (subscription != null) {
           final tier = subscription.effectiveTier;
-          final location = state.matchedLocation;
           if (_isPaidEventsLocation(location) && !tier.canViewEvents) {
             return AppPaths.subscriptionPackages;
           }
@@ -280,7 +317,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppPaths.businessDashboard,
-        redirect: (ctx, state) => AppPaths.ownerDashboard,
+        builder: (ctx, _) => const PartnerBusinessDashboardScreen(),
       ),
       GoRoute(
         path: AppPaths.ownerProfile,
@@ -478,6 +515,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     }
   });
   ref.listen(subscriptionProvider, (_, _) => router.refresh());
+  ref.listen(appSessionProvider, (_, _) => router.refresh());
 
   return router;
 });
@@ -493,22 +531,48 @@ bool _isPaidLegalLocation(String location) =>
     location == AppPaths.legalServices ||
     location == AppPaths.ownerLegalServices;
 
+bool _isGeneralAdminLocation(String location) =>
+    location == AppPaths.adminDashboard ||
+    location == AppPaths.adminEventos ||
+    location == AppPaths.adminPhotos ||
+    location == AppPaths.adminCategoryPhotos ||
+    location == AppPaths.adminPerformance;
+
+String? _marketFeatureForLocation(String location) {
+  if (_isPaidEventsLocation(location)) return 'events';
+  if (_isPaidLegalLocation(location) || location == AppPaths.clientContracts) {
+    return 'legal';
+  }
+  if (location == AppPaths.clientVapId ||
+      location == AppPaths.clientVapIdEdit ||
+      location.startsWith('/vap-validate/')) {
+    return 'local_id';
+  }
+  if (location == AppPaths.clientServices) return 'workers';
+  if (location == AppPaths.exploreSeekers) return 'seekers';
+  if (location == AppPaths.subscriptionPackages) return 'premium';
+  return null;
+}
+
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
     _authSub = ref.listen(authStateProvider, (_, _) => notifyListeners());
     _userSub = ref.listen(currentUserProvider, (_, _) => notifyListeners());
     _grantSub = ref.listen(accessGrantedProvider, (_, _) => notifyListeners());
+    _sessionSub = ref.listen(appSessionProvider, (_, _) => notifyListeners());
   }
 
   late final ProviderSubscription<AsyncValue<dynamic>> _authSub;
   late final ProviderSubscription<dynamic> _userSub;
   late final ProviderSubscription<AsyncValue<bool>> _grantSub;
+  late final ProviderSubscription<AsyncValue<dynamic>> _sessionSub;
 
   @override
   void dispose() {
     _authSub.close();
     _userSub.close();
     _grantSub.close();
+    _sessionSub.close();
     super.dispose();
   }
 }
