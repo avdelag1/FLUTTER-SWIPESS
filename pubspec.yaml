@@ -32,6 +32,7 @@ dependencies:
   latlong2: ^0.10.1
   intl: ^0.20.2
   record: ^6.1.2
+  speech_to_text: ^7.4.0
   qr_flutter: ^4.1.0
   flutter_tts: ^4.2.3
   geolocator: ^14.0.2
