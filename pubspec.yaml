@@ -1,7 +1,7 @@
 name: flutter_swipes
 description: "Swipess — swipe-first discovery for homes, events, and local services."
 publish_to: 'none'
-version: 1.2.40+625
+version: 1.2.41+626
 environment:
   sdk: ^3.12.2
 
@@ -79,16 +79,3 @@ flutter_launcher_icons:
   image_path_ios: "assets/app_icon.png"
   android: true
   ios: true
-  remove_alpha_ios: true
-  background_color_ios: "#000000"
-  web:
-    generate: true
-    image_path: "assets/images/logo.png"
-    background_color: "#000000"
-    theme_color: "#000000"
-  windows:
-    generate: true
-    image_path: "assets/images/logo.png"
-  macos:
-    generate: true
-    image_path: "assets/images/logo.png"
