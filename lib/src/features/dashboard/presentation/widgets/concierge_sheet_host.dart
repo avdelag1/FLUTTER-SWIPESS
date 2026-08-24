@@ -134,7 +134,12 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                             ),
                           ),
                         ),
-                        Expanded(child: widget.child),
+                        Expanded(
+                          child: TooltipVisibility(
+                            visible: false,
+                            child: widget.child,
+                          ),
+                        ),
                       ],
                     ),
                   ),
