@@ -1,0 +1,9 @@
+-- Events use the shared likes table. The historic constraint only allowed
+-- listing/profile/radio_station targets, so event saves were rejected even
+-- though the Flutter UI optimistically showed the liked state.
+alter table public.likes
+  drop constraint if exists likes_target_type_check;
+
+alter table public.likes
+  add constraint likes_target_type_check
+  check (target_type = any (array['listing'::text, 'profile'::text, 'radio_station'::text, 'event'::text]));
