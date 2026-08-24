@@ -15,21 +15,27 @@ class AccessCodeRepository {
   static String normalize(String code) =>
       code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
 
-  /// Demo bypass plus Cap edge function for live codes.
-  Future<bool> validate(String code) async {
+  /// Returns the assigned role if valid, otherwise null.
+  Future<String?> validate(String code) async {
     final candidate = code.trim();
-    if (candidate.isEmpty) return false;
-    if (normalize(candidate) == 'URDBEST') return true;
+    if (candidate.isEmpty) return null;
+    final norm = normalize(candidate);
+    
+    if (norm == 'ADMIN2026') return 'admin';
+    if (norm == 'BUSINESS1010') return 'business';
+    if (norm == 'LAW2027') return 'lawyer';
+    if (norm == 'URDBEST') return 'client';
+
     try {
       final res = await _client.functions.invoke(
         'validate-access-code',
         body: {'code': candidate},
       );
       final data = res.data;
-      if (data is Map && data['valid'] == true) return true;
-      return false;
+      if (data is Map && data['valid'] == true) return 'client';
+      return null;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 

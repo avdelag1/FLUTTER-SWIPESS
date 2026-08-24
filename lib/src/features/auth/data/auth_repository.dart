@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/providers/supabase_provider.dart';
+import 'package:flutter_swipes/src/core/services/access_grant_service.dart';
 import 'package:flutter_swipes/src/features/auth/data/oauth_popup.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -57,11 +58,20 @@ class SupabaseAuthRepository implements AuthRepository {
   }) async {
     final trimmed = name?.trim() ?? '';
     final referral = _webReferral;
+
+    String role = 'client';
+    try {
+      final savedRole = await AccessGrantService.getSavedRole();
+      if (savedRole != null && savedRole != 'client') {
+        role = savedRole;
+      }
+    } catch (_) {}
+
     final res = await _auth.signUp(
       email: email,
       password: password,
       data: {
-        'role': 'client',
+        'role': role,
         'name': trimmed,
         'full_name': trimmed,
         if (referral != null) 'referred_by': referral,

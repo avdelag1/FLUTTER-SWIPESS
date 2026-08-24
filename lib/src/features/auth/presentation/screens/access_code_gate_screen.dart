@@ -50,11 +50,11 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       _verifying = true;
     });
 
-    final ok = await ref.read(accessCodeRepositoryProvider).validate(code);
+    final role = await ref.read(accessCodeRepositoryProvider).validate(code);
     if (!mounted) return;
-    if (ok) {
+    if (role != null) {
       try {
-        await ref.read(accessGrantedProvider.notifier).grant();
+        await ref.read(accessGrantedProvider.notifier).grant(role: role);
         try {
           AppHaptics.light();
         } catch (_) {}

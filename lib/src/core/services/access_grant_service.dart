@@ -12,12 +12,30 @@ class AccessGrantService {
   /// Capacitor native apps never show the access-code gate.
   static bool get skipOnNative => !kIsWeb;
 
-  static Future<void> persist() async {
+  static Future<void> persist({String? role}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _key,
-      jsonEncode({'grantedAt': DateTime.now().millisecondsSinceEpoch, 'v': 1}),
+      jsonEncode({
+        'grantedAt': DateTime.now().millisecondsSinceEpoch,
+        'v': 1,
+        if (role != null) 'role': role,
+      }),
     );
+  }
+
+  static Future<String?> getSavedRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_key);
+      if (raw != null) {
+        final parsed = jsonDecode(raw);
+        if (parsed is Map) {
+          return parsed['role'] as String?;
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   static Future<bool> isGranted() async {

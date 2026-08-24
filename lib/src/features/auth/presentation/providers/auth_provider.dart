@@ -138,8 +138,8 @@ class AccessGrantedNotifier extends AsyncNotifier<bool> {
     return AccessGrantService.isGranted();
   }
 
-  Future<void> grant() async {
-    await AccessGrantService.persist();
+  Future<void> grant({String? role}) async {
+    await AccessGrantService.persist(role: role);
     state = const AsyncData(true);
   }
 
