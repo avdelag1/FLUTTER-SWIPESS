@@ -30,6 +30,14 @@ class VoiceTranscribeRepository {
 
   Future<bool> hasPermission() => _recorder.hasPermission();
 
+  Future<bool> isRecording() => _recorder.isRecording();
+
+  /// Live microphone level used for the in-field waveform. `Amplitude.current`
+  /// is dBFS on supported platforms/web, so callers can normalize it visually.
+  Stream<Amplitude> amplitudeStream({
+    Duration interval = const Duration(milliseconds: 100),
+  }) => _recorder.onAmplitudeChanged(interval);
+
   Future<bool> start() async {
     if (!await _recorder.hasPermission()) return false;
     if (await _recorder.isRecording()) return true;
