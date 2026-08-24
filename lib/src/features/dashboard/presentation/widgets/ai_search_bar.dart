@@ -382,7 +382,17 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                if (_voiceActive)
+                if (_countdown != null)
+                  Text(
+                    '$_countdown',
+                    key: ValueKey(_countdown),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: _voiceActive ? Colors.white : glow,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  )
+                else if (_voiceActive)
                   BreathingWidget(
                     duration: const Duration(milliseconds: 1100),
                     minOpacity: .55,
@@ -395,30 +405,6 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                   )
                 else
                   Icon(Icons.mic_rounded, color: glow, size: 21),
-                if (_countdown != null)
-                  Positioned(
-                    right: -5,
-                    top: -6,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: glow, width: 1.4),
-                      ),
-                      child: Text(
-                        '$_countdown',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: glow,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -586,9 +572,7 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                       border: InputBorder.none,
                       isDense: true,
                       hintText: _voiceActive
-                          ? (_countdown != null
-                                ? 'Sending in $_countdown…'
-                                : 'Listening… your words appear here')
+                          ? 'Listening… your words appear here'
                           : 'Search properties, workers, people, events...',
                       hintStyle: GoogleFonts.plusJakartaSans(
                         color: _voiceActive ? glow : ink.withAlpha(140),

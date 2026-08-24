@@ -34,8 +34,8 @@ class LiveVoiceInput {
   String _committed = '';
   String _lastPublished = '';
 
-  Timer? _silenceFinalizeTimer;
-  Timer? _browserSilenceTimer;
+  Timer? _silenceTimer;
+  Timer? _silenceTimer;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   bool _segmentHasSpeech = false;
   bool _finalizing = false;
@@ -123,7 +123,7 @@ class LiveVoiceInput {
             }
             // Browser silence is based on the last transcript update, not raw
             // room amplitude. Background noise can no longer reset this forever.
-            _armBrowserSilence();
+            _armSilence();
           },
           onListening: (listening) {
             if (!_active || _intentionalStop) return;
@@ -143,6 +143,7 @@ class LiveVoiceInput {
             // Live words remain available even if amplitude capture fails.
           }
           _publishListening(true);
+      _armSilence();
           return true;
         }
 
@@ -164,6 +165,7 @@ class LiveVoiceInput {
       _segmentHasSpeech = false;
       _listenToAmplitude();
       _publishListening(true);
+      _armSilence();
       return true;
     } catch (_) {
       _onError?.call(
@@ -176,15 +178,21 @@ class LiveVoiceInput {
     }
   }
 
-  void _armBrowserSilence() {
-    if (!_active || !_usingBrowser || !_segmentHasSpeech) return;
-    _browserSilenceTimer?.cancel();
-    _browserSilenceTimer = Timer(silenceBeforeCountdown, () {
-      _browserSilenceTimer = null;
-      if (!_active || _intentionalStop || !_usingBrowser || !_segmentHasSpeech) {
-        return;
+  void _armSilence() {
+    _silenceTimer?.cancel();
+    if (!_active || _intentionalStop) return;
+    _silenceTimer = Timer(silenceBeforeCountdown, () {
+      _silenceTimer = null;
+      if (!_active || _intentionalStop) return;
+      if (_usingBrowser) {
+        _onSilence?.call();
+      } else {
+        unawaited(_finalizeSegment(
+          restart: true,
+          triggerSilence: true,
+          forceTranscribe: false,
+        ));
       }
-      _onSilence?.call();
     });
   }
 
@@ -195,35 +203,12 @@ class LiveVoiceInput {
         .listen(
           (amplitude) {
             if (!_active || _intentionalStop || _finalizing) return;
-
-            final level = amplitude.current.isFinite
-                ? amplitude.current
-                : -60.0;
+            final level = amplitude.current.isFinite ? amplitude.current : -60.0;
             _publishSoundLevel(level);
-
-            // On web amplitude is visual feedback only. It must never re-arm
-            // the four-second silence timer because room noise kept auto-send
-            // stuck in LISTENING indefinitely.
-            if (_usingBrowser) return;
-
-            if (level > _nativeSpeechGateDb) {
-              _segmentHasSpeech = true;
-              _silenceFinalizeTimer?.cancel();
-              _silenceFinalizeTimer = Timer(
-                silenceBeforeCountdown,
-                () => unawaited(
-                  _finalizeSegment(
-                    restart: true,
-                    triggerSilence: true,
-                    forceTranscribe: false,
-                  ),
-                ),
-              );
-            }
           },
           onError: (_) {
             if (_active && !_usingBrowser) {
-              _onError?.call('Voice recording stopped. Try the microphone again.');
+              _onError?.call('Voice recording stopped.');
             }
           },
         );
@@ -244,8 +229,8 @@ class LiveVoiceInput {
     if (!_active && !forceTranscribe) return;
 
     _finalizing = true;
-    _silenceFinalizeTimer?.cancel();
-    _silenceFinalizeTimer = null;
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
     _publishSoundLevel(0);
@@ -294,10 +279,10 @@ class LiveVoiceInput {
 
     _intentionalStop = true;
     _active = false;
-    _browserSilenceTimer?.cancel();
-    _silenceFinalizeTimer?.cancel();
-    _browserSilenceTimer = null;
-    _silenceFinalizeTimer = null;
+    _silenceTimer?.cancel();
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
+    _silenceTimer = null;
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
     _publishSoundLevel(0);
@@ -316,8 +301,8 @@ class LiveVoiceInput {
     if (!_active && !_usingBrowser) return;
 
     _intentionalStop = true;
-    _browserSilenceTimer?.cancel();
-    _silenceFinalizeTimer?.cancel();
+    _silenceTimer?.cancel();
+    _silenceTimer?.cancel();
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
 
@@ -347,10 +332,10 @@ class LiveVoiceInput {
   }
 
   void _clearSession({required bool keepOwner}) {
-    _browserSilenceTimer?.cancel();
-    _silenceFinalizeTimer?.cancel();
-    _browserSilenceTimer = null;
-    _silenceFinalizeTimer = null;
+    _silenceTimer?.cancel();
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
+    _silenceTimer = null;
     _active = false;
     _starting = false;
     _intentionalStop = false;
