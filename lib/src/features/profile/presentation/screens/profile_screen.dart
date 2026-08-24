@@ -21,6 +21,7 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_pro
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
+import 'package:flutter_swipes/src/features/gamification/presentation/widgets/engagement_reward_card.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
@@ -286,13 +287,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       const SizedBox(height: 18),
 
-                      // Daily Quests
-                      _Panel(
-                        child: _DailyQuests(
-                          expanded: _questsOpen,
-                          onToggle: () =>
-                              setState(() => _questsOpen = !_questsOpen),
-                        ),
+                      // Active-time loyalty: automatic progress, no claims.
+                      const _Panel(
+                        child: EngagementRewardCard(),
                       ),
                       const SizedBox(height: 14),
 
