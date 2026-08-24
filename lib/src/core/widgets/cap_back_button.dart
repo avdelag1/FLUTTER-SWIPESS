@@ -9,9 +9,10 @@ import 'package:go_router/go_router.dart';
 
 /// Shared compact back control used across phone pages.
 ///
-/// Uses GoRouter history when available. Routes opened with `go()` do not have
-/// a Navigator page to pop, so we fall back to the correct section dashboard
-/// instead of leaving a dead back button on screen.
+/// Always tries the nearest Navigator first, then the root Navigator, then
+/// GoRouter history, and finally a deterministic section fallback. This avoids
+/// dead back buttons on web when a screen was opened with `go()` or from a
+/// nested MaterialPageRoute.
 class CapBackButton extends ConsumerWidget {
   const CapBackButton({
     super.key,
@@ -49,14 +50,32 @@ class CapBackButton extends ConsumerWidget {
       return;
     }
 
-    if (context.canPop()) {
-      context.pop();
+    // Screens opened from profile/cards often live in a nested Navigator.
+    final nearest = Navigator.of(context);
+    if (nearest.canPop()) {
+      nearest.pop();
       return;
     }
 
+    // Some web routes are mounted under the root navigator instead.
+    final root = Navigator.of(context, rootNavigator: true);
+    if (root.canPop()) {
+      root.pop();
+      return;
+    }
+
+    // GoRouter can still have declarative history even when Navigator reports
+    // no imperative page to pop.
+    try {
+      final router = GoRouter.of(context);
+      if (router.canPop()) {
+        router.pop();
+        return;
+      }
+    } catch (_) {}
+
     final fallback = _resolvedFallback(context);
-    final current = _currentPath(context);
-    if (current != fallback) context.go(fallback);
+    context.go(fallback);
   }
 
   bool _followsProfileChrome(BuildContext context) {
@@ -80,37 +99,38 @@ class CapBackButton extends ConsumerWidget {
         child: Semantics(
           button: true,
           label: 'Back',
-          child: Material(
-            color: Colors.transparent,
-            child: InkResponse(
-              key: const ValueKey('cap-back-button'),
-              onTap: () => _handleTap(context),
-              containedInkWell: true,
-              highlightShape: BoxShape.circle,
-              radius: 22,
-              child: ClipOval(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isLight
-                          ? Colors.white.withAlpha(178)
-                          : Colors.white.withAlpha(22),
-                      border: isLight
-                          ? Border.all(
-                              color: Colors.black.withAlpha(18),
-                              width: .7,
-                            )
-                          : null,
-                    ),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: isLight ? const Color(0xFF111318) : color,
-                      size: 18,
+          child: GestureDetector(
+            key: const ValueKey('cap-back-button'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _handleTap(context),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Center(
+                child: ClipOval(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isLight
+                            ? Colors.white.withAlpha(178)
+                            : Colors.white.withAlpha(22),
+                        border: isLight
+                            ? Border.all(
+                                color: Colors.black.withAlpha(18),
+                                width: .7,
+                              )
+                            : null,
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: isLight ? const Color(0xFF111318) : color,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
