@@ -8,9 +8,9 @@ class EngagementRewardProgress {
   const EngagementRewardProgress({
     this.steps = 0,
     this.stepsNeeded = 5,
-    this.stepMinutes = 35,
+    this.stepMinutes = 45,
     this.activeSecondsRemainder = 0,
-    this.secondsToNextStep = 2100,
+    this.secondsToNextStep = 2700,
     this.totalSteps = 0,
     this.tokensAwarded = 0,
   });
@@ -36,7 +36,7 @@ class EngagementRewardProgress {
     int readInt(String key, int fallback) =>
         (json[key] as num?)?.toInt() ?? fallback;
 
-    final stepMinutes = readInt('step_minutes', 35);
+    final stepMinutes = readInt('step_minutes', 45);
     return EngagementRewardProgress(
       steps: readInt('steps', 0).clamp(0, 5).toInt(),
       stepsNeeded: readInt('steps_needed', 5),
