@@ -56,7 +56,7 @@ class LiveVoiceInput {
     if (_active && !identical(_owner, owner)) {
       await cancel();
     } else if (_active && identical(_owner, owner)) {
-      return true;
+      return _speech.isListening;
     }
 
     _owner = owner;
@@ -77,12 +77,12 @@ class LiveVoiceInput {
     }
 
     _active = true;
-    _onListeningChanged?.call(true);
     final started = await _listen();
     if (!started) {
       await cancel();
       return false;
     }
+    _onListeningChanged?.call(true);
     return true;
   }
 
@@ -98,7 +98,7 @@ class LiveVoiceInput {
           if (message.isNotEmpty &&
               !message.contains('error_no_match') &&
               !message.contains('error_speech_timeout')) {
-            _onError?.call(message);
+            _onError?.call(_friendlyError(message));
           }
           if (error.permanent) {
             unawaited(cancel());
@@ -111,7 +111,9 @@ class LiveVoiceInput {
       _available = false;
     }
     if (!_available) {
-      _onError?.call('Speech recognition is not available on this device.');
+      _onError?.call(
+        'Voice input is unavailable. Check microphone permission and try again.',
+      );
     }
     return _available;
   }
@@ -128,6 +130,7 @@ class LiveVoiceInput {
           final words = result.recognizedWords.trim();
           if (words.isEmpty) return;
 
+          _onListeningChanged?.call(true);
           _sessionWords = words;
           _publishTranscript();
           _armSilence();
@@ -150,16 +153,47 @@ class LiveVoiceInput {
           listenFor: const Duration(minutes: 2),
         ),
       );
-      return _speech.isListening || _active;
-    } catch (error) {
+
+      // Some browser implementations report `listen()` as completed before the
+      // Web Speech session is actually live. Wait briefly for the real listening
+      // state instead of marking the UI as recording just because `_active` is
+      // true. This prevents the stuck/blank recording overlay failure mode.
+      for (var i = 0; i < 8; i++) {
+        if (_speech.isListening) return true;
+        if (!_active || _intentionalStop) return false;
+        await Future<void>.delayed(const Duration(milliseconds: 75));
+      }
+
       if (_active) {
-        _onError?.call('Could not start voice input.');
-        _scheduleRestart();
+        _onError?.call(
+          'Microphone did not start. Allow microphone access in your browser or device settings, then try again.',
+        );
+      }
+      return false;
+    } catch (_) {
+      if (_active) {
+        _onError?.call(
+          'Could not start voice input. Check microphone permission and try again.',
+        );
       }
       return false;
     } finally {
       _starting = false;
     }
+  }
+
+  String _friendlyError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('permission') ||
+        lower.contains('denied') ||
+        lower.contains('not-allowed') ||
+        lower.contains('not_allowed')) {
+      return 'Microphone permission is blocked. Allow microphone access and try again.';
+    }
+    if (lower.contains('network')) {
+      return 'Voice recognition lost its connection. Try again.';
+    }
+    return 'Voice input stopped: $raw';
   }
 
   void _publishTranscript() {
@@ -243,6 +277,7 @@ class LiveVoiceInput {
     _silenceTimer = null;
     _restartTimer = null;
     _onListeningChanged?.call(false);
+    _onSoundLevel?.call(0);
     _onText = null;
     _onSoundLevel = null;
     _onListeningChanged = null;
