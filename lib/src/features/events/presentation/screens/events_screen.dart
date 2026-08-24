@@ -3,11 +3,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
@@ -23,10 +23,11 @@ import 'package:video_player/video_player.dart';
 
 /// Full-screen, Reels-style event deck.
 ///
-/// Events enters with all controls visible. In automatic mode they fade away
-/// after seven seconds of inactivity, matching the listing swipe-deck rhythm.
-/// The eye control is a deliberate pin: first tap keeps every control visible
-/// indefinitely; the second tap releases the pin and hides them immediately.
+/// Event chrome intentionally follows the listing swipe deck contract:
+/// visible on entry, seven-second idle timeout, 360ms reveal / 500ms hide with
+/// easeOutCubic, and the eye control pins everything on until explicitly
+/// released. A vertical event swipe resets the idle window instead of forcing
+/// the chrome on/off.
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
 
@@ -46,6 +47,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   Duration? _handoffPosition;
   bool _handoffPageApplied = false;
   Timer? _chromeAutoHide;
+
+  Duration get _motionDuration => Duration(
+        milliseconds: _eventChromeVisible ? 360 : 500,
+      );
 
   @override
   void initState() {
@@ -127,10 +132,17 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     ref.read(chromeVisibilityProvider.notifier).show();
   }
 
+  void _openLikes() {
+    AppHaptics.light();
+    _registerChromeActivity();
+    context.push(AppPaths.exploreEventsLikes);
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(filteredEventsProvider);
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
+    final likedCount = ref.watch(favoritedEventsProvider).value?.length ?? 0;
 
     return ColoredBox(
       color: Colors.black,
@@ -222,13 +234,15 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           event: event,
                           active: active,
                           shouldLoadVideo: near,
-                          siblings: events,
                           chromeVisible: _eventChromeVisible,
+                          motionDuration: _motionDuration,
+                          likedCount: likedCount,
                           initialPosition: event.id == _handoffEventId
                               ? _handoffPosition
                               : null,
                           onToggleChrome: _handleSurfaceTap,
                           onChromeInteraction: _registerChromeActivity,
+                          onOpenLikes: _openLikes,
                           onOpen: () {
                             _registerChromeActivity();
                             context.push(AppPaths.exploreEvent(event.id));
@@ -241,126 +255,111 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         ignoring: !_eventChromeVisible,
                         child: AnimatedOpacity(
                           opacity: _eventChromeVisible ? 1 : 0,
-                          duration: const Duration(milliseconds: 280),
+                          duration: _motionDuration,
                           curve: Curves.easeOutCubic,
-                          child: Stack(
-                            children: [
-                              Positioned(
-                                top: 4,
-                                left: 4,
-                                right: 0,
-                                height: 66,
-                                child: Stack(
-                                  children: [
-                                    Positioned(
-                                      left: 0,
-                                      top: 3,
-                                      child: _TopIcon(
-                                        icon: Icons.arrow_back_rounded,
-                                        color: Colors.white,
-                                        onTap: () {
-                                          _prepareToLeaveEvents();
-                                          if (context.canPop()) {
-                                            context.pop();
-                                          } else {
-                                            context.go(
-                                              AppPaths.clientDashboard,
-                                            );
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 46,
-                                      right: 0,
-                                      top: 0,
-                                      bottom: 0,
-                                      child: ShaderMask(
-                                        blendMode: BlendMode.dstIn,
-                                        shaderCallback: (bounds) =>
-                                            const LinearGradient(
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                              colors: [
-                                                Colors.transparent,
-                                                Colors.black,
-                                                Colors.black,
-                                                Colors.transparent,
-                                              ],
-                                              stops: [0, 0.07, 0.91, 1],
-                                            ).createShader(bounds),
-                                        child: ListView(
-                                          scrollDirection: Axis.horizontal,
-                                          physics: const BouncingScrollPhysics(
-                                            parent:
-                                                AlwaysScrollableScrollPhysics(),
-                                          ),
-                                          padding: const EdgeInsets.only(
-                                            left: 10,
-                                            right: 22,
-                                          ),
-                                          children: [
-                                            for (final c in ref.watch(
-                                              eventCategoriesProvider,
-                                            ))
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 7,
-                                                ),
-                                                child: _EventCategoryRing(
-                                                  category: c,
-                                                  active: _category == c.key,
-                                                  onTap: () {
-                                                    AppHaptics.light();
-                                                    _registerChromeActivity();
-                                                    setState(() {
-                                                      _category = c.key;
-                                                      _index = 0;
-                                                    });
-                                                    ref
-                                                        .read(
-                                                          selectedCategoryProvider
-                                                              .notifier,
-                                                        )
-                                                        .setCategory(c.key);
-                                                    if (_pages.hasClients) {
-                                                      _pages.jumpToPage(0);
-                                                    }
-                                                  },
-                                                ),
-                                              ),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                right: 10,
-                                              ),
-                                              child: _EventCategoryRing(
-                                                category:
-                                                    const EventFeedCategory(
-                                                      key: 'likes',
-                                                      label: 'My Likes',
-                                                      icon: Icons.favorite_rounded,
-                                                      image:
-                                                          'assets/filters/events.jpg',
-                                                      color: Color(0xFFEC4899),
-                                                    ),
-                                                active: false,
-                                                onTap: () {
-                                                  AppHaptics.light();
-                                                  _registerChromeActivity();
-                                                  context.push(
-                                                    AppPaths.exploreEventsLikes,
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                          ],
+                          child: AnimatedSlide(
+                            offset: _eventChromeVisible
+                                ? Offset.zero
+                                : const Offset(0, -0.12),
+                            duration: _motionDuration,
+                            curve: Curves.easeOutCubic,
+                            child: Stack(
+                              children: [
+                                Positioned(
+                                  top: 4,
+                                  left: 4,
+                                  right: 0,
+                                  height: 66,
+                                  child: Stack(
+                                    children: [
+                                      Positioned(
+                                        left: 0,
+                                        top: 3,
+                                        child: _TopIcon(
+                                          icon: Icons.arrow_back_rounded,
+                                          color: Colors.white,
+                                          onTap: () {
+                                            _prepareToLeaveEvents();
+                                            if (context.canPop()) {
+                                              context.pop();
+                                            } else {
+                                              context.go(
+                                                AppPaths.clientDashboard,
+                                              );
+                                            }
+                                          },
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      Positioned(
+                                        left: 46,
+                                        right: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        child: ShaderMask(
+                                          blendMode: BlendMode.dstIn,
+                                          shaderCallback: (bounds) =>
+                                              const LinearGradient(
+                                                begin: Alignment.centerLeft,
+                                                end: Alignment.centerRight,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black,
+                                                  Colors.black,
+                                                  Colors.transparent,
+                                                ],
+                                                stops: [0, 0.065, 0.92, 1],
+                                              ).createShader(bounds),
+                                          child: ListView(
+                                            scrollDirection: Axis.horizontal,
+                                            physics:
+                                                const BouncingScrollPhysics(
+                                              parent:
+                                                  AlwaysScrollableScrollPhysics(),
+                                            ),
+                                            padding: const EdgeInsets.only(
+                                              left: 10,
+                                              right: 34,
+                                            ),
+                                            children: [
+                                              for (final c in ref.watch(
+                                                eventCategoriesProvider,
+                                              ))
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                    right: 7,
+                                                  ),
+                                                  child: _EventCategoryRing(
+                                                    category: c,
+                                                    active: _category == c.key,
+                                                    onTap: () {
+                                                      AppHaptics.light();
+                                                      _registerChromeActivity();
+                                                      setState(() {
+                                                        _category = c.key;
+                                                        _index = 0;
+                                                      });
+                                                      ref
+                                                          .read(
+                                                            selectedCategoryProvider
+                                                                .notifier,
+                                                          )
+                                                          .setCategory(c.key);
+                                                      if (_pages.hasClients) {
+                                                        _pages.jumpToPage(0);
+                                                      }
+                                                    },
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -371,7 +370,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             ),
           ),
           Positioned(
-            right: 14,
+            right: 12,
             bottom: bottomSafe + 18,
             child: _FocusOrb(
               controlsVisible: _eventChromeVisible,
@@ -513,21 +512,21 @@ class _EventCategoryRing extends StatelessWidget {
                       ? const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                          colors: [Color(0xFF3B82F6), Color(0xFF22D3EE)],
                         )
                       : null,
                   color: active ? null : Colors.black.withAlpha(96),
                   border: active
                       ? null
                       : Border.all(
-                          color: Colors.white.withAlpha(76),
+                          color: Colors.white.withAlpha(66),
                           width: .7,
                         ),
                   boxShadow: active
                       ? [
                           BoxShadow(
-                            color: const Color(0xFFEB4898).withAlpha(70),
-                            blurRadius: 10,
+                            color: const Color(0xFF3B82F6).withAlpha(80),
+                            blurRadius: 11,
                             spreadRadius: -1,
                           ),
                         ]
@@ -556,6 +555,7 @@ class _EventCategoryRing extends StatelessWidget {
                       : Image.network(
                           category.image,
                           fit: BoxFit.cover,
+                          cacheWidth: 160,
                           errorBuilder: (_, _, _) => Icon(
                             category.icon,
                             size: 14,
@@ -576,21 +576,7 @@ class _EventCategoryRing extends StatelessWidget {
                 fontWeight: active ? FontWeight.w900 : FontWeight.w700,
                 fontSize: 9,
                 letterSpacing: 0.12,
-                shadows: const [
-                  Shadow(color: Colors.black, blurRadius: 8),
-                ],
-              ),
-            ),
-            const SizedBox(height: 2),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              width: active ? 12 : 3,
-              height: 2,
-              decoration: BoxDecoration(
-                color: active
-                    ? const Color(0xFFFF4D8D)
-                    : Colors.white.withAlpha(42),
-                borderRadius: BorderRadius.circular(99),
+                shadows: const [Shadow(color: Colors.black, blurRadius: 8)],
               ),
             ),
           ],
@@ -605,10 +591,12 @@ class _EventStoryPage extends ConsumerStatefulWidget {
     required this.event,
     required this.active,
     required this.shouldLoadVideo,
-    required this.siblings,
     required this.chromeVisible,
+    required this.motionDuration,
+    required this.likedCount,
     required this.onToggleChrome,
     required this.onChromeInteraction,
+    required this.onOpenLikes,
     required this.onOpen,
     this.initialPosition,
   });
@@ -616,11 +604,13 @@ class _EventStoryPage extends ConsumerStatefulWidget {
   final Event event;
   final bool active;
   final bool shouldLoadVideo;
-  final List<Event> siblings;
   final bool chromeVisible;
+  final Duration motionDuration;
+  final int likedCount;
   final Duration? initialPosition;
   final VoidCallback onToggleChrome;
   final VoidCallback onChromeInteraction;
+  final VoidCallback onOpenLikes;
   final VoidCallback onOpen;
 
   @override
@@ -630,6 +620,7 @@ class _EventStoryPage extends ConsumerStatefulWidget {
 class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   VideoPlayerController? _player;
   bool? _favoritedOverride;
+  bool _favoriteBusy = false;
   bool _didApplyInitialPosition = false;
 
   Event get event => widget.event;
@@ -640,33 +631,33 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.shouldLoadVideo && _hasVideo) _bindVideo();
+    if (widget.shouldLoadVideo && _hasVideo) unawaited(_bindVideo());
   }
 
   @override
   void didUpdateWidget(covariant _EventStoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.shouldLoadVideo && _hasVideo && _player == null) {
-      _bindVideo();
+      unawaited(_bindVideo());
     }
     if (!widget.shouldLoadVideo && _player != null) {
-      _player?.dispose();
+      unawaited(_player?.dispose());
       _player = null;
     }
     final p = _player;
     if (p == null || !p.value.isInitialized) return;
     if (widget.active) {
-      p.play();
+      unawaited(p.play());
     } else {
-      p.pause();
+      unawaited(p.pause());
     }
     final soundOn = ref.read(deckSoundOnProvider);
-    p.setVolume(soundOn ? 1 : 0);
+    unawaited(p.setVolume(soundOn ? 1 : 0));
   }
 
   Future<void> _bindVideo() async {
     final url = event.videoUrl;
-    if (url == null) return;
+    if (url == null || url.trim().isEmpty) return;
     final next = VideoPlayerController.networkUrl(Uri.parse(url));
     _player = next;
     try {
@@ -682,9 +673,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
             initial >= duration) {
           safePosition = duration - const Duration(milliseconds: 120);
         }
-        if (safePosition > Duration.zero) {
-          await next.seekTo(safePosition);
-        }
+        if (safePosition > Duration.zero) await next.seekTo(safePosition);
         _didApplyInitialPosition = true;
       }
       final soundOn = ref.read(deckSoundOnProvider);
@@ -704,11 +693,15 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
   }
 
   Future<void> _toggleFavorite() async {
+    if (_favoriteBusy) return;
     widget.onChromeInteraction();
     final current =
         _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
-    setState(() => _favoritedOverride = !current);
+    setState(() {
+      _favoriteBusy = true;
+      _favoritedOverride = !current;
+    });
     AppHaptics.medium();
     try {
       await ref
@@ -717,7 +710,14 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       ref.invalidate(eventFavoriteProvider(event.id));
       ref.invalidate(favoritedEventsProvider);
     } catch (_) {
-      setState(() => _favoritedOverride = current);
+      if (mounted) {
+        setState(() => _favoritedOverride = current);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update this event like.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _favoriteBusy = false);
     }
   }
 
@@ -784,6 +784,10 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
             Image.network(
               image,
               fit: BoxFit.cover,
+              cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                  .round()
+                  .clamp(640, 1800),
+              gaplessPlayback: true,
               errorBuilder: (_, _, _) =>
                   const ColoredBox(color: Color(0xFF16161C)),
             )
@@ -809,7 +813,7 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
             ignoring: !widget.chromeVisible,
             child: AnimatedOpacity(
               opacity: widget.chromeVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 280),
+              duration: widget.motionDuration,
               curve: Curves.easeOutCubic,
               child: Stack(
                 fit: StackFit.expand,
@@ -817,174 +821,194 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
                   Positioned(
                     right: 12,
                     bottom: bottom + 110,
-                    child: Column(
-                      children: [
-                        _RailBtn(
-                          icon: favorited
-                              ? Icons.favorite_rounded
-                              : Icons.favorite_border_rounded,
-                          color: favorited
-                              ? const Color(0xFFF43F5E)
-                              : Colors.white,
-                          onTap: _toggleFavorite,
-                        ),
-                        const SizedBox(height: 10),
-                        EventMuteButton(
-                          soundOn: ref.watch(deckSoundOnProvider),
-                          onToggle: () {
-                            widget.onChromeInteraction();
-                            final next = !ref.read(deckSoundOnProvider);
-                            ref
-                                .read(deckSoundOnProvider.notifier)
-                                .setSoundOn(next);
-                            _player?.setVolume(next ? 1 : 0);
-                            if (next) _player?.play();
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 4,
+                    child: AnimatedSlide(
+                      offset: widget.chromeVisible
+                          ? Offset.zero
+                          : const Offset(.12, 0),
+                      duration: widget.motionDuration,
+                      curve: Curves.easeOutCubic,
+                      child: Column(
+                        children: [
+                          _LikesLibraryButton(
+                            count: widget.likedCount,
+                            onTap: widget.onOpenLikes,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(86),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: Colors.white.withAlpha(44),
-                              width: .7,
+                          const SizedBox(height: 10),
+                          _RailBtn(
+                            icon: favorited
+                                ? Icons.thumb_up_alt_rounded
+                                : Icons.thumb_up_alt_outlined,
+                            color: favorited
+                                ? const Color(0xFF60A5FA)
+                                : Colors.white,
+                            active: favorited,
+                            onTap: _toggleFavorite,
+                          ),
+                          const SizedBox(height: 10),
+                          EventMuteButton(
+                            soundOn: ref.watch(deckSoundOnProvider),
+                            onToggle: () {
+                              widget.onChromeInteraction();
+                              final next = !ref.read(deckSoundOnProvider);
+                              ref
+                                  .read(deckSoundOnProvider.notifier)
+                                  .setSoundOn(next);
+                              _player?.setVolume(next ? 1 : 0);
+                              if (next) _player?.play();
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 6,
+                              horizontal: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withAlpha(86),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: Colors.white.withAlpha(44),
+                                width: .7,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                _RailBtn(
+                                  icon: Icons.info_outline_rounded,
+                                  size: 42,
+                                  onTap: widget.onOpen,
+                                ),
+                                _RailBtn(
+                                  icon: Icons.chat_rounded,
+                                  size: 42,
+                                  onTap: _whatsApp,
+                                ),
+                                _RailBtn(
+                                  icon: Icons.share_rounded,
+                                  size: 42,
+                                  onTap: _share,
+                                ),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              _RailBtn(
-                                icon: Icons.info_outline_rounded,
-                                size: 42,
-                                onTap: widget.onOpen,
-                              ),
-                              _RailBtn(
-                                icon: Icons.chat_rounded,
-                                size: 42,
-                                onTap: _whatsApp,
-                              ),
-                              _RailBtn(
-                                icon: Icons.share_rounded,
-                                size: 42,
-                                onTap: _share,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   Positioned(
                     left: 20,
                     right: 88,
                     bottom: bottom + 28,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            _Pill(
-                              label: event.category.toUpperCase(),
-                              color: AppTheme.brandPrimary,
-                            ),
-                            if (event.isFree) ...[
-                              const SizedBox(width: 6),
-                              const _Pill(
-                                label: 'FREE',
-                                color: Color(0xFF34D399),
-                              ),
-                            ],
-                            if (_hasVideo) ...[
-                              const SizedBox(width: 6),
-                              const _Pill(
-                                label: 'VIDEO',
-                                color: Color(0xFF38BDF8),
-                              ),
-                            ],
-                            if (event.discountTag != null) ...[
-                              const SizedBox(width: 6),
+                    child: AnimatedSlide(
+                      offset: widget.chromeVisible
+                          ? Offset.zero
+                          : const Offset(0, .08),
+                      duration: widget.motionDuration,
+                      curve: Curves.easeOutCubic,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
                               _Pill(
-                                label: event.discountTag!.toUpperCase(),
-                                color: const Color(0xFFFBBF24),
+                                label: event.category.toUpperCase(),
+                                color: AppTheme.brandPrimary,
                               ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          event.title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 26,
-                            height: 1.05,
-                            letterSpacing: -0.6,
-                            shadows: const [
-                              Shadow(blurRadius: 12, color: Colors.black),
+                              if (event.isFree) ...[
+                                const SizedBox(width: 6),
+                                const _Pill(
+                                  label: 'FREE',
+                                  color: Color(0xFF34D399),
+                                ),
+                              ],
+                              if (_hasVideo) ...[
+                                const SizedBox(width: 6),
+                                const _Pill(
+                                  label: 'VIDEO',
+                                  color: Color(0xFF38BDF8),
+                                ),
+                              ],
+                              if (event.discountTag != null) ...[
+                                const SizedBox(width: 6),
+                                _Pill(
+                                  label: event.discountTag!.toUpperCase(),
+                                  color: const Color(0xFFFBBF24),
+                                ),
+                              ],
                             ],
                           ),
-                        ),
-                        if (event.organizerName != null) ...[
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 10),
                           Text(
-                            'by ${event.organizerName}',
+                            event.title,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 26,
+                              height: 1.05,
+                              letterSpacing: -0.6,
+                              shadows: const [
+                                Shadow(blurRadius: 12, color: Colors.black),
+                              ],
+                            ),
+                          ),
+                          if (event.organizerName != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              'by ${event.organizerName}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                          if (event.promoText != null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              event.promoText!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withAlpha(220),
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (event.eventDate != null)
+                                _MetaChip(
+                                  icon: Icons.calendar_today_rounded,
+                                  label: DateFormat('MMM d · h:mm a')
+                                      .format(event.eventDate!.toLocal()),
+                                ),
+                              if (event.location != null)
+                                _MetaChip(
+                                  icon: Icons.location_on_rounded,
+                                  label: event.location!,
+                                ),
+                              if (!event.isFree && event.priceText != null)
+                                _MetaChip(
+                                  icon: Icons.confirmation_number_rounded,
+                                  label: event.priceText!,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Swipe up for next · eye keeps controls visible',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white.withAlpha(220),
+                              fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
-                        if (event.promoText != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            event.promoText!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white.withAlpha(220),
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (event.eventDate != null)
-                              _MetaChip(
-                                icon: Icons.calendar_today_rounded,
-                                label: DateFormat('MMM d · h:mm a')
-                                    .format(event.eventDate!.toLocal()),
-                              ),
-                            if (event.location != null)
-                              _MetaChip(
-                                icon: Icons.location_on_rounded,
-                                label: event.location!,
-                              ),
-                            if (!event.isFree && event.priceText != null)
-                              _MetaChip(
-                                icon: Icons.confirmation_number_rounded,
-                                label: event.priceText!,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _chromePinnedHelp,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -995,9 +1019,75 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
       ),
     );
   }
+}
 
-  static const _chromePinnedHelp =
-      'Swipe up for next · eye keeps controls visible';
+class _LikesLibraryButton extends StatelessWidget {
+  const _LikesLibraryButton({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            width: 50,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B82F6).withAlpha(34),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: const Color(0xFF60A5FA).withAlpha(105),
+                width: .8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2563EB).withAlpha(42),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.thumb_up_alt_rounded,
+                  color: Color(0xFF93C5FD),
+                  size: 18,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'LIKES',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .6,
+                  ),
+                ),
+                if (count > 0) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    '$count',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF93C5FD),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _RailBtn extends StatelessWidget {
@@ -1006,24 +1096,34 @@ class _RailBtn extends StatelessWidget {
     required this.onTap,
     this.color = Colors.white,
     this.size = 48,
+    this.active = false,
   });
   final IconData icon;
   final VoidCallback onTap;
   final Color color;
   final double size;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
         width: size,
         height: size,
         margin: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
-          color: Colors.black.withAlpha(76),
+          color: active
+              ? const Color(0xFF3B82F6).withAlpha(42)
+              : Colors.black.withAlpha(76),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withAlpha(44), width: .7),
+          border: Border.all(
+            color: active
+                ? const Color(0xFF60A5FA).withAlpha(130)
+                : Colors.white.withAlpha(44),
+            width: .7,
+          ),
         ),
         child: Icon(icon, color: color, size: size > 44 ? 21 : 18),
       ),
@@ -1075,7 +1175,7 @@ class _MetaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: const Color(0xFFFB923C)),
+          Icon(icon, size: 12, color: const Color(0xFF60A5FA)),
           const SizedBox(width: 5),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 140),
