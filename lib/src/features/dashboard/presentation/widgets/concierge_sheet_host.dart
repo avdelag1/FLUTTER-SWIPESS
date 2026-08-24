@@ -150,60 +150,6 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                                   child: widget.child,
                                 ),
                               ),
-                              // One persistent mic visual only. No waveform is
-                              // painted over the composer anymore.
-                              Positioned(
-                                left: 23,
-                                bottom: m.padding.bottom + 22,
-                                child: IgnorePointer(
-                                  child: ValueListenableBuilder<bool>(
-                                    valueListenable: voice.listeningNotifier,
-                                    builder: (context, listening, _) {
-                                      if (!listening) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      return ValueListenableBuilder<double>(
-                                        valueListenable: voice.levelNotifier,
-                                        builder: (context, level, _) {
-                                          return BreathingWidget(
-                                            duration: const Duration(
-                                              milliseconds: 1100,
-                                            ),
-                                            minOpacity: .55,
-                                            maxOpacity: 1,
-                                            child: Container(
-                                              width: 38,
-                                              height: 38,
-                                              decoration: BoxDecoration(
-                                                color: micColor,
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.white.withAlpha(
-                                                    isLight ? 150 : 90,
-                                                  ),
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: micColor.withAlpha(70),
-                                                    blurRadius: 12 + (level * 12),
-                                                    spreadRadius: level * 2,
-                                                  ),
-                                                ],
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: const Icon(
-                                                Icons.mic_rounded,
-                                                color: Colors.white,
-                                                size: 20,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
                             ],
                           ),
                         ),

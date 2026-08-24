@@ -1108,8 +1108,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                       )
                                     : Icon(
                                         _recording
-                                            ? Icons.graphic_eq_rounded
-                                            : Icons.mic_none_rounded,
+                                            ? Icons.mic_rounded
+                                            : Icons.mic_rounded,
                                         key: ValueKey(_recording),
                                         color: isLight ? _aiBlue : _aiBlueSoft,
                                         size: 19,

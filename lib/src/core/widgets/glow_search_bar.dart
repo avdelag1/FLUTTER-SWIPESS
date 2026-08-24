@@ -443,7 +443,17 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                if (_voiceActive)
+                if (_countdown != null)
+                  Text(
+                    '$_countdown',
+                    key: ValueKey(_countdown),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: _voiceActive ? Colors.white : blue,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  )
+                else if (_voiceActive)
                   BreathingWidget(
                     duration: const Duration(milliseconds: 1050),
                     minOpacity: .55,
@@ -456,30 +466,6 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
                   )
                 else
                   Icon(Icons.mic_rounded, color: blue, size: 18),
-                if (_countdown != null)
-                  Positioned(
-                    right: -5,
-                    top: -5,
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: blue, width: 1.3),
-                      ),
-                      child: Text(
-                        '$_countdown',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: blue,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
