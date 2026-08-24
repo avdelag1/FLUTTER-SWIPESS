@@ -4,9 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/global_notice.dart';
+import 'package:flutter_swipes/src/features/gamification/presentation/providers/engagement_reward_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,16 +16,17 @@ final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
   return service;
 });
 
-/// Active-engagement heartbeat.
+/// Active-use heartbeat for the SWIPESS loyalty ladder.
 ///
-/// Time counts only when the app is foregrounded AND the user has interacted
-/// recently. Leaving Swipess open on a table, locking the phone, switching apps,
-/// or leaving it running in the background does not earn time.
+/// Reward time follows the user across every route. It counts while SWIPESS is
+/// foregrounded and the session still looks active. A generous five-minute
+/// activity window lets people read listings, messages, contracts, or client
+/// details without losing credit, while abandoned/background sessions stop.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
 
   static const _heartbeatEvery = Duration(seconds: 15);
-  static const _activeWindow = Duration(seconds: 45);
+  static const _activeWindow = Duration(minutes: 5);
 
   final Ref ref;
   Timer? _timer;
@@ -46,14 +47,14 @@ class SessionGamificationService {
 
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     _isForeground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
+    if (_isForeground) _lastInteractionAt = DateTime.now();
 
     if (_lifecycleObserver == null) {
       _lifecycleObserver = _GamificationLifecycleObserver(
         onStateChanged: (state) {
           if (state == AppLifecycleState.resumed) {
             _isForeground = true;
-            // A fresh interaction is required after returning to Swipess.
-            _lastInteractionAt = null;
+            _lastInteractionAt = DateTime.now();
             final ctx = _context;
             if (ctx != null) _startForegroundTimer(ctx);
           } else if (state == AppLifecycleState.inactive ||
@@ -72,8 +73,8 @@ class SessionGamificationService {
     if (_isForeground) _startForegroundTimer(_context ?? context);
   }
 
-  /// Called from the app-level pointer listener. This is intentionally cheap;
-  /// no network request happens here.
+  /// Called from the app-level pointer/scroll listener. No network call happens
+  /// here; it simply keeps the foreground session eligible for reward time.
   void markActivity() {
     if (!_isForeground) return;
     _lastInteractionAt = DateTime.now();
@@ -155,7 +156,7 @@ class SessionGamificationService {
       final tokenAwarded = data['token_awarded'] == true;
       if (!stepAwarded && !tokenAwarded) return;
 
-      ref.invalidate(dailyQuestsProvider);
+      ref.invalidate(engagementRewardProgressProvider);
       ref.invalidate(directRequestBalanceProvider);
       ref.invalidate(notificationsProvider);
       ref.invalidate(unreadNotificationsProvider);
@@ -169,8 +170,8 @@ class SessionGamificationService {
         tokenAwarded: tokenAwarded,
       );
     } catch (_) {
-      // Missed heartbeats are never backfilled, so idle/background time cannot
-      // accidentally become rewardable later.
+      // Missed heartbeats are never backfilled. This prevents background or
+      // abandoned time from turning into reward credit later.
     } finally {
       _syncing = false;
     }
