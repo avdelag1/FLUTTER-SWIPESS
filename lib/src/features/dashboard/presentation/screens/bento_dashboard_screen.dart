@@ -12,6 +12,8 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/event
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
+import 'package:flutter_swipes/src/features/session/domain/app_market_context.dart';
+import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -36,15 +38,52 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     super.dispose();
   }
 
+  bool _marketAllows(String feature) {
+    final market = ref.read(appMarketProvider).value;
+    return market == null ||
+        (market.effectiveOpen && market.featureEnabled(feature));
+  }
+
+  void _showMarketUnavailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'This module is not active in your current SWIPESS market.',
+        ),
+      ),
+    );
+  }
+
   void _openCategory(String id, String title) {
-    if (id == 'events') {
-      context.go(AppPaths.exploreEvents);
+    final feature = _featureForBentoId(id);
+    if (feature != null && !_marketAllows(feature)) {
+      _showMarketUnavailable();
       return;
     }
-    openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
+
+    switch (id) {
+      case 'events':
+        context.go(AppPaths.exploreEvents);
+        return;
+      case 'seekers':
+        context.go(AppPaths.exploreSeekers);
+        return;
+      case 'legal':
+        context.go(AppPaths.clientLegal);
+        return;
+      case 'premium':
+        context.go(AppPaths.subscriptionPackages);
+        return;
+      default:
+        openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
+    }
   }
 
   void _openAiSearch([String? query]) {
+    if (!_marketAllows('ai')) {
+      _showMarketUnavailable();
+      return;
+    }
     final subscription = ref.read(subscriptionProvider).value;
     if (subscription != null && subscription.effectiveTier.canUseAI != true) {
       showPaywall(context, featureName: 'Swipess AI');
@@ -534,8 +573,12 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
     final discovery = ref.watch(discoveryLocationProvider);
-    final leftItems = _bentoItems.where((i) => i.index.isEven).toList();
-    final rightItems = _bentoItems.where((i) => i.index.isOdd).toList();
+    final market = ref.watch(appMarketProvider).value;
+    final visibleItems = _bentoItems
+        .where((item) => _bentoFeatureEnabled(market, item.id))
+        .toList(growable: false);
+    final leftItems = visibleItems.where((i) => i.index.isEven).toList();
+    final rightItems = visibleItems.where((i) => i.index.isOdd).toList();
 
     return Container(
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
@@ -558,7 +601,11 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
                         child: GlowSearchBar(
-                          hint: 'What are you looking for?',
+                          hint: market != null &&
+                                  (!market.effectiveOpen ||
+                                      !market.featureEnabled('ai'))
+                              ? 'AI is not active in this market'
+                              : 'What are you looking for?',
                           onTap: () => _openAiSearch(),
                           controller: _aiSearchController,
                           onSubmitted: (val) => _openAiSearch(val),
@@ -836,6 +883,25 @@ class _BentoItemData {
   final String subtitle;
   final double height;
   final String delaySeconds;
+}
+
+String? _featureForBentoId(String id) => switch (id) {
+      'property' => 'properties',
+      'services' => 'workers',
+      'yacht' => 'yachts',
+      'motorcycle' => 'motorcycles',
+      'bicycle' => 'bicycles',
+      'events' => 'events',
+      'seekers' => 'seekers',
+      'legal' => 'legal',
+      'premium' => 'premium',
+      _ => null,
+    };
+
+bool _bentoFeatureEnabled(AppMarketContext? market, String id) {
+  final feature = _featureForBentoId(id);
+  if (feature == null || market == null) return true;
+  return market.effectiveOpen && market.featureEnabled(feature);
 }
 
 const _bentoItems = [
