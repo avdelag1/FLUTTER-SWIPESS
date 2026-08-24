@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- record: voice notes on listings and AI concierge dictation. -->
+    <!-- Voice notes + live speech-to-text for AI/search. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <!-- Android 13+ runtime notification opt-in. -->
@@ -32,10 +32,6 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -45,11 +41,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Verified App Links for the share/recovery URLs the app hands out.
-                 Only the paths GoRouter can actually resolve are claimed, so
-                 marketing pages on the same host still open in the browser.
-                 Requires /.well-known/assetlinks.json on each host — see
-                 MIGRATION_PROGRESS.md. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -68,9 +59,6 @@
                 <data android:pathPrefix="/s/"/>
             </intent-filter>
 
-            <!-- Custom scheme fallback. Works with no server-side association
-                 file, so swipess://listing/<id> resolves even before App Link
-                 verification is provisioned. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -78,8 +66,6 @@
                 <data android:scheme="swipess"/>
             </intent-filter>
         </activity>
-        <!-- flutter_local_notifications: fires the scheduled reminder and
-             re-registers what is still pending after a reboot or an update. -->
         <receiver
             android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>
@@ -94,25 +80,20 @@
             </intent-filter>
         </receiver>
 
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- Required on Android 11+ so speech_to_text can discover the system
+             speech recognition service before starting partial-result dictation. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- url_launcher's canLaunchUrl returns false on Android 11+ unless the
-             target intent is declared here. Without these the promoter WhatsApp
-             button, "add to calendar" and the invite sheet silently do nothing. -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
