@@ -14,6 +14,15 @@ class LawyerWorkspaceRepository {
     return LawyerWorkspace.fromJson(Map<String, dynamic>.from(result));
   }
 
+  Future<List<Map<String, dynamic>>> fetchServicePackages() async {
+    final result = await _client.rpc('app_lawyer_service_packages');
+    if (result is! List) return const [];
+    return [
+      for (final item in result)
+        if (item is Map) Map<String, dynamic>.from(item),
+    ];
+  }
+
   Future<void> setAvailability(bool available) async {
     final result = await _client.rpc(
       'app_lawyer_set_availability',
