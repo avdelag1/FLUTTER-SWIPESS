@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_swipes/src/features/events/data/event_engagement_tracker
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/event_connect_bar.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -31,10 +33,14 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
+  static const double _dismissThreshold = 92;
+
   late final PageController _pages;
   int _index = 0;
   bool? _favoritedOverride;
   bool _busyFavorite = false;
+  double _pullDistance = 0;
+  bool _dismissed = false;
 
   Event get event => widget.event;
 
@@ -83,6 +89,55 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         l.contains('.webm') ||
         l.contains('.mov') ||
         l.contains('/videos/');
+  }
+
+  void _goDashboard() {
+    if (_dismissed || !mounted) return;
+    _dismissed = true;
+    AppHaptics.medium();
+    final router = GoRouter.of(context);
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
+    router.go(AppPaths.clientDashboard);
+  }
+
+  bool _handlePullDown(ScrollNotification notification) {
+    if (_dismissed) return false;
+
+    final minExtent = notification.metrics.minScrollExtent;
+    final pixels = notification.metrics.pixels;
+
+    if (notification is ScrollUpdateNotification && pixels < minExtent) {
+      final pulled = ((minExtent - pixels) * 0.78)
+          .clamp(0.0, 180.0)
+          .toDouble();
+      if (pulled > _pullDistance && mounted) {
+        setState(() => _pullDistance = pulled);
+      }
+      return false;
+    }
+
+    if (notification is OverscrollNotification &&
+        pixels <= minExtent + 0.5 &&
+        notification.overscroll < 0) {
+      final pulled = (_pullDistance + (-notification.overscroll * 0.72))
+          .clamp(0.0, 180.0)
+          .toDouble();
+      if (pulled > _pullDistance && mounted) {
+        setState(() => _pullDistance = pulled);
+      }
+      return false;
+    }
+
+    if (notification is ScrollEndNotification && _pullDistance > 0) {
+      if (_pullDistance >= _dismissThreshold) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _goDashboard());
+      } else if (mounted) {
+        setState(() => _pullDistance = 0);
+      }
+    }
+
+    return false;
   }
 
   Future<void> _toggleFavorite() async {
@@ -203,6 +258,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
     final gallery = _media;
+    final pullProgress = (_pullDistance / _dismissThreshold)
+        .clamp(0.0, 1.0)
+        .toDouble();
 
     final idx = widget.siblings.indexWhere((e) => e.id == event.id);
     final prevId = idx > 0 ? widget.siblings[idx - 1].id : null;
@@ -221,515 +279,532 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               DateFormat('h:mm a').format(event.eventEndDate!.toLocal()),
           ].join(' — ');
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              // Hero gallery
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.58,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      PageView.builder(
-                        controller: _pages,
-                        itemCount: gallery.length,
-                        onPageChanged: (i) => setState(() => _index = i),
-                        itemBuilder: (context, i) {
-                          final url = gallery[i];
-                          if (url.isEmpty) {
-                            return const ColoredBox(
-                              color: Color(0xFF16161C),
-                              child: Center(
-                                child: Icon(
-                                  Icons.celebration_rounded,
-                                  color: Colors.white24,
-                                  size: 64,
-                                ),
-                              ),
-                            );
-                          }
-                          if (_isVideo(url)) {
-                            return _EventVideo(url: url);
-                          }
-                          return Image.network(
-                            url,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                const ColoredBox(color: Color(0xFF16161C)),
-                          );
-                        },
+    return ColoredBox(
+      color: const Color(0xFF050507),
+      child: Transform.translate(
+        offset: Offset(0, _pullDistance * 0.62),
+        child: Transform.scale(
+          scale: 1 - (0.045 * pullProgress),
+          alignment: Alignment.topCenter,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26 * pullProgress),
+            child: Scaffold(
+              body: NotificationListener<ScrollNotification>(
+                onNotification: _handlePullDown,
+                child: Stack(
+                  children: [
+                    CustomScrollView(
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
                       ),
-                      const IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Color(0x99000000),
-                                Color(0x00000000),
-                                Color(0xE6000000),
+                      slivers: [
+                        // Hero gallery
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: MediaQuery.sizeOf(context).height * 0.58,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                PageView.builder(
+                                  controller: _pages,
+                                  itemCount: gallery.length,
+                                  onPageChanged: (i) => setState(() => _index = i),
+                                  itemBuilder: (context, i) {
+                                    final url = gallery[i];
+                                    if (url.isEmpty) {
+                                      return const ColoredBox(
+                                        color: Color(0xFF16161C),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.celebration_rounded,
+                                            color: Colors.white24,
+                                            size: 64,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    if (_isVideo(url)) {
+                                      return _EventVideo(url: url);
+                                    }
+                                    return Image.network(
+                                      url,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) =>
+                                          const ColoredBox(color: Color(0xFF16161C)),
+                                    );
+                                  },
+                                ),
+                                const IgnorePointer(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0x99000000),
+                                          Color(0x00000000),
+                                          Color(0xE6000000),
+                                        ],
+                                        stops: [0, 0.45, 1],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: top + 12,
+                                  left: 16,
+                                  right: 16,
+                                  child: Row(
+                                    children: [
+                                      _GlassBtn(
+                                        icon: Icons.arrow_back_ios_new_rounded,
+                                        onTap: () => Navigator.pop(context),
+                                      ),
+                                      const Spacer(),
+                                      _GlassBtn(
+                                        icon: favorited
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: favorited
+                                            ? const Color(0xFFF43F5E)
+                                            : Colors.white,
+                                        onTap: _toggleFavorite,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _GlassBtn(icon: Icons.share_rounded, onTap: _share),
+                                    ],
+                                  ),
+                                ),
+                                if (gallery.length > 1)
+                                  Positioned(
+                                    bottom: 48,
+                                    left: 0,
+                                    right: 0,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        for (
+                                          var i = 0;
+                                          i < gallery.length.clamp(0, 8);
+                                          i++
+                                        )
+                                          AnimatedContainer(
+                                            duration: const Duration(milliseconds: 220),
+                                            width: i == _index ? 22 : 6,
+                                            height: 6,
+                                            margin: const EdgeInsets.symmetric(
+                                              horizontal: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(999),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                Positioned(
+                                  left: 20,
+                                  bottom: 20,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withAlpha(120),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: Text(
+                                      event.category.toUpperCase(),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 10,
+                                        letterSpacing: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
-                              stops: [0, 0.45, 1],
                             ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        top: top + 12,
-                        left: 16,
-                        right: 16,
-                        child: Row(
-                          children: [
-                            _GlassBtn(
-                              icon: Icons.arrow_back_ios_new_rounded,
-                              onTap: () => Navigator.pop(context),
-                            ),
-                            const Spacer(),
-                            _GlassBtn(
-                              icon: favorited
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              color: favorited
-                                  ? const Color(0xFFF43F5E)
-                                  : Colors.white,
-                              onTap: _toggleFavorite,
-                            ),
-                            const SizedBox(width: 8),
-                            _GlassBtn(icon: Icons.share_rounded, onTap: _share),
-                          ],
-                        ),
-                      ),
-                      if (gallery.length > 1)
-                        Positioned(
-                          bottom: 48,
-                          left: 0,
-                          right: 0,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (
-                                var i = 0;
-                                i < gallery.length.clamp(0, 8);
-                                i++
-                              )
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 220),
-                                  width: i == _index ? 22 : 6,
-                                  height: 6,
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: i == _index
-                                        ? Colors.white
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      Positioned(
-                        left: 20,
-                        bottom: 20,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(120),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: Text(
-                            event.category.toUpperCase(),
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 1.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
-              if (widget.siblings.length > 1)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    child: Row(
-                      children: [
-                        _SiblingChip(
-                          label: 'Prev',
-                          icon: Icons.chevron_left_rounded,
-                          enabled: prevId != null,
-                          onTap: () => _goSibling(prevId),
-                        ),
-                        const Spacer(),
-                        _SiblingChip(
-                          label: 'More events',
-                          highlighted: true,
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        const Spacer(),
-                        _SiblingChip(
-                          label: 'Next',
-                          icon: Icons.chevron_right_rounded,
-                          trailing: true,
-                          enabled: nextId != null,
-                          onTap: () => _goSibling(nextId),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(22, 22, 22, bottom + 120),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.title.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 40,
-                          fontWeight: FontWeight.w900,
-                          fontStyle: FontStyle.italic,
-                          height: 0.95,
-                          letterSpacing: -1.2,
-                        ),
-                      ),
-                      if (event.promoText?.trim().isNotEmpty == true) ...[
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B).withAlpha(30),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: const Color(0xFFF59E0B).withAlpha(80),
-                            ),
-                          ),
-                          child: Text(
-                            event.promoText!.toUpperCase(),
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFFBBF24),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 22),
-                      _InfoRow(
-                        icon: Icons.calendar_today_rounded,
-                        iconColor: const Color(0xFF6366F1),
-                        eyebrow: 'When & Time',
-                        title: dateLabel,
-                        subtitle: timeLabel.isEmpty ? null : timeLabel,
-                      ),
-                      const SizedBox(height: 12),
-                      _InfoRow(
-                        icon: Icons.location_on_rounded,
-                        iconColor: const Color(0xFFF43F5E),
-                        eyebrow: 'The Location',
-                        title: event.location ?? 'TBA',
-                        subtitle:
-                            event.locationDetail ?? 'Verified destination',
-                      ),
-                      const SizedBox(height: 28),
-                      Row(
-                        children: [
-                          Text(
-                            'THE EXPERIENCE',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 2.2,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Container(height: 1, color: Colors.white12),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        event.description ?? 'Join us for an unforgettable experience in the heart of the Riviera Maya.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 16,
-                          height: 1.55,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(22),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF14141A),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: Colors.white12),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        if (widget.siblings.length > 1)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    'ADMISSION PASS',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 10,
-                                      letterSpacing: 1.6,
-                                    ),
+                                  _SiblingChip(
+                                    label: 'Prev',
+                                    icon: Icons.chevron_left_rounded,
+                                    enabled: prevId != null,
+                                    onTap: () => _goSibling(prevId),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    event.isFree
-                                        ? 'FREE ENTRY'
-                                        : (event.priceText ?? 'PREMIUM')
-                                              .toUpperCase(),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontStyle: FontStyle.italic,
-                                      fontSize: 28,
-                                      letterSpacing: -0.8,
-                                    ),
+                                  const Spacer(),
+                                  _SiblingChip(
+                                    label: 'More events',
+                                    highlighted: true,
+                                    onTap: () => Navigator.pop(context),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'VERIFIED BOOKING REQUIRED',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: AppTheme.brandPrimary,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 10,
-                                      letterSpacing: 1.6,
-                                    ),
+                                  const Spacer(),
+                                  _SiblingChip(
+                                    label: 'Next',
+                                    icon: Icons.chevron_right_rounded,
+                                    trailing: true,
+                                    enabled: nextId != null,
+                                    onTap: () => _goSibling(nextId),
                                   ),
                                 ],
                               ),
                             ),
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: const Icon(
-                                Icons.verified_user_rounded,
-                                color: Color(0xFFFB7185),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (event.organizerName?.trim().isNotEmpty == true) ...[
-                        const SizedBox(height: 28),
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          decoration: const BoxDecoration(
-                            border: Border(
-                              top: BorderSide(color: Colors.white12),
-                              bottom: BorderSide(color: Colors.white12),
-                            ),
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 28,
-                                backgroundImage: event.organizerPhotoUrl != null
-                                    ? NetworkImage(event.organizerPhotoUrl!)
-                                    : null,
-                                child: event.organizerPhotoUrl == null
-                                    ? const Icon(
-                                        Icons.person_rounded,
-                                        color: Colors.white,
-                                      )
-                                    : null,
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'ELITE ORGANIZER',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 9,
-                                        letterSpacing: 1.6,
+
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(22, 22, 22, bottom + 120),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  event.title.toUpperCase(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.w900,
+                                    fontStyle: FontStyle.italic,
+                                    height: 0.95,
+                                    letterSpacing: -1.2,
+                                  ),
+                                ),
+                                if (event.promoText?.trim().isNotEmpty == true) ...[
+                                  const SizedBox(height: 14),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF59E0B).withAlpha(30),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(
+                                        color: const Color(0xFFF59E0B).withAlpha(80),
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
+                                    child: Text(
+                                      event.promoText!.toUpperCase(),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFFFBBF24),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 10,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 22),
+                                _InfoRow(
+                                  icon: Icons.calendar_today_rounded,
+                                  iconColor: const Color(0xFF6366F1),
+                                  eyebrow: 'When & Time',
+                                  title: dateLabel,
+                                  subtitle: timeLabel.isEmpty ? null : timeLabel,
+                                ),
+                                const SizedBox(height: 12),
+                                _InfoRow(
+                                  icon: Icons.location_on_rounded,
+                                  iconColor: const Color(0xFFF43F5E),
+                                  eyebrow: 'The Location',
+                                  title: event.location ?? 'TBA',
+                                  subtitle:
+                                      event.locationDetail ?? 'Verified destination',
+                                ),
+                                const SizedBox(height: 28),
+                                Row(
+                                  children: [
                                     Text(
-                                      event.organizerName!.toUpperCase(),
+                                      'THE EXPERIENCE',
                                       style: GoogleFonts.plusJakartaSans(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w900,
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 16,
+                                        fontSize: 10,
+                                        letterSpacing: 2.2,
                                       ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Container(height: 1, color: Colors.white12),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: Colors.white12),
-                                ),
-                                child: Text(
-                                  'VERIFIED HOST',
+                                const SizedBox(height: 14),
+                                Text(
+                                  event.description ?? 'Join us for an unforgettable experience in the heart of the Riviera Maya.',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFFF43F5E),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 9,
-                                    letterSpacing: 1.2,
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    height: 1.55,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Container(
+                                  padding: const EdgeInsets.all(22),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF14141A),
+                                    borderRadius: BorderRadius.circular(28),
+                                    border: Border.all(color: Colors.white12),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'ADMISSION PASS',
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 10,
+                                                letterSpacing: 1.6,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              event.isFree
+                                                  ? 'FREE ENTRY'
+                                                  : (event.priceText ?? 'PREMIUM')
+                                                        .toUpperCase(),
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                                fontStyle: FontStyle.italic,
+                                                fontSize: 28,
+                                                letterSpacing: -0.8,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'VERIFIED BOOKING REQUIRED',
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: AppTheme.brandPrimary,
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 10,
+                                                letterSpacing: 1.6,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 56,
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        child: const Icon(
+                                          Icons.verified_user_rounded,
+                                          color: Color(0xFFFB7185),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (event.organizerName?.trim().isNotEmpty == true) ...[
+                                  const SizedBox(height: 28),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        top: BorderSide(color: Colors.white12),
+                                        bottom: BorderSide(color: Colors.white12),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 28,
+                                          backgroundImage: event.organizerPhotoUrl != null
+                                              ? NetworkImage(event.organizerPhotoUrl!)
+                                              : null,
+                                          child: event.organizerPhotoUrl == null
+                                              ? const Icon(
+                                                  Icons.person_rounded,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'ELITE ORGANIZER',
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 9,
+                                                  letterSpacing: 1.6,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                event.organizerName!.toUpperCase(),
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontStyle: FontStyle.italic,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.transparent,
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(color: Colors.white12),
+                                          ),
+                                          child: Text(
+                                            'VERIFIED HOST',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              color: const Color(0xFFF43F5E),
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 9,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                if (event.hasConnectLinks) ...[
+                                  const SizedBox(height: 28),
+                                  EventConnectBar(
+                                    event: event,
+                                    message:
+                                        'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Sticky footer CTAs
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: EdgeInsets.fromLTRB(20, 28, 20, bottom + 18),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x00000000), Color(0xF2000000)],
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            if (event.hasWhatsApp)
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _whatsApp,
+                                  child: Container(
+                                    height: 58,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(22),
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF25D366).withAlpha(90),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.chat_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          'WHATSAPP',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 1.6,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: _share,
+                                  child: Container(
+                                    height: 58,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(22),
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'SHARE EVENT',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.6,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (event.hasConnectLinks) ...[
-                        const SizedBox(height: 28),
-                        EventConnectBar(
-                          event: event,
-                          message:
-                              'Hola, vi tu evento "${event.title}" en Swipess 🔥',
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Sticky footer CTAs
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: EdgeInsets.fromLTRB(20, 28, 20, bottom + 18),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x00000000), Color(0xF2000000)],
-                ),
-              ),
-              child: Row(
-                children: [
-                  if (event.hasWhatsApp)
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _whatsApp,
-                        child: Container(
-                          height: 58,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(22),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+                            const SizedBox(width: 10),
+                            _FooterSquare(
+                              icon: Icons.calendar_month_rounded,
+                              onTap: _addToCalendar,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF25D366).withAlpha(90),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.chat_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'WHATSAPP',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.6,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _share,
-                        child: Container(
-                          height: 58,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(22),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'SHARE EVENT',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.6,
-                              ),
-                            ),
-                          ),
+                            const SizedBox(width: 10),
+                            _FooterSquare(icon: Icons.ios_share_rounded, onTap: _share),
+                          ],
                         ),
                       ),
                     ),
-                  const SizedBox(width: 10),
-                  _FooterSquare(
-                    icon: Icons.calendar_month_rounded,
-                    onTap: _addToCalendar,
-                  ),
-                  const SizedBox(width: 10),
-                  _FooterSquare(icon: Icons.ios_share_rounded, onTap: _share),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
