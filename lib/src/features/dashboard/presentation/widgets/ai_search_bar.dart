@@ -7,7 +7,9 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/search_frame_shine.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -18,8 +20,9 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// Voice interaction contract:
 /// tap mic → partial words appear immediately in this same field → live audio
-/// bars move → 4 seconds of silence → visible 3…2…1 → automatic submit. Any
-/// new recognized speech cancels the countdown; Enter or the arrow submits now.
+/// waveform moves on the right → 4 seconds of silence → visible 3…2…1 →
+/// automatic submit. Any new speech cancels the countdown; Enter or the arrow
+/// submits now. The microphone itself never disappears while recording.
 class AiSearchBar extends ConsumerStatefulWidget {
   const AiSearchBar({super.key});
 
@@ -111,6 +114,9 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
       },
       onSoundLevel: (level) {
         if (!mounted) return;
+        if (_countdown != null && level > -36.0) {
+          _cancelCountdown();
+        }
         final normalized = ((level + 45) / 45).clamp(0.0, 1.0);
         setState(() => _voiceLevel = normalized);
       },
@@ -285,32 +291,6 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
         .trim();
   }
 
-  Widget _voiceBars(Color color) {
-    final level = _voiceLevel.clamp(0.0, 1.0);
-    const multipliers = <double>[.55, 1, .72, .92, .48];
-    return SizedBox(
-      width: 25,
-      height: 20,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (final multiplier in multipliers)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 90),
-              curve: Curves.easeOut,
-              width: 3,
-              height: 5 + (13 * level * multiplier),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
@@ -346,16 +326,10 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
         child: Row(
           children: [
             const SizedBox(width: 16),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 140),
-              child: _voiceActive
-                  ? _voiceBars(glow)
-                  : Icon(
-                      Icons.search_rounded,
-                      key: const ValueKey('search'),
-                      color: glow.withAlpha(220),
-                      size: 20,
-                    ),
+            Icon(
+              Icons.search_rounded,
+              color: glow.withAlpha(220),
+              size: 20,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -374,7 +348,7 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                   border: InputBorder.none,
                   isDense: true,
                   hintText: _voiceActive
-                      ? 'Speak now — your words appear here…'
+                      ? 'Listening… your words appear here'
                       : 'Search properties, workers, people, events...',
                   hintStyle: GoogleFonts.plusJakartaSans(
                     color: _voiceActive ? glow : ink.withAlpha(140),
@@ -388,65 +362,100 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                 onSubmitted: (_) => _runSearch(),
               ),
             ),
+            if (_voiceActive) ...[
+              LiveAudioWaveform(
+                active: true,
+                level: _voiceLevel,
+                color: glow,
+                width: 76,
+                height: 22,
+                samples: 24,
+              ),
+              const SizedBox(width: 6),
+            ],
             Semantics(
               button: true,
               label: _voiceActive ? 'Stop recording' : 'Start voice search',
               child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _toggleVoice,
-                  child: AnimatedScale(
-                    duration: const Duration(milliseconds: 120),
-                    scale: _voiceActive ? pulseScale : 1,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: _voiceActive
-                            ? glow
-                            : glow.withAlpha(isLight ? 18 : 30),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _voiceActive
-                              ? glow
-                              : glow.withAlpha(100),
-                        ),
-                        boxShadow: _voiceActive
-                            ? [
-                                BoxShadow(
-                                  color: glow.withAlpha(75),
-                                  blurRadius: 14 + (_voiceLevel * 12),
-                                  spreadRadius: _voiceLevel * 2,
-                                ),
-                              ]
-                            : null,
+                behavior: HitTestBehavior.opaque,
+                onTap: _toggleVoice,
+                child: AnimatedScale(
+                  duration: const Duration(milliseconds: 120),
+                  scale: _voiceActive ? pulseScale : 1,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _voiceActive
+                          ? glow
+                          : glow.withAlpha(isLight ? 18 : 30),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _voiceActive ? glow : glow.withAlpha(100),
                       ),
-                      alignment: Alignment.center,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 120),
-                        child: _countdown != null
-                            ? Text(
-                                '$_countdown',
-                                key: ValueKey(_countdown),
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: _voiceActive ? Colors.white : glow,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              )
-                            : Icon(
-                                _voiceActive
-                                    ? Icons.stop_rounded
-                                    : Icons.mic_rounded,
-                                key: ValueKey(_voiceActive),
-                                color: _voiceActive ? Colors.white : glow,
-                                size: _voiceActive ? 20 : 21,
+                      boxShadow: _voiceActive
+                          ? [
+                              BoxShadow(
+                                color: glow.withAlpha(75),
+                                blurRadius: 14 + (_voiceLevel * 12),
+                                spreadRadius: _voiceLevel * 2,
                               ),
-                      ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        if (_voiceActive)
+                          BreathingWidget(
+                            duration: const Duration(milliseconds: 1100),
+                            minOpacity: .55,
+                            maxOpacity: 1,
+                            child: const Icon(
+                              Icons.mic_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          )
+                        else
+                          Icon(
+                            Icons.mic_rounded,
+                            color: glow,
+                            size: 21,
+                          ),
+                        if (_countdown != null)
+                          Positioned(
+                            right: -5,
+                            top: -6,
+                            child: Container(
+                              width: 19,
+                              height: 19,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: glow, width: 1.3),
+                              ),
+                              child: Text(
+                                '$_countdown',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: glow,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
               ),
+            ),
             const SizedBox(width: 2),
             IconButton(
               onPressed: _submitting ? null : _runSearch,
