@@ -5,11 +5,11 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/engagement_reward_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Profile-facing explanation of the SWIPESS active-time loyalty loop.
+/// Profile-facing explanation of the SWIPESS active-use loyalty loop.
 ///
-/// There is nothing to claim here. The server advances the five-step ladder
-/// automatically from authenticated active-use heartbeats and credits the token
-/// as soon as step five is reached.
+/// The exact cadence is intentionally not exposed in the UI. Users only see
+/// their progress and the automatic reward outcome; the server remains the
+/// source of truth for when a step is earned.
 class EngagementRewardCard extends ConsumerWidget {
   const EngagementRewardCard({super.key});
 
@@ -58,7 +58,7 @@ class EngagementRewardCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Your time in SWIPESS earns tokens automatically.',
+                    'Use SWIPESS and unlock rewards automatically.',
                     style: GoogleFonts.plusJakartaSans(
                       color: muted,
                       fontSize: 11.5,
@@ -92,37 +92,21 @@ class EngagementRewardCard extends ConsumerWidget {
         const SizedBox(height: 18),
         _RewardTrack(completed: progress.steps),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                async.isLoading
-                    ? 'Syncing your active time…'
-                    : progress.steps == 4
-                    ? '${progress.minutesToNextStep} active min to your free token.'
-                    : '${progress.steps}/5 complete · ${progress.minutesToNextStep} active min to the next step.',
-                style: GoogleFonts.plusJakartaSans(
-                  color: ink,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${progress.stepMinutes} MIN / STEP',
-              style: GoogleFonts.plusJakartaSans(
-                color: AppTheme.brandPrimary,
-                fontSize: 9.5,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .55,
-              ),
-            ),
-          ],
+        Text(
+          async.isLoading
+              ? 'Syncing your reward progress…'
+              : progress.steps == 4
+                  ? '4/5 complete · Your next reward is close.'
+                  : '${progress.steps}/5 complete · Keep exploring to unlock the next step.',
+          style: GoogleFonts.plusJakartaSans(
+            color: ink,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 7),
         Text(
-          'Stay active anywhere in the app. Every ${progress.stepMinutes} active minutes advances one step. The fifth step adds 1 token automatically — no claim button.',
+          'Complete all 5 steps and your free token is added automatically.',
           style: GoogleFonts.plusJakartaSans(
             color: muted,
             fontSize: 10.5,
@@ -202,15 +186,19 @@ class _RewardTrack extends StatelessWidget {
                     color: i <= safe ? Colors.white : muted,
                   )
                 : i <= safe
-                ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
-                : Text(
-                    '$i',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: muted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      )
+                    : Text(
+                        '$i',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
           ),
         ],
       ],
