@@ -10,12 +10,12 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/concierge_sheet_host.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_message_bubble.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_welcome_grid.dart';
@@ -69,18 +69,25 @@ class _IntelCoreSheet extends ConsumerStatefulWidget {
 }
 
 class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
+  static const _aiBlue = Color(0xFF2563EB);
+  static const _aiBlueSoft = Color(0xFF60A5FA);
+  static const _aiCyan = Color(0xFF38BDF8);
+
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   final _messages = <IntelChatBubble>[];
   final _saved = <Map<String, dynamic>>[];
+  final _voice = LiveVoiceInput.instance;
+
   bool _showHistory = false;
   bool _showPersona = false;
   bool _loading = false;
   bool _bootstrapped = false;
   bool _recording = false;
-  bool _transcribing = false;
+  bool _preparingSubmit = false;
   bool _privacyAccepted = false;
-  bool _autoSend = false;
+  bool _autoSend = true;
+  double _voiceLevel = 0;
   int? _countdown;
   Timer? _countdownTimer;
   String _character = 'default';
@@ -88,8 +95,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   final _tts = FlutterTts();
 
   static const _personas = <(String, String, String, Color)>[
-    ('default', 'Swipess AI', 'Global Discovery', Color(0xFFFF3D00)),
-    ('kyle', 'Kyle', 'Market Hustler', Color(0xFFFB923C)),
+    ('default', 'Swipess AI', 'Global Discovery', _aiBlue),
+    ('kyle', 'Kyle', 'Market Hustler', _aiCyan),
     ('beaugosse', 'Beau Gosse', 'Social Alpha', Color(0xFFA855F7)),
     ('donajkiin', "Don Aj K'iin", 'Mayan Wisdom', Color(0xFF10B981)),
     ('botbetter', 'Bot Better', 'Luxury Analyst', Color(0xFFEC4899)),
@@ -117,6 +124,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    unawaited(_voice.cancel(owner: this));
     _controller.dispose();
     _scroll.dispose();
     _tts.stop();
@@ -210,67 +218,96 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   Future<void> _toggleVoice() async {
-    final repo = ref.read(voiceTranscribeRepositoryProvider);
-    if (_recording) {
-      setState(() {
-        _recording = false;
-        _transcribing = true;
-      });
-      try {
-        final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
-        final text = await repo.stop(language: lang);
-        if (text.trim().isNotEmpty && mounted) {
-          await _submit(text.trim());
-        }
-      } on VoiceTranscribeException catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.message)));
-        }
-      } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                t(ref, 'flutter.voiceFailed', 'Voice transcription failed'),
-              ),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _transcribing = false);
-      }
-      return;
-    }
-    final ok = await repo.start();
-    if (!ok) {
+    if (_loading || _preparingSubmit) return;
+    if (_voice.isOwnedBy(this) || _recording) {
+      _cancelCountdown();
+      await _voice.cancel(owner: this);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              t(ref, 'flutter.micDenied', 'Microphone permission denied'),
-            ),
-          ),
-        );
+        setState(() {
+          _recording = false;
+          _voiceLevel = 0;
+        });
       }
       return;
     }
-    setState(() => _recording = true);
+
+    AppHaptics.light();
+    final started = await _voice.start(
+      owner: this,
+      initialText: _controller.text,
+      onText: (text) {
+        if (!mounted) return;
+        // New speech always wins over an in-flight 3…2…1 countdown.
+        _cancelCountdown();
+        _controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+        setState(() => _recording = true);
+      },
+      onSilence: () {
+        if (_autoSend) _beginCountdown();
+      },
+      onListeningChanged: (listening) {
+        if (!mounted) return;
+        setState(() {
+          _recording = listening;
+          if (!listening) _voiceLevel = 0;
+        });
+      },
+      onSoundLevel: (level) {
+        if (!mounted) return;
+        final normalized = ((level + 45) / 45).clamp(0.0, 1.0);
+        setState(() => _voiceLevel = normalized);
+      },
+      onError: (message) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      },
+    );
+
+    if (mounted) {
+      setState(() {
+        _recording = started;
+        if (!started) _voiceLevel = 0;
+      });
+    }
   }
 
   String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
 
   Future<void> _submit([String? preset]) async {
+    if (_loading || _preparingSubmit) return;
+    _preparingSubmit = true;
     _cancelCountdown();
+
+    if (_voice.isOwnedBy(this) || _recording) {
+      await _voice.finish(owner: this);
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _voiceLevel = 0;
+        });
+      }
+    }
+
     final q = (preset ?? _controller.text).trim();
-    if (q.isEmpty || _loading) return;
+    if (q.isEmpty) {
+      _preparingSubmit = false;
+      return;
+    }
+
     AppHaptics.selection();
     _controller.clear();
 
+    if (!mounted) return;
     setState(() {
       _messages.add(IntelChatBubble(id: _newId(), role: 'user', content: q));
       _loading = true;
     });
+    _preparingSubmit = false;
     _scrollToEnd();
 
     final loc = ref.read(discoveryLocationProvider);
@@ -361,9 +398,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     if (parsed.filterAction != null) {
       _applyConciergeFilter(parsed.filterAction!);
     }
-    setState(() {
-      _loading = false;
-    });
+    setState(() => _loading = false);
     _scrollToEnd();
     _persistHistory();
   }
@@ -612,7 +647,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         : m.content;
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Telemetry Copied')));
+        .showSnackBar(const SnackBar(content: Text('Copied')));
   }
 
   void _delete(IntelChatBubble m) {
@@ -657,15 +692,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   void _onComposerChanged(String value) {
-    if (!_autoSend) return;
-    if (value.trim().isEmpty) {
-      _cancelCountdown();
-      return;
-    }
-    _startCountdown();
+    // Manual typing never auto-sends. The hands-free timer belongs to voice
+    // silence only, so normal keyboard use remains predictable.
+    _cancelCountdown();
+    if (mounted) setState(() {});
   }
 
-  void _startCountdown() {
+  void _beginCountdown() {
+    if (!mounted || !_autoSend || _controller.text.trim().isEmpty || _loading) {
+      return;
+    }
     _countdownTimer?.cancel();
     setState(() => _countdown = 3);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -673,19 +709,21 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         timer.cancel();
         return;
       }
-      final next = (_countdown ?? 1) - 1;
-      if (next <= 0) {
-        timer.cancel();
-        setState(() => _countdown = null);
-        _submit();
-      } else {
-        setState(() => _countdown = next);
+      final current = _countdown ?? 0;
+      if (current > 1) {
+        setState(() => _countdown = current - 1);
+        return;
       }
+      timer.cancel();
+      _countdownTimer = null;
+      setState(() => _countdown = null);
+      unawaited(_submit());
     });
   }
 
   void _cancelCountdown() {
     _countdownTimer?.cancel();
+    _countdownTimer = null;
     if (_countdown != null && mounted) setState(() => _countdown = null);
   }
 
@@ -701,7 +739,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     final edgeReady = ref.watch(aiEdgeReadyProvider);
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    final canvas = isLight ? Colors.white : const Color(0xFF0A0A0C);
+    final canvas = isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0A0D12);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -747,16 +785,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 (_messages.isEmpty ||
                                     _messages.last.content.trim().isEmpty))
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 16,
-                                  top: 4,
-                                ),
+                                padding: const EdgeInsets.only(left: 16, top: 4),
                                 child: Text(
                                   t(ref, 'flutter.thinking', 'Thinking…'),
                                   style: GoogleFonts.plusJakartaSans(
                                     color: isLight
                                         ? ink.withAlpha(110)
-                                        : Colors.white,
+                                        : Colors.white70,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -810,7 +845,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: isLight ? ink.withAlpha(24) : Colors.white),
+          bottom: BorderSide(
+            color: isLight ? _aiBlue.withAlpha(24) : _aiBlueSoft.withAlpha(34),
+          ),
         ),
       ),
       child: Row(
@@ -831,7 +868,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               Text(
                 'INTEL CORE',
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFFFF3D00),
+                  color: isLight ? _aiBlue : _aiBlueSoft,
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
                   fontSize: 11,
@@ -840,15 +877,29 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                online ? 'ONLINE' : 'OFFLINE',
-                style: GoogleFonts.plusJakartaSans(
-                  color: isLight ? ink.withAlpha(90) : Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 8,
-                  letterSpacing: 1.6,
-                  height: 1,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: online ? const Color(0xFF22C55E) : Colors.white38,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    online ? 'ONLINE' : 'OFFLINE',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: isLight ? ink.withAlpha(90) : Colors.white70,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 8,
+                      letterSpacing: 1.6,
+                      height: 1,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -878,7 +929,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     Text(
                       persona.$3.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: isLight ? ink.withAlpha(90) : Colors.white,
+                        color: isLight ? ink.withAlpha(90) : Colors.white70,
                         fontWeight: FontWeight.w800,
                         fontSize: 7,
                         letterSpacing: 0.6,
@@ -892,8 +943,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: persona.$4.withAlpha(40),
+                    color: persona.$4.withAlpha(34),
                     shape: BoxShape.circle,
+                    border: Border.all(color: persona.$4.withAlpha(80)),
                   ),
                   child: Icon(
                     Icons.auto_awesome_rounded,
@@ -912,6 +964,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   Widget _composer({required bool isLight, required Color ink}) {
+    final voiceScale = 1.0 + (_voiceLevel * .08);
+    final voiceActive = _recording || _countdown != null;
+    final fill = isLight ? const Color(0xFFF1F5F9) : const Color(0xFF111827);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         14,
@@ -921,129 +977,204 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       ),
       child: Column(
         children: [
-          if (_countdown != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 14,
-                    color: AppTheme.brandPrimary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'SEND IN',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: ink,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 10,
-                      letterSpacing: 1.4,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: AppTheme.brandPrimary,
-                    child: Text(
-                      '$_countdown',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: _cancelCountdown,
-                    icon: Icon(Icons.close_rounded, size: 16, color: ink),
-                  ),
-                ],
-              ),
-            ),
           AiDisclosure(isLight: isLight, showModelLine: true),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: voiceActive
+                ? Padding(
+                    key: ValueKey('voice-${_countdown ?? 'live'}'),
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        BreathingWidget(
+                          duration: const Duration(milliseconds: 1100),
+                          minOpacity: .5,
+                          maxOpacity: 1,
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: _aiCyan,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          _countdown != null
+                              ? 'SENDING IN $_countdown · SPEAK TO KEEP GOING'
+                              : _autoSend
+                              ? 'LISTENING · HANDS-FREE AUTO SEND ON'
+                              : 'LISTENING · MANUAL SEND',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: isLight ? _aiBlue : _aiBlueSoft,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .9,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           Row(
             children: [
               Expanded(
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  constraints: const BoxConstraints(minHeight: 50),
+                  padding: const EdgeInsets.fromLTRB(6, 0, 10, 0),
                   decoration: BoxDecoration(
-                    color: isLight
-                        ? const Color(0xFFF4F4F7)
-                        : const Color(0xFF14141A),
-                    borderRadius: BorderRadius.circular(22),
+                    color: fill,
+                    borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: isLight ? ink.withAlpha(40) : Colors.white,
-                      width: 1.2,
+                      color: voiceActive
+                          ? _aiBlueSoft.withAlpha(isLight ? 165 : 185)
+                          : _aiBlueSoft.withAlpha(isLight ? 42 : 48),
+                      width: voiceActive ? 1.25 : .8,
                     ),
+                    boxShadow: voiceActive
+                        ? [
+                            BoxShadow(
+                              color: _aiBlue.withAlpha(28),
+                              blurRadius: 20,
+                              spreadRadius: -3,
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() => _autoSend = !_autoSend);
-                          if (!_autoSend) _cancelCountdown();
-                        },
-                        child: Icon(
-                          Icons.timer_outlined,
-                          color: _autoSend
-                              ? AppTheme.brandPrimary
-                              : (isLight ? ink.withAlpha(120) : Colors.white),
-                          size: 20,
+                      Tooltip(
+                        message: _autoSend
+                            ? 'Hands-free auto send is on'
+                            : 'Hands-free auto send is off',
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            AppHaptics.selection();
+                            setState(() => _autoSend = !_autoSend);
+                            if (!_autoSend) _cancelCountdown();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: _autoSend
+                                  ? _aiBlue.withAlpha(isLight ? 22 : 45)
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.auto_mode_rounded,
+                              color: _autoSend
+                                  ? (isLight ? _aiBlue : _aiBlueSoft)
+                                  : (isLight
+                                        ? ink.withAlpha(105)
+                                        : Colors.white54),
+                              size: 18,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 2),
-                      GestureDetector(
-                        onTap: (_loading || _transcribing)
-                            ? null
-                            : _toggleVoice,
-                        child: Icon(
-                          _recording
-                              ? Icons.mic_rounded
-                              : Icons.mic_none_rounded,
-                          color: _recording
-                              ? AppTheme.brandPrimary
-                              : (isLight ? ink.withAlpha(120) : Colors.white),
-                          size: 20,
+                      Tooltip(
+                        message: _recording ? 'Stop listening' : 'Speak to AI',
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _toggleVoice,
+                          child: AnimatedScale(
+                            duration: const Duration(milliseconds: 110),
+                            scale: _recording ? voiceScale : 1,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: voiceActive
+                                    ? _aiBlue.withAlpha(isLight ? 28 : 48)
+                                    : Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: voiceActive
+                                      ? _aiBlueSoft.withAlpha(150)
+                                      : Colors.transparent,
+                                ),
+                                boxShadow: _recording
+                                    ? [
+                                        BoxShadow(
+                                          color: _aiCyan.withAlpha(60),
+                                          blurRadius: 12 + (_voiceLevel * 14),
+                                          spreadRadius: _voiceLevel * 2,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 120),
+                                child: _countdown != null
+                                    ? Text(
+                                        '$_countdown',
+                                        key: ValueKey(_countdown),
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: isLight ? _aiBlue : _aiBlueSoft,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      )
+                                    : Icon(
+                                        _recording
+                                            ? Icons.graphic_eq_rounded
+                                            : Icons.mic_none_rounded,
+                                        key: ValueKey(_recording),
+                                        color: isLight ? _aiBlue : _aiBlueSoft,
+                                        size: 19,
+                                      ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: TextField(
                           controller: _controller,
-                          enabled: !_loading,
+                          enabled: !_loading && !_preparingSubmit,
+                          cursorColor: isLight ? _aiBlue : _aiBlueSoft,
                           style: TextStyle(color: ink, fontSize: 15),
                           minLines: 1,
                           maxLines: 5,
                           decoration: InputDecoration(
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            filled: false,
+                            isDense: true,
                             hintText: _recording
                                 ? t(ref, 'flutter.listening', 'Listening…')
-                                : _transcribing
-                                ? t(
-                                    ref,
-                                    'flutter.transcribing',
-                                    'Transcribing…',
-                                  )
                                 : t(
                                     ref,
                                     'flutter.askAnything',
                                     'Ask anything...',
                                   ),
                             hintStyle: TextStyle(
-                              color: isLight
-                                  ? ink.withAlpha(100)
-                                  : Colors.white,
+                              color: _recording
+                                  ? (isLight ? _aiBlue : _aiBlueSoft)
+                                  : (isLight
+                                        ? ink.withAlpha(95)
+                                        : Colors.white54),
+                              fontWeight: _recording
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
                             ),
                           ),
-                          onChanged: (value) {
-                            setState(() {});
-                            _onComposerChanged(value);
-                          },
+                          onChanged: _onComposerChanged,
                           onSubmitted: (_) => _submit(),
                         ),
                       ),
@@ -1053,34 +1184,40 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: _loading ? null : () => _submit(),
-                child: Container(
-                  width: 44,
-                  height: 44,
+                onTap: _loading || _preparingSubmit ? null : () => _submit(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _controller.text.trim().isEmpty || _loading
                         ? (isLight
-                              ? const Color(0xFFE8E8EE)
-                              : Colors.transparent)
-                        : AppTheme.brandPrimary,
-                    border: Border.all(
-                      color: isLight ? ink.withAlpha(40) : Colors.white,
-                      width: 1.2,
-                    ),
+                              ? const Color(0xFFE7ECF4)
+                              : const Color(0xFF172033))
+                        : _aiBlue,
+                    boxShadow: _controller.text.trim().isEmpty || _loading
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: _aiBlue.withAlpha(55),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                   ),
                   child: _loading
                       ? Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(13),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: isLight ? ink.withAlpha(160) : Colors.white,
+                            color: isLight ? _aiBlue : _aiBlueSoft,
                           ),
                         )
                       : Icon(
                           Icons.arrow_upward_rounded,
                           color: _controller.text.trim().isEmpty
-                              ? (isLight ? ink.withAlpha(90) : Colors.white)
+                              ? (isLight ? ink.withAlpha(80) : Colors.white54)
                               : Colors.white,
                         ),
                 ),
@@ -1102,13 +1239,20 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppTheme.brandPrimary.withAlpha(24),
+              color: _aiBlue.withAlpha(24),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: AppTheme.brandPrimary.withAlpha(50)),
+              border: Border.all(color: _aiBlueSoft.withAlpha(55)),
+              boxShadow: [
+                BoxShadow(
+                  color: _aiBlue.withAlpha(32),
+                  blurRadius: 28,
+                  spreadRadius: -4,
+                ),
+              ],
             ),
             child: const Icon(
               Icons.auto_awesome_rounded,
-              color: AppTheme.brandPrimary,
+              color: _aiBlueSoft,
               size: 40,
             ),
           ),
@@ -1140,8 +1284,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
             child: ElevatedButton(
               onPressed: _acceptPrivacy,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.brandPrimary,
+                backgroundColor: _aiBlue,
                 foregroundColor: Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -1172,7 +1317,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     required Color ink,
     required bool online,
   }) {
-    final canvas = isLight ? Colors.white : const Color(0xF214141A);
+    final canvas = isLight ? Colors.white : const Color(0xF2141820);
     return Positioned.fill(
       child: Row(
         children: [
@@ -1197,7 +1342,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       Text(
                         online ? 'CORE ONLINE' : 'OFFLINE',
                         style: GoogleFonts.plusJakartaSans(
-                          color: AppTheme.brandPrimary,
+                          color: isLight ? _aiBlue : _aiBlueSoft,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1214,7 +1359,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     child: Text(
                       '+ NEW CHAT',
                       style: GoogleFonts.plusJakartaSans(
-                        color: AppTheme.brandPrimary,
+                        color: isLight ? _aiBlue : _aiBlueSoft,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -1239,7 +1384,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     Text(
                       'No saved chats yet.',
                       style: GoogleFonts.plusJakartaSans(
-                        color: (isLight ? ink.withAlpha(120) : Colors.white),
+                        color: isLight ? ink.withAlpha(120) : Colors.white70,
                       ),
                     ),
                   for (final item in _saved)
@@ -1249,8 +1394,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
+                          color: isLight
+                              ? const Color(0xFFF6F8FC)
+                              : const Color(0xFF111827),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: ink.withAlpha(40)),
+                          border: Border.all(
+                            color: _aiBlueSoft.withAlpha(isLight ? 28 : 34),
+                          ),
                         ),
                         child: Text(
                           item['title']?.toString() ?? 'Chat',
@@ -1285,9 +1435,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
           width: 260,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isLight ? Colors.white : const Color(0xFF14141A),
+            color: isLight ? Colors.white : const Color(0xFF141A24),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: ink.withAlpha(30)),
+            border: Border.all(color: _aiBlueSoft.withAlpha(30)),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x33000000),
@@ -1305,7 +1455,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 child: Text(
                   'PERSONA',
                   style: GoogleFonts.plusJakartaSans(
-                    color: isLight ? ink.withAlpha(110) : Colors.white,
+                    color: isLight ? ink.withAlpha(110) : Colors.white70,
                     fontWeight: FontWeight.w900,
                     fontSize: 9,
                     letterSpacing: 1.6,
@@ -1331,7 +1481,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   title: Text(
                     p.$2.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: p.$1 == _character ? AppTheme.brandPrimary : ink,
+                      color: p.$1 == _character
+                          ? (isLight ? _aiBlue : _aiBlueSoft)
+                          : ink,
                       fontWeight: FontWeight.w900,
                       fontSize: 11,
                     ),
@@ -1339,16 +1491,16 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   subtitle: Text(
                     p.$3.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: (isLight ? ink.withAlpha(120) : Colors.white),
+                      color: isLight ? ink.withAlpha(120) : Colors.white70,
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   trailing: p.$1 == _character
-                      ? const Icon(
+                      ? Icon(
                           Icons.circle,
                           size: 8,
-                          color: AppTheme.brandPrimary,
+                          color: isLight ? _aiBlue : _aiBlueSoft,
                         )
                       : null,
                 ),
