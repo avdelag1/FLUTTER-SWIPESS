@@ -569,17 +569,6 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
               children: [
                 const SizedBox(width: 8),
                 _micButton(isLight: isLight, glow: glow),
-                if (_voiceActive) ...[
-                  const SizedBox(width: 7),
-                  LiveAudioWaveform(
-                    active: true,
-                    level: _voiceLevel,
-                    color: glow,
-                    width: 66,
-                    height: 22,
-                    samples: 22,
-                  ),
-                ],
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
@@ -614,6 +603,17 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                     onSubmitted: (_) => _runSearch(),
                   ),
                 ),
+                if (_voiceActive) ...[
+                  const SizedBox(width: 7),
+                  LiveAudioWaveform(
+                    active: true,
+                    level: _voiceLevel,
+                    color: glow,
+                    width: 66,
+                    height: 22,
+                    samples: 22,
+                  ),
+                ],
                 IconButton(
                   onPressed: _submitting ? null : _runSearch,
                   tooltip: 'Send',
