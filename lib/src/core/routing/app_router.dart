@@ -116,10 +116,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
         }
 
-        if (session != null) {
+        final market = ref.read(appMarketProvider).value;
+        if (market != null) {
           final feature = _marketFeatureForLocation(location);
           if (feature != null &&
-              (!session.territoryOpen || !session.featureEnabled(feature))) {
+              (!market.effectiveOpen || !market.featureEnabled(feature))) {
             return AppPaths.clientDashboard;
           }
         }
@@ -516,6 +517,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   });
   ref.listen(subscriptionProvider, (_, _) => router.refresh());
   ref.listen(appSessionProvider, (_, _) => router.refresh());
+  ref.listen(appMarketProvider, (_, _) => router.refresh());
 
   return router;
 });
@@ -560,12 +562,14 @@ class _RouterRefresh extends ChangeNotifier {
     _userSub = ref.listen(currentUserProvider, (_, _) => notifyListeners());
     _grantSub = ref.listen(accessGrantedProvider, (_, _) => notifyListeners());
     _sessionSub = ref.listen(appSessionProvider, (_, _) => notifyListeners());
+    _marketSub = ref.listen(appMarketProvider, (_, _) => notifyListeners());
   }
 
   late final ProviderSubscription<AsyncValue<dynamic>> _authSub;
   late final ProviderSubscription<dynamic> _userSub;
   late final ProviderSubscription<AsyncValue<bool>> _grantSub;
   late final ProviderSubscription<AsyncValue<dynamic>> _sessionSub;
+  late final ProviderSubscription<AsyncValue<dynamic>> _marketSub;
 
   @override
   void dispose() {
@@ -573,6 +577,7 @@ class _RouterRefresh extends ChangeNotifier {
     _userSub.close();
     _grantSub.close();
     _sessionSub.close();
+    _marketSub.close();
     super.dispose();
   }
 }
