@@ -73,24 +73,26 @@ class IntelWelcomeGrid extends StatelessWidget {
                       AppHaptics.selection();
                       onPick(item.$2);
                     },
-                    child: Ink(
+                    child: ConstrainedBox(
                       constraints: const BoxConstraints(minWidth: 116),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: chipFill,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: border),
-                      ),
-                      child: Text(
-                        item.$1,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: ink,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
+                      child: Ink(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: chipFill,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: border),
+                        ),
+                        child: Text(
+                          item.$1,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
