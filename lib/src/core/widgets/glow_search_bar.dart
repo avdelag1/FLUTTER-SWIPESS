@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -43,8 +45,14 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     with SingleTickerProviderStateMixin {
   final math.Random _random = math.Random();
   final FocusNode _focusNode = FocusNode();
+  final LiveVoiceInput _voice = LiveVoiceInput.instance;
   Timer? _promptTimer;
+  Timer? _countdownTimer;
   int _promptIndex = 0;
+  int? _countdown;
+  double _voiceLevel = 0;
+  bool _voiceActive = false;
+  bool _submittingVoice = false;
   late final AnimationController _glintController;
 
   bool get _isEditableSearch => widget.controller != null;
@@ -52,7 +60,8 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   bool get _showPrompt {
     if (!_isEditableSearch) return true;
     return (widget.controller?.text.trim().isEmpty ?? true) &&
-        !_focusNode.hasFocus;
+        !_focusNode.hasFocus &&
+        !_voiceActive;
   }
 
   String get _place {
@@ -134,11 +143,127 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   @override
   void dispose() {
     _promptTimer?.cancel();
+    _countdownTimer?.cancel();
+    unawaited(_voice.cancel(owner: this));
     widget.controller?.removeListener(_handleControllerChanged);
     _focusNode.removeListener(_handleFocusChanged);
     _focusNode.dispose();
     _glintController.dispose();
     super.dispose();
+  }
+
+  void _cancelCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    if (_countdown != null && mounted) setState(() => _countdown = null);
+  }
+
+  void _beginCountdown() {
+    if (!mounted || _submittingVoice) return;
+    final text = widget.controller?.text.trim() ?? '';
+    if (text.isEmpty) return;
+    _countdownTimer?.cancel();
+    setState(() => _countdown = 3);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final current = _countdown ?? 0;
+      if (current > 1) {
+        setState(() => _countdown = current - 1);
+        return;
+      }
+      timer.cancel();
+      _countdownTimer = null;
+      setState(() => _countdown = null);
+      unawaited(_submitVoiceSearch());
+    });
+  }
+
+  Future<void> _toggleVoice() async {
+    if (!_isEditableSearch) {
+      widget.onTap?.call();
+      return;
+    }
+
+    if (_voice.isOwnedBy(this) || _voiceActive) {
+      _cancelCountdown();
+      await _voice.cancel(owner: this);
+      if (mounted) {
+        setState(() {
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
+      }
+      return;
+    }
+
+    AppHaptics.light();
+    _focusNode.requestFocus();
+    final started = await _voice.start(
+      owner: this,
+      initialText: widget.controller?.text ?? '',
+      onText: (text) {
+        if (!mounted) return;
+        _cancelCountdown();
+        final controller = widget.controller;
+        if (controller != null) {
+          controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          );
+        }
+        widget.onChanged?.call(text);
+        setState(() => _voiceActive = true);
+      },
+      onSilence: _beginCountdown,
+      onListeningChanged: (listening) {
+        if (!mounted) return;
+        setState(() {
+          _voiceActive = listening;
+          if (!listening) _voiceLevel = 0;
+        });
+      },
+      onSoundLevel: (level) {
+        if (!mounted) return;
+        final normalized = ((level + 45) / 45).clamp(0.0, 1.0);
+        setState(() => _voiceLevel = normalized);
+      },
+      onError: (message) {
+        if (!mounted) return;
+        setState(() {
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      },
+    );
+
+    if (mounted) {
+      setState(() {
+        _voiceActive = started;
+        if (!started) _voiceLevel = 0;
+      });
+    }
+  }
+
+  Future<void> _submitVoiceSearch() async {
+    if (_submittingVoice) return;
+    _submittingVoice = true;
+    _cancelCountdown();
+    await _voice.finish(owner: this);
+    if (mounted) {
+      setState(() {
+        _voiceActive = false;
+        _voiceLevel = 0;
+      });
+    }
+    final text = widget.controller?.text ?? '';
+    _submitSearch(text);
+    _submittingVoice = false;
   }
 
   String _normalize(String input) {
@@ -149,9 +274,29 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         .trim();
   }
 
-  void _runDirectSearch(String raw) {
+  void _submitSearch(String raw) {
     final input = raw.trim();
-    if (input.isEmpty) return;
+    if (input.isEmpty) {
+      widget.onTap?.call();
+      return;
+    }
+
+    if (!_runDirectSearch(input)) {
+      if (widget.onSubmitted != null) {
+        widget.onSubmitted!(input);
+      } else {
+        context.go(
+          '${AppPaths.clientFilters}?q=${Uri.encodeQueryComponent(input)}',
+        );
+        widget.controller?.clear();
+      }
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  bool _runDirectSearch(String raw) {
+    final input = raw.trim();
+    if (input.isEmpty) return false;
     final q = _normalize(input);
     bool has(String pattern) => RegExp(pattern).hasMatch(q);
 
@@ -212,13 +357,37 @@ class _GlowSearchBarState extends State<GlowSearchBar>
         categoryTitle: 'PROPERTIES',
       );
     } else {
-      context.go(
-        '${AppPaths.clientFilters}?q=${Uri.encodeQueryComponent(input)}',
-      );
+      return false;
     }
 
     widget.controller?.clear();
-    FocusManager.instance.primaryFocus?.unfocus();
+    return true;
+  }
+
+  Widget _voiceBars(Color color) {
+    final level = _voiceLevel.clamp(0.0, 1.0);
+    const multipliers = <double>[.52, 1, .68, .9, .45];
+    return SizedBox(
+      width: 24,
+      height: 18,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (final multiplier in multipliers)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOut,
+              width: 3,
+              height: 4 + (12 * level * multiplier),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _animatedPrompt({
@@ -315,9 +484,11 @@ class _GlowSearchBarState extends State<GlowSearchBar>
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
+    final blue = isLight ? const Color(0xFF2563EB) : const Color(0xFF60A5FA);
     final prompts = _rotatingPrompts;
     final safeIndex = _promptIndex % prompts.length;
     final displayHint = prompts[safeIndex];
+    final voiceVisible = _voiceActive || _countdown != null;
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -327,18 +498,32 @@ class _GlowSearchBarState extends State<GlowSearchBar>
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _isEditableSearch ? null : widget.onTap,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
               height: 44,
-              padding: const EdgeInsets.only(left: 16, right: 5),
+              padding: const EdgeInsets.only(left: 12, right: 3),
               decoration: BoxDecoration(
                 color: isLight
                     ? Colors.white.withAlpha(205)
                     : const Color(0xFF121822).withAlpha(230),
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: const Color(0xFF60A5FA).withAlpha(isLight ? 125 : 145),
-                  width: .9,
+                  color: voiceVisible
+                      ? blue
+                      : const Color(0xFF60A5FA).withAlpha(
+                          isLight ? 125 : 145,
+                        ),
+                  width: voiceVisible ? 1.5 : .9,
                 ),
+                boxShadow: voiceVisible
+                    ? [
+                        BoxShadow(
+                          color: blue.withAlpha(38),
+                          blurRadius: 16 + (_voiceLevel * 10),
+                          spreadRadius: -2,
+                        ),
+                      ]
+                    : null,
               ),
               alignment: Alignment.centerLeft,
               child: _isEditableSearch
@@ -347,7 +532,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                       children: [
                         if (_showPrompt)
                           Positioned.fill(
-                            right: 42,
+                            right: 84,
                             child: IgnorePointer(
                               child: Align(
                                 alignment: Alignment.centerLeft,
@@ -363,8 +548,11 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                         TextField(
                           focusNode: _focusNode,
                           controller: widget.controller,
-                          onChanged: widget.onChanged,
-                          onSubmitted: _runDirectSearch,
+                          onChanged: (value) {
+                            _cancelCountdown();
+                            widget.onChanged?.call(value);
+                          },
+                          onSubmitted: _submitSearch,
                           textInputAction: TextInputAction.search,
                           autofocus: false,
                           style: GoogleFonts.plusJakartaSans(
@@ -374,19 +562,109 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                           ),
                           cursorColor: const Color(0xFF60A5FA),
                           decoration: InputDecoration(
-                            suffixIcon: IconButton(
-                              tooltip: 'Search',
-                              onPressed: () => _runDirectSearch(
-                                widget.controller?.text ?? '',
-                              ),
-                              icon: Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 19,
-                                color: ink,
-                              ),
+                            prefixIcon: _voiceActive
+                                ? Padding(
+                                    padding: const EdgeInsets.only(right: 7),
+                                    child: Center(child: _voiceBars(blue)),
+                                  )
+                                : null,
+                            prefixIconConstraints: _voiceActive
+                                ? const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 38,
+                                  )
+                                : null,
+                            hintText: _voiceActive
+                                ? 'Speak now — words appear here…'
+                                : null,
+                            hintStyle: GoogleFonts.plusJakartaSans(
+                              color: blue.withAlpha(190),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                            ),
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Tooltip(
+                                  message: _voiceActive
+                                      ? 'Stop recording'
+                                      : 'Speak your search',
+                                  child: Semantics(
+                                    button: true,
+                                    label: _voiceActive
+                                        ? 'Stop recording'
+                                        : 'Start voice search',
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: _toggleVoice,
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 150,
+                                        ),
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: _voiceActive
+                                              ? blue
+                                              : blue.withAlpha(
+                                                  isLight ? 18 : 34,
+                                                ),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: _voiceActive
+                                                ? blue
+                                                : blue.withAlpha(90),
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(
+                                            milliseconds: 110,
+                                          ),
+                                          child: _countdown != null
+                                              ? Text(
+                                                  '$_countdown',
+                                                  key: ValueKey(_countdown),
+                                                  style: GoogleFonts
+                                                      .plusJakartaSans(
+                                                    color: _voiceActive
+                                                        ? Colors.white
+                                                        : blue,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                )
+                                              : Icon(
+                                                  _voiceActive
+                                                      ? Icons.stop_rounded
+                                                      : Icons.mic_rounded,
+                                                  key: ValueKey(_voiceActive),
+                                                  color: _voiceActive
+                                                      ? Colors.white
+                                                      : blue,
+                                                  size: 18,
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Search',
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () => _submitSearch(
+                                    widget.controller?.text ?? '',
+                                  ),
+                                  icon: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 19,
+                                    color: ink,
+                                  ),
+                                ),
+                              ],
                             ),
                             suffixIconConstraints: const BoxConstraints(
-                              minWidth: 38,
+                              minWidth: 76,
                               minHeight: 38,
                             ),
                             border: InputBorder.none,
@@ -416,21 +694,40 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                     ),
             ),
           ),
-          const SizedBox(height: 5),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Powered by Gemini · AI can make mistakes.',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: ink.withAlpha(isLight ? 135 : 170),
-                fontWeight: FontWeight.w500,
-                fontSize: 10.5,
-                letterSpacing: .02,
+          if (voiceVisible) ...[
+            const SizedBox(height: 5),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _countdown != null
+                    ? 'Sending in $_countdown · speak again to keep recording'
+                    : 'Listening · tap the blue stop button to finish',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  color: blue,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10.5,
+                ),
               ),
             ),
-          ),
+          ] else ...[
+            const SizedBox(height: 5),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Powered by Gemini · AI can make mistakes.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  color: ink.withAlpha(isLight ? 135 : 170),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 10.5,
+                  letterSpacing: .02,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 7),
           Row(
             children: [
