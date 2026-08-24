@@ -44,8 +44,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   static const _headerInset = 72.0;
   static const _dockInset = 82.0;
   static const _backRowInset = 44.0;
+  static const _dismissThreshold = 120.0; // px of downward pull to dismiss
 
   String? _lastLocation;
+  double _eventsSwipeOffset = 0;
 
   @override
   void initState() {
@@ -59,6 +61,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   void dispose() {
     ref.read(sessionGamificationProvider).stopTracking();
     super.dispose();
+  }
+
+  void _dismissEventsWithSwipe() {
+    AppHaptics.medium();
+    setState(() => _eventsSwipeOffset = 0);
+    ref.read(chromeVisibilityProvider.notifier).show();
+    context.go(AppPaths.clientDashboard);
   }
 
   /// Reserve real layout space for persistent header/dock chrome.
@@ -197,25 +206,58 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 ),
                 if (isEvents)
-                  AnimatedContainer(
-                    duration: chromeMotionDuration,
-                    curve: Curves.easeOutCubic,
-                    margin: persistentChromeVisible
-                        ? EdgeInsets.fromLTRB(
-                            8,
-                            safe.top + 58,
-                            8,
-                            safe.bottom + 70,
-                          )
-                        : EdgeInsets.zero,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(
-                        persistentChromeVisible ? 24 : 0,
+                  GestureDetector(
+                    onVerticalDragUpdate: (details) {
+                      // Only track downward drag — upward scroll belongs to
+                      // the events screen's own ScrollView.
+                      if (details.delta.dy > 0) {
+                        setState(() {
+                          _eventsSwipeOffset = (_eventsSwipeOffset +
+                                  details.delta.dy)
+                              .clamp(0, 320);
+                        });
+                      }
+                    },
+                    onVerticalDragEnd: (details) {
+                      if (_eventsSwipeOffset >= _dismissThreshold ||
+                          (details.primaryVelocity ?? 0) > 800) {
+                        _dismissEventsWithSwipe();
+                      } else {
+                        // Snap back with spring-like animation.
+                        setState(() => _eventsSwipeOffset = 0);
+                      }
+                    },
+                    onVerticalDragCancel: () {
+                      setState(() => _eventsSwipeOffset = 0);
+                    },
+                    child: Transform.translate(
+                      offset: Offset(0, _eventsSwipeOffset),
+                      child: Opacity(
+                        // Fade out slightly as user pulls down, like Instagram.
+                        opacity:
+                            (1 - (_eventsSwipeOffset / 320)).clamp(0.4, 1.0),
+                        child: AnimatedContainer(
+                          duration: chromeMotionDuration,
+                          curve: Curves.easeOutCubic,
+                          margin: persistentChromeVisible
+                              ? EdgeInsets.fromLTRB(
+                                  8,
+                                  safe.top + 58,
+                                  8,
+                                  safe.bottom + 70,
+                                )
+                              : EdgeInsets.zero,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(
+                              persistentChromeVisible ? 24 : 0,
+                            ),
+                          ),
+                          child: const EventsScreen(),
+                        ),
                       ),
                     ),
-                    child: const EventsScreen(),
                   ),
                 if (!isDashboard && !isEvents)
                   isProfile

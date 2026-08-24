@@ -213,8 +213,15 @@
           recognition = new SR();
           recognition.continuous = true;
           recognition.interimResults = true;
-          recognition.maxAlternatives = 1;
-          try { recognition.lang = navigator.language || 'en-US'; } catch(e){}
+          // More alternatives = browser picks the best transcript.
+          recognition.maxAlternatives = 3;
+          // Prefer the user's OS language; fall back to en-US.
+          try {
+            var lang = navigator.language || 'en-US';
+            // Normalize: 'en' → 'en-US', 'es' → 'es-ES', etc.
+            if (lang.indexOf('-') === -1) lang = lang + '-' + lang.toUpperCase();
+            recognition.lang = lang;
+          } catch(e){}
 
           recognition.onstart = function () {
             if (!active || intentionalStop) return;
@@ -234,12 +241,20 @@
               var idx = event.resultIndex || 0;
               for (var i = idx; i < results.length; i++) {
                 var r = results[i];
-                var t = (r[0] && r[0].transcript) ? r[0].transcript.trim() : '';
-                if (!t) continue;
+                // Pick the alternative with highest confidence score.
+                var best = '';
+                var bestConf = -1;
+                for (var j = 0; j < r.length; j++) {
+                  var alt = r[j];
+                  var conf = alt.confidence || 0;
+                  var t = (alt.transcript || '').trim();
+                  if (t && conf >= bestConf) { best = t; bestConf = conf; }
+                }
+                if (!best) continue;
                 if (r.isFinal) {
-                  finalText = join(finalText, t);
+                  finalText = join(finalText, best);
                 } else {
-                  interim = join(interim, t);
+                  interim = join(interim, best);
                 }
               }
               var live = join(finalText, interim);
