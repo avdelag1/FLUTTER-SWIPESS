@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/admin/data/admin_repository.dart';
 import 'package:flutter_swipes/src/features/admin/domain/admin_models.dart';
-import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
+import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 
 final isAdminProvider = FutureProvider<bool>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.read(adminRepositoryProvider).hasAdminRole();
+  final session = await ref.watch(appSessionProvider.future);
+  return session?.canUseAdminPortal ?? false;
 });
 
 final adminEventsProvider = FutureProvider<List<AdminEventRow>>((ref) async {
