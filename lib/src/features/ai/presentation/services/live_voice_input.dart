@@ -23,6 +23,9 @@ class LiveVoiceInput {
       _voice ??= VoiceTranscribeRepository();
   final BrowserLiveSpeech _browser = BrowserLiveSpeech();
 
+  final ValueNotifier<bool> listeningNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<double> levelNotifier = ValueNotifier<double>(0);
+
   bool _active = false;
   bool _starting = false;
   bool _intentionalStop = false;
@@ -51,6 +54,28 @@ class LiveVoiceInput {
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
+
+  void _publishListening(bool listening) {
+    if (listeningNotifier.value != listening) {
+      listeningNotifier.value = listening;
+    }
+    _onListeningChanged?.call(listening);
+  }
+
+  void _publishSoundLevel(double rawLevel) {
+    _onSoundLevel?.call(rawLevel);
+    final normalized = rawLevel <= 0
+        ? ((rawLevel + 45) / 45).clamp(0.0, 1.0).toDouble()
+        : rawLevel.clamp(0.0, 1.0).toDouble();
+    if ((levelNotifier.value - normalized).abs() > .005) {
+      levelNotifier.value = normalized;
+    }
+  }
+
+  void _resetPublishedVoiceState() {
+    if (listeningNotifier.value) listeningNotifier.value = false;
+    if (levelNotifier.value != 0) levelNotifier.value = 0;
+  }
 
   Future<bool> start({
     required Object owner,
@@ -84,9 +109,9 @@ class LiveVoiceInput {
     if (_starting) return false;
     _starting = true;
 
-    // We use the native record package path for all platforms including Web. 
-    // The previous gray overlay bug was caused by Flutter Web Tooltip 
-    // rendering, not package:record. Using the native path restores 
+    // We use the native record package path for all platforms including Web.
+    // The previous gray overlay bug was caused by Flutter Web Tooltip
+    // rendering, not package:record. Using the native path restores
     // real microphone amplitude visualization and accurate silence detection.
     try {
       final started = await _nativeVoice.start();
@@ -101,7 +126,7 @@ class LiveVoiceInput {
       _active = true;
       _segmentHasSpeech = false;
       _listenToAmplitude();
-      _onListeningChanged?.call(true);
+      _publishListening(true);
       return true;
     } catch (_) {
       _onError?.call(
@@ -124,7 +149,7 @@ class LiveVoiceInput {
               return;
             }
             final level = amplitude.current.isFinite ? amplitude.current : -60.0;
-            _onSoundLevel?.call(level);
+            _publishSoundLevel(level);
 
             if (level > -45.0) {
               _segmentHasSpeech = true;
@@ -168,7 +193,7 @@ class LiveVoiceInput {
     _silenceFinalizeTimer = null;
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
-    _onSoundLevel?.call(0);
+    _publishSoundLevel(0);
 
     final shouldTranscribe = _segmentHasSpeech || forceTranscribe;
     String text = '';
@@ -221,7 +246,7 @@ class LiveVoiceInput {
     _silenceFinalizeTimer = null;
     await _amplitudeSubscription?.cancel();
     _amplitudeSubscription = null;
-    _onSoundLevel?.call(0);
+    _publishSoundLevel(0);
 
     try {
       if (_usingBrowser) {
@@ -231,7 +256,7 @@ class LiveVoiceInput {
       }
     } catch (_) {}
 
-    _onListeningChanged?.call(false);
+    _publishListening(false);
     _clearSession(keepOwner: false);
   }
 
@@ -248,15 +273,15 @@ class LiveVoiceInput {
         await _browser.stop();
       } catch (_) {}
       _active = false;
-      _onSoundLevel?.call(0);
-      _onListeningChanged?.call(false);
+      _publishSoundLevel(0);
+      _publishListening(false);
       _clearSession(keepOwner: false);
       return;
     }
 
     _active = false;
-    _onListeningChanged?.call(false);
-    _onSoundLevel?.call(0);
+    _publishListening(false);
+    _publishSoundLevel(0);
     await _finalizeSegment(
       restart: false,
       triggerSilence: false,
@@ -287,6 +312,7 @@ class LiveVoiceInput {
     _onListeningChanged = null;
     _onSilence = null;
     _onError = null;
+    _resetPublishedVoiceState();
   }
 
   static String _join(String a, String b) {
