@@ -1,10 +1,11 @@
 name: Apply live voice waveform
 
 on:
-  push:
+  pull_request:
     branches: [main]
     paths:
-      - .github/workflows/apply-live-voice-waveform.yml
+      - .github/waveform-trigger
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -186,23 +187,11 @@ jobs:
                   raise SystemExit(f'Missing import anchor in {label}: {anchor}')
               return text.replace(anchor, anchor + addition, 1)
 
-          # Dashboard blue AI bar.
           glow_path = root / 'lib/src/core/widgets/glow_search_bar.dart'
           glow = glow_path.read_text(encoding='utf-8')
-          glow = add_import(
-              glow,
-              "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n",
-              "import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';\n",
-              'glow_search_bar.dart',
-          )
-          glow = add_import(
-              glow,
-              "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n",
-              "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n",
-              'glow_search_bar.dart',
-          )
+          glow = add_import(glow, "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n", "import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';\n", 'glow_search_bar.dart')
+          glow = add_import(glow, "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n", "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n", 'glow_search_bar.dart')
 
-          # Remove the old five-bar pseudo-waveform.
           old_start = glow.find('  Widget _voiceBars(Color color) {')
           old_end = glow.find('  Widget _animatedPrompt(', old_start)
           if old_start >= 0 and old_end > old_start:
@@ -228,10 +217,7 @@ jobs:
                                   )
                                 : null,
                             prefixIconConstraints: _voiceActive
-                                ? const BoxConstraints(
-                                    minWidth: 104,
-                                    minHeight: 38,
-                                  )
+                                ? const BoxConstraints(minWidth: 104, minHeight: 38)
                                 : null,
                             hintText: _voiceActive ? 'Listening…' : null,
 '''
@@ -246,9 +232,7 @@ jobs:
               raise SystemExit('Could not isolate dashboard mic button')
           glow_mic = '''                                Semantics(
                                   button: true,
-                                  label: _voiceActive
-                                      ? 'Stop recording'
-                                      : 'Start voice search',
+                                  label: _voiceActive ? 'Stop recording' : 'Start voice search',
                                   child: GestureDetector(
                                     behavior: HitTestBehavior.opaque,
                                     onTap: _toggleVoice,
@@ -257,23 +241,11 @@ jobs:
                                       width: 32,
                                       height: 32,
                                       decoration: BoxDecoration(
-                                        color: _voiceActive
-                                            ? blue
-                                            : blue.withAlpha(isLight ? 18 : 34),
+                                        color: _voiceActive ? blue : blue.withAlpha(isLight ? 18 : 34),
                                         shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: _voiceActive
-                                              ? blue
-                                              : blue.withAlpha(90),
-                                        ),
+                                        border: Border.all(color: _voiceActive ? blue : blue.withAlpha(90)),
                                         boxShadow: _voiceActive
-                                            ? [
-                                                BoxShadow(
-                                                  color: blue.withAlpha(55),
-                                                  blurRadius: 12 + (_voiceLevel * 8),
-                                                  spreadRadius: _voiceLevel * 1.5,
-                                                ),
-                                              ]
+                                            ? [BoxShadow(color: blue.withAlpha(55), blurRadius: 12 + (_voiceLevel * 8), spreadRadius: _voiceLevel * 1.5)]
                                             : null,
                                       ),
                                       alignment: Alignment.center,
@@ -282,37 +254,20 @@ jobs:
                                               duration: const Duration(milliseconds: 1120),
                                               minOpacity: .58,
                                               maxOpacity: 1,
-                                              child: const Icon(
-                                                Icons.mic_rounded,
-                                                color: Colors.white,
-                                                size: 18,
-                                              ),
+                                              child: const Icon(Icons.mic_rounded, color: Colors.white, size: 18),
                                             )
-                                          : Icon(
-                                              Icons.mic_rounded,
-                                              color: blue,
-                                              size: 18,
-                                            ),
+                                          : Icon(Icons.mic_rounded, color: blue, size: 18),
                                     ),
                                   ),
                                 ),
 '''
           glow = glow[:sem_start] + glow_mic + glow[sem_end:]
-          glow = glow.replace(
-              'Recording · waveform is live · tap Stop to transcribe',
-              'Listening · waveform moves with your voice · tap mic to stop',
-          )
+          glow = glow.replace('Recording · waveform is live · tap Stop to transcribe', 'Listening · waveform moves with your voice · tap mic to stop')
           glow_path.write_text(glow, encoding='utf-8')
 
-          # Intel Core full chat composer.
           intel_path = root / 'lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart'
           intel = intel_path.read_text(encoding='utf-8')
-          intel = add_import(
-              intel,
-              "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n",
-              "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n",
-              'intel_core_sheet.dart',
-          )
+          intel = add_import(intel, "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n", "import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';\n", 'intel_core_sheet.dart')
 
           tap_anchor = intel.find('                        onTap: _toggleVoice,')
           if tap_anchor < 0:
@@ -334,23 +289,11 @@ jobs:
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: voiceActive
-                                  ? _aiBlue.withAlpha(isLight ? 28 : 48)
-                                  : Colors.transparent,
+                              color: voiceActive ? _aiBlue.withAlpha(isLight ? 28 : 48) : Colors.transparent,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: voiceActive
-                                    ? _aiBlueSoft.withAlpha(150)
-                                    : Colors.transparent,
-                              ),
+                              border: Border.all(color: voiceActive ? _aiBlueSoft.withAlpha(150) : Colors.transparent),
                               boxShadow: _recording
-                                  ? [
-                                      BoxShadow(
-                                        color: _aiCyan.withAlpha(60),
-                                        blurRadius: 12 + (_voiceLevel * 14),
-                                        spreadRadius: _voiceLevel * 2,
-                                      ),
-                                    ]
+                                  ? [BoxShadow(color: _aiCyan.withAlpha(60), blurRadius: 12 + (_voiceLevel * 14), spreadRadius: _voiceLevel * 2)]
                                   : null,
                             ),
                             alignment: Alignment.center,
@@ -359,17 +302,9 @@ jobs:
                                     duration: const Duration(milliseconds: 1080),
                                     minOpacity: .55,
                                     maxOpacity: 1,
-                                    child: Icon(
-                                      Icons.mic_rounded,
-                                      color: isLight ? _aiBlue : _aiBlueSoft,
-                                      size: 19,
-                                    ),
+                                    child: Icon(Icons.mic_rounded, color: isLight ? _aiBlue : _aiBlueSoft, size: 19),
                                   )
-                                : Icon(
-                                    Icons.mic_none_rounded,
-                                    color: isLight ? _aiBlue : _aiBlueSoft,
-                                    size: 19,
-                                  ),
+                                : Icon(Icons.mic_none_rounded, color: isLight ? _aiBlue : _aiBlueSoft, size: 19),
                           ),
                         ),
                       ),
@@ -389,7 +324,6 @@ jobs:
 '''
           intel = intel[:mic_start] + intel_mic + intel[mic_end:]
           intel_path.write_text(intel, encoding='utf-8')
-
           print('Patched live voice waveform UI successfully.')
           PY
 
@@ -398,10 +332,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            lib/src/features/ai/presentation/widgets/live_audio_waveform.dart \
-            lib/src/core/widgets/glow_search_bar.dart \
-            lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+          git add lib/src/features/ai/presentation/widgets/live_audio_waveform.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
           git diff --cached --check
           git commit -m "fix(voice): add real scrolling waveform to AI inputs"
           git push origin HEAD:main
