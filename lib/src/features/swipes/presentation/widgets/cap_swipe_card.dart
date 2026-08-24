@@ -217,8 +217,34 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
   }
 
+  bool _isInteractiveControlPoint(Offset local) {
+    final box = context.size;
+    if (box == null) return false;
+    final w = box.width;
+    final h = box.height;
+    final x = local.dx;
+    final y = local.dy;
+
+    // Raw pointer listening gives media taps maximum speed, but these visible
+    // controls must win the hit. Otherwise pressing Share/Message/Back/Mute can
+    // also be mistaken for a photo-edge or chrome-summon tap.
+    if (widget.onBack != null && x <= 72 && y <= 72) return true;
+
+    final topRightHeight = widget.canUndo && widget.onUndo != null ? 116.0 : 62.0;
+    if (x >= w - 68 && y <= topRightHeight) return true;
+
+    if (widget.railVisible &&
+        x >= w - 86 &&
+        y >= math.max(64.0, h - 520) &&
+        y <= h - 96) {
+      return true;
+    }
+
+    return false;
+  }
+
   void _onPointerDown(PointerDownEvent e) {
-    if (!widget.isTop) return;
+    if (!widget.isTop || _isInteractiveControlPoint(e.localPosition)) return;
     _startHold(e.localPosition);
   }
 
