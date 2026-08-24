@@ -86,7 +86,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   bool _recording = false;
   bool _preparingSubmit = false;
   bool _privacyAccepted = false;
-  bool _autoSend = true;
+  final bool _autoSend = true;
   double _voiceLevel = 0;
   int? _countdown;
   Timer? _countdownTimer;
@@ -122,9 +122,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     ('ezriyah', 'Ezriyah', 'Integration Coach', Color(0xFF14B8A6)),
   ];
 
-  @override
-  void initState() {
-    super.initState();
     _loadPrivacy();
     _loadSaved();
     final seed = widget.initialQuery.trim();
