@@ -96,21 +96,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   late final FocusNode _focusNode;
 
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = FocusNode(
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.enter &&
-            !HardwareKeyboard.instance.isShiftPressed) {
-          _submit();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-    );
-  }
 
   static const _personas = <(String, String, String, Color)>[
     ('default', 'Swipess AI', 'Global Discovery', _aiBlue),
@@ -125,6 +110,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode(
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.enter &&
+            !HardwareKeyboard.instance.isShiftPressed) {
+          _submit();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
     _loadPrivacy();
     _loadSaved();
     final seed = widget.initialQuery.trim();
