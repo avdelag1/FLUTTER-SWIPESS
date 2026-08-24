@@ -160,12 +160,17 @@ class EventRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw StateError('Sign in required');
     if (favorited) {
+      // `likes.direction` is shared with swipe decisions and is NOT NULL.
+      // Events use `right` to represent a positive/save decision. Upsert makes
+      // rapid double taps and retries idempotent instead of surfacing a unique
+      // constraint error after the heart already turned on in the UI.
       await _withSessionRetry(
-        () => _client.from('likes').insert({
+        () => _client.from('likes').upsert({
           'user_id': userId,
           'target_id': eventId,
           'target_type': 'event',
-        }),
+          'direction': 'right',
+        }, onConflict: 'user_id,target_id,target_type'),
       );
     } else {
       await _withSessionRetry(
@@ -188,7 +193,8 @@ class EventRepository {
           .from('likes')
           .select('target_id')
           .eq('user_id', userId)
-          .eq('target_type', 'event'),
+          .eq('target_type', 'event')
+          .order('created_at', ascending: false),
     );
     final ids = (likes as List)
         .map((row) => (row as Map<String, dynamic>)['target_id'] as String?)
