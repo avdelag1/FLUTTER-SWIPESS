@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/gamification/presentation/providers/engagement_reward_provider.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
@@ -37,6 +38,8 @@ class _TokensModalState extends ConsumerState<TokensModal> {
   @override
   Widget build(BuildContext context) {
     final balance = ref.watch(directRequestBalanceProvider);
+    final reward = ref.watch(engagementRewardProgressProvider);
+
     return Container(
       decoration: const BoxDecoration(
         color: SwipessTokens.darkCanvas,
@@ -99,6 +102,24 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                           _balance('TOTAL', '${b.total}'),
                         ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  reward.when(
+                    loading: () => const _ActiveRewardStrip(
+                      steps: 0,
+                      stepMinutes: 35,
+                      minutesToNext: null,
+                    ),
+                    error: (_, _) => const _ActiveRewardStrip(
+                      steps: 0,
+                      stepMinutes: 35,
+                      minutesToNext: null,
+                    ),
+                    data: (p) => _ActiveRewardStrip(
+                      steps: p.steps,
+                      stepMinutes: p.stepMinutes,
+                      minutesToNext: p.minutesToNextStep,
                     ),
                   ),
                 ],
@@ -280,4 +301,132 @@ class _TokensModalState extends ConsumerState<TokensModal> {
       ),
     ],
   );
+}
+
+class _ActiveRewardStrip extends StatelessWidget {
+  const _ActiveRewardStrip({
+    required this.steps,
+    required this.stepMinutes,
+    required this.minutesToNext,
+  });
+
+  final int steps;
+  final int stepMinutes;
+  final int? minutesToNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = steps.clamp(0, 5);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF3B82F6).withAlpha(15),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF60A5FA).withAlpha(45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.card_giftcard_rounded,
+                color: Color(0xFF93C5FD),
+                size: 17,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'EARN FREE TOKENS WHILE YOU USE SWIPESS',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .35,
+                  ),
+                ),
+              ),
+              Text(
+                '$completed/5',
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF93C5FD),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              for (var i = 1; i <= 5; i++) ...[
+                if (i > 1)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: i <= completed
+                            ? const Color(0xFF60A5FA)
+                            : Colors.white.withAlpha(22),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                Container(
+                  width: i == 5 ? 28 : 23,
+                  height: i == 5 ? 28 : 23,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: i <= completed
+                        ? (i == 5
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFF2563EB))
+                        : Colors.white.withAlpha(13),
+                    border: Border.all(color: Colors.white.withAlpha(28)),
+                  ),
+                  alignment: Alignment.center,
+                  child: i == 5
+                      ? Icon(
+                          Icons.card_giftcard_rounded,
+                          size: 13,
+                          color: i <= completed
+                              ? Colors.white
+                              : Colors.white38,
+                        )
+                      : i <= completed
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        )
+                      : Text(
+                          '$i',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white54,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            minutesToNext == null
+                ? '$stepMinutes active minutes = 1 step · 5 steps = 1 free token.'
+                : '$stepMinutes active minutes = 1 step · $minutesToNext min to your next step · no claim needed.',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white70,
+              fontSize: 10,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
