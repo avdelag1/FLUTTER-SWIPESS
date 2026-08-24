@@ -808,11 +808,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                             suffixIcon: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Tooltip(
-                                  message: _voiceActive
-                                      ? 'Stop recording'
-                                      : 'Speak your search',
-                                  child: Semantics(
+                                Semantics(
                                     button: true,
                                     label: _voiceActive
                                         ? 'Stop recording'
@@ -871,7 +867,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                                       ),
                                     ),
                                   ),
-                                ),
                                 IconButton(
                                   tooltip: 'Search',
                                   visualDensity: VisualDensity.compact,

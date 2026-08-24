@@ -1082,19 +1082,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                         ),
                       ),
                       const SizedBox(width: 2),
-                      Tooltip(
-                        message: _recording ? 'Stop listening' : 'Speak to AI',
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _toggleVoice,
-                          child: AnimatedScale(
-                            duration: const Duration(milliseconds: 110),
-                            scale: _recording ? voiceScale : 1,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 160),
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _toggleVoice,
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 110),
+                          scale: _recording ? voiceScale : 1,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
                                 color: voiceActive
                                     ? _aiBlue.withAlpha(isLight ? 28 : 48)
                                     : Colors.transparent,
@@ -1139,7 +1137,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             ),
                           ),
                         ),
-                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: TextField(

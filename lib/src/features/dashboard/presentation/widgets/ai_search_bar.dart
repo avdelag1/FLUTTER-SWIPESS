@@ -388,12 +388,10 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                 onSubmitted: (_) => _runSearch(),
               ),
             ),
-            Tooltip(
-              message: _voiceActive ? 'Stop recording' : 'Speak your search',
-              child: Semantics(
-                button: true,
-                label: _voiceActive ? 'Stop recording' : 'Start voice search',
-                child: GestureDetector(
+            Semantics(
+              button: true,
+              label: _voiceActive ? 'Stop recording' : 'Start voice search',
+              child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: _toggleVoice,
                   child: AnimatedScale(
@@ -449,7 +447,6 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                   ),
                 ),
               ),
-            ),
             const SizedBox(width: 2),
             IconButton(
               onPressed: _submitting ? null : _runSearch,
