@@ -268,19 +268,91 @@ class _IdentitySection extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: 72,
-              height: 72,
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: QrImageView(data: validationUrl, padding: EdgeInsets.zero),
-            ),
+            const SizedBox(width: 12),
+            _VerificationQr(theme: t, validationUrl: validationUrl),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _VerificationQr extends StatelessWidget {
+  const _VerificationQr({required this.theme, required this.validationUrl});
+
+  final VapCardTheme theme;
+  final String validationUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Scan to validate this SWIPESS Local ID',
+      image: true,
+      child: Container(
+        width: 94,
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 5),
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(22),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: theme.accent.withAlpha(125), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: theme.accent.withAlpha(38),
+              blurRadius: 18,
+              spreadRadius: -3,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 82,
+              height: 82,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: QrImageView(
+                data: validationUrl,
+                version: QrVersions.auto,
+                errorCorrectionLevel: QrErrorCorrectLevel.M,
+                padding: EdgeInsets.zero,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: Color(0xFF111111),
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: Color(0xFF111111),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.verified_user_rounded,
+                  color: theme.accent,
+                  size: 10,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  'VERIFY',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: theme.textPrimary,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
