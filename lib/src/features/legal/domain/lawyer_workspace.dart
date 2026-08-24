@@ -16,19 +16,24 @@ class LawyerWorkspace {
   bool get isAvailable => lawyer['is_available'] == true;
   double get commissionRate => _number(lawyer['commission_rate']);
 
+  int get availableRequests => _integer(summary['available_requests']);
   int get pendingRequests => _integer(summary['pending_requests']);
   int get activeClients => _integer(summary['active_clients']);
   int get openCases => _integer(summary['open_cases']);
   int get upcomingAppointments => _integer(summary['upcoming_appointments']);
   int get templatesAvailable => _integer(summary['templates_available']);
-  int get servicePackagesAvailable => _integer(summary['service_packages_available']);
+  int get servicePackagesAvailable =>
+      _integer(summary['service_packages_available']);
   double get grossEarned30d => _number(summary['gross_earned_30d']);
   double get commission30d => _number(summary['commission_30d']);
 
+  List<Map<String, dynamic>> get availableQueue =>
+      _list(raw['available_requests']);
   List<Map<String, dynamic>> get requests => _list(raw['requests']);
   List<Map<String, dynamic>> get cases => _list(raw['cases']);
   List<Map<String, dynamic>> get appointments => _list(raw['appointments']);
-  List<Map<String, dynamic>> get recentTransactions => _list(raw['recent_transactions']);
+  List<Map<String, dynamic>> get recentTransactions =>
+      _list(raw['recent_transactions']);
 
   static Map<String, dynamic> _map(Object? value) {
     if (value is Map<String, dynamic>) return value;
