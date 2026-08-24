@@ -106,21 +106,9 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                   ),
                   const SizedBox(height: 10),
                   reward.when(
-                    loading: () => const _ActiveRewardStrip(
-                      steps: 0,
-                      stepMinutes: 35,
-                      minutesToNext: null,
-                    ),
-                    error: (_, _) => const _ActiveRewardStrip(
-                      steps: 0,
-                      stepMinutes: 35,
-                      minutesToNext: null,
-                    ),
-                    data: (p) => _ActiveRewardStrip(
-                      steps: p.steps,
-                      stepMinutes: p.stepMinutes,
-                      minutesToNext: p.minutesToNextStep,
-                    ),
+                    loading: () => const _ActiveRewardStrip(steps: 0),
+                    error: (_, _) => const _ActiveRewardStrip(steps: 0),
+                    data: (p) => _ActiveRewardStrip(steps: p.steps),
                   ),
                 ],
               ),
@@ -304,15 +292,9 @@ class _TokensModalState extends ConsumerState<TokensModal> {
 }
 
 class _ActiveRewardStrip extends StatelessWidget {
-  const _ActiveRewardStrip({
-    required this.steps,
-    required this.stepMinutes,
-    required this.minutesToNext,
-  });
+  const _ActiveRewardStrip({required this.steps});
 
   final int steps;
-  final int stepMinutes;
-  final int? minutesToNext;
 
   @override
   Widget build(BuildContext context) {
@@ -396,28 +378,28 @@ class _ActiveRewardStrip extends StatelessWidget {
                               : Colors.white38,
                         )
                       : i <= completed
-                      ? const Icon(
-                          Icons.check_rounded,
-                          size: 13,
-                          color: Colors.white,
-                        )
-                      : Text(
-                          '$i',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white54,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                          ? const Icon(
+                              Icons.check_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            )
+                          : Text(
+                              '$i',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white54,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                 ),
               ],
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            minutesToNext == null
-                ? '$stepMinutes active minutes = 1 step · 5 steps = 1 free token.'
-                : '$stepMinutes active minutes = 1 step · $minutesToNext min to your next step · no claim needed.',
+            completed == 4
+                ? 'Your next reward is close. Keep exploring.'
+                : 'Complete all 5 steps and your free token is added automatically.',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white70,
               fontSize: 10,
