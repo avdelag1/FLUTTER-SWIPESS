@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';
 
 class ConciergeSheetHost extends ConsumerStatefulWidget {
   const ConciergeSheetHost({
@@ -52,6 +54,11 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   Widget build(BuildContext context) {
     final m = MediaQuery.of(context);
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final voice = LiveVoiceInput.instance;
+    final waveformColor = isLight
+        ? const Color(0xFF2563EB)
+        : const Color(0xFF60A5FA);
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -135,9 +142,42 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                           ),
                         ),
                         Expanded(
-                          child: TooltipVisibility(
-                            visible: false,
-                            child: widget.child,
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: TooltipVisibility(
+                                  visible: false,
+                                  child: widget.child,
+                                ),
+                              ),
+                              Positioned(
+                                left: 66,
+                                bottom: m.padding.bottom + 31,
+                                child: IgnorePointer(
+                                  child: ValueListenableBuilder<bool>(
+                                    valueListenable: voice.listeningNotifier,
+                                    builder: (context, listening, _) {
+                                      if (!listening) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return ValueListenableBuilder<double>(
+                                        valueListenable: voice.levelNotifier,
+                                        builder: (context, level, _) {
+                                          return LiveAudioWaveform(
+                                            active: listening,
+                                            level: level,
+                                            color: waveformColor,
+                                            width: 104,
+                                            height: 23,
+                                            samples: 32,
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
