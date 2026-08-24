@@ -53,8 +53,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final handoff = EventPreviewHandoff.take();
     _handoffEventId = handoff?.eventId;
     _handoffPosition = handoff?.position;
-    // A fresh visit always starts usable: header, bottom dock, event topic rail
-    // and right-side event actions are visible before the idle fade begins.
     WidgetsBinding.instance.addPostFrameCallback((_) => _enterEvents());
   }
 
@@ -94,8 +92,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     ref.read(chromeVisibilityProvider.notifier).hide();
   }
 
-  /// Eye behavior is intentionally different from a normal surface tap.
-  /// It is a persistent user choice for the current Events visit.
   void _toggleChromePin() {
     AppHaptics.light();
     if (_chromePinned) {
@@ -107,7 +103,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _showChrome(scheduleHide: false);
   }
 
-  /// Preserve the old focus gesture without allowing it to override an eye pin.
   void _handleSurfaceTap() {
     if (_chromePinned) return;
     AppHaptics.light();
@@ -118,8 +113,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     }
   }
 
-  /// Activity while controls are already visible restarts the idle window.
-  /// Swiping after they have faded does not unexpectedly bring them back.
   void _registerChromeActivity() {
     if (_chromePinned) {
       _showChrome(scheduleHide: false);
@@ -213,9 +206,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       onPageChanged: (i) {
                         AppHaptics.selection();
                         setState(() => _index = i);
-                        // Scrolling keeps a visible automatic session alive,
-                        // but never cancels an eye pin and never revives chrome
-                        // that already faded away.
                         _registerChromeActivity();
                       },
                       itemBuilder: (context, i) {
@@ -246,13 +236,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         );
                       },
                     ),
-                    AnimatedOpacity(
-                      opacity: _eventChromeVisible ? 1 : 0,
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeOutCubic,
+                    Positioned.fill(
                       child: IgnorePointer(
                         ignoring: !_eventChromeVisible,
-                        child: Positioned.fill(
+                        child: AnimatedOpacity(
+                          opacity: _eventChromeVisible ? 1 : 0,
+                          duration: const Duration(milliseconds: 280),
+                          curve: Curves.easeOutCubic,
                           child: Stack(
                             children: [
                               Positioned(
