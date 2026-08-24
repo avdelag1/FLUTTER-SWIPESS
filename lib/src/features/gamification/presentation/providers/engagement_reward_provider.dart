@@ -27,7 +27,9 @@ class EngagementRewardProgress {
 
   double get stepFraction {
     final secondsPerStep = math.max(1, stepMinutes * 60);
-    return (activeSecondsRemainder / secondsPerStep).clamp(0.0, 1.0);
+    return (activeSecondsRemainder / secondsPerStep)
+        .clamp(0.0, 1.0)
+        .toDouble();
   }
 
   factory EngagementRewardProgress.fromJson(Map<String, dynamic> json) {
