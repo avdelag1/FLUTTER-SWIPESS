@@ -138,9 +138,14 @@ class _VapIdModalBody extends ConsumerWidget {
 
   Future<void> _openDocuments(WidgetRef ref) async {
     AppHaptics.selection();
+    // Capture the router before removing the overlay. The PEARL panel is hosted
+    // above MaterialApp.router, so Navigator.push from the overlay context is
+    // unreliable on web. A deterministic go() after the dismiss animation
+    // always lands on the real document vault.
+    final router = ref.read(appRouterProvider);
     ref.read(overlayModalsProvider.notifier).closeVapId();
-    await Future<void>.delayed(const Duration(milliseconds: 70));
-    await ref.read(appRouterProvider).push<void>(AppPaths.documents);
+    await Future<void>.delayed(const Duration(milliseconds: 90));
+    router.go(AppPaths.documents);
   }
 
   void _edit(WidgetRef ref) {
