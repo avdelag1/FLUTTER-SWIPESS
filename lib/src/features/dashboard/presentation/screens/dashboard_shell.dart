@@ -119,6 +119,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
     final persistentChromeVisible = showChrome && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
+    // Events deliberately inherits the exact swipe-deck chrome cadence:
+    // reveal in 360ms, hide in 500ms, same cubic curve and slide vectors.
+    final chromeMotionDuration = isEvents
+        ? Duration(milliseconds: persistentChromeVisible ? 360 : 500)
+        : const Duration(milliseconds: 220);
 
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
@@ -157,7 +162,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 ),
                 if (isEvents)
-                  Container(
+                  AnimatedContainer(
+                    duration: chromeMotionDuration,
+                    curve: Curves.easeOutCubic,
                     margin: persistentChromeVisible
                         ? EdgeInsets.fromLTRB(
                             8,
@@ -192,11 +199,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             right: 0,
             child: AnimatedOpacity(
               opacity: showHeader ? 1 : 0,
-              duration: const Duration(milliseconds: 220),
+              duration: chromeMotionDuration,
               curve: Curves.easeOutCubic,
               child: AnimatedSlide(
                 offset: showHeader ? Offset.zero : const Offset(0, -0.12),
-                duration: const Duration(milliseconds: 220),
+                duration: chromeMotionDuration,
                 curve: Curves.easeOutCubic,
                 child: IgnorePointer(
                   ignoring: !showHeader,
@@ -259,13 +266,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ignoring: !persistentChromeVisible,
               child: AnimatedOpacity(
                 opacity: persistentChromeVisible ? 1 : 0,
-                duration: const Duration(milliseconds: 220),
+                duration: chromeMotionDuration,
                 curve: Curves.easeOutCubic,
                 child: AnimatedSlide(
                   offset: persistentChromeVisible
                       ? Offset.zero
                       : const Offset(0, 1.0),
-                  duration: const Duration(milliseconds: 220),
+                  duration: chromeMotionDuration,
                   curve: Curves.easeOutCubic,
                   child: SafeArea(
                     child: Consumer(
