@@ -34,8 +34,16 @@ class EventsNotifier extends AsyncNotifier<List<Event>> {
     );
   }
 
-  void toggleBookmark(String eventId) {
-    // Optional: implement local bookmarking state here
+  /// Shared save toggle for older call sites. This is intentionally persisted
+  /// through Supabase rather than being a local-only bookmark flag.
+  Future<bool> toggleBookmark(String eventId) async {
+    final repo = ref.read(eventRepositoryProvider);
+    final current = await repo.isFavorited(eventId);
+    final next = !current;
+    await repo.setFavorited(eventId, favorited: next);
+    ref.invalidate(eventFavoriteProvider(eventId));
+    ref.invalidate(favoritedEventsProvider);
+    return next;
   }
 }
 
@@ -184,6 +192,26 @@ class FavoritedEventsNotifier extends AsyncNotifier<List<Event>> {
     );
   }
 
+  /// Optimistically keeps the Saved Events library in sync with the feed.
+  /// Persistence still happens in the repository and rolls back on failure.
+  Future<void> set(Event event, {required bool favorited}) async {
+    final previous = state.value ?? const <Event>[];
+    final next = <Event>[
+      if (favorited) event,
+      ...previous.where((item) => item.id != event.id),
+    ];
+    state = AsyncData(next);
+    try {
+      await ref
+          .read(eventRepositoryProvider)
+          .setFavorited(event.id, favorited: favorited);
+      ref.invalidate(eventFavoriteProvider(event.id));
+    } catch (_) {
+      state = AsyncData(previous);
+      rethrow;
+    }
+  }
+
   Future<void> remove(String eventId) async {
     final previous = state.value ?? const <Event>[];
     state = AsyncData(previous.where((e) => e.id != eventId).toList());
@@ -194,6 +222,7 @@ class FavoritedEventsNotifier extends AsyncNotifier<List<Event>> {
       ref.invalidate(eventFavoriteProvider(eventId));
     } catch (_) {
       state = AsyncData(previous);
+      rethrow;
     }
   }
 }
