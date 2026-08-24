@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
@@ -62,6 +61,9 @@ class IntelMessageBubble extends StatefulWidget {
 }
 
 class _IntelMessageBubbleState extends State<IntelMessageBubble> {
+  static const _aiBlue = Color(0xFF2563EB);
+  static const _aiBlueSoft = Color(0xFF60A5FA);
+
   bool _showActions = false;
   bool _copied = false;
 
@@ -145,10 +147,10 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                 ),
                 decoration: BoxDecoration(
                   color: isUser
-                      ? AppTheme.brandPrimary
+                      ? _aiBlue
                       : (widget.isLight
-                            ? Colors.white
-                            : Colors.white.withAlpha(12)),
+                            ? const Color(0xFFF3F6FB)
+                            : const Color(0xFF141A24)),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(22),
                     topRight: const Radius.circular(22),
@@ -157,12 +159,21 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                   ),
                   border: Border.all(
                     color: isUser
-                        ? AppTheme.brandPrimary
+                        ? _aiBlueSoft.withAlpha(125)
                         : (widget.isLight
-                              ? _ink.withAlpha(220)
-                              : Colors.transparent),
-                    width: 1.4,
+                              ? const Color(0xFF2563EB).withAlpha(28)
+                              : const Color(0xFF60A5FA).withAlpha(34)),
+                    width: 1,
                   ),
+                  boxShadow: isUser
+                      ? [
+                          BoxShadow(
+                            color: _aiBlue.withAlpha(42),
+                            blurRadius: 18,
+                            offset: const Offset(0, 7),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Stack(
                   children: [
@@ -190,10 +201,10 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                                 : Icons.volume_up_rounded,
                             size: 14,
                             color: widget.speaking
-                                ? AppTheme.brandPrimary
+                                ? _aiBlueSoft
                                 : (widget.isLight
                                       ? _ink.withAlpha(90)
-                                      : Colors.white),
+                                      : Colors.white70),
                           ),
                         ),
                       ),
@@ -210,7 +221,7 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                     Icon(
                       Icons.auto_awesome_rounded,
                       size: 10,
-                      color: AppTheme.brandPrimary.withAlpha(180),
+                      color: _aiBlueSoft.withAlpha(210),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -218,7 +229,7 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                       style: GoogleFonts.plusJakartaSans(
                         color: widget.isLight
                             ? _ink.withAlpha(100)
-                            : Colors.white,
+                            : Colors.white70,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.1,
@@ -322,8 +333,8 @@ class _ActionBtn extends StatelessWidget {
           height: 30,
           decoration: BoxDecoration(
             color: isLight
-                ? const Color(0xFFF1F1F4)
-                : Colors.white.withAlpha(28),
+                ? const Color(0xFFF1F4F9)
+                : const Color(0xFF182131),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 14, color: color),
