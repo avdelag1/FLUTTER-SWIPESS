@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/live_audio_waveform.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -384,12 +386,14 @@ class _GlowSearchBarState extends State<GlowSearchBar>
     final input = raw.trim();
     if (input.isEmpty) return false;
     final q = _normalize(input);
-    
+
     // If the query is clearly a conversational question, answer it with AI
     // instead of routing to a screen. Short keyword lookups (e.g. "events",
     // "motorcycles near me") still hit the direct routes below.
     final isQuestion = q.contains('?') ||
-        RegExp(r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b').hasMatch(q);
+        RegExp(
+          r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b',
+        ).hasMatch(q);
     if (isQuestion && q.split(' ').length > 2) {
       return false;
     }
@@ -458,32 +462,6 @@ class _GlowSearchBarState extends State<GlowSearchBar>
 
     widget.controller?.clear();
     return true;
-  }
-
-  Widget _voiceBars(Color color) {
-    final level = _voiceLevel.clamp(0.0, 1.0);
-    const multipliers = <double>[.52, 1, .68, .9, .45];
-    return SizedBox(
-      width: 24,
-      height: 18,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (final multiplier in multipliers)
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 90),
-              curve: Curves.easeOut,
-              width: 3,
-              height: 4 + (12 * level * multiplier),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _animatedPrompt({
@@ -796,20 +774,9 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                           ),
                           cursorColor: const Color(0xFF60A5FA),
                           decoration: InputDecoration(
-                            prefixIcon: _voiceActive
-                                ? Padding(
-                                    padding: const EdgeInsets.only(right: 7),
-                                    child: Center(child: _voiceBars(blue)),
-                                  )
-                                : null,
-                            prefixIconConstraints: _voiceActive
-                                ? const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 38,
-                                  )
-                                : null,
-                            hintText: _voiceActive
-                                ? 'Recording — tap Stop when finished'
+                            hintText: _voiceActive &&
+                                    (widget.controller?.text.trim().isEmpty ?? true)
+                                ? 'Listening…'
                                 : null,
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: blue.withAlpha(190),
@@ -819,67 +786,111 @@ class _GlowSearchBarState extends State<GlowSearchBar>
                             suffixIcon: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                if (_voiceActive) ...[
+                                  LiveAudioWaveform(
+                                    active: true,
+                                    level: _voiceLevel,
+                                    color: blue,
+                                    width: 74,
+                                    height: 20,
+                                    samples: 24,
+                                  ),
+                                  const SizedBox(width: 5),
+                                ],
                                 Semantics(
-                                    button: true,
-                                    label: _voiceActive
-                                        ? 'Stop recording'
-                                        : 'Start voice search',
-                                    child: GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: _toggleVoice,
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 150,
-                                        ),
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
+                                  button: true,
+                                  label: _voiceActive
+                                      ? 'Stop recording'
+                                      : 'Start voice search',
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: _toggleVoice,
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 150),
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: _voiceActive
+                                            ? blue
+                                            : blue.withAlpha(
+                                                isLight ? 18 : 34,
+                                              ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
                                           color: _voiceActive
                                               ? blue
-                                              : blue.withAlpha(
-                                                  isLight ? 18 : 34,
-                                                ),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: _voiceActive
-                                                ? blue
-                                                : blue.withAlpha(90),
-                                          ),
+                                              : blue.withAlpha(90),
                                         ),
+                                        boxShadow: _voiceActive
+                                            ? [
+                                                BoxShadow(
+                                                  color: blue.withAlpha(55),
+                                                  blurRadius:
+                                                      12 + (_voiceLevel * 8),
+                                                  spreadRadius:
+                                                      _voiceLevel * 1.4,
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
                                         alignment: Alignment.center,
-                                        child: AnimatedSwitcher(
-                                          duration: const Duration(
-                                            milliseconds: 110,
-                                          ),
-                                          child: _countdown != null
-                                              ? Text(
+                                        children: [
+                                          if (_voiceActive)
+                                            BreathingWidget(
+                                              duration: const Duration(
+                                                milliseconds: 1100,
+                                              ),
+                                              minOpacity: .55,
+                                              maxOpacity: 1,
+                                              child: const Icon(
+                                                Icons.mic_rounded,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
+                                            )
+                                          else
+                                            Icon(
+                                              Icons.mic_rounded,
+                                              color: blue,
+                                              size: 18,
+                                            ),
+                                          if (_countdown != null)
+                                            Positioned(
+                                              right: -4,
+                                              top: -5,
+                                              child: Container(
+                                                width: 16,
+                                                height: 16,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: blue,
+                                                    width: 1.2,
+                                                  ),
+                                                ),
+                                                alignment: Alignment.center,
+                                                child: Text(
                                                   '$_countdown',
-                                                  key: ValueKey(_countdown),
                                                   style: GoogleFonts
                                                       .plusJakartaSans(
-                                                    color: _voiceActive
-                                                        ? Colors.white
-                                                        : blue,
-                                                    fontSize: 12,
+                                                    color: blue,
+                                                    fontSize: 8,
                                                     fontWeight: FontWeight.w900,
+                                                    height: 1,
                                                   ),
-                                                )
-                                              : Icon(
-                                                  _voiceActive
-                                                      ? Icons.stop_rounded
-                                                      : Icons.mic_rounded,
-                                                  key: ValueKey(_voiceActive),
-                                                  color: _voiceActive
-                                                      ? Colors.white
-                                                      : blue,
-                                                  size: 18,
                                                 ),
-                                        ),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
                                   ),
+                                ),
                                 IconButton(
-                                  tooltip: 'Search',
                                   visualDensity: VisualDensity.compact,
                                   onPressed: () => _submitSearch(
                                     widget.controller?.text ?? '',
@@ -930,7 +941,7 @@ class _GlowSearchBarState extends State<GlowSearchBar>
               child: Text(
                 _countdown != null
                     ? 'Sending in $_countdown · speak again to keep recording'
-                    : 'Recording · waveform is live · tap Stop to transcribe',
+                    : 'Listening · live waveform · tap mic to stop',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
