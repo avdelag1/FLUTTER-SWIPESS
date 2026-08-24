@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
@@ -46,7 +47,17 @@ class GlowSearchBar extends StatefulWidget {
 class _GlowSearchBarState extends State<GlowSearchBar>
     with SingleTickerProviderStateMixin {
   final math.Random _random = math.Random();
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode = FocusNode(
+    onKeyEvent: (node, event) {
+      if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.enter &&
+          !HardwareKeyboard.instance.isShiftPressed) {
+        _submitSearch(widget.controller?.text ?? '');
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    },
+  );
   final LiveVoiceInput _voice = LiveVoiceInput.instance;
   final AiEdgeRepository _ai = AiEdgeRepository();
   Timer? _promptTimer;

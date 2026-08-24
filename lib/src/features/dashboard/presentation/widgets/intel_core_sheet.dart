@@ -94,6 +94,24 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   String? _speakingId;
   final _tts = FlutterTts();
 
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.enter &&
+            !HardwareKeyboard.instance.isShiftPressed) {
+          _submit();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+  }
+
   static const _personas = <(String, String, String, Color)>[
     ('default', 'Swipess AI', 'Global Discovery', _aiBlue),
     ('kyle', 'Kyle', 'Market Hustler', _aiCyan),
@@ -127,6 +145,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     unawaited(_voice.cancel(owner: this));
     _controller.dispose();
     _scroll.dispose();
+    _focusNode.dispose();
     _tts.stop();
     super.dispose();
   }
@@ -1048,40 +1067,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   ),
                   child: Row(
                     children: [
-                      Tooltip(
-                        message: _autoSend
-                            ? 'Hands-free auto send is on'
-                            : 'Hands-free auto send is off',
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            AppHaptics.selection();
-                            setState(() => _autoSend = !_autoSend);
-                            if (!_autoSend) _cancelCountdown();
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: _autoSend
-                                  ? _aiBlue.withAlpha(isLight ? 22 : 45)
-                                  : Colors.transparent,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.auto_mode_rounded,
-                              color: _autoSend
-                                  ? (isLight ? _aiBlue : _aiBlueSoft)
-                                  : (isLight
-                                        ? ink.withAlpha(105)
-                                        : Colors.white54),
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 2),
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: _toggleVoice,
@@ -1140,6 +1125,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: TextField(
+                          focusNode: _focusNode,
                           controller: _controller,
                           enabled: !_loading && !_preparingSubmit,
                           cursorColor: isLight ? _aiBlue : _aiBlueSoft,
@@ -1147,6 +1133,17 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           minLines: 1,
                           maxLines: 5,
                           decoration: InputDecoration(
+                            prefixIcon: _recording
+                                ? AnimatedScale(
+                                    duration: const Duration(milliseconds: 110),
+                                    scale: voiceScale,
+                                    child: Icon(
+                                      Icons.graphic_eq_rounded,
+                                      color: _aiBlue,
+                                      size: 20,
+                                    ),
+                                  )
+                                : null,
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,

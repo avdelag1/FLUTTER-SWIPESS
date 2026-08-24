@@ -308,10 +308,10 @@ class _LikedEventCard extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: 142,
-                  height: double.infinity,
+                  width: 135,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -323,7 +323,7 @@ class _LikedEventCard extends StatelessWidget {
                             end: Alignment.centerRight,
                             colors: [
                               Colors.transparent,
-                              Color(0x33000000),
+                              Color(0x77000000),
                             ],
                           ),
                         ),
@@ -353,19 +353,27 @@ class _LikedEventCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          event.category.toUpperCase(),
-                          maxLines: 1,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF60A5FA),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 8.5,
-                            letterSpacing: 1.1,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3B82F6).withAlpha(30),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            event.category.toUpperCase(),
+                            maxLines: 1,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFF60A5FA),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 9,
+                              letterSpacing: 1.1,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           event.title,
                           maxLines: 2,
@@ -374,7 +382,7 @@ class _LikedEventCard extends StatelessWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 15,
-                            height: 1.05,
+                            height: 1.2,
                           ),
                         ),
                         const Spacer(),
@@ -385,7 +393,7 @@ class _LikedEventCard extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white.withAlpha(185),
                             fontWeight: FontWeight.w700,
-                            fontSize: 10.5,
+                            fontSize: 11,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -395,7 +403,7 @@ class _LikedEventCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white.withAlpha(120),
-                            fontSize: 10.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -404,38 +412,40 @@ class _LikedEventCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Tooltip(
-                    message: 'Remove from likes',
-                    child: InkWell(
-                      onTap: onRemove,
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        width: 48,
-                        padding: const EdgeInsets.symmetric(vertical: 9),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withAlpha(24),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.thumb_up_alt_rounded,
-                              color: Color(0xFF60A5FA),
-                              size: 19,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'LIKED',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFF93C5FD),
-                                fontSize: 7.5,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: .5,
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Center(
+                    child: Tooltip(
+                      message: 'Remove from likes',
+                      child: InkWell(
+                        onTap: onRemove,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: 52,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3B82F6).withAlpha(24),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.thumb_up_alt_rounded,
+                                color: Color(0xFF60A5FA),
+                                size: 20,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                'LIKED',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: const Color(0xFF93C5FD),
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
