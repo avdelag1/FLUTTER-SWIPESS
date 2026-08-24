@@ -11,13 +11,11 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Dashboard Events behaves like a live channel rather than a playlist that
-/// restarts whenever the dashboard widget is rebuilt.
+/// Dashboard Events teaser.
 ///
-/// Every event owns a 30-second wall-clock slot. The slot is derived from UTC
-/// time, so backgrounding, locking the phone, navigating elsewhere, killing the
-/// app, or reopening it later cannot reset the stream to event zero. On resume
-/// we calculate the event and playback offset that should be live *now*.
+/// Each unique event video plays exactly once, then advances immediately to the
+/// next unique event. Short clips are never looped to fill an artificial slot.
+/// The list repeats only after every available video has been shown.
 class EventsTeaserCard extends ConsumerStatefulWidget {
   const EventsTeaserCard({super.key, this.onTap});
 
@@ -29,30 +27,40 @@ class EventsTeaserCard extends ConsumerStatefulWidget {
 
 class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     with WidgetsBindingObserver {
-  static const _liveSlot = Duration(seconds: 30);
-
   VideoPlayerController? _current;
   VideoPlayerController? _preloaded;
   int? _preloadedIndex;
-  Timer? _timelineTimer;
   int _index = 0;
-  int _browseOffset = 0;
   bool _loading = false;
   bool _switching = false;
+  bool _completionQueued = false;
   bool _routeActive = true;
   bool _appActive = true;
   double _dragDx = 0;
 
   bool get _canPlay => _routeActive && _appActive;
 
-  List<Event> get _videos =>
-      ref.read(dashboardVideoEventsProvider).value ?? const <Event>[];
+  List<Event> _uniqueVideos(Iterable<Event> source) {
+    final seen = <String>{};
+    final out = <Event>[];
+    for (final event in source) {
+      final raw = event.videoUrl?.trim();
+      if (raw == null || raw.isEmpty) continue;
+      final key = raw.toLowerCase();
+      if (seen.add(key)) out.add(event);
+    }
+    return out;
+  }
+
+  List<Event> get _videos => _uniqueVideos(
+        ref.read(dashboardVideoEventsProvider).value ?? const <Event>[],
+      );
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncToTimeline());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLoaded());
   }
 
   @override
@@ -62,11 +70,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     if (_routeActive == active) return;
     _routeActive = active;
     if (_canPlay) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _syncToTimeline(forceSeek: true),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) => _resumePlayback());
     } else {
-      _timelineTimer?.cancel();
       _current?.pause();
       _preloaded?.pause();
     }
@@ -77,14 +82,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     switch (state) {
       case AppLifecycleState.resumed:
         _appActive = true;
-        if (mounted) unawaited(_syncToTimeline(forceSeek: true));
+        if (mounted) unawaited(_resumePlayback());
         break;
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
         _appActive = false;
-        _timelineTimer?.cancel();
         _current?.pause();
         _preloaded?.pause();
         break;
@@ -94,39 +98,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _timelineTimer?.cancel();
     _current?.dispose();
     _preloaded?.dispose();
     super.dispose();
-  }
-
-  int _globalIndex(DateTime now, int count) {
-    if (count <= 1) return 0;
-    final slot = now.toUtc().millisecondsSinceEpoch ~/ _liveSlot.inMilliseconds;
-    return slot % count;
-  }
-
-  int _targetIndex(DateTime now, int count) {
-    if (count <= 1) return 0;
-    var result = (_globalIndex(now, count) + _browseOffset) % count;
-    if (result < 0) result += count;
-    return result;
-  }
-
-  Duration _slotOffset(DateTime now) {
-    final elapsed = now.toUtc().millisecondsSinceEpoch % _liveSlot.inMilliseconds;
-    return Duration(milliseconds: elapsed);
-  }
-
-  Duration _safeVideoOffset(
-    VideoPlayerController controller,
-    Duration desired,
-  ) {
-    final duration = controller.value.duration;
-    if (duration <= Duration.zero) return Duration.zero;
-    final durationMs = duration.inMilliseconds;
-    if (durationMs <= 1) return Duration.zero;
-    return Duration(milliseconds: desired.inMilliseconds % durationMs);
   }
 
   Future<VideoPlayerController?> _prepare(Event event) async {
@@ -134,15 +108,15 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     if (raw == null || raw.isEmpty) return null;
     final uri = Uri.tryParse(raw);
     if (uri == null) return null;
+
     final controller = VideoPlayerController.networkUrl(
       uri,
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     try {
       await controller.initialize();
-      // A short source may loop inside its 30-second live slot. The stream only
-      // advances events on the shared wall-clock boundary.
-      await controller.setLooping(true);
+      // Important: never loop one short event several times before advancing.
+      await controller.setLooping(false);
       await controller.setVolume(0);
       return controller;
     } catch (_) {
@@ -151,77 +125,60 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     }
   }
 
-  Future<void> _seekToLiveOffset(
-    VideoPlayerController controller,
-    Duration offset,
-  ) async {
-    try {
-      await controller.seekTo(_safeVideoOffset(controller, offset));
-    } catch (_) {}
-  }
-
-  void _scheduleTimelineBoundary() {
-    _timelineTimer?.cancel();
-    final videos = _videos;
-    if (!_canPlay || videos.length < 2) return;
-    final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
-    final slotMs = _liveSlot.inMilliseconds;
-    var waitMs = slotMs - (nowMs % slotMs);
-    if (waitMs < 40) waitMs += slotMs;
-    _timelineTimer = Timer(Duration(milliseconds: waitMs + 20), () {
-      if (mounted) unawaited(_syncToTimeline(forceSeek: true));
+  void _watchForCompletion(VideoPlayerController controller) {
+    controller.addListener(() {
+      if (!mounted ||
+          !identical(controller, _current) ||
+          _completionQueued ||
+          _switching ||
+          !_canPlay) {
+        return;
+      }
+      final value = controller.value;
+      if (!value.isInitialized || value.duration <= Duration.zero) return;
+      final remainingMs =
+          value.duration.inMilliseconds - value.position.inMilliseconds;
+      if (value.position > Duration.zero && remainingMs <= 180) {
+        _completionQueued = true;
+        unawaited(_advance(1));
+      }
     });
   }
 
-  Future<void> _syncToTimeline({bool forceSeek = false}) async {
+  Future<void> _ensureLoaded() async {
     if (!mounted || _loading || _switching) return;
     final videos = _videos;
     if (videos.isEmpty) return;
 
-    final now = DateTime.now();
-    final targetIndex = _targetIndex(now, videos.length);
-    final offset = _slotOffset(now);
-
-    if (_current == null) {
-      await _loadInitial(videos, targetIndex, offset);
+    if (_current != null && _index < videos.length) {
+      await _resumePlayback();
       return;
     }
 
-    if (_index != targetIndex) {
-      await _switchTo(videos, targetIndex, offset);
-      return;
-    }
-
-    if (forceSeek) await _seekToLiveOffset(_current!, offset);
-    await _applySound();
-    if (_canPlay) await _current?.play();
-    _scheduleTimelineBoundary();
-  }
-
-  Future<void> _loadInitial(
-    List<Event> videos,
-    int targetIndex,
-    Duration offset,
-  ) async {
-    if (_loading) return;
     _loading = true;
     try {
+      // Start at a changing position so every fresh session does not always
+      // begin with event zero, while preserving sequential playback afterward.
+      final seed = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 30000;
+      final start = videos.length <= 1 ? 0 : seed % videos.length;
+
       for (var attempt = 0; attempt < videos.length; attempt++) {
-        final candidateIndex = (targetIndex + attempt) % videos.length;
-        final controller = await _prepare(videos[candidateIndex]);
+        final candidate = (start + attempt) % videos.length;
+        final controller = await _prepare(videos[candidate]);
         if (!mounted) {
           await controller?.dispose();
           return;
         }
         if (controller == null) continue;
-        _index = candidateIndex;
+
+        _index = candidate;
         _current = controller;
-        await _seekToLiveOffset(controller, offset);
+        _completionQueued = false;
+        _watchForCompletion(controller);
         await _applySound();
         if (_canPlay) await controller.play();
         if (mounted) setState(() {});
         unawaited(_preloadNext(videos));
-        _scheduleTimelineBoundary();
         return;
       }
     } finally {
@@ -229,71 +186,104 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     }
   }
 
+  Future<void> _resumePlayback() async {
+    final current = _current;
+    if (current == null || !current.value.isInitialized) {
+      await _ensureLoaded();
+      return;
+    }
+
+    final duration = current.value.duration;
+    final position = current.value.position;
+    if (duration > Duration.zero &&
+        position >= duration - const Duration(milliseconds: 180)) {
+      _completionQueued = true;
+      await _advance(1);
+      return;
+    }
+
+    await _applySound();
+    if (_canPlay) await current.play();
+  }
+
   Future<void> _preloadNext(List<Event> videos) async {
     if (!mounted || videos.length < 2) return;
-    final targetIndex = (_index + 1) % videos.length;
-    final prepared = await _prepare(videos[targetIndex]);
+    final target = (_index + 1) % videos.length;
+    final prepared = await _prepare(videos[target]);
     if (!mounted) {
       await prepared?.dispose();
       return;
     }
+
     final old = _preloaded;
     _preloaded = prepared;
-    _preloadedIndex = prepared == null ? null : targetIndex;
+    _preloadedIndex = prepared == null ? null : target;
     await old?.dispose();
   }
 
-  Future<void> _switchTo(
-    List<Event> videos,
-    int targetIndex,
-    Duration offset,
-  ) async {
-    if (!mounted || _switching || videos.isEmpty) return;
+  Future<void> _advance(int delta) async {
+    final videos = _videos;
+    if (videos.isEmpty || _switching) return;
+
+    if (videos.length == 1) {
+      final current = _current;
+      if (current != null && current.value.isInitialized) {
+        await current.seekTo(Duration.zero);
+        _completionQueued = false;
+        if (_canPlay) await current.play();
+      }
+      return;
+    }
+
     _switching = true;
     try {
-      VideoPlayerController? next;
-      if (_preloaded != null &&
-          _preloadedIndex == targetIndex &&
-          _preloaded!.value.isInitialized) {
-        next = _preloaded;
-        _preloaded = null;
-        _preloadedIndex = null;
-      } else {
-        next = await _prepare(videos[targetIndex]);
-      }
-      if (next == null || !mounted) return;
+      for (var attempt = 1; attempt <= videos.length; attempt++) {
+        var target = (_index + (delta * attempt)) % videos.length;
+        if (target < 0) target += videos.length;
 
-      final previous = _current;
-      _current = next;
-      _index = targetIndex;
-      await _seekToLiveOffset(next, offset);
-      await _applySound();
-      if (_canPlay) await next.play();
-      if (mounted) setState(() {});
+        VideoPlayerController? next;
+        if (delta == 1 &&
+            attempt == 1 &&
+            _preloaded != null &&
+            _preloadedIndex == target &&
+            _preloaded!.value.isInitialized) {
+          next = _preloaded;
+          _preloaded = null;
+          _preloadedIndex = null;
+        } else {
+          next = await _prepare(videos[target]);
+        }
+        if (!mounted) {
+          await next?.dispose();
+          return;
+        }
+        if (next == null) continue;
 
-      if (previous != null) {
-        Future<void>.delayed(const Duration(milliseconds: 680), () async {
-          try {
-            await previous.setVolume(0);
-            await previous.pause();
-            await previous.dispose();
-          } catch (_) {}
-        });
+        final previous = _current;
+        _current = next;
+        _index = target;
+        _completionQueued = false;
+        _watchForCompletion(next);
+        await _applySound();
+        if (_canPlay) await next.play();
+        if (mounted) setState(() {});
+
+        if (previous != null) {
+          Future<void>.delayed(const Duration(milliseconds: 520), () async {
+            try {
+              await previous.setVolume(0);
+              await previous.pause();
+              await previous.dispose();
+            } catch (_) {}
+          });
+        }
+
+        unawaited(_preloadNext(videos));
+        return;
       }
-      unawaited(_preloadNext(videos));
-      _scheduleTimelineBoundary();
     } finally {
       _switching = false;
     }
-  }
-
-  Future<void> _manualAdvance(int delta) async {
-    final videos = _videos;
-    if (videos.length < 2 || _switching) return;
-    _browseOffset = (_browseOffset + delta) % videos.length;
-    final now = DateTime.now();
-    final target = _targetIndex(now, videos.length);
-    await _switchTo(videos, target, Duration.zero);
   }
 
   Future<void> _applySound() async {
@@ -330,23 +320,19 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   @override
   Widget build(BuildContext context) {
     final teaserAsync = ref.watch(dashboardVideoEventsProvider);
-    final videos = teaserAsync.value ?? const <Event>[];
+    final videos = _uniqueVideos(teaserAsync.value ?? const <Event>[]);
     final soundOn = ref.watch(deckSoundOnProvider);
 
-    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (
-      _,
-      next,
-    ) {
-      final loaded = next.value ?? const <Event>[];
+    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (_, next) {
+      final loaded = _uniqueVideos(next.value ?? const <Event>[]);
       if (loaded.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _syncToTimeline(forceSeek: true),
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLoaded());
       }
     });
     ref.listen<bool>(deckSoundOnProvider, (_, __) => _applySound());
 
-    final event = videos.isEmpty ? null : videos[_index % videos.length];
+    final safeIndex = videos.isEmpty ? 0 : _index % videos.length;
+    final event = videos.isEmpty ? null : videos[safeIndex];
     final controller = _current;
     final ready = controller != null && controller.value.isInitialized;
 
@@ -360,7 +346,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         final signal = velocity.abs() > 120 ? velocity : _dragDx;
         if (signal.abs() < 12) return;
         AppHaptics.selection();
-        unawaited(_manualAdvance(signal < 0 ? 1 : -1));
+        unawaited(_advance(signal < 0 ? 1 : -1));
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
@@ -370,8 +356,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
             const ColoredBox(color: Color(0xFF080A0F)),
             if (ready)
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 520),
-                reverseDuration: const Duration(milliseconds: 420),
+                duration: const Duration(milliseconds: 420),
+                reverseDuration: const Duration(milliseconds: 320),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 layoutBuilder: (currentChild, previousChildren) => Stack(
@@ -394,17 +380,14 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         end: Offset.zero,
                       ).animate(curved),
                       child: ScaleTransition(
-                        scale: Tween<double>(
-                          begin: 1.025,
-                          end: 1,
-                        ).animate(curved),
+                        scale: Tween<double>(begin: 1.02, end: 1).animate(curved),
                         child: child,
                       ),
                     ),
                   );
                 },
                 child: _CoverVideo(
-                  key: ValueKey(event?.videoUrl ?? _index),
+                  key: ValueKey(event?.videoUrl ?? safeIndex),
                   controller: controller,
                 ),
               )
@@ -448,10 +431,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
               left: 14,
               top: 13,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(125),
                   borderRadius: BorderRadius.circular(999),
