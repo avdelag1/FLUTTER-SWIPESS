@@ -17,9 +17,9 @@ import 'package:google_fonts/google_fonts.dart';
 /// Keyword-first dashboard search with hands-free live dictation.
 ///
 /// Voice interaction contract:
-/// tap mic → partial words appear immediately → 4 seconds of silence → visible
-/// 3…2…1 → automatic submit. Any new recognized speech cancels the countdown;
-/// Enter or the arrow submits immediately.
+/// tap mic → partial words appear immediately in this same field → live audio
+/// bars move → 4 seconds of silence → visible 3…2…1 → automatic submit. Any
+/// new recognized speech cancels the countdown; Enter or the arrow submits now.
 class AiSearchBar extends ConsumerStatefulWidget {
   const AiSearchBar({super.key});
 
@@ -78,7 +78,12 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
     if (_voice.isOwnedBy(this) || _voiceActive) {
       _cancelCountdown();
       await _voice.cancel(owner: this);
-      if (mounted) setState(() => _voiceActive = false);
+      if (mounted) {
+        setState(() {
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
+      }
       return;
     }
 
@@ -98,7 +103,11 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
       },
       onSilence: _beginCountdown,
       onListeningChanged: (listening) {
-        if (mounted) setState(() => _voiceActive = listening);
+        if (!mounted) return;
+        setState(() {
+          _voiceActive = listening;
+          if (!listening) _voiceLevel = 0;
+        });
       },
       onSoundLevel: (level) {
         if (!mounted) return;
@@ -107,12 +116,21 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
       },
       onError: (message) {
         if (!mounted) return;
+        setState(() {
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
         );
       },
     );
-    if (mounted) setState(() => _voiceActive = started);
+    if (mounted) {
+      setState(() {
+        _voiceActive = started;
+        if (!started) _voiceLevel = 0;
+      });
+    }
   }
 
   Future<void> _runSearch() async {
@@ -120,7 +138,12 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
     _submitting = true;
     _cancelCountdown();
     await _voice.finish(owner: this);
-    if (mounted) setState(() => _voiceActive = false);
+    if (mounted) {
+      setState(() {
+        _voiceActive = false;
+        _voiceLevel = 0;
+      });
+    }
 
     final q = _controller.text.trim();
     AppHaptics.selection();
@@ -262,6 +285,32 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
         .trim();
   }
 
+  Widget _voiceBars(Color color) {
+    final level = _voiceLevel.clamp(0.0, 1.0);
+    const multipliers = <double>[.55, 1, .72, .92, .48];
+    return SizedBox(
+      width: 25,
+      height: 20,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (final multiplier in multipliers)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOut,
+              width: 3,
+              height: 5 + (13 * level * multiplier),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLight = ref.watch(isLightThemeProvider);
@@ -270,20 +319,44 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
     final fill = AppTheme.wellFor(isLight: isLight);
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
     final pulseScale = 1.0 + (_voiceLevel * .08);
+    final voiceVisible = _voiceActive || _countdown != null;
 
     return SearchFrameShine(
       color: glow,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         height: 56,
         decoration: BoxDecoration(
           color: fill,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: frame, width: 1.5),
+          border: Border.all(
+            color: voiceVisible ? glow : frame,
+            width: voiceVisible ? 2 : 1.5,
+          ),
+          boxShadow: voiceVisible
+              ? [
+                  BoxShadow(
+                    color: glow.withAlpha(38),
+                    blurRadius: 18 + (_voiceLevel * 10),
+                    spreadRadius: -2,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
             const SizedBox(width: 16),
-            Icon(Icons.search_rounded, color: glow.withAlpha(220), size: 20),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 140),
+              child: _voiceActive
+                  ? _voiceBars(glow)
+                  : Icon(
+                      Icons.search_rounded,
+                      key: const ValueKey('search'),
+                      color: glow.withAlpha(220),
+                      size: 20,
+                    ),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
@@ -301,7 +374,7 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
                   border: InputBorder.none,
                   isDense: true,
                   hintText: _voiceActive
-                      ? 'Listening…'
+                      ? 'Speak now — your words appear here…'
                       : 'Search properties, workers, people, events...',
                   hintStyle: GoogleFonts.plusJakartaSans(
                     color: _voiceActive ? glow : ink.withAlpha(140),
@@ -316,72 +389,79 @@ class _AiSearchBarState extends ConsumerState<AiSearchBar> {
               ),
             ),
             Tooltip(
-              message: _voiceActive ? 'Stop listening' : 'Speak your search',
-              child: GestureDetector(
-                onTap: _toggleVoice,
-                child: AnimatedScale(
-                  duration: const Duration(milliseconds: 120),
-                  scale: _voiceActive ? pulseScale : 1,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: _voiceActive
-                          ? glow.withAlpha(42)
-                          : glow.withAlpha(16),
-                      shape: BoxShape.circle,
-                      border: Border.all(
+              message: _voiceActive ? 'Stop recording' : 'Speak your search',
+              child: Semantics(
+                button: true,
+                label: _voiceActive ? 'Stop recording' : 'Start voice search',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggleVoice,
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 120),
+                    scale: _voiceActive ? pulseScale : 1,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
                         color: _voiceActive
-                            ? glow.withAlpha(210)
-                            : glow.withAlpha(85),
+                            ? glow
+                            : glow.withAlpha(isLight ? 18 : 30),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _voiceActive
+                              ? glow
+                              : glow.withAlpha(100),
+                        ),
+                        boxShadow: _voiceActive
+                            ? [
+                                BoxShadow(
+                                  color: glow.withAlpha(75),
+                                  blurRadius: 14 + (_voiceLevel * 12),
+                                  spreadRadius: _voiceLevel * 2,
+                                ),
+                              ]
+                            : null,
                       ),
-                      boxShadow: _voiceActive
-                          ? [
-                              BoxShadow(
-                                color: glow.withAlpha(70),
-                                blurRadius: 14 + (_voiceLevel * 12),
-                                spreadRadius: _voiceLevel * 2,
+                      alignment: Alignment.center,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 120),
+                        child: _countdown != null
+                            ? Text(
+                                '$_countdown',
+                                key: ValueKey(_countdown),
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: _voiceActive ? Colors.white : glow,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              )
+                            : Icon(
+                                _voiceActive
+                                    ? Icons.stop_rounded
+                                    : Icons.mic_rounded,
+                                key: ValueKey(_voiceActive),
+                                color: _voiceActive ? Colors.white : glow,
+                                size: _voiceActive ? 20 : 21,
                               ),
-                            ]
-                          : null,
-                    ),
-                    alignment: Alignment.center,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 120),
-                      child: _countdown != null
-                          ? Text(
-                              '$_countdown',
-                              key: ValueKey(_countdown),
-                              style: GoogleFonts.plusJakartaSans(
-                                color: glow,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            )
-                          : Icon(
-                              _voiceActive
-                                  ? Icons.graphic_eq_rounded
-                                  : Icons.mic_none_rounded,
-                              key: ValueKey(_voiceActive),
-                              color: glow,
-                              size: 19,
-                            ),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: 2),
             IconButton(
               onPressed: _submitting ? null : _runSearch,
               tooltip: 'Search',
+              visualDensity: VisualDensity.compact,
               icon: Icon(
                 Icons.arrow_forward_rounded,
                 color: glow.withAlpha(230),
                 size: 20,
               ),
             ),
+            const SizedBox(width: 2),
           ],
         ),
       ),
