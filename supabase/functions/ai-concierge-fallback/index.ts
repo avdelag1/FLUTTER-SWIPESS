@@ -10,6 +10,8 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const MOONSHOT_API_KEY = Deno.env.get("MOONSHOT_API_KEY") || "";
+const MINIMAX_API_KEY = Deno.env.get("MINIMAX_API_KEY") || "";
 
 function json(status: number, body: unknown, provider?: string) {
   return new Response(JSON.stringify(body), {
@@ -67,6 +69,10 @@ function systemPrompt(body: any) {
   ].filter(Boolean).join("\n");
 }
 
+function textFromOpenAI(data: any): string {
+  return data?.choices?.[0]?.message?.content?.toString().trim() || "";
+}
+
 async function groq(messages: any[]) {
   if (!GROQ_API_KEY) throw new Error("Groq unavailable");
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -84,8 +90,7 @@ async function groq(messages: any[]) {
     }),
   });
   if (!res.ok) throw new Error(`Groq ${res.status}`);
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content?.toString().trim();
+  const text = textFromOpenAI(await res.json());
   if (!text) throw new Error("Groq returned no text");
   return text;
 }
@@ -120,6 +125,55 @@ async function gemini(system: string, history: any[]) {
   return text;
 }
 
+async function kimi(messages: any[]) {
+  if (!MOONSHOT_API_KEY) throw new Error("Kimi unavailable");
+  const res = await fetch("https://api.moonshot.cn/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${MOONSHOT_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "moonshot-v1-8k",
+      messages,
+      max_tokens: 900,
+      temperature: 0.4,
+      stream: false,
+    }),
+  });
+  if (!res.ok) throw new Error(`Kimi ${res.status}`);
+  const text = textFromOpenAI(await res.json());
+  if (!text) throw new Error("Kimi returned no text");
+  return text;
+}
+
+async function minimax(messages: any[]) {
+  if (!MINIMAX_API_KEY) throw new Error("MiniMax unavailable");
+  const res = await fetch("https://api.minimaxi.chat/v1/text/chatcompletion_v2", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${MINIMAX_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "MiniMax-M2.7",
+      messages,
+      max_tokens: 900,
+      temperature: 0.4,
+      stream: false,
+    }),
+  });
+  if (!res.ok) throw new Error(`MiniMax ${res.status}`);
+  const data = await res.json();
+  const text =
+    textFromOpenAI(data) ||
+    data?.reply?.toString().trim() ||
+    data?.choices?.[0]?.text?.toString().trim() ||
+    "";
+  if (!text) throw new Error("MiniMax returned no text");
+  return text;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "POST required" });
@@ -146,21 +200,29 @@ Deno.serve(async (req) => {
       ...history.filter((m: any) => m.role !== "system"),
     ];
 
-    try {
-      const text = await groq(openAiMessages);
-      return json(200, { choices: [{ message: { content: text } }] }, "groq");
-    } catch (groqError) {
-      console.error("[ai-concierge-fallback] Groq failed", groqError);
+    const attempts: Array<[string, () => Promise<string>]> = [
+      ["groq", () => groq(openAiMessages)],
+      ["gemini", () => gemini(system, history)],
+      ["kimi", () => kimi(openAiMessages)],
+      ["minimax", () => minimax(openAiMessages)],
+    ];
+
+    const errors: string[] = [];
+    for (const [provider, run] of attempts) {
       try {
-        const text = await gemini(system, history);
-        return json(200, { choices: [{ message: { content: text } }] }, "gemini");
-      } catch (geminiError) {
-        console.error("[ai-concierge-fallback] Gemini failed", geminiError);
-        return json(503, { error: "AI temporarily unavailable. Please try again." });
+        const text = await run();
+        return json(200, { choices: [{ message: { content: text } }] }, provider);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(`${provider}:${message}`);
+        console.error(`[ai-concierge-fallback] ${provider} failed`, message);
       }
     }
+
+    console.error("[ai-concierge-fallback] all providers failed", errors.join(" | "));
+    return json(503, { error: "AI temporarily unavailable. Please try again." });
   } catch (error) {
-    console.error("[ai-concierge-fallback]", error);
+    console.error("[ai-concierge-fallback]", error instanceof Error ? error.message : String(error));
     return json(500, { error: "AI temporarily unavailable. Please try again." });
   }
 });
