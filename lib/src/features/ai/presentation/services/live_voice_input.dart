@@ -84,95 +84,10 @@ class LiveVoiceInput {
     if (_starting) return false;
     _starting = true;
 
-    // IMPORTANT: never instantiate or start package:record on Flutter Web. The
-    // production Chrome failure showed a page-sized gray platform surface while
-    // recording. Native browser recognition needs no visible DOM/platform-view
-    // surface and provides true interim transcription instead of waiting for a
-    // full audio segment to upload.
-    if (kIsWeb) {
-      try {
-        if (!_browser.isSupported) {
-          _onError?.call(
-            'Live voice typing is not available in this browser. Use Chrome or type your message.',
-          );
-          _clearSession(keepOwner: false);
-          return false;
-        }
-
-        _usingBrowser = true;
-        _active = true;
-        final started = await _browser.start(
-          onText: (speech, isFinal) {
-            if (!_active || !_usingBrowser || _intentionalStop) return;
-            final clean = speech.trim();
-            if (clean.isEmpty) return;
-
-            _browserSilenceTimer?.cancel();
-            final total = _join(_committed, clean);
-            if (total != _lastPublished) {
-              _lastPublished = total;
-              _onText?.call(total);
-            }
-
-            // SpeechRecognition does not expose raw microphone amplitude. Pulse
-            // the existing waveform whenever Chrome produces a partial/final
-            // transcript so the user still sees an active voice state.
-            _onSoundLevel?.call(isFinal ? -24 : -14);
-            _browserPulseTimer?.cancel();
-            _browserPulseTimer = Timer(const Duration(milliseconds: 170), () {
-              if (_active && _usingBrowser) _onSoundLevel?.call(-32);
-            });
-
-            _browserSilenceTimer = Timer(silenceBeforeCountdown, () {
-              if (!_active || !_usingBrowser || _lastPublished.trim().isEmpty) {
-                return;
-              }
-              _onSoundLevel?.call(0);
-              _onSilence?.call();
-            });
-          },
-          onListening: (listening) {
-            if (!_usingBrowser) return;
-            if (listening) {
-              _onListeningChanged?.call(true);
-            } else if (!_active || _intentionalStop) {
-              _onListeningChanged?.call(false);
-            }
-          },
-          onError: (message) {
-            if (!_usingBrowser) return;
-            _onError?.call(message);
-          },
-        );
-
-        if (!started) {
-          _active = false;
-          _usingBrowser = false;
-          _onError?.call(
-            'Could not start live voice typing. Check Chrome microphone permission and try again.',
-          );
-          _clearSession(keepOwner: false);
-          return false;
-        }
-
-        _onListeningChanged?.call(true);
-        return true;
-      } catch (_) {
-        _active = false;
-        _usingBrowser = false;
-        _onError?.call(
-          'Could not start live voice typing. Check Chrome microphone permission and try again.',
-        );
-        _clearSession(keepOwner: false);
-        return false;
-      } finally {
-        _starting = false;
-      }
-    }
-
-    // Native iOS/Android path: record a short segment and use the existing
-    // Supabase transcription endpoint. This path is intentionally never used
-    // by Flutter Web.
+    // We use the native record package path for all platforms including Web. 
+    // The previous gray overlay bug was caused by Flutter Web Tooltip 
+    // rendering, not package:record. Using the native path restores 
+    // real microphone amplitude visualization and accurate silence detection.
     try {
       final started = await _nativeVoice.start();
       if (!started) {

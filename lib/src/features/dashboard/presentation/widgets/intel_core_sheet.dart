@@ -1130,17 +1130,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           minLines: 1,
                           maxLines: 5,
                           decoration: InputDecoration(
-                            prefixIcon: _recording
-                                ? AnimatedScale(
-                                    duration: const Duration(milliseconds: 110),
-                                    scale: voiceScale,
-                                    child: Icon(
-                                      Icons.graphic_eq_rounded,
-                                      color: _aiBlue,
-                                      size: 20,
-                                    ),
-                                  )
-                                : null,
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
