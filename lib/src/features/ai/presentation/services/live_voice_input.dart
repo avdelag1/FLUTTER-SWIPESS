@@ -1,21 +1,24 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
+import 'package:record/record.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-/// One shared speech recognizer for every SWIPESS AI entry point.
+/// One shared voice coordinator for every SWIPESS AI entry point.
 ///
-/// Platform speech recognizers are intentionally single-session resources. This
-/// coordinator guarantees that the dashboard search bar and Intel Core never
-/// compete for the microphone, keeps partial text live in the visible field,
-/// restarts short Android recognition windows, and emits a four-second silence
-/// signal that the UI turns into its 3…2…1 hands-free send countdown.
+/// Native apps use platform speech recognition for live partial words. Flutter
+/// web uses the app's MediaRecorder + `voice-transcribe` pipeline instead. The
+/// web recorder avoids browser speech-recognition DOM/overlay glitches while
+/// still exposing live amplitude for the in-field waveform and inserting the
+/// transcript back into the same visible field when a segment finishes.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
   static final LiveVoiceInput instance = LiveVoiceInput._();
 
   final SpeechToText _speech = SpeechToText();
+  final VoiceTranscribeRepository _webVoice = VoiceTranscribeRepository();
 
   bool _initialized = false;
   bool _available = false;
@@ -30,6 +33,10 @@ class LiveVoiceInput {
 
   Timer? _silenceTimer;
   Timer? _restartTimer;
+  Timer? _webSilenceFinalizeTimer;
+  StreamSubscription<Amplitude>? _webAmplitudeSubscription;
+  bool _webSegmentHasSpeech = false;
+  bool _webFinalizing = false;
 
   ValueChanged<String>? _onText;
   ValueChanged<double>? _onSoundLevel;
@@ -56,6 +63,7 @@ class LiveVoiceInput {
     if (_active && !identical(_owner, owner)) {
       await cancel();
     } else if (_active && identical(_owner, owner)) {
+      if (kIsWeb) return _webVoice.isRecording();
       return _speech.isListening;
     }
 
@@ -71,6 +79,10 @@ class LiveVoiceInput {
     _lastPublished = _committed;
     _intentionalStop = false;
 
+    if (kIsWeb) {
+      return _startWebRecorder();
+    }
+
     if (!await _ensureInitialized()) {
       _clearSession(keepOwner: false);
       return false;
@@ -84,6 +96,152 @@ class LiveVoiceInput {
     }
     _onListeningChanged?.call(true);
     return true;
+  }
+
+  Future<bool> _startWebRecorder() async {
+    if (_starting) return false;
+    _starting = true;
+    try {
+      final started = await _webVoice.start();
+      if (!started) {
+        _onError?.call(
+          'Microphone permission is blocked. Allow microphone access and try again.',
+        );
+        _clearSession(keepOwner: false);
+        return false;
+      }
+
+      _active = true;
+      _webSegmentHasSpeech = false;
+      _listenToWebAmplitude();
+      _onListeningChanged?.call(true);
+      return true;
+    } catch (_) {
+      _onError?.call(
+        'Could not start voice input. Check microphone permission and try again.',
+      );
+      _clearSession(keepOwner: false);
+      return false;
+    } finally {
+      _starting = false;
+    }
+  }
+
+  void _listenToWebAmplitude() {
+    unawaited(_webAmplitudeSubscription?.cancel());
+    _webAmplitudeSubscription = _webVoice
+        .amplitudeStream(interval: const Duration(milliseconds: 90))
+        .listen(
+          (amplitude) {
+            if (!_active || _intentionalStop || _webFinalizing) return;
+            final level = amplitude.current.isFinite ? amplitude.current : -60.0;
+            _onSoundLevel?.call(level);
+
+            // dBFS: values closer to zero are louder. This threshold is loose
+            // enough for laptop microphones but high enough to ignore most idle
+            // room noise. Manual Stop still transcribes if the threshold misses.
+            if (level > -45.0) {
+              final firstSoundOfSegment = !_webSegmentHasSpeech;
+              _webSegmentHasSpeech = true;
+              _webSilenceFinalizeTimer?.cancel();
+
+              // If a 3…2…1 countdown is already showing, re-emitting the current
+              // text tells both UIs that speech resumed so they cancel countdown.
+              if (firstSoundOfSegment && _lastPublished.isNotEmpty) {
+                _onText?.call(_lastPublished);
+              }
+
+              _webSilenceFinalizeTimer = Timer(
+                silenceBeforeCountdown,
+                () => unawaited(
+                  _finalizeWebSegment(
+                    restart: true,
+                    triggerSilence: true,
+                    forceTranscribe: false,
+                  ),
+                ),
+              );
+            }
+          },
+          onError: (_) {
+            if (_active) {
+              _onError?.call('Voice recording stopped. Try the microphone again.');
+            }
+          },
+        );
+  }
+
+  Future<void> _finalizeWebSegment({
+    required bool restart,
+    required bool triggerSilence,
+    required bool forceTranscribe,
+  }) async {
+    if (_webFinalizing) {
+      while (_webFinalizing) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      return;
+    }
+    if (!_active && !forceTranscribe) return;
+
+    _webFinalizing = true;
+    _webSilenceFinalizeTimer?.cancel();
+    _webSilenceFinalizeTimer = null;
+    await _webAmplitudeSubscription?.cancel();
+    _webAmplitudeSubscription = null;
+    _onSoundLevel?.call(0);
+
+    final shouldTranscribe = _webSegmentHasSpeech || forceTranscribe;
+    String text = '';
+    try {
+      if (shouldTranscribe) {
+        text = await _webVoice.stop();
+      } else {
+        await _webVoice.cancel();
+      }
+    } on VoiceTranscribeException catch (error) {
+      // A silence-only restarted segment can be legitimately too short when the
+      // 3…2…1 auto-send fires. Do not turn that into a visible error.
+      if (forceTranscribe &&
+          !error.message.toLowerCase().contains('too short')) {
+        _onError?.call(error.message);
+      }
+    } catch (_) {
+      if (forceTranscribe) {
+        _onError?.call('Voice transcription failed — please try again.');
+      }
+    }
+
+    if (text.trim().isNotEmpty) {
+      _committed = _join(_committed, text.trim());
+      _lastPublished = _committed;
+      _onText?.call(_committed);
+    }
+
+    _webSegmentHasSpeech = false;
+    _webFinalizing = false;
+
+    if (restart && _active && !_intentionalStop) {
+      try {
+        final started = await _webVoice.start();
+        if (started) {
+          _listenToWebAmplitude();
+          _onListeningChanged?.call(true);
+          if (triggerSilence && text.trim().isNotEmpty) {
+            _onSilence?.call();
+          }
+          return;
+        }
+      } catch (_) {}
+      _onError?.call('Microphone stopped. Tap the mic to continue.');
+      _active = false;
+      _onListeningChanged?.call(false);
+      return;
+    }
+
+    if (triggerSilence && text.trim().isNotEmpty) {
+      _onSilence?.call();
+    }
   }
 
   Future<bool> _ensureInitialized() async {
@@ -154,10 +312,6 @@ class LiveVoiceInput {
         ),
       );
 
-      // Some browser implementations report `listen()` as completed before the
-      // Web Speech session is actually live. Wait briefly for the real listening
-      // state instead of marking the UI as recording just because `_active` is
-      // true. This prevents the stuck/blank recording overlay failure mode.
       for (var i = 0; i < 8; i++) {
         if (_speech.isListening) return true;
         if (!_active || _intentionalStop) return false;
@@ -221,8 +375,6 @@ class LiveVoiceInput {
     }
     if (status == SpeechToText.doneStatus ||
         status == SpeechToText.notListeningStatus) {
-      // Some platforms finalize recognition after only a short pause. Commit
-      // the latest partial phrase before restarting so dictation stays seamless.
       if (_sessionWords.isNotEmpty) {
         _committed = _join(_committed, _sessionWords);
         _sessionWords = '';
@@ -233,7 +385,7 @@ class LiveVoiceInput {
   }
 
   void _scheduleRestart() {
-    if (!_active || _intentionalStop) return;
+    if (!_active || _intentionalStop || kIsWeb) return;
     _restartTimer?.cancel();
     _restartTimer = Timer(const Duration(milliseconds: 180), () {
       if (_active && !_intentionalStop) unawaited(_listen());
@@ -248,20 +400,45 @@ class LiveVoiceInput {
     _intentionalStop = true;
     _silenceTimer?.cancel();
     _restartTimer?.cancel();
+    _webSilenceFinalizeTimer?.cancel();
+
+    if (kIsWeb) {
+      await _finalizeWebSegment(
+        restart: false,
+        triggerSilence: false,
+        forceTranscribe: true,
+      );
+      _clearSession(keepOwner: false);
+      return;
+    }
+
     try {
       await _speech.stop();
     } catch (_) {}
     _clearSession(keepOwner: false);
   }
 
-  /// Cancel microphone capture without changing whatever text is already in the
-  /// visible composer/search field.
+  /// Stop microphone capture while preserving recognized text in the caller's
+  /// visible field. On web the current MediaRecorder segment is transcribed
+  /// before stopping, so tapping the blue Stop button never throws words away.
   Future<void> cancel({Object? owner}) async {
     if (owner != null && !identical(_owner, owner)) return;
     if (!_active && _owner == null) return;
     _intentionalStop = true;
     _silenceTimer?.cancel();
     _restartTimer?.cancel();
+    _webSilenceFinalizeTimer?.cancel();
+
+    if (kIsWeb && _active) {
+      await _finalizeWebSegment(
+        restart: false,
+        triggerSilence: false,
+        forceTranscribe: true,
+      );
+      _clearSession(keepOwner: false);
+      return;
+    }
+
     try {
       await _speech.cancel();
     } catch (_) {}
@@ -272,10 +449,16 @@ class LiveVoiceInput {
     _active = false;
     _starting = false;
     _intentionalStop = false;
+    _webFinalizing = false;
+    _webSegmentHasSpeech = false;
     _silenceTimer?.cancel();
     _restartTimer?.cancel();
+    _webSilenceFinalizeTimer?.cancel();
+    unawaited(_webAmplitudeSubscription?.cancel());
     _silenceTimer = null;
     _restartTimer = null;
+    _webSilenceFinalizeTimer = null;
+    _webAmplitudeSubscription = null;
     _onListeningChanged?.call(false);
     _onSoundLevel?.call(0);
     _onText = null;
