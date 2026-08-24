@@ -42,6 +42,12 @@ class PartnerBusinessDashboardScreen extends ConsumerWidget {
           statusLabel: 'Business active',
           actions: const [
             RoleDashboardAction(
+              title: 'Scan member',
+              subtitle: 'Validate Local ID, log visits and apply discounts',
+              icon: Icons.qr_code_scanner_rounded,
+              path: AppPaths.businessScan,
+            ),
+            RoleDashboardAction(
               title: 'Messages',
               subtitle: 'Continue customer conversations',
               icon: Icons.forum_outlined,
@@ -97,10 +103,22 @@ class _BusinessLivePanel extends StatelessWidget {
           children: [
             _MetricCard(label: 'Scans today', value: '${workspace.scansToday}'),
             _MetricCard(label: 'Customers', value: '${workspace.customersTotal}'),
-            _MetricCard(label: 'Sales · 30d', value: money.format(workspace.grossSales30d)),
-            _MetricCard(label: 'Transactions · 30d', value: '${workspace.transactions30d}'),
-            _MetricCard(label: 'Discounts · 30d', value: money.format(workspace.discounts30d)),
-            _MetricCard(label: 'Commission · 30d', value: money.format(workspace.commission30d)),
+            _MetricCard(
+              label: 'Sales · 30d',
+              value: money.format(workspace.grossSales30d),
+            ),
+            _MetricCard(
+              label: 'Transactions · 30d',
+              value: '${workspace.transactions30d}',
+            ),
+            _MetricCard(
+              label: 'Discounts · 30d',
+              value: money.format(workspace.discounts30d),
+            ),
+            _MetricCard(
+              label: 'Commission · 30d',
+              value: money.format(workspace.commission30d),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -178,7 +196,9 @@ class _MetricCard extends StatelessWidget {
         color: isLight ? Colors.white.withAlpha(225) : AppTheme.dashGlassStrong,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isLight ? Colors.black.withAlpha(18) : Colors.white.withAlpha(30),
+          color: isLight
+              ? Colors.black.withAlpha(18)
+              : Colors.white.withAlpha(30),
         ),
       ),
       child: Column(
@@ -208,7 +228,11 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _InfoPanel extends StatelessWidget {
-  const _InfoPanel({required this.isLight, required this.title, required this.lines});
+  const _InfoPanel({
+    required this.isLight,
+    required this.title,
+    required this.lines,
+  });
 
   final bool isLight;
   final String title;
@@ -223,7 +247,9 @@ class _InfoPanel extends StatelessWidget {
         color: isLight ? Colors.white.withAlpha(225) : AppTheme.dashGlassStrong,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isLight ? Colors.black.withAlpha(18) : Colors.white.withAlpha(30),
+          color: isLight
+              ? Colors.black.withAlpha(18)
+              : Colors.white.withAlpha(30),
         ),
       ),
       child: Column(
@@ -283,19 +309,27 @@ class _WorkspaceState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               if (message != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   message!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
               if (onRetry != null) ...[
                 const SizedBox(height: 18),
-                FilledButton(onPressed: onRetry, child: const Text('Try again')),
+                FilledButton(
+                  onPressed: onRetry,
+                  child: const Text('Try again'),
+                ),
               ],
             ],
           ),
