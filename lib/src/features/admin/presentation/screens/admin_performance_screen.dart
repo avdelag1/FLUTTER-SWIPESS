@@ -30,6 +30,11 @@ class AdminPerformanceScreen extends ConsumerWidget {
     return Map<String, dynamic>.from(result as Map);
   }
 
+  Future<Map<String, dynamic>> _loadGuardrails() async {
+    final result = await Supabase.instance.client.rpc('admin_content_guardrails');
+    return Map<String, dynamic>.from(result as Map);
+  }
+
   static String _bytes(num value) {
     final bytes = value.toDouble();
     if (bytes >= 1024 * 1024 * 1024) {
@@ -78,6 +83,33 @@ class AdminPerformanceScreen extends ConsumerWidget {
     );
   }
 
+  Widget _sectionTitle(String title, {String? subtitle}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white70,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AdminShell(
@@ -85,22 +117,10 @@ class AdminPerformanceScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          Text(
+          _sectionTitle(
             'Infrastructure & capacity',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Live Supabase database, storage and platform-volume snapshot. One media file can be reused across multiple app surfaces without duplicating storage.',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
-              fontSize: 11,
-              height: 1.4,
-            ),
+            subtitle:
+                'Live Supabase database, storage and platform-volume snapshot. One media file can be reused across multiple app surfaces without duplicating storage.',
           ),
           const SizedBox(height: 12),
           FutureBuilder<Map<String, dynamic>>(
@@ -149,7 +169,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    for (final raw in buckets.take(8))
+                    for (final raw in buckets.take(10))
                       if (raw is Map)
                         ListTile(
                           dense: true,
@@ -177,6 +197,112 @@ class AdminPerformanceScreen extends ConsumerWidget {
                           ),
                         ),
                   ],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 26),
+          _sectionTitle(
+            'Content guardrails',
+            subtitle:
+                'Live account limits and video policy. Super-admin changes are enforced by the database, not only by the app UI.',
+          ),
+          const SizedBox(height: 10),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _loadGuardrails(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError || snapshot.data == null) {
+                return Text(
+                  'Content guardrails unavailable for this account.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                );
+              }
+              final data = snapshot.data!;
+              final limits = (data['limits'] as List?) ?? const [];
+              final media = (data['media_rules'] as List?) ?? const [];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Active content limits',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  for (final raw in limits)
+                    if (raw is Map)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.shield_outlined, color: Colors.white70, size: 18),
+                        title: Text(
+                          '${raw['tier']}'.toUpperCase(),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Listings: ${raw['max_active_listings'] ?? 'Unlimited'}  ·  Events: ${raw['max_active_events'] ?? 'Unlimited'}',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white60,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Video policy',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  for (final raw in media)
+                    if (raw is Map)
+                      ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          raw['video_enabled'] == true
+                              ? Icons.videocam_rounded
+                              : Icons.videocam_off_rounded,
+                          color: raw['video_enabled'] == true
+                              ? AppTheme.brandPrimary
+                              : Colors.white38,
+                          size: 18,
+                        ),
+                        title: Text(
+                          '${raw['content_type']}',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        subtitle: Text(
+                          raw['video_enabled'] == true
+                              ? '1 video · ${raw['max_duration_seconds']}s max · ${_bytes((raw['max_file_size_bytes'] as num?) ?? 0)} · autoplay preview ${raw['autoplay_preview'] == true ? 'on' : 'off'}'
+                              : 'Video disabled',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white60,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
                 ],
               );
             },
