@@ -1,11 +1,8 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/bulk_selection_bar.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
@@ -22,408 +19,337 @@ class MessagesScreen extends ConsumerStatefulWidget {
 }
 
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
-  String _activeFilter = 'all'; // all, unread, archived
-  String _activeSection = 'chats'; // chats, documents
-  final _searchController = TextEditingController();
+  static const _accent = Color(0xFF4C8DFF);
+  static const _accent2 = Color(0xFF7767FF);
+
+  String _section = 'chats';
+  String _filter = 'all';
+  final _search = TextEditingController();
+  final Set<String> _selected = <String>{};
+  bool _selecting = false;
+  bool _deleting = false;
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _search.dispose();
     super.dispose();
   }
 
+  void _beginSelection([String? id]) {
+    AppHaptics.selection();
+    setState(() {
+      _selecting = true;
+      if (id != null) _selected.add(id);
+    });
+  }
+
+  void _cancelSelection() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _toggleSelection(String id) {
+    AppHaptics.selection();
+    setState(() {
+      if (!_selected.add(id)) _selected.remove(id);
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selected.isEmpty || _deleting) return;
+    final count = _selected.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(count == 1 ? 'Delete chat?' : 'Delete $count chats?'),
+        content: const Text(
+          'This removes the selected conversations from your inbox. The other participant keeps their copy.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE5484D),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deleting = true);
+    try {
+      await ref.read(conversationsProvider.notifier).hideMany(_selected);
+      if (mounted) _cancelSelection();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not remove chats')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  List<ChatConversation> _filtered(List<ChatConversation> items) {
+    final q = _search.text.trim().toLowerCase();
+    return items.where((conversation) {
+      if (q.isNotEmpty &&
+          !conversation.name.toLowerCase().contains(q) &&
+          !conversation.lastMessage.toLowerCase().contains(q) &&
+          !(conversation.listingTag ?? '').toLowerCase().contains(q)) {
+        return false;
+      }
+      if (_filter == 'unread' && conversation.unreadCount == 0) return false;
+      if (_filter == 'archived') return conversation.archived;
+      return !conversation.archived;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(conversationsProvider);
-
+    final conversations = ref.watch(conversationsProvider);
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
-    final well = MatteSurface.well(context);
-    final isLight = MatteSurface.isLight(context);
 
     return Scaffold(
       backgroundColor: MatteSurface.canvas(context),
-      body: Stack(
-        children: [
-          // Soft brand ambient (Cap inbox glow)
-          Positioned(
-            top: -50,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.brandPrimary.withAlpha(isLight ? 18 : 28),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              child: Row(
+                children: [
+                  CapBackButton(
+                    onTap: _selecting ? _cancelSelection : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selecting ? 'SELECT CHATS' : 'MESSAGES',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -.4,
+                          ),
+                        ),
+                        if (!_selecting)
+                          Text(
+                            'Conversations and shared documents',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: muted,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (!_selecting && _section == 'chats')
+                    IconButton(
+                      tooltip: 'Select chats',
+                      onPressed: () => _beginSelection(),
+                      icon: Icon(
+                        Icons.checklist_rounded,
+                        color: ink,
+                        size: 21,
+                      ),
+                    ),
+                ],
               ),
             ),
-          ),
-
-          SafeArea(
-            bottom: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                  child: Row(
-                    children: [
-                      const CapBackButton(),
-                      const Spacer(),
-                      _buildSectionToggle(),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Color(0xFFEB4898),
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0xFFEB4898).withAlpha(70),
-                              blurRadius: 24,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.chat_bubble_rounded,
-                          color: MatteSurface.ink(context),
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'MESSAGES',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFFEB4898),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                fontStyle: FontStyle.italic,
-                                letterSpacing: 4,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'INBOX',
-                              style: AppTheme.displayItalic.copyWith(
-                                fontSize: 40,
-                                height: 0.95,
-                                color: ink,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: GestureDetector(
-                    onTap: () {
-                      AppHaptics.medium();
-                      showMessageActivationPackages(context);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.brandPrimary.withAlpha(40),
-                            const Color(0xFFFBBF24).withAlpha(24),
-                          ],
-                        ),
-                        border: Border.all(color: Colors.transparent),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.bolt_rounded,
-                            color: Color(0xFFFBBF24),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Get Direct Requests for priority',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: ink,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'VIEW',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: AppTheme.brandPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
+            if (!_selecting)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SectionPill(
+                        label: 'CHATS',
+                        icon: Icons.chat_bubble_outline_rounded,
+                        selected: _section == 'chats',
+                        onTap: () => setState(() => _section = 'chats'),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                if (_activeSection == 'chats') ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: _buildFilters(),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: TextField(
-                      controller: _searchController,
-                      style: TextStyle(color: ink, fontWeight: FontWeight.bold),
-                      onChanged: (v) => setState(() {}),
-                      decoration: InputDecoration(
-                        hintText: 'Search conversations...',
-                        hintStyle: TextStyle(color: muted.withAlpha(160)),
-                        prefixIcon: Icon(Icons.search, color: muted),
-                        filled: true,
-                        fillColor: well,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _SectionPill(
+                        label: 'DOCUMENTS',
+                        icon: Icons.folder_outlined,
+                        selected: _section == 'documents',
+                        onTap: () => setState(() => _section = 'documents'),
                       ),
                     ),
+                  ],
+                ),
+              ),
+            if (_section == 'documents' && !_selecting)
+              const Expanded(child: MessagesDocumentsLibrary())
+            else
+              Expanded(
+                child: conversations.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(
+                      color: _accent,
+                      strokeWidth: 2,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-
-                  Expanded(
-                    child: async.when(
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.brandPrimary,
-                        ),
-                      ),
-                      error: (e, _) => Center(
-                        child: Text(
-                          'Error: $e',
-                          style: TextStyle(color: muted),
-                        ),
-                      ),
-                      data: (items) {
-                        final q = _searchController.text.trim().toLowerCase();
-                        var filtered = items.where((c) {
-                          if (q.isNotEmpty && !c.name.toLowerCase().contains(q))
-                            return false;
-                          if (_activeFilter == 'unread' && c.unreadCount == 0)
-                            return false;
-                          if (_activeFilter == 'archived' && !c.archived) {
-                            return false;
-                          }
-                          if (_activeFilter != 'archived' && c.archived) {
-                            return false;
-                          }
-                          return true;
-                        }).toList();
-
-                        if (filtered.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                  error: (_, _) => Center(
+                    child: TextButton(
+                      onPressed: () =>
+                          ref.read(conversationsProvider.notifier).refresh(),
+                      child: const Text('Could not load chats — retry'),
+                    ),
+                  ),
+                  data: (items) {
+                    final filtered = _filtered(items);
+                    _selected.removeWhere(
+                      (id) => !items.any((item) => item.id == id),
+                    );
+                    return Column(
+                      children: [
+                        if (_selecting)
+                          BulkSelectionBar(
+                            selectedCount: _selected.length,
+                            totalCount: filtered.length,
+                            busy: _deleting,
+                            accent: _accent,
+                            deleteLabel: 'Delete',
+                            onCancel: _cancelSelection,
+                            onSelectAll: () {
+                              setState(() {
+                                final ids = filtered.map((item) => item.id).toSet();
+                                if (ids.isNotEmpty && ids.every(_selected.contains)) {
+                                  _selected.removeAll(ids);
+                                } else {
+                                  _selected.addAll(ids);
+                                }
+                              });
+                            },
+                            onDelete: _deleteSelected,
+                          )
+                        else ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                            child: _SearchBox(
+                              controller: _search,
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Row(
                               children: [
-                                Icon(
-                                  Icons.message_rounded,
-                                  size: 64,
-                                  color: ink.withAlpha(40),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'NO MESSAGES YET',
-                                  style: AppTheme.displayItalic.copyWith(
-                                    fontSize: 24,
-                                    color: muted,
+                                for (final entry in const [
+                                  ('all', 'Inbox'),
+                                  ('unread', 'Unread'),
+                                  ('archived', 'Archive'),
+                                ]) ...[
+                                  _FilterPill(
+                                    label: entry.$2,
+                                    selected: _filter == entry.$1,
+                                    onTap: () => setState(() => _filter = entry.$1),
                                   ),
+                                  const SizedBox(width: 7),
+                                ],
+                                const Spacer(),
+                                _IconAction(
+                                  icon: Icons.bolt_rounded,
+                                  tooltip: 'Direct request packages',
+                                  onTap: () => showMessageActivationPackages(context),
+                                ),
+                                const SizedBox(width: 6),
+                                _IconAction(
+                                  icon: Icons.sync_rounded,
+                                  tooltip: 'Refresh',
+                                  onTap: () => ref
+                                      .read(conversationsProvider.notifier)
+                                      .refresh(),
                                 ),
                               ],
                             ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final conversation = filtered[index];
-                            return GestureDetector(
-                              onLongPress: conversation.archived
-                                  ? null
-                                  : () {
-                                      AppHaptics.medium();
-                                      ref
-                                          .read(conversationsProvider.notifier)
-                                          .archive(conversation.id);
-                                    },
-                              child: _ChatTile(conversation: conversation),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ] else ...[
-                  const Expanded(child: MessagesDocumentsLibrary()),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionToggle() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _TogglePill(
-          label: 'CHATS',
-          icon: Icons.inbox_rounded,
-          isActive: _activeSection == 'chats',
-          onTap: () {
-            AppHaptics.light();
-            setState(() => _activeSection = 'chats');
-          },
-        ),
-        const SizedBox(width: 8),
-        _TogglePill(
-          label: 'DOCUMENTS',
-          icon: Icons.folder_special_rounded,
-          isActive: _activeSection == 'documents',
-          onTap: () {
-            AppHaptics.light();
-            setState(() => _activeSection = 'documents');
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilters() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _FilterChip(
-            label: 'INBOX',
-            icon: Icons.inbox_rounded,
-            isActive: _activeFilter == 'all',
-            onTap: () {
-              AppHaptics.light();
-              setState(() => _activeFilter = 'all');
-            },
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'PRIORITY',
-            icon: Icons.auto_awesome_rounded,
-            isActive: _activeFilter == 'unread',
-            onTap: () {
-              AppHaptics.light();
-              setState(() => _activeFilter = 'unread');
-            },
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'ARCHIVE',
-            icon: Icons.archive_outlined,
-            isActive: _activeFilter == 'archived',
-            onTap: () {
-              AppHaptics.light();
-              setState(() => _activeFilter = 'archived');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TogglePill extends StatelessWidget {
-  const _TogglePill({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-    this.icon,
-  });
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final muted = MatteSurface.muted(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: isActive
-              ? LinearGradient(colors: [Color(0xFFFF4D00), Color(0xFFEB4898)])
-              : null,
-          color: isActive ? null : MatteSurface.cardFill(context),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isActive
-                ? Colors.white.withAlpha(50)
-                : MatteSurface.hairline(context),
-          ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFEB4898).withAlpha(90),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 12,
-                color: isActive ? Colors.white : const Color(0xFFEB4898),
+                          ),
+                        ],
+                        Expanded(
+                          child: filtered.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    _filter == 'archived'
+                                        ? 'No archived chats'
+                                        : 'No conversations yet',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: muted,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    4,
+                                    16,
+                                    120,
+                                  ),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 9),
+                                  itemBuilder: (context, index) {
+                                    final conversation = filtered[index];
+                                    return _ConversationTile(
+                                      conversation: conversation,
+                                      selecting: _selecting,
+                                      selected: _selected.contains(conversation.id),
+                                      onTap: () {
+                                        if (_selecting) {
+                                          _toggleSelection(conversation.id);
+                                          return;
+                                        }
+                                        AppHaptics.medium();
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => ChatScreen(
+                                              conversation: conversation,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      onLongPress: () =>
+                                          _beginSelection(conversation.id),
+                                      onArchive: _selecting
+                                          ? null
+                                          : () {
+                                              if (conversation.archived) {
+                                                ref
+                                                    .read(conversationsProvider.notifier)
+                                                    .unarchive(conversation.id);
+                                              } else {
+                                                ref
+                                                    .read(conversationsProvider.notifier)
+                                                    .archive(conversation.id);
+                                              }
+                                            },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: isActive ? Colors.white : muted,
-                fontWeight: FontWeight.w900,
-                fontSize: 9,
-                letterSpacing: 1.4,
-              ),
-            ),
           ],
         ),
       ),
@@ -431,181 +357,347 @@ class _TogglePill extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.isActive,
+class _ConversationTile extends StatelessWidget {
+  const _ConversationTile({
+    required this.conversation,
+    required this.selecting,
+    required this.selected,
     required this.onTap,
-    this.icon,
+    required this.onLongPress,
+    this.onArchive,
   });
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-  final IconData? icon;
 
-  @override
-  Widget build(BuildContext context) {
-    final muted = MatteSurface.muted(context);
-    final isLight = MatteSurface.isLight(context);
-    final rose = Color(0xFFF43F5E);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isLight ? Color(0xFFFFF1F2) : rose.withAlpha(40))
-              : MatteSurface.cardFill(context),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isActive
-                ? rose.withAlpha(isLight ? 100 : 80)
-                : MatteSurface.hairline(context),
-          ),
-          boxShadow: isActive && !isLight
-              ? [BoxShadow(color: rose.withAlpha(50), blurRadius: 12)]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 12,
-                color: isActive ? rose : const Color(0xFFEB4898),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: isActive ? rose : muted,
-                fontWeight: FontWeight.w900,
-                fontSize: 9,
-                letterSpacing: 1.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatTile extends StatelessWidget {
-  _ChatTile({required this.conversation});
   final ChatConversation conversation;
+  final bool selecting;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback? onArchive;
 
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
-    final hairline = MatteSurface.hairline(context);
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.medium();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ChatScreen(conversation: conversation),
-          ),
-        );
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: MatteSurface.cardFill(context),
-              border: Border.all(color: hairline),
-              borderRadius: BorderRadius.circular(24),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected
+                ? _MessagesScreenState._accent.withAlpha(26)
+                : MatteSurface.cardFill(context),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? _MessagesScreenState._accent.withAlpha(140)
+                  : MatteSurface.hairline(context),
             ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundImage: conversation.avatarUrl != null
-                      ? NetworkImage(conversation.avatarUrl!)
-                      : null,
-                  child: conversation.avatarUrl == null
-                      ? Text(
-                          conversation.name[0].toUpperCase(),
-                          style: TextStyle(
-                            color: ink,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              conversation.name,
-                              style: TextStyle(
-                                color: ink,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(
-                            conversation.timestamp,
-                            style: TextStyle(
-                              color: muted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        conversation.lastMessage,
+          ),
+          child: Row(
+            children: [
+              if (selecting) ...[
+                SelectionBadge(selected: selected),
+                const SizedBox(width: 10),
+              ],
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: _MessagesScreenState._accent.withAlpha(25),
+                backgroundImage: conversation.avatarUrl?.isNotEmpty == true
+                    ? NetworkImage(conversation.avatarUrl!)
+                    : null,
+                child: conversation.avatarUrl?.isNotEmpty == true
+                    ? null
+                    : Text(
+                        conversation.name.isEmpty
+                            ? '?'
+                            : conversation.name[0].toUpperCase(),
                         style: TextStyle(
-                          color: conversation.unreadCount > 0 ? ink : muted,
-                          fontWeight: conversation.unreadCount > 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          fontSize: 14,
+                          color: ink,
+                          fontWeight: FontWeight.w900,
                         ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            conversation.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: ink,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          conversation.timestamp,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: muted,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      conversation.lastMessage.isEmpty
+                          ? (conversation.listingTag ?? 'Start the conversation')
+                          : conversation.lastMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: muted,
+                        fontSize: 11.5,
+                        fontWeight: conversation.unreadCount > 0
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                      ),
+                    ),
+                    if (conversation.listingTag?.isNotEmpty == true) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        conversation.listingTag!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _MessagesScreenState._accent,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
-                if (conversation.unreadCount > 0) ...[
-                  SizedBox(width: 12),
+              ),
+              if (!selecting) ...[
+                const SizedBox(width: 8),
+                if (conversation.unreadCount > 0)
                   Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.brandPrimary,
+                    width: 20,
+                    height: 20,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: _MessagesScreenState._accent,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
                       '${conversation.unreadCount}',
-                      style: TextStyle(
-                        color: MatteSurface.ink(context),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
                         fontWeight: FontWeight.w900,
-                        fontSize: 12,
                       ),
                     ),
                   ),
-                ],
+                IconButton(
+                  tooltip: conversation.archived ? 'Move to inbox' : 'Archive',
+                  onPressed: onArchive,
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    conversation.archived
+                        ? Icons.unarchive_outlined
+                        : Icons.archive_outlined,
+                    color: muted,
+                    size: 18,
+                  ),
+                ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionPill extends StatelessWidget {
+  const _SectionPill({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 38,
+        decoration: BoxDecoration(
+          gradient: selected
+              ? const LinearGradient(
+                  colors: [
+                    _MessagesScreenState._accent,
+                    _MessagesScreenState._accent2,
+                  ],
+                )
+              : null,
+          color: selected ? null : MatteSurface.well(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? Colors.transparent
+                : MatteSurface.hairline(context),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: selected ? Colors.white : ink),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: selected ? Colors.white : ink,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .5,
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected
+              ? _MessagesScreenState._accent.withAlpha(28)
+              : MatteSurface.well(context),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected
+                ? _MessagesScreenState._accent.withAlpha(110)
+                : MatteSurface.hairline(context),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: selected
+                ? _MessagesScreenState._accent
+                : MatteSurface.ink(context),
+            fontSize: 9.5,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchBox extends StatelessWidget {
+  const _SearchBox({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = MatteSurface.muted(context);
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: MatteSurface.well(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: MatteSurface.hairline(context)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, color: muted, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: TextStyle(color: MatteSurface.ink(context), fontSize: 13),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Search conversations',
+                hintStyle: TextStyle(color: muted, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IconAction extends StatelessWidget {
+  const _IconAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: MatteSurface.well(context),
+            shape: BoxShape.circle,
+            border: Border.all(color: MatteSurface.hairline(context)),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: MatteSurface.muted(context),
           ),
         ),
       ),

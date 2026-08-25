@@ -46,12 +46,26 @@ class NotificationsNotifier extends AsyncNotifier<List<AppNotification>> {
     ref.invalidate(unreadNotificationsProvider);
   }
 
-  Future<void> dismiss(String id) async {
-    await ref.read(notificationRepositoryProvider).dismiss(id);
-    final current = state.value;
-    if (current == null) return;
-    state = AsyncData(current.where((n) => n.id != id).toList());
-    ref.invalidate(unreadNotificationsProvider);
+  Future<void> dismiss(String id) => dismissMany([id]);
+
+  Future<void> dismissMany(Iterable<String> ids) async {
+    final selected = ids.toSet();
+    if (selected.isEmpty) return;
+    final previous = state.value ?? const <AppNotification>[];
+    state = AsyncData(
+      previous.where((notification) => !selected.contains(notification.id)).toList(),
+    );
+    try {
+      final repo = ref.read(notificationRepositoryProvider);
+      for (final id in selected) {
+        await repo.dismiss(id);
+      }
+    } catch (_) {
+      state = AsyncData(previous);
+      rethrow;
+    } finally {
+      ref.invalidate(unreadNotificationsProvider);
+    }
   }
 }
 

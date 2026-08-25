@@ -1,17 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/bulk_selection_bar.dart';
 import 'package:flutter_swipes/src/features/ai/domain/user_memory.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Cap MemoryDrawer — AI Memory sheet (Bolt/Brain via edge functions).
 Future<void> showMemoryDrawer(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    backgroundColor: Colors.transparent,
     builder: (_) => const _MemoryDrawer(),
   );
 }
@@ -24,12 +26,28 @@ class _MemoryDrawer extends ConsumerStatefulWidget {
 }
 
 class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
+  static const _accent = Color(0xFF4C8DFF);
+  static const _accent2 = Color(0xFF7767FF);
+  static const _historyKey = 'Swipess-ai-conversations';
+
+  int _tab = 0;
   MemoryCategory? _filter;
-  bool _adding = false;
-  MemoryCategory _newCat = MemoryCategory.fact;
+  MemoryCategory _newCategory = MemoryCategory.fact;
   final _title = TextEditingController();
   final _content = TextEditingController();
+  final Set<String> _selected = <String>{};
+  final List<Map<String, dynamic>> _savedChats = <Map<String, dynamic>>[];
+  bool _adding = false;
   bool _saving = false;
+  bool _selecting = false;
+  bool _deleting = false;
+  bool _chatsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedChats();
+  }
 
   @override
   void dispose() {
@@ -38,14 +56,97 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (_title.text.trim().isEmpty || _content.text.trim().isEmpty) return;
+  Future<void> _loadSavedChats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_historyKey);
+      if (raw != null) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          _savedChats
+            ..clear()
+            ..addAll([
+              for (final row in decoded)
+                if (row is Map) Map<String, dynamic>.from(row),
+            ]);
+        }
+      }
+    } catch (_) {
+      _savedChats.clear();
+    } finally {
+      if (mounted) setState(() => _chatsLoading = false);
+    }
+  }
+
+  Future<void> _persistSavedChats() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_savedChats.isEmpty) {
+      await prefs.remove(_historyKey);
+    } else {
+      await prefs.setString(_historyKey, jsonEncode(_savedChats));
+    }
+  }
+
+  String _chatId(Map<String, dynamic> row, int index) {
+    final raw = row['id']?.toString().trim();
+    return raw == null || raw.isEmpty ? 'saved-chat-$index' : raw;
+  }
+
+  String _chatPreview(Map<String, dynamic> row) {
+    final messages = row['messages'];
+    if (messages is List) {
+      for (final item in messages.reversed) {
+        if (item is! Map) continue;
+        final text = item['content']?.toString().trim();
+        if (text != null && text.isNotEmpty) return text;
+      }
+    }
+    return 'Saved AI conversation';
+  }
+
+  void _switchTab(int value) {
+    if (_tab == value) return;
+    AppHaptics.selection();
+    setState(() {
+      _tab = value;
+      _adding = false;
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _beginSelection([String? id]) {
+    AppHaptics.selection();
+    setState(() {
+      _selecting = true;
+      if (id != null) _selected.add(id);
+    });
+  }
+
+  void _cancelSelection() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  void _toggle(String id) {
+    AppHaptics.selection();
+    setState(() {
+      if (!_selected.add(id)) _selected.remove(id);
+    });
+  }
+
+  Future<void> _saveMemory() async {
+    if (_saving ||
+        _title.text.trim().isEmpty ||
+        _content.text.trim().isEmpty) {
+      return;
+    }
     setState(() => _saving = true);
     AppHaptics.medium();
-    final ok = await ref
-        .read(memoriesProvider.notifier)
-        .add(
-          category: _newCat,
+    final ok = await ref.read(memoriesProvider.notifier).add(
+          category: _newCategory,
           title: _title.text.trim(),
           content: _content.text.trim(),
         );
@@ -60,59 +161,124 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
     });
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save memory — check session / schema'),
-        ),
+        const SnackBar(content: Text('Could not save memory')),
       );
     }
   }
 
+  Future<bool> _confirmDelete(int count, String noun) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          count == 1 ? 'Delete $noun?' : 'Delete $count ${noun}s?',
+        ),
+        content: const Text('Deleted data cannot be restored.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE5484D),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  Future<void> _deleteSelectedMemories() async {
+    if (_selected.isEmpty || _deleting) return;
+    if (!await _confirmDelete(_selected.length, 'memory')) return;
+    setState(() => _deleting = true);
+    try {
+      final notifier = ref.read(memoriesProvider.notifier);
+      for (final id in _selected.toList()) {
+        await notifier.remove(id);
+      }
+      if (mounted) _cancelSelection();
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  Future<void> _deleteSelectedChats() async {
+    if (_selected.isEmpty || _deleting) return;
+    if (!await _confirmDelete(_selected.length, 'saved chat')) return;
+    setState(() => _deleting = true);
+    try {
+      setState(() {
+        for (var i = _savedChats.length - 1; i >= 0; i--) {
+          if (_selected.contains(_chatId(_savedChats[i], i))) {
+            _savedChats.removeAt(i);
+          }
+        }
+      });
+      await _persistSavedChats();
+      if (mounted) _cancelSelection();
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  Future<void> _deleteOneMemory(UserMemory memory) async {
+    if (!await _confirmDelete(1, 'memory')) return;
+    await ref.read(memoriesProvider.notifier).remove(memory.id);
+  }
+
+  Future<void> _deleteOneChat(int index) async {
+    if (!await _confirmDelete(1, 'saved chat')) return;
+    setState(() => _savedChats.removeAt(index));
+    await _persistSavedChats();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(memoriesProvider);
-    final edgeReady = ref.watch(aiEdgeReadyProvider);
+    final memories = ref.watch(memoriesProvider);
+    final height = MediaQuery.sizeOf(context).height * .82;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    final height = MediaQuery.sizeOf(context).height * 0.78;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
         height: height,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF18181B), Color(0xFF09090B)],
-          ),
+          color: Color(0xFF0C1017),
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
+          border: Border(top: BorderSide(color: Color(0x22FFFFFF))),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 10),
+            const SizedBox(height: 9),
             Container(
-              width: 40,
+              width: 38,
               height: 4,
               decoration: BoxDecoration(
                 color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 12, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 10, 8),
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
-                      color: Colors.transparent,
+                      color: _accent.withAlpha(24),
                       shape: BoxShape.circle,
+                      border: Border.all(color: _accent.withAlpha(55)),
                     ),
                     child: const Icon(
-                      Icons.psychology_rounded,
-                      color: Color(0xFF22D3EE),
-                      size: 20,
+                      Icons.psychology_alt_rounded,
+                      color: _accent,
+                      size: 18,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -121,212 +287,371 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'AI MEMORY',
+                          'AI DATA',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
                             fontSize: 15,
-                            letterSpacing: 0.6,
+                            letterSpacing: .4,
                           ),
                         ),
                         Text(
-                          edgeReady
-                              ? 'Brain online · Supabase Edge AI'
-                              : 'Brain paused',
+                          'Manage what Swipess AI keeps for you',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 11,
+                            color: Colors.white60,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  if (!_selecting && _tab == 0)
+                    IconButton(
+                      tooltip: 'Add memory',
+                      onPressed: () => setState(() => _adding = !_adding),
+                      icon: Icon(
+                        _adding ? Icons.close_rounded : Icons.add_rounded,
+                        color: _accent,
+                      ),
+                    ),
+                  if (!_selecting)
+                    IconButton(
+                      tooltip: 'Select items',
+                      onPressed: () => _beginSelection(),
+                      icon: const Icon(
+                        Icons.checklist_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   IconButton(
-                    onPressed: () => setState(() => _adding = !_adding),
-                    icon: Icon(
-                      _adding ? Icons.close_rounded : Icons.add_rounded,
-                      color: AppTheme.brandPrimary,
-                    ),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
                   ),
                 ],
               ),
             ),
-            SizedBox(
-              height: 38,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
                 children: [
-                  _CatChip(
-                    label: 'All',
-                    selected: _filter == null,
-                    onTap: () => setState(() => _filter = null),
-                  ),
-                  for (final c in MemoryCategory.values)
-                    _CatChip(
-                      label: c.label,
-                      selected: _filter == c,
-                      onTap: () => setState(() => _filter = c),
+                  Expanded(
+                    child: _TabPill(
+                      label: 'MEMORY',
+                      icon: Icons.psychology_rounded,
+                      selected: _tab == 0,
+                      onTap: () => _switchTab(0),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _TabPill(
+                      label: 'SAVED CHATS',
+                      icon: Icons.history_rounded,
+                      selected: _tab == 1,
+                      onTap: () => _switchTab(1),
+                    ),
+                  ),
                 ],
               ),
             ),
-            if (_adding)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Column(
+            const SizedBox(height: 8),
+            if (_tab == 0)
+              memories.maybeWhen(
+                data: (items) {
+                  final filtered = _filteredMemories(items);
+                  _selected.removeWhere(
+                    (id) => !items.any((memory) => memory.id == id),
+                  );
+                  if (!_selecting) return const SizedBox.shrink();
+                  return _selectionBar(
+                    ids: filtered.map((memory) => memory.id).toList(),
+                    onDelete: _deleteSelectedMemories,
+                    deleteLabel: 'Delete',
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              )
+            else if (_selecting)
+              _selectionBar(
+                ids: [
+                  for (var i = 0; i < _savedChats.length; i++)
+                    _chatId(_savedChats[i], i),
+                ],
+                onDelete: _deleteSelectedChats,
+                deleteLabel: 'Delete',
+              ),
+            if (_tab == 0 && !_selecting) ...[
+              SizedBox(
+                height: 34,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    SizedBox(
-                      height: 34,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          for (final c in MemoryCategory.values)
-                            _CatChip(
-                              label: c.label,
-                              selected: _newCat == c,
-                              onTap: () => setState(() => _newCat = c),
-                            ),
-                        ],
-                      ),
+                    _CategoryChip(
+                      label: 'All',
+                      selected: _filter == null,
+                      onTap: () => setState(() => _filter = null),
                     ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _title,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Title',
-                        hintStyle: const TextStyle(color: Colors.white),
-                        filled: true,
-                        fillColor: Colors.transparent,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
+                    for (final category in MemoryCategory.values)
+                      _CategoryChip(
+                        label: category.label,
+                        selected: _filter == category,
+                        onTap: () => setState(() => _filter = category),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _content,
-                      maxLines: 3,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'What should the brain remember?',
-                        hintStyle: const TextStyle(color: Colors.white),
-                        filled: true,
-                        fillColor: Colors.transparent,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _saving ? null : _save,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: Text(_saving ? 'Saving…' : 'Save memory'),
-                      ),
-                    ),
                   ],
                 ),
               ),
+              if (_adding) _addMemoryForm(),
+            ],
             Expanded(
-              child: async.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                ),
-                error: (_, _) => Center(
-                  child: TextButton(
-                    onPressed: () =>
-                        ref.read(memoriesProvider.notifier).refresh(),
-                    child: const Text('Could not load — retry'),
-                  ),
-                ),
-                data: (items) {
-                  final filtered = _filter == null
-                      ? items
-                      : items.where((m) => m.category == _filter).toList();
-                  if (filtered.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No memories yet — teach the brain preferences, contacts, and facts.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white),
+              child: _tab == 0
+                  ? memories.when(
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(
+                          color: _accent,
+                          strokeWidth: 2,
+                        ),
                       ),
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) {
-                      final m = filtered[i];
-                      return Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white24),
+                      error: (_, _) => Center(
+                        child: TextButton(
+                          onPressed: () =>
+                              ref.read(memoriesProvider.notifier).refresh(),
+                          child: const Text('Could not load memory — retry'),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    m.category.label.toUpperCase(),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: const Color(0xFF22D3EE),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 10,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    m.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    m.content,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      height: 1.35,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => ref
-                                  .read(memoriesProvider.notifier)
-                                  .remove(m.id),
-                              icon: const Icon(
-                                Icons.delete_outline_rounded,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
+                      ),
+                      data: (items) => _memoryList(_filteredMemories(items)),
+                    )
+                  : _chatList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<UserMemory> _filteredMemories(List<UserMemory> items) {
+    if (_filter == null) return items;
+    return items.where((memory) => memory.category == _filter).toList();
+  }
+
+  Widget _selectionBar({
+    required List<String> ids,
+    required VoidCallback onDelete,
+    required String deleteLabel,
+  }) {
+    return BulkSelectionBar(
+      selectedCount: _selected.length,
+      totalCount: ids.length,
+      busy: _deleting,
+      accent: _accent,
+      deleteLabel: deleteLabel,
+      onCancel: _cancelSelection,
+      onSelectAll: () {
+        setState(() {
+          final all = ids.isNotEmpty && ids.every(_selected.contains);
+          if (all) {
+            _selected.removeAll(ids);
+          } else {
+            _selected.addAll(ids);
+          }
+        });
+      },
+      onDelete: onDelete,
+    );
+  }
+
+  Widget _addMemoryForm() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withAlpha(18)),
+        ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 30,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final category in MemoryCategory.values)
+                    _CategoryChip(
+                      label: category.label,
+                      selected: _newCategory == category,
+                      onTap: () => setState(() => _newCategory = category),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _title,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: _inputDecoration('Title'),
+            ),
+            const SizedBox(height: 7),
+            TextField(
+              controller: _content,
+              maxLines: 2,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: _inputDecoration('What should AI remember?'),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: FilledButton(
+                onPressed: _saving ? null : _saveMemory,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _accent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                ),
+                child: Text(_saving ? 'Saving…' : 'Save memory'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+      filled: true,
+      fillColor: Colors.white.withAlpha(7),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
+  Widget _memoryList(List<UserMemory> items) {
+    if (items.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.psychology_outlined,
+        title: 'No memories yet',
+        subtitle: 'Add preferences, contacts, notes or useful facts.',
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 9),
+      itemBuilder: (context, index) {
+        final memory = items[index];
+        final selected = _selected.contains(memory.id);
+        return _DataTile(
+          eyebrow: memory.category.label,
+          title: memory.title,
+          body: memory.content,
+          selecting: _selecting,
+          selected: selected,
+          onTap: _selecting ? () => _toggle(memory.id) : null,
+          onLongPress: () => _beginSelection(memory.id),
+          onDelete: _selecting ? null : () => _deleteOneMemory(memory),
+        );
+      },
+    );
+  }
+
+  Widget _chatList() {
+    if (_chatsLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+      );
+    }
+    if (_savedChats.isEmpty) {
+      return const _EmptyState(
+        icon: Icons.history_toggle_off_rounded,
+        title: 'No saved AI chats',
+        subtitle: 'AI conversations you keep will appear here.',
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+      itemCount: _savedChats.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 9),
+      itemBuilder: (context, index) {
+        final chat = _savedChats[index];
+        final id = _chatId(chat, index);
+        final selected = _selected.contains(id);
+        return _DataTile(
+          eyebrow: 'AI CONVERSATION',
+          title: chat['title']?.toString().trim().isNotEmpty == true
+              ? chat['title'].toString()
+              : 'Saved chat',
+          body: _chatPreview(chat),
+          selecting: _selecting,
+          selected: selected,
+          onTap: _selecting ? () => _toggle(id) : null,
+          onLongPress: () => _beginSelection(id),
+          onDelete: _selecting ? null : () => _deleteOneChat(index),
+        );
+      },
+    );
+  }
+}
+
+class _TabPill extends StatelessWidget {
+  const _TabPill({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 38,
+        decoration: BoxDecoration(
+          gradient: selected
+              ? const LinearGradient(
+                  colors: [
+                    _MemoryDrawerState._accent,
+                    _MemoryDrawerState._accent2,
+                  ],
+                )
+              : null,
+          color: selected ? null : Colors.white.withAlpha(8),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: selected ? Colors.transparent : Colors.white.withAlpha(18),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 9.5,
+                letterSpacing: .5,
               ),
             ),
           ],
@@ -336,12 +661,13 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
   }
 }
 
-class _CatChip extends StatelessWidget {
-  const _CatChip({
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
     required this.label,
     required this.selected,
     required this.onTap,
   });
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -349,28 +675,191 @@ class _CatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
+      padding: const EdgeInsets.only(right: 7),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
-                ? AppTheme.brandPrimary
-                : Colors.white.withAlpha(12),
+                ? _MemoryDrawerState._accent.withAlpha(27)
+                : Colors.white.withAlpha(7),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? AppTheme.brandPrimary : Colors.white24,
+              color: selected
+                  ? _MemoryDrawerState._accent.withAlpha(105)
+                  : Colors.white.withAlpha(16),
             ),
           ),
           child: Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: selected ? _MemoryDrawerState._accent : Colors.white70,
+              fontSize: 9.5,
               fontWeight: FontWeight.w800,
-              fontSize: 11,
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DataTile extends StatelessWidget {
+  const _DataTile({
+    required this.eyebrow,
+    required this.title,
+    required this.body,
+    required this.selecting,
+    required this.selected,
+    required this.onLongPress,
+    this.onTap,
+    this.onDelete,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String body;
+  final bool selecting;
+  final bool selected;
+  final VoidCallback onLongPress;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: selected
+                ? _MemoryDrawerState._accent.withAlpha(22)
+                : Colors.white.withAlpha(7),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? _MemoryDrawerState._accent.withAlpha(145)
+                  : Colors.white.withAlpha(17),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (selecting) ...[
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: SelectionBadge(
+                    selected: selected,
+                    accent: _MemoryDrawerState._accent,
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      eyebrow.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: _MemoryDrawerState._accent,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 8.5,
+                        letterSpacing: .9,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      body,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white60,
+                        fontSize: 11.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!selecting && onDelete != null)
+                IconButton(
+                  tooltip: 'Delete',
+                  onPressed: onDelete,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.white54,
+                    size: 19,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 42, color: Colors.white24),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white54,
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+          ],
         ),
       ),
     );
