@@ -1,26 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/browser_live_speech.dart';
-import 'package:record/record.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 enum ListenMode { dictation, search, confirmation }
 
-/// One shared microphone coordinator for every SWIPESS AI entry point.
+/// Shared microphone coordinator for every SWIPESS AI entry point.
 ///
-/// Chrome/web uses browser speech recognition for immediate live words. Native
-/// clients keep using recorder + transcription. Both paths share the same
-/// four-second silence contract before callers render 3 -> 2 -> 1 and send.
+/// Web uses browser speech recognition. Native iOS/Android uses the platform
+/// speech recognizer through `speech_to_text`, including partial results, so
+/// words appear in the composer while the user is still speaking.
+///
+/// After roughly four seconds of silence callers receive [onSilence] and can
+/// render the existing 3 -> 2 -> 1 auto-send countdown. Native recognition is
+/// immediately restarted after silence so speaking again can cancel that
+/// countdown and continue the same message.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
   static final LiveVoiceInput instance = LiveVoiceInput._();
 
-  VoiceTranscribeRepository? _voice;
-  VoiceTranscribeRepository get _nativeVoice =>
-      _voice ??= VoiceTranscribeRepository();
   final BrowserLiveSpeech _browser = BrowserLiveSpeech();
+  final stt.SpeechToText _nativeSpeech = stt.SpeechToText();
 
   final ValueNotifier<bool> listeningNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<double> levelNotifier = ValueNotifier<double>(0);
@@ -29,15 +32,19 @@ class LiveVoiceInput {
   bool _starting = false;
   bool _intentionalStop = false;
   bool _usingBrowser = false;
+  bool _nativeInitialized = false;
+  bool _nativeRestarting = false;
   Object? _owner;
 
   String _committed = '';
   String _lastPublished = '';
-
-  Timer? _silenceTimer;
-  StreamSubscription<Amplitude>? _amplitudeSubscription;
+  String _nativeSessionText = '';
+  String _languageCode = 'en-US';
   bool _segmentHasSpeech = false;
-  bool _finalizing = false;
+  bool _silenceDeliveredForSegment = false;
+
+  Timer? _browserSilenceTimer;
+  Timer? _nativeRestartTimer;
 
   ValueChanged<String>? _onText;
   ValueChanged<double>? _onSoundLevel;
@@ -47,7 +54,6 @@ class LiveVoiceInput {
   ListenMode _listenMode = ListenMode.dictation;
 
   static const silenceBeforeCountdown = Duration(seconds: 4);
-  static const double _nativeSpeechGateDb = -36.0;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -63,7 +69,7 @@ class LiveVoiceInput {
     _onSoundLevel?.call(rawLevel);
     final normalized = rawLevel <= 0
         ? ((rawLevel + 45) / 45).clamp(0.0, 1.0).toDouble()
-        : rawLevel.clamp(0.0, 1.0).toDouble();
+        : (rawLevel / 10).clamp(0.0, 1.0).toDouble();
     if ((levelNotifier.value - normalized).abs() > .005) {
       levelNotifier.value = normalized;
     }
@@ -75,11 +81,9 @@ class LiveVoiceInput {
   }
 
   void setLanguage(String langCode) {
-    if (kIsWeb) {
-      _browser.setLanguage(langCode);
-    }
-    // Native VoiceTranscribeRepository (iOS/Android plugin) handles its own
-    // locale via speech_to_text if implemented. This fixes the web implementation.
+    final clean = langCode.trim();
+    if (clean.isNotEmpty) _languageCode = clean;
+    if (kIsWeb) _browser.setLanguage(_languageCode);
   }
 
   Future<bool> start({
@@ -101,6 +105,9 @@ class LiveVoiceInput {
       return true;
     }
 
+    if (_starting) return false;
+    _starting = true;
+
     _owner = owner;
     _onText = onText;
     _onSilence = onSilence;
@@ -110,30 +117,28 @@ class LiveVoiceInput {
     _listenMode = listenMode;
     _committed = initialText.trim();
     _lastPublished = _committed;
-    _intentionalStop = false;
+    _nativeSessionText = '';
     _segmentHasSpeech = false;
-
-    if (_starting) return false;
-    _starting = true;
+    _silenceDeliveredForSegment = false;
+    _intentionalStop = false;
 
     try {
       if (kIsWeb && _browser.isSupported) {
-        _active = true;
         _usingBrowser = true;
-        final browserStarted = await _browser.start(
+        _active = true;
+        final started = await _browser.start(
           onText: (speech, _) {
             if (!_active || _intentionalStop || !_usingBrowser) return;
             final clean = speech.trim();
             if (clean.isEmpty) return;
             _segmentHasSpeech = true;
+            _silenceDeliveredForSegment = false;
             final total = _join(_committed, clean);
             if (total != _lastPublished) {
               _lastPublished = total;
               _onText?.call(total);
             }
-            // Browser silence is based on the last transcript update, not raw
-            // room amplitude. Background noise can no longer reset this forever.
-            _armSilence();
+            _armBrowserSilence();
           },
           onListening: (listening) {
             if (!_active || _intentionalStop) return;
@@ -144,42 +149,31 @@ class LiveVoiceInput {
             _onError?.call(message);
           },
         );
-
-        if (browserStarted) {
-          try {
-            final recorderStarted = await _nativeVoice.start();
-            if (recorderStarted) _listenToAmplitude();
-          } catch (_) {
-            // Live words remain available even if amplitude capture fails.
-          }
+        if (started) {
           _publishListening(true);
-      _armSilence();
+          _armBrowserSilence();
           return true;
         }
-
-        _active = false;
         _usingBrowser = false;
+        _active = false;
       }
 
-      final started = await _nativeVoice.start();
-      if (!started) {
+      final ready = await _initializeNative();
+      if (!ready) {
         _onError?.call(
-          'Microphone permission is blocked. Allow microphone access and try again.',
+          'Speech recognition is unavailable. Allow microphone and speech recognition access, then try again.',
         );
         _clearSession(keepOwner: false);
         return false;
       }
 
-      _active = true;
       _usingBrowser = false;
-      _segmentHasSpeech = false;
-      _listenToAmplitude();
-      _publishListening(true);
-      _armSilence();
-      return true;
+      _active = true;
+      await _startNativeListen();
+      return _active;
     } catch (_) {
       _onError?.call(
-        'Could not start voice input. Check microphone permission and try again.',
+        'Could not start voice input. Check microphone and speech recognition permission and try again.',
       );
       _clearSession(keepOwner: false);
       return false;
@@ -188,99 +182,141 @@ class LiveVoiceInput {
     }
   }
 
-  void _armSilence() {
-    _silenceTimer?.cancel();
-    if (!_active || _intentionalStop) return;
-    _silenceTimer = Timer(silenceBeforeCountdown, () {
-      _silenceTimer = null;
-      if (!_active || _intentionalStop) return;
-      if (_usingBrowser) {
-        _onSilence?.call();
-      } else {
-        unawaited(_finalizeSegment(
-          restart: true,
-          triggerSilence: true,
-          forceTranscribe: false,
-        ));
+  Future<bool> _initializeNative() async {
+    if (_nativeInitialized) return true;
+    _nativeInitialized = await _nativeSpeech.initialize(
+      onStatus: _handleNativeStatus,
+      onError: (error) {
+        if (!_active || _intentionalStop) return;
+        final msg = error.errorMsg.toLowerCase();
+        if (msg.contains('no_match') || msg.contains('speech_timeout')) {
+          _finishNativeSegmentAndRestart();
+          return;
+        }
+        _onError?.call('Voice recognition stopped. Please try again.');
+      },
+    );
+    return _nativeInitialized;
+  }
+
+  Future<void> _startNativeListen() async {
+    if (!_active || _intentionalStop || _usingBrowser) return;
+    if (_nativeSpeech.isListening) {
+      _publishListening(true);
+      return;
+    }
+
+    _nativeSessionText = '';
+    _segmentHasSpeech = false;
+    _silenceDeliveredForSegment = false;
+
+    await _nativeSpeech.listen(
+      onResult: (result) {
+        if (!_active || _intentionalStop || _usingBrowser) return;
+        final speech = result.recognizedWords.trim();
+        if (speech.isEmpty) return;
+
+        _nativeSessionText = speech;
+        _segmentHasSpeech = true;
+        _silenceDeliveredForSegment = false;
+        final total = _join(_committed, speech);
+        if (total != _lastPublished) {
+          _lastPublished = total;
+          _onText?.call(total);
+        }
+
+        if (result.finalResult) {
+          _commitNativeSegment();
+        }
+      },
+      onSoundLevelChange: (level) {
+        if (!_active || _intentionalStop) return;
+        _publishSoundLevel(level);
+      },
+      listenOptions: stt.SpeechListenOptions(
+        partialResults: true,
+        cancelOnError: false,
+        autoPunctuation: true,
+        listenMode: _nativeListenMode,
+        pauseFor: silenceBeforeCountdown,
+        listenFor: const Duration(minutes: 2),
+        localeId: _languageCode,
+      ),
+    );
+
+    if (_active && !_intentionalStop) _publishListening(true);
+  }
+
+  stt.ListenMode get _nativeListenMode {
+    switch (_listenMode) {
+      case ListenMode.search:
+        return stt.ListenMode.search;
+      case ListenMode.confirmation:
+        return stt.ListenMode.confirmation;
+      case ListenMode.dictation:
+        return stt.ListenMode.dictation;
+    }
+  }
+
+  void _handleNativeStatus(String status) {
+    if (!_active || _intentionalStop || _usingBrowser) return;
+    final normalized = status.toLowerCase();
+    if (normalized == stt.SpeechToText.listeningStatus.toLowerCase()) {
+      _publishListening(true);
+      return;
+    }
+    if (normalized == stt.SpeechToText.doneStatus.toLowerCase() ||
+        normalized == stt.SpeechToText.notListeningStatus.toLowerCase()) {
+      _finishNativeSegmentAndRestart();
+    }
+  }
+
+  void _finishNativeSegmentAndRestart() {
+    if (!_active || _intentionalStop || _usingBrowser) return;
+    _commitNativeSegment();
+    _publishSoundLevel(0);
+
+    if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
+      _silenceDeliveredForSegment = true;
+      _onSilence?.call();
+    }
+
+    if (_nativeRestarting) return;
+    _nativeRestarting = true;
+    _nativeRestartTimer?.cancel();
+    _nativeRestartTimer = Timer(const Duration(milliseconds: 180), () async {
+      _nativeRestarting = false;
+      if (!_active || _intentionalStop || _usingBrowser) return;
+      try {
+        await _startNativeListen();
+      } catch (_) {
+        if (_active && !_intentionalStop) {
+          _onError?.call('Voice recognition could not restart. Tap the microphone to try again.');
+        }
       }
     });
   }
 
-  void _listenToAmplitude() {
-    unawaited(_amplitudeSubscription?.cancel());
-    _amplitudeSubscription = _nativeVoice
-        .amplitudeStream(interval: const Duration(milliseconds: 80))
-        .listen(
-          (amplitude) {
-            if (!_active || _intentionalStop || _finalizing) return;
-            final level = amplitude.current.isFinite ? amplitude.current : -60.0;
-            _publishSoundLevel(level);
-          },
-          onError: (_) {
-            if (_active && !_usingBrowser) {
-              _onError?.call('Voice recording stopped.');
-            }
-          },
-        );
+  void _commitNativeSegment() {
+    final clean = _nativeSessionText.trim();
+    if (clean.isEmpty) return;
+    final total = _join(_committed, clean);
+    _committed = total;
+    _lastPublished = total;
+    _nativeSessionText = '';
   }
 
-  Future<void> _finalizeSegment({
-    required bool restart,
-    required bool triggerSilence,
-    required bool forceTranscribe,
-  }) async {
-    if (_usingBrowser) return;
-    if (_finalizing) {
-      while (_finalizing) {
-        await Future<void>.delayed(const Duration(milliseconds: 25));
+  void _armBrowserSilence() {
+    _browserSilenceTimer?.cancel();
+    if (!_active || _intentionalStop || !_usingBrowser) return;
+    _browserSilenceTimer = Timer(silenceBeforeCountdown, () {
+      _browserSilenceTimer = null;
+      if (!_active || _intentionalStop || !_usingBrowser) return;
+      if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
+        _silenceDeliveredForSegment = true;
+        _onSilence?.call();
       }
-      return;
-    }
-    if (!_active && !forceTranscribe) return;
-
-    _finalizing = true;
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
-    await _amplitudeSubscription?.cancel();
-    _amplitudeSubscription = null;
-    _publishSoundLevel(0);
-
-    final shouldTranscribe = _segmentHasSpeech || forceTranscribe;
-    String text = '';
-    try {
-      if (shouldTranscribe) {
-        text = await _nativeVoice.stop();
-      } else {
-        await _nativeVoice.cancel();
-      }
-    } catch (e) {
-      _onError?.call(e.toString());
-    }
-
-    if (text.isNotEmpty) {
-      final total = _join(_committed, text);
-      _lastPublished = total;
-      _committed = total;
-      _onText?.call(total);
-    }
-
-    _finalizing = false;
-
-    if (!_active || _intentionalStop) return;
-
-    if (triggerSilence && shouldTranscribe) {
-      _onSilence?.call();
-    }
-
-    if (restart && _active) {
-      try {
-        await _nativeVoice.start();
-        _segmentHasSpeech = false;
-        _listenToAmplitude();
-      } catch (_) {
-        await cancel(owner: _owner);
-      }
-    }
+    });
   }
 
   Future<void> cancel({Object? owner}) async {
@@ -289,15 +325,18 @@ class LiveVoiceInput {
 
     _intentionalStop = true;
     _active = false;
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
-    await _amplitudeSubscription?.cancel();
-    _amplitudeSubscription = null;
+    _browserSilenceTimer?.cancel();
+    _nativeRestartTimer?.cancel();
+    _browserSilenceTimer = null;
+    _nativeRestartTimer = null;
     _publishSoundLevel(0);
 
     try {
-      if (_usingBrowser) await _browser.cancel();
-      if (_voice != null) await _nativeVoice.cancel();
+      if (_usingBrowser) {
+        await _browser.cancel();
+      } else if (_nativeInitialized) {
+        await _nativeSpeech.cancel();
+      }
     } catch (_) {}
 
     _publishListening(false);
@@ -306,47 +345,42 @@ class LiveVoiceInput {
 
   Future<void> finish({required Object owner}) async {
     if (!identical(_owner, owner)) return;
-    if (!_active && !_usingBrowser) return;
+    if (!_active) return;
 
     _intentionalStop = true;
-    _silenceTimer?.cancel();
-    await _amplitudeSubscription?.cancel();
-    _amplitudeSubscription = null;
+    _browserSilenceTimer?.cancel();
+    _nativeRestartTimer?.cancel();
+    _browserSilenceTimer = null;
+    _nativeRestartTimer = null;
 
-    if (_usingBrowser) {
-      try {
+    try {
+      if (_usingBrowser) {
         await _browser.stop();
-      } catch (_) {}
-      try {
-        if (_voice != null) await _nativeVoice.cancel();
-      } catch (_) {}
-      _active = false;
-      _publishSoundLevel(0);
-      _publishListening(false);
-      _clearSession(keepOwner: false);
-      return;
-    }
+      } else if (_nativeInitialized) {
+        await _nativeSpeech.stop();
+        _commitNativeSegment();
+      }
+    } catch (_) {}
 
     _active = false;
-    _publishListening(false);
     _publishSoundLevel(0);
-    await _finalizeSegment(
-      restart: false,
-      triggerSilence: false,
-      forceTranscribe: true,
-    );
+    _publishListening(false);
     _clearSession(keepOwner: false);
   }
 
   void _clearSession({required bool keepOwner}) {
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
+    _browserSilenceTimer?.cancel();
+    _nativeRestartTimer?.cancel();
+    _browserSilenceTimer = null;
+    _nativeRestartTimer = null;
     _active = false;
     _starting = false;
     _intentionalStop = false;
     _usingBrowser = false;
+    _nativeRestarting = false;
     _segmentHasSpeech = false;
-    _finalizing = false;
+    _silenceDeliveredForSegment = false;
+    _nativeSessionText = '';
     if (!keepOwner) _owner = null;
     _lastPublished = '';
     _committed = '';
