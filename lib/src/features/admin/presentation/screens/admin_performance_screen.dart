@@ -35,6 +35,16 @@ class AdminPerformanceScreen extends ConsumerWidget {
     return Map<String, dynamic>.from(result as Map);
   }
 
+  Future<Map<String, dynamic>> _loadAlerts() async {
+    final result = await Supabase.instance.client.rpc('admin_infrastructure_alerts');
+    return Map<String, dynamic>.from(result as Map);
+  }
+
+  Future<Map<String, dynamic>> _loadCleanupStatus() async {
+    final result = await Supabase.instance.client.rpc('admin_infrastructure_job_status');
+    return Map<String, dynamic>.from(result as Map);
+  }
+
   static String _bytes(num value) {
     final bytes = value.toDouble();
     if (bytes >= 1024 * 1024 * 1024) {
@@ -110,6 +120,66 @@ class AdminPerformanceScreen extends ConsumerWidget {
     );
   }
 
+  Widget _healthPanel(Map<String, dynamic> data) {
+    final alerts = (data['alerts'] as List?) ?? const [];
+    final healthy = data['status'] == 'healthy' && alerts.isEmpty;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: healthy ? const Color(0xFF10B981) : AppTheme.brandPrimary,
+        ),
+        color: Colors.white.withValues(alpha: .04),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                healthy ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
+                color: healthy ? const Color(0xFF10B981) : AppTheme.brandPrimary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  healthy ? 'Infrastructure healthy' : 'Infrastructure needs attention',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (healthy)
+            Text(
+              'Database, file storage and media-cleanup thresholds are currently inside the safe range.',
+              style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 11, height: 1.4),
+            )
+          else
+            for (final raw in alerts)
+              if (raw is Map)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    '• ${raw['message']}',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: raw['level'] == 'critical' ? AppTheme.brandPrimary : Colors.white70,
+                      fontSize: 11,
+                      fontWeight: raw['level'] == 'critical' ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AdminShell(
@@ -121,6 +191,19 @@ class AdminPerformanceScreen extends ConsumerWidget {
             'Infrastructure & capacity',
             subtitle:
                 'Live Supabase database, storage and platform-volume snapshot. One media file can be reused across multiple app surfaces without duplicating storage.',
+          ),
+          const SizedBox(height: 12),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _loadAlerts(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(height: 4, child: LinearProgressIndicator());
+              }
+              if (snapshot.hasError || snapshot.data == null) {
+                return const SizedBox.shrink();
+              }
+              return _healthPanel(snapshot.data!);
+            },
           ),
           const SizedBox(height: 12),
           FutureBuilder<Map<String, dynamic>>(
@@ -198,6 +281,73 @@ class AdminPerformanceScreen extends ConsumerWidget {
                         ),
                   ],
                 ],
+              );
+            },
+          ),
+          const SizedBox(height: 18),
+          _sectionTitle(
+            'Automatic media cleanup',
+            subtitle: 'A protected daily job removes old listing media only when no listing references the file.',
+          ),
+          const SizedBox(height: 8),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _loadCleanupStatus(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox(height: 4, child: LinearProgressIndicator());
+              }
+              if (snapshot.hasError || snapshot.data == null) {
+                return Text(
+                  'Cleanup status unavailable.',
+                  style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 11),
+                );
+              }
+              final data = snapshot.data!;
+              final lastRun = data['last_run'];
+              final last = lastRun is Map ? lastRun : null;
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white24),
+                  color: Colors.white.withValues(alpha: .04),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.auto_delete_rounded, color: Colors.white70, size: 19),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Daily cleanup · active',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${data['orphan_candidates'] ?? 0} pending',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (last != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Last run: ${last['status']} · ${last['items_removed'] ?? 0} removed',
+                        style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ],
+                ),
               );
             },
           ),
