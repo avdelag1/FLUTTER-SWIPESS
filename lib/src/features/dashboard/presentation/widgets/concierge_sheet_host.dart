@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,10 +57,13 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   Widget build(BuildContext context) {
     final m = MediaQuery.of(context);
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final voice = LiveVoiceInput.instance;
-    final micColor = isLight
-        ? const Color(0xFF2563EB)
-        : const Color(0xFF60A5FA);
+    final keyboardBottom = m.viewInsets.bottom;
+    final sheetBottom = keyboardBottom > 0
+        ? keyboardBottom + 4
+        : m.padding.bottom + 4;
+    final sheetTop = m.padding.top + 4;
+    final maxBottom = math.max(4.0, m.size.height - sheetTop - 180);
+    final resolvedBottom = sheetBottom.clamp(4.0, maxBottom).toDouble();
 
     return Stack(
       fit: StackFit.expand,
@@ -69,11 +74,13 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
             child: ColoredBox(color: Colors.black.withAlpha(110)),
           ),
         ),
-        Positioned(
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           left: 6,
           right: 6,
-          top: m.padding.top + 4,
-          bottom: m.padding.bottom + 4,
+          top: sheetTop,
+          bottom: resolvedBottom,
           child: SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(0, 1.08),
@@ -112,12 +119,13 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (d) {
-                            if (d.delta.dy <= 0) return;
+                            if (d.delta.dy <= 0 || keyboardBottom > 0) return;
                             setState(
                               () => _drag = (_drag + d.delta.dy).clamp(0, 260),
                             );
                           },
                           onVerticalDragEnd: (_) {
+                            if (keyboardBottom > 0) return;
                             if (_drag > 82) {
                               _close();
                             } else {
