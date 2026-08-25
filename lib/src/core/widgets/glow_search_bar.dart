@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_reposit
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,7 +20,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// Contract: mic is always the first control on the LEFT. Voice transcription
 /// appears as real text in the field. No waveform is rendered here. Enter and
 /// the send arrow answer on the dashboard; Intel Core opens only from Continue.
-class GlowSearchBar extends StatefulWidget {
+class GlowSearchBar extends ConsumerStatefulWidget {
   const GlowSearchBar({
     super.key,
     this.hint = 'What are you looking for?',
@@ -48,10 +49,10 @@ class GlowSearchBar extends StatefulWidget {
   final VoidCallback? onGuestsTap;
 
   @override
-  State<GlowSearchBar> createState() => _GlowSearchBarState();
+  ConsumerState<GlowSearchBar> createState() => _GlowSearchBarState();
 }
 
-class _GlowSearchBarState extends State<GlowSearchBar> {
+class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   final _random = math.Random();
   final _voice = LiveVoiceInput.instance;
   final _ai = AiEdgeRepository();
@@ -207,6 +208,10 @@ class _GlowSearchBarState extends State<GlowSearchBar> {
 
     AppHaptics.light();
     _focusNode.requestFocus();
+
+    // Mute any background app audio (e.g., video reels) so it doesn't bleed into the mic
+    ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
+
     final started = await _voice.start(
       languageCode: ref.read(voiceLanguageProvider).localeCode,
       owner: this,

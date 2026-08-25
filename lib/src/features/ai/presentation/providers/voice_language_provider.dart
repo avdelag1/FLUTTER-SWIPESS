@@ -22,14 +22,13 @@ enum VoiceLanguage {
 
 /// Global provider for the user's selected voice recognition language.
 final voiceLanguageProvider =
-    StateNotifierProvider<VoiceLanguageNotifier, VoiceLanguage>((ref) {
+    NotifierProvider<VoiceLanguageNotifier, VoiceLanguage>(() {
   return VoiceLanguageNotifier();
 });
 
-class VoiceLanguageNotifier extends StateNotifier<VoiceLanguage> {
-  // Defaults to English, though if null the JS bridge would fallback to OS lang.
-  // We keep an explicit default here so the UI knows what to show.
-  VoiceLanguageNotifier() : super(VoiceLanguage.english);
+class VoiceLanguageNotifier extends Notifier<VoiceLanguage> {
+  @override
+  VoiceLanguage build() => VoiceLanguage.english;
 
   void setLanguage(VoiceLanguage lang) {
     state = lang;

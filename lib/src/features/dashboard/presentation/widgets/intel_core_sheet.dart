@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/concierge_sheet_host.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
@@ -249,6 +250,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
 
     AppHaptics.light();
+
+    // Mute any background app audio (e.g., video reels) so it doesn't bleed into the mic
+    ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
+
     final started = await _voice.start(
       languageCode: ref.read(voiceLanguageProvider).localeCode,
       owner: this,

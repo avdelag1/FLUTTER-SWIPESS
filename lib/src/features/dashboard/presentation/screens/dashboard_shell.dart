@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
@@ -129,6 +130,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final location = GoRouterState.of(context).matchedLocation;
     if (_lastLocation != location) {
       _lastLocation = location;
+      // Auto-cancel microphone any time the user navigates to a new page
+      LiveVoiceInput.instance.cancel();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
       });
