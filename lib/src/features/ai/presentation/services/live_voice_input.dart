@@ -42,6 +42,7 @@ class LiveVoiceInput {
   String _languageCode = 'en-US';
   bool _segmentHasSpeech = false;
   bool _silenceDeliveredForSegment = false;
+  bool _nativeSegmentCommitted = false;
 
   Timer? _browserSilenceTimer;
   Timer? _nativeRestartTimer;
@@ -120,6 +121,7 @@ class LiveVoiceInput {
     _nativeSessionText = '';
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
+    _nativeSegmentCommitted = false;
     _intentionalStop = false;
 
     try {
@@ -209,10 +211,19 @@ class LiveVoiceInput {
     _nativeSessionText = '';
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
+    _nativeSegmentCommitted = false;
 
     await _nativeSpeech.listen(
       onResult: (result) {
         if (!_active || _intentionalStop || _usingBrowser) return;
+
+        // iOS can deliver the same final result more than once while the
+        // recognizer transitions from `finalResult` to `done/notListening`.
+        // Once this native segment has been committed, ignore any additional
+        // callbacks until the next listen session starts. Without this guard a
+        // phrase such as "Hola" can become "Hola Hola" in the composer.
+        if (_nativeSegmentCommitted) return;
+
         final speech = result.recognizedWords.trim();
         if (speech.isEmpty) return;
 
@@ -291,19 +302,23 @@ class LiveVoiceInput {
         await _startNativeListen();
       } catch (_) {
         if (_active && !_intentionalStop) {
-          _onError?.call('Voice recognition could not restart. Tap the microphone to try again.');
+          _onError?.call(
+            'Voice recognition could not restart. Tap the microphone to try again.',
+          );
         }
       }
     });
   }
 
   void _commitNativeSegment() {
+    if (_nativeSegmentCommitted) return;
     final clean = _nativeSessionText.trim();
     if (clean.isEmpty) return;
     final total = _join(_committed, clean);
     _committed = total;
     _lastPublished = total;
     _nativeSessionText = '';
+    _nativeSegmentCommitted = true;
   }
 
   void _armBrowserSilence() {
@@ -380,6 +395,7 @@ class LiveVoiceInput {
     _nativeRestarting = false;
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
+    _nativeSegmentCommitted = false;
     _nativeSessionText = '';
     if (!keepOwner) _owner = null;
     _lastPublished = '';
