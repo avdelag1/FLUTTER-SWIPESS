@@ -99,7 +99,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   late final FocusNode _focusNode;
 
-
   static const _personas = <(String, String, String, Color)>[
     ('default', 'Swipess AI', 'Global Discovery', _aiBlue),
     ('kyle', 'Kyle', 'Market Hustler', _aiCyan),
@@ -250,8 +249,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
 
     AppHaptics.light();
-
-    // Mute any background app audio (e.g., video reels) so it doesn't bleed into the mic
     ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
 
     final started = await _voice.start(
@@ -260,7 +257,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       initialText: _controller.text,
       onText: (text) {
         if (!mounted) return;
-        // New speech always wins over an in-flight 3…2…1 countdown.
         _cancelCountdown();
         _controller.value = TextEditingValue(
           text: text,
@@ -436,12 +432,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
   }
 
-  /// Keep the chat open and reveal header / dock so the user can navigate.
   void _peekChrome() {
     ref.read(chromeVisibilityProvider.notifier).show();
   }
 
-  /// Cap-style curated routing — follow-up chips after Intel Core replies.
   void _openIntent(String q) {
     _peekChrome();
     if (RegExp(
@@ -605,7 +599,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     context.go(AppPaths.clientDashboard);
   }
 
-  /// Cap `applyConciergeFilters` — [FILTER:] tags update the swipe deck.
   void _applyConciergeFilter(Map<String, dynamic> filters) {
     final n = ref.read(swipeFilterProvider.notifier);
     final cat = filters['activeCategory']?.toString();
@@ -715,8 +708,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   void _onComposerChanged(String value) {
-    // Manual typing never auto-sends. The hands-free timer belongs to voice
-    // silence only, so normal keyboard use remains predictable.
     _cancelCountdown();
     if (mounted) setState(() {});
   }
@@ -1082,50 +1073,48 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
+                              color: voiceActive
+                                  ? _aiBlue.withAlpha(isLight ? 28 : 48)
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
                                 color: voiceActive
-                                    ? _aiBlue.withAlpha(isLight ? 28 : 48)
+                                    ? _aiBlueSoft.withAlpha(150)
                                     : Colors.transparent,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: voiceActive
-                                      ? _aiBlueSoft.withAlpha(150)
-                                      : Colors.transparent,
-                                ),
-                                boxShadow: _recording
-                                    ? [
-                                        BoxShadow(
-                                          color: _aiCyan.withAlpha(60),
-                                          blurRadius: 12 + (_voiceLevel * 14),
-                                          spreadRadius: _voiceLevel * 2,
-                                        ),
-                                      ]
-                                    : null,
                               ),
-                              alignment: Alignment.center,
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 120),
-                                child: _countdown != null
-                                    ? Text(
-                                        '$_countdown',
-                                        key: ValueKey(_countdown),
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: isLight ? _aiBlue : _aiBlueSoft,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      )
-                                    : Icon(
-                                        _recording
-                                            ? Icons.mic_rounded
-                                            : Icons.mic_rounded,
-                                        key: ValueKey(_recording),
-                                        color: isLight ? _aiBlue : _aiBlueSoft,
-                                        size: 19,
+                              boxShadow: _recording
+                                  ? [
+                                      BoxShadow(
+                                        color: _aiCyan.withAlpha(60),
+                                        blurRadius: 12 + (_voiceLevel * 14),
+                                        spreadRadius: _voiceLevel * 2,
                                       ),
-                              ),
+                                    ]
+                                  : null,
+                            ),
+                            alignment: Alignment.center,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 120),
+                              child: _countdown != null
+                                  ? Text(
+                                      '$_countdown',
+                                      key: ValueKey(_countdown),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: isLight ? _aiBlue : _aiBlueSoft,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.mic_rounded,
+                                      key: ValueKey(_recording),
+                                      color: isLight ? _aiBlue : _aiBlueSoft,
+                                      size: 19,
+                                    ),
                             ),
                           ),
                         ),
+                      ),
                       const SizedBox(width: 6),
                       if (voiceActive) ...[
                         VoiceLanguageSelector(isLight: isLight),
@@ -1136,6 +1125,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           focusNode: _focusNode,
                           controller: _controller,
                           enabled: !_loading && !_preparingSubmit,
+                          textInputAction: TextInputAction.send,
+                          keyboardType: TextInputType.text,
                           cursorColor: isLight ? _aiBlue : _aiBlueSoft,
                           style: TextStyle(color: ink, fontSize: 15),
                           minLines: 1,
