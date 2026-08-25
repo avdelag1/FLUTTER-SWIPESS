@@ -349,7 +349,7 @@ class _Deck extends StatelessWidget {
                             _RailBtn(
                               icon: Icons.chat_bubble_outline_rounded,
                               onTap: onMessage,
-                              accent: const Color(0xFF4DABF7),
+                              accent: const Color(0xFF00E5FF), // Vibrant Neon Cyan
                             ),
                             const SizedBox(height: 10),
                             _RailBtn(

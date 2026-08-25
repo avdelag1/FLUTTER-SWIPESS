@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
+import 'package:flutter_swipes/src/core/providers/app_notification_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/screens/who_liked_you_screen.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/widgets/premium_liked_card.dart';
@@ -27,11 +28,11 @@ class LikesScreen extends ConsumerStatefulWidget {
 }
 
 class _LikesScreenState extends ConsumerState<LikesScreen> {
-  static const _accent = Color(0xFF4C8DFF);
-  static const _accent2 = Color(0xFF7667FF);
+  static const _accent = Color(0xFFFF4D00); // Swipess Neon Orange
+  static const _accent2 = Color(0xFFEB4898); // Vibrant Pink
   static const _accentGradient = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [_accent, _accent2],
   );
 
@@ -352,6 +353,11 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                           await ref
                               .read(likedPeopleProvider.notifier)
                               .remove(person.userId);
+                          ref.read(appNotificationsProvider.notifier).show(
+                            title: 'Removed',
+                            message: '${person.name} was removed from your likes',
+                            type: AppToastType.info,
+                          );
                         },
                       );
                     },
@@ -479,6 +485,11 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                               await ref
                                   .read(likedListingsProvider.notifier)
                                   .remove(item.id);
+                              ref.read(appNotificationsProvider.notifier).show(
+                                title: 'Removed',
+                                message: 'Listing was removed from your likes',
+                                type: AppToastType.info,
+                              );
                             },
                           );
                         }, childCount: filtered.length),
@@ -546,7 +557,6 @@ class _Seg extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
     final well = MatteSurface.well(context);
     final hairline = MatteSurface.hairline(context);
 

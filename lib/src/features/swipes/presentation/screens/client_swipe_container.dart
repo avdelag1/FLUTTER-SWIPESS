@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/providers/app_notification_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
-import 'package:flutter_swipes/src/core/widgets/app_bottom_nav.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -263,6 +262,12 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
         await ref
             .read(swipeRepositoryProvider)
             .registerSwipeRight(authUser, listing.id);
+        
+        ref.read(appNotificationsProvider.notifier).show(
+          title: 'Saved',
+          message: listing.title ?? 'Added to your likes',
+          type: AppToastType.like,
+        );
       } else {
         await ref
             .read(swipeRepositoryProvider)
