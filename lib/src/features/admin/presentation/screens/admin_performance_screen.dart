@@ -4,8 +4,9 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Cap `AdminPerformanceDashboard` — Lighthouse snapshot from the Cap source.
+/// Admin performance + infrastructure capacity dashboard.
 class AdminPerformanceScreen extends ConsumerWidget {
   const AdminPerformanceScreen({super.key});
 
@@ -24,17 +25,58 @@ class AdminPerformanceScreen extends ConsumerWidget {
     ('SI', '6.1s', true),
   ];
 
-  static const issues = [
-    (
-      'Improve image delivery',
-      'Swipess-logo.webp is oversized vs display size. Convert PNG logos to modern formats.',
-    ),
-    (
-      'Reduce unused JavaScript',
-      'vendor.js / supabase.js still ship unused code. Prefer dynamic imports.',
-    ),
-    ('Reduce unused CSS', 'index.css transfers unused rules on first load.'),
-  ];
+  Future<Map<String, dynamic>> _loadUsage() async {
+    final result = await Supabase.instance.client.rpc('admin_platform_usage');
+    return Map<String, dynamic>.from(result as Map);
+  }
+
+  static String _bytes(num value) {
+    final bytes = value.toDouble();
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${bytes.toStringAsFixed(0)} B';
+  }
+
+  Widget _metric(String label, String value, IconData icon) {
+    return Container(
+      width: 165,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white24),
+        color: Colors.white.withValues(alpha: .04),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white70, size: 18),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white70,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +85,103 @@ class AdminPerformanceScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
+          Text(
+            'Infrastructure & capacity',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Live Supabase database, storage and platform-volume snapshot. One media file can be reused across multiple app surfaces without duplicating storage.',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white70,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _loadUsage(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (snapshot.hasError || snapshot.data == null) {
+                return Text(
+                  'Infrastructure metrics unavailable for this account.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                );
+              }
+              final data = snapshot.data!;
+              final buckets = (data['buckets'] as List?) ?? const [];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _metric('Database', _bytes(data['database_bytes'] ?? 0), Icons.storage_rounded),
+                      _metric('File storage', _bytes(data['storage_bytes'] ?? 0), Icons.cloud_rounded),
+                      _metric('Stored files', '${data['storage_objects'] ?? 0}', Icons.perm_media_rounded),
+                      _metric('Listings', '${data['listings'] ?? 0}', Icons.view_carousel_rounded),
+                      _metric('Events', '${data['events'] ?? 0}', Icons.event_rounded),
+                      _metric('Users', '${data['users'] ?? 0}', Icons.people_alt_rounded),
+                    ],
+                  ),
+                  if (buckets.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Storage by bucket',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    for (final raw in buckets.take(8))
+                      if (raw is Map)
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            '${raw['bucket']}',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${raw['objects']} files',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
+                          ),
+                          trailing: Text(
+                            _bytes((raw['bytes'] as num?) ?? 0),
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                  ],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 26),
           Text(
             'PageSpeed snapshot (Cap source)',
             style: GoogleFonts.plusJakartaSans(
@@ -107,36 +246,6 @@ class AdminPerformanceScreen extends ConsumerWidget {
                   color: v.$3 ? AppTheme.brandPrimary : const Color(0xFF10B981),
                   fontWeight: FontWeight.w800,
                 ),
-              ),
-            ),
-          const SizedBox(height: 8),
-          for (final issue in issues)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    issue.$1,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    issue.$2,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
               ),
             ),
         ],
