@@ -184,7 +184,7 @@ class AiEdgeRepository {
       if (character != null && character.isNotEmpty) 'character': character,
       if (locationContext != null && locationContext.isNotEmpty)
         'locationContext': locationContext,
-      'preferredIntent': ?intent,
+      if (intent != null) 'preferredIntent': intent,
     };
 
     String? reply;
@@ -648,7 +648,7 @@ class AiEdgeRepository {
       if (character != null && character.isNotEmpty) 'character': character,
       if (locationContext != null && locationContext.isNotEmpty)
         'locationContext': locationContext,
-      'preferredIntent': ?intent,
+      if (intent != null) 'preferredIntent': intent,
     };
 
     var yieldedAny = false;

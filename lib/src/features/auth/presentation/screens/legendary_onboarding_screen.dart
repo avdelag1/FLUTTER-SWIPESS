@@ -3,7 +3,6 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// First-run cinematic welcome slides after access grant.
 class LegendaryOnboardingScreen extends StatefulWidget {
@@ -338,8 +337,8 @@ class _Background extends StatelessWidget {
   Widget build(BuildContext context) {
     final image = slide.assetImage != null
         ? Image.asset(slide.assetImage!, fit: BoxFit.cover)
-        : CachedNetworkImage(
-  imageUrl: slide.networkImage!,
+        : Image.network(
+            slide.networkImage!,
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => Container(color: Colors.black),
           );

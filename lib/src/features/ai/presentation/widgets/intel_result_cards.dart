@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `ChatListingCard` / `ChatProfileCard` for Intel Core replies.
 class IntelListingCard extends StatelessWidget {
@@ -55,8 +55,8 @@ class IntelListingCard extends StatelessWidget {
             if (image != null && image.isNotEmpty)
               AspectRatio(
                 aspectRatio: 16 / 10,
-                child: CachedNetworkImage(
-  imageUrl: image,
+                child: Image.network(
+                  image,
                   fit: BoxFit.cover,
                   cacheWidth: 640,
                   errorBuilder: (_, _, _) =>
@@ -147,8 +147,8 @@ class IntelProfileCard extends StatelessWidget {
             if (image != null && image.isNotEmpty)
               AspectRatio(
                 aspectRatio: 16 / 10,
-                child: CachedNetworkImage(
-  imageUrl: image,
+                child: Image.network(
+                  image,
                   fit: BoxFit.cover,
                   cacheWidth: 640,
                   errorBuilder: (_, _, _) =>

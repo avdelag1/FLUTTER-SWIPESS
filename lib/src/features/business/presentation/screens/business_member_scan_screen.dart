@@ -495,7 +495,7 @@ class _BusinessMemberScanScreenState
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<double>(
-          initialValue: tiers.contains(_discount) ? _discount : 0,
+          value: tiers.contains(_discount) ? _discount : 0,
           decoration: const InputDecoration(labelText: 'Member discount'),
           items: [
             for (final tier in tiers)

@@ -100,13 +100,13 @@ class VoiceLanguageSelector extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: isLight
-                  ? Colors.black.withValues(alpha: 0.05)
-                  : Colors.white.withValues(alpha: 0.08),
+                  ? Colors.black.withOpacity(0.05)
+                  : Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isLight
-                    ? Colors.black.withValues(alpha: 0.05)
-                    : Colors.white.withValues(alpha: 0.1),
+                    ? Colors.black.withOpacity(0.05)
+                    : Colors.white.withOpacity(0.1),
               ),
             ),
             alignment: Alignment.center,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -10,7 +11,6 @@ import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_p
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `OwnerClientSwipeDialog` — Discover Potential Clients deck.
 Future<void> showOwnerClientSwipeDialog(BuildContext context) {
@@ -254,8 +254,8 @@ class _Deck extends StatelessWidget {
                   children: [
                     if (client.primaryImage != null &&
                         client.primaryImage!.isNotEmpty)
-                      CachedNetworkImage(
-  imageUrl: client.primaryImage!,
+                      Image.network(
+                        client.primaryImage!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const ColoredBox(
                           color: Color(0xFF16161C),

@@ -14,7 +14,6 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_ch
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Browser discovery map.
 ///
@@ -101,23 +100,15 @@ class _WebDiscoveryMapScreenV4State
 
   double _wrapLng(double value) {
     var v = value;
-    while (v > 180) {
-      v -= 360;
-    }
-    while (v < -180) {
-      v += 360;
-    }
+    while (v > 180) v -= 360;
+    while (v < -180) v += 360;
     return v;
   }
 
   double _shortestLngDelta(double from, double to) {
     var d = to - from;
-    while (d > 180) {
-      d -= 360;
-    }
-    while (d < -180) {
-      d += 360;
-    }
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
     return d;
   }
 
@@ -868,10 +859,10 @@ class _PreviewImage extends StatelessWidget {
         height: 60,
         child: url == null || url!.trim().isEmpty
             ? fallback
-            : CachedNetworkImage(
-  imageUrl: url!,
+            : Image.network(
+                url!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => fallback,
+                errorBuilder: (_, __, ___) => fallback,
               ),
       ),
     );

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 typedef SwipeCallback = void Function(
   Listing listing,
@@ -109,14 +108,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       return;
     }
 
-    // Match CachedNetworkImage(
-  imageUrl: cacheWidth: ...) exactly. Warming an un-resized
+    // Match Image.network(cacheWidth: ...) exactly. Warming an un-resized
     // NetworkImage uses a different cache key and still forces a decode after
     // the user taps to the next photo.
     final provider = ResizeImage.resizeIfNeeded(
       cacheWidth,
       null,
-      CachedNetworkImageProvider(url),
+      NetworkImage(url),
     );
     unawaited(
       precacheImage(provider, context).catchError((_) {

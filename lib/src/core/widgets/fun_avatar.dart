@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Temporary deterministic avatar used only when a user has not uploaded a
 /// real profile photo yet. The same seed always gets the same character, so
@@ -42,8 +41,8 @@ class FunAvatar extends StatelessWidget {
           height: size,
           child: url == null || url.isEmpty
               ? fallback
-              : CachedNetworkImage(
-  imageUrl: url,
+              : Image.network(
+                  url,
                   width: size,
                   height: size,
                   fit: BoxFit.cover,

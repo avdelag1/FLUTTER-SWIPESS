@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_thumbnail.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -21,7 +23,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap PropertyManagement — Listing Control terminal.
 class OwnerPropertiesScreen extends ConsumerStatefulWidget {
@@ -809,8 +810,7 @@ class _AssetCard extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   listing.primaryImage != null
-                      ? CachedNetworkImage(
-  imageUrl: listing.primaryImage!, fit: BoxFit.cover)
+                      ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
                       : const ColoredBox(color: Color(0xFF16161C)),
                   const DecoratedBox(
                     decoration: BoxDecoration(

@@ -3,7 +3,6 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/bulk_selection_bar.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Modern listing/profile tile used by the Likes page.
 class PremiumLikedCard extends StatelessWidget {
@@ -78,8 +77,8 @@ class PremiumLikedCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   if (imageUrl != null && imageUrl!.isNotEmpty)
-                    CachedNetworkImage(
-  imageUrl: imageUrl!,
+                    Image.network(
+                      imageUrl!,
                       fit: BoxFit.cover,
                       cacheWidth: 800,
                       errorBuilder: (_, _, _) => _fallback(),

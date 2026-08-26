@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/screens/payment_result_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/domain/subscription_tier.dart';

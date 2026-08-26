@@ -7,7 +7,6 @@ import 'package:flutter_swipes/src/features/admin/presentation/providers/admin_p
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `AdminCategoryPhotos`.
 class AdminCategoryPhotosScreen extends ConsumerWidget {
@@ -114,8 +113,7 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-  imageUrl: p.imageUrl, fit: BoxFit.cover),
+                          child: Image.network(p.imageUrl, fit: BoxFit.cover),
                         ),
                         Positioned(
                           top: 4,

@@ -5,7 +5,6 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 Future<void> showListingShareSheet(
   BuildContext context, {
@@ -73,8 +72,8 @@ class _ShareSheet extends StatelessWidget {
                     width: 56,
                     height: 56,
                     child: listing.primaryImage != null
-                        ? CachedNetworkImage(
-  imageUrl: listing.primaryImage!,
+                        ? Image.network(
+                            listing.primaryImage!,
                             fit: BoxFit.cover,
                           )
                         : const ColoredBox(color: Color(0xFF16161C)),

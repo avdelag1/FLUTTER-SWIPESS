@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
@@ -360,7 +361,7 @@ class _ReportDialogState extends State<ReportDialog> {
 }
 
 class _TypeRow extends StatelessWidget {
-  const _TypeRow({required this.label, required this.selected, required this.onTap});
+  _TypeRow({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;

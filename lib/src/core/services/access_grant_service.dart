@@ -19,7 +19,7 @@ class AccessGrantService {
       jsonEncode({
         'grantedAt': DateTime.now().millisecondsSinceEpoch,
         'v': 1,
-        'role': ?role,
+        if (role != null) 'role': role,
       }),
     );
   }

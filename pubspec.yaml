@@ -1,7 +1,7 @@
 name: flutter_swipes
 description: "Swipess — swipe-first discovery for homes, events, and local services."
 publish_to: 'none'
-version: 1.2.42+629
+version: 1.2.42+627
 environment:
   sdk: ^3.12.2
 
@@ -50,7 +50,6 @@ dependencies:
   app_badge_plus: ^1.3.4
   liquid_pull_to_refresh: ^3.0.1
   mobile_scanner: ^7.4.0
-  cached_network_image: ^3.4.1
 
 dependency_overrides:
   mapbox_maps_flutter_mobile: 3.0.0-alpha.27

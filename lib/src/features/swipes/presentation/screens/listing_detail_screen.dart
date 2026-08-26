@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -17,7 +18,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 final listingByIdProvider = FutureProvider.family<Listing?, String>((ref, id) {
   return ref.read(listingRepositoryProvider).fetchById(id);
@@ -716,8 +716,8 @@ class _Gallery extends StatelessWidget {
               onTap: onTap,
               child: Hero(
                 tag: 'swipe_hero_${listingId}_$i',
-                child: CachedNetworkImage(
-  imageUrl: url,
+                child: Image.network(
+                  url,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => const ColoredBox(
                     color: Color(0xFF16161C),

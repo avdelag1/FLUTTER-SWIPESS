@@ -738,8 +738,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           controller: _controller,
                           minLines: 1,
                           maxLines: 4,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _send(),
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontSize: 15,

@@ -225,7 +225,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: _leaseTemplates.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final template = _leaseTemplates[index];
                 return _LeaseTemplateCard(
@@ -300,7 +300,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               scrollDirection: Axis.horizontal,
               physics: const ClampingScrollPhysics(),
               itemCount: cats.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final c = cats[index];
                 final selected = _category == c.$1;
@@ -450,7 +450,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  channel,
+                  '$channel',
                   textAlign: TextAlign.center,
                   style: SwipessTokens.displayItalic(color: ink, fontSize: 22),
                 ),

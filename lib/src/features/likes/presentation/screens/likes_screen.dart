@@ -627,7 +627,7 @@ class _HChips extends StatelessWidget {
                 ),
               ),
             ),
-          ?trailing,
+          if (trailing != null) trailing!,
         ],
       ),
     );

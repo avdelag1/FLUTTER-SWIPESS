@@ -14,7 +14,6 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_ch
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Web globe renderer that deliberately avoids Mapbox AnnotationManager APIs.
 ///
@@ -270,19 +269,24 @@ class _RealMapboxGlobeScreenV2State
       var cursor = 0;
       final centerCoordinate = pixels[cursor++];
       Offset? center;
-      center = Offset(centerCoordinate.x, centerCoordinate.y);
+      if (centerCoordinate != null) {
+        center = Offset(centerCoordinate.x, centerCoordinate.y);
+      }
 
       double? radius;
       if (loc.radiusKm <= 250 && cursor < pixels.length) {
         final edge = pixels[cursor++];
-        radius = (Offset(edge.x, edge.y) - center).distance;
-        if (!radius.isFinite || radius < 2 || radius > 1800) radius = null;
+        if (center != null && edge != null) {
+          radius = (Offset(edge.x, edge.y) - center).distance;
+          if (!radius.isFinite || radius < 2 || radius > 1800) radius = null;
+        }
       }
 
       final next = <String, Offset>{};
       for (final pin in pins) {
         if (cursor >= pixels.length) break;
         final pixel = pixels[cursor++];
+        if (pixel == null) continue;
         final offset = Offset(pixel.x, pixel.y);
         if (!offset.dx.isFinite || !offset.dy.isFinite) continue;
         next[_pinKey(pin)] = offset;
@@ -379,11 +383,11 @@ class _RealMapboxGlobeScreenV2State
       }
       _scheduleProjection();
     });
-    ref.listen(mapListingsProvider, (_, _) {
+    ref.listen(mapListingsProvider, (_, __) {
       _scheduleProjection();
       _queueInitialFlight();
     });
-    ref.listen(mapProfilesProvider, (_, _) {
+    ref.listen(mapProfilesProvider, (_, __) {
       _scheduleProjection();
       _queueInitialFlight();
     });
@@ -990,10 +994,10 @@ class _PreviewImage extends StatelessWidget {
         height: 60,
         child: url == null || url!.trim().isEmpty
             ? fallback
-            : CachedNetworkImage(
-  imageUrl: url!,
+            : Image.network(
+                url!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => fallback,
+                errorBuilder: (_, __, ___) => fallback,
               ),
       ),
     );

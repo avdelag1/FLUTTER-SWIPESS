@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:video_player/video_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 bool isQuickFilterVideoUrl(String url) {
   final lower = url.toLowerCase();
@@ -368,8 +368,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final logicalW = MediaQuery.sizeOf(context).width;
     final cacheW = (logicalW * dpr * 0.55).round().clamp(320, 900);
-    return CachedNetworkImage(
-  imageUrl: url,
+    return Image.network(
+      url,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,

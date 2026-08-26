@@ -34,9 +34,8 @@ class SavedSearch {
     final min = filters['min_price'];
     final max = filters['max_price'];
     if (city != null && city.toString().isNotEmpty) parts.add('$city');
-    if (category != null && category.toString().isNotEmpty) {
+    if (category != null && category.toString().isNotEmpty)
       parts.add('$category');
-    }
     if (min != null || max != null) {
       parts.add('\$${min ?? 0}–\$${max ?? '∞'}');
     }

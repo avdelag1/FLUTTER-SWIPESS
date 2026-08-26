@@ -155,7 +155,7 @@ class NeoNaiveCard extends StatelessWidget {
 
 /// Cap `neo-naive-group` — stacked rows with soft hairline dividers.
 class NeoNaiveGroup extends StatelessWidget {
-  const NeoNaiveGroup({super.key, required this.children});
+  NeoNaiveGroup({super.key, required this.children});
 
   final List<Widget> children;
 
@@ -182,7 +182,7 @@ class NeoNaiveGroup extends StatelessWidget {
 
 /// Black canvas + ambient wells. Drop-in for inner Cap pages (not gate/swipe).
 class NeoNaiveScaffold extends StatelessWidget {
-  const NeoNaiveScaffold({super.key, required this.body, this.floatingActionButton});
+  NeoNaiveScaffold({super.key, required this.body, this.floatingActionButton});
 
   final Widget body;
   final Widget? floatingActionButton;
@@ -263,7 +263,7 @@ class NeoNaiveChip extends StatelessWidget {
 
 /// Cap AtmosphericLayer shim — same ambient wells as page background.
 class AtmosphericLayer extends StatelessWidget {
-  const AtmosphericLayer({
+  AtmosphericLayer({
     super.key,
     this.opacity = 1,
     this.variant = AtmosphericVariant.defaultTone,

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
@@ -13,7 +14,6 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap UnifiedListingForm edit path — update title, media, details, save.
 class EditListingScreen extends ConsumerStatefulWidget {
@@ -417,8 +417,7 @@ class _PhotoGrid extends ConsumerWidget {
     final tiles = <Widget>[
       for (var i = 0; i < state.existingImages.length; i++)
         _tile(
-          child: CachedNetworkImage(
-  imageUrl: state.existingImages[i], fit: BoxFit.cover),
+          child: Image.network(state.existingImages[i], fit: BoxFit.cover),
           onRemove: () =>
               ref.read(editListingProvider.notifier).removeExistingImage(i),
         ),

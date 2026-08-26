@@ -90,11 +90,10 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
     final all = (rows as List)
         .map((row) => Listing.fromJson(row as Map<String, dynamic>))
         .toList();
-    if (status == 'active') {
+    if (status == 'active')
       return all
           .where((l) => l.isActive == true || l.status == 'active')
           .toList();
-    }
     if (status == 'all') return all;
     return all.where((l) => l.status == status).toList();
   }

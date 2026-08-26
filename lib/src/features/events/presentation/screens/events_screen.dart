@@ -20,7 +20,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Full-screen, Reels-style event deck.
 ///
@@ -553,8 +552,8 @@ class _EventCategoryRing extends StatelessWidget {
                             color: Colors.white,
                           ),
                         )
-                      : CachedNetworkImage(
-  imageUrl: category.image,
+                      : Image.network(
+                          category.image,
                           fit: BoxFit.cover,
                           cacheWidth: 160,
                           errorBuilder: (_, _, _) => Icon(
@@ -782,8 +781,8 @@ class _EventStoryPageState extends ConsumerState<_EventStoryPage> {
               ),
             )
           else if (image.isNotEmpty)
-            CachedNetworkImage(
-  imageUrl: image,
+            Image.network(
+              image,
               fit: BoxFit.cover,
               cacheWidth: (MediaQuery.sizeOf(context).width * 2)
                   .round()

@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/native/app_review.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `MatchCelebrateModal` — mutual-match overlay with avatars + CTAs.
 Future<void> showMatchCelebrateModal(
@@ -331,8 +331,8 @@ class _AvatarCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           if (url != null && url!.isNotEmpty)
-            CachedNetworkImage(
-  imageUrl: url!,
+            Image.network(
+              url!,
               fit: BoxFit.cover,
               cacheWidth: 400,
               errorBuilder: (_, _, _) =>

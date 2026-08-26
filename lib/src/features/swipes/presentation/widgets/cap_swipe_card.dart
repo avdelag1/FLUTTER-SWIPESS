@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
@@ -15,7 +16,6 @@ import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_match_meter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `SimpleSwipeCard` visual + hold-zoom + photo segments + right rail.
 class CapSwipeCard extends ConsumerStatefulWidget {
@@ -392,8 +392,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ? _fallback()
                     : _isVideo(current)
                     ? _buildVideo()
-                    : CachedNetworkImage(
-  imageUrl: current,
+                    : Image.network(
+                        current,
                         fit: BoxFit.cover,
                         alignment: const Alignment(0, -0.12),
                         width: double.infinity,

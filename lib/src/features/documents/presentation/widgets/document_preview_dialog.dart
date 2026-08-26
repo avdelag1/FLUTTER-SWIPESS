@@ -1,13 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/doc_type_specimen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `DocumentPreviewDialog` — blurred authorized preview, never the full file.
 Future<void> showDocumentPreviewDialog(
@@ -256,8 +256,8 @@ class _BlurredImagePreview extends StatelessWidget {
           imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Transform.scale(
             scale: 1.08,
-            child: CachedNetworkImage(
-  imageUrl: url,
+            child: Image.network(
+              url,
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => DocTypeSpecimen(documentType: type),
             ),

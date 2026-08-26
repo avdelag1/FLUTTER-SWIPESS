@@ -5,7 +5,6 @@ import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.da
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// Dedicated identity-photo editor for the Virtual ID/PEARL card.
 ///
@@ -145,8 +144,8 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                       color: Colors.white,
                       size: 28,
                     )
-                  : CachedNetworkImage(
-  imageUrl: photo,
+                  : Image.network(
+                      photo,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const Icon(
                         Icons.badge_outlined,

@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/contracts_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LegalHubScreen extends StatelessWidget {

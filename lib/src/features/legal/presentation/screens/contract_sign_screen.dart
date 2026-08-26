@@ -314,7 +314,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                           child: Image.memory(
                             _decodeSignature(_savedSignature!),
                             fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => Center(
+                            errorBuilder: (_, __, ___) => Center(
                               child: Text(
                                 'Saved signature',
                                 style: TextStyle(color: muted),
