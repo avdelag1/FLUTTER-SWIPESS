@@ -233,34 +233,54 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     onVerticalDragCancel: () {
                       setState(() => _eventsSwipeOffset = 0);
                     },
-                    child: Transform.translate(
-                      offset: Offset(0, _eventsSwipeOffset),
-                      child: Opacity(
-                        // Fade out slightly as user pulls down, like Instagram.
-                        opacity:
-                            (1 - (_eventsSwipeOffset / 320)).clamp(0.4, 1.0),
-                        child: AnimatedContainer(
-                          duration: chromeMotionDuration,
-                          curve: Curves.easeOutCubic,
-                          margin: persistentChromeVisible
-                              ? EdgeInsets.fromLTRB(
-                                  8,
-                                  safe.top + 58,
-                                  8,
-                                  safe.bottom + 70,
-                                )
-                              : EdgeInsets.zero,
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(
-                              persistentChromeVisible ? 24 : 0,
+                    child: _eventsSwipeOffset == 0
+                        ? AnimatedContainer(
+                            duration: chromeMotionDuration,
+                            curve: Curves.easeOutCubic,
+                            margin: persistentChromeVisible
+                                ? EdgeInsets.fromLTRB(
+                                    8,
+                                    safe.top + 58,
+                                    8,
+                                    safe.bottom + 70,
+                                  )
+                                : EdgeInsets.zero,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(
+                                persistentChromeVisible ? 24 : 0,
+                              ),
+                            ),
+                            child: const EventsScreen(),
+                          )
+                        : Transform.translate(
+                            offset: Offset(0, _eventsSwipeOffset),
+                            child: Opacity(
+                              // Fade out slightly as user pulls down, like Instagram.
+                              opacity: (1 - (_eventsSwipeOffset / 320)).clamp(0.4, 1.0),
+                              child: AnimatedContainer(
+                                duration: chromeMotionDuration,
+                                curve: Curves.easeOutCubic,
+                                margin: persistentChromeVisible
+                                    ? EdgeInsets.fromLTRB(
+                                        8,
+                                        safe.top + 58,
+                                        8,
+                                        safe.bottom + 70,
+                                      )
+                                    : EdgeInsets.zero,
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(
+                                    persistentChromeVisible ? 24 : 0,
+                                  ),
+                                ),
+                                child: const EventsScreen(),
+                              ),
                             ),
                           ),
-                          child: const EventsScreen(),
-                        ),
-                      ),
-                    ),
                   ),
                 if (!isDashboard && !isEvents)
                   isProfile

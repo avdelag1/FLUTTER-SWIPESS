@@ -105,6 +105,16 @@ class _PullDownToDismissState extends State<PullDownToDismiss>
 
   @override
   Widget build(BuildContext context) {
+    if (_y == 0) {
+      return GestureDetector(
+        behavior: HitTestBehavior.deferToChild,
+        onVerticalDragStart: _onDragStart,
+        onVerticalDragUpdate: _onDragUpdate,
+        onVerticalDragEnd: _onDragEnd,
+        child: widget.child,
+      );
+    }
+
     final t = (_y / 220).clamp(0.0, 1.0);
     final scale = 1 - (0.22 * Curves.easeOut.transform(t));
     final opacity = (1 - 0.55 * Curves.easeOut.transform(t)).clamp(0.35, 1.0);

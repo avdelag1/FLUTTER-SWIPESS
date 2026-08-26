@@ -198,34 +198,38 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               );
             },
           ),
-          IgnorePointer(
-            ignoring: !_chromeVisible,
-            child: AnimatedOpacity(
-              opacity: _chromeVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 220),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _GlassIcon(
-                        icon: Icons.arrow_back_rounded,
-                        onTap: () {
-                          ref.read(chromeVisibilityProvider.notifier).show();
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go(AppPaths.clientDashboard);
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SizedBox(
-                          height: 64,
-                          child: ListView.separated(
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              ignoring: !_chromeVisible,
+              child: AnimatedOpacity(
+                opacity: _chromeVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 220),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _GlassIcon(
+                          icon: Icons.arrow_back_rounded,
+                          onTap: () {
+                            ref.read(chromeVisibilityProvider.notifier).show();
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go(AppPaths.clientDashboard);
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: SizedBox(
+                            height: 64,
+                            child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
                             itemCount: categories.length,
@@ -257,6 +261,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 ),
               ),
             ),
+          ),
           ),
           Positioned(
             right: 12,
@@ -473,90 +478,94 @@ class _EventPageState extends ConsumerState<_EventPage> {
               ),
             ),
           ),
-          IgnorePointer(
-            ignoring: !widget.chromeVisible,
-            child: AnimatedOpacity(
-              opacity: widget.chromeVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 220),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Positioned(
-                    right: 12,
-                    bottom: bottom + 105,
-                    child: Column(
+          Positioned(
+            right: 12,
+            bottom: bottom + 105,
+            child: IgnorePointer(
+              ignoring: !widget.chromeVisible,
+              child: AnimatedOpacity(
+                opacity: widget.chromeVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 220),
+                child: Column(
+                  children: [
+                    _HeartLibraryButton(
+                      count: widget.likedCount,
+                      onTap: widget.onOpenLikes,
+                    ),
+                    const SizedBox(height: 10),
+                    _HeartButton(
+                      active: favorited,
+                      onTap: _toggleFavorite,
+                    ),
+                    const SizedBox(height: 10),
+                    EventMuteButton(
+                      soundOn: soundOn,
+                      onToggle: () {
+                        widget.onChromeInteraction();
+                        ref
+                            .read(deckSoundOnProvider.notifier)
+                            .setSoundOn(!soundOn);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    _RailButton(icon: Icons.info_outline_rounded, onTap: widget.onOpen),
+                    const SizedBox(height: 6),
+                    _RailButton(icon: Icons.chat_bubble_outline_rounded, onTap: _whatsApp),
+                    const SizedBox(height: 6),
+                    _RailButton(icon: Icons.share_rounded, onTap: _share),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            right: 82,
+            bottom: bottom + 26,
+            child: IgnorePointer(
+              ignoring: !widget.chromeVisible,
+              child: AnimatedOpacity(
+                opacity: widget.chromeVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 220),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
-                        _HeartLibraryButton(
-                          count: widget.likedCount,
-                          onTap: widget.onOpenLikes,
-                        ),
-                        const SizedBox(height: 10),
-                        _HeartButton(
-                          active: favorited,
-                          onTap: _toggleFavorite,
-                        ),
-                        const SizedBox(height: 10),
-                        EventMuteButton(
-                          soundOn: soundOn,
-                          onToggle: () {
-                            widget.onChromeInteraction();
-                            ref
-                                .read(deckSoundOnProvider.notifier)
-                                .setSoundOn(!soundOn);
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        _RailButton(icon: Icons.info_outline_rounded, onTap: widget.onOpen),
-                        const SizedBox(height: 6),
-                        _RailButton(icon: Icons.chat_bubble_outline_rounded, onTap: _whatsApp),
-                        const SizedBox(height: 6),
-                        _RailButton(icon: Icons.share_rounded, onTap: _share),
+                        _MetaPill(label: event.category.toUpperCase()),
+                        if (event.isFree) const _MetaPill(label: 'FREE'),
+                        if (_hasVideo) const _MetaPill(label: 'VIDEO'),
                       ],
                     ),
-                  ),
-                  Positioned(
-                    left: 18,
-                    right: 82,
-                    bottom: bottom + 26,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            _MetaPill(label: event.category.toUpperCase()),
-                            if (event.isFree) const _MetaPill(label: 'FREE'),
-                            if (_hasVideo) const _MetaPill(label: 'VIDEO'),
-                          ],
+                    const SizedBox(height: 10),
+                    Text(
+                      event.title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 26,
+                        height: 1.04,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.7,
+                        shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
+                      ),
+                    ),
+                    if ((event.organizerName ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        'by ${event.organizerName}',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          event.title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 26,
-                            height: 1.04,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.7,
-                            shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
-                          ),
-                        ),
-                        if ((event.organizerName ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 5),
-                          Text(
-                            'by ${event.organizerName}',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                        if ((event.promoText ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
+                      ),
+                    ],
+                    if ((event.promoText ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
                             event.promoText!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -584,10 +593,8 @@ class _EventPageState extends ConsumerState<_EventPage> {
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
             ),
-          ),
         ],
       ),
     );
