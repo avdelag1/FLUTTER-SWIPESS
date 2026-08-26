@@ -34,6 +34,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+const _profileAccentPink = Color(0xFFEB4898);
+
 /// Profile continuation after the social/listings gallery.
 /// The order is intentional: share + earn first, virtual ID next, then compact
 /// colorful shortcuts, followed by the complete deeper account toolset.
@@ -48,8 +50,6 @@ class ProfileToolsHub extends ConsumerWidget {
   final String? role;
   final String profileId;
   final String profileName;
-
-  static const _pink = Color(0xFFEB4898);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -137,7 +137,7 @@ class ProfileToolsHub extends ConsumerWidget {
             _QuickTool(
               icon: Icons.settings_rounded,
               title: 'Settings',
-              accent: const Color(0xFFEB4898),
+              accent: _profileAccentPink,
               onTap: () => context.push(
                 role == 'owner'
                     ? AppPaths.ownerSettings
@@ -168,7 +168,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.event_available_rounded,
-              accent: const Color(0xFFEB4898),
+              accent: _profileAccentPink,
               title: 'Saved events',
               subtitle: 'Your hearted events',
               onTap: () => _push(context, const EventFavoritesScreen()),
@@ -253,7 +253,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.card_giftcard_rounded,
-              accent: const Color(0xFFEB4898),
+              accent: _profileAccentPink,
               title: 'Resident perks',
               subtitle: 'Local benefits and privileges',
               onTap: () => _push(context, const PerksScreen()),
@@ -317,7 +317,7 @@ class ProfileToolsHub extends ConsumerWidget {
           children: [
             _ToolRow(
               icon: Icons.chat_bubble_outline_rounded,
-              accent: const Color(0xFFEB4898),
+              accent: _profileAccentPink,
               title: 'Send feedback',
               subtitle: 'Tell us what should be better',
               onTap: () => _showFeedback(context),
@@ -556,9 +556,10 @@ class _VirtualIdPreview extends ConsumerWidget {
     final location = card?.locationLabel ?? 'Swipess local member';
     final photo = card?.displayPhotoUrl;
     final rawId = profileId.trim();
+    final idLength = rawId.length < 8 ? rawId.length : 8;
     final shortId = rawId.isEmpty
         ? 'SWIPESS'
-        : rawId.substring(0, rawId.length.clamp(0, 8)).toUpperCase();
+        : rawId.substring(0, idLength).toUpperCase();
 
     return Semantics(
       button: true,
@@ -593,13 +594,13 @@ class _VirtualIdPreview extends ConsumerWidget {
                     const Icon(
                       Icons.verified_user_outlined,
                       size: 15,
-                      color: Color(0xFFEB4898),
+                      color: _profileAccentPink,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'SWIPESS LOCAL ID',
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFFEB4898),
+                        color: _profileAccentPink,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.25,
@@ -679,7 +680,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                color: const Color(0xFFEB4898),
+                                color: _profileAccentPink,
                                 fontSize: 8.5,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: .7,
@@ -941,7 +942,7 @@ class _ToolRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white46,
+                      color: Colors.white54,
                       fontSize: 9.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -980,7 +981,7 @@ class _LanguageChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? _pink : Colors.white10,
+          color: active ? _profileAccentPink : Colors.white10,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
