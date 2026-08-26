@@ -3,9 +3,8 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
@@ -17,7 +16,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ma
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
-/// Cap `SimpleSwipeCard` visual + hold-zoom + photo segments + right rail.
+/// Swipe card with fast media taps, deliberate hold-to-zoom and clean social
+/// feedback. The LIKE treatment is intentionally frameless.
 class CapSwipeCard extends ConsumerStatefulWidget {
   const CapSwipeCard({
     super.key,
@@ -73,29 +73,20 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   VideoPlayerController? _video;
   String? _boundVideo;
 
-  // A normal tap should always win. Zoom only begins after a clearly deliberate
-  // press, while tiny movement cancels the pending hold quickly so card swipes
-  // remain immediate.
   static const _holdDelay = Duration(milliseconds: 360);
   static const _zoomScale = 3.2;
   static const _cancelMovePx = 10.0;
   static const _tapMovePx = 12.0;
 
   List<String> get _media {
-    final images = widget.listing.images;
+    final out = <String>[...widget.listing.images];
     final video = widget.listing.videoUrl;
-    if (images.isEmpty && (video == null || video.isEmpty)) {
-      return const [];
-    }
-    final out = <String>[...images];
-    if (video != null && video.isNotEmpty && !out.contains(video)) {
-      out.add(video);
-    }
+    if (video != null && video.isNotEmpty && !out.contains(video)) out.add(video);
     return out;
   }
 
-  bool _isVideo(String url) {
-    final l = url.toLowerCase();
+  bool _isVideo(String value) {
+    final l = value.toLowerCase();
     return l.contains('.mp4') ||
         l.contains('.webm') ||
         l.contains('.mov') ||
@@ -109,12 +100,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       _photoIndex = 0;
       _endZoom();
     }
-    // Back-stack cards must not decode video — only the top card plays.
     if (!widget.isTop) {
       _disposeVideo();
-      return;
-    }
-    if (oldWidget.listing.id != widget.listing.id || !oldWidget.isTop) {
+    } else if (oldWidget.listing.id != widget.listing.id || !oldWidget.isTop) {
       unawaited(_syncVideo());
     }
   }
@@ -137,16 +125,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (media.isEmpty) return;
     final normalized = ((index % media.length) + media.length) % media.length;
     if (normalized == _photoIndex) return;
-
-    // The UI index and the already-prefetched image swap happen in the same
-    // frame. Video setup can continue asynchronously without delaying taps.
     setState(() => _photoIndex = normalized);
     widget.onPhotoIndexChanged?.call(normalized);
     unawaited(_syncVideo());
   }
 
   Future<void> _syncVideo() async {
-    // Non-top cards in the stack only show stills / placeholders.
     if (!widget.isTop) {
       _disposeVideo();
       return;
@@ -155,35 +139,29 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (media.isEmpty) return;
     final url = media[_photoIndex % media.length];
     if (!_isVideo(url)) {
-      // An image is already visible because _setPhoto rebuilt synchronously;
-      // avoid a redundant second rebuild when leaving video media.
-      if (_video != null || _boundVideo != null) _disposeVideo();
+      if (_video != null) _disposeVideo();
       return;
     }
-    if (url == _boundVideo && _video != null) return;
-    _boundVideo = url;
-    final prev = _video;
+    if (_boundVideo == url && _video != null) return;
+
+    final previous = _video;
     final next = VideoPlayerController.networkUrl(Uri.parse(url));
     _video = next;
+    _boundVideo = url;
     try {
       await next.initialize();
       if (!mounted || !widget.isTop || _boundVideo != url) {
         await next.dispose();
-        if (identical(_video, next)) {
-          _video = null;
-          _boundVideo = null;
-        }
         return;
       }
-      final soundOn = ref.read(deckSoundOnProvider);
       await next.setLooping(true);
-      await next.setVolume(soundOn ? 1 : 0);
+      await next.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
       await next.play();
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});
     } finally {
-      await prev?.dispose();
+      await previous?.dispose();
     }
   }
 
@@ -193,7 +171,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _movedPastCancel = false;
     _pointerStart = local;
     _holdTimer = Timer(_holdDelay, () {
-      if (!_holdPending || _movedPastCancel || !widget.isTop) return;
+      if (!_holdPending || _movedPastCancel || !widget.isTop || !mounted) return;
       AppHaptics.medium();
       setState(() {
         _zoomed = true;
@@ -208,7 +186,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _holdPending = false;
     _pointerStart = null;
     _movedPastCancel = false;
-    if (_zoomed) {
+    if (_zoomed && mounted) {
       setState(() {
         _zoomed = false;
         _zoomPan = Offset.zero;
@@ -217,41 +195,29 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
   }
 
-  bool _isInteractiveControlPoint(Offset local) {
-    final box = context.size;
-    if (box == null) return false;
-    final w = box.width;
-    final h = box.height;
-    final x = local.dx;
-    final y = local.dy;
-
-    // Raw pointer listening gives media taps maximum speed, but these visible
-    // controls must win the hit. Otherwise pressing Share/Message/Back/Mute can
-    // also be mistaken for a photo-edge or chrome-summon tap.
-    if (widget.onBack != null && x <= 72 && y <= 72) return true;
-
-    final topRightHeight = widget.canUndo && widget.onUndo != null ? 116.0 : 62.0;
-    if (x >= w - 68 && y <= topRightHeight) return true;
-
+  bool _controlPoint(Offset local) {
+    final size = context.size;
+    if (size == null) return false;
+    if (widget.onBack != null && local.dx <= 72 && local.dy <= 72) return true;
+    final topRight = widget.canUndo && widget.onUndo != null ? 116.0 : 62.0;
+    if (local.dx >= size.width - 68 && local.dy <= topRight) return true;
     if (widget.railVisible &&
-        x >= w - 86 &&
-        y >= math.max(64.0, h - 520) &&
-        y <= h - 96) {
+        local.dx >= size.width - 86 &&
+        local.dy >= math.max(64.0, size.height - 520) &&
+        local.dy <= size.height - 96) {
       return true;
     }
-
     return false;
   }
 
-  void _onPointerDown(PointerDownEvent e) {
-    if (!widget.isTop || _isInteractiveControlPoint(e.localPosition)) return;
+  void _pointerDown(PointerDownEvent e) {
+    if (!widget.isTop || _controlPoint(e.localPosition)) return;
     _startHold(e.localPosition);
   }
 
-  void _onPointerMove(PointerMoveEvent e) {
-    if (!widget.isTop) return;
+  void _pointerMove(PointerMoveEvent e) {
     final start = _pointerStart;
-    if (start == null) return;
+    if (!widget.isTop || start == null) return;
     final delta = e.localPosition - start;
     if (!_zoomed && _holdPending && delta.distance > _cancelMovePx) {
       _holdTimer?.cancel();
@@ -260,21 +226,21 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return;
     }
     if (_zoomed) {
-      final box = context.size;
-      if (box == null) return;
-      final nx = (e.localPosition.dx / box.width).clamp(0.0, 1.0);
-      final ny = (e.localPosition.dy / box.height).clamp(0.0, 1.0);
-      final maxT = ((_zoomScale - 1) / 2);
+      final size = context.size;
+      if (size == null) return;
+      final nx = (e.localPosition.dx / size.width).clamp(0.0, 1.0);
+      final ny = (e.localPosition.dy / size.height).clamp(0.0, 1.0);
+      final maxT = (_zoomScale - 1) / 2;
       setState(() {
         _zoomPan = Offset(
-          (0.5 - nx) * 2 * maxT * box.width,
-          (0.5 - ny) * 2 * maxT * box.height,
+          (0.5 - nx) * 2 * maxT * size.width,
+          (0.5 - ny) * 2 * maxT * size.height,
         );
       });
     }
   }
 
-  void _onPointerUp(PointerUpEvent e) {
+  void _pointerUp(PointerUpEvent e) {
     if (!widget.isTop) return;
     final wasZoomed = _zoomed;
     final pending = _holdPending && !_movedPastCancel;
@@ -282,103 +248,72 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _holdTimer?.cancel();
     _holdPending = false;
     _pointerStart = null;
-
     if (wasZoomed) {
       _endZoom();
       return;
     }
-
-    if (pending && start != null) {
-      final dist = (e.localPosition - start).distance;
-      if (dist < _tapMovePx) {
-        _handleTap(e.localPosition);
-      }
+    if (pending && start != null && (e.localPosition - start).distance < _tapMovePx) {
+      _handleTap(e.localPosition);
     }
     _movedPastCancel = false;
   }
 
   void _handleTap(Offset local) {
-    final box = context.size;
-    if (box == null) return;
-    final w = box.width;
-    final h = box.height;
-    final x = local.dx;
-    final y = local.dy;
-
-    // Top strip summons all shared chrome: header, bottom dock and the card rail.
-    if (y < 56) {
+    final size = context.size;
+    if (size == null) return;
+    if (local.dy < 56) {
       AppHaptics.light();
       widget.onSummonChrome?.call();
       return;
     }
-
-    // Edge taps are intentionally checked before the center action so they can
-    // flip photos at full tap speed without waiting on any zoom recognizer.
     final media = _media;
-    if (media.length > 1 && x < w * 0.28) {
+    if (media.length > 1 && local.dx < size.width * .28) {
       AppHaptics.selection();
       _setPhoto(_photoIndex - 1);
       return;
     }
-    if (media.length > 1 && x > w * 0.72) {
+    if (media.length > 1 && local.dx > size.width * .72) {
       AppHaptics.selection();
       _setPhoto(_photoIndex + 1);
       return;
     }
-
-    // Center tap → Insights.
-    if (y > h * 0.25 && y < h * 0.75) {
-      AppHaptics.light();
+    if (local.dy > size.height * .25 && local.dy < size.height * .75) {
       widget.onInsights?.call();
     }
   }
 
-  // A pending hold must never steal the parent card's horizontal drag. Only an
-  // already-activated deliberate zoom locks the swipe gesture.
   bool get interceptsDrag => _zoomed;
 
   @override
   Widget build(BuildContext context) {
     final media = _media;
-    final hasMedia = media.isNotEmpty;
-    final current = hasMedia ? media[_photoIndex % media.length] : null;
+    final current = media.isEmpty ? null : media[_photoIndex % media.length];
     final soundOn = ref.watch(deckSoundOnProvider);
     final radiusKm = ref.watch(discoveryLocationProvider).radiusKm;
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _video?.setVolume(on ? 1 : 0);
     });
-    if (widget.isTop &&
-        hasMedia &&
-        _video == null &&
-        current != null &&
-        _isVideo(current)) {
+    if (widget.isTop && current != null && _isVideo(current) && _video == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && widget.isTop) unawaited(_syncVideo());
+        if (mounted) unawaited(_syncVideo());
       });
     }
-
-    final likeScale = 0.6 + widget.likeOpacity * 0.6;
-    final nopeScale = 0.6 + widget.nopeOpacity * 0.6;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: _onPointerDown,
-        onPointerMove: _onPointerMove,
-        onPointerUp: _onPointerUp,
+        onPointerDown: _pointerDown,
+        onPointerMove: _pointerMove,
+        onPointerUp: _pointerUp,
         onPointerCancel: (_) => _endZoom(),
-        child: Container(
+        child: ColoredBox(
           color: Colors.black,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Media
               AnimatedContainer(
-                duration: _zoomed
-                    ? Duration.zero
-                    : const Duration(milliseconds: 120),
-                curve: Curves.easeOutCubic,
+                duration: _zoomed ? Duration.zero : const Duration(milliseconds: 120),
                 transformAlignment: Alignment.center,
                 transform: Matrix4.identity()
                   ..translateByDouble(_zoomPan.dx, _zoomPan.dy, 0, 1)
@@ -391,89 +326,30 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 child: current == null
                     ? _fallback()
                     : _isVideo(current)
-                    ? _buildVideo()
-                    : Image.network(
-                        current,
-                        fit: BoxFit.cover,
-                        alignment: const Alignment(0, -0.12),
-                        width: double.infinity,
-                        height: double.infinity,
-                        // Decode near display size — full remote bitmaps crush
-                        // Flutter FPS. SwipeableCardStack precaches using this
-                        // exact resized key so edge taps display immediately.
-                        cacheWidth: (MediaQuery.sizeOf(context).width * 2)
-                            .round()
-                            .clamp(480, 1600),
-                        filterQuality: FilterQuality.low,
-                        gaplessPlayback: true,
-                        errorBuilder: (_, _, _) => _fallback(),
-                      ),
+                        ? _videoWidget()
+                        : Image.network(
+                            current,
+                            fit: BoxFit.cover,
+                            alignment: const Alignment(0, -.12),
+                            cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                                .round()
+                                .clamp(480, 1600),
+                            filterQuality: FilterQuality.low,
+                            gaplessPlayback: true,
+                            errorBuilder: (_, _, _) => _fallback(),
+                          ),
               ),
-
               if (!_zoomed)
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      stops: [0.45, 0.7, 1],
-                      colors: [
-                        Colors.transparent,
-                        Color(0x66000000),
-                        Color(0xCC000000),
-                      ],
+                      colors: [Colors.transparent, Color(0x66000000), Color(0xD9000000)],
+                      stops: [.45, .72, 1],
                     ),
                   ),
                 ),
-
-              if (!_zoomed && widget.listing.reappearedReason != null)
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: widget.listing.reappearedReason == 'price_dropped'
-                          ? const Color(0xFF34D399).withAlpha(200)
-                          : Colors.white.withAlpha(50),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white.withAlpha(50)),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 8),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          widget.listing.reappearedReason == 'price_dropped'
-                              ? Icons.arrow_downward_rounded
-                              : Icons.history_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          widget.listing.reappearedReason == 'price_dropped'
-                              ? 'PRICE DROPPED'
-                              : 'REAPPEARED',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              // Photo index feedback is intentionally fast so it lands in the
-              // same visual beat as the already-cached image swap.
               if (!_zoomed && media.length > 1)
                 Positioned(
                   top: 14,
@@ -486,7 +362,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         if (i > 0) const SizedBox(width: 4),
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 90),
-                          curve: Curves.easeOutCubic,
                           width: i == _photoIndex ? 22 : 6,
                           height: 6,
                           decoration: BoxDecoration(
@@ -494,22 +369,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                                 ? Colors.white
                                 : Colors.white.withAlpha(110),
                             borderRadius: BorderRadius.circular(99),
-                            boxShadow: i == _photoIndex
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.white.withAlpha(120),
-                                      blurRadius: 8,
-                                    ),
-                                  ]
-                                : null,
                           ),
                         ),
                       ],
                     ],
                   ),
                 ),
-
-              // Cap Verified pill + SwipeMatchMeter
               if (!_zoomed)
                 Positioned(
                   top: 66,
@@ -518,53 +383,23 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (widget.listing.hasVerifiedDocuments)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withAlpha(90),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: Colors.white.withAlpha(70),
+                        _GlassLabel(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified_rounded,
+                                  size: 14, color: Color(0xFFA78BFA)),
+                              const SizedBox(width: 6),
+                              Text(
+                                'VERIFIED',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.1,
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF8B5CF6)
-                                        .withAlpha(100),
-                                    blurRadius: 16,
-                                  ),
-                                ],
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFA78BFA),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'VERIFIED',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            ],
                           ),
                         ),
                       Builder(
@@ -585,8 +420,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ],
                   ),
                 ),
-
-              // Top-left back
               if (!_zoomed && widget.onBack != null)
                 Positioned(
                   top: 10,
@@ -598,25 +431,22 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     onTap: widget.onBack!,
                   ),
                 ),
-
-              // Top-right return (one-shot undo) + mute
               if (!_zoomed)
                 Positioned(
                   top: 10,
                   right: 10,
                   child: Column(
                     children: [
-                      if (widget.canUndo && widget.onUndo != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _GlassCircle(
-                            size: 44,
-                            iconSize: 22,
-                            icon: Icons.undo_rounded,
-                            onTap: widget.onUndo!,
-                          ),
+                      if (widget.canUndo && widget.onUndo != null) ...[
+                        _GlassCircle(
+                          size: 44,
+                          iconSize: 22,
+                          icon: Icons.undo_rounded,
+                          onTap: widget.onUndo!,
                         ),
-                      _MuteIconButton(
+                        const SizedBox(height: 10),
+                      ],
+                      _MuteButton(
                         soundOn: soundOn,
                         onTap: () {
                           AppHaptics.selection();
@@ -627,27 +457,20 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ],
                   ),
                 ),
-
-              // Cap right column: KM (top rail) → Map 58px → glass action rail.
-              // Map sits just above the bottom-right rail (not mid-height).
               if (!_zoomed && widget.isTop && widget.railVisible)
                 Positioned(
                   right: 12,
                   bottom: 120,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _GlassPill(
+                      _GlassLabel(
                         child: Column(
                           children: [
-                            const Icon(
-                              Icons.location_on_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            const Icon(Icons.location_on_rounded,
+                                color: Colors.white, size: 16),
                             Text(
                               '${radiusKm}KM',
-                              style: GoogleFonts.plusJakartaSans(
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w900,
@@ -677,8 +500,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ],
                   ),
                 ),
-
-              // Rating + info
               if (!_zoomed)
                 Positioned(
                   left: 14,
@@ -687,42 +508,21 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(140),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              color: Color(0xFFFFD43B),
-                              size: 14,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.favorite_rounded,
+                              color: Color(0xFFFF3040), size: 15),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${widget.listing.likes ?? 0}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '5.0',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Text(
-                              '  (${widget.listing.likes ?? 0})',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -730,13 +530,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         decoration: BoxDecoration(
                           color: const Color(0x8C141418),
                           borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(140),
-                              blurRadius: 32,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -745,8 +538,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                               widget.listing.formattedPrice,
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w900,
                                 fontSize: 22,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -754,66 +547,54 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                               widget.listing.title ?? 'Listing',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w600,
                                 fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                            if (widget.listing.propertyType != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.listing.propertyType!,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-
-              // LIKE banner — zooms from top-left
-              if (widget.likeOpacity > 0.02)
+              if (widget.likeOpacity > .02)
                 Positioned(
-                  top: 48,
+                  top: 52,
                   left: 24,
                   child: Opacity(
                     opacity: widget.likeOpacity.clamp(0.0, 1.0),
                     child: Transform.rotate(
-                      angle: -12 * math.pi / 180,
+                      angle: -10 * math.pi / 180,
                       child: Transform.scale(
-                        scale: likeScale,
+                        scale: .75 + widget.likeOpacity * .45,
                         alignment: Alignment.topLeft,
-                        child: _Stamp(
-                          text: 'LIKE',
-                          color: const Color(0xFF34D399),
-                        ),
+                        child: const _LikeFeedback(),
                       ),
                     ),
                   ),
                 ),
-
-              // NOPE banner — zooms from top-right
-              if (widget.nopeOpacity > 0.02)
+              if (widget.nopeOpacity > .02)
                 Positioned(
-                  top: 48,
+                  top: 54,
                   right: 24,
                   child: Opacity(
                     opacity: widget.nopeOpacity.clamp(0.0, 1.0),
                     child: Transform.rotate(
-                      angle: 12 * math.pi / 180,
-                      child: Transform.scale(
-                        scale: nopeScale,
-                        alignment: Alignment.topRight,
-                        child: _Stamp(
-                          text: 'NOPE',
+                      angle: 10 * math.pi / 180,
+                      child: Text(
+                        'NOPE',
+                        style: TextStyle(
                           color: const Color(0xFFFB7185),
+                          fontSize: 44,
+                          fontWeight: FontWeight.w900,
+                          shadows: [
+                            Shadow(
+                              color: const Color(0xFFFB7185).withAlpha(160),
+                              blurRadius: 20,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -826,11 +607,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     );
   }
 
-  Widget _buildVideo() {
+  Widget _videoWidget() {
     final player = _video;
-    if (player == null || !player.value.isInitialized) {
-      return _fallback();
-    }
+    if (player == null || !player.value.isInitialized) return _fallback();
     return FittedBox(
       fit: BoxFit.cover,
       child: SizedBox(
@@ -841,46 +620,35 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     );
   }
 
-  Widget _fallback() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-        ),
-      ),
-    );
-  }
+  Widget _fallback() => const ColoredBox(color: Color(0xFF111827));
 }
 
-class _Stamp extends StatelessWidget {
-  const _Stamp({required this.text, required this.color});
-  final String text;
-  final Color color;
+class _LikeFeedback extends StatelessWidget {
+  const _LikeFeedback();
 
   @override
   Widget build(BuildContext context) {
-    final isLike = text == 'LIKE';
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isLike ? 28 : 36,
-        vertical: isLike ? 12 : 20,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(isLike ? 24 : 999),
-        border: isLike ? Border.all(color: color, width: 4) : null,
-        color: Colors.black.withAlpha(isLike ? 50 : 0),
-        boxShadow: [BoxShadow(color: color.withAlpha(100), blurRadius: 24)],
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: isLike ? 48 : 44,
-          fontWeight: FontWeight.w900,
-          letterSpacing: -1.5,
-          shadows: [Shadow(color: color.withAlpha(180), blurRadius: 20)],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.favorite_rounded, color: Color(0xFFFF3040), size: 46),
+        const SizedBox(width: 8),
+        Text(
+          'LIKE',
+          style: TextStyle(
+            color: const Color(0xFFFF3040),
+            fontSize: 46,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1.5,
+            shadows: [
+              Shadow(
+                color: const Color(0xFFFF3040).withAlpha(170),
+                blurRadius: 22,
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -893,7 +661,6 @@ class _ActionRail extends StatelessWidget {
     this.onInsights,
     this.onReport,
   });
-
   final VoidCallback? onAi;
   final VoidCallback? onShare;
   final VoidCallback? onMessage;
@@ -902,7 +669,6 @@ class _ActionRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cap: rounded-3xl glass column, 46×46 tap targets, frameless icons.
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -912,60 +678,33 @@ class _ActionRail extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(77),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withAlpha(77)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(128),
-                blurRadius: 48,
-                offset: const Offset(0, 16),
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _RailBtn(
+              _RailButton(
                 onTap: onAi,
-                child: Text(
-                  'AI',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                  ),
-                ),
+                child: Text('AI',
+                    style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900)),
               ),
-              _RailBtn(
+              _RailButton(
                 onTap: onShare,
-                child: const Icon(
-                  Icons.share_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.share_rounded, size: 20),
               ),
-              _RailBtn(
+              _RailButton(
                 onTap: onMessage,
-                child: const Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
               ),
-              _RailBtn(
+              _RailButton(
                 onTap: onInsights,
-                child: const Icon(
-                  Icons.bar_chart_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.bar_chart_rounded, size: 20),
               ),
-              _RailBtn(
+              _RailButton(
                 onTap: onReport,
-                child: const Icon(
-                  Icons.flag_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.flag_outlined, size: 20),
               ),
             ],
           ),
@@ -975,19 +714,19 @@ class _ActionRail extends StatelessWidget {
   }
 }
 
-class _RailBtn extends StatelessWidget {
-  const _RailBtn({required this.child, this.onTap});
+class _RailButton extends StatelessWidget {
+  const _RailButton({required this.child, this.onTap});
   final Widget child;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         AppHaptics.selection();
         onTap?.call();
       },
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(width: 46, height: 46, child: Center(child: child)),
     );
   }
@@ -1011,22 +750,11 @@ class _GlassCircle extends StatelessWidget {
       onTap: onTap,
       child: ClipOval(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             width: size,
             height: size,
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(77),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withAlpha(77)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(128),
-                  blurRadius: 48,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
+            color: Colors.black.withAlpha(82),
             child: Icon(icon, color: Colors.white, size: iconSize),
           ),
         ),
@@ -1035,10 +763,28 @@ class _GlassCircle extends StatelessWidget {
   }
 }
 
-/// Deck mute — soft dark chip, no white ring (Cap volume icon).
-class _MuteIconButton extends StatelessWidget {
-  const _MuteIconButton({required this.soundOn, required this.onTap});
+class _GlassLabel extends StatelessWidget {
+  const _GlassLabel({required this.child});
+  final Widget child;
 
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          color: Colors.black.withAlpha(78),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _MuteButton extends StatelessWidget {
+  const _MuteButton({required this.soundOn, required this.onTap});
   final bool soundOn;
   final VoidCallback onTap;
 
@@ -1046,7 +792,6 @@ class _MuteIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 40,
         height: 40,
@@ -1068,24 +813,6 @@ class _MuteIconButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _GlassPill extends StatelessWidget {
-  const _GlassPill({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withAlpha(77),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withAlpha(77)),
-      ),
-      child: child,
     );
   }
 }

@@ -1,60 +1,27 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
-import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
-import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
-import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
-import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
-import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
-import 'package:flutter_swipes/src/features/gamification/presentation/widgets/engagement_reward_card.dart';
-import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
-import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/providers/who_liked_you_provider.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_interested_clients_screen.dart';
-import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
-import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/profile_activity_feed.dart';
-import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
-import 'package:flutter_swipes/src/features/profile/domain/daily_quest.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_section.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
+import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
-import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/holographic_id_card.dart';
-import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
-import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
-import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Capacitor ClientProfile — identity, quests, action grid, share, feedback, PEARL.
+const _profilePink = Color(0xFFEB4898);
+const _profileRed = Color(0xFFFF3040);
+
+/// Instagram-inspired marketplace profile: identity, real metrics and a visual
+/// gallery of everything the signed-in member has posted.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -63,1415 +30,775 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _questsOpen = false;
-  bool _moreOpen = false;
-  String? _feedbackCategory;
-  final _feedbackCtrl = TextEditingController();
-  bool _feedbackDone = false;
-  bool _feedbackSending = false;
+  String _filter = 'all';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(chromeVisibilityProvider.notifier).reset();
+      if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
     });
   }
 
   @override
-  void dispose() {
-    _feedbackCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final async = ref.watch(currentProfileProvider);
-    final top = MediaQuery.paddingOf(context).top;
+    final profileAsync = ref.watch(currentProfileProvider);
+    final listingsAsync = ref.watch(myListingsProvider('all'));
+    final safe = MediaQuery.paddingOf(context);
 
-    final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
+    return Scaffold(
+      backgroundColor: AppTheme.dashBg,
+      body: profileAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        ),
+        error: (_, _) => Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(currentProfileProvider),
+            child: const Text('Could not load profile — retry'),
+          ),
+        ),
+        data: (profile) {
+          final authUser = Supabase.instance.client.auth.currentUser;
+          final userId = profile?.userId ?? authUser?.id ?? '';
+          final name = _displayName(
+            profile?.name ?? '',
+            profile?.email ?? authUser?.email ?? '',
+          );
+          final all = listingsAsync.value ?? const <Listing>[];
+          final totalLikes = all.fold<int>(0, (sum, l) => sum + (l.likes ?? 0));
+          final totalViews = all.fold<int>(0, (sum, l) => sum + (l.views ?? 0));
 
-    return NeoNaiveScaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: async.when(
-              loading: () => Center(
-                child: CircularProgressIndicator(color: ink, strokeWidth: 2),
-              ),
-              error: (_, _) => Center(
-                child: TextButton(
-                  onPressed: () => ref.invalidate(currentProfileProvider),
-                  child: const Text('Could not load profile — retry'),
+          return RefreshIndicator(
+            color: _profilePink,
+            onRefresh: () async {
+              ref.invalidate(currentProfileProvider);
+              ref.invalidate(myListingsProvider('all'));
+              ref.invalidate(ownerListingsStatsProvider);
+              await Future.wait([
+                ref.read(currentProfileProvider.future),
+                ref.read(myListingsProvider('all').future),
+              ]);
+            },
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (n) {
+                if (n is ScrollUpdateNotification) {
+                  ref.read(chromeVisibilityProvider.notifier).onScroll(
+                        pixels: n.metrics.pixels,
+                        delta: n.scrollDelta ?? 0,
+                      );
+                }
+                return false;
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-              ),
-              data: (profile) {
-                final name = profile?.name ?? 'Identity';
-                final email =
-                    profile?.email ??
-                    Supabase.instance.client.auth.currentUser?.email ??
-                    '';
-                final avatar = profile?.avatarUrl;
-                final completion = profile?.completionPercent ?? 0;
-                final likes = ref.watch(whoLikedYouProvider).value?.length ?? 0;
-                final chats =
-                    ref.watch(conversationsProvider).value?.length ?? 0;
-                final headline = _displayName(name, email);
-
-                return NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollUpdateNotification) {
-                      ref
-                          .read(chromeVisibilityProvider.notifier)
-                          .onScroll(
-                            pixels: notification.metrics.pixels,
-                            delta: notification.scrollDelta ?? 0,
-                          );
-                    }
-                    return false;
-                  },
-                  child: ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(20, top + 132, 20, 140),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  safe.top + 88,
+                  16,
+                  safe.bottom + 122,
+                ),
+                children: [
+                  Row(
                     children: [
-                      // Identity core
-                      Center(
-                        child: Column(
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Container(
-                                  width: 132,
-                                  height: 132,
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Color(0xFFFF4D00),
-                                        Color(0xFFEB4898),
-                                      ],
-                                    ),
-                                  ),
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Color(0xFF080C14),
-                                    ),
-                                    child: FunAvatar(
-                                      seed:
-                                          profile?.userId ??
-                                          Supabase.instance.client.auth.currentUser?.id ??
-                                          email,
-                                      imageUrl: avatar,
-                                      size: 126,
-                                      semanticLabel: '$headline profile avatar',
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: -6,
-                                  right: -6,
-                                  child: GestureDetector(
-                                    onTap: () async {
-                                      AppHaptics.light();
-                                      final url = await Navigator.of(context)
-                                          .push<String>(
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const ProfileCameraScreen(
-                                                    mode: ProfileCameraMode
-                                                        .selfie,
-                                                  ),
-                                            ),
-                                          );
-                                      if (url != null) {
-                                        ref.invalidate(currentProfileProvider);
-                                      }
-                                    },
-                                    child: Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(18),
-                                        gradient: const LinearGradient(
-                                          colors: [
-                                            Color(0xFFFF4D00),
-                                            Color(0xFFFF6B00),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFF0A0A0D),
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt_rounded,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Text('PROFILE', style: NexusTheme.sectionLabel),
-                            const SizedBox(height: 6),
-                            Text(
-                              headline,
-                              textAlign: TextAlign.center,
-                              style: AppTheme.displayItalic.copyWith(
-                                fontSize: 34,
-                                height: 1.05,
-                                color: ink,
-                              ),
-                            ),
-                            if (email.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                email,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: muted,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      // HUD stats
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatTile(
-                              icon: Icons.local_fire_department_rounded,
-                              iconColor: const Color(0xFFFF4D00),
-                              value: likes,
-                              label: 'Likes',
-                              onTap: () =>
-                                  context.push(AppPaths.clientWhoLikedYou),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatTile(
-                              icon: Icons.auto_awesome_rounded,
-                              iconColor: const Color(0xFFEB4898),
-                              value: likes,
-                              label: 'Total Matches',
-                              onTap: () {
-                                context.go(AppPaths.clientLikedProperties);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatTile(
-                              icon: Icons.chat_bubble_outline_rounded,
-                              iconColor: const Color(0xFFFF8C42),
-                              value: chats,
-                              label: 'Messages',
-                              onTap: () {
-                                context.go(AppPaths.messages);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Active-time loyalty: automatic progress, no claims.
-                      const _Panel(
-                        child: EngagementRewardCard(),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Magic AI + primary actions (nexus, not a rainbow grid)
-                      GestureDetector(
-                        onTap: () {
-                          AppHaptics.medium();
-                          showMagicAiProfileSheet(context);
-                        },
-                        child: SwipessDashboardTile(
-                          title: 'MAGIC AI PROFILE',
-                          icon: Icons.auto_awesome_rounded,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
-                          ),
-                          isFullWidth: true,
-                          height: 64,
-                          onTap: () => showMagicAiProfileSheet(context),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // 2-Column Grid Row 1: Edit Profile | Promote Event
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SwipessDashboardTile(
-                              title: 'EDIT PROFILE',
-                              icon: Icons.person_rounded,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFF4E50), Color(0xFFF9D423)],
-                              ),
-                              onTap: () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const EditProfileScreen(),
-                                    ),
-                                  ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SwipessDashboardTile(
-                              title: 'PROMOTE EVENT',
-                              icon: Icons.campaign_rounded,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFF4D00), Color(0xFFFF8C00)],
-                              ),
-                              onTap: () =>
-                                  context.push(AppPaths.clientAdvertise),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // 2-Column Grid Row 2: Seekers | Tokens
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SwipessDashboardTile(
-                              title: 'SEEKERS',
-                              icon: Icons.people_rounded,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                              ),
-                              onTap: () => context.go(AppPaths.exploreSeekers),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SwipessDashboardTile(
-                              title: 'TOKENS',
-                              icon: Icons.toll_rounded,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
-                              ),
-                              onTap: () => showGlassModal(
-                                context: context,
-                                builder: (_) => const TokensModal(),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // 2-Column Grid Row 3: Settings | Sign Out
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SwipessDashboardTile(
-                              title: 'SETTINGS',
-                              icon: Icons.settings_rounded,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF475569), Color(0xFF334155)],
-                              ),
-                              onTap: () => context.push(
-                                profile?.role == 'owner'
-                                    ? AppPaths.ownerSettings
-                                    : AppPaths.clientSettings,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SwipessDashboardTile(
-                              title: 'SIGN OUT',
-                              icon: Icons.logout_rounded,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFDC2626), Color(0xFF991B1B)],
-                              ),
-                              onTap: () async {
-                                AppHaptics.medium();
-                                await ref
-                                    .read(authRepositoryProvider)
-                                    .signOut();
-                                if (!context.mounted) return;
-                                context.go(AppPaths.welcome);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Premium Hero Tile (Full width, Gold/Orange)
-                      SwipessDashboardTile(
-                        title: 'PREMIUM',
-                        icon: Icons.workspace_premium_rounded,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                        ),
-                        isFullWidth: true,
-                        height: 64,
-                        onTap: () =>
-                            context.push(AppPaths.subscriptionPackages),
-                      ),
-                      const SizedBox(height: 18),
-
-                      _Panel(
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-                        child: InviteFriendsSection(
-                          profileId:
-                              profile?.userId ??
-                              Supabase.instance.client.auth.currentUser?.id ??
-                              '',
-                          profileName: name,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Feedback
-                      _Panel(
-                        padding: const EdgeInsets.all(18),
-                        child: _feedbackDone
-                            ? Column(
-                                children: [
-                                  const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: Color(0xFF10B981),
-                                    size: 44,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    'Thank you!',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: ink,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'Your feedback helps us build a better Swipess.',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: muted,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => setState(() {
-                                      _feedbackDone = false;
-                                      _feedbackCtrl.clear();
-                                      _feedbackCategory = null;
-                                    }),
-                                    child: const Text('Send another'),
-                                  ),
-                                ],
-                              )
-                            : _FeedbackForm(
-                                category: _feedbackCategory,
-                                controller: _feedbackCtrl,
-                                sending: _feedbackSending,
-                                onCategory: (c) =>
-                                    setState(() => _feedbackCategory = c),
-                                onSubmit: _submitFeedback,
-                              ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Holographic Identity Vault
-                      GestureDetector(
-                        onTap: () {
-                          AppHaptics.light();
-                          context.go(AppPaths.clientVapId);
-                        },
-                        child: Column(
-                          children: [
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF222833),
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: Colors.white.withAlpha(42),
-                                    width: 1.1,
-                                  ),
-                                ),
-                                child: Text(
-                                  'Sync Protocol',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            HolographicIDCard(
-                              name: name,
-                              idNumber:
-                                  'NX-${(profile?.userId ?? '00000000').padRight(8).substring(0, 8).toUpperCase()}',
-                              avatarUrl: avatar,
-                              occupation: profile?.role ?? 'Client',
-                              location: profile?.city ?? '',
-                              years: profile?.age?.toString() ?? '',
-                              bio: profile?.bio ?? '',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Seeker requests teaser
-                      GestureDetector(
-                        onTap: () {
-                          context.go(AppPaths.exploreSeekers);
-                        },
-                        child: _Panel(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF3B82F6).withAlpha(40),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.campaign_outlined,
-                                  color: Color(0xFF60A5FA),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Seeker Requests',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: ink,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 13,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Post what professional you need',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: muted,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.white,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      if (completion < 100) ...[
-                        const SizedBox(height: 14),
-                        _Panel(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.auto_awesome_rounded,
-                                    color: Color(0xFFEB4898),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Profile Completeness',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: muted,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 2,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '$completion%',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: ink,
-                                      fontWeight: FontWeight.w900,
-                                      fontStyle: FontStyle.italic,
-                                      fontSize: 22,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(999),
-                                child: LinearProgressIndicator(
-                                  value: completion / 100,
-                                  minHeight: 10,
-                                  valueColor: const AlwaysStoppedAnimation(
-                                    Color(0xFFFF4D00),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 18),
-                      ProfileActivityFeed(ink: ink, muted: muted),
-                      const SizedBox(height: 18),
-                      // Language row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _LangChip(
-                            label: 'EN',
-                            active: !ref.watch(appLocaleProvider).isEs,
-                            onTap: () => ref
-                                .read(appLocaleProvider.notifier)
-                                .setCode('en'),
-                          ),
-                          const SizedBox(width: 8),
-                          _LangChip(
-                            label: 'ES',
-                            active: ref.watch(appLocaleProvider).isEs,
-                            onTap: () => ref
-                                .read(appLocaleProvider.notifier)
-                                .setCode('es'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // More tools (Flutter extras)
-                      GestureDetector(
-                        onTap: () => setState(() => _moreOpen = !_moreOpen),
-                        child: Row(
-                          children: [
-                            Text(
-                              'MORE TOOLS',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: muted,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const Spacer(),
-                            Icon(
-                              _moreOpen
-                                  ? Icons.keyboard_arrow_up_rounded
-                                  : Icons.keyboard_arrow_down_rounded,
-                              color: muted,
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_moreOpen) ...[
-                        const SizedBox(height: 12),
-                        _MoreToolsGrid(
-                          unread:
-                              ref.watch(unreadNotificationsProvider).value ?? 0,
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      Center(
-                        child: TextButton(
-                          onPressed: () async {
-                            AppHaptics.medium();
-                            await ref.read(authRepositoryProvider).signOut();
-                            ref.read(currentUserProvider.notifier).clear();
-                            if (context.mounted) context.go(AppPaths.welcome);
-                          },
-                          child: Text(
-                            'Sign out',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: muted,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Center(
+                      Expanded(
                         child: Text(
-                          'Swipess v1.0.0',
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                            color: muted.withAlpha(120),
-                            fontSize: 12,
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -.7,
                           ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Add listing',
+                        onPressed: () => context.push(AppPaths.ownerListingsNew),
+                        icon: const Icon(Icons.add_box_outlined, size: 27),
+                      ),
+                      IconButton(
+                        tooltip: 'More',
+                        onPressed: () => _accountMenu(profile?.role),
+                        icon: const Icon(Icons.menu_rounded, size: 28),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Container(
+                        width: 94,
+                        height: 94,
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Color(0xFFFF4D00), _profilePink],
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.dashBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: FunAvatar(
+                            seed: userId.isEmpty ? name : userId,
+                            imageUrl: profile?.avatarUrl,
+                            size: 84,
+                            semanticLabel: '$name profile photo',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _Stat(value: all.length, label: 'Listings'),
+                            _Stat(value: totalLikes, label: 'Likes'),
+                            _Stat(value: totalViews, label: 'Views'),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                );
-              },
+                  if ((profile?.bio ?? '').trim().isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      profile!.bio!.trim(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  if ((profile?.city ?? '').trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 15),
+                        const SizedBox(width: 4),
+                        Text(
+                          profile!.city!.trim(),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Edit profile',
+                          onTap: _editProfile,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Share profile',
+                          onTap: userId.isEmpty
+                              ? null
+                              : () => AppShare.profile(id: userId, name: name),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ActionButton(
+                          label: 'Manage',
+                          onTap: _openManager,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  listingsAsync.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                    error: (_, _) => Center(
+                      child: TextButton(
+                        onPressed: () =>
+                            ref.invalidate(myListingsProvider('all')),
+                        child: const Text('Could not load listings — retry'),
+                      ),
+                    ),
+                    data: (listings) {
+                      final visible = _filtered(listings);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _FilterStrip(
+                            listings: listings,
+                            selected: _filter,
+                            onSelect: (value) {
+                              AppHaptics.selection();
+                              setState(() => _filter = value);
+                            },
+                          ),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              const Icon(Icons.grid_on_rounded, size: 21),
+                              const SizedBox(width: 8),
+                              Text(
+                                _filter == 'all'
+                                    ? 'YOUR LISTINGS'
+                                    : _filter.toUpperCase(),
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton.icon(
+                                onPressed: _openManager,
+                                icon: const Icon(Icons.tune_rounded, size: 16),
+                                label: const Text('Manage'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (visible.isEmpty)
+                            _EmptyGallery(
+                              onAdd: () =>
+                                  context.push(AppPaths.ownerListingsNew),
+                            )
+                          else
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: visible.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 2,
+                                mainAxisSpacing: 2,
+                                childAspectRatio: .86,
+                              ),
+                              itemBuilder: (context, index) {
+                                final listing = visible[index];
+                                return _ListingTile(
+                                  listing: listing,
+                                  onTap: () =>
+                                      context.push('/listing/${listing.id}'),
+                                  onLongPress: () => _listingActions(listing),
+                                );
+                              },
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          Positioned(top: top + 76, left: 16, child: const CapBackButton()),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Future<void> _submitFeedback() async {
-    final msg = _feedbackCtrl.text.trim();
-    final cat = _feedbackCategory;
-    if (msg.isEmpty || cat == null || _feedbackSending) return;
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to send feedback.')),
-      );
-      return;
+  List<Listing> _filtered(List<Listing> all) {
+    if (_filter == 'all') return all;
+    if (_filter == 'active') {
+      return all
+          .where((l) => l.isActive == true || l.status == 'active')
+          .toList();
     }
-
-    setState(() => _feedbackSending = true);
-    try {
-      final role =
-          user.appMetadata['role']?.toString() ??
-          user.userMetadata?['role']?.toString() ??
-          'client';
-      await Supabase.instance.client.from('support_tickets').insert({
-        'user_id': user.id,
-        'subject': 'Feedback · $cat',
-        'message': msg,
-        'category': 'feedback_$cat',
-        'priority': 'low',
-        'user_email': user.email ?? '',
-        'user_role': role,
-        'source': 'profile_feedback',
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _feedbackSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not send feedback: $error')),
-      );
-      return;
+    if (_filter == 'services') {
+      return all
+          .where((l) => l.category == 'worker' || l.category == 'services')
+          .toList();
     }
-    if (!mounted) return;
-    setState(() {
-      _feedbackSending = false;
-      _feedbackDone = true;
-    });
+    return all.where((l) => l.category == _filter).toList();
   }
 
-  static String _displayName(String name, String email) {
-    var n = name.trim();
-    final looksLikeEmail = n.contains('@') || n.toLowerCase() == 'identity';
-    if (n.isEmpty || looksLikeEmail) {
-      final local = email.split('@').first;
-      n = local.contains('.') ? local.split('.').first : local;
-    } else {
-      n = n.split(' ').first;
-    }
-    if (n.isEmpty) return 'You';
-    return n[0].toUpperCase() + n.substring(1);
-  }
-}
-
-class _Panel extends StatelessWidget {
-  const _Panel({required this.child, this.padding});
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          width: double.infinity,
-          padding: padding ?? EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: MatteSurface.elevated(context),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.transparent),
-          ),
-          child: child,
-        ),
-      ),
+  Future<void> _editProfile() async {
+    AppHaptics.light();
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
     );
+    ref.invalidate(currentProfileProvider);
   }
-}
 
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.label,
-    required this.onTap,
-  });
+  Future<void> _openManager() async {
+    AppHaptics.light();
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
+    );
+    ref.invalidate(myListingsProvider('all'));
+    ref.invalidate(ownerListingsStatsProvider);
+  }
 
-  final IconData icon;
-  final Color iconColor;
-  final int value;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: MatteSurface.elevated(context),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.transparent),
-        ),
+  Future<void> _listingActions(Listing listing) async {
+    AppHaptics.medium();
+    final active = listing.isActive == true || listing.status == 'active';
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF111217),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: iconColor, size: 20),
-            const SizedBox(height: 8),
-            Text(
-              '$value',
-              style: GoogleFonts.plusJakartaSans(
-                color: ink,
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.8,
-              ),
+            ListTile(
+              leading: const Icon(Icons.edit_rounded),
+              title: const Text('Edit listing'),
+              onTap: () => Navigator.pop(sheetContext, 'edit'),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: muted,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.6,
-              ),
+            ListTile(
+              leading: Icon(active
+                  ? Icons.archive_outlined
+                  : Icons.publish_rounded),
+              title: Text(active ? 'Archive listing' : 'Make active'),
+              onTap: () => Navigator.pop(sheetContext, 'status'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.share_rounded),
+              title: const Text('Share listing'),
+              onTap: () => Navigator.pop(sheetContext, 'share'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded,
+                  color: _profileRed),
+              title: const Text('Delete listing',
+                  style: TextStyle(color: _profileRed)),
+              onTap: () => Navigator.pop(sheetContext, 'delete'),
             ),
           ],
         ),
       ),
     );
+    if (!mounted || action == null) return;
+
+    if (action == 'edit') {
+      await Navigator.of(context, rootNavigator: true).push<void>(
+        MaterialPageRoute(builder: (_) => EditListingScreen(listing: listing)),
+      );
+    } else if (action == 'status') {
+      await ref
+          .read(ownerListingsActionsProvider)
+          .setStatus(listing.id, active ? 'archived' : 'active');
+    } else if (action == 'share') {
+      await AppShare.listing(id: listing.id, title: listing.title);
+    } else if (action == 'delete') {
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Delete listing?'),
+          content: Text(
+            'This permanently removes “${listing.title ?? 'this listing'}”.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: _profileRed),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+      if (yes == true) {
+        await ref.read(ownerListingsActionsProvider).delete(listing.id);
+      }
+    }
+
+    ref.invalidate(myListingsProvider('all'));
+    ref.invalidate(ownerListingsStatsProvider);
+  }
+
+  Future<void> _accountMenu(String? role) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF111217),
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.workspace_premium_outlined),
+              title: const Text('Premium & benefits'),
+              onTap: () => Navigator.pop(sheetContext, 'premium'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Settings'),
+              onTap: () => Navigator.pop(sheetContext, 'settings'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded),
+              title: const Text('Sign out'),
+              onTap: () => Navigator.pop(sheetContext, 'logout'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'premium') {
+      context.push(AppPaths.subscriptionPackages);
+    } else if (action == 'settings') {
+      context.push(
+        role == 'owner' ? AppPaths.ownerSettings : AppPaths.clientSettings,
+      );
+    } else if (action == 'logout') {
+      await ref.read(authRepositoryProvider).signOut();
+      if (mounted) context.go(AppPaths.welcome);
+    }
+  }
+
+  static String _displayName(String name, String email) {
+    final clean = name.trim();
+    if (clean.isNotEmpty && !clean.contains('@')) return clean;
+    final local = email.trim().split('@').first;
+    if (local.isEmpty) return 'You';
+    return local[0].toUpperCase() + local.substring(1);
   }
 }
 
-class _DailyQuests extends ConsumerWidget {
-  const _DailyQuests({required this.expanded, required this.onToggle});
-  final bool expanded;
-  final VoidCallback onToggle;
+class _Stat extends StatelessWidget {
+  const _Stat({required this.value, required this.label});
+  final int value;
+  final String label;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(dailyQuestsProvider);
-    final board = async.maybeWhen(
-      data: (value) => value,
-      orElse: () => const DailyQuestBoard(),
-    );
-    final points = board.points;
-    final quests = List<DailyQuest>.from(board.quests)
-      ..sort((a, b) {
-        if (a.claimed != b.claimed) return a.claimed ? 1 : -1;
-        if (a.completed != b.completed) return a.completed ? -1 : 1;
-        return 0;
-      });
+  Widget build(BuildContext context) {
+    String compact(int n) {
+      if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+      if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+      return '$n';
+    }
 
     return Column(
       children: [
-        GestureDetector(
-          onTap: onToggle,
-          behavior: HitTestBehavior.opaque,
-          child: Row(
-            children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                color: AppTheme.brandPrimary,
-                size: 20,
-              ),
-              SizedBox(width: 8),
-              Text(
-                capCopy(ref, 'Daily Quests', 'Misiones diarias'),
-                style: GoogleFonts.plusJakartaSans(
-                  color: MatteSurface.ink(context),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.transparent),
-                ),
-                child: Text(
-                  async.isLoading
-                      ? '…'
-                      : '$points / ${DailyQuestBoard.pointsNeeded}',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: AppTheme.brandPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              Icon(
-                expanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                color: Colors.white,
-              ),
-            ],
+        Text(
+          compact(value),
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        if (expanded) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: board.progressPercent,
-              minHeight: 8,
-              valueColor: const AlwaysStoppedAnimation(AppTheme.brandPrimary),
-            ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 8),
-          Text(
-            capCopy(
-              ref,
-              'Earn ${DailyQuestBoard.pointsNeeded} points to unlock a free token!',
-              '¡Gana ${DailyQuestBoard.pointsNeeded} puntos para un token gratis!',
-            ),
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (async.hasError)
-            TextButton(
-              onPressed: () => ref.invalidate(dailyQuestsProvider),
-              child: const Text('Could not load quests — retry'),
-            )
-          else if (quests.isEmpty)
-            Text(
-              capCopy(
-                ref,
-                'Sign in to unlock daily quests.',
-                'Inicia sesión para desbloquear misiones.',
-              ),
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 12,
-              ),
-            )
-          else
-            for (final q in quests)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10141B),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withAlpha(36),
-                      width: 1.1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        q.claimed
-                            ? Icons.check_circle_rounded
-                            : q.id == 'login'
-                            ? Icons.bolt_rounded
-                            : q.id == 'swipe'
-                            ? Icons.gps_fixed_rounded
-                            : Icons.auto_awesome_rounded,
-                        color: q.claimed
-                            ? const Color(0xFF10B981)
-                            : q.completed
-                            ? AppTheme.brandPrimary
-                            : Colors.white,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              q.title,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                                decoration: q.claimed
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                            ),
-                            if (!q.claimed)
-                              Text(
-                                '${q.progress}/${q.goal}  ·  +${q.points} pts',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      if (q.completed && !q.claimed)
-                        TextButton(
-                          onPressed: () async {
-                            final before = points;
-                            final ok = await ref
-                                .read(dailyQuestsProvider.notifier)
-                                .claim(q.id);
-                            if (!context.mounted || !ok) return;
-                            final unlocked =
-                                before + q.points >=
-                                DailyQuestBoard.pointsNeeded;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  unlocked
-                                      ? 'Token Unlocked! You earned a FREE Token.'
-                                      : 'Reward Claimed! +${q.points} points.',
-                                ),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            'CLAIM',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: AppTheme.brandPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 11,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-        ],
+        ),
       ],
     );
   }
 }
 
-class _FeedbackForm extends StatelessWidget {
-  const _FeedbackForm({
-    required this.category,
-    required this.controller,
-    required this.sending,
-    required this.onCategory,
-    required this.onSubmit,
-  });
-
-  final String? category;
-  final TextEditingController controller;
-  final bool sending;
-  final ValueChanged<String> onCategory;
-  final VoidCallback onSubmit;
-
-  static const cats = [
-    ('bug', 'Bug / Issue', Color(0xFFEF4444)),
-    ('feature', 'Feature Request', Color(0xFF6366F1)),
-    ('experience', 'App Experience', Color(0xFFF97316)),
-    ('compliment', 'Compliment', Color(0xFF10B981)),
-    ('other', 'Other', Color(0xFF94A3B8)),
-  ];
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4C1D95), Color(0xFF7C3AED)],
-                ),
-              ),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
+    return SizedBox(
+      height: 38,
+      child: FilledButton(
+        onPressed: onTap,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF252932),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterStrip extends StatelessWidget {
+  const _FilterStrip({
+    required this.listings,
+    required this.selected,
+    required this.onSelect,
+  });
+  final List<Listing> listings;
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = <(String, String, IconData)>[
+      ('all', 'All', Icons.grid_view_rounded),
+      ('property', 'Homes', Icons.home_outlined),
+      ('services', 'Services', Icons.work_outline_rounded),
+      ('motorcycle', 'Motos', Icons.two_wheeler_rounded),
+      ('bicycle', 'Bikes', Icons.pedal_bike_rounded),
+      ('yacht', 'Yachts', Icons.sailing_outlined),
+      ('active', 'Active', Icons.bolt_rounded),
+    ];
+
+    int count(String id) {
+      if (id == 'all') return listings.length;
+      if (id == 'active') {
+        return listings
+            .where((l) => l.isActive == true || l.status == 'active')
+            .length;
+      }
+      if (id == 'services') {
+        return listings
+            .where((l) => l.category == 'worker' || l.category == 'services')
+            .length;
+      }
+      return listings.where((l) => l.category == id).length;
+    }
+
+    return SizedBox(
+      height: 82,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final active = selected == item.$1;
+          return GestureDetector(
+            onTap: () => onSelect(item.$1),
+            child: SizedBox(
+              width: 64,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Send Feedback',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: MatteSurface.ink(context),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: active ? _profilePink : const Color(0xFF1A1E26),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(item.$3, color: Colors.white, size: 22),
+                        Positioned(
+                          right: 1,
+                          bottom: 0,
+                          child: Container(
+                            constraints: const BoxConstraints(minWidth: 18),
+                            height: 18,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: const BoxDecoration(
+                              color: _profileRed,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${count(item.$1)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 5),
                   Text(
-                    'Help us improve Swipess',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: MatteSurface.muted(context),
-                      fontSize: 12,
+                    item.$2,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: active ? Colors.white : Colors.white70,
+                      fontSize: 9.5,
+                      fontWeight: active ? FontWeight.w900 : FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final c in cats)
-              GestureDetector(
-                onTap: () => onCategory(c.$1),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: category == c.$1
-                        ? c.$3.withAlpha(55)
-                        : const Color(0xFF222833),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: category == c.$1
-                          ? c.$3
-                          : Colors.white.withAlpha(42),
-                      width: 1.15,
-                    ),
-                  ),
-                  child: Text(
-                    c.$2,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: category == c.$1 ? c.$3 : Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller,
-          maxLines: 3,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Tell us what\'s on your mind…',
-            hintStyle: TextStyle(color: Colors.white),
-            filled: true,
-            fillColor: const Color(0xFF10141B),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: Colors.white.withAlpha(48),
-                width: 1.15,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: Colors.white.withAlpha(48),
-                width: 1.15,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppTheme.brandPrimary,
-                width: 1.4,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: sending ? null : onSubmit,
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-              disabledBackgroundColor: Colors.white24,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(
-              sending ? 'Sending…' : 'Send Feedback',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-            ),
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 }
 
-class _LangChip extends StatelessWidget {
-  const _LangChip({
-    required this.label,
-    required this.active,
+class _ListingTile extends StatelessWidget {
+  const _ListingTile({
+    required this.listing,
     required this.onTap,
+    required this.onLongPress,
   });
-  final String label;
-  final bool active;
+  final Listing listing;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
+    final image = listing.images.isNotEmpty ? listing.images.first : '';
+    final active = listing.isActive == true || listing.status == 'active';
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 48,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active
-              ? AppTheme.brandPrimary.withAlpha(48)
-              : const Color(0xFF222833),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(42),
-            width: 1.15,
+      onLongPress: onLongPress,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (image.isNotEmpty)
+            Image.network(
+              image,
+              fit: BoxFit.cover,
+              cacheWidth: 480,
+              errorBuilder: (_, _, _) => const ColoredBox(
+                color: Color(0xFF20242D),
+                child: Icon(Icons.image_not_supported_outlined),
+              ),
+            )
+          else
+            const ColoredBox(
+              color: Color(0xFF20242D),
+              child: Icon(Icons.photo_outlined),
+            ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0x99000000)],
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: 12,
+          Positioned(
+            top: 6,
+            left: 6,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: active
+                    ? const Color(0xFF22C55E)
+                    : const Color(0xFF94A3B8),
+                shape: BoxShape.circle,
+              ),
+            ),
           ),
-        ),
+          if ((listing.videoUrl ?? '').isNotEmpty)
+            const Positioned(
+              top: 5,
+              right: 5,
+              child: Icon(Icons.play_circle_fill_rounded, size: 18),
+            ),
+          Positioned(
+            left: 6,
+            right: 6,
+            bottom: 5,
+            child: Row(
+              children: [
+                const Icon(Icons.favorite_rounded,
+                    size: 12, color: _profileRed),
+                const SizedBox(width: 3),
+                Text(
+                  '${listing.likes ?? 0}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                const Icon(Icons.visibility_rounded, size: 12),
+                const SizedBox(width: 3),
+                Text(
+                  '${listing.views ?? 0}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _MoreToolsGrid extends StatelessWidget {
-  const _MoreToolsGrid({required this.unread});
-  final int unread;
+class _EmptyGallery extends StatelessWidget {
+  const _EmptyGallery({required this.onAdd});
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
-    final items = <(IconData, String, VoidCallback)>[
-      (
-        Icons.home_work_outlined,
-        'My listings',
-        () => Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(builder: (_) => const OwnerPropertiesScreen()),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      decoration: BoxDecoration(
+        color: const Color(0xFF171B22),
+        borderRadius: BorderRadius.circular(22),
       ),
-      (
-        Icons.how_to_reg_outlined,
-        'Interested clients',
-        () => Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(
-            builder: (_) => const OwnerInterestedClientsScreen(),
-          ),
-        ),
-      ),
-      (
-        Icons.event_available_rounded,
-        'Saved events',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const EventFavoritesScreen())),
-      ),
-      (
-        Icons.psychology_rounded,
-        'AI Memory / Brain',
-        () => showMemoryDrawer(context),
-      ),
-      (
-        Icons.bookmark_border_rounded,
-        'Saved searches',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const SavedSearchesScreen())),
-      ),
-      (
-        Icons.notifications_none_rounded,
-        unread > 0 ? 'Alerts ($unread)' : 'Notifications',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-      ),
-      (
-        Icons.folder_outlined,
-        'Document vault',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const DocumentVaultScreen())),
-      ),
-      (
-        Icons.account_balance_wallet_outlined,
-        'Escrow',
-        () => Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(builder: (_) => const EscrowDashboardScreen()),
-        ),
-      ),
-      (
-        Icons.gavel_rounded,
-        'Legal hub',
-        () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const LegalHubScreen())),
-      ),
-      (
-        Icons.balance_rounded,
-        'Lawyer services',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const LawyerServicesScreen())),
-      ),
-      (
-        Icons.work_outline_rounded,
-        'Worker discovery',
-        () => Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(builder: (_) => const WorkerDiscoveryScreen()),
-        ),
-      ),
-      (
-        Icons.card_giftcard_rounded,
-        'Resident perks',
-        () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const PerksScreen())),
-      ),
-      (
-        Icons.info_outline_rounded,
-        'About Swipess',
-        () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
-      ),
-      (
-        Icons.qr_code_scanner_rounded,
-        'Validate PEARL',
-        () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const VapValidateScreen())),
-      ),
-      (
-        Icons.videocam_outlined,
-        'Video tours',
-        () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const VideoToursScreen())),
-      ),
-      (
-        Icons.people_outline_rounded,
-        'Roommates',
-        () => Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(builder: (_) => const RoommateMatchingScreen()),
-        ),
-      ),
-      (
-        Icons.newspaper_outlined,
-        'Local intel',
-        () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const LocalIntelScreen())),
-      ),
-      (
-        Icons.trending_up_rounded,
-        'Market prices',
-        () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const PriceTrackerScreen())),
-      ),
-      (
-        Icons.handyman_outlined,
-        'Maintenance',
-        () => Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(builder: (_) => const MaintenanceRequestsScreen()),
-        ),
-      ),
-      (
-        Icons.help_outline_rounded,
-        'Help & FAQ',
-        () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const FAQScreen())),
-      ),
-    ];
-
-    return Column(
-      children: [
-        for (final item in items)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(item.$1, color: AppTheme.brandPrimary),
-            title: Text(
-              item.$2,
-              style: GoogleFonts.plusJakartaSans(
-                color: MatteSurface.ink(context),
-                fontWeight: FontWeight.w700,
-              ),
+      child: Column(
+        children: [
+          const Icon(Icons.add_photo_alternate_outlined, size: 42),
+          const SizedBox(height: 12),
+          Text(
+            'Your listings will live here.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
             ),
-            trailing: Icon(
-              Icons.chevron_right_rounded,
-              color: MatteSurface.muted(context),
-            ),
-            onTap: item.$3,
           ),
-      ],
+          const SizedBox(height: 6),
+          const Text(
+            'Post once, then edit, archive, share or delete it from your profile.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add listing'),
+          ),
+        ],
+      ),
     );
   }
 }
