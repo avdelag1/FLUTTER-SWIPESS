@@ -102,7 +102,11 @@ class LikesRepository {
     if (userId == null) return;
     await _client
         .from('likes')
-        .delete()
+        .update({
+          'direction': 'left',
+          'dismiss_count': 1,
+          'dismissed_at': DateTime.now().toIso8601String(),
+        })
         .eq('user_id', userId)
         .eq('target_id', targetUserId)
         .eq('target_type', 'profile');
@@ -113,7 +117,11 @@ class LikesRepository {
     if (userId == null) return;
     await _client
         .from('likes')
-        .delete()
+        .update({
+          'direction': 'left',
+          'dismiss_count': 1,
+          'dismissed_at': DateTime.now().toIso8601String(),
+        })
         .eq('user_id', userId)
         .eq('target_id', listingId)
         .eq('target_type', 'listing');
