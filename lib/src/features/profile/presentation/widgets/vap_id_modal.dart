@@ -24,6 +24,12 @@ import 'package:google_fonts/google_fonts.dart';
 class VapIdModal extends ConsumerWidget {
   const VapIdModal({super.key});
 
+  // Keep the PEARL toolbar/card physically clear of the persistent app chrome.
+  // SafeArea handles the device cutouts; these values reserve the visible
+  // SWIPESS header and dock themselves so neither layer sits on top of the ID.
+  static const _headerChromeClearance = 58.0;
+  static const _dockChromeClearance = 82.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return PrivacyScreenGuard(
@@ -33,7 +39,12 @@ class VapIdModal extends ConsumerWidget {
         builder: (context, dismiss) {
           return SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+              padding: const EdgeInsets.fromLTRB(
+                8,
+                _headerChromeClearance + 8,
+                8,
+                _dockChromeClearance + 12,
+              ),
               child: _VapIdModalBody(onClose: dismiss),
             ),
           );
