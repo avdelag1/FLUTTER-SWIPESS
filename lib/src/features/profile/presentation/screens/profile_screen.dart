@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/my_li
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/profile_tools_hub.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -20,8 +21,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 const _profilePink = Color(0xFFEB4898);
 const _profileRed = Color(0xFFFF3040);
 
-/// Instagram-inspired marketplace profile: identity, real metrics and a visual
-/// gallery of everything the signed-in member has posted.
+/// Social-first profile: Instagram-like identity + listing gallery first,
+/// followed by the complete account/tooling area from the original profile.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -218,7 +219,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _ActionButton(
-                          label: 'Manage',
+                          label: 'Manage listings',
                           onTap: _openManager,
                         ),
                       ),
@@ -271,12 +272,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   letterSpacing: 1.1,
                                 ),
                               ),
-                              const Spacer(),
-                              TextButton.icon(
-                                onPressed: _openManager,
-                                icon: const Icon(Icons.tune_rounded, size: 16),
-                                label: const Text('Manage'),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -310,6 +305,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ],
                       );
                     },
+                  ),
+                  ProfileToolsHub(
+                    role: profile?.role,
+                    profileId: userId,
+                    profileName: name,
                   ),
                 ],
               ),
@@ -369,9 +369,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onTap: () => Navigator.pop(sheetContext, 'edit'),
             ),
             ListTile(
-              leading: Icon(active
-                  ? Icons.archive_outlined
-                  : Icons.publish_rounded),
+              leading: Icon(
+                active ? Icons.archive_outlined : Icons.publish_rounded,
+              ),
               title: Text(active ? 'Archive listing' : 'Make active'),
               onTap: () => Navigator.pop(sheetContext, 'status'),
             ),
@@ -381,10 +381,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onTap: () => Navigator.pop(sheetContext, 'share'),
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded,
-                  color: _profileRed),
-              title: const Text('Delete listing',
-                  style: TextStyle(color: _profileRed)),
+              leading: const Icon(
+                Icons.delete_outline_rounded,
+                color: _profileRed,
+              ),
+              title: const Text(
+                'Delete listing',
+                style: TextStyle(color: _profileRed),
+              ),
               onTap: () => Navigator.pop(sheetContext, 'delete'),
             ),
           ],
@@ -729,8 +733,11 @@ class _ListingTile extends StatelessWidget {
             bottom: 5,
             child: Row(
               children: [
-                const Icon(Icons.favorite_rounded,
-                    size: 12, color: _profileRed),
+                const Icon(
+                  Icons.favorite_rounded,
+                  size: 12,
+                  color: _profileRed,
+                ),
                 const SizedBox(width: 3),
                 Text(
                   '${listing.likes ?? 0}',
