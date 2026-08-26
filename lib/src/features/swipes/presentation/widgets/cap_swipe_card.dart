@@ -669,47 +669,58 @@ class _ActionRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(77),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _RailButton(
-                onTap: onAi,
-                child: Text('AI',
-                    style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900)),
-              ),
-              _RailButton(
-                onTap: onShare,
-                child: const Icon(Icons.share_rounded, size: 20),
-              ),
-              _RailButton(
-                onTap: onMessage,
-                child: const Icon(Icons.chat_bubble_outline_rounded, size: 20),
-              ),
-              _RailButton(
-                onTap: onInsights,
-                child: const Icon(Icons.bar_chart_rounded, size: 20),
-              ),
-              _RailButton(
-                onTap: onReport,
-                child: const Icon(Icons.flag_outlined, size: 20),
-              ),
-            ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _RailButton(
+          onTap: onAi,
+          child: Text(
+            'AI',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
+            ),
           ),
         ),
-      ),
+        _RailButton(
+          onTap: onShare,
+          child: const Icon(
+            Icons.share_rounded,
+            size: 22,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+          ),
+        ),
+        _RailButton(
+          onTap: onMessage,
+          child: const Icon(
+            Icons.chat_bubble_outline_rounded,
+            size: 22,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+          ),
+        ),
+        _RailButton(
+          onTap: onInsights,
+          child: const Icon(
+            Icons.bar_chart_rounded,
+            size: 22,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+          ),
+        ),
+        _RailButton(
+          onTap: onReport,
+          child: const Icon(
+            Icons.flag_outlined,
+            size: 22,
+            color: Colors.white,
+            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -747,15 +758,17 @@ class _GlassCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            width: size,
-            height: size,
-            color: Colors.black.withAlpha(82),
-            child: Icon(icon, color: Colors.white, size: iconSize),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: iconSize,
+            shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
       ),
@@ -769,16 +782,13 @@ class _GlassLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-          color: Colors.black.withAlpha(78),
-          child: child,
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(64),
+        borderRadius: BorderRadius.circular(14),
       ),
+      child: child,
     );
   }
 }
@@ -791,24 +801,18 @@ class _MuteButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
         width: 40,
         height: 40,
         child: Center(
           child: BreathingWidget(
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(110),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                color: Colors.white,
-                size: 15,
-              ),
+            child: Icon(
+              soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+              color: Colors.white,
+              size: 18,
+              shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
             ),
           ),
         ),
