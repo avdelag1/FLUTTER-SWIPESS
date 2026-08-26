@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -57,7 +58,6 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   final _random = math.Random();
   final _voice = LiveVoiceInput.instance;
-  final _ai = AiEdgeRepository();
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -302,7 +302,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     widget.controller?.clear();
 
     try {
-      final reply = await _ai.chatConcierge(
+      final reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
         messages: [
           const AiChatMessage(
             role: 'system',
