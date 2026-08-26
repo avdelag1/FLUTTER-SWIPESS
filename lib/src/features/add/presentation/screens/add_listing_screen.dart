@@ -60,8 +60,11 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     if (widget.initialCategory == null &&
         widget.initialMode == null &&
         !seeded) {
-      ref.read(addListingProvider.notifier).reset();
-      draft = ref.read(addListingProvider);
+      Future.microtask(() {
+        if (mounted) {
+          ref.read(addListingProvider.notifier).reset();
+        }
+      });
     }
     _title = TextEditingController(text: draft.title);
     _price = TextEditingController(text: draft.price);
