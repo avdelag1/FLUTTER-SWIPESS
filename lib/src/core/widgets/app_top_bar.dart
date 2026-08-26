@@ -65,7 +65,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF050608) : Colors.white;
-    final location = GoRouterState.of(context).matchedLocation;
+    String location = '';
+    try {
+      location = GoRouterState.of(context).matchedLocation;
+    } catch (_) {}
     final isProfileRoute = location == AppPaths.clientProfile;
 
     final directRequests = ref.watch(directRequestBalanceProvider);
