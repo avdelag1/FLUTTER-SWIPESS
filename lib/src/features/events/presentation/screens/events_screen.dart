@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -663,15 +662,17 @@ class _RailButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            width: 44,
-            height: 44,
-            color: Colors.black.withAlpha(80),
-            child: Icon(icon, color: Colors.white, size: 20),
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 22,
+            shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
       ),
@@ -688,15 +689,17 @@ class _GlassIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            width: size,
-            height: size,
-            color: Colors.black.withAlpha(72),
-            child: Icon(icon, color: Colors.white, size: 19),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: 21,
+            shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
       ),
