@@ -28,7 +28,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.swipess.app</string>
+			<string>com.swipess.mobile</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>swipess</string>
