@@ -43,6 +43,15 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     GoRouter.maybeOf(context)?.go(AppPaths.clientProfile);
   }
 
+  void _backFromProfile(BuildContext context) {
+    AppHaptics.light();
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go(AppPaths.clientDashboard);
+  }
+
   String get _label {
     final raw = firstName?.trim() ?? '';
     if (raw.isEmpty) return 'You';
@@ -56,6 +65,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
     final ink = isLight ? const Color(0xFF050608) : Colors.white;
+    final location = GoRouterState.of(context).matchedLocation;
+    final isProfileRoute = location == AppPaths.clientProfile;
 
     final directRequests = ref.watch(directRequestBalanceProvider);
     final tokensLabel = directRequests.when(
@@ -87,13 +98,25 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ProfileAvatarButton(
-                  key: const ValueKey('header-profile'),
-                  avatarUrl: avatarUrl,
-                  seed: firstName ?? avatarUrl ?? 'swipess-you',
-                  semanticLabel: 'Open profile, $_label',
-                  onTap: () => _openProfile(context),
-                ),
+                if (isProfileRoute)
+                  _HudButton(
+                    key: const ValueKey('header-profile-back'),
+                    semanticLabel: 'Back',
+                    onTap: () => _backFromProfile(context),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: ink,
+                    ),
+                  )
+                else
+                  _ProfileAvatarButton(
+                    key: const ValueKey('header-profile'),
+                    avatarUrl: avatarUrl,
+                    seed: firstName ?? avatarUrl ?? 'swipess-you',
+                    semanticLabel: 'Open profile, $_label',
+                    onTap: () => _openProfile(context),
+                  ),
                 SizedBox(width: chromeGap),
                 _HudButton(
                   key: const ValueKey('header-create'),
