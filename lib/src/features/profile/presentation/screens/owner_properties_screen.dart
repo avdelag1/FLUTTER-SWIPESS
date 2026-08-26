@@ -23,6 +23,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap PropertyManagement — Listing Control terminal.
 class OwnerPropertiesScreen extends ConsumerStatefulWidget {
@@ -810,7 +811,8 @@ class _AssetCard extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   listing.primaryImage != null
-                      ? Image.network(listing.primaryImage!, fit: BoxFit.cover)
+                      ? CachedNetworkImage(
+  imageUrl: listing.primaryImage!, fit: BoxFit.cover)
                       : const ColoredBox(color: Color(0xFF16161C)),
                   const DecoratedBox(
                     decoration: BoxDecoration(

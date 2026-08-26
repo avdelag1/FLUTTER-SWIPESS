@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/features/insights/presentation/providers/insi
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class LocalIntelScreen extends ConsumerStatefulWidget {
   const LocalIntelScreen({super.key});
@@ -155,7 +156,8 @@ class _IntelCard extends StatelessWidget {
           if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.network(post.imageUrl!, fit: BoxFit.cover),
+              child: CachedNetworkImage(
+  imageUrl: post.imageUrl!, fit: BoxFit.cover),
             ),
           Padding(
             padding: const EdgeInsets.all(16),

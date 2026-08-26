@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repos
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 final publicProfileProvider =
     FutureProvider.family<PublicMemberProfile?, String>((ref, userId) async {
@@ -205,8 +206,8 @@ class _BodyState extends State<_Body> {
             right: 0,
             height: h * 0.52,
             child: hero != null
-                ? Image.network(
-                    hero,
+                ? CachedNetworkImage(
+  imageUrl: hero,
                     fit: BoxFit.cover,
                     errorBuilder: (_, _, _) => fallbackAvatar(),
                   )
@@ -394,8 +395,8 @@ class _BodyState extends State<_Body> {
                                     const SizedBox(width: 8),
                                 itemBuilder: (context, i) => ClipRRect(
                                   borderRadius: BorderRadius.circular(14),
-                                  child: Image.network(
-                                    p.images[i],
+                                  child: CachedNetworkImage(
+  imageUrl: p.images[i],
                                     width: 72,
                                     height: 72,
                                     fit: BoxFit.cover,

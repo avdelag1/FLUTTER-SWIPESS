@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/admin/presentation/providers/admin_p
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `AdminPhotos` — `admin-uploads` bucket folders.
 class AdminPhotosScreen extends ConsumerWidget {
@@ -102,8 +103,8 @@ class AdminPhotosScreen extends ConsumerWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            p.publicUrl,
+                          child: CachedNetworkImage(
+  imageUrl: p.publicUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (_, _, _) =>
                                 const ColoredBox(color: Color(0xFF16161C)),

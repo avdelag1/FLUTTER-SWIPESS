@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Capacitor ClientWorkerDiscovery — browse worker / pro listings.
 class WorkerDiscoveryScreen extends ConsumerStatefulWidget {
@@ -233,7 +234,8 @@ class _WorkerCard extends StatelessWidget {
                 width: 96,
                 child: image == null
                     ? const ColoredBox(color: Color(0xFF16161C))
-                    : Image.network(image, fit: BoxFit.cover),
+                    : CachedNetworkImage(
+  imageUrl: image, fit: BoxFit.cover),
               ),
               Expanded(
                 child: Padding(

@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class EventFavoritesScreen extends ConsumerStatefulWidget {
   const EventFavoritesScreen({super.key});
@@ -436,8 +437,8 @@ class _LikedEventCard extends StatelessWidget {
                             size: 34,
                           ),
                         )
-                      : Image.network(
-                          _image!,
+                      : CachedNetworkImage(
+  imageUrl: _image!,
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const ColoredBox(
                             color: Color(0xFF20242C),

@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap PublicListingPreview — guest-friendly listing deep link.
 class PublicListingPreviewScreen extends ConsumerWidget {
@@ -68,7 +69,8 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 flexibleSpace: FlexibleSpaceBar(
                   background: image == null
                       ? const ColoredBox(color: Color(0xFF16161C))
-                      : Image.network(image, fit: BoxFit.cover),
+                      : CachedNetworkImage(
+  imageUrl: image, fit: BoxFit.cover),
                 ),
               ),
               SliverToBoxAdapter(

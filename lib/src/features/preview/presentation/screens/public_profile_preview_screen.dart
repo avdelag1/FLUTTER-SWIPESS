@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap PublicProfilePreview — guest-friendly member deep link.
 class PublicProfilePreviewScreen extends ConsumerWidget {
@@ -44,7 +45,8 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
             fit: StackFit.expand,
             children: [
               if (hero != null)
-                Image.network(hero, fit: BoxFit.cover)
+                CachedNetworkImage(
+  imageUrl: hero, fit: BoxFit.cover)
               else
                 const ColoredBox(color: Color(0xFF16161C)),
               const DecoratedBox(

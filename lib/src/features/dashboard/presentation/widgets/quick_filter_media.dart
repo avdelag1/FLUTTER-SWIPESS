@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 bool isQuickFilterVideoUrl(String url) {
   final lower = url.toLowerCase();
@@ -368,8 +369,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final logicalW = MediaQuery.sizeOf(context).width;
     final cacheW = (logicalW * dpr * 0.55).round().clamp(320, 900);
-    return Image.network(
-      url,
+    return CachedNetworkImage(
+  imageUrl: url,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,

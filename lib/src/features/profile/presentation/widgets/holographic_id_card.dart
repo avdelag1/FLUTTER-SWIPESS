@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Compact profile preview of the same Pearl VAP / Local ID opened from nav.
 ///
@@ -114,8 +115,8 @@ class HolographicIDCard extends StatelessWidget {
                     border: Border.all(color: theme.tagBorder),
                   ),
                   child: avatarUrl != null && avatarUrl!.trim().isNotEmpty
-                      ? Image.network(
-                          avatarUrl!,
+                      ? CachedNetworkImage(
+  imageUrl: avatarUrl!,
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => _Initials(
                             initials: initials,

@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/video_tours/presentation/providers/video_tours_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap VideoTours — vertical immersive feed with share / like / mute / details.
 class VideoToursScreen extends ConsumerWidget {
@@ -154,7 +155,8 @@ class _TourPageState extends State<_TourPage> {
             ),
           )
         else if (listing.primaryImage != null)
-          Image.network(listing.primaryImage!, fit: BoxFit.cover)
+          CachedNetworkImage(
+  imageUrl: listing.primaryImage!, fit: BoxFit.cover)
         else
           const ColoredBox(color: Color(0xFF16161C)),
         const DecoratedBox(

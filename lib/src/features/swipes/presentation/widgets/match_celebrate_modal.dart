@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/native/app_review.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap `MatchCelebrateModal` — mutual-match overlay with avatars + CTAs.
 Future<void> showMatchCelebrateModal(
@@ -331,8 +332,8 @@ class _AvatarCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           if (url != null && url!.isNotEmpty)
-            Image.network(
-              url!,
+            CachedNetworkImage(
+  imageUrl: url!,
               fit: BoxFit.cover,
               cacheWidth: 400,
               errorBuilder: (_, _, _) =>

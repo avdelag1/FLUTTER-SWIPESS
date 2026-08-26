@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 final listingByIdProvider = FutureProvider.family<Listing?, String>((ref, id) {
   return ref.read(listingRepositoryProvider).fetchById(id);
@@ -716,8 +717,8 @@ class _Gallery extends StatelessWidget {
               onTap: onTap,
               child: Hero(
                 tag: 'swipe_hero_${listingId}_$i',
-                child: Image.network(
-                  url,
+                child: CachedNetworkImage(
+  imageUrl: url,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => const ColoredBox(
                     color: Color(0xFF16161C),

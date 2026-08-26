@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_ch
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Web globe renderer that deliberately avoids Mapbox AnnotationManager APIs.
 ///
@@ -994,8 +995,8 @@ class _PreviewImage extends StatelessWidget {
         height: 60,
         child: url == null || url!.trim().isEmpty
             ? fallback
-            : Image.network(
-                url!,
+            : CachedNetworkImage(
+  imageUrl: url!,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => fallback,
               ),

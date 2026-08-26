@@ -16,6 +16,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Capacitor EventoDetail — gallery, favorite, share, WhatsApp, calendar.
 class EventDetailScreen extends ConsumerStatefulWidget {
@@ -326,8 +327,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     if (_isVideo(url)) {
                                       return _EventVideo(url: url);
                                     }
-                                    return Image.network(
-                                      url,
+                                    return CachedNetworkImage(
+  imageUrl: url,
                                       fit: BoxFit.cover,
                                       errorBuilder: (_, _, _) =>
                                           const ColoredBox(color: Color(0xFF16161C)),

@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.da
 import 'package:flutter_swipes/src/features/profile/domain/vap_card_themes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ThemedVapCard extends StatelessWidget {
   const ThemedVapCard({
@@ -134,8 +135,8 @@ class _IdentitySection extends StatelessWidget {
                 border: t.isDark ? null : Border.all(color: t.tagBorder),
               ),
               child: data.displayPhotoUrl != null
-                  ? Image.network(
-                      data.displayPhotoUrl!,
+                  ? CachedNetworkImage(
+  imageUrl: data.displayPhotoUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) =>
                           _Initials(data: data, theme: t),
@@ -536,8 +537,8 @@ class _DocThumb extends ConsumerWidget {
                       color: t.textTertiary,
                       size: 17,
                     )
-                  : Image.network(
-                      url,
+                  : CachedNetworkImage(
+  imageUrl: url,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => Icon(
                         Icons.description_outlined,
