@@ -131,7 +131,7 @@ class NativeIap {
             'productId': purchase.productID,
             'transactionId': purchase.purchaseID,
             'receipt': receipt,
-            if (submissionId != null) 'submissionId': submissionId,
+            'submissionId': ?submissionId,
           },
         );
         final data = res.data;
@@ -142,7 +142,7 @@ class NativeIap {
         body: {
           'productId': purchase.productID,
           'purchaseToken': receipt,
-          if (submissionId != null) 'submissionId': submissionId,
+          'submissionId': ?submissionId,
         },
       );
       final data = res.data;

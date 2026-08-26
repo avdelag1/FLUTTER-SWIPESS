@@ -70,7 +70,7 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
                     ),
                     const SizedBox(height: 14),
                     DropdownButtonFormField<String>(
-                      value: selectedId,
+                      initialValue: selectedId,
                       decoration: const InputDecoration(
                         labelText: 'Legal package',
                       ),

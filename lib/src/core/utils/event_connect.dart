@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:url_launcher/url_launcher.dart';
 

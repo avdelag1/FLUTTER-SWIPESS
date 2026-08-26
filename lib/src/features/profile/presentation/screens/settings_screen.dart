@@ -407,7 +407,7 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _GroupLabel extends StatelessWidget {
-  _GroupLabel(this.text);
+  const _GroupLabel(this.text);
   final String text;
 
   @override

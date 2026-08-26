@@ -512,8 +512,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
         _renderAnnotations();
       }
     });
-    ref.listen(mapListingsProvider, (_, __) => _renderAnnotations());
-    ref.listen(mapProfilesProvider, (_, __) => _renderAnnotations());
+    ref.listen(mapListingsProvider, (_, _) => _renderAnnotations());
+    ref.listen(mapProfilesProvider, (_, _) => _renderAnnotations());
 
     final listingCount = listingsAsync.value?.length ?? 0;
     final peopleCount = profilesAsync.value?.length ?? 0;
@@ -535,8 +535,9 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                   await _renderAnnotations();
                   _refreshDeviceLocation();
                   await Future<void>.delayed(const Duration(milliseconds: 120));
-                  if (mounted)
+                  if (mounted) {
                     await _flyTo(ref.read(discoveryLocationProvider));
+                  }
                 },
               ),
             ),

@@ -9,7 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap PublicProfilePreview — guest-friendly member deep link.
 class PublicProfilePreviewScreen extends ConsumerWidget {
-  PublicProfilePreviewScreen({super.key, required this.userId});
+  const PublicProfilePreviewScreen({super.key, required this.userId});
 
   final String userId;
 

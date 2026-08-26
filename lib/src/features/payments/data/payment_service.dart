@@ -12,9 +12,8 @@ export 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 class PaymentService {
   PaymentService({
     PaymentOrchestrator? orchestrator,
-    Future<bool> Function()? complimentaryAccessActive,
-  }) : _orchestrator = orchestrator ?? PaymentOrchestrator(),
-       _complimentaryAccessActive = complimentaryAccessActive;
+    this._complimentaryAccessActive,
+  }) : _orchestrator = orchestrator ?? PaymentOrchestrator();
 
   final PaymentOrchestrator _orchestrator;
   final Future<bool> Function()? _complimentaryAccessActive;

@@ -221,11 +221,12 @@ class _IntelCard extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                         onPressed: () async {
                           final uri = Uri.tryParse(post.sourceUrl!);
-                          if (uri != null)
+                          if (uri != null) {
                             await launchUrl(
                               uri,
                               mode: LaunchMode.externalApplication,
                             );
+                          }
                         },
                         icon: Icon(
                           Icons.open_in_new_rounded,

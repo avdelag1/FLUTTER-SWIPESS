@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -489,7 +488,7 @@ class _Header extends StatelessWidget {
 }
 
 class _DetailsPanel extends StatelessWidget {
-  _DetailsPanel({required this.profile});
+  const _DetailsPanel({required this.profile});
   final RoommateProfile profile;
 
   @override

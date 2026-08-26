@@ -155,8 +155,9 @@ class ListingRepository {
     if (city != null && city.trim().isNotEmpty) {
       query = query.ilike('city', '%${city.trim()}%');
     }
-    if (propertyTypes.isNotEmpty)
+    if (propertyTypes.isNotEmpty) {
       query = query.inFilter('property_type', propertyTypes);
+    }
 
     final data = await query
         .order('created_at', ascending: false)
@@ -193,8 +194,9 @@ class ListingRepository {
       final baths = (listing.baths ?? listing.bathrooms ?? 0).ceil();
       if (minBaths != null && minBaths > 0 && baths < minBaths) return false;
       if (furnished != null && listing.furnished != furnished) return false;
-      if (petFriendly != null && listing.petFriendly != petFriendly)
+      if (petFriendly != null && listing.petFriendly != petFriendly) {
         return false;
+      }
       if (propertyTypes.isNotEmpty) {
         final pt = listing.propertyType;
         if (pt == null || !propertyTypes.contains(pt)) return false;
@@ -309,8 +311,9 @@ class ListingRepository {
     for (var i = 0; i < files.length; i++) {
       final file = files[i];
       final bytes = await file.readAsBytes();
-      if (bytes.isEmpty)
+      if (bytes.isEmpty) {
         throw Exception('One selected legal document is empty.');
+      }
       if (bytes.lengthInBytes > 15 * 1024 * 1024) {
         throw Exception('Each legal document must be under 15MB.');
       }

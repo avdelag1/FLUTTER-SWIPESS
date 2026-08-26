@@ -6,7 +6,6 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -15,7 +14,6 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_thumbnail.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';

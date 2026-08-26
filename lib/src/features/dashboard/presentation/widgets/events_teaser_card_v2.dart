@@ -329,7 +329,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLoaded());
       }
     });
-    ref.listen<bool>(deckSoundOnProvider, (_, __) => _applySound());
+    ref.listen<bool>(deckSoundOnProvider, (_, _) => _applySound());
 
     final safeIndex = videos.isEmpty ? 0 : _index % videos.length;
     final event = videos.isEmpty ? null : videos[safeIndex];
@@ -364,7 +364,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                   fit: StackFit.expand,
                   children: [
                     ...previousChildren,
-                    if (currentChild != null) currentChild,
+                    ?currentChild,
                   ],
                 ),
                 transitionBuilder: (child, animation) {

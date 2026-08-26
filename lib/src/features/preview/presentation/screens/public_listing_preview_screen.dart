@@ -10,7 +10,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 /// Cap PublicListingPreview — guest-friendly listing deep link.
 class PublicListingPreviewScreen extends ConsumerWidget {
-  PublicListingPreviewScreen({super.key, required this.listingId});
+  const PublicListingPreviewScreen({super.key, required this.listingId});
 
   final String listingId;
 

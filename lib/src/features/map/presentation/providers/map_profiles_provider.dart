@@ -37,20 +37,23 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
         )
         .timeout(const Duration(seconds: 8));
     for (final profile in _parseRows(data)) {
-      if (profile.id != userId && profile.id.isNotEmpty)
+      if (profile.id != userId && profile.id.isNotEmpty) {
         merged[profile.id] = profile;
+      }
     }
   } catch (_) {}
 
   for (final profile in await cityProfilesFuture) {
-    if (profile.id != userId && profile.id.isNotEmpty)
+    if (profile.id != userId && profile.id.isNotEmpty) {
       merged[profile.id] = profile;
+    }
   }
 
   if (merged.isEmpty) {
     for (final profile in await _fallbackProfiles(client, limit, userId)) {
-      if (profile.id != userId && profile.id.isNotEmpty)
+      if (profile.id != userId && profile.id.isNotEmpty) {
         merged[profile.id] = profile;
+      }
     }
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';

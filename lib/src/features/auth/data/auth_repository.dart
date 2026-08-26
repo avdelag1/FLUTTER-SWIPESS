@@ -74,7 +74,7 @@ class SupabaseAuthRepository implements AuthRepository {
         'role': role,
         'name': trimmed,
         'full_name': trimmed,
-        if (referral != null) 'referred_by': referral,
+        'referred_by': ?referral,
       },
     );
     if (res.session != null) return res;
@@ -137,7 +137,7 @@ class SupabaseAuthRepository implements AuthRepository {
         final referral = _webReferral;
         final query = <String, String>{
           'oauth_popup': '1',
-          if (referral != null) 'ref': referral,
+          'ref': ?referral,
         };
         final redirectTo = Uri.parse(Uri.base.origin)
             .replace(queryParameters: query)

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -359,7 +358,7 @@ class _Offer {
 }
 
 class _OfferTile extends StatelessWidget {
-  _OfferTile({required this.offer});
+  const _OfferTile({required this.offer});
   final _Offer offer;
 
   @override

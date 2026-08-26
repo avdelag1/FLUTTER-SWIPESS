@@ -101,15 +101,23 @@ class _WebDiscoveryMapScreenV4State
 
   double _wrapLng(double value) {
     var v = value;
-    while (v > 180) v -= 360;
-    while (v < -180) v += 360;
+    while (v > 180) {
+      v -= 360;
+    }
+    while (v < -180) {
+      v += 360;
+    }
     return v;
   }
 
   double _shortestLngDelta(double from, double to) {
     var d = to - from;
-    while (d > 180) d -= 360;
-    while (d < -180) d += 360;
+    while (d > 180) {
+      d -= 360;
+    }
+    while (d < -180) {
+      d += 360;
+    }
     return d;
   }
 
@@ -863,7 +871,7 @@ class _PreviewImage extends StatelessWidget {
             : CachedNetworkImage(
   imageUrl: url!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => fallback,
+                errorBuilder: (_, _, _) => fallback,
               ),
       ),
     );

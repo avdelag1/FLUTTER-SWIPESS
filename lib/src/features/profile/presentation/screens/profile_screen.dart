@@ -63,7 +63,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _questsOpen = false;
+  final bool _questsOpen = false;
   bool _moreOpen = false;
   String? _feedbackCategory;
   final _feedbackCtrl = TextEditingController();
