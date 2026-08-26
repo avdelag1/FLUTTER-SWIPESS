@@ -35,16 +35,28 @@ jobs:
   visual-parity:
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+      - name: Detect golden harness
+        id: golden
+        shell: bash
+        run: |
+          if [[ -f test/parity/parity_harness_test.dart ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No golden harness in this checkout; skipping visual parity."
+          fi
       - uses: subosito/flutter-action@v2
+        if: steps.golden.outputs.present == 'true'
         with:
           channel: stable
           cache: true
       - name: Dependencies
+        if: steps.golden.outputs.present == 'true'
         run: flutter pub get
       - name: Golden visual regression tests
+        if: steps.golden.outputs.present == 'true'
         timeout-minutes: 8
         run: flutter test test/parity/parity_harness_test.dart --tags golden --reporter expanded
 
