@@ -1127,6 +1127,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           enabled: !_loading && !_preparingSubmit,
                           textInputAction: TextInputAction.send,
                           keyboardType: TextInputType.text,
+                          onSubmitted: (_) => _submit(),
                           cursorColor: isLight ? _aiBlue : _aiBlueSoft,
                           style: TextStyle(color: ink, fontSize: 15),
                           minLines: 1,
