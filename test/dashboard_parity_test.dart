@@ -13,7 +13,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          appMarketProvider.overrideWith((ref) => const AsyncValue.data(null)),
+          appMarketProvider.overrideWith((ref) => null),
         ],
         child: const MaterialApp(home: Scaffold(body: BentoDashboardScreen())),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
@@ -62,6 +63,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('CREATE NEW LISTING'), findsOneWidget);
+    expect(find.byType(AddListingScreen), findsOneWidget);
   });
 }
