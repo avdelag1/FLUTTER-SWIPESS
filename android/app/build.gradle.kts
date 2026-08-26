@@ -16,7 +16,7 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystoreProperties.getProperty("storeFile") != null
 
 android {
-    namespace = "com.swipess.mobile"
+    namespace = "com.swipess.app"
 
     // Google Play requires new apps and updates to target Android 16 / API 36
     // from August 31, 2026. Pin both values so a local Flutter SDK default cannot
@@ -33,7 +33,7 @@ android {
 
     defaultConfig {
         // Matches the shipped Capacitor app so this build installs as an update.
-        applicationId = "com.swipess.mobile"
+        applicationId = "com.swipess.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
