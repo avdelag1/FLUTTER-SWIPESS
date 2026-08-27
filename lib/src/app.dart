@@ -17,6 +17,7 @@ import 'package:flutter_swipes/src/features/gamification/presentation/providers/
 import 'package:flutter_swipes/src/features/native/biometric_gate.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
+import 'package:go_router/go_router.dart';
 
 class NativeSwipeApp extends ConsumerWidget {
   const NativeSwipeApp({super.key});
@@ -48,14 +49,21 @@ class NativeSwipeApp extends ConsumerWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         builder: (context, child) {
-          return _EngagementTrackingBootstrap(
-            child: SystemChromeSync(
-              child: ConnectivityWatcher(
-                child: AppLifecycleWatcher(
-                  child: AppBadgeSync(
-                    child: BiometricGate(
-                      child: OverlayModalsHost(
-                        child: child ?? const SizedBox.shrink(),
+          // MaterialApp.router's builder sits above the Router/Navigator child.
+          // Our global modal host also lives here, so without this inherited
+          // router, overlay content (notably the Map) cannot use context.push()
+          // and throws "No GoRouter found in context" on preview taps.
+          return InheritedGoRouter(
+            goRouter: router,
+            child: _EngagementTrackingBootstrap(
+              child: SystemChromeSync(
+                child: ConnectivityWatcher(
+                  child: AppLifecycleWatcher(
+                    child: AppBadgeSync(
+                      child: BiometricGate(
+                        child: OverlayModalsHost(
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
                     ),
                   ),
