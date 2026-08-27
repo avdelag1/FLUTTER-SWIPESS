@@ -528,7 +528,7 @@ class _AiListingBuilderScreenState
               ),
               const SizedBox(height: 16),
               Text(
-                'SECURELY PROCESSED BY SWIPESS AI (SUPABASE EDGE · GROQ).',
+                'SECURELY PROCESSED BY GOOGLE GEMINI.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,

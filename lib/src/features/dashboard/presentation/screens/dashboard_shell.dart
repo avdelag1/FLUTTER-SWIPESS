@@ -408,7 +408,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             if (id == NavTab.ai) {
                               if (subscription != null &&
                                   subscription.effectiveTier.canUseAI != true) {
-                                showPaywall(context, featureName: 'Swipess AI');
+                                showPaywall(context, featureName: 'Google Gemini');
                                 return;
                               }
 

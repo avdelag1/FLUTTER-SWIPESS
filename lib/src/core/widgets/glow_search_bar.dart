@@ -209,7 +209,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     }
 
     AppHaptics.light();
-    _focusNode.requestFocus();
 
     // Mute any background app audio (e.g., video reels) so it doesn't bleed into the mic
     ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
@@ -516,7 +515,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                 ),
                 const SizedBox(width: 9),
                 Text(
-                  'Swipess AI is thinking…',
+                  'Google Gemini is thinking…',
                   style: GoogleFonts.plusJakartaSans(
                     color: ink.withAlpha(180),
                     fontSize: 12,
@@ -531,7 +530,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                 Row(
                   children: [
                     Text(
-                      'SWIPESS AI',
+                      'GOOGLE GEMINI',
                       style: GoogleFonts.plusJakartaSans(
                         color: blue,
                         fontSize: 9,
@@ -776,7 +775,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Swipess AI · can make mistakes.',
+              'Google Gemini · can make mistakes.',
               style: GoogleFonts.plusJakartaSans(
                 color: ink.withAlpha(isLight ? 135 : 170),
                 fontWeight: FontWeight.w500,

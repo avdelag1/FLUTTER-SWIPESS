@@ -84,7 +84,7 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
       final eventRows = await client
           .from('events')
           .select('created_at')
-          .eq('is_active', true);
+          .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
         final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
@@ -207,7 +207,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     }
     final subscription = ref.read(subscriptionProvider).value;
     if (subscription != null && subscription.effectiveTier.canUseAI != true) {
-      showPaywall(context, featureName: 'Swipess AI');
+      showPaywall(context, featureName: 'Google Gemini');
       return;
     }
     ref

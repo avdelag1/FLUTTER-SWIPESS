@@ -100,7 +100,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   late final FocusNode _focusNode;
 
   static const _personas = <(String, String, String, Color)>[
-    ('default', 'Swipess AI', 'Global Discovery', _aiBlue),
+    ('default', 'Google Gemini', 'Global Discovery', _aiBlue),
     ('kyle', 'Kyle', 'Market Hustler', _aiCyan),
     ('beaugosse', 'Beau Gosse', 'Social Alpha', Color(0xFFA855F7)),
     ('donajkiin', "Don Aj K'iin", 'Mayan Wisdom', Color(0xFF10B981)),

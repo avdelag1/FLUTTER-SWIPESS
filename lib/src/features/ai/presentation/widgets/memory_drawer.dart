@@ -296,7 +296,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                           ),
                         ),
                         Text(
-                          'Manage what Swipess AI keeps for you',
+                          'Manage what Google Gemini keeps for you',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white60,
                             fontSize: 10.5,

@@ -61,7 +61,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
       if (!access.effectiveTier.canUseAI) {
         if (!mounted) return;
         setState(() => _busy = false);
-        showPaywall(context, featureName: 'Swipess AI');
+        showPaywall(context, featureName: 'Google Gemini');
         return;
       }
 
@@ -142,7 +142,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Included during your 3-month welcome access and with Premium. Describe yourself and Swipess AI drafts your bio.',
+              'Included during your 3-month welcome access and with Premium. Describe yourself and Google Gemini drafts your bio.',
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontSize: 12,

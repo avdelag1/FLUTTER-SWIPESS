@@ -171,7 +171,7 @@ class DockButton extends StatelessWidget {
       switch (item.id) {
         NavTab.dashboard => 'Home',
         NavTab.likes => 'Likes',
-        NavTab.ai => 'Swipess AI',
+        NavTab.ai => 'Google Gemini',
         NavTab.add => 'Add listing',
         NavTab.messages => 'Messages',
         NavTab.idCard => 'Virtual ID card',
