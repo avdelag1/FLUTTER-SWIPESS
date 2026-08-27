@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
@@ -24,15 +25,12 @@ import 'package:intl/intl.dart';
 
 final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
   final client = Supabase.instance.client;
+  final prefs = await SharedPreferences.getInstance();
   final counts = <String, int>{};
 
-  // Map bento IDs to their Supabase 'category' column values
   const categoryMap = {
     'property': 'property',
-    'events': null, // events are separate table
-    'recommended': null,
     'services': 'services',
-    'popular': null,
     'yacht': 'yacht',
     'dining': 'dining',
     'motos': 'motorcycles',
@@ -40,61 +38,77 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
     'people': 'people',
   };
 
-  // Fetch listing counts per category in one query
+  DateTime getLastAccessed(String id) {
+    final str = prefs.getString('bento_last_accessed_$id');
+    if (str != null) return DateTime.parse(str).toUtc();
+    return DateTime.now().toUtc().subtract(const Duration(days: 7));
+  }
+
   try {
     final rows = await client
         .from('listings')
-        .select('category')
+        .select('category, created_at')
         .eq('is_active', true)
         .eq('status', 'active');
 
     final listings = rows as List;
-    final grouped = <String, int>{};
-    for (final row in listings) {
-      final cat = row['category']?.toString() ?? '';
-      grouped[cat] = (grouped[cat] ?? 0) + 1;
-    }
-
+    
     for (final entry in categoryMap.entries) {
-      if (entry.value != null) {
-        counts[entry.key] = grouped[entry.value] ?? 0;
+      final lastAccessed = getLastAccessed(entry.key);
+      int count = 0;
+      for (final row in listings) {
+        final cat = row['category']?.toString();
+        if (cat == entry.value) {
+          final createdAt = DateTime.tryParse(row['created_at']?.toString() ?? '')?.toUtc();
+          if (createdAt != null && createdAt.isAfter(lastAccessed)) {
+            count++;
+          }
+        }
       }
+      counts[entry.key] = count;
     }
 
-    // Events count from events table
+    final popLast = getLastAccessed('popular');
+    counts['popular'] = listings.where((r) {
+      final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
+      return dt != null && dt.isAfter(popLast);
+    }).length;
+
+    final recLast = getLastAccessed('recommended');
+    counts['recommended'] = listings.where((r) {
+      final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
+      return dt != null && dt.isAfter(recLast);
+    }).length;
+
     try {
       final eventRows = await client
           .from('events')
-          .select('id')
+          .select('created_at')
           .eq('is_active', true);
-      counts['events'] = (eventRows as List).length;
+      final evLast = getLastAccessed('events');
+      counts['events'] = (eventRows as List).where((r) {
+        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
+        return dt != null && dt.isAfter(evLast);
+      }).length;
     } catch (_) {}
 
-    // Popular = total active listings
-    counts['popular'] = listings.length;
-    // Recommended = same as popular for now
-    counts['recommended'] = listings.length;
-  } catch (_) {
-    // Fallback to zeros if query fails
-  }
+  } catch (_) {}
 
   return counts;
 });
 
-class AccessedCategoriesNotifier extends Notifier<Set<String>> {
-  @override
-  Set<String> build() => {};
+class AccessedCategoriesManager {
+  AccessedCategoriesManager(this.ref);
+  final Ref ref;
 
-  void markAccessed(String id) {
-    if (!state.contains(id)) {
-      state = {...state, id};
-    }
+  Future<void> markAccessed(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('bento_last_accessed_$id', DateTime.now().toUtc().toIso8601String());
+    ref.invalidate(newItemsCountProvider);
   }
 }
 
-final accessedCategoriesProvider = NotifierProvider<AccessedCategoriesNotifier, Set<String>>(
-  AccessedCategoriesNotifier.new,
-);
+final accessedCategoriesProvider = Provider((ref) => AccessedCategoriesManager(ref));
 
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.count});
@@ -802,9 +816,8 @@ class _BentoTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final accessed = ref.watch(accessedCategoriesProvider);
     final counts = ref.watch(newItemsCountProvider).value ?? const {};
-    final unreadCount = accessed.contains(item.id) ? 0 : (counts[item.id] ?? 0);
+    final unreadCount = counts[item.id] ?? 0;
     
     final badgeWidget = unreadCount > 0 
       ? Positioned(
@@ -828,7 +841,7 @@ class _BentoTile extends ConsumerWidget {
                   children: [
                     EventsTeaserCard(
                       onTap: () {
-                        ref.read(accessedCategoriesProvider.notifier).markAccessed(item.id);
+                        ref.read(accessedCategoriesProvider).markAccessed(item.id);
                         final sub = ref.read(subscriptionProvider).value;
                         if (sub != null &&
                             sub.effectiveTier.canViewEvents != true) {
@@ -859,7 +872,7 @@ class _BentoTile extends ConsumerWidget {
           isLight: isLight,
           enableVideo: true,
           onTap: () {
-            ref.read(accessedCategoriesProvider.notifier).markAccessed(item.id);
+            ref.read(accessedCategoriesProvider).markAccessed(item.id);
             onOpen(item.id, item.title);
           },
         ),
