@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/likes/data/repositories/likes_repository.dart';
 import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final likesRepositoryProvider = Provider<LikesRepository>((ref) {
   return LikesRepository();
@@ -65,12 +66,43 @@ final likedPeopleProvider =
       LikedPeopleNotifier.new,
     );
 
+Future<Set<String>> _fetchLikedTargetIds(String targetType) async {
+  final client = Supabase.instance.client;
+  final userId = client.auth.currentUser?.id;
+  if (userId == null) return const <String>{};
+
+  final rows = await client
+      .from('likes')
+      .select('target_id')
+      .eq('user_id', userId)
+      .eq('target_type', targetType)
+      .eq('direction', 'right');
+
+  return (rows as List)
+      .map((row) => (row as Map<String, dynamic>)['target_id']?.toString())
+      .whereType<String>()
+      .where((id) => id.isNotEmpty)
+      .toSet();
+}
+
+/// Discovery needs only IDs. Reading the full liked Listing models can fail if
+/// one old/saved listing has malformed or legacy columns, which used to make the
+/// map fail open and show liked items again. These providers query the canonical
+/// `likes` decision rows directly so a right-swipe always stays excluded.
+final likedListingIdsProvider = FutureProvider<Set<String>>(
+  (ref) => _fetchLikedTargetIds('listing'),
+);
+
+final likedPeopleIdsProvider = FutureProvider<Set<String>>(
+  (ref) => _fetchLikedTargetIds('profile'),
+);
+
 /// Events use the same generic likes table but do not need a full event model
 /// just to keep discovery unseen-only. The ID set is enough for every map
 /// renderer to remove saved events immediately.
-final likedEventIdsProvider = FutureProvider<Set<String>>((ref) {
-  return ref.read(likesRepositoryProvider).fetchLikedEventIds();
-});
+final likedEventIdsProvider = FutureProvider<Set<String>>(
+  (ref) => _fetchLikedTargetIds('event'),
+);
 
 class InterestedClientsNotifier extends AsyncNotifier<List<InterestedClient>> {
   @override
