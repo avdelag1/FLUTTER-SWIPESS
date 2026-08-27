@@ -10,10 +10,11 @@ import 'package:flutter_swipes/src/features/map/presentation/screens/web_discove
 @JS('eval')
 external JSAny? _eval(JSString code);
 
-/// Prefer the persistent Mapbox GL surface whenever the browser has a healthy
-/// hardware WebGL2 context. The previous implementation used Mapbox only for a
-/// cinematic intro and then deliberately swapped to FlutterMap, which is the
-/// exact reason the world looked 3D and the actual discovery map became 2D.
+/// Prefer the persistent Mapbox surface whenever the browser can create any
+/// WebGL2 context. Do not reject integrated/software renderers here: Flutter's
+/// own renderer may report CPU-only mode on older Macs while a DOM-hosted
+/// Mapbox canvas can still create a usable WebGL2 context. Mapbox should get a
+/// chance to render instead of being pre-emptively forced onto the 2D fallback.
 bool _browserSupportsPersistentMapbox() {
   try {
     final result = _eval(
@@ -23,32 +24,12 @@ bool _browserSupportsPersistentMapbox() {
         try {
           var canvas = document.createElement('canvas');
           gl = canvas.getContext('webgl2', {
-            failIfMajorPerformanceCaveat: true,
             antialias: true,
             alpha: true,
             depth: true,
-            stencil: true,
-            powerPreference: 'high-performance'
+            stencil: true
           });
-          if (!gl) return false;
-          try {
-            var debug = gl.getExtension('WEBGL_debug_renderer_info');
-            if (debug) {
-              var renderer = String(
-                gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) || ''
-              ).toLowerCase();
-              var blocked = [
-                'swiftshader',
-                'software',
-                'llvmpipe',
-                'microsoft basic render'
-              ];
-              for (var i = 0; i < blocked.length; i++) {
-                if (renderer.indexOf(blocked[i]) !== -1) return false;
-              }
-            }
-          } catch (_) {}
-          return true;
+          return !!gl;
         } catch (_) {
           return false;
         } finally {
@@ -143,17 +124,29 @@ class _WebDiscoveryMapBootstrapState
     return FutureBuilder<bool>(
       future: _mapboxReady,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done &&
-            snapshot.data == true &&
-            _hardwareReady) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Material(
+            color: Color(0xFFF3F8FB),
+            child: Center(
+              child: SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.data == true && _hardwareReady) {
           return WebDiscoveryMapboxV3(
             onClose: widget.onClose,
             showCitiesOnOpen: widget.showCitiesOnOpen,
           );
         }
 
-        // Old/CPU-only browsers still get the stable 2D renderer instead of a
-        // blank or fake globe. Modern Chrome/Safari remain on Mapbox end-to-end.
+        // Only use the 2D safety renderer when WebGL2 truly cannot be created
+        // or Mapbox could not be configured. Do not silently show it while the
+        // Mapbox runtime check is still in progress.
         return WebDiscoveryMapScreenV5(
           onClose: widget.onClose,
           showCitiesOnOpen: widget.showCitiesOnOpen,

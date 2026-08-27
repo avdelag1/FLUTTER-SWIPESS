@@ -191,6 +191,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   final _searchController = TextEditingController();
   final _cards = ScrollController();
   final Set<String> _sessionHidden = <String>{};
+  final Set<String> _justLiked = <String>{};
 
   double get _trayHeight => switch (_trayLevel) {
         -1 => 0,
@@ -451,11 +452,20 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }) {
     final all = <_Item>[
       for (final listing in listings)
-        if (!likedListings.contains(listing.id)) _listingItem(listing, loc),
+        if (!likedListings.contains(listing.id) ||
+            (_selectedKey == '${_listingKind(listing).name}:${listing.id}' &&
+                _justLiked.contains(_selectedKey)))
+          _listingItem(listing, loc),
       for (final profile in profiles)
-        if (!likedPeople.contains(profile.id)) _profileItem(profile, loc),
+        if (!likedPeople.contains(profile.id) ||
+            (_selectedKey == 'person:${profile.id}' &&
+                _justLiked.contains(_selectedKey)))
+          _profileItem(profile, loc),
       for (final event in events)
-        if (!likedEvents.contains(event.id)) _eventItem(event, loc),
+        if (!likedEvents.contains(event.id) ||
+            (_selectedKey == 'event:${event.id}' &&
+                _justLiked.contains(_selectedKey)))
+          _eventItem(event, loc),
     ];
     return all
         .where((item) => !_sessionHidden.contains(item.key) && _matches(item))
@@ -538,8 +548,16 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     }
   }
 
+  void _retireSelectedLike({String? exceptKey}) {
+    final key = _selectedKey;
+    if (key == null || key == exceptKey || !_justLiked.contains(key)) return;
+    _justLiked.remove(key);
+    _sessionHidden.add(key);
+  }
+
   void _select(_Item item, List<_Item> items) {
     AppHaptics.selection();
+    _retireSelectedLike(exceptKey: item.key);
     setState(() => _selectedKey = item.key);
     final index = items.indexWhere((candidate) => candidate.key == item.key);
     if (index >= 0 && _cards.hasClients) {
@@ -553,10 +571,12 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
 
   void _dismissSelection() {
     if (_selectedKey == null && !_menuOpen) return;
+    _retireSelectedLike();
     setState(() {
       _selectedKey = null;
       _menuOpen = false;
     });
+    _scheduleProjection();
   }
 
   void _open(_Item item) {
@@ -571,13 +591,11 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   Future<void> _like(_Item item) async {
-    if (_sessionHidden.contains(item.key)) return;
+    if (_sessionHidden.contains(item.key) || _justLiked.contains(item.key)) {
+      return;
+    }
     AppHaptics.medium();
-    setState(() {
-      _sessionHidden.add(item.key);
-      if (_selectedKey == item.key) _selectedKey = null;
-    });
-    _scheduleProjection();
+    setState(() => _justLiked.add(item.key));
     try {
       final repo = ref.read(likesRepositoryProvider);
       if (item.listing != null) {
@@ -595,7 +613,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       }
     } catch (_) {
       if (!mounted) return;
-      setState(() => _sessionHidden.remove(item.key));
+      setState(() => _justLiked.remove(item.key));
       _scheduleProjection();
     }
   }
@@ -616,6 +634,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
         longitude: result.longitude,
       );
       location.setRadiusKm(result.suggestedRadiusKm);
+      _retireSelectedLike();
       setState(() {
         _query = '';
         _selectedKey = null;
@@ -631,6 +650,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   void _closeMap() {
+    _retireSelectedLike();
     final close = widget.onClose;
     if (close != null) {
       close();
@@ -677,6 +697,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       if (previous.latitude != next.latitude ||
           previous.longitude != next.longitude ||
           previous.radiusKm != next.radiusKm) {
+        _retireSelectedLike();
         setState(() => _selectedKey = null);
         unawaited(_flyTo(next));
       }
@@ -801,24 +822,6 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
-              // Preview paints after ALL markers. It therefore cannot be hidden
-              // behind a cluster of pins, regardless of marker list order.
-              if (selected != null && selectedPixel != null)
-                Positioned(
-                  left: (selectedPixel.dx - 118)
-                      .clamp(8.0, math.max(8.0, constraints.maxWidth - 244))
-                      .toDouble(),
-                  top: (selectedPixel.dy - 150)
-                      .clamp(8.0, math.max(8.0, constraints.maxHeight - 104))
-                      .toDouble(),
-                  child: _Preview(
-                    item: selected,
-                    onOpen: () => _open(selected!),
-                    onLike: () => _like(selected!),
-                    onClose: _dismissSelection,
-                  ),
-                ),
-
               if (_controlsVisible && !_openingFlight) ...[
                 Positioned(
                   top: pad.top + 8,
@@ -886,6 +889,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                           controller: _searchController,
                           busy: _searchingPlace,
                           onChanged: (value) => setState(() {
+                            _retireSelectedLike();
                             _query = value;
                             _selectedKey = null;
                           }),
@@ -902,6 +906,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                     active: _filter,
                     onFilter: (value) {
                       setState(() {
+                        _retireSelectedLike();
                         _filter = value;
                         _selectedKey = null;
                       });
@@ -924,6 +929,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                         _menuOpen = false;
                       }),
                       onHideControls: () => setState(() {
+                        _retireSelectedLike();
                         _controlsVisible = false;
                         _menuOpen = false;
                         _searchOpen = false;
@@ -950,6 +956,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                       city: loc.city,
                       items: items,
                       selectedKey: _selectedKey,
+                      likedKeys: _justLiked,
                       controller: _cards,
                       level: _trayLevel,
                       height: _trayHeight,
@@ -968,6 +975,26 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                     label: 'Show controls',
                     icon: Icons.visibility_rounded,
                     onTap: () => setState(() => _controlsVisible = true),
+                  ),
+                ),
+
+              // The preview is intentionally the FINAL Stack child. It must
+              // float above pins, filter chips, menu controls and the listing
+              // tray, exactly like a premium map callout.
+              if (selected != null && selectedPixel != null)
+                Positioned(
+                  left: (selectedPixel.dx - 118)
+                      .clamp(8.0, math.max(8.0, constraints.maxWidth - 244))
+                      .toDouble(),
+                  top: (selectedPixel.dy - 150)
+                      .clamp(8.0, math.max(8.0, constraints.maxHeight - 104))
+                      .toDouble(),
+                  child: _Preview(
+                    item: selected,
+                    liked: _justLiked.contains(selected.key),
+                    onOpen: () => _open(selected!),
+                    onLike: () => _like(selected!),
+                    onClose: _dismissSelection,
                   ),
                 ),
             ],
@@ -1043,12 +1070,14 @@ class _Pin extends StatelessWidget {
 class _Preview extends StatelessWidget {
   const _Preview({
     required this.item,
+    required this.liked,
     required this.onOpen,
     required this.onLike,
     required this.onClose,
   });
 
   final _Item item;
+  final bool liked;
   final VoidCallback onOpen;
   final VoidCallback onLike;
   final VoidCallback onClose;
@@ -1138,8 +1167,11 @@ class _Preview extends StatelessWidget {
                 bottom: 7,
                 right: 7,
                 child: _BareIcon(
-                  icon: Icons.favorite_border_rounded,
-                  label: 'Like',
+                  icon: liked
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  label: liked ? 'Saved' : 'Like',
+                  color: liked ? const Color(0xFFE53935) : Colors.black87,
                   onTap: onLike,
                 ),
               ),
@@ -1191,11 +1223,13 @@ class _BareIcon extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.color = Colors.black87,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -1207,7 +1241,7 @@ class _BareIcon extends StatelessWidget {
           child: SizedBox(
             width: 30,
             height: 30,
-            child: Icon(icon, color: Colors.black87, size: 18),
+            child: Icon(icon, color: color, size: 18),
           ),
         ),
       );
@@ -1409,6 +1443,7 @@ class _Tray extends StatelessWidget {
     required this.city,
     required this.items,
     required this.selectedKey,
+    required this.likedKeys,
     required this.controller,
     required this.level,
     required this.height,
@@ -1422,6 +1457,7 @@ class _Tray extends StatelessWidget {
   final String city;
   final List<_Item> items;
   final String? selectedKey;
+  final Set<String> likedKeys;
   final ScrollController controller;
   final int level;
   final double height;
@@ -1505,6 +1541,7 @@ class _Tray extends StatelessWidget {
                           return _MiniCard(
                             item: item,
                             selected: item.key == selectedKey,
+                            liked: likedKeys.contains(item.key),
                             onTap: () => onSelect(item),
                             onOpen: () => onOpen(item),
                             onLike: () => onLike(item),
@@ -1521,6 +1558,7 @@ class _MiniCard extends StatelessWidget {
   const _MiniCard({
     required this.item,
     required this.selected,
+    required this.liked,
     required this.onTap,
     required this.onOpen,
     required this.onLike,
@@ -1528,6 +1566,7 @@ class _MiniCard extends StatelessWidget {
 
   final _Item item;
   final bool selected;
+  final bool liked;
   final VoidCallback onTap;
   final VoidCallback onOpen;
   final VoidCallback onLike;
@@ -1595,8 +1634,13 @@ class _MiniCard extends StatelessWidget {
                             ),
                           ),
                           _BareIcon(
-                            icon: Icons.favorite_border_rounded,
-                            label: 'Like',
+                            icon: liked
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            label: liked ? 'Saved' : 'Like',
+                            color: liked
+                                ? const Color(0xFFE53935)
+                                : Colors.black87,
                             onTap: onLike,
                           ),
                         ],
