@@ -4,6 +4,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
@@ -82,7 +84,7 @@ Widget buildPlatformDiscoveryMap({
   );
 }
 
-class _WebDiscoveryMapBootstrap extends StatefulWidget {
+class _WebDiscoveryMapBootstrap extends ConsumerStatefulWidget {
   const _WebDiscoveryMapBootstrap({
     required this.onClose,
     required this.showCitiesOnOpen,
@@ -92,23 +94,51 @@ class _WebDiscoveryMapBootstrap extends StatefulWidget {
   final bool showCitiesOnOpen;
 
   @override
-  State<_WebDiscoveryMapBootstrap> createState() =>
+  ConsumerState<_WebDiscoveryMapBootstrap> createState() =>
       _WebDiscoveryMapBootstrapState();
 }
 
-class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
+class _WebDiscoveryMapBootstrapState
+    extends ConsumerState<_WebDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
   late final bool _globeReady = _browserSupportsMapboxGlobe();
   late final bool _playIntro;
   Timer? _introWatchdog;
   bool _introWatchdogArmed = false;
   bool _introComplete = false;
+  bool _audioSuppressed = false;
+  bool? _lastRouteActive;
 
   @override
   void initState() {
     super.initState();
     _playIntro = !_webGlobePlayedThisSession;
     if (_playIntro) _webGlobePlayedThisSession = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.of(context);
+    if (_lastRouteActive == active) return;
+    _lastRouteActive = active;
+    if (active) {
+      _suppressAudio();
+    } else {
+      _restoreAudio();
+    }
+  }
+
+  void _suppressAudio() {
+    if (_audioSuppressed) return;
+    _audioSuppressed = true;
+    ref.read(deckSoundOnProvider.notifier).suspendTemporarily();
+  }
+
+  void _restoreAudio() {
+    if (!_audioSuppressed) return;
+    _audioSuppressed = false;
+    ref.read(deckSoundOnProvider.notifier).resumeTemporarySound();
   }
 
   void _armIntroWatchdog() {
@@ -126,6 +156,7 @@ class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
   @override
   void dispose() {
     _introWatchdog?.cancel();
+    _restoreAudio();
     super.dispose();
   }
 
@@ -161,10 +192,9 @@ class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
 
         _armIntroWatchdog();
 
-        // Chrome/Flutter can run in CPU-only mode (webGLVersion = -1). In that
-        // case a true Mapbox GL sphere cannot initialize, so render a polished
-        // CPU-safe circular world from the same raster basemap. It gives the
-        // intended globe moment and dissolves into the real map flight below.
+        // A true Mapbox sphere requires WebGL2. If the browser is CPU-only,
+        // preserve the same round-world experience with the CPU-safe basemap
+        // globe instead of ever showing a broken/grey Mapbox surface.
         if (snapshot.data != true || !_globeReady) {
           return Stack(
             fit: StackFit.expand,
