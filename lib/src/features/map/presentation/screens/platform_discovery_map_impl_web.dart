@@ -9,27 +9,63 @@ import 'package:flutter_swipes/src/features/map/presentation/screens/web_discove
 @JS('eval')
 external JSAny? _eval(JSString code);
 
-/// Mapbox GL JS requires a working WebGL context. Some browsers/devices can
-/// still run Flutter in CPU mode while reporting WebGL version -1; attempting
-/// to create the Mapbox globe in that state throws from inside Mapbox GL before
-/// Flutter can recover. Probe capability first and keep the stable raster map
-/// path when WebGL is disabled/unavailable.
-bool _browserSupportsWebGl() {
+/// The spherical Mapbox intro is optional on web and must never be allowed to
+/// compromise the normal discovery map. Mapbox GL's globe renderer needs a
+/// healthy WebGL2 context; a browser can otherwise let Flutter run in CPU mode
+/// while a weaker WebGL1 probe still succeeds, only for Mapbox itself to throw
+/// during painter setup.
+///
+/// Require hardware-capable WebGL2 up front. Browsers that fail this gate keep
+/// the bright Mapbox-backed raster discovery map, which already has its own
+/// world-to-city camera flight and does not depend on WebGL.
+bool _browserSupportsMapboxGlobe() {
   try {
     final result = _eval(
       r'''
       (function () {
+        var gl = null;
         try {
           var canvas = document.createElement('canvas');
-          var gl = canvas.getContext('webgl2', {failIfMajorPerformanceCaveat:false}) ||
-                   canvas.getContext('webgl', {failIfMajorPerformanceCaveat:false}) ||
-                   canvas.getContext('experimental-webgl');
+          gl = canvas.getContext('webgl2', {
+            failIfMajorPerformanceCaveat: true,
+            antialias: true,
+            alpha: true,
+            depth: true,
+            stencil: true,
+            powerPreference: 'high-performance'
+          });
           if (!gl) return false;
-          var lose = gl.getExtension && gl.getExtension('WEBGL_lose_context');
-          if (lose && lose.loseContext) lose.loseContext();
+
+          // Reject known software renderers. They can technically create a
+          // context while still failing or stalling Mapbox's globe pipeline.
+          try {
+            var debug = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debug) {
+              var renderer = String(
+                gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) || ''
+              ).toLowerCase();
+              var blocked = [
+                'swiftshader',
+                'software',
+                'llvmpipe',
+                'microsoft basic render'
+              ];
+              for (var i = 0; i < blocked.length; i++) {
+                if (renderer.indexOf(blocked[i]) !== -1) return false;
+              }
+            }
+          } catch (_) {}
+
           return true;
-        } catch (e) {
+        } catch (_) {
           return false;
+        } finally {
+          try {
+            if (gl) {
+              var lose = gl.getExtension('WEBGL_lose_context');
+              if (lose && lose.loseContext) lose.loseContext();
+            }
+          } catch (_) {}
         }
       })()
       '''
@@ -67,7 +103,7 @@ class _WebDiscoveryMapBootstrap extends StatefulWidget {
 
 class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
-  late final bool _webGlReady = _browserSupportsWebGl();
+  late final bool _globeReady = _browserSupportsMapboxGlobe();
   Timer? _introWatchdog;
   bool _introWatchdogArmed = false;
   bool _introComplete = false;
@@ -116,20 +152,19 @@ class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
           showCitiesOnOpen: widget.showCitiesOnOpen,
         );
 
-        if (snapshot.data != true || !_webGlReady) {
-          // The discovery renderer is Mapbox-backed raster tiles and does not
-          // require WebGL. It already starts from a world view and flies into
-          // the active city, so WebGL-disabled browsers keep the intended
-          // experience instead of crashing on the optional spherical globe.
+        if (snapshot.data != true || !_globeReady) {
+          // Never instantiate Mapbox GL's spherical renderer when this browser
+          // cannot provide healthy WebGL2. The raster discovery map stays fully
+          // interactive and performs the fallback world-to-city flight itself.
           return discoveryMap;
         }
 
         _armIntroWatchdog();
 
-        // Prewarm the premium discovery map underneath the true Mapbox globe.
-        // Its own city camera settles while the globe is visible, so removing
-        // the intro reveals the finished city map instead of triggering a
-        // second world-to-city animation.
+        // Prewarm the production discovery map underneath the optional globe.
+        // The intro itself remains transparent until Mapbox reports that its
+        // style is genuinely loaded, so even a late renderer failure cannot
+        // cover the working map with an opaque placeholder.
         return Stack(
           fit: StackFit.expand,
           children: [
