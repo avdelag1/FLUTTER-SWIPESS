@@ -1,23 +1,20 @@
-import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v5.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_mapbox_v3.dart';
 
 @JS('eval')
 external JSAny? _eval(JSString code);
 
-bool _webGlobePlayedThisSession = false;
-
-/// A real Mapbox sphere on web requires a healthy hardware WebGL2 context.
-/// Never fake it with a clipped 2D map: on old/CPU-only browsers that produced
-/// the blank pale circle users were seeing. Unsupported browsers now skip the
-/// cinematic cleanly and go straight to the usable discovery map.
-bool _browserSupportsMapboxGlobe() {
+/// Prefer the persistent Mapbox GL surface whenever the browser has a healthy
+/// hardware WebGL2 context. The previous implementation used Mapbox only for a
+/// cinematic intro and then deliberately swapped to FlutterMap, which is the
+/// exact reason the world looked 3D and the actual discovery map became 2D.
+bool _browserSupportsPersistentMapbox() {
   try {
     final result = _eval(
       r'''
@@ -99,12 +96,8 @@ class _WebDiscoveryMapBootstrap extends ConsumerStatefulWidget {
 class _WebDiscoveryMapBootstrapState
     extends ConsumerState<_WebDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
-  late final bool _globeReady = _browserSupportsMapboxGlobe();
-  late final bool _playIntro;
+  late final bool _hardwareReady = _browserSupportsPersistentMapbox();
   late final DeckAudioNotifier _audioNotifier;
-  Timer? _introWatchdog;
-  bool _introWatchdogArmed = false;
-  bool _introComplete = false;
   bool _audioSuppressed = false;
   bool? _lastRouteActive;
 
@@ -112,8 +105,6 @@ class _WebDiscoveryMapBootstrapState
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    _playIntro = !_webGlobePlayedThisSession;
-    if (_playIntro) _webGlobePlayedThisSession = true;
   }
 
   @override
@@ -141,21 +132,8 @@ class _WebDiscoveryMapBootstrapState
     _audioNotifier.resumeTemporarySound();
   }
 
-  void _armIntroWatchdog() {
-    if (_introWatchdogArmed || _introComplete) return;
-    _introWatchdogArmed = true;
-    _introWatchdog = Timer(const Duration(seconds: 8), _finishIntro);
-  }
-
-  void _finishIntro() {
-    if (!mounted || _introComplete) return;
-    _introWatchdog?.cancel();
-    setState(() => _introComplete = true);
-  }
-
   @override
   void dispose() {
-    _introWatchdog?.cancel();
     _restoreAudio();
     super.dispose();
   }
@@ -165,46 +143,20 @@ class _WebDiscoveryMapBootstrapState
     return FutureBuilder<bool>(
       future: _mapboxReady,
       builder: (context, snapshot) {
-        final discoveryMap = WebDiscoveryMapScreenV5(
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.data == true &&
+            _hardwareReady) {
+          return WebDiscoveryMapboxV3(
+            onClose: widget.onClose,
+            showCitiesOnOpen: widget.showCitiesOnOpen,
+          );
+        }
+
+        // Old/CPU-only browsers still get the stable 2D renderer instead of a
+        // blank or fake globe. Modern Chrome/Safari remain on Mapbox end-to-end.
+        return WebDiscoveryMapScreenV5(
           onClose: widget.onClose,
           showCitiesOnOpen: widget.showCitiesOnOpen,
-        );
-
-        // Do not block the actual map behind a fake loading sphere. The first
-        // paint is always a real usable discovery surface.
-        if (snapshot.connectionState != ConnectionState.done) {
-          return discoveryMap;
-        }
-
-        if (!_playIntro) return discoveryMap;
-
-        // No hardware WebGL2 / no Mapbox token = no 3D globe on this browser.
-        // Skip it instead of displaying a 2D map clipped into a circle.
-        if (snapshot.data != true || !_globeReady) {
-          return discoveryMap;
-        }
-
-        _armIntroWatchdog();
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            discoveryMap,
-            Positioned.fill(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 520),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: _introComplete
-                    ? const SizedBox.expand(
-                        key: ValueKey('mapbox-world-intro-complete'),
-                      )
-                    : MapboxWorldIntroScreen(
-                        key: const ValueKey('mapbox-world-intro'),
-                        onComplete: _finishIntro,
-                      ),
-              ),
-            ),
-          ],
         );
       },
     );
