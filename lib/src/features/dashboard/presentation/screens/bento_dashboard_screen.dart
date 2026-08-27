@@ -21,6 +21,68 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+final newItemsCountProvider = Provider<Map<String, int>>((ref) {
+  return {
+    'property': 12,
+    'events': 5,
+    'recommended': 3,
+    'services': 8,
+    'popular': 2,
+    'yacht': 4,
+    'dining': 7,
+    'motos': 1,
+    'jets': 2,
+    'people': 9,
+  };
+});
+
+class AccessedCategoriesNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => {};
+
+  void markAccessed(String id) {
+    if (!state.contains(id)) {
+      state = {...state, id};
+    }
+  }
+}
+
+final accessedCategoriesProvider = NotifierProvider<AccessedCategoriesNotifier, Set<String>>(
+  AccessedCategoriesNotifier.new,
+);
+
+class _CategoryBadge extends StatelessWidget {
+  const _CategoryBadge({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF4D00),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black45,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        '+$count',
+        style: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
 class BentoDashboardScreen extends ConsumerStatefulWidget {
   const BentoDashboardScreen({super.key});
 
@@ -682,7 +744,7 @@ class _BentoColumn extends StatelessWidget {
   }
 }
 
-class _BentoTile extends StatelessWidget {
+class _BentoTile extends ConsumerWidget {
   const _BentoTile({
     required this.item,
     required this.isLight,
@@ -694,7 +756,19 @@ class _BentoTile extends StatelessWidget {
   final void Function(String id, String title) onOpen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accessed = ref.watch(accessedCategoriesProvider);
+    final counts = ref.watch(newItemsCountProvider);
+    final unreadCount = accessed.contains(item.id) ? 0 : (counts[item.id] ?? 0);
+    
+    final badgeWidget = unreadCount > 0 
+      ? Positioned(
+          top: 10,
+          right: 10,
+          child: _CategoryBadge(count: unreadCount),
+        )
+      : const SizedBox.shrink();
+
     if (item.id == 'events') {
       return Consumer(
         builder: (context, ref, _) {
@@ -704,16 +778,23 @@ class _BentoTile extends StatelessWidget {
               decoration: AppTheme.qfNeoFrame(isLight: isLight),
               child: ClipRRect(
                 borderRadius: AppTheme.qfNeoFrameRadius,
-                child: EventsTeaserCard(
-                  onTap: () {
-                    final sub = ref.read(subscriptionProvider).value;
-                    if (sub != null &&
-                        sub.effectiveTier.canViewEvents != true) {
-                      showPaywall(context, featureName: 'Events & Pros');
-                      return;
-                    }
-                    onOpen(item.id, item.title);
-                  },
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    EventsTeaserCard(
+                      onTap: () {
+                        ref.read(accessedCategoriesProvider.notifier).markAccessed(item.id);
+                        final sub = ref.read(subscriptionProvider).value;
+                        if (sub != null &&
+                            sub.effectiveTier.canViewEvents != true) {
+                          showPaywall(context, featureName: 'Events & Pros');
+                          return;
+                        }
+                        onOpen(item.id, item.title);
+                      },
+                    ),
+                    badgeWidget,
+                  ],
                 ),
               ),
             ),
@@ -722,15 +803,23 @@ class _BentoTile extends StatelessWidget {
       );
     }
 
-    return _BentoCard(
-      title: item.title,
-      subtitle: item.subtitle,
-      height: item.height,
-      media: BentoMediaPools.forId(item.id),
-      stagger: Duration(seconds: int.parse(item.delaySeconds)),
-      isLight: isLight,
-      enableVideo: true,
-      onTap: () => onOpen(item.id, item.title),
+    return Stack(
+      children: [
+        _BentoCard(
+          title: item.title,
+          subtitle: item.subtitle,
+          height: item.height,
+          media: BentoMediaPools.forId(item.id),
+          stagger: Duration(seconds: int.parse(item.delaySeconds)),
+          isLight: isLight,
+          enableVideo: true,
+          onTap: () {
+            ref.read(accessedCategoriesProvider.notifier).markAccessed(item.id);
+            onOpen(item.id, item.title);
+          },
+        ),
+        badgeWidget,
+      ],
     );
   }
 }
