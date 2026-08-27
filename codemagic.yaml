@@ -17,12 +17,9 @@ workflows:
       cancel_previous_builds: true
 
     environment:
-      groups:
-        # Create this group in Codemagic with:
-        # APP_STORE_CONNECT_PRIVATE_KEY
-        # APP_STORE_CONNECT_KEY_IDENTIFIER
-        # APP_STORE_CONNECT_ISSUER_ID
-        - appstore_credentials
+      # App Store Connect variables may already exist at app/team scope in this
+      # Codemagic project. Do not reference a non-existent group here: that made
+      # the workflow fail before even cloning/building the app.
       vars:
         BUNDLE_ID: com.swipess.mobile
         APP_STORE_APPLE_ID: 6779810584
@@ -59,6 +56,19 @@ workflows:
           echo "IOS_BUILD_NAME=$IOS_BUILD_NAME" >> "$CM_ENV"
           echo "SWIPESS_BUILD_SHA=$CM_COMMIT" >> "$CM_ENV"
           echo "SWIPESS_BUILD_CHANNEL=CM-main" >> "$CM_ENV"
+
+      - name: Check App Store Connect credentials
+        script: |
+          set -eu
+          for name in APP_STORE_CONNECT_PRIVATE_KEY APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_ISSUER_ID; do
+            eval "value=\${$name:-}"
+            if [ -z "$value" ]; then
+              echo "MISSING_CODEMAGIC_CREDENTIAL: $name"
+              echo "Add this existing App Store Connect credential to the Codemagic app/team environment, then rebuild."
+              exit 1
+            fi
+          done
+          echo "App Store Connect credentials are present."
 
       - name: Resolve next TestFlight build number
         script: |
