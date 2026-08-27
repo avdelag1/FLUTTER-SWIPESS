@@ -4,6 +4,18 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m2
 
+    # Source of truth: every push to GitHub main can produce the exact iOS
+    # TestFlight binary. Cancel stale queued builds so an older commit can never
+    # arrive in TestFlight after a newer one.
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+      cancel_previous_builds: true
+
     environment:
       groups:
         # Create this group in Codemagic with:
@@ -14,21 +26,56 @@ workflows:
       vars:
         BUNDLE_ID: com.swipess.mobile
         APP_STORE_APPLE_ID: 6779810584
-        # Supabase publishable client configuration. These are public client
-        # values, not service-role/database secrets. Passing them explicitly
-        # prevents release archives from depending on an accidental source
-        # fallback change.
         SUPABASE_URL: https://vplgtcguxujxwrgguxqq.supabase.co
         SUPABASE_PUBLISHABLE_KEY: sb_publishable_FA0BseFSS6zM7Y8K3w8zLQ_d8BXqEuV
-        # GOOGLE_SERVER_CLIENT_ID and GOOGLE_IOS_CLIENT_ID are intentionally not
-        # hardcoded in git. Add the existing OAuth client IDs as Codemagic env
-        # variables; this workflow forwards them into Flutter and derives the
-        # required reversed iOS callback scheme automatically.
       flutter: stable
       xcode: latest
       cocoapods: default
 
     scripts:
+      - name: Prove GitHub source and branch
+        script: |
+          set -eu
+          echo "Codemagic branch: ${CM_BRANCH:-<unset>}"
+          echo "Codemagic commit: ${CM_COMMIT:-<unset>}"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          echo "Checked-out HEAD: $HEAD_SHA"
+
+          if [ "${CM_BRANCH:-}" != "main" ]; then
+            echo "REFUSING RELEASE: iOS TestFlight releases must come from main."
+            exit 1
+          fi
+          if [ -z "${CM_COMMIT:-}" ] || [ "$HEAD_SHA" != "$CM_COMMIT" ]; then
+            echo "REFUSING RELEASE: checkout SHA does not equal Codemagic CM_COMMIT."
+            exit 1
+          fi
+
+          IOS_BUILD_NAME="$(sed -n 's/^version:[[:space:]]*\([^+[:space:]]*\).*/\1/p' pubspec.yaml | head -1)"
+          if [ -z "$IOS_BUILD_NAME" ]; then
+            echo "Could not resolve Flutter build name from pubspec.yaml."
+            exit 1
+          fi
+
+          echo "IOS_BUILD_NAME=$IOS_BUILD_NAME" >> "$CM_ENV"
+          echo "SWIPESS_BUILD_SHA=$CM_COMMIT" >> "$CM_ENV"
+          echo "SWIPESS_BUILD_CHANNEL=CM-main" >> "$CM_ENV"
+
+      - name: Resolve next TestFlight build number
+        script: |
+          set -eu
+          LATEST_BUILD="$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")"
+          case "$LATEST_BUILD" in
+            ''|*[!0-9]*)
+              echo "Unexpected TestFlight build number: $LATEST_BUILD"
+              exit 1
+              ;;
+          esac
+          IOS_BUILD_NUMBER=$((LATEST_BUILD + 1))
+          echo "Latest TestFlight build: $LATEST_BUILD"
+          echo "This Codemagic build: $IOS_BUILD_NAME ($IOS_BUILD_NUMBER)"
+          echo "IOS_BUILD_NUMBER=$IOS_BUILD_NUMBER" >> "$CM_ENV"
+          echo "SWIPESS_BUILD_NUMBER=$IOS_BUILD_NUMBER" >> "$CM_ENV"
+
       - name: Get Flutter packages
         script: flutter pub get
 
@@ -61,11 +108,16 @@ workflows:
       - name: Force Flutter/Xcode release configuration
         script: |
           flutter build ios --config-only --release --no-codesign \
+            --build-name="$IOS_BUILD_NAME" \
+            --build-number="$IOS_BUILD_NUMBER" \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}"
-          grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig || true
+            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}" \
+            --dart-define=SWIPESS_BUILD_SHA="$SWIPESS_BUILD_SHA" \
+            --dart-define=SWIPESS_BUILD_NUMBER="$SWIPESS_BUILD_NUMBER" \
+            --dart-define=SWIPESS_BUILD_CHANNEL="$SWIPESS_BUILD_CHANNEL"
+          grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' ios/Flutter/Generated.xcconfig
 
       - name: Fetch App Store signing files
         script: |
@@ -76,33 +128,67 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
-      - name: Build signed RELEASE IPA
+      - name: Build signed RELEASE IPA from exact commit
         script: |
+          set -eu
           flutter clean
           flutter pub get
           flutter build ios --config-only --release --no-codesign \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
-            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}"
-          # Version/build come only from pubspec.yaml so Codemagic can never
-          # silently upload an old hard-coded build number again.
-          flutter build ipa --release \
+            --build-name="$IOS_BUILD_NAME" \
+            --build-number="$IOS_BUILD_NUMBER" \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
             --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
             --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}" \
+            --dart-define=SWIPESS_BUILD_SHA="$SWIPESS_BUILD_SHA" \
+            --dart-define=SWIPESS_BUILD_NUMBER="$SWIPESS_BUILD_NUMBER" \
+            --dart-define=SWIPESS_BUILD_CHANNEL="$SWIPESS_BUILD_CHANNEL"
+
+          flutter build ipa --release \
+            --build-name="$IOS_BUILD_NAME" \
+            --build-number="$IOS_BUILD_NUMBER" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID="${GOOGLE_SERVER_CLIENT_ID:-}" \
+            --dart-define=GOOGLE_IOS_CLIENT_ID="${GOOGLE_IOS_CLIENT_ID:-}" \
+            --dart-define=SWIPESS_BUILD_SHA="$SWIPESS_BUILD_SHA" \
+            --dart-define=SWIPESS_BUILD_NUMBER="$SWIPESS_BUILD_NUMBER" \
+            --dart-define=SWIPESS_BUILD_CHANNEL="$SWIPESS_BUILD_CHANNEL" \
             --export-options-plist=/Users/builder/export_options.plist
 
-      - name: Reject debug/JIT IPA
+      - name: Verify IPA identity and release mode
         script: |
+          set -eu
           rm -rf /tmp/swipess_ipa
           mkdir -p /tmp/swipess_ipa
           unzip -q build/ios/ipa/*.ipa -d /tmp/swipess_ipa
-          sh ios/ci_scripts/verify_release_bundle.sh /tmp/swipess_ipa/Payload/Runner.app
+          APP_PATH=/tmp/swipess_ipa/Payload/Runner.app
+
+          sh ios/ci_scripts/verify_release_bundle.sh "$APP_PATH"
+
+          ACTUAL_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Info.plist")"
+          ACTUAL_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP_PATH/Info.plist")"
+          if [ "$ACTUAL_NAME" != "$IOS_BUILD_NAME" ] || [ "$ACTUAL_BUILD" != "$IOS_BUILD_NUMBER" ]; then
+            echo "REFUSING UPLOAD: IPA identity mismatch."
+            echo "Expected: $IOS_BUILD_NAME ($IOS_BUILD_NUMBER)"
+            echo "Actual:   $ACTUAL_NAME ($ACTUAL_BUILD)"
+            exit 1
+          fi
+
+          mkdir -p build/ios/ipa
+          cat > build/ios/ipa/SWIPESS_PROVENANCE.txt <<EOF
+          channel=$SWIPESS_BUILD_CHANNEL
+          branch=$CM_BRANCH
+          commit=$CM_COMMIT
+          version=$ACTUAL_NAME
+          build=$ACTUAL_BUILD
+          EOF
+
+          echo "VERIFIED IPA: $ACTUAL_NAME ($ACTUAL_BUILD) from $CM_BRANCH@$CM_COMMIT"
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/ipa/SWIPESS_PROVENANCE.txt
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
@@ -117,12 +203,6 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       groups:
-        # Create these groups in Codemagic with:
-        # - KEYSTORE (base64 encoded keystore file)
-        # - KEYSTORE_PASSWORD
-        # - KEY_ALIAS
-        # - KEY_PASSWORD
-        # - GOOGLE_PLAY_CREDENTIALS (base64 encoded service account json)
         - keys
       vars:
         PACKAGE_NAME: com.swipess.mobile
