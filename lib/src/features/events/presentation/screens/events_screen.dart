@@ -20,6 +20,10 @@ import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
 /// Reels-style Events feed with Instagram-like heart interactions.
+///
+/// Dashboard event previews can hand their already-buffered player into this
+/// screen, so opening an event feels immediate instead of reconnecting to the
+/// same video URL and buffering again.
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
 
@@ -29,12 +33,14 @@ class EventsScreen extends ConsumerStatefulWidget {
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
   static const _chromeTimeout = Duration(seconds: 7);
-  final _pages = PageController();
+
+  final PageController _pages = PageController();
   int _index = 0;
   String _category = 'All';
   late bool _chromeVisible;
   bool _chromePinned = false;
   Timer? _hideTimer;
+
   String? _handoffEventId;
   Duration? _handoffPosition;
   VideoPlayerController? _handoffController;
@@ -48,10 +54,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _handoffPosition = handoff?.position;
     _handoffController = handoff?.controller;
 
-    // A dashboard-preview launch starts completely immersive on frame one. The
-    // video itself is already running and controls can be summoned with a tap.
+    // Dashboard launches begin edge-to-edge. The video is already playing and
+    // the user can reveal the chrome with one tap.
     _chromeVisible = handoff == null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (handoff == null) {
         _showChrome();
       } else {
@@ -96,15 +103,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   void _togglePin() {
     AppHaptics.light();
+    _hideTimer?.cancel();
     if (_chromeVisible) {
-      _hideTimer?.cancel();
       setState(() {
         _chromeVisible = false;
         _chromePinned = false;
       });
       ref.read(chromeVisibilityProvider.notifier).hide();
     } else {
-      _hideTimer?.cancel();
       setState(() {
         _chromeVisible = true;
         _chromePinned = true;
@@ -114,11 +120,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   }
 
   void _touchChrome() {
-    if (_chromePinned) {
-      // Do nothing if pinned
-    } else if (_chromeVisible) {
-      _showChrome();
-    }
+    if (!_chromePinned && _chromeVisible) _showChrome();
   }
 
   @override
@@ -135,11 +137,15 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         children: [
           async.when(
             loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
             ),
             error: (_, _) => Center(
               child: TextButton(
-                onPressed: () => ref.read(eventsListProvider.notifier).refresh(),
+                onPressed: () =>
+                    ref.read(eventsListProvider.notifier).refresh(),
                 child: const Text('Could not load events — retry'),
               ),
             ),
@@ -169,11 +175,15 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
               if (!_handoffApplied && _handoffEventId != null) {
                 _handoffApplied = true;
-                final target = events.indexWhere((e) => e.id == _handoffEventId);
+                final target = events.indexWhere(
+                  (event) => event.id == _handoffEventId,
+                );
                 if (target >= 0) {
                   _index = target;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _pages.hasClients) _pages.jumpToPage(target);
+                    if (mounted && _pages.hasClients) {
+                      _pages.jumpToPage(target);
+                    }
                   });
                 }
               }
@@ -181,7 +191,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               return PageView.builder(
                 controller: _pages,
                 scrollDirection: Axis.vertical,
-                physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                physics: const PageScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
                 itemCount: events.length + 1,
                 onPageChanged: (index) {
                   AppHaptics.selection();
@@ -191,9 +203,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 itemBuilder: (context, index) {
                   if (index == events.length) {
                     return PromoteCTACard(
-                      onPromote: () => context.push(AppPaths.clientAdvertise),
+                      onPromote: () =>
+                          context.push(AppPaths.clientAdvertise),
                     );
                   }
+
                   final event = events[index];
                   return _EventPage(
                     event: event,
@@ -230,12 +244,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ignoring: !_chromeVisible,
               child: AnimatedSlide(
                 offset: _chromeVisible ? Offset.zero : const Offset(0, -1),
-                duration: const Duration(milliseconds: 350),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: _chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
+                  duration: const Duration(milliseconds: 220),
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
@@ -246,7 +259,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           _GlassIcon(
                             icon: Icons.arrow_back_rounded,
                             onTap: () {
-                              ref.read(chromeVisibilityProvider.notifier).show();
+                              ref
+                                  .read(chromeVisibilityProvider.notifier)
+                                  .show();
                               if (context.canPop()) {
                                 context.pop();
                               } else {
@@ -259,39 +274,44 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             child: SizedBox(
                               height: 64,
                               child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: categories.length,
-                              separatorBuilder: (_, _) => const SizedBox(width: 7),
-                              itemBuilder: (context, i) {
-                                final c = categories[i];
-                                return _CategoryChip(
-                                  category: c,
-                                  active: _category == c.key,
-                                  onTap: () {
-                                    AppHaptics.light();
-                                    setState(() {
-                                      _category = c.key;
-                                      _index = 0;
-                                    });
-                                    ref
-                                        .read(selectedCategoryProvider.notifier)
-                                        .setCategory(c.key);
-                                    if (_pages.hasClients) _pages.jumpToPage(0);
-                                    _touchChrome();
-                                  },
-                                );
-                              },
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: categories.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 7),
+                                itemBuilder: (context, i) {
+                                  final category = categories[i];
+                                  return _CategoryChip(
+                                    category: category,
+                                    active: _category == category.key,
+                                    onTap: () {
+                                      AppHaptics.light();
+                                      setState(() {
+                                        _category = category.key;
+                                        _index = 0;
+                                      });
+                                      ref
+                                          .read(
+                                            selectedCategoryProvider.notifier,
+                                          )
+                                          .setCategory(category.key);
+                                      if (_pages.hasClients) {
+                                        _pages.jumpToPage(0);
+                                      }
+                                      _touchChrome();
+                                    },
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
           ),
           Positioned(
             right: 12,
@@ -366,6 +386,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
   @override
   void didUpdateWidget(covariant _EventPage oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.shouldLoadVideo && _hasVideo && _player == null) {
       final transferred = widget.initialController;
       if (transferred != null && transferred.value.isInitialized) {
@@ -376,24 +397,23 @@ class _EventPageState extends ConsumerState<_EventPage> {
         unawaited(_bindVideo());
       }
     }
+
     if (!widget.shouldLoadVideo && _player != null) {
       unawaited(_player?.dispose());
       _player = null;
     }
-    final p = _player;
-    if (p == null || !p.value.isInitialized) return;
+
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
     if (widget.active) {
-      unawaited(p.play());
+      unawaited(player.play());
     } else {
-      unawaited(p.pause());
+      unawaited(player.pause());
     }
   }
 
   Future<void> _adoptTransferredVideo(VideoPlayerController player) async {
     try {
-      // The dashboard already initialized and buffered this exact controller.
-      // Do not seek or reconnect: preserve the current frame/position and only
-      // switch it into the full-screen feed's looping/audio behavior.
       await player.setLooping(true);
       await player.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
       if (widget.active) await player.play();
@@ -411,26 +431,32 @@ class _EventPageState extends ConsumerState<_EventPage> {
   Future<void> _bindVideo() async {
     final url = event.videoUrl;
     if (url == null || url.trim().isEmpty) return;
+
     final next = VideoPlayerController.networkUrl(Uri.parse(url));
     _player = next;
     try {
       await next.initialize();
       await next.setLooping(true);
+
       if (!_initialApplied && widget.initialPosition != null) {
         final duration = next.value.duration;
         var target = widget.initialPosition!;
-        if (duration > const Duration(milliseconds: 120) && target >= duration) {
+        if (duration > const Duration(milliseconds: 120) &&
+            target >= duration) {
           target = duration - const Duration(milliseconds: 120);
         }
         if (target > Duration.zero) await next.seekTo(target);
         _initialApplied = true;
       }
+
       await next.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
       if (widget.active) await next.play();
-      if (mounted) setState(() {});
+      if (mounted && identical(_player, next)) setState(() {});
     } catch (_) {
-      await next.dispose();
-      if (_player == next) _player = null;
+      try {
+        await next.dispose();
+      } catch (_) {}
+      if (identical(_player, next)) _player = null;
     }
   }
 
@@ -443,6 +469,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
   Future<void> _toggleFavorite() async {
     if (_busy) return;
     widget.onChromeInteraction();
+
     final current = _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
     setState(() {
@@ -450,6 +477,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
       _favoritedOverride = !current;
     });
     AppHaptics.medium();
+
     try {
       await ref
           .read(eventRepositoryProvider)
@@ -466,7 +494,9 @@ class _EventPageState extends ConsumerState<_EventPage> {
   Future<void> _share() async {
     widget.onChromeInteraction();
     await Clipboard.setData(
-      ClipboardData(text: 'Check out ${event.title} on Swipess! ${event.shareUrl}'),
+      ClipboardData(
+        text: 'Check out ${event.title} on Swipess! ${event.shareUrl}',
+      ),
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -493,6 +523,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
     final favorited = _favoritedOverride ??
         (ref.watch(eventFavoriteProvider(event.id)).value ?? false);
     final soundOn = ref.watch(deckSoundOnProvider);
+
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _player?.setVolume(on ? 1 : 0);
       if (on && widget.active) _player?.play();
@@ -538,7 +569,11 @@ class _EventPageState extends ConsumerState<_EventPage> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0x22000000), Colors.transparent, Color(0xB0000000)],
+                colors: [
+                  Color(0x22000000),
+                  Colors.transparent,
+                  Color(0xB0000000),
+                ],
                 stops: [0, .55, 1],
               ),
             ),
@@ -549,13 +584,14 @@ class _EventPageState extends ConsumerState<_EventPage> {
             child: IgnorePointer(
               ignoring: !widget.chromeVisible,
               child: AnimatedSlide(
-                offset: widget.chromeVisible ? Offset.zero : const Offset(1, 0),
-                duration: const Duration(milliseconds: 350),
+                offset: widget.chromeVisible
+                    ? Offset.zero
+                    : const Offset(1, 0),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: widget.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
+                  duration: const Duration(milliseconds: 220),
                   child: Column(
                     children: [
                       _HeartLibraryButton(
@@ -578,11 +614,20 @@ class _EventPageState extends ConsumerState<_EventPage> {
                         },
                       ),
                       const SizedBox(height: 10),
-                      _RailButton(icon: Icons.info_outline_rounded, onTap: widget.onOpen),
+                      _RailButton(
+                        icon: Icons.info_outline_rounded,
+                        onTap: widget.onOpen,
+                      ),
                       const SizedBox(height: 6),
-                      _RailButton(icon: Icons.chat_bubble_outline_rounded, onTap: _whatsApp),
+                      _RailButton(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        onTap: _whatsApp,
+                      ),
                       const SizedBox(height: 6),
-                      _RailButton(icon: Icons.share_rounded, onTap: _share),
+                      _RailButton(
+                        icon: Icons.share_rounded,
+                        onTap: _share,
+                      ),
                     ],
                   ),
                 ),
@@ -596,13 +641,14 @@ class _EventPageState extends ConsumerState<_EventPage> {
             child: IgnorePointer(
               ignoring: !widget.chromeVisible,
               child: AnimatedSlide(
-                offset: widget.chromeVisible ? Offset.zero : const Offset(0, 1),
-                duration: const Duration(milliseconds: 350),
+                offset: widget.chromeVisible
+                    ? Offset.zero
+                    : const Offset(0, 1),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: widget.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
+                  duration: const Duration(milliseconds: 220),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -626,7 +672,9 @@ class _EventPageState extends ConsumerState<_EventPage> {
                           height: 1.04,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.7,
-                          shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
+                          shadows: const [
+                            Shadow(color: Colors.black, blurRadius: 12),
+                          ],
                         ),
                       ),
                       if ((event.organizerName ?? '').isNotEmpty) ...[
@@ -642,37 +690,39 @@ class _EventPageState extends ConsumerState<_EventPage> {
                       if ((event.promoText ?? '').isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(
-                              event.promoText!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white70, height: 1.3),
-                            ),
-                          ],
-                          const SizedBox(height: 9),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              if (event.eventDate != null)
-                                _InfoChip(
-                                  icon: Icons.calendar_today_rounded,
-                                  label: DateFormat('MMM d · h:mm a')
-                                      .format(event.eventDate!.toLocal()),
-                                ),
-                              if ((event.location ?? '').isNotEmpty)
-                                _InfoChip(
-                                  icon: Icons.location_on_rounded,
-                                  label: event.location!,
-                                ),
-                            ],
+                          event.promoText!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            height: 1.3,
                           ),
+                        ),
+                      ],
+                      const SizedBox(height: 9),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (event.eventDate != null)
+                            _InfoChip(
+                              icon: Icons.calendar_today_rounded,
+                              label: DateFormat('MMM d · h:mm a')
+                                  .format(event.eventDate!.toLocal()),
+                            ),
+                          if ((event.location ?? '').isNotEmpty)
+                            _InfoChip(
+                              icon: Icons.location_on_rounded,
+                              label: event.location!,
+                            ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
@@ -681,6 +731,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
 
 class _HeartLibraryButton extends StatelessWidget {
   const _HeartLibraryButton({required this.count, required this.onTap});
+
   final int count;
   final VoidCallback onTap;
 
@@ -692,7 +743,11 @@ class _HeartLibraryButton extends StatelessWidget {
         width: 52,
         child: Column(
           children: [
-            const Icon(Icons.favorite_rounded, color: Color(0xFFFF3040), size: 31),
+            const Icon(
+              Icons.favorite_rounded,
+              color: Color(0xFFFF3040),
+              size: 31,
+            ),
             const SizedBox(height: 2),
             Text(
               '$count',
@@ -711,6 +766,7 @@ class _HeartLibraryButton extends StatelessWidget {
 
 class _HeartButton extends StatelessWidget {
   const _HeartButton({required this.active, required this.onTap});
+
   final bool active;
   final VoidCallback onTap;
 
@@ -727,10 +783,14 @@ class _HeartButton extends StatelessWidget {
             duration: const Duration(milliseconds: 150),
             scale: active ? 1.08 : 1,
             child: Icon(
-              active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              active
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
               color: active ? const Color(0xFFFF3040) : Colors.white,
               size: 31,
-              shadows: const [Shadow(color: Colors.black54, blurRadius: 10)],
+              shadows: const [
+                Shadow(color: Colors.black54, blurRadius: 10),
+              ],
             ),
           ),
         ),
@@ -741,6 +801,7 @@ class _HeartButton extends StatelessWidget {
 
 class _RailButton extends StatelessWidget {
   const _RailButton({required this.icon, required this.onTap});
+
   final IconData icon;
   final VoidCallback onTap;
 
@@ -757,7 +818,9 @@ class _RailButton extends StatelessWidget {
             icon,
             color: Colors.white,
             size: 22,
-            shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
+            shadows: const [
+              Shadow(color: Colors.black87, blurRadius: 10),
+            ],
           ),
         ),
       ),
@@ -766,7 +829,12 @@ class _RailButton extends StatelessWidget {
 }
 
 class _GlassIcon extends StatelessWidget {
-  const _GlassIcon({required this.icon, required this.onTap, this.size = 40});
+  const _GlassIcon({
+    required this.icon,
+    required this.onTap,
+    this.size = 40,
+  });
+
   final IconData icon;
   final VoidCallback onTap;
   final double size;
@@ -784,7 +852,9 @@ class _GlassIcon extends StatelessWidget {
             icon,
             color: Colors.white,
             size: 21,
-            shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
+            shadows: const [
+              Shadow(color: Colors.black87, blurRadius: 10),
+            ],
           ),
         ),
       ),
@@ -798,6 +868,7 @@ class _CategoryChip extends StatelessWidget {
     required this.active,
     required this.onTap,
   });
+
   final EventFeedCategory category;
   final bool active;
   final VoidCallback onTap;
@@ -858,6 +929,7 @@ class _CategoryChip extends StatelessWidget {
 
 class _MetaPill extends StatelessWidget {
   const _MetaPill({required this.label});
+
   final String label;
 
   @override
@@ -882,6 +954,7 @@ class _MetaPill extends StatelessWidget {
 
 class _InfoChip extends StatelessWidget {
   const _InfoChip({required this.icon, required this.label});
+
   final IconData icon;
   final String label;
 
