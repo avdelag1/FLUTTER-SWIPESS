@@ -213,59 +213,65 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             right: 0,
             child: IgnorePointer(
               ignoring: !_chromeVisible,
-              child: AnimatedOpacity(
-                opacity: _chromeVisible ? 1 : 0,
-                duration: const Duration(milliseconds: 220),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _GlassIcon(
-                          icon: Icons.arrow_back_rounded,
-                          onTap: () {
-                            ref.read(chromeVisibilityProvider.notifier).show();
-                            if (context.canPop()) {
-                              context.pop();
-                            } else {
-                              context.go(AppPaths.clientDashboard);
-                            }
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SizedBox(
-                            height: 64,
-                            child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: categories.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: 7),
-                            itemBuilder: (context, i) {
-                              final c = categories[i];
-                              return _CategoryChip(
-                                category: c,
-                                active: _category == c.key,
-                                onTap: () {
-                                  AppHaptics.light();
-                                  setState(() {
-                                    _category = c.key;
-                                    _index = 0;
-                                  });
-                                  ref
-                                      .read(selectedCategoryProvider.notifier)
-                                      .setCategory(c.key);
-                                  if (_pages.hasClients) _pages.jumpToPage(0);
-                                  _touchChrome();
-                                },
-                              );
+              child: AnimatedSlide(
+                offset: _chromeVisible ? Offset.zero : const Offset(0, -1),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: _chromeVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _GlassIcon(
+                            icon: Icons.arrow_back_rounded,
+                            onTap: () {
+                              ref.read(chromeVisibilityProvider.notifier).show();
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go(AppPaths.clientDashboard);
+                              }
                             },
                           ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SizedBox(
+                              height: 64,
+                              child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: categories.length,
+                              separatorBuilder: (_, _) => const SizedBox(width: 7),
+                              itemBuilder: (context, i) {
+                                final c = categories[i];
+                                return _CategoryChip(
+                                  category: c,
+                                  active: _category == c.key,
+                                  onTap: () {
+                                    AppHaptics.light();
+                                    setState(() {
+                                      _category = c.key;
+                                      _index = 0;
+                                    });
+                                    ref
+                                        .read(selectedCategoryProvider.notifier)
+                                        .setCategory(c.key);
+                                    if (_pages.hasClients) _pages.jumpToPage(0);
+                                    _touchChrome();
+                                  },
+                                );
+                              },
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -492,37 +498,43 @@ class _EventPageState extends ConsumerState<_EventPage> {
             bottom: bottom + 105,
             child: IgnorePointer(
               ignoring: !widget.chromeVisible,
-              child: AnimatedOpacity(
-                opacity: widget.chromeVisible ? 1 : 0,
-                duration: const Duration(milliseconds: 220),
-                child: Column(
-                  children: [
-                    _HeartLibraryButton(
-                      count: widget.likedCount,
-                      onTap: widget.onOpenLikes,
-                    ),
-                    const SizedBox(height: 10),
-                    _HeartButton(
-                      active: favorited,
-                      onTap: _toggleFavorite,
-                    ),
-                    const SizedBox(height: 10),
-                    EventMuteButton(
-                      soundOn: soundOn,
-                      onToggle: () {
-                        widget.onChromeInteraction();
-                        ref
-                            .read(deckSoundOnProvider.notifier)
-                            .setSoundOn(!soundOn);
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _RailButton(icon: Icons.info_outline_rounded, onTap: widget.onOpen),
-                    const SizedBox(height: 6),
-                    _RailButton(icon: Icons.chat_bubble_outline_rounded, onTap: _whatsApp),
-                    const SizedBox(height: 6),
-                    _RailButton(icon: Icons.share_rounded, onTap: _share),
-                  ],
+              child: AnimatedSlide(
+                offset: widget.chromeVisible ? Offset.zero : const Offset(1, 0),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: widget.chromeVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: Column(
+                    children: [
+                      _HeartLibraryButton(
+                        count: widget.likedCount,
+                        onTap: widget.onOpenLikes,
+                      ),
+                      const SizedBox(height: 10),
+                      _HeartButton(
+                        active: favorited,
+                        onTap: _toggleFavorite,
+                      ),
+                      const SizedBox(height: 10),
+                      EventMuteButton(
+                        soundOn: soundOn,
+                        onToggle: () {
+                          widget.onChromeInteraction();
+                          ref
+                              .read(deckSoundOnProvider.notifier)
+                              .setSoundOn(!soundOn);
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _RailButton(icon: Icons.info_outline_rounded, onTap: widget.onOpen),
+                      const SizedBox(height: 6),
+                      _RailButton(icon: Icons.chat_bubble_outline_rounded, onTap: _whatsApp),
+                      const SizedBox(height: 6),
+                      _RailButton(icon: Icons.share_rounded, onTap: _share),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -533,76 +545,83 @@ class _EventPageState extends ConsumerState<_EventPage> {
             bottom: bottom + 26,
             child: IgnorePointer(
               ignoring: !widget.chromeVisible,
-              child: AnimatedOpacity(
-                opacity: widget.chromeVisible ? 1 : 0,
-                duration: const Duration(milliseconds: 220),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _MetaPill(label: event.category.toUpperCase()),
-                        if (event.isFree) const _MetaPill(label: 'FREE'),
-                        if (_hasVideo) const _MetaPill(label: 'VIDEO'),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      event.title,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 26,
-                        height: 1.04,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.7,
-                        shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
+              child: AnimatedSlide(
+                offset: widget.chromeVisible ? Offset.zero : const Offset(0, 1),
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: widget.chromeVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _MetaPill(label: event.category.toUpperCase()),
+                          if (event.isFree) const _MetaPill(label: 'FREE'),
+                          if (_hasVideo) const _MetaPill(label: 'VIDEO'),
+                        ],
                       ),
-                    ),
-                    if ((event.organizerName ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 10),
                       Text(
-                        'by ${event.organizerName}',
+                        event.title,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 26,
+                          height: 1.04,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.7,
+                          shadows: const [Shadow(color: Colors.black, blurRadius: 12)],
                         ),
                       ),
-                    ],
-                    if ((event.promoText ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                            event.promoText!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white70, height: 1.3),
+                      if ((event.organizerName ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          'by ${event.organizerName}',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
-                        const SizedBox(height: 9),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            if (event.eventDate != null)
-                              _InfoChip(
-                                icon: Icons.calendar_today_rounded,
-                                label: DateFormat('MMM d · h:mm a')
-                                    .format(event.eventDate!.toLocal()),
-                              ),
-                            if ((event.location ?? '').isNotEmpty)
-                              _InfoChip(
-                                icon: Icons.location_on_rounded,
-                                label: event.location!,
-                              ),
-                          ],
                         ),
                       ],
+                      if ((event.promoText ?? '').isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                              event.promoText!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white70, height: 1.3),
+                            ),
+                          ],
+                          const SizedBox(height: 9),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: [
+                              if (event.eventDate != null)
+                                _InfoChip(
+                                  icon: Icons.calendar_today_rounded,
+                                  label: DateFormat('MMM d · h:mm a')
+                                      .format(event.eventDate!.toLocal()),
+                                ),
+                              if ((event.location ?? '').isNotEmpty)
+                                _InfoChip(
+                                  icon: Icons.location_on_rounded,
+                                  label: event.location!,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
+              ),
             ),
         ],
       ),
