@@ -17,10 +17,9 @@ workflows:
       cancel_previous_builds: true
 
     environment:
-      # One-time Codemagic setup: create this exact variable group and add the
-      # existing App Store Connect API key values to it.
-      groups:
-        - appstore_credentials
+      # App Store Connect variables may already exist at app/team scope in this
+      # Codemagic project. Do not reference a non-existent group here: that made
+      # the workflow fail before even cloning/building the app.
       vars:
         BUNDLE_ID: com.swipess.mobile
         APP_STORE_APPLE_ID: 6779810584
@@ -65,6 +64,7 @@ workflows:
             eval "value=\${$name:-}"
             if [ -z "$value" ]; then
               echo "MISSING_CODEMAGIC_CREDENTIAL: $name"
+              echo "Add this existing App Store Connect credential to the Codemagic app/team environment, then rebuild."
               exit 1
             fi
           done
