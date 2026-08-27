@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
@@ -18,7 +20,7 @@ Widget buildPlatformDiscoveryMap({
   );
 }
 
-class _NativeDiscoveryMapBootstrap extends StatefulWidget {
+class _NativeDiscoveryMapBootstrap extends ConsumerStatefulWidget {
   const _NativeDiscoveryMapBootstrap({
     required this.onClose,
     required this.showCitiesOnOpen,
@@ -28,12 +30,12 @@ class _NativeDiscoveryMapBootstrap extends StatefulWidget {
   final bool showCitiesOnOpen;
 
   @override
-  State<_NativeDiscoveryMapBootstrap> createState() =>
+  ConsumerState<_NativeDiscoveryMapBootstrap> createState() =>
       _NativeDiscoveryMapBootstrapState();
 }
 
 class _NativeDiscoveryMapBootstrapState
-    extends State<_NativeDiscoveryMapBootstrap> {
+    extends ConsumerState<_NativeDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
   late final bool _playIntro;
   Timer? _introWatchdog;
@@ -43,12 +45,39 @@ class _NativeDiscoveryMapBootstrapState
   bool _watchdogArmed = false;
   bool _nativeMapReportedReady = false;
   bool _useFallback = false;
+  bool _audioSuppressed = false;
+  bool? _lastRouteActive;
 
   @override
   void initState() {
     super.initState();
     _playIntro = !_nativeGlobePlayedThisSession;
     if (_playIntro) _nativeGlobePlayedThisSession = true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.of(context);
+    if (_lastRouteActive == active) return;
+    _lastRouteActive = active;
+    if (active) {
+      _suppressAudio();
+    } else {
+      _restoreAudio();
+    }
+  }
+
+  void _suppressAudio() {
+    if (_audioSuppressed) return;
+    _audioSuppressed = true;
+    ref.read(deckSoundOnProvider.notifier).suspendTemporarily();
+  }
+
+  void _restoreAudio() {
+    if (!_audioSuppressed) return;
+    _audioSuppressed = false;
+    ref.read(deckSoundOnProvider.notifier).resumeTemporarySound();
   }
 
   void _armIntroWatchdog() {
@@ -81,6 +110,7 @@ class _NativeDiscoveryMapBootstrapState
   void dispose() {
     _introWatchdog?.cancel();
     _mapLoadWatchdog?.cancel();
+    _restoreAudio();
     super.dispose();
   }
 
@@ -115,6 +145,9 @@ class _NativeDiscoveryMapBootstrapState
         }
 
         if (snapshot.data == true && !_useFallback) {
+          // iOS + Android use the original Mapbox round-world intro on the first
+          // map opening of the running app session, then continue into the
+          // native Mapbox discovery map. Re-entering Map does not replay it.
           if (_playIntro && !_introComplete) {
             _armIntroWatchdog();
             return _transition(
