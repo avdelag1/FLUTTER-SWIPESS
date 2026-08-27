@@ -146,7 +146,7 @@ class _MapboxWorldIntroScreenState
         curve: Curves.easeOut,
         child: MapWidget(
           key: const ValueKey('swipess-mapbox-world-intro'),
-          styleUri: MapboxStyles.STREETS,
+          styleUri: MapboxStyles.MAPBOX_STREETS,
           onMapCreated: _setupMap,
           onMapLoadedListener: (_) => _onMapLoaded(),
         ),
