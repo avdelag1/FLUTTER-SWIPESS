@@ -19,14 +19,19 @@ workflows:
       cancel_previous_builds: true
 
     environment:
-      # App Store Connect variables may already exist at app/team scope in this
-      # Codemagic project. Do not reference a non-existent group here: that made
-      # the workflow fail before even cloning/building the app.
+      # Required so Codemagic injects App Store Connect API credentials into the
+      # shell for app-store-connect CLI steps (build number lookup, signing,
+      # TestFlight upload). Without this block, integration auth works for
+      # publishing but script steps return 401 Unauthorized.
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.swipess.mobile
       vars:
         BUNDLE_ID: com.swipess.mobile
         APP_STORE_APPLE_ID: 6779810584
         SUPABASE_URL: https://vplgtcguxujxwrgguxqq.supabase.co
         SUPABASE_PUBLISHABLE_KEY: sb_publishable_FA0BseFSS6zM7Y8K3w8zLQ_d8BXqEuV
+        APP_STORE_CONNECT_API_UNAUTHORIZED_RETRIES: "5"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -60,10 +65,28 @@ workflows:
           echo "SWIPESS_BUILD_CHANNEL=CM-main" >> "$CM_ENV"
 
 
+      - name: Verify App Store Connect CLI credentials
+        script: |
+          set -eu
+          missing=0
+          for var in APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_PRIVATE_KEY; do
+            if [ -z "${!var:-}" ]; then
+              echo "Missing $var in build environment."
+              missing=1
+            else
+              echo "$var is present."
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "App Store Connect API credentials were not injected."
+            echo "Ensure integrations.app_store_connect is AppStoreConnect and ios_signing is configured."
+            exit 1
+          fi
+
       - name: Resolve next TestFlight build number
         script: |
           set -eu
-          LATEST_BUILD="$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")"
+          LATEST_BUILD="$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" --api-unauthorized-retries 5)"
           case "$LATEST_BUILD" in
             ''|*[!0-9]*)
               echo "Unexpected TestFlight build number: $LATEST_BUILD"
@@ -127,7 +150,8 @@ workflows:
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --api-unauthorized-retries 5
           keychain add-certificates
           xcode-project use-profiles
 
