@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
@@ -113,12 +115,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   )
                 else
-                  _ProfileAvatarButton(
-                    key: const ValueKey('header-profile'),
-                    avatarUrl: avatarUrl,
-                    seed: firstName ?? avatarUrl ?? 'swipess-you',
-                    semanticLabel: 'Open profile, $_label',
-                    onTap: () => _openProfile(context),
+                  _HudButton(
+                    key: const ValueKey('header-map'),
+                    semanticLabel: 'Open map',
+                    onTap: () {
+                      AppHaptics.medium();
+                      ref.read(overlayModalsProvider.notifier).openPassportMap();
+                    },
+                    child: _AnimatedWorldIcon(color: ink),
                   ),
                 SizedBox(width: chromeGap),
                 _HudButton(
@@ -130,11 +134,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   },
                   child: Icon(Icons.add_rounded, size: 25, color: ink),
                 ),
-              ],
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+                SizedBox(width: chromeGap),
                 _HudButton(
                   key: const ValueKey('header-tokens'),
                   semanticLabel:
@@ -167,35 +167,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
-                SizedBox(width: chromeGap),
-                _HudButton(
-                  key: const ValueKey('header-map'),
-                  semanticLabel: 'Open map',
-                  onTap: () {
-                    AppHaptics.medium();
-                    ref.read(overlayModalsProvider.notifier).openPassportMap();
-                  },
-                  child: Icon(Icons.public_rounded, size: 22, color: ink),
-                ),
-                SizedBox(width: chromeGap),
-                _HudButton(
-                  key: const ValueKey('header-theme'),
-                  semanticLabel: isLight
-                      ? 'Switch to dark appearance'
-                      : 'Switch to light appearance',
-                  onTap: () {
-                    AppHaptics.medium();
-                    ref.read(visualThemeProvider.notifier).toggle();
-                  },
-                  child: Icon(
-                    isLight
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
-                    size: 22,
-                    color: ink,
-                  ),
-                ),
-                SizedBox(width: chromeGap),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 _HudButton(
                   key: const ValueKey('header-notifications'),
                   semanticLabel: 'Open notifications',
@@ -234,6 +210,34 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
+                SizedBox(width: chromeGap),
+                _HudButton(
+                  key: const ValueKey('header-theme'),
+                  semanticLabel: isLight
+                      ? 'Switch to dark appearance'
+                      : 'Switch to light appearance',
+                  onTap: () {
+                    AppHaptics.medium();
+                    ref.read(visualThemeProvider.notifier).toggle();
+                  },
+                  child: Icon(
+                    isLight
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    size: 22,
+                    color: ink,
+                  ),
+                ),
+                if (!isProfileRoute) ...[
+                  SizedBox(width: chromeGap),
+                  _ProfileAvatarButton(
+                    key: const ValueKey('header-profile'),
+                    avatarUrl: avatarUrl,
+                    seed: firstName ?? avatarUrl ?? 'swipess-you',
+                    semanticLabel: 'Open profile, $_label',
+                    onTap: () => _openProfile(context),
+                  ),
+                ],
               ],
             ),
           ],
@@ -309,6 +313,76 @@ class _HudButton extends StatelessWidget {
           child: Center(child: child),
         ),
       ),
+    );
+  }
+}
+
+class _AnimatedWorldIcon extends StatefulWidget {
+  const _AnimatedWorldIcon({required this.color});
+  final Color color;
+
+  @override
+  State<_AnimatedWorldIcon> createState() => _AnimatedWorldIconState();
+}
+
+class _AnimatedWorldIconState extends State<_AnimatedWorldIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  Timer? _timer;
+  final _random = math.Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _scheduleNextShine();
+  }
+
+  void _scheduleNextShine() {
+    // Random interval between 8 and 10 seconds
+    final delay = Duration(seconds: 8 + _random.nextInt(3));
+    _timer = Timer(delay, () {
+      if (mounted) {
+        _controller.forward(from: 0).then((_) => _scheduleNextShine());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        // 0.0 to 1.0 back to 0.0 smoothly
+        final intensity = math.sin(t * math.pi);
+        
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(Icons.public_rounded, size: 22, color: widget.color),
+            if (intensity > 0)
+              Opacity(
+                opacity: intensity,
+                child: Icon(
+                  Icons.public_rounded,
+                  size: 22,
+                  color: AppTheme.brandPrimary, 
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
