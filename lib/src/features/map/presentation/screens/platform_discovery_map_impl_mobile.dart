@@ -38,6 +38,7 @@ class _NativeDiscoveryMapBootstrapState
     extends ConsumerState<_NativeDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
   late final bool _playIntro;
+  late final DeckAudioNotifier _audioNotifier;
   Timer? _introWatchdog;
   Timer? _mapLoadWatchdog;
   bool _introWatchdogArmed = false;
@@ -51,6 +52,7 @@ class _NativeDiscoveryMapBootstrapState
   @override
   void initState() {
     super.initState();
+    _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _playIntro = !_nativeGlobePlayedThisSession;
     if (_playIntro) _nativeGlobePlayedThisSession = true;
   }
@@ -71,13 +73,13 @@ class _NativeDiscoveryMapBootstrapState
   void _suppressAudio() {
     if (_audioSuppressed) return;
     _audioSuppressed = true;
-    ref.read(deckSoundOnProvider.notifier).suspendTemporarily();
+    _audioNotifier.suspendTemporarily();
   }
 
   void _restoreAudio() {
     if (!_audioSuppressed) return;
     _audioSuppressed = false;
-    ref.read(deckSoundOnProvider.notifier).resumeTemporarySound();
+    _audioNotifier.resumeTemporarySound();
   }
 
   void _armIntroWatchdog() {
@@ -110,6 +112,8 @@ class _NativeDiscoveryMapBootstrapState
   void dispose() {
     _introWatchdog?.cancel();
     _mapLoadWatchdog?.cancel();
+    // Never call ref.read from dispose. Keep the notifier captured while the
+    // ConsumerState is mounted so map audio can always be restored safely.
     _restoreAudio();
     super.dispose();
   }
