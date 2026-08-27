@@ -120,13 +120,34 @@ class ListingLocations {
   static ({double lat, double lng, String country, String state})? resolve(
     String? city,
   ) {
+    final canonical = canonicalName(city);
+    return canonical == null ? null : cities[canonical];
+  }
+
+  /// Returns the stored city label for friendly AI/user variants such as
+  /// "Tulum, Mexico", while refusing ambiguous or unsupported locations.
+  static String? canonicalName(String? city) {
     if (city == null || city.trim().isEmpty) return null;
     final key = city.trim();
-    final exact = cities[key];
-    if (exact != null) return exact;
+    if (cities.containsKey(key)) return key;
+    final normalized = _normalize(key);
     for (final entry in cities.entries) {
-      if (entry.key.toLowerCase() == key.toLowerCase()) return entry.value;
+      final candidate = _normalize(entry.key);
+      if (candidate == normalized ||
+          normalized.startsWith('$candidate,') ||
+          normalized.startsWith('$candidate ')) {
+        return entry.key;
+      }
     }
     return null;
   }
+
+  static String _normalize(String value) => value
+      .trim()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u');
 }

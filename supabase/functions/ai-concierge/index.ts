@@ -94,7 +94,21 @@ function wantsEvents(q: string) {
 }
 
 function wantsPeople(q: string) {
-  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|nearby people)\b/i.test(q);
+  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|friends|nearby people)\b/i.test(q);
+}
+
+function wantsStructuredResults(q: string, preferredIntent?: string) {
+  if (preferredIntent === "profiles") return true;
+  if (/\b(find|show|search|browse|looking|look for|need|available|near me|nearby|recommend|recommendation|buscar|busco|muéstrame|mostrar|necesito|cerca|disponible)\b/i.test(q)) {
+    return true;
+  }
+  // Dashboard search often sends a short category phrase such as "properties"
+  // without an explicit verb. Short discovery prompts should still yield cards.
+  if (/\b(what|why|how|explain|rights|law|meaning|difference|qué|por qué|cómo|explica|derechos|ley)\b/i.test(q)) {
+    return false;
+  }
+  return q.trim().split(/\s+/).length <= 4 &&
+    (detectCategory(q) !== null || wantsEvents(q) || wantsPeople(q));
 }
 
 function needsFreshWeb(q: string) {
@@ -112,8 +126,10 @@ function recentCasualCount(history: Msg[]) {
     .filter((m) => isCasualLowValue(m.content)).length;
 }
 
-async function loadContext(client: any, query: string) {
-  const category = detectCategory(query);
+async function loadContext(client: any, query: string, preferredIntent?: string) {
+  const profileIntent = preferredIntent === "profiles" || wantsPeople(query);
+  const structuredRequest = wantsStructuredResults(query, preferredIntent);
+  const category = profileIntent || !structuredRequest ? null : detectCategory(query);
   let listings: any[] = [];
   let events: any[] = [];
   let profiles: any[] = [];
@@ -134,7 +150,7 @@ async function loadContext(client: any, query: string) {
     }
   }
 
-  if (wantsEvents(query)) {
+  if (structuredRequest && wantsEvents(query)) {
     try {
       const { data, error } = await client
         .from("events")
@@ -148,21 +164,45 @@ async function loadContext(client: any, query: string) {
     }
   }
 
-  if (wantsPeople(query)) {
+  if (profileIntent) {
     try {
       const { data, error } = await client
-        .from("profiles")
-        .select("user_id,full_name,city,neighborhood,active_mode,avatar_url")
-        .eq("is_active", true)
-        .order("updated_at", { ascending: false })
+        .from("client_profiles")
+        .select("user_id,name,city,bio,age,occupation,profile_images,location_updated_at")
+        .order("location_updated_at", { ascending: false, nullsFirst: false })
         .limit(3);
-      if (!error && Array.isArray(data)) profiles = data;
+      if (!error && Array.isArray(data)) {
+        profiles = data.map((profile: any) => ({
+          id: profile.user_id,
+          name: profile.name || "Swipess member",
+          city: profile.city || "",
+          age: profile.age ?? null,
+          occupation: profile.occupation ?? null,
+          image: Array.isArray(profile.profile_images) ? profile.profile_images[0] || "" : "",
+        }));
+      }
     } catch (e) {
       console.error("[ai-concierge-v75] profiles context", String(e));
     }
   }
 
   return { category, listings, events, profiles };
+}
+
+function withStructuredContext(text: string, ctx: any, query: string, preferredIntent?: string) {
+  if (!wantsStructuredResults(query, preferredIntent)) return text;
+  const tags: string[] = [];
+  if (preferredIntent === "profiles" || (wantsPeople(query) && !ctx.category)) {
+    if (ctx.profiles.length) tags.push(`[PROFILES:${JSON.stringify(ctx.profiles)}]`);
+  } else if (ctx.category && ctx.listings.length) {
+    tags.push(`[LISTINGS:${JSON.stringify(ctx.listings)}]`);
+  }
+  if (wantsEvents(query) && ctx.events.length) {
+    tags.push(`[EVENTS:${JSON.stringify(ctx.events)}]`);
+  }
+  if (!tags.length) return text;
+  const missing = tags.filter((tag) => !text.includes(tag.slice(0, tag.indexOf(":") + 1)));
+  return missing.length ? `${text.trim()}\n${missing.join("\n")}`.trim() : text;
 }
 
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
@@ -292,7 +332,8 @@ Deno.serve(async (req) => {
     const lastUser = [...history].reverse().find((m) => m.role === "user")?.content || "";
     if (!lastUser) return json(400, { error: "At least one user message is required" });
 
-    const ctx = await loadContext(client, lastUser);
+    const preferredIntent = body?.preferredIntent?.toString().trim();
+    const ctx = await loadContext(client, lastUser, preferredIntent);
     const fresh = needsFreshWeb(lastUser);
     const system = contextPrompt(ctx, body, history, lastUser);
     const modelMessages: Msg[] = [
@@ -319,7 +360,8 @@ Deno.serve(async (req) => {
       try {
         const text = (await run()).trim();
         if (!text || /^(AI )?temporarily unavailable/i.test(text)) throw new Error("provider returned outage text");
-        return json(200, { choices: [{ message: { content: text } }] }, provider, fresh ? "grounded-or-fallback" : "provider-json");
+        const grounded = withStructuredContext(text, ctx, lastUser, preferredIntent);
+        return json(200, { choices: [{ message: { content: grounded } }] }, provider, fresh ? "grounded-or-fallback" : "provider-json");
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         errors.push(`${provider}:${message}`);
