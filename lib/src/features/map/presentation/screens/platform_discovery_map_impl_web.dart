@@ -103,6 +103,7 @@ class _WebDiscoveryMapBootstrapState
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
   late final bool _globeReady = _browserSupportsMapboxGlobe();
   late final bool _playIntro;
+  late final DeckAudioNotifier _audioNotifier;
   Timer? _introWatchdog;
   bool _introWatchdogArmed = false;
   bool _introComplete = false;
@@ -112,6 +113,7 @@ class _WebDiscoveryMapBootstrapState
   @override
   void initState() {
     super.initState();
+    _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _playIntro = !_webGlobePlayedThisSession;
     if (_playIntro) _webGlobePlayedThisSession = true;
   }
@@ -132,13 +134,13 @@ class _WebDiscoveryMapBootstrapState
   void _suppressAudio() {
     if (_audioSuppressed) return;
     _audioSuppressed = true;
-    ref.read(deckSoundOnProvider.notifier).suspendTemporarily();
+    _audioNotifier.suspendTemporarily();
   }
 
   void _restoreAudio() {
     if (!_audioSuppressed) return;
     _audioSuppressed = false;
-    ref.read(deckSoundOnProvider.notifier).resumeTemporarySound();
+    _audioNotifier.resumeTemporarySound();
   }
 
   void _armIntroWatchdog() {
@@ -156,6 +158,9 @@ class _WebDiscoveryMapBootstrapState
   @override
   void dispose() {
     _introWatchdog?.cancel();
+    // Never use ref.read from dispose. Riverpod intentionally rejects reads
+    // once a ConsumerState has started unmounting. The notifier is captured
+    // while mounted so temporary map audio suppression can always be released.
     _restoreAudio();
     super.dispose();
   }
