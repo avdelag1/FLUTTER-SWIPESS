@@ -200,7 +200,7 @@ async function groq(messages: Msg[]) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${GROQ_API_KEY}` },
-    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, max_tokens: 900, temperature: 0.55, stream: false }),
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", messages, max_tokens: 900, temperature: 0.55, stream: false }),
   });
   if (!res.ok) throw new Error(`http ${res.status}`);
   const text = openAiText(await res.json());
