@@ -53,15 +53,6 @@ class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
     super.dispose();
   }
 
-  Widget _transition(Widget child, String key) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 420),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      child: KeyedSubtree(key: ValueKey(key), child: child),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
@@ -83,23 +74,43 @@ class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
           );
         }
 
-        if (snapshot.data == true && !_introComplete) {
-          _armIntroWatchdog();
-          return _transition(
-            MapboxWorldIntroScreen(onComplete: _finishIntro),
-            'mapbox-world-intro',
-          );
+        final discoveryMap = WebDiscoveryMapScreenV5(
+          onClose: widget.onClose,
+          showCitiesOnOpen: widget.showCitiesOnOpen,
+        );
+
+        if (snapshot.data != true) {
+          // Safety only: never strand the browser on an empty surface if the
+          // Mapbox runtime token cannot be initialized.
+          return discoveryMap;
         }
 
-        // The premium browser discovery screen remains the destination after
-        // the actual Mapbox globe flight. If Mapbox initialization ever fails,
-        // this also prevents a blank browser surface.
-        return _transition(
-          WebDiscoveryMapScreenV5(
-            onClose: widget.onClose,
-            showCitiesOnOpen: widget.showCitiesOnOpen,
-          ),
-          'web-discovery-map',
+        _armIntroWatchdog();
+
+        // Prewarm the premium discovery map underneath the true Mapbox globe.
+        // Its own city camera settles while the globe is visible, so removing
+        // the intro reveals the finished city map instead of triggering a
+        // second world-to-city animation.
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            discoveryMap,
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 480),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: _introComplete
+                    ? const SizedBox.expand(
+                        key: ValueKey('mapbox-world-intro-complete'),
+                      )
+                    : MapboxWorldIntroScreen(
+                        key: const ValueKey('mapbox-world-intro'),
+                        onComplete: _finishIntro,
+                      ),
+              ),
+            ),
+          ],
         );
       },
     );
