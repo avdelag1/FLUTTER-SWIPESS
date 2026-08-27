@@ -7,7 +7,7 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
 final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
-  final likedListingsFuture = ref.watch(likedListingsProvider.future);
+  final likedIdsFuture = ref.watch(likedListingIdsProvider.future);
   final client = Supabase.instance.client;
   final limit = loc.radiusKm >= 5000
       ? 1000
@@ -54,18 +54,20 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final inArea = _forMap(merged.values.toList(growable: false), loc);
   final discoverable = await _filterDiscoverable(client, inArea);
 
-  // The discovery map is for finding something new. Anything the current user
-  // already liked/saved belongs in Likes and must not be shown again as a map
-  // discovery pin or tray card.
+  // The map is an unseen-only discovery surface. Exclude right-swiped/saved
+  // listing IDs directly from the canonical `likes` decision rows. Do not rely
+  // on re-loading full liked Listing models here: one malformed legacy listing
+  // used to make that model fetch fail and the map would then show every liked
+  // item again.
   try {
-    final liked = await likedListingsFuture;
-    if (liked.isEmpty) return discoverable;
-    final likedIds = liked.map((listing) => listing.id).toSet();
+    final likedIds = await likedIdsFuture;
+    if (likedIds.isEmpty) return discoverable;
     return discoverable
         .where((listing) => !likedIds.contains(listing.id))
         .toList(growable: false);
   } catch (_) {
-    // A temporary Likes read failure must not make the entire map unavailable.
+    // Discovery stays usable if the likes service is temporarily unavailable.
+    // The server-side discoverability RPC above remains a second exclusion gate.
     return discoverable;
   }
 });
