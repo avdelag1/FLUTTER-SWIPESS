@@ -20,9 +20,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 
-// Session memory: the opening world-flight is a one-time cinematic moment.
-// Returning to Map in the same running app resumes the last map camera instead
-// of replaying the intro.
 bool _webDiscoveryOpenedThisSession = false;
 LatLng? _webSessionCenter;
 double? _webSessionZoom;
@@ -152,15 +149,15 @@ const _filters = <_FilterDef>[
   _FilterDef('properties', 'Properties', Icons.home_outlined),
   _FilterDef('services', 'Services', Icons.handyman_outlined),
   _FilterDef('dining', 'Dining', Icons.restaurant_rounded),
-  _FilterDef('jets', 'Jets', Icons.flight),
-  _FilterDef('yachts', 'Yachts', Icons.directions_boat),
-  _FilterDef('motorcycles', 'Motos', Icons.motorcycle),
-  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike),
-  _FilterDef('roommates', 'Roommates', Icons.people),
-  _FilterDef('seekers', 'Seekers', Icons.search),
-  _FilterDef('buyers', 'Buyers', Icons.shopping_bag),
-  _FilterDef('renters', 'Renters', Icons.key),
-  _FilterDef('people', 'People', Icons.person),
+  _FilterDef('jets', 'Jets', Icons.flight_rounded),
+  _FilterDef('yachts', 'Yachts', Icons.sailing_rounded),
+  _FilterDef('motorcycles', 'Motos', Icons.two_wheeler_rounded),
+  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike_rounded),
+  _FilterDef('roommates', 'Roommates', Icons.group_outlined),
+  _FilterDef('seekers', 'Seekers', Icons.travel_explore_rounded),
+  _FilterDef('buyers', 'Buyers', Icons.shopping_bag_outlined),
+  _FilterDef('renters', 'Renters', Icons.key_rounded),
+  _FilterDef('people', 'People', Icons.person_outline_rounded),
 ];
 
 class _WebDiscoveryMapScreenV8State
@@ -182,7 +179,7 @@ class _WebDiscoveryMapScreenV8State
   String _filter = 'all';
   String _query = '';
   String? _selected;
-  int _trayLevel = 1;
+  int _trayLevel = 0;
   double _zoom = 11.2;
 
   double _fromLat = 18;
@@ -226,7 +223,7 @@ class _WebDiscoveryMapScreenV8State
   }
 
   double get _trayHeight => switch (_trayLevel) {
-        0 => 54,
+        0 => 52,
         2 => 318,
         _ => 198,
       };
@@ -347,6 +344,20 @@ class _WebDiscoveryMapScreenV8State
         _openingFlight = false;
       });
     }
+  }
+
+  void _goBack() {
+    final router = GoRouter.of(context);
+    if (router.canPop()) {
+      router.pop();
+      return;
+    }
+    final close = widget.onClose;
+    if (close != null) {
+      close();
+      return;
+    }
+    context.go(AppPaths.clientDashboard);
   }
 
   ({double lat, double lng}) _spread(
@@ -523,17 +534,11 @@ class _WebDiscoveryMapScreenV8State
 
   void _select(_Item item, List<_Item> items) {
     AppHaptics.selection();
-    if (_selected == item.key) {
-      _open(item);
-      return;
-    }
-    setState(() {
-      _selected = item.key;
-    });
+    setState(() => _selected = item.key);
     final index = items.indexWhere((e) => e.key == item.key);
     if (index >= 0 && _cards.hasClients) {
       _cards.animateTo(
-        index * 234.0,
+        index * 224.0,
         duration: const Duration(milliseconds: 190),
         curve: Curves.easeOutCubic,
       );
@@ -639,8 +644,6 @@ class _WebDiscoveryMapScreenV8State
                   initialRotation,
                 );
                 if (_playOpeningFlight) {
-                  // Hold on the world long enough to enjoy it, then perform a
-                  // slower cinematic zoom to the active city.
                   _openingTimer = Timer(
                     const Duration(milliseconds: 2200),
                     () {
@@ -687,9 +690,9 @@ class _WebDiscoveryMapScreenV8State
                       point: LatLng(loc.latitude, loc.longitude),
                       radius: loc.radiusKm * 1000.0,
                       useRadiusInMeter: true,
-                      color: const Color(0x123B82F6),
-                      borderColor: const Color(0x88147DFF),
-                      borderStrokeWidth: 1.2,
+                      color: Colors.transparent,
+                      borderColor: const Color(0x30147DFF),
+                      borderStrokeWidth: 1,
                     ),
                   ],
                 ),
@@ -706,32 +709,21 @@ class _WebDiscoveryMapScreenV8State
                     for (final item in items)
                       Marker(
                         point: LatLng(item.lat, item.lng),
-                        width: item.key == _selected ? 240 : 50,
-                        height: item.key == _selected ? 140 : 60,
+                        width: item.key == _selected ? 250 : 50,
+                        height: item.key == _selected ? 158 : 60,
                         rotate: true,
                         alignment: Alignment.bottomCenter,
                         child: _Pin(
                           item: item,
                           selected: item.key == _selected,
                           onTap: () => _select(item, items),
+                          onOpen: () => _open(item),
                         ),
                       ),
                   ],
                 ),
             ],
           ),
-          if (_flying)
-            const IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.center,
-                    colors: [Color(0x18FFFFFF), Color(0x00FFFFFF)],
-                  ),
-                ),
-              ),
-            ),
           if (_controlsVisible && !_openingFlight) ...[
             Positioned(
               top: pad.top + 8,
@@ -740,6 +732,7 @@ class _WebDiscoveryMapScreenV8State
               child: _Header(
                 filter: _filter,
                 searchOpen: _searchOpen,
+                onBack: _goBack,
                 onMenu: () => setState(() {
                   _menuOpen = !_menuOpen;
                   _citiesOpen = false;
@@ -761,8 +754,8 @@ class _WebDiscoveryMapScreenV8State
             ),
             if (_menuOpen)
               Positioned(
-                top: pad.top + 54,
-                left: 12,
+                top: pad.top + 50,
+                left: 54,
                 child: _MapMenu(
                   onHide: _hideControls,
                   onCities: () => setState(() {
@@ -784,7 +777,7 @@ class _WebDiscoveryMapScreenV8State
               ),
             if (_citiesOpen)
               Positioned(
-                top: pad.top + 96,
+                top: pad.top + 92,
                 left: 12,
                 right: 12,
                 child: MapCityChips(
@@ -807,9 +800,9 @@ class _WebDiscoveryMapScreenV8State
               ),
             Positioned(
               right: 12,
-              bottom: _trayHeight + pad.bottom + 24,
+              bottom: _trayHeight + pad.bottom + 18,
               child: _CircleAction(
-                tooltip: 'Recenter on ${loc.city}',
+                label: 'Recenter on ${loc.city}',
                 icon: Icons.my_location_rounded,
                 onTap: () => _recenter(loc),
               ),
@@ -837,7 +830,7 @@ class _WebDiscoveryMapScreenV8State
               top: pad.top + 10,
               right: 12,
               child: _CircleAction(
-                tooltip: 'Show map controls',
+                label: 'Show map controls',
                 icon: Icons.visibility_rounded,
                 onTap: _showControls,
               ),
@@ -852,6 +845,7 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.filter,
     required this.searchOpen,
+    required this.onBack,
     required this.onMenu,
     required this.onSearchToggle,
     required this.onSearch,
@@ -860,6 +854,7 @@ class _Header extends StatelessWidget {
 
   final String filter;
   final bool searchOpen;
+  final VoidCallback onBack;
   final VoidCallback onMenu;
   final VoidCallback onSearchToggle;
   final ValueChanged<String> onSearch;
@@ -875,8 +870,14 @@ class _Header extends StatelessWidget {
             child: Row(
               children: [
                 _HeaderCircle(
-                  tooltip: 'Map menu',
-                  icon: Icons.menu_rounded,
+                  label: 'Back',
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: onBack,
+                ),
+                const SizedBox(width: 6),
+                _HeaderCircle(
+                  label: 'Map options',
+                  icon: Icons.tune_rounded,
                   onTap: onMenu,
                 ),
                 Expanded(
@@ -885,7 +886,7 @@ class _Header extends StatelessWidget {
                       'SWIPESS',
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.black,
-                        fontSize: 19,
+                        fontSize: 18,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -.5,
@@ -894,7 +895,7 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 _HeaderCircle(
-                  tooltip: 'Search map',
+                  label: 'Search map',
                   icon: searchOpen ? Icons.close_rounded : Icons.search_rounded,
                   onTap: onSearchToggle,
                 ),
@@ -906,16 +907,16 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 7),
           Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
+              constraints: const BoxConstraints(maxWidth: 520),
               child: Container(
-                height: 40,
-                decoration: _whitePanel(20),
+                height: 38,
+                decoration: _whitePanel(19),
                 child: TextField(
                   autofocus: true,
                   onChanged: onSearch,
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.black,
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
@@ -923,14 +924,14 @@ class _Header extends StatelessWidget {
                     hintText: 'Search events, places...',
                     hintStyle: GoogleFonts.plusJakartaSans(
                       color: Colors.black45,
-                      fontSize: 12,
+                      fontSize: 11.5,
                     ),
                     prefixIcon: const Icon(
                       Icons.search_rounded,
                       color: Colors.black54,
-                      size: 17,
+                      size: 16,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
@@ -939,7 +940,7 @@ class _Header extends StatelessWidget {
         ],
         const SizedBox(height: 7),
         SizedBox(
-          height: 36,
+          height: 34,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -950,23 +951,23 @@ class _Header extends StatelessWidget {
               final active = f.id == filter;
               return Material(
                 color: active ? Colors.black : const Color(0xF8FFFFFF),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(17),
                 elevation: 1,
                 shadowColor: Colors.black12,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(17),
                   onTap: () => onFilter(f.id),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
+                      horizontal: 9,
+                      vertical: 6,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           f.icon,
-                          size: 13,
+                          size: 12.5,
                           color: active ? Colors.white : Colors.black87,
                         ),
                         const SizedBox(width: 4),
@@ -974,7 +975,7 @@ class _Header extends StatelessWidget {
                           f.title,
                           style: GoogleFonts.plusJakartaSans(
                             color: active ? Colors.white : Colors.black,
-                            fontSize: 10.5,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1070,19 +1071,20 @@ BoxDecoration _whitePanel(double radius) => BoxDecoration(
 
 class _HeaderCircle extends StatelessWidget {
   const _HeaderCircle({
-    required this.tooltip,
+    required this.label,
     required this.icon,
     required this.onTap,
   });
 
-  final String tooltip;
+  final String label;
   final IconData icon;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
+    return Semantics(
+      button: true,
+      label: label,
       child: Material(
         color: Colors.white,
         shape: const CircleBorder(),
@@ -1092,9 +1094,9 @@ class _HeaderCircle extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, color: Colors.black87, size: 19),
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: Colors.black87, size: 17),
           ),
         ),
       ),
@@ -1129,25 +1131,25 @@ class _Pin extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.onTap,
+    required this.onOpen,
   });
 
   final _Item item;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
     final kind = item.kind;
-    
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
-        children: [
-          // The actual Pin
-          AnimatedScale(
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomCenter,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedScale(
             scale: selected ? 1.12 : 1,
             duration: const Duration(milliseconds: 140),
             curve: Curves.easeOutBack,
@@ -1205,91 +1207,128 @@ class _Pin extends StatelessWidget {
               ),
             ),
           ),
-          
-          // The Popup Window (if selected)
-          if (selected)
-            Positioned(
-              bottom: 64, // Place above the pin
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x30000000),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item.title,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.black87,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
+        ),
+        if (selected)
+          Positioned(
+            bottom: 64,
+            child: Material(
+              color: Colors.white,
+              elevation: 8,
+              shadowColor: Colors.black26,
+              borderRadius: BorderRadius.circular(14),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onOpen,
+                child: SizedBox(
+                  width: 224,
+                  height: 82,
+                  child: Row(
+                    children: [
+                      _Image(url: item.image, width: 72),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(9, 8, 8, 8),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(kind.icon, size: 12, color: kind.color),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      kind.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: kind.color,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                item.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.black,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.black54,
+                                  fontSize: 9.5,
+                                ),
+                              ),
+                              if (item.detail.trim().isNotEmpty)
+                                Text(
+                                  item.detail,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.black87,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.black54,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                      const Padding(
+                        padding: EdgeInsets.only(right: 7),
+                        child: Icon(Icons.chevron_right_rounded, size: 18),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
 
 class _CircleAction extends StatelessWidget {
   const _CircleAction({
-    required this.tooltip,
+    required this.label,
     required this.icon,
     required this.onTap,
-    this.dark = false,
   });
 
-  final String tooltip;
+  final String label;
   final IconData icon;
   final VoidCallback onTap;
-  final bool dark;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Material(
-          color: dark ? Colors.black : Colors.white,
-          shape: const CircleBorder(),
-          elevation: 4,
-          shadowColor: Colors.black26,
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: Colors.white,
+        shape: const CircleBorder(),
+        elevation: 3,
+        shadowColor: Colors.black26,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
           child: SizedBox(
-            width: 50,
-            height: 50,
-            child: Icon(
-              icon,
-              color: dark ? Colors.white : Colors.black,
-              size: 24,
-            ),
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: Colors.black87, size: 17),
           ),
         ),
       ),
@@ -1330,71 +1369,93 @@ class _Tray extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       height: height,
-      padding: const EdgeInsets.fromLTRB(16, 7, 16, 12),
-      decoration: _whitePanel(26),
+      padding: EdgeInsets.fromLTRB(
+        14,
+        level == 0 ? 5 : 7,
+        10,
+        level == 0 ? 5 : 12,
+      ),
+      decoration: _whitePanel(level == 0 ? 20 : 26),
       child: Column(
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: level == 0 ? onExpand : onCollapse,
-            onVerticalDragEnd: (details) {
-              final velocity = details.primaryVelocity ?? 0;
-              if (velocity < -60) {
-                onExpand();
-              } else if (velocity > 60) {
-                onCollapse();
-              }
-            },
-            child: SizedBox(
-              height: 18,
-              width: double.infinity,
-              child: Center(
-                child: Container(
-                  width: 42,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD0D6),
-                    borderRadius: BorderRadius.circular(99),
+          if (level > 0)
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onCollapse,
+              onVerticalDragEnd: (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity < -60) {
+                  onExpand();
+                } else if (velocity > 60) {
+                  onCollapse();
+                }
+              },
+              child: SizedBox(
+                height: 18,
+                width: double.infinity,
+                child: Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD0D6),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Discover ${city.trim().isEmpty ? 'nearby' : city}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.black,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
+          InkWell(
+            onTap: level == 0 ? onExpand : null,
+            borderRadius: BorderRadius.circular(15),
+            child: SizedBox(
+              height: level == 0 ? 42 : 40,
+              child: Row(
+                children: [
+                  if (level == 0) ...[
+                    const Icon(
+                      Icons.view_carousel_rounded,
+                      size: 18,
+                      color: Colors.black87,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      level == 0
+                          ? 'View ${items.length} places in ${city.trim().isEmpty ? 'this area' : city}'
+                          : 'Discover ${city.trim().isEmpty ? 'nearby' : city}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black,
+                        fontSize: level == 0 ? 12.5 : 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              if (level > 0)
-                TextButton(
-                  onPressed: onSeeAll,
-                  style: TextButton.styleFrom(
-                    textStyle: const TextStyle(fontSize: 11),
+                  if (level > 0)
+                    TextButton(
+                      onPressed: onSeeAll,
+                      style: TextButton.styleFrom(
+                        textStyle: const TextStyle(fontSize: 11),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: const Text('See all'),
+                    ),
+                  IconButton(
+                    onPressed: level == 0 ? onExpand : onCollapse,
                     visualDensity: VisualDensity.compact,
+                    iconSize: 20,
+                    icon: Icon(
+                      level == 0
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                    ),
                   ),
-                  child: const Text('See all'),
-                ),
-              IconButton(
-                tooltip: level == 0 ? 'Expand tray' : 'Collapse tray',
-                onPressed: level == 0 ? onExpand : onCollapse,
-                visualDensity: VisualDensity.compact,
-                iconSize: 20,
-                icon: Icon(
-                  level == 0
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                ),
+                ],
               ),
-            ],
+            ),
           ),
           if (level > 0) ...[
             const SizedBox(height: 2),
