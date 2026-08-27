@@ -22,11 +22,10 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   late final GoRouter _router;
   late String _lastRoute;
 
-  // When a user opens a listing/profile/event from Map, keep the actual Map
-  // widget alive offstage instead of destroying it. Going Back then reveals the
-  // same camera, pins, filters, selected preview and already-loaded provider data
-  // instantly. This also guarantees the world intro is never replayed simply
-  // because the user inspected a result.
+  // Opening a result from Map must not destroy or close the map overlay. We
+  // simply hold the exact live instance offstage while the routed detail page is
+  // visible, then reveal it again on Back. Camera, pins, filters, tray, search
+  // and selected preview therefore remain exactly where the user left them.
   bool _mapHeldForDetail = false;
   String? _mapReturnRoute;
 
@@ -34,11 +33,6 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   void initState() {
     super.initState();
     _router = ref.read(appRouterProvider);
-
-    // Do not read GoRouter.state here. This host is created above the routed
-    // child, so the router can still have an empty match list during startup.
-    // Reading state at that moment throws "Bad state: No element" and replaces
-    // the whole web app with Flutter's grey error surface.
     _lastRoute = _router.routeInformationProvider.value.uri.toString();
     _router.routeInformationProvider.addListener(_handleRouteChange);
   }
@@ -53,8 +47,6 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   }
 
   void _handleRouteChange() {
-    // RouteInformationProvider is safe even while GoRouter is transitioning
-    // between match lists; GoRouter.state is not.
     final nextRoute = _router.routeInformationProvider.value.uri.toString();
     if (nextRoute == _lastRoute) return;
 
@@ -64,43 +56,41 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
 
     final modals = ref.read(overlayModalsProvider);
 
-    if (modals.showPassportMap) {
-      // Preview navigation is special: hide the map visually, but keep it
-      // mounted. Back navigation restores this exact live instance.
+    if (modals.showPassportMap && !_mapHeldForDetail) {
+      // A listing/profile/event was pushed from the live map. Keep
+      // showPassportMap=true: changing that provider here caused a close/open
+      // race that could make the detail page appear briefly and then bounce
+      // straight back to Map. Only hide the map visually.
       if (_isMapDetailRoute(nextRoute)) {
         setState(() {
           _mapHeldForDetail = true;
           _mapReturnRoute = previousRoute;
         });
-      } else {
-        setState(() {
-          _mapHeldForDetail = false;
-          _mapReturnRoute = null;
-        });
       }
-      ref.read(overlayModalsProvider.notifier).closePassportMap();
       return;
     }
 
-    if (_mapHeldForDetail) {
-      if (nextRoute == _mapReturnRoute) {
-        // User pressed Back from the detail/insight page: reveal the already
-        // mounted map immediately, with no re-fetch and no intro replay.
-        setState(() {
-          _mapHeldForDetail = false;
-          _mapReturnRoute = null;
-        });
-        ref.read(overlayModalsProvider.notifier).openPassportMap();
-        return;
-      }
+    if (!_mapHeldForDetail) return;
 
-      // If the user leaves the detail flow for another unrelated destination,
-      // release the preserved map instead of keeping a hidden screen forever.
-      if (!_isMapDetailRoute(nextRoute)) {
-        setState(() {
-          _mapHeldForDetail = false;
-          _mapReturnRoute = null;
-        });
+    if (nextRoute == _mapReturnRoute) {
+      // Back from detail: no provider toggle, no reconstruction, no refetch.
+      // Reveal the exact same mounted map instance immediately.
+      setState(() {
+        _mapHeldForDetail = false;
+        _mapReturnRoute = null;
+      });
+      return;
+    }
+
+    if (!_isMapDetailRoute(nextRoute)) {
+      // The user intentionally navigated away from the detail/map flow. Release
+      // the preserved overlay so it cannot unexpectedly reappear later.
+      setState(() {
+        _mapHeldForDetail = false;
+        _mapReturnRoute = null;
+      });
+      if (modals.showPassportMap) {
+        ref.read(overlayModalsProvider.notifier).closePassportMap();
       }
     }
   }
@@ -115,17 +105,14 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
     final keepMapAlive = modals.showPassportMap || _mapHeldForDetail;
-    final pauseRoutedMedia = modals.showPassportMap ||
+    final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
+    final pauseRoutedMedia = mapVisible ||
         modals.showVapId ||
         modals.showConcierge;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        // The dashboard/detail route stays mounted under global overlays, but
-        // its tickers are paused while hidden. Dashboard video widgets already
-        // observe TickerMode, so this stops invisible decoding/playback under
-        // Map and avoids wasting GPU/VideoFrame resources in Chrome.
         TickerMode(
           enabled: !pauseRoutedMedia,
           child: widget.child,
@@ -134,11 +121,9 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
         if (keepMapAlive)
           Positioned.fill(
             child: Offstage(
-              offstage: !modals.showPassportMap,
+              offstage: !mapVisible,
               child: TickerMode(
-                enabled: modals.showPassportMap,
-                // Only the global map overlay needs an inherited GoRouter
-                // because it lives beside (not under) the routed child.
+                enabled: mapVisible,
                 child: InheritedGoRouter(
                   goRouter: _router,
                   child: PlatformDiscoveryMapScreen(
