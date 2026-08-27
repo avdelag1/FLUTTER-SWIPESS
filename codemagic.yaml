@@ -3,6 +3,8 @@ workflows:
     name: Swipess iOS Release -> TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: AppStoreConnect
 
     # Source of truth: every push to GitHub main can produce the exact iOS
     # TestFlight binary. Cancel stale queued builds so an older commit can never
@@ -57,18 +59,6 @@ workflows:
           echo "SWIPESS_BUILD_SHA=$CM_COMMIT" >> "$CM_ENV"
           echo "SWIPESS_BUILD_CHANNEL=CM-main" >> "$CM_ENV"
 
-      - name: Check App Store Connect credentials
-        script: |
-          set -eu
-          for name in APP_STORE_CONNECT_PRIVATE_KEY APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_ISSUER_ID; do
-            eval "value=\${$name:-}"
-            if [ -z "$value" ]; then
-              echo "MISSING_CODEMAGIC_CREDENTIAL: $name"
-              echo "Add this existing App Store Connect credential to the Codemagic app/team environment, then rebuild."
-              exit 1
-            fi
-          done
-          echo "App Store Connect credentials are present."
 
       - name: Resolve next TestFlight build number
         script: |
@@ -203,9 +193,8 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
+        submit_to_testflight: true
 
   swipess-android-playstore:
     name: Swipess Android Release -> Play Store
