@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Reusable top-drop notice used for important app-wide feedback.
@@ -26,6 +27,8 @@ class GlobalNotice {
     hide();
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
+    
+    AppHaptics.heavy();
 
     late final OverlayEntry entry;
     entry = OverlayEntry(

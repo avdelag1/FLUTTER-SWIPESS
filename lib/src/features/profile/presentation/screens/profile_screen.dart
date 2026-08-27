@@ -132,27 +132,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Container(
-                        width: 94,
-                        height: 94,
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFFF4D00), _profilePink],
-                          ),
-                        ),
+                      GestureDetector(
+                        onTap: _editProfile,
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          width: 94,
+                          height: 94,
+                          padding: const EdgeInsets.all(3),
                           decoration: const BoxDecoration(
-                            color: AppTheme.dashBg,
                             shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFFF4D00), _profilePink],
+                            ),
                           ),
-                          child: FunAvatar(
-                            seed: userId.isEmpty ? name : userId,
-                            imageUrl: profile?.avatarUrl,
-                            size: 84,
-                            semanticLabel: '$name profile photo',
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.dashBg,
+                              shape: BoxShape.circle,
+                            ),
+                            child: FunAvatar(
+                              seed: userId.isEmpty ? name : userId,
+                              imageUrl: profile?.avatarUrl,
+                              size: 84,
+                              semanticLabel: '$name profile photo',
+                            ),
                           ),
                         ),
                       ),

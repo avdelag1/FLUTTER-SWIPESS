@@ -84,17 +84,26 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   void _togglePin() {
     AppHaptics.light();
-    setState(() => _chromePinned = !_chromePinned);
-    if (_chromePinned) {
-      _showChrome(schedule: false);
+    if (_chromeVisible) {
+      _hideTimer?.cancel();
+      setState(() {
+        _chromeVisible = false;
+        _chromePinned = false;
+      });
+      ref.read(chromeVisibilityProvider.notifier).hide();
     } else {
-      _showChrome();
+      _hideTimer?.cancel();
+      setState(() {
+        _chromeVisible = true;
+        _chromePinned = true;
+      });
+      ref.read(chromeVisibilityProvider.notifier).show();
     }
   }
 
   void _touchChrome() {
     if (_chromePinned) {
-      _showChrome(schedule: false);
+      // Do nothing if pinned
     } else if (_chromeVisible) {
       _showChrome();
     }
@@ -267,7 +276,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             right: 12,
             bottom: safeBottom + 18,
             child: _GlassIcon(
-              icon: _chromePinned
+              icon: _chromeVisible
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
               onTap: _togglePin,

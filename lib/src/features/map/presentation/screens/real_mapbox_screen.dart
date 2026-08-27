@@ -49,7 +49,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
   bool _requestingDeviceLocation = false;
 
   MapPin? _selected;
-  String _layer = 'all';
+  String _activeCategory = 'all';
   bool _citiesOpen = false;
   bool _mapLoaded = false;
   int _annotationGeneration = 0;
@@ -144,8 +144,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       _deviceLongitude = current.longitude;
       await _renderAnnotations();
     } catch (_) {
-      // Location permission/service is optional. The map remains fully usable;
-      // we simply do not fake a blue "you are here" dot at a city centroid.
     } finally {
       _requestingDeviceLocation = false;
     }
@@ -168,10 +166,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     required Color fill,
     bool location = false,
   }) async {
-    const size = 88.0;
+    const size = 110.0;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
-    final center = const ui.Offset(size / 2, size / 2);
+    final center = const ui.Offset(size / 2, size / 2 - 10);
 
     if (location) {
       final halo = ui.Paint()..color = const Color(0x33147DFF);
@@ -188,23 +186,60 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       final blueDot = ui.Paint()..color = const Color(0xFF147DFF);
       canvas.drawCircle(center, 14.5, blueDot);
     } else {
-      final shadow = ui.Paint()
-        ..color = Colors.black.withAlpha(72)
-        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 7);
-      canvas.drawCircle(center.translate(0, 3), 31, shadow);
+      final radius = 22.0;
+      final path = ui.Path();
+      final width = radius * 2;
+      final height = radius * 2.5; 
+      final left = center.dx - radius;
+      final top = center.dy - radius;
+      
+      path.moveTo(center.dx, top + height);
+      path.quadraticBezierTo(left, top + height * 0.7, left, top + radius);
+      path.arcToPoint(
+        ui.Offset(left + width, top + radius),
+        radius: ui.Radius.circular(radius),
+        clockwise: true,
+      );
+      path.quadraticBezierTo(left + width, top + height * 0.7, center.dx, top + height);
 
-      final outer = ui.Paint()..color = Colors.white;
-      canvas.drawCircle(center, 31, outer);
+      canvas.drawPath(
+        path.shift(const ui.Offset(0, 4)),
+        ui.Paint()
+          ..color = Colors.black.withAlpha(45)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 8),
+      );
 
-      final inner = ui.Paint()..color = fill;
-      canvas.drawCircle(center, 25.5, inner);
+      canvas.drawPath(
+        path,
+        ui.Paint()
+          ..color = Colors.white
+          ..style = ui.PaintingStyle.fill,
+      );
+
+      final innerPath = ui.Path();
+      final innerRadius = radius - 3.5;
+      final innerWidth = innerRadius * 2;
+      final innerHeight = height - 6.5;
+      final innerLeft = center.dx - innerRadius;
+      final innerTop = center.dy - innerRadius + 1.8;
+
+      innerPath.moveTo(center.dx, innerTop + innerHeight);
+      innerPath.quadraticBezierTo(innerLeft, innerTop + innerHeight * 0.7, innerLeft, innerTop + innerRadius);
+      innerPath.arcToPoint(
+        ui.Offset(innerLeft + innerWidth, innerTop + innerRadius),
+        radius: ui.Radius.circular(innerRadius),
+        clockwise: true,
+      );
+      innerPath.quadraticBezierTo(innerLeft + innerWidth, innerTop + innerHeight * 0.7, center.dx, innerTop + innerHeight);
+
+      canvas.drawPath(innerPath, ui.Paint()..color = fill);
 
       final painter = TextPainter(
         text: TextSpan(
           text: String.fromCharCode(icon.codePoint),
           style: TextStyle(
             color: Colors.white,
-            fontSize: 34,
+            fontSize: 22,
             fontFamily: icon.fontFamily,
             package: icon.fontPackage,
           ),
@@ -213,7 +248,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       )..layout();
       painter.paint(
         canvas,
-        ui.Offset((size - painter.width) / 2, (size - painter.height) / 2),
+        ui.Offset(center.dx - painter.width / 2, top + radius - painter.height / 2),
       );
     }
 
@@ -235,12 +270,12 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     _locationManager = await map.annotations.createPointAnnotationManager();
 
     _listingIcon ??= await _buildMarkerIcon(
-      icon: Icons.home_work_rounded,
-      fill: const Color(0xFFFF6338),
+      icon: Icons.domain_rounded,
+      fill: const Color(0xFF14B8A6),
     );
     _peopleIcon ??= await _buildMarkerIcon(
-      icon: Icons.person_rounded,
-      fill: const Color(0xFFE95B9B),
+      icon: Icons.music_note_rounded,
+      fill: const Color(0xFF8B5CF6),
     );
     _locationIcon ??= await _buildMarkerIcon(
       icon: Icons.my_location_rounded,
@@ -347,12 +382,30 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     final loc = ref.read(discoveryLocationProvider);
     final listings = ref.read(mapListingsProvider).value ?? const [];
     final profiles = ref.read(mapProfilesProvider).value ?? const [];
-    return [
-      if (_layer != 'people')
-        for (final listing in listings) _listingPin(listing, loc),
-      if (_layer != 'listings')
-        for (final profile in profiles) _profilePin(profile, loc),
-    ];
+    final allPins = <MapPin>[];
+
+    for (final listing in listings) {
+      final cat = (listing.category ?? '').toLowerCase();
+      final pin = _listingPin(listing, loc);
+      if (_activeCategory == 'all') {
+        allPins.add(pin);
+      } else if (_activeCategory == 'events' && cat == 'event') {
+        allPins.add(pin);
+      } else if (_activeCategory == 'properties' && cat == 'property') {
+        allPins.add(pin);
+      } else if (_activeCategory == 'services' && (cat == 'service' || cat == 'worker')) {
+        allPins.add(pin);
+      }
+    }
+
+    for (final profile in profiles) {
+      final pin = _profilePin(profile, loc);
+      if (_activeCategory == 'all' || _activeCategory == 'people') {
+        allPins.add(pin);
+      }
+    }
+
+    return allPins;
   }
 
   void _selectNearest(
@@ -499,7 +552,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     final loc = ref.watch(discoveryLocationProvider);
     final listingsAsync = ref.watch(mapListingsProvider);
     final profilesAsync = ref.watch(mapProfilesProvider);
-    final isLight = Theme.of(context).brightness == Brightness.light;
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null ||
@@ -515,167 +567,482 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     ref.listen(mapListingsProvider, (_, __) => _renderAnnotations());
     ref.listen(mapProfilesProvider, (_, __) => _renderAnnotations());
 
-    final listingCount = listingsAsync.value?.length ?? 0;
-    final peopleCount = profilesAsync.value?.length ?? 0;
+    final visiblePins = _visiblePins();
 
     return Material(
       color: Colors.black,
-      child: SizedBox.expand(
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned.fill(
-              child: MapWidget(
-                key: const ValueKey('swipess-real-mapbox'),
-                styleUri: isLight ? _lightStyle : _darkStyle,
-                onMapCreated: _setupMap,
-                onMapLoadedListener: (_) async {
-                  _mapLoaded = true;
-                  await _prepareAnnotationManagers();
-                  await _renderAnnotations();
-                  _refreshDeviceLocation();
-                  await Future<void>.delayed(const Duration(milliseconds: 120));
-                  if (mounted)
-                    await _flyTo(ref.read(discoveryLocationProvider));
-                },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: MapWidget(
+              key: const ValueKey('swipess-real-mapbox'),
+              styleUri: _lightStyle,
+              onMapCreated: _setupMap,
+              onMapLoadedListener: (_) async {
+                _mapLoaded = true;
+                await _prepareAnnotationManagers();
+                await _renderAnnotations();
+                _refreshDeviceLocation();
+                await Future<void>.delayed(const Duration(milliseconds: 120));
+                if (mounted) await _flyTo(ref.read(discoveryLocationProvider));
+              },
+            ),
+          ),
+          
+          // Faded gradient behind top bar
+          Positioned(
+            top: 0, left: 0, right: 0, height: 180,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withAlpha(240),
+                      Colors.white.withAlpha(0),
+                    ],
+                  ),
+                ),
               ),
             ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                child: Align(
-                  alignment: Alignment.topLeft,
+          ),
+
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Top Bar
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _GlassMapButton(
-                        icon: Icons.close_rounded,
-                        tooltip: 'Close',
-                        onTap:
-                            widget.onClose ??
-                            () => context.go(AppPaths.clientDashboard),
+                      _CircularIconButton(
+                        icon: Icons.menu_rounded,
+                        onTap: widget.onClose ?? () => context.go(AppPaths.clientDashboard),
                       ),
-                      const SizedBox(width: 8),
-                      _GlassMapLabelButton(
-                        icon: Icons.location_city_rounded,
-                        label: 'CITIES',
-                        selected: _citiesOpen,
+                      Text(
+                        'SWIPESS',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.black,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      _CircularIconButton(
+                        icon: Icons.search_rounded,
                         onTap: () => setState(() => _citiesOpen = !_citiesOpen),
                       ),
-                      const Spacer(),
-                      _LayerPill(
-                        value: _layer,
-                        listingCount: listingCount,
-                        peopleCount: peopleCount,
-                        onChanged: (value) {
-                          AppHaptics.selection();
-                          setState(() {
-                            _layer = value;
-                            _selected = null;
-                          });
+                    ],
+                  ),
+                ),
+                
+                // Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        active: _activeCategory == 'all',
+                        onTap: () {
+                          setState(() { _activeCategory = 'all'; _selected = null; });
+                          _renderAnnotations();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Events',
+                        icon: Icons.music_note_rounded,
+                        active: _activeCategory == 'events',
+                        onTap: () {
+                          setState(() { _activeCategory = 'events'; _selected = null; });
+                          _renderAnnotations();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Properties',
+                        icon: Icons.domain_rounded,
+                        active: _activeCategory == 'properties',
+                        onTap: () {
+                          setState(() { _activeCategory = 'properties'; _selected = null; });
+                          _renderAnnotations();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Services',
+                        icon: Icons.room_service_rounded,
+                        active: _activeCategory == 'services',
+                        onTap: () {
+                          setState(() { _activeCategory = 'services'; _selected = null; });
                           _renderAnnotations();
                         },
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
+
+          if (_citiesOpen)
             Positioned(
-              top: MediaQuery.paddingOf(context).top + 58,
-              left: 12,
-              child: _RangePill(
-                radiusKm: loc.radiusKm,
-                onLocal: () => _setRange(5),
-                onRegion: () => _setRange(100),
-                onWorld: () => _setRange(20000),
+              left: 0, right: 0,
+              top: MediaQuery.paddingOf(context).top + 106,
+              child: MapCityChips(
+                activeCity: loc.city,
+                onSelect: (city) {
+                  ref.read(discoveryLocationProvider.notifier).setCoordinates(
+                    city: city.name,
+                    country: city.country,
+                    latitude: city.lat,
+                    longitude: city.lng,
+                  );
+                  if (loc.radiusKm > 500) {
+                    ref.read(discoveryLocationProvider.notifier).setRadiusKm(25);
+                  }
+                  setState(() => _citiesOpen = false);
+                },
               ),
             ),
-            if (_citiesOpen)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: MediaQuery.paddingOf(context).top + 106,
-                child: MapCityChips(
-                  activeCity: loc.city,
-                  onSelect: (city) {
-                    ref
-                        .read(discoveryLocationProvider.notifier)
-                        .setCoordinates(
-                          city: city.name,
-                          country: city.country,
-                          latitude: city.lat,
-                          longitude: city.lng,
-                        );
-                    if (loc.radiusKm > 500) {
-                      ref
-                          .read(discoveryLocationProvider.notifier)
-                          .setRadiusKm(25);
-                    }
-                    setState(() => _citiesOpen = false);
-                  },
+
+          Positioned(
+            right: 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 320,
+            child: Column(
+              children: [
+                _GlassMapButton(
+                  icon: Icons.my_location_rounded,
+                  tooltip: 'My location',
+                  onTap: _flyToDevice,
                 ),
+              ],
+            ),
+          ),
+
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: _BottomListingSheet(
+              pins: visiblePins,
+              city: loc.city,
+              selectedPin: _selected,
+              onPinTap: (pin) {
+                AppHaptics.medium();
+                context.push(pin.isListing ? '/listing/${pin.id}' : '/profile/${pin.id}');
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CircularIconButton extends StatelessWidget {
+  const _CircularIconButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44, height: 44,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: Icon(icon, color: Colors.black, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, this.icon, required this.active, required this.onTap});
+  final String label;
+  final IconData? icon;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        AppHaptics.selection();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: active ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withAlpha(active ? 40 : 15), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: active ? Colors.white : Colors.black87),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: active ? Colors.white : Colors.black87,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
-            Positioned(
-              right: 12,
-              bottom: MediaQuery.paddingOf(context).bottom + 88,
-              child: Column(
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomListingSheet extends StatefulWidget {
+  const _BottomListingSheet({required this.pins, required this.city, this.selectedPin, required this.onPinTap});
+  final List<MapPin> pins;
+  final String city;
+  final MapPin? selectedPin;
+  final void Function(MapPin) onPinTap;
+
+  @override
+  State<_BottomListingSheet> createState() => _BottomListingSheetState();
+}
+
+class _BottomListingSheetState extends State<_BottomListingSheet> {
+  final _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(covariant _BottomListingSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedPin != null && widget.selectedPin != oldWidget.selectedPin) {
+      final idx = widget.pins.indexOf(widget.selectedPin!);
+      if (idx != -1 && _scrollController.hasClients) {
+        _scrollController.animateTo(
+          idx * 280.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(30), blurRadius: 20, offset: const Offset(0, -5)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2))),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _GlassMapButton(
-                    icon: Icons.add_rounded,
-                    tooltip: 'Zoom in',
-                    onTap: () async {
-                      final map = _map;
-                      if (map == null) return;
-                      final camera = await map.getCameraState();
-                      await map.easeTo(
-                        CameraOptions(
-                          zoom: math.min(camera.zoom + 1, 18),
-                          pitch: 0,
-                          bearing: 0,
-                        ),
-                        MapAnimationOptions(duration: 220, startDelay: 0),
-                      );
-                    },
+                  Text(
+                    'Discover ${widget.city.isEmpty ? 'Nearby' : widget.city}',
+                    style: GoogleFonts.plusJakartaSans(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 8),
-                  _GlassMapButton(
-                    icon: Icons.zoom_out_rounded,
-                    tooltip: 'Zoom out',
-                    onTap: () async {
-                      final map = _map;
-                      if (map == null) return;
-                      final camera = await map.getCameraState();
-                      await map.easeTo(
-                        CameraOptions(
-                          zoom: math.max(camera.zoom - 1, 1),
-                          pitch: 0,
-                          bearing: 0,
-                        ),
-                        MapAnimationOptions(duration: 220, startDelay: 0),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _GlassMapButton(
-                    icon: Icons.my_location_rounded,
-                    tooltip: 'My location',
-                    onTap: _flyToDevice,
+                  Text(
+                    'See all',
+                    style: GoogleFonts.plusJakartaSans(color: const Color(0xFF147DFF), fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
             ),
-            if (_selected != null)
-              Positioned(
-                left: 12,
-                right: 12,
-                bottom: MediaQuery.paddingOf(context).bottom + 18,
-                child: _SelectedPinCard(
-                  pin: _selected!,
-                  onOpen: _openSelected,
-                  onClose: () => setState(() => _selected = null),
+            if (widget.pins.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 120, top: 40),
+                child: Text('No results found.', style: GoogleFonts.plusJakartaSans(color: Colors.black54)),
+              )
+            else
+              SizedBox(
+                height: 250,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: widget.pins.length,
+                  itemBuilder: (context, i) {
+                    final pin = widget.pins[i];
+                    return _ListingCard(
+                      pin: pin,
+                      selected: pin == widget.selectedPin,
+                      onTap: () => widget.onPinTap(pin),
+                    );
+                  },
                 ),
               ),
+            const SizedBox(height: 80), // Padding for the floating dock
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ListingCard extends StatelessWidget {
+  const _ListingCard({required this.pin, required this.selected, required this.onTap});
+  final MapPin pin;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    String imageUrl = '';
+    String title = '';
+    String subtitle = '';
+    String price = '';
+    String tag = 'PROPERTY';
+    Color tagColor = const Color(0xFF14B8A6);
+
+    if (pin.isListing && pin.listing != null) {
+      title = pin.listing!.title ?? '';
+      subtitle = pin.listing!.city ?? '';
+      price = pin.listing!.price ?? '';
+      if (pin.listing!.images != null && pin.listing!.images!.isNotEmpty) {
+        imageUrl = pin.listing!.images!.first.url;
+      }
+      final cat = (pin.listing!.category ?? '').toLowerCase();
+      if (cat == 'event') {
+        tag = 'EVENT';
+        tagColor = const Color(0xFF8B5CF6);
+      } else if (cat == 'worker' || cat == 'service') {
+        tag = 'SERVICE';
+        tagColor = const Color(0xFFF43F5E);
+      } else {
+        tag = 'PROPERTY';
+      }
+    } else if (pin.profile != null) {
+      title = pin.profile!.displayName;
+      subtitle = pin.profile!.city ?? '';
+      imageUrl = pin.profile!.avatarUrl ?? '';
+      tag = 'PERSON';
+      tagColor = const Color(0xFF8B5CF6);
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 200,
+        margin: const EdgeInsets.only(right: 16, bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(selected ? 30 : 10),
+              blurRadius: selected ? 15 : 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: selected ? Border.all(color: Colors.black, width: 2) : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl.isNotEmpty)
+                      Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(color: Colors.grey[200]))
+                    else
+                      Container(color: Colors.grey[200]),
+                    Positioned(
+                      top: 8, left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: tagColor, borderRadius: BorderRadius.circular(6)),
+                        child: Text(
+                          tag,
+                          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8, right: 8,
+                      child: Icon(Icons.favorite_border_rounded, color: Colors.white, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_rounded, color: Colors.black54, size: 12),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(color: Colors.black54, fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    price,
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -725,395 +1092,3 @@ class _GlassMapButton extends StatelessWidget {
   }
 }
 
-class _GlassMapLabelButton extends StatelessWidget {
-  const _GlassMapLabelButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Material(
-          color: selected
-              ? Colors.white.withAlpha(218)
-              : Colors.black.withAlpha(82),
-          child: InkWell(
-            onTap: onTap,
-            child: Container(
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: Colors.white.withAlpha(selected ? 225 : 76),
-                  width: .8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    color: selected ? const Color(0xFF111318) : Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: selected ? const Color(0xFF111318) : Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .65,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RangePill extends StatelessWidget {
-  const _RangePill({
-    required this.radiusKm,
-    required this.onLocal,
-    required this.onRegion,
-    required this.onWorld,
-  });
-
-  final int radiusKm;
-  final VoidCallback onLocal;
-  final VoidCallback onRegion;
-  final VoidCallback onWorld;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          height: 36,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(70),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withAlpha(58), width: .7),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _RangeChoice(
-                icon: Icons.near_me_rounded,
-                label: 'LOCAL',
-                active: radiusKm <= 25,
-                onTap: onLocal,
-              ),
-              _RangeChoice(
-                icon: Icons.travel_explore_rounded,
-                label: 'REGION',
-                active: radiusKm > 25 && radiusKm < 5000,
-                onTap: onRegion,
-              ),
-              _RangeChoice(
-                icon: Icons.public_rounded,
-                label: 'WORLD',
-                active: radiusKm >= 5000,
-                onTap: onWorld,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RangeChoice extends StatelessWidget {
-  const _RangeChoice({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 9),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? Colors.white.withAlpha(46) : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 12),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 8.5,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .7,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LayerPill extends StatelessWidget {
-  const _LayerPill({
-    required this.value,
-    required this.listingCount,
-    required this.peopleCount,
-    required this.onChanged,
-  });
-
-  final String value;
-  final int listingCount;
-  final int peopleCount;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          height: 42,
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: Colors.black.withAlpha(74),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withAlpha(58), width: .7),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _LayerChoice(
-                icon: Icons.layers_rounded,
-                label: 'ALL',
-                active: value == 'all',
-                onTap: () => onChanged('all'),
-              ),
-              _LayerChoice(
-                icon: Icons.home_work_rounded,
-                label: 'LISTINGS',
-                active: value == 'listings',
-                badge: listingCount,
-                onTap: () => onChanged('listings'),
-              ),
-              _LayerChoice(
-                icon: Icons.people_alt_rounded,
-                label: 'USERS',
-                active: value == 'people',
-                badge: peopleCount,
-                onTap: () => onChanged('people'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LayerChoice extends StatelessWidget {
-  const _LayerChoice({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-    this.badge,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  final int? badge;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        height: 34,
-        padding: EdgeInsets.symmetric(horizontal: badge == null ? 9 : 8),
-        decoration: BoxDecoration(
-          color: active ? Colors.white.withAlpha(46) : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 12.5),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 8.5,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .55,
-              ),
-            ),
-            if (badge != null) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$badge',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectedPinCard extends StatelessWidget {
-  const _SelectedPinCard({
-    required this.pin,
-    required this.onOpen,
-    required this.onClose,
-  });
-
-  final MapPin pin;
-  final VoidCallback onOpen;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = pin.isListing
-        ? (pin.listing?.title ?? 'Listing')
-        : (pin.profile?.displayName ?? 'Swipess member');
-    final subtitle = pin.isListing
-        ? (pin.listing?.formattedPrice ?? pin.listing?.city ?? 'Nearby listing')
-        : (pin.profile?.city ?? 'Nearby member');
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-        child: Material(
-          color: Colors.black.withAlpha(132),
-          child: InkWell(
-            onTap: onOpen,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: Colors.white.withAlpha(58),
-                  width: .7,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color:
-                          (pin.isListing
-                                  ? const Color(0xFFFF6338)
-                                  : const Color(0xFFE95B9B))
-                              .withAlpha(235),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      pin.isListing
-                          ? Icons.home_work_rounded
-                          : Icons.person_rounded,
-                      color: Colors.white,
-                      size: 19,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 19,
-                  ),
-                  IconButton(
-                    onPressed: onClose,
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                      size: 17,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

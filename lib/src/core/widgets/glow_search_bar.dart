@@ -680,6 +680,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                               alignment: Alignment.centerLeft,
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 380),
+                                layoutBuilder: (currentChild, previousChildren) {
+                                  return Stack(
+                                    alignment: Alignment.centerLeft,
+                                    children: <Widget>[
+                                      ...previousChildren,
+                                      if (currentChild != null) currentChild,
+                                    ],
+                                  );
+                                },
                                 child: Text(
                                   displayHint,
                                   key: ValueKey<String>(displayHint),

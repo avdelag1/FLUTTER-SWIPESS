@@ -141,15 +141,18 @@ class AiEdgeRepository {
           AiChatMessage(
             role: 'system',
             content: type == 'profile'
-                ? 'You are Swipess profile copy. Rewrite the user text into a '
-                      'polished, cinematic bio. Return only the bio.'
+                ? 'You are an elite profile copywriter. Your ONLY job is to rewrite the user text into a '
+                  'polished, cinematic bio. Return ONLY the rewritten bio text. Do NOT greet the user, do NOT say "Here is your bio", do NOT act like a chat assistant.'
                 : 'You are an elite listing architect for Swipess. Transform '
-                      'raw input into a professional, cinematic listing '
-                      'description. Return only the description.',
+                  'raw input into a professional, cinematic listing '
+                  'description. Return ONLY the description. Do NOT greet the user or chat.',
           ),
-          AiChatMessage(role: 'user', content: trimmed),
+          AiChatMessage(
+            role: 'user', 
+            content: 'CRITICAL INSTRUCTION: Rewrite this text and return ONLY the new text. Do not chat with me. TEXT:\n$trimmed'
+          ),
         ],
-        character: type == 'profile' ? null : 'listing_architect',
+        character: type == 'profile' ? 'profile_copywriter' : 'listing_architect',
         stream: false,
       );
       return reply.trim().isEmpty ? null : reply.trim();
@@ -354,10 +357,13 @@ class AiEdgeRepository {
           AiChatMessage(
             role: 'system',
             content:
-                'Extract listing details from the user input for category: '
-                '$category. Return ONLY valid JSON.',
+                'You are an expert data extractor. Extract listing details from the user input for category: '
+                '$category. Return ONLY valid JSON and absolutely NO other text or chat.',
           ),
-          AiChatMessage(role: 'user', content: prompt),
+          AiChatMessage(
+            role: 'user', 
+            content: 'CRITICAL INSTRUCTION: Extract the following into a valid JSON object. Do not chat or say anything else. TEXT:\n$prompt'
+          ),
         ],
         character: 'listing_extractor',
         stream: false,
