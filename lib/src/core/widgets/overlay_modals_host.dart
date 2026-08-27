@@ -115,11 +115,21 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
     final keepMapAlive = modals.showPassportMap || _mapHeldForDetail;
+    final pauseRoutedMedia = modals.showPassportMap ||
+        modals.showVapId ||
+        modals.showConcierge;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        widget.child,
+        // The dashboard/detail route stays mounted under global overlays, but
+        // its tickers are paused while hidden. Dashboard video widgets already
+        // observe TickerMode, so this stops invisible decoding/playback under
+        // Map and avoids wasting GPU/VideoFrame resources in Chrome.
+        TickerMode(
+          enabled: !pauseRoutedMedia,
+          child: widget.child,
+        ),
         if (modals.showVapId) const VapIdModal(),
         if (keepMapAlive)
           Positioned.fill(
