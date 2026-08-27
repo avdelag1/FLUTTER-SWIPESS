@@ -95,22 +95,51 @@ class DashboardDock extends StatelessWidget {
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  child: Row(
+                  child: Stack(
                     children: [
-                      for (final item in items)
-                        SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: DockButton(
-                            item: item,
-                            wash: item.wash,
-                            selected: selectedTab == item.id,
-                            onTap: () {
-                              AppHaptics.light();
-                              onTabSelected(item.id);
-                            },
+                      if (selectedTab != null && items.indexWhere((i) => i.id == selectedTab) >= 0)
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutCubic,
+                          left: items.indexWhere((i) => i.id == selectedTab) * 44.0,
+                          bottom: 0,
+                          width: 44.0,
+                          height: 44.0,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Container(
+                                width: 3.5,
+                                height: 3.5,
+                                decoration: BoxDecoration(
+                                  color: isLight
+                                      ? Colors.black.withAlpha(205)
+                                      : Colors.white.withAlpha(225),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
+                      Row(
+                        children: [
+                          for (final item in items)
+                            SizedBox(
+                              width: 44,
+                              height: 44,
+                              child: DockButton(
+                                item: item,
+                                wash: item.wash,
+                                selected: selectedTab == item.id,
+                                onTap: () {
+                                  AppHaptics.light();
+                                  onTabSelected(item.id);
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -179,27 +208,13 @@ class DockButton extends StatelessWidget {
               splashColor: wash.withAlpha(34),
               child: Center(
                 child: AnimatedScale(
-                  scale: emphasized ? 1.04 : 1,
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeOutCubic,
+                  scale: emphasized ? 1.12 : 1,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.elasticOut,
                   child: Stack(
                     alignment: Alignment.center,
                     clipBehavior: Clip.none,
                     children: [
-                      if (selected)
-                        Positioned(
-                          bottom: -2,
-                          child: Container(
-                            width: 3.5,
-                            height: 3.5,
-                            decoration: BoxDecoration(
-                              color: isLight
-                                  ? Colors.black.withAlpha(205)
-                                  : Colors.white.withAlpha(225),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
                       item.useAiIcon
                           ? CustomPaint(
                               painter: AiRobotPainter(color: iconColor),
