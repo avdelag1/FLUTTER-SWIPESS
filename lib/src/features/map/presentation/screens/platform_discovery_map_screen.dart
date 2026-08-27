@@ -34,16 +34,22 @@ class PlatformDiscoveryMapScreen extends StatelessWidget {
       splashColor: Colors.transparent,
       focusColor: Colors.transparent,
       splashFactory: NoSplash.splashFactory,
-      iconTheme: base.iconTheme.copyWith(color: Colors.black),
+      iconTheme: base.iconTheme.copyWith(
+        color: const Color(0xFF111318),
+        size: 18,
+      ),
       iconButtonTheme: IconButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: const WidgetStatePropertyAll<Color>(Colors.black),
+          foregroundColor:
+              const WidgetStatePropertyAll<Color>(Color(0xFF111318)),
           overlayColor:
               const WidgetStatePropertyAll<Color>(Colors.transparent),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
+          foregroundColor:
+              const WidgetStatePropertyAll<Color>(Color(0xFF111318)),
           overlayColor:
               const WidgetStatePropertyAll<Color>(Colors.transparent),
         ),
@@ -53,10 +59,43 @@ class PlatformDiscoveryMapScreen extends StatelessWidget {
     return Theme(
       data: mapTheme,
       child: IconTheme(
-        data: const IconThemeData(color: Colors.black),
-        child: buildPlatformDiscoveryMap(
-          onClose: onClose,
-          showCitiesOnOpen: showCitiesOnOpen,
+        data: const IconThemeData(color: Color(0xFF111318), size: 18),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            buildPlatformDiscoveryMap(
+              onClose: onClose,
+              showCitiesOnOpen: showCitiesOnOpen,
+            ),
+
+            // The top filter rail and optional city rail scroll horizontally.
+            // Give their far-right end a soft optical fade so pills disappear
+            // naturally into the screen edge instead of looking sliced by a
+            // rectangular phone/browser boundary. This is a transparent shade,
+            // not a frame, so there is no visible vertical seam.
+            const Positioned(
+              top: 48,
+              right: 0,
+              width: 30,
+              height: 90,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0x00FFFFFF),
+                        Color(0x16FFFFFF),
+                        Color(0x6BFFFFFF),
+                      ],
+                      stops: [0, .48, 1],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
