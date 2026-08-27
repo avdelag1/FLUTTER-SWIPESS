@@ -65,6 +65,13 @@ final likedPeopleProvider =
       LikedPeopleNotifier.new,
     );
 
+/// Events use the same generic likes table but do not need a full event model
+/// just to keep discovery unseen-only. The ID set is enough for every map
+/// renderer to remove saved events immediately.
+final likedEventIdsProvider = FutureProvider<Set<String>>((ref) {
+  return ref.read(likesRepositoryProvider).fetchLikedEventIds();
+});
+
 class InterestedClientsNotifier extends AsyncNotifier<List<InterestedClient>> {
   @override
   Future<List<InterestedClient>> build() {
