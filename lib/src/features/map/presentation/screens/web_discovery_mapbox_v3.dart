@@ -15,19 +15,19 @@ import 'package:flutter_swipes/src/features/map/presentation/providers/map_listi
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 bool _webMapboxOpenedThisSession = false;
 
-/// Persistent browser Mapbox discovery surface.
+/// Persistent browser Mapbox discovery.
 ///
-/// The old browser flow rendered a real Mapbox globe only as an intro and then
-/// replaced it with FlutterMap tiles, which is why users saw a 3D world briefly
-/// and landed on a 2D map. This screen keeps Mapbox mounted for the whole map
-/// session and paints every Swipess pin/card as Flutter chrome above it.
+/// Mapbox remains mounted from the globe intro through local discovery. Pins,
+/// popup cards, search and the tray are normal Flutter chrome above the map so
+/// their z-order is deterministic and a selected popup can never sit behind a
+/// later marker.
 class WebDiscoveryMapboxV3 extends ConsumerStatefulWidget {
   const WebDiscoveryMapboxV3({
     super.key,
@@ -152,15 +152,15 @@ const _filters = <_FilterDef>[
   _FilterDef('properties', 'Properties', Icons.home_outlined),
   _FilterDef('services', 'Services', Icons.handyman_outlined),
   _FilterDef('dining', 'Dining', Icons.restaurant_rounded),
-  _FilterDef('jets', 'Jets', Icons.flight),
-  _FilterDef('yachts', 'Yachts', Icons.directions_boat),
-  _FilterDef('motorcycles', 'Motos', Icons.motorcycle),
-  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike),
-  _FilterDef('roommates', 'Roommates', Icons.people),
-  _FilterDef('seekers', 'Seekers', Icons.search),
-  _FilterDef('buyers', 'Buyers', Icons.shopping_bag),
-  _FilterDef('renters', 'Renters', Icons.key),
-  _FilterDef('people', 'People', Icons.person),
+  _FilterDef('jets', 'Jets', Icons.flight_rounded),
+  _FilterDef('yachts', 'Yachts', Icons.sailing_rounded),
+  _FilterDef('motorcycles', 'Motos', Icons.two_wheeler_rounded),
+  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike_rounded),
+  _FilterDef('roommates', 'Roommates', Icons.group_rounded),
+  _FilterDef('seekers', 'Seekers', Icons.travel_explore_rounded),
+  _FilterDef('buyers', 'Buyers', Icons.shopping_bag_rounded),
+  _FilterDef('renters', 'Renters', Icons.key_rounded),
+  _FilterDef('people', 'People', Icons.person_rounded),
 ];
 
 class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
@@ -173,28 +173,29 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   bool _projectionScheduled = false;
   bool _projecting = false;
   bool _projectionQueued = false;
+  bool _openingFlight = false;
   bool _menuOpen = false;
   bool _searchOpen = false;
   bool _searchingPlace = false;
   bool _controlsVisible = true;
-  bool _openingFlight = false;
   String _filter = 'all';
   String _query = '';
   String? _selectedKey;
   int _trayLevel = 0;
-  final TextEditingController _search = TextEditingController();
-  final ScrollController _cards = ScrollController();
-  final Set<String> _sessionHidden = <String>{};
-  Map<String, Offset> _pixels = const {};
-  Offset? _centerPixel;
-  double? _radiusPixels;
   double? _gpsLat;
   double? _gpsLng;
+  Offset? _locationPixel;
+  double? _radiusPixels;
+  Map<String, Offset> _pixels = const {};
+
+  final _searchController = TextEditingController();
+  final _cards = ScrollController();
+  final Set<String> _sessionHidden = <String>{};
 
   double get _trayHeight => switch (_trayLevel) {
         -1 => 0,
         0 => 52,
-        _ => 190,
+        _ => 188,
       };
 
   @override
@@ -208,7 +209,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   @override
   void dispose() {
     _openingTimer?.cancel();
-    _search.dispose();
+    _searchController.dispose();
     _cards.dispose();
     super.dispose();
   }
@@ -245,7 +246,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
         CameraOptions(
           center: _point(loc.latitude, loc.longitude),
           zoom: _zoomFor(loc.radiusKm),
-          pitch: loc.radiusKm <= 100 ? 42 : 22,
+          pitch: loc.radiusKm <= 100 ? 46 : 24,
           bearing: -12,
         ),
       );
@@ -271,17 +272,19 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
 
   Future<void> _loadGps({required bool silent}) async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return;
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied && !silent) {
-        permission = await Geolocator.requestPermission();
+      if (!await geo.Geolocator.isLocationServiceEnabled()) return;
+      var permission = await geo.Geolocator.checkPermission();
+      if (permission == geo.LocationPermission.denied && !silent) {
+        permission = await geo.Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
+      if (permission == geo.LocationPermission.denied ||
+          permission == geo.LocationPermission.deniedForever) {
         return;
       }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
+      final position = await geo.Geolocator.getCurrentPosition(
+        locationSettings: const geo.LocationSettings(
+          accuracy: geo.LocationAccuracy.best,
+        ),
       );
       if (!mounted) return;
       setState(() {
@@ -323,39 +326,47 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   _Kind _listingKind(Listing listing) {
-    final c = (listing.category ?? '').trim().toLowerCase();
-    if (c.contains('jet')) return _Kind.jet;
-    if (c.contains('restaurant') || c.contains('dining') || c.contains('food')) {
+    final category = (listing.category ?? '').trim().toLowerCase();
+    if (category.contains('jet')) return _Kind.jet;
+    if (category.contains('restaurant') ||
+        category.contains('dining') ||
+        category.contains('food')) {
       return _Kind.dining;
     }
-    if (c.contains('worker') ||
-        c.contains('service') ||
-        c.contains('professional') ||
-        c.contains('massage') ||
-        c.contains('cleaning')) {
+    if (category.contains('worker') ||
+        category.contains('service') ||
+        category.contains('professional') ||
+        category.contains('massage') ||
+        category.contains('cleaning')) {
       return _Kind.service;
     }
-    if (c.contains('motorcycle') || c.contains('moto')) {
+    if (category.contains('motorcycle') || category.contains('moto')) {
       return _Kind.motorcycle;
     }
-    if (c.contains('bicycle') || c.contains('bike')) return _Kind.bicycle;
-    if (c.contains('yacht') || c.contains('boat')) return _Kind.yacht;
-    if (c.contains('roommate')) return _Kind.roommate;
-    if (c.contains('seeker') || c.contains('request')) return _Kind.seeker;
-    if (c.contains('buyer')) return _Kind.buyer;
-    if (c.contains('renter')) return _Kind.renter;
+    if (category.contains('bicycle') || category.contains('bike')) {
+      return _Kind.bicycle;
+    }
+    if (category.contains('yacht') || category.contains('boat')) {
+      return _Kind.yacht;
+    }
+    if (category.contains('roommate')) return _Kind.roommate;
+    if (category.contains('seeker') || category.contains('request')) {
+      return _Kind.seeker;
+    }
+    if (category.contains('buyer')) return _Kind.buyer;
+    if (category.contains('renter')) return _Kind.renter;
     return _Kind.property;
   }
 
   _Item _listingItem(Listing listing, DiscoveryLocation loc) {
-    final p = listing.latitude != null && listing.longitude != null
+    final point = listing.latitude != null && listing.longitude != null
         ? _spread(listing.id, listing.latitude!, listing.longitude!)
         : _spread(listing.id, loc.latitude, loc.longitude, baseMeters: 360);
     return _Item(
       id: listing.id,
       kind: _listingKind(listing),
-      lat: p.lat,
-      lng: p.lng,
+      lat: point.lat,
+      lng: point.lng,
       title: (listing.title ?? '').trim().isEmpty
           ? 'Swipess listing'
           : listing.title!.trim(),
@@ -367,14 +378,14 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   _Item _profileItem(Profile profile, DiscoveryLocation loc) {
-    final p = profile.latitude != null && profile.longitude != null
+    final point = profile.latitude != null && profile.longitude != null
         ? _spread(profile.id, profile.latitude!, profile.longitude!)
         : _spread(profile.id, loc.latitude, loc.longitude, baseMeters: 420);
     return _Item(
       id: profile.id,
       kind: _Kind.person,
-      lat: p.lat,
-      lng: p.lng,
+      lat: point.lat,
+      lng: point.lng,
       title: profile.displayName,
       subtitle: profile.city ?? 'Nearby',
       image: profile.avatarUrl ?? '',
@@ -384,13 +395,17 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   _Item _eventItem(Event event, DiscoveryLocation loc) {
-    final p = _spread('event:${event.id}', loc.latitude, loc.longitude,
-        baseMeters: 260);
+    final point = _spread(
+      'event:${event.id}',
+      loc.latitude,
+      loc.longitude,
+      baseMeters: 260,
+    );
     return _Item(
       id: event.id,
       kind: _Kind.event,
-      lat: p.lat,
-      lng: p.lng,
+      lat: point.lat,
+      lng: point.lng,
       title: event.title,
       subtitle: event.location ?? event.locationDetail ?? loc.city,
       image: event.imageUrl ??
@@ -447,6 +462,20 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
         .toList(growable: false);
   }
 
+  List<_Item> _currentItems() {
+    final loc = ref.read(discoveryLocationProvider);
+    return _buildItems(
+      loc: loc,
+      listings: ref.read(mapListingsProvider).value ?? const <Listing>[],
+      profiles: ref.read(mapProfilesProvider).value ?? const <Profile>[],
+      events: ref.read(eventsListProvider).value ?? const <Event>[],
+      likedListings:
+          ref.read(likedListingIdsProvider).value ?? const <String>{},
+      likedPeople: ref.read(likedPeopleIdsProvider).value ?? const <String>{},
+      likedEvents: ref.read(likedEventIdsProvider).value ?? const <String>{},
+    );
+  }
+
   void _scheduleProjection() {
     if (!_mapLoaded || _map == null || _projectionScheduled) return;
     _projectionScheduled = true;
@@ -474,33 +503,32 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
           _point(loc.latitude + loc.radiusKm / 111.32, loc.longitude),
         for (final item in items) _point(item.lat, item.lng),
       ];
-      final pixels = await map.pixelsForCoordinates(points);
-      if (!mounted || pixels.isEmpty) return;
+      final projected = await map.pixelsForCoordinates(points);
+      if (!mounted || projected.isEmpty) return;
+
       var cursor = 0;
-      final center = pixels[cursor++];
-      Offset? centerPixel;
-      if (center != null) centerPixel = Offset(center.x, center.y);
+      final location = projected[cursor++];
+      final locationPixel = Offset(location.x, location.y);
       double? radius;
-      if (loc.radiusKm <= 250 && cursor < pixels.length) {
-        final edge = pixels[cursor++];
-        if (edge != null && centerPixel != null) {
-          radius = (Offset(edge.x, edge.y) - centerPixel).distance;
-          if (!radius.isFinite || radius < 2 || radius > 1800) radius = null;
-        }
+      if (loc.radiusKm <= 250 && cursor < projected.length) {
+        final edge = projected[cursor++];
+        radius = (Offset(edge.x, edge.y) - locationPixel).distance;
+        if (!radius.isFinite || radius < 2 || radius > 1800) radius = null;
       }
+
       final next = <String, Offset>{};
       for (final item in items) {
-        if (cursor >= pixels.length) break;
-        final p = pixels[cursor++];
-        if (p == null) continue;
-        next[item.key] = Offset(p.x, p.y);
+        if (cursor >= projected.length) break;
+        final point = projected[cursor++];
+        next[item.key] = Offset(point.x, point.y);
       }
       setState(() {
-        _centerPixel = centerPixel;
+        _locationPixel = locationPixel;
         _radiusPixels = radius;
         _pixels = next;
       });
     } catch (_) {
+      // A transient projection frame should never blank the map.
     } finally {
       _projecting = false;
       if (_projectionQueued && mounted) {
@@ -510,34 +538,13 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     }
   }
 
-  List<_Item> _currentItems() {
-    final loc = ref.read(discoveryLocationProvider);
-    final listings = ref.read(mapListingsProvider).value ?? const <Listing>[];
-    final profiles = ref.read(mapProfilesProvider).value ?? const <Profile>[];
-    final events = ref.read(eventsListProvider).value ?? const <Event>[];
-    final likedListings =
-        ref.read(likedListingIdsProvider).value ?? const <String>{};
-    final likedPeople =
-        ref.read(likedPeopleIdsProvider).value ?? const <String>{};
-    final likedEvents = ref.read(likedEventIdsProvider).value ?? const <String>{};
-    return _buildItems(
-      loc: loc,
-      listings: listings,
-      profiles: profiles,
-      events: events,
-      likedListings: likedListings,
-      likedPeople: likedPeople,
-      likedEvents: likedEvents,
-    );
-  }
-
   void _select(_Item item, List<_Item> items) {
     AppHaptics.selection();
     setState(() => _selectedKey = item.key);
-    final index = items.indexWhere((e) => e.key == item.key);
+    final index = items.indexWhere((candidate) => candidate.key == item.key);
     if (index >= 0 && _cards.hasClients) {
       _cards.animateTo(
-        index * 206.0,
+        index * 204.0,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
       );
@@ -594,22 +601,21 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   Future<void> _submitSearch() async {
-    final query = _search.text.trim();
+    final query = _searchController.text.trim();
     if (query.length < 2 || _searchingPlace) return;
     setState(() => _searchingPlace = true);
     try {
       final results = await MapboxPlaceSearch.search(query);
       if (!mounted || results.isEmpty) return;
       final result = results.first;
-      ref.read(discoveryLocationProvider.notifier).setCoordinates(
-            city: result.name,
-            country: result.country,
-            latitude: result.latitude,
-            longitude: result.longitude,
-          );
-      ref
-          .read(discoveryLocationProvider.notifier)
-          .setRadiusKm(result.suggestedRadiusKm);
+      final location = ref.read(discoveryLocationProvider.notifier);
+      location.setCoordinates(
+        city: result.name,
+        country: result.country,
+        latitude: result.latitude,
+        longitude: result.longitude,
+      );
+      location.setRadiusKm(result.suggestedRadiusKm);
       setState(() {
         _query = '';
         _selectedKey = null;
@@ -656,9 +662,15 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       likedPeople: likedPeople,
       likedEvents: likedEvents,
     );
-    final selected = _selectedKey == null
-        ? null
-        : items.where((item) => item.key == _selectedKey).firstOrNull;
+    _Item? selected;
+    if (_selectedKey != null) {
+      for (final item in items) {
+        if (item.key == _selectedKey) {
+          selected = item;
+          break;
+        }
+      }
+    }
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null) return;
@@ -669,12 +681,12 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
         unawaited(_flyTo(next));
       }
     });
-    ref.listen(mapListingsProvider, (_, __) => _scheduleProjection());
-    ref.listen(mapProfilesProvider, (_, __) => _scheduleProjection());
-    ref.listen(eventsListProvider, (_, __) => _scheduleProjection());
-    ref.listen(likedListingIdsProvider, (_, __) => _scheduleProjection());
-    ref.listen(likedPeopleIdsProvider, (_, __) => _scheduleProjection());
-    ref.listen(likedEventIdsProvider, (_, __) => _scheduleProjection());
+    ref.listen(mapListingsProvider, (_, _) => _scheduleProjection());
+    ref.listen(mapProfilesProvider, (_, _) => _scheduleProjection());
+    ref.listen(eventsListProvider, (_, _) => _scheduleProjection());
+    ref.listen(likedListingIdsProvider, (_, _) => _scheduleProjection());
+    ref.listen(likedPeopleIdsProvider, (_, _) => _scheduleProjection());
+    ref.listen(likedEventIdsProvider, (_, _) => _scheduleProjection());
 
     if (!tokenReady) {
       return const Material(
@@ -687,11 +699,11 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       color: const Color(0xFFF3F8FB),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          bool onScreen(Offset p, {double margin = 100}) =>
-              p.dx >= -margin &&
-              p.dy >= -margin &&
-              p.dx <= constraints.maxWidth + margin &&
-              p.dy <= constraints.maxHeight + margin;
+          bool onScreen(Offset point, {double margin = 100}) =>
+              point.dx >= -margin &&
+              point.dy >= -margin &&
+              point.dx <= constraints.maxWidth + margin &&
+              point.dy <= constraints.maxHeight + margin;
 
           final selectedPixel = selected == null ? null : _pixels[selected.key];
 
@@ -715,16 +727,28 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                 },
                 onCameraChangeListener: (_) => _scheduleProjection(),
                 onMapIdleListener: (_) => _scheduleProjection(),
-                onTapListener: (_) => _dismissSelection(),
               ),
 
-              if (_centerPixel != null &&
+              // When a preview is open, one background tap dismisses it. This
+              // temporary layer is below all pins/cards so it cannot steal taps
+              // from the selected result. After dismissal normal map gestures
+              // immediately pass through to Mapbox again.
+              if (_selectedKey != null)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: _dismissSelection,
+                    child: const ColoredBox(color: Colors.transparent),
+                  ),
+                ),
+
+              if (_locationPixel != null &&
                   _radiusPixels != null &&
                   loc.radiusKm <= 250 &&
-                  onScreen(_centerPixel!, margin: _radiusPixels!))
+                  onScreen(_locationPixel!, margin: _radiusPixels!))
                 Positioned(
-                  left: _centerPixel!.dx - _radiusPixels!,
-                  top: _centerPixel!.dy - _radiusPixels!,
+                  left: _locationPixel!.dx - _radiusPixels!,
+                  top: _locationPixel!.dy - _radiusPixels!,
                   child: IgnorePointer(
                     child: Container(
                       width: _radiusPixels! * 2,
@@ -741,29 +765,29 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
-              if (_centerPixel != null && onScreen(_centerPixel!))
+              if (_locationPixel != null && onScreen(_locationPixel!))
                 Positioned(
-                  left: _centerPixel!.dx - 10,
-                  top: _centerPixel!.dy - 10,
+                  left: _locationPixel!.dx - 10,
+                  top: _locationPixel!.dy - 10,
                   child: const IgnorePointer(child: _LocationDot()),
                 ),
 
-              // Paint every non-selected pin first.
+              // Every regular marker paints first.
               for (final item in items)
-                if (item.key != _selectedKey &&
-                    _pixels[item.key] case final Offset pixel)
-                  if (onScreen(pixel))
-                    Positioned(
-                      left: pixel.dx - 24,
-                      top: pixel.dy - 48,
-                      child: _Pin(
-                        item: item,
-                        selected: false,
-                        onTap: () => _select(item, items),
+                if (item.key != _selectedKey)
+                  if (_pixels[item.key] case final Offset pixel)
+                    if (onScreen(pixel))
+                      Positioned(
+                        left: pixel.dx - 24,
+                        top: pixel.dy - 48,
+                        child: _Pin(
+                          item: item,
+                          selected: false,
+                          onTap: () => _select(item, items),
+                        ),
                       ),
-                    ),
 
-              // Selected pin is deliberately painted after every other pin.
+              // Selected marker is above regular markers.
               if (selected != null &&
                   selectedPixel != null &&
                   onScreen(selectedPixel))
@@ -773,12 +797,12 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   child: _Pin(
                     item: selected,
                     selected: true,
-                    onTap: () => _open(selected),
+                    onTap: () => _open(selected!),
                   ),
                 ),
 
-              // And the preview is the final map overlay, so no marker can ever
-              // cover it. This fixes the overlapping banner regression.
+              // Preview paints after ALL markers. It therefore cannot be hidden
+              // behind a cluster of pins, regardless of marker list order.
               if (selected != null && selectedPixel != null)
                 Positioned(
                   left: (selectedPixel.dx - 118)
@@ -789,8 +813,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                       .toDouble(),
                   child: _Preview(
                     item: selected,
-                    onOpen: () => _open(selected),
-                    onLike: () => _like(selected),
+                    onOpen: () => _open(selected!),
+                    onLike: () => _like(selected!),
                     onClose: _dismissSelection,
                   ),
                 ),
@@ -858,8 +882,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 540),
-                        child: _SearchBar(
-                          controller: _search,
+                        child: _MapSearch(
+                          controller: _searchController,
                           busy: _searchingPlace,
                           onChanged: (value) => setState(() {
                             _query = value;
@@ -1131,6 +1155,7 @@ class _FloatingIcon extends StatelessWidget {
     required this.icon,
     required this.onTap,
   });
+
   final String label;
   final IconData icon;
   final VoidCallback onTap;
@@ -1167,6 +1192,7 @@ class _BareIcon extends StatelessWidget {
     required this.label,
     required this.onTap,
   });
+
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -1189,6 +1215,7 @@ class _BareIcon extends StatelessWidget {
 
 class _FilterRail extends StatelessWidget {
   const _FilterRail({required this.active, required this.onFilter});
+
   final String active;
   final ValueChanged<String> onFilter;
 
@@ -1211,7 +1238,7 @@ class _FilterRail extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             physics: const BouncingScrollPhysics(),
             itemCount: _filters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            separatorBuilder: (_, _) => const SizedBox(width: 6),
             itemBuilder: (context, index) {
               final filter = _filters[index];
               final selected = filter.id == active;
@@ -1252,8 +1279,8 @@ class _FilterRail extends StatelessWidget {
       );
 }
 
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({
+class _MapSearch extends StatelessWidget {
+  const _MapSearch({
     required this.controller,
     required this.busy,
     required this.onChanged,
@@ -1363,7 +1390,9 @@ class _Menu extends StatelessWidget {
         children: [
           row(Icons.my_location_rounded, 'My location', onMyLocation),
           row(
-            trayVisible ? Icons.visibility_off_rounded : Icons.view_carousel_rounded,
+            trayVisible
+                ? Icons.visibility_off_rounded
+                : Icons.view_carousel_rounded,
             trayVisible ? 'Hide listings' : 'Show listings',
             onToggleTray,
           ),
@@ -1420,9 +1449,9 @@ class _Tray extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTap: level == 0 ? onExpand : onCollapse,
               onVerticalDragEnd: (details) {
-                final v = details.primaryVelocity ?? 0;
-                if (v < -80) onExpand();
-                if (v > 80) onCollapse();
+                final velocity = details.primaryVelocity ?? 0;
+                if (velocity < -80) onExpand();
+                if (velocity > 80) onCollapse();
               },
               child: SizedBox(
                 height: 40,
@@ -1470,7 +1499,7 @@ class _Tray extends StatelessWidget {
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
                         itemCount: items.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return _MiniCard(
@@ -1584,6 +1613,7 @@ class _MiniCard extends StatelessWidget {
 
 class _Image extends StatelessWidget {
   const _Image({required this.url, required this.width});
+
   final String url;
   final double width;
 
@@ -1602,7 +1632,7 @@ class _Image extends StatelessWidget {
       child: Image.network(
         url,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback(),
+        errorBuilder: (_, _, _) => fallback(),
       ),
     );
   }
