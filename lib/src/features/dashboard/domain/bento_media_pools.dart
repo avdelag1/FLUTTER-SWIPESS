@@ -45,14 +45,13 @@ class BentoMediaPools {
           'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'motorcycle':
+        // Keep the first and last frames local. The previous ATV Unsplash URL
+        // now returns 404 and was filling the web console on every dashboard
+        // rotation. Local fallbacks make this rail deterministic and quiet.
         return const [
           AppAssets.filterMotorcycle,
-          // Vespa / scooter lifestyle.
           'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
-          // Sport / racer motorcycle.
-          'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
-          // Quad / ATV action.
-          'https://images.unsplash.com/photo-1590401831889-4e4c2755e1aa?auto=format&fit=crop&w=1000&q=92',
+          AppAssets.filterMotorcycle,
         ];
       case 'bicycle':
         return const [
