@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
@@ -9,10 +7,9 @@ import 'package:go_router/go_router.dart';
 
 /// Shared compact back control used across phone pages.
 ///
-/// Always tries the nearest Navigator first, then the root Navigator, then
-/// GoRouter history, and finally a deterministic section fallback. This avoids
-/// dead back buttons on web when a screen was opened with `go()` or from a
-/// nested MaterialPageRoute.
+/// The visual is intentionally just a floating icon. The invisible 44pt hit
+/// target remains for accessibility and reliable phone taps; backgrounds,
+/// circular frames and glass outlines are not painted.
 class CapBackButton extends ConsumerWidget {
   const CapBackButton({
     super.key,
@@ -50,22 +47,18 @@ class CapBackButton extends ConsumerWidget {
       return;
     }
 
-    // Screens opened from profile/cards often live in a nested Navigator.
     final nearest = Navigator.of(context);
     if (nearest.canPop()) {
       nearest.pop();
       return;
     }
 
-    // Some web routes are mounted under the root navigator instead.
     final root = Navigator.of(context, rootNavigator: true);
     if (root.canPop()) {
       root.pop();
       return;
     }
 
-    // GoRouter can still have declarative history even when Navigator reports
-    // no imperative page to pop.
     try {
       final router = GoRouter.of(context);
       if (router.canPop()) {
@@ -74,8 +67,7 @@ class CapBackButton extends ConsumerWidget {
       }
     } catch (_) {}
 
-    final fallback = _resolvedFallback(context);
-    context.go(fallback);
+    context.go(_resolvedFallback(context));
   }
 
   bool _followsProfileChrome(BuildContext context) {
@@ -89,6 +81,10 @@ class CapBackButton extends ConsumerWidget {
     final followsChrome = _followsProfileChrome(context);
     final chromeVisible = ref.watch(chromeVisibilityProvider);
     final visible = !followsChrome || chromeVisible;
+    final iconColor = isLight ? const Color(0xFF111318) : color;
+    final shadowColor = isLight
+        ? Colors.white.withAlpha(210)
+        : Colors.black.withAlpha(170);
 
     return IgnorePointer(
       ignoring: !visible,
@@ -107,32 +103,14 @@ class CapBackButton extends ConsumerWidget {
               width: 44,
               height: 44,
               child: Center(
-                child: ClipOval(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isLight
-                            ? Colors.white.withAlpha(178)
-                            : Colors.white.withAlpha(22),
-                        border: isLight
-                            ? Border.all(
-                                color: Colors.black.withAlpha(18),
-                                width: .7,
-                              )
-                            : null,
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: isLight ? const Color(0xFF111318) : color,
-                        size: 18,
-                      ),
-                    ),
-                  ),
+                child: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: iconColor,
+                  size: 20,
+                  shadows: [
+                    Shadow(color: shadowColor, blurRadius: 5),
+                    Shadow(color: shadowColor, blurRadius: 2),
+                  ],
                 ),
               ),
             ),
