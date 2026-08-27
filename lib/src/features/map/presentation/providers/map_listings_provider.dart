@@ -119,7 +119,7 @@ Future<List<Listing>> _fetchRegisteredCityListings(
     var query = client
         .from('listings')
         .select(
-          'id, title, description, price, hourly_rate, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, beds, baths',
         );
     query = query.eq('is_active', true).ilike('city', '%$city%');
     if (withStatus) query = query.eq('status', 'active');
@@ -146,7 +146,7 @@ Future<List<Listing>> _fallbackListings(
     var query = client
         .from('listings')
         .select(
-          'id, title, description, price, hourly_rate, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, bedrooms, bathrooms',
+          'id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, beds, baths',
         );
     query = query.eq('is_active', true);
     if (withStatus) query = query.eq('status', 'active');

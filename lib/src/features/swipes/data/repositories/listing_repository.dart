@@ -16,13 +16,11 @@ class ListingRepository {
     : _client = client ?? Supabase.instance.client;
 
   static const _swipeFields = '''
-    id, title, description, price, previous_price, images, video_url,
-    city, neighborhood, beds, baths, square_footage, category,
-    listing_type, property_type, vehicle_brand, vehicle_model, year,
-    mileage, amenities, pet_friendly, furnished, owner_id, created_at,
-    updated_at, currency, pricing_unit, service_category, experience_years,
-    experience_level, latitude, longitude, status, is_active, hourly_rate,
-    has_verified_documents, verification_status, owner_verified_at
+    id, title, description, price, images, video_url,
+    city, neighborhood, beds, baths, category,
+    listing_type, property_type,
+    amenities, pet_friendly, furnished, owner_id, created_at,
+    updated_at, currency, latitude, longitude, status, is_active
   ''';
 
   /// Fetch the swipe feed for the current user.

@@ -53,7 +53,7 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
     var filter = client
         .from('listings')
         .select(
-          'id, owner_id, title, description, price, images, image_url, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, likes, created_at, amenities, furnished, pet_friendly, property_type, beds, baths, video_url, vehicle_brand, vehicle_model, year, mileage, service_category',
+          'id, owner_id, title, description, price, images, image_url, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, likes, created_at, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
         )
         .eq('owner_id', userId);
     if (status == 'active') {
