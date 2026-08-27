@@ -9,15 +9,10 @@ import 'package:flutter_swipes/src/features/map/presentation/screens/web_discove
 @JS('eval')
 external JSAny? _eval(JSString code);
 
-/// The spherical Mapbox intro is optional on web and must never be allowed to
-/// compromise the normal discovery map. Mapbox GL's globe renderer needs a
-/// healthy WebGL2 context; a browser can otherwise let Flutter run in CPU mode
-/// while a weaker WebGL1 probe still succeeds, only for Mapbox itself to throw
-/// during painter setup.
-///
-/// Require hardware-capable WebGL2 up front. Browsers that fail this gate keep
-/// the bright Mapbox-backed raster discovery map, which already has its own
-/// world-to-city camera flight and does not depend on WebGL.
+bool _webGlobePlayedThisSession = false;
+
+/// The spherical Mapbox intro is optional on web and must never compromise the
+/// normal discovery map. Require a healthy hardware WebGL2 context up front.
 bool _browserSupportsMapboxGlobe() {
   try {
     final result = _eval(
@@ -35,9 +30,6 @@ bool _browserSupportsMapboxGlobe() {
             powerPreference: 'high-performance'
           });
           if (!gl) return false;
-
-          // Reject known software renderers. They can technically create a
-          // context while still failing or stalling Mapbox's globe pipeline.
           try {
             var debug = gl.getExtension('WEBGL_debug_renderer_info');
             if (debug) {
@@ -55,7 +47,6 @@ bool _browserSupportsMapboxGlobe() {
               }
             }
           } catch (_) {}
-
           return true;
         } catch (_) {
           return false;
@@ -104,14 +95,22 @@ class _WebDiscoveryMapBootstrap extends StatefulWidget {
 class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
   late final bool _globeReady = _browserSupportsMapboxGlobe();
+  late final bool _playIntro;
   Timer? _introWatchdog;
   bool _introWatchdogArmed = false;
   bool _introComplete = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _playIntro = !_webGlobePlayedThisSession;
+    if (_playIntro) _webGlobePlayedThisSession = true;
+  }
+
   void _armIntroWatchdog() {
     if (_introWatchdogArmed || _introComplete) return;
     _introWatchdogArmed = true;
-    _introWatchdog = Timer(const Duration(seconds: 7), _finishIntro);
+    _introWatchdog = Timer(const Duration(seconds: 10), _finishIntro);
   }
 
   void _finishIntro() {
@@ -152,26 +151,27 @@ class _WebDiscoveryMapBootstrapState extends State<_WebDiscoveryMapBootstrap> {
           showCitiesOnOpen: widget.showCitiesOnOpen,
         );
 
+        // Re-entering Map later in the same app session goes straight back to
+        // the live map. The cinematic world intro is an opening moment, not a
+        // repeated interruption.
+        if (!_playIntro) return discoveryMap;
+
         if (snapshot.data != true || !_globeReady) {
-          // Never instantiate Mapbox GL's spherical renderer when this browser
-          // cannot provide healthy WebGL2. The raster discovery map stays fully
-          // interactive and performs the fallback world-to-city flight itself.
+          // CPU-only/unsupported browsers use the Flutter-rendered world-to-city
+          // fallback inside the discovery map instead of creating a broken
+          // Mapbox GL surface.
           return discoveryMap;
         }
 
         _armIntroWatchdog();
 
-        // Prewarm the production discovery map underneath the optional globe.
-        // The intro itself remains transparent until Mapbox reports that its
-        // style is genuinely loaded, so even a late renderer failure cannot
-        // cover the working map with an opaque placeholder.
         return Stack(
           fit: StackFit.expand,
           children: [
             discoveryMap,
             Positioned.fill(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 480),
+                duration: const Duration(milliseconds: 520),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 child: _introComplete
