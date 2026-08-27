@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-/// A cinematic real-Mapbox globe opening used before the discovery map.
+/// Cinematic native Mapbox opening.
 ///
-/// The discovery map is prewarmed underneath this widget. The globe remains
-/// transparent until Mapbox confirms the style is loaded, so a failed WebGL
-/// surface can never cover the working map with a grey/blank layer.
+/// Mapbox Standard renders a true globe at low zoom. This screen is shown only
+/// once by the native bootstrap, then flies from the round Earth into the active
+/// discovery location. Re-opening Map during the same app session skips it.
 class MapboxWorldIntroScreen extends ConsumerStatefulWidget {
   const MapboxWorldIntroScreen({
     super.key,
@@ -32,15 +32,13 @@ class _MapboxWorldIntroScreenState
   bool _completed = false;
   bool _loaded = false;
 
-  // A little farther out than before so the whole spherical Earth is obvious.
-  static const double _worldZoom = 0.52;
+  static const double _worldZoom = 0.62;
 
   @override
   void initState() {
     super.initState();
-    // Only guards initialization. Once Mapbox is really loaded, the full
-    // cinematic hold + flight is intentionally allowed to run.
-    _loadWatchdog = Timer(const Duration(milliseconds: 2800), () {
+    // Never trap the user behind the cinematic if Mapbox cannot load.
+    _loadWatchdog = Timer(const Duration(seconds: 7), () {
       if (!_loaded) _finish();
     });
   }
@@ -49,13 +47,13 @@ class _MapboxWorldIntroScreenState
       Point(coordinates: Position(lng, lat));
 
   double _zoomForRadius(int km) {
-    if (km <= 5) return 13.2;
-    if (km <= 10) return 12.3;
-    if (km <= 25) return 11.2;
-    if (km <= 50) return 10.2;
-    if (km <= 100) return 9.2;
-    if (km <= 250) return 8.0;
-    if (km <= 1000) return 5.8;
+    if (km <= 5) return 13.4;
+    if (km <= 10) return 12.5;
+    if (km <= 25) return 11.4;
+    if (km <= 50) return 10.4;
+    if (km <= 100) return 9.4;
+    if (km <= 250) return 8.2;
+    if (km <= 1000) return 5.9;
     if (km <= 5000) return 3.2;
     return 2.0;
   }
@@ -63,14 +61,12 @@ class _MapboxWorldIntroScreenState
   Future<void> _setupMap(MapboxMap map) async {
     _map = map;
     try {
-      // Atlantic-centered framing keeps the Americas, Europe and Africa visible
-      // while making the round Earth immediately legible.
       await map.setCamera(
         CameraOptions(
           center: _point(18, -28),
           zoom: _worldZoom,
           pitch: 0,
-          bearing: -8,
+          bearing: -10,
         ),
       );
     } catch (_) {
@@ -90,8 +86,8 @@ class _MapboxWorldIntroScreenState
     _started = true;
     _startTimer?.cancel();
 
-    // Let the user actually enjoy the globe before moving toward the city.
-    _startTimer = Timer(const Duration(milliseconds: 1900), () async {
+    // Give the globe a short hero moment before the geographic flight.
+    _startTimer = Timer(const Duration(milliseconds: 1250), () async {
       if (!mounted || _completed) return;
       final map = _map;
       if (map == null) {
@@ -105,11 +101,12 @@ class _MapboxWorldIntroScreenState
           CameraOptions(
             center: _point(loc.latitude, loc.longitude),
             zoom: _zoomForRadius(loc.radiusKm),
-            pitch: 0,
-            bearing: 0,
+            // A little pitch at destination makes the arrival feel spatial
+            // without leaving the discovery map in an awkward camera angle.
+            pitch: loc.radiusKm <= 50 ? 38 : 18,
+            bearing: loc.radiusKm <= 50 ? 18 : 0,
           ),
-          // Deliberately slower than the old 2.55s flight.
-          MapAnimationOptions(duration: 4800, startDelay: 0),
+          MapAnimationOptions(duration: 3900, startDelay: 0),
         );
       } catch (_) {
         _finish();
@@ -142,11 +139,12 @@ class _MapboxWorldIntroScreenState
     return IgnorePointer(
       child: AnimatedOpacity(
         opacity: _loaded ? 1 : 0,
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 260),
         curve: Curves.easeOut,
         child: MapWidget(
           key: const ValueKey('swipess-mapbox-world-intro'),
-          styleUri: MapboxStyles.MAPBOX_STREETS,
+          // Standard is intentional: low zoom uses the native globe projection.
+          styleUri: MapboxStyles.STANDARD,
           onMapCreated: _setupMap,
           onMapLoadedListener: (_) => _onMapLoaded(),
         ),
