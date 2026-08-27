@@ -475,8 +475,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
             ),
           if (widget.showMute)
             Positioned(
-              top: 6,
-              right: 6,
+              bottom: 8,
+              right: 8,
               child: GestureDetector(
                 onTap: () {
                   AppHaptics.selection();

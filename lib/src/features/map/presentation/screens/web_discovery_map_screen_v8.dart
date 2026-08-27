@@ -192,6 +192,10 @@ class _WebDiscoveryMapScreenV8State
   double _fromRotation = -8;
   double _toRotation = 0;
 
+  // User's real GPS position (separate from discovery browse location)
+  double? _userGpsLat;
+  double? _userGpsLng;
+
   @override
   void initState() {
     super.initState();
@@ -212,6 +216,9 @@ class _WebDiscoveryMapScreenV8State
           });
         }
       });
+
+    // Auto-fetch the user's real GPS position for the blue dot
+    _autoFetchGps();
   }
 
   @override
@@ -330,6 +337,37 @@ class _WebDiscoveryMapScreenV8State
     _flight.forward(from: 0);
   }
 
+  /// Silently fetches the user's real GPS for the blue dot WITHOUT
+  /// changing the discovery browse location or moving the map.
+  Future<void> _autoFetchGps() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+        ),
+      );
+
+      if (mounted) {
+        setState(() {
+          _userGpsLat = position.latitude;
+          _userGpsLng = position.longitude;
+        });
+      }
+    } catch (_) {
+      // GPS unavailable — blue dot falls back to discovery location
+    }
+  }
+
   Future<void> _findMyExactLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -349,6 +387,10 @@ class _WebDiscoveryMapScreenV8State
     );
     
     if (mounted) {
+      setState(() {
+        _userGpsLat = position.latitude;
+        _userGpsLng = position.longitude;
+      });
       ref.read(discoveryLocationProvider.notifier).setCoordinates(
         city: 'My Location',
         country: '',
@@ -733,7 +775,10 @@ class _WebDiscoveryMapScreenV8State
                 MarkerLayer(
                   markers: [
                     Marker(
-                      point: LatLng(loc.latitude, loc.longitude),
+                      point: LatLng(
+                        _userGpsLat ?? loc.latitude,
+                        _userGpsLng ?? loc.longitude,
+                      ),
                       width: 48,
                       height: 48,
                       rotate: true,

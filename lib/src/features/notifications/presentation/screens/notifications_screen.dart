@@ -367,6 +367,7 @@ class _NotificationTile extends StatelessWidget {
                   Text(
                     notification.title,
                     style: TextStyle(
+                      decoration: TextDecoration.none,
                       color: MatteSurface.ink(context),
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -379,6 +380,7 @@ class _NotificationTile extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
+                        decoration: TextDecoration.none,
                         color: MatteSurface.muted(context),
                         fontSize: 12,
                         height: 1.35,
@@ -389,6 +391,7 @@ class _NotificationTile extends StatelessWidget {
                   Text(
                     time,
                     style: TextStyle(
+                      decoration: TextDecoration.none,
                       color: MatteSurface.faint(context),
                       fontSize: 10,
                       fontWeight: FontWeight.w700,

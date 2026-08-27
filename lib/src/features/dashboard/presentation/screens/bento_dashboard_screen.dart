@@ -976,7 +976,7 @@ class _BentoCardState extends State<_BentoCard> {
                 ),
                 Positioned(
                   left: 8,
-                  right: 8,
+                  right: 44,
                   bottom: 8,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
