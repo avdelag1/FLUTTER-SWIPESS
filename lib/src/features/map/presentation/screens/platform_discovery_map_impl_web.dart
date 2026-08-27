@@ -1,24 +1,22 @@
 import 'dart:async';
 import 'dart:js_interop';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
-import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v5.dart';
-import 'package:latlong2/latlong.dart';
 
 @JS('eval')
 external JSAny? _eval(JSString code);
 
 bool _webGlobePlayedThisSession = false;
 
-/// The spherical Mapbox intro is optional on web and must never compromise the
-/// normal discovery map. Require a healthy hardware WebGL2 context up front.
+/// A real Mapbox sphere on web requires a healthy hardware WebGL2 context.
+/// Never fake it with a clipped 2D map: on old/CPU-only browsers that produced
+/// the blank pale circle users were seeing. Unsupported browsers now skip the
+/// cinematic cleanly and go straight to the usable discovery map.
 bool _browserSupportsMapboxGlobe() {
   try {
     final result = _eval(
@@ -146,7 +144,7 @@ class _WebDiscoveryMapBootstrapState
   void _armIntroWatchdog() {
     if (_introWatchdogArmed || _introComplete) return;
     _introWatchdogArmed = true;
-    _introWatchdog = Timer(const Duration(seconds: 10), _finishIntro);
+    _introWatchdog = Timer(const Duration(seconds: 8), _finishIntro);
   }
 
   void _finishIntro() {
@@ -158,9 +156,6 @@ class _WebDiscoveryMapBootstrapState
   @override
   void dispose() {
     _introWatchdog?.cancel();
-    // Never use ref.read from dispose. Riverpod intentionally rejects reads
-    // once a ConsumerState has started unmounting. The notifier is captured
-    // while mounted so temporary map audio suppression can always be released.
     _restoreAudio();
     super.dispose();
   }
@@ -170,49 +165,26 @@ class _WebDiscoveryMapBootstrapState
     return FutureBuilder<bool>(
       future: _mapboxReady,
       builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const ColoredBox(
-            color: Color(0xFFF5F8FA),
-            child: Center(
-              child: SizedBox(
-                width: 26,
-                height: 26,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          );
-        }
-
         final discoveryMap = WebDiscoveryMapScreenV5(
           onClose: widget.onClose,
           showCitiesOnOpen: widget.showCitiesOnOpen,
         );
 
-        // Returning to Map later in the same running app goes straight back to
-        // the existing discovery experience. No repeated intro interruption.
-        if (!_playIntro) return discoveryMap;
-
-        _armIntroWatchdog();
-
-        // A true Mapbox sphere requires WebGL2. If the browser is CPU-only,
-        // preserve the same round-world experience with the CPU-safe basemap
-        // globe instead of ever showing a broken/grey Mapbox surface.
-        if (snapshot.data != true || !_globeReady) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              discoveryMap,
-              if (!_introComplete)
-                Positioned.fill(
-                  child: _CpuSafeWorldIntro(onComplete: _finishIntro),
-                ),
-            ],
-          );
+        // Do not block the actual map behind a fake loading sphere. The first
+        // paint is always a real usable discovery surface.
+        if (snapshot.connectionState != ConnectionState.done) {
+          return discoveryMap;
         }
 
+        if (!_playIntro) return discoveryMap;
+
+        // No hardware WebGL2 / no Mapbox token = no 3D globe on this browser.
+        // Skip it instead of displaying a 2D map clipped into a circle.
+        if (snapshot.data != true || !_globeReady) {
+          return discoveryMap;
+        }
+
+        _armIntroWatchdog();
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -235,163 +207,6 @@ class _WebDiscoveryMapBootstrapState
           ],
         );
       },
-    );
-  }
-}
-
-/// CPU-safe globe illusion used only when the browser cannot create the WebGL2
-/// context required by Mapbox GL. The world is still the real Mapbox/Carto
-/// raster basemap, clipped and shaded as a sphere. The underlying discovery map
-/// performs the geographic world-to-city flight at the same time.
-class _CpuSafeWorldIntro extends StatefulWidget {
-  const _CpuSafeWorldIntro({required this.onComplete});
-
-  final VoidCallback onComplete;
-
-  @override
-  State<_CpuSafeWorldIntro> createState() => _CpuSafeWorldIntroState();
-}
-
-class _CpuSafeWorldIntroState extends State<_CpuSafeWorldIntro>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 7000),
-    )
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) widget.onComplete();
-      })
-      ..forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final t = _controller.value;
-          final launch = ((t - .30) / .58).clamp(0.0, 1.0);
-          final easedLaunch = Curves.easeInOutCubic.transform(launch);
-          final fade = t <= .64
-              ? 1.0
-              : (1.0 - ((t - .64) / .30).clamp(0.0, 1.0));
-          final scale = 1.0 + easedLaunch * 1.9;
-          final rotation = -0.045 + easedLaunch * 0.08;
-
-          return Opacity(
-            opacity: fade,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final shortest = math.min(
-                  constraints.maxWidth,
-                  constraints.maxHeight,
-                );
-                final diameter = (shortest * .68).clamp(260.0, 620.0);
-
-                return Center(
-                  child: Transform.rotate(
-                    angle: rotation,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: diameter,
-                        height: diameter,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0x44000000),
-                              blurRadius: 42,
-                              spreadRadius: 6,
-                              offset: Offset(0, 18),
-                            ),
-                            BoxShadow(
-                              color: Color(0x22FFFFFF),
-                              blurRadius: 22,
-                              spreadRadius: 2,
-                              offset: Offset(-12, -12),
-                            ),
-                          ],
-                        ),
-                        child: ClipOval(
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              FlutterMap(
-                                options: const MapOptions(
-                                  initialCenter: LatLng(18, -28),
-                                  initialZoom: .58,
-                                  minZoom: .4,
-                                  maxZoom: 2.0,
-                                  interactionOptions: InteractionOptions(
-                                    flags: InteractiveFlag.none,
-                                  ),
-                                  backgroundColor: Color(0xFFDCEAF3),
-                                ),
-                                children: [
-                                  TileLayer(
-                                    urlTemplate: MapBasemap.urlTemplate(true),
-                                    subdomains: MapBasemap.subdomains,
-                                    additionalOptions:
-                                        MapBasemap.additionalOptions,
-                                    userAgentPackageName:
-                                        MapBasemap.userAgentPackageName,
-                                    tileDimension: 256,
-                                    maxNativeZoom: 19,
-                                    keepBuffer: 3,
-                                  ),
-                                ],
-                              ),
-                              const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    center: Alignment(-.30, -.34),
-                                    radius: .95,
-                                    colors: [
-                                      Color(0x00FFFFFF),
-                                      Color(0x08000000),
-                                      Color(0x52000000),
-                                    ],
-                                    stops: [.46, .74, 1],
-                                  ),
-                                ),
-                              ),
-                              const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.fromBorderSide(
-                                    BorderSide(
-                                      color: Color(0x66FFFFFF),
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
     );
   }
 }
