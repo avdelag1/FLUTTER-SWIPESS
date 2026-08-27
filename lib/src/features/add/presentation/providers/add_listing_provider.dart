@@ -13,10 +13,17 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/my_li
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 class AddListingNotifier extends Notifier<ListingDraft> {
+  String? _lastPublishNotice;
+
+  String? get lastPublishNotice => _lastPublishNotice;
+
   @override
   ListingDraft build() => const ListingDraft();
 
-  void reset() => state = const ListingDraft();
+  void reset() {
+    _lastPublishNotice = null;
+    state = const ListingDraft();
+  }
 
   void setStep(int step) =>
       state = state.copyWith(step: step, clearError: true);
@@ -156,6 +163,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   void removeVideo() => state = state.copyWith(clearVideo: true);
 
   Future<bool> publish() async {
+    _lastPublishNotice = null;
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       state = state.copyWith(
@@ -191,17 +199,27 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       final listing = await repo.createListing(payload);
+      String? documentWarning;
       if (state.requiresLegalDocuments && state.legalDocuments.isNotEmpty) {
-        await repo.uploadListingLegalDocuments(
-          userId: user.id,
-          listingId: listing.id,
-          category: state.categoryValue,
-          files: state.legalDocuments,
-        );
+        try {
+          await repo.uploadListingLegalDocuments(
+            userId: user.id,
+            listingId: listing.id,
+            category: state.categoryValue,
+            files: state.legalDocuments,
+          );
+        } catch (_) {
+          // The listing already exists at this point. Treating the entire
+          // publish as failed invites a retry and creates a duplicate listing.
+          documentWarning = 'Listing published, but one or more verification documents did not upload. Add them again from Manage listings.';
+        }
       }
       ref.invalidate(swipeListingsProvider);
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
+      _lastPublishNotice =
+          documentWarning ??
+          'Listing published — it is live on the swipe deck.';
       state = const ListingDraft();
       return true;
     } catch (error) {

@@ -274,11 +274,13 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     }
     final ok = await notifier.publish();
     if (!mounted) return;
+    final publishNotice = notifier.lastPublishNotice;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           ok
-              ? 'Listing published — it is live on the swipe deck.'
+              ? (publishNotice ??
+                    'Listing published — it is live on the swipe deck.')
               : (ref.read(addListingProvider).error ??
                     'Could not save listing'),
         ),

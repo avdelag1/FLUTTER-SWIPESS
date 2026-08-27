@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
+import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -39,6 +40,14 @@ class _AiListingBuilderScreenState
   bool _hydrated = false;
 
   static const _welcomeKey = 'hasSeenListingWelcome';
+
+  int get _maxPhotos => switch (_category) {
+    'property' => 30,
+    'yacht' => 12,
+    'worker' => 8,
+    'motorcycle' || 'bicycle' => 5,
+    _ => 5,
+  };
 
   @override
   void initState() {
@@ -90,7 +99,7 @@ class _AiListingBuilderScreenState
     setState(() {
       _photos
         ..clear()
-        ..addAll(files.take(30));
+        ..addAll(files.take(_maxPhotos));
     });
   }
 
@@ -123,6 +132,14 @@ class _AiListingBuilderScreenState
 
   Future<void> _create() async {
     if (_busy) return;
+    if (_photos.isEmpty && _description.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add at least one photo or describe your listing.'),
+        ),
+      );
+      return;
+    }
     setState(() {
       _busy = true;
       _step = 'processing';
@@ -145,12 +162,18 @@ class _AiListingBuilderScreenState
 
     Map<String, dynamic> parsed = const {};
     if (desc.isNotEmpty) {
-      parsed = await ref
-          .read(aiEdgeRepositoryProvider)
-          .extractListing(category: _category, prompt: desc, city: city);
+      try {
+        parsed = await ref
+            .read(aiEdgeRepositoryProvider)
+            .extractListing(category: _category, prompt: desc, city: city);
+      } catch (_) {
+        // AI is an accelerator, never a blocker. The user's original text and
+        // media still continue into the normal listing editor.
+        parsed = const {};
+      }
     }
 
-    final detected = parsed['category']?.toString();
+    final detected = parsed['category']?.toString().trim().toLowerCase();
     if (detected != null &&
         const {
           'property',
@@ -174,10 +197,12 @@ class _AiListingBuilderScreenState
     final descOut = parsed['description']?.toString().trim().isNotEmpty == true
         ? parsed['description'].toString().trim()
         : desc;
-    final cityOut = parsed['city']?.toString().trim().isNotEmpty == true
-        ? parsed['city'].toString().trim()
-        : city;
-    final priceOut = parsed['price']?.toString() ?? '';
+    final parsedCity = parsed['city']?.toString().trim();
+    final cityOut =
+        ListingLocations.canonicalName(parsedCity) ??
+        ListingLocations.canonicalName(city) ??
+        city;
+    final priceOut = _numericText(parsed['price']);
     final amenities = <String>[
       if (parsed['amenities'] is List)
         ...((parsed['amenities'] as List).map((e) => e.toString())),
@@ -211,7 +236,7 @@ class _AiListingBuilderScreenState
                         ? '${descOut.substring(0, 48)}…'
                         : descOut)),
         price: priceOut.isNotEmpty ? priceOut : d.price,
-        photos: [..._photos],
+        photos: _photos.take(ListingDraft(category: cat).maxPhotos).toList(),
         adjectives: adjectives.isEmpty ? d.adjectives : adjectives,
         amenities: amenities.isEmpty ? d.amenities : amenities.toSet().toList(),
         beds: parsed['beds']?.toString() ?? d.beds,
@@ -414,7 +439,12 @@ class _AiListingBuilderScreenState
                         selected: _category == c.$1,
                         onTap: () {
                           AppHaptics.selection();
-                          setState(() => _category = c.$1);
+                          setState(() {
+                            _category = c.$1;
+                            if (_photos.length > _maxPhotos) {
+                              _photos.removeRange(_maxPhotos, _photos.length);
+                            }
+                          });
                         },
                       ),
                       const SizedBox(width: 10),
@@ -423,7 +453,7 @@ class _AiListingBuilderScreenState
                 ),
               ),
               const SizedBox(height: 22),
-              Text('2. PHOTOS (${_photos.length}/30)', style: _label),
+              Text('2. PHOTOS (${_photos.length}/$_maxPhotos)', style: _label),
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: _pickPhotos,
@@ -458,7 +488,7 @@ class _AiListingBuilderScreenState
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'AI will analyze and arrange them automatically',
+                          'Photos will be attached to your generated draft',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -475,7 +505,7 @@ class _AiListingBuilderScreenState
               const SizedBox(height: 10),
               GlassTextField(
                 controller: _city,
-                hint: 'Quick search: type any city...',
+                hint: 'Enter a supported city...',
                 icon: Icons.search_rounded,
               ),
               const SizedBox(height: 6),
@@ -528,7 +558,7 @@ class _AiListingBuilderScreenState
               ),
               const SizedBox(height: 16),
               Text(
-                'SECURELY PROCESSED BY SWIPESS AI (SUPABASE EDGE · GROQ).',
+                'SECURELY PROCESSED BY SWIPESS AI (SUPABASE EDGE · MODEL FALLBACK).',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
@@ -585,6 +615,12 @@ class _AiListingBuilderScreenState
         ),
       ],
     );
+  }
+
+  String _numericText(dynamic value) {
+    if (value == null) return '';
+    final match = RegExp(r'-?\d[\d,]*(?:\.\d+)?').firstMatch(value.toString());
+    return match?.group(0)?.replaceAll(',', '') ?? '';
   }
 
   TextStyle get _label => GoogleFonts.plusJakartaSans(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
@@ -24,7 +25,7 @@ class AiEdgeRepository {
 
   static const _timeout = Duration(seconds: 60);
   static final _profileIntent = RegExp(
-    r'\b(seekers|workers|buyers|renters|people|users|pros|professionals)\b',
+    r'\b(seekers|buyers|renters|people|users|profiles|friends)\b',
     caseSensitive: false,
   );
 
@@ -114,8 +115,24 @@ class AiEdgeRepository {
       }
     }
 
-    if (rows.length > 12) rows.removeRange(0, rows.length - 12);
-    return rows;
+    if (rows.length <= 12) return rows;
+
+    // Keep the caller's system contract while trimming old conversation turns.
+    // Dropping the first rows previously removed listing-extractor and rewrite
+    // instructions from long chats, which could turn structured operations into
+    // ordinary conversational answers.
+    final systemRows = rows.where((row) => row['role'] == 'system').toList();
+    final conversationRows = rows
+        .where((row) => row['role'] != 'system')
+        .toList();
+    final systemBudget = math.min(systemRows.length, 2);
+    final conversationBudget = 12 - systemBudget;
+    return <Map<String, String>>[
+      ...systemRows.take(systemBudget),
+      ...conversationRows.skip(
+        math.max(0, conversationRows.length - conversationBudget),
+      ),
+    ];
   }
 
   /// Cap `useAIEnhanceText` → `ai-enhance-text`, with concierge fallback.
@@ -142,17 +159,20 @@ class AiEdgeRepository {
             role: 'system',
             content: type == 'profile'
                 ? 'You are an elite profile copywriter. Your ONLY job is to rewrite the user text into a '
-                  'polished, cinematic bio. Return ONLY the rewritten bio text. Do NOT greet the user, do NOT say "Here is your bio", do NOT act like a chat assistant.'
+                      'polished, cinematic bio. Return ONLY the rewritten bio text. Do NOT greet the user, do NOT say "Here is your bio", do NOT act like a chat assistant.'
                 : 'You are an elite listing architect for Swipess. Transform '
-                  'raw input into a professional, cinematic listing '
-                  'description. Return ONLY the description. Do NOT greet the user or chat.',
+                      'raw input into a professional, cinematic listing '
+                      'description. Return ONLY the description. Do NOT greet the user or chat.',
           ),
           AiChatMessage(
-            role: 'user', 
-            content: 'CRITICAL INSTRUCTION: Rewrite this text and return ONLY the new text. Do not chat with me. TEXT:\n$trimmed'
+            role: 'user',
+            content:
+                'CRITICAL INSTRUCTION: Rewrite this text and return ONLY the new text. Do not chat with me. TEXT:\n$trimmed',
           ),
         ],
-        character: type == 'profile' ? 'profile_copywriter' : 'listing_architect',
+        character: type == 'profile'
+            ? 'profile_copywriter'
+            : 'listing_architect',
         stream: false,
       );
       return reply.trim().isEmpty ? null : reply.trim();
@@ -225,11 +245,10 @@ class AiEdgeRepository {
     // personas, memory and structured tags. This function exists only so an
     // empty/malformed SSE response can never masquerade as a total AI outage.
     try {
-      final rescueRaw = await _postEdge(
-        'ai-concierge-fallback',
-        {...payload, 'stream': false},
-        stream: false,
-      );
+      final rescueRaw = await _postEdge('ai-concierge-fallback', {
+        ...payload,
+        'stream': false,
+      }, stream: false);
       final rescue = _normalizeReply(_parseConciergeReply(rescueRaw) ?? '');
       if (rescue.isNotEmpty) return rescue;
     } on AiUnavailableException catch (e) {
@@ -361,8 +380,9 @@ class AiEdgeRepository {
                 '$category. Return ONLY valid JSON and absolutely NO other text or chat.',
           ),
           AiChatMessage(
-            role: 'user', 
-            content: 'CRITICAL INSTRUCTION: Extract the following into a valid JSON object. Do not chat or say anything else. TEXT:\n$prompt'
+            role: 'user',
+            content:
+                'CRITICAL INSTRUCTION: Extract the following into a valid JSON object. Do not chat or say anything else. TEXT:\n$prompt',
           ),
         ],
         character: 'listing_extractor',

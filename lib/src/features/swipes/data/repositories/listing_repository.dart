@@ -325,16 +325,25 @@ class ListingRepository {
             bytes,
             fileOptions: FileOptions(contentType: contentType, upsert: false),
           );
-      await _client.from('listing_legal_documents').insert({
-        'listing_id': listingId,
-        'owner_id': userId,
-        'file_name': file.name,
-        'file_path': path,
-        'mime_type': contentType,
-        'file_size': bytes.lengthInBytes,
-        'document_type': _listingLegalDocumentType(category, file.name),
-        'status': 'pending',
-      });
+      try {
+        await _client.from('listing_legal_documents').insert({
+          'listing_id': listingId,
+          'owner_id': userId,
+          'file_name': file.name,
+          'file_path': path,
+          'mime_type': contentType,
+          'file_size': bytes.lengthInBytes,
+          'document_type': _listingLegalDocumentType(category, file.name),
+          'status': 'pending',
+        });
+      } catch (_) {
+        // Never leave a private document in Storage without its ownership and
+        // review row. Removing this just-uploaded path makes retries safe.
+        try {
+          await _client.storage.from('legal-documents').remove([path]);
+        } catch (_) {}
+        rethrow;
+      }
     }
     try {
       await _client
