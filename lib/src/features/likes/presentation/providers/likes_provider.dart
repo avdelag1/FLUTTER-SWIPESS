@@ -89,13 +89,18 @@ Future<Set<String>> _fetchLikedTargetIds(String targetType) async {
 /// one old/saved listing has malformed or legacy columns, which used to make the
 /// map fail open and show liked items again. These providers query the canonical
 /// `likes` decision rows directly so a right-swipe always stays excluded.
-final likedListingIdsProvider = FutureProvider<Set<String>>(
-  (ref) => _fetchLikedTargetIds('listing'),
-);
+final likedListingIdsProvider = FutureProvider<Set<String>>((ref) async {
+  // The map save flow already invalidates likedListingsProvider. Watching it
+  // here makes the canonical ID set refresh in the same frame, so a saved item
+  // cannot reappear after closing/reopening Map.
+  ref.watch(likedListingsProvider);
+  return _fetchLikedTargetIds('listing');
+});
 
-final likedPeopleIdsProvider = FutureProvider<Set<String>>(
-  (ref) => _fetchLikedTargetIds('profile'),
-);
+final likedPeopleIdsProvider = FutureProvider<Set<String>>((ref) async {
+  ref.watch(likedPeopleProvider);
+  return _fetchLikedTargetIds('profile');
+});
 
 /// Events use the same generic likes table but do not need a full event model
 /// just to keep discovery unseen-only. The ID set is enough for every map
