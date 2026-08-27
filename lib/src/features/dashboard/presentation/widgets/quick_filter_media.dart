@@ -79,13 +79,17 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   bool _holdsBudgetSlot = false;
   bool _binding = false;
   bool _routeActive = true;
+  bool _videoPreviewEnabled = true;
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
 
+  bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
+  bool get _hasVideo => _pool.any(isQuickFilterVideoUrl);
+
   List<String> get _sources {
     if (_pool.isEmpty) return const <String>[];
-    if (widget.enableVideo) return _pool;
+    if (_videoEnabled) return _pool;
     final stills = _pool
         .where((u) => !isQuickFilterVideoUrl(u))
         .toList(growable: false);
@@ -159,6 +163,22 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     _index = 0;
   }
 
+  void _toggleVideoPreview() {
+    AppHaptics.selection();
+    final next = !_videoPreviewEnabled;
+    setState(() {
+      _videoPreviewEnabled = next;
+      _index = 0;
+    });
+    if (!next) {
+      // Releasing the controller immediately saves CPU/GPU/network instead of
+      // merely hiding a video that is still decoding behind the still image.
+      _disposeVideo();
+    } else {
+      _scheduleVisibilityCheck();
+    }
+  }
+
   void _scheduleVisibilityCheck() {
     if (!mounted || !_routeActive || _visibilityCheckScheduled) return;
     _visibilityCheckScheduled = true;
@@ -191,7 +211,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
     if (_sources.isEmpty) return;
     final current = _sources[_index % _sources.length];
-    if (!widget.enableVideo || !isQuickFilterVideoUrl(current)) {
+    if (!_videoEnabled || !isQuickFilterVideoUrl(current)) {
       _pauseForCoordinator();
       return;
     }
@@ -222,7 +242,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   Future<void> _playIfReady() async {
-    if (!_routeActive) return;
+    if (!_routeActive || !_videoEnabled) return;
     final player = _video;
     if (player == null || !player.value.isInitialized) {
       await _syncVideo(autoPlay: true);
@@ -259,9 +279,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   Future<void> _syncVideo({required bool autoPlay}) async {
-    if (!_routeActive || _binding || _sources.isEmpty) return;
+    if (!_routeActive || !_videoEnabled || _binding || _sources.isEmpty) return;
     final url = _sources[_index % _sources.length];
-    if (!widget.enableVideo || !isQuickFilterVideoUrl(url)) {
+    if (!_videoEnabled || !isQuickFilterVideoUrl(url)) {
       _disposeVideo();
       if (mounted) setState(() {});
       return;
@@ -286,7 +306,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
     try {
       await next.initialize();
-      if (!mounted || !_routeActive || _boundVideoUrl != url) {
+      if (!mounted || !_routeActive || !_videoEnabled || _boundVideoUrl != url) {
         await next.setVolume(0);
         await next.dispose();
         return;
@@ -317,7 +337,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_routeActive && _visibleFraction >= 0.50) {
+    if (_videoEnabled && _routeActive && _visibleFraction >= 0.50) {
       final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
       player.setVolume(soundOn && (unlocked || !kIsWeb) ? 1 : 0);
     } else {
@@ -327,14 +347,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   String? _fallbackStillUrl() {
-    final sources = _sources;
-    if (sources.isEmpty) return null;
+    if (_pool.isEmpty) return null;
 
-    for (var distance = 1; distance < sources.length; distance++) {
-      final before = sources[(_index - distance) % sources.length];
+    for (var distance = 1; distance <= _pool.length; distance++) {
+      final before = _pool[(_index - distance) % _pool.length];
       if (!isQuickFilterVideoUrl(before)) return before;
 
-      final after = sources[(_index + distance) % sources.length];
+      final after = _pool[(_index + distance) % _pool.length];
       if (!isQuickFilterVideoUrl(after)) return after;
     }
     return null;
@@ -382,6 +401,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
 
   Widget _buildMedia(String url) {
     if (isQuickFilterVideoUrl(url)) {
+      if (!_videoEnabled) {
+        final fallback = _fallbackStillUrl();
+        if (fallback != null) return _buildStill(fallback);
+        return const ColoredBox(color: Color(0xFF15171C));
+      }
+
       final player = _video;
       if (player != null &&
           player.value.isInitialized &&
@@ -445,7 +470,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
           AnimatedSwitcher(
             duration: Duration(milliseconds: kIsWeb ? 120 : 180),
             child: KeyedSubtree(
-              key: ValueKey(current),
+              key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
               child: _buildMedia(current),
             ),
           ),
@@ -473,6 +498,42 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                 ],
               ),
             ),
+          if (widget.enableVideo && _hasVideo)
+            Positioned(
+              top: 5,
+              right: 5,
+              child: Semantics(
+                button: true,
+                label: _videoPreviewEnabled
+                    ? 'Turn video preview off'
+                    : 'Turn video preview on',
+                child: Tooltip(
+                  message: _videoPreviewEnabled
+                      ? 'Video preview on'
+                      : 'Video preview off',
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _toggleVideoPreview,
+                    child: SizedBox(
+                      width: 34,
+                      height: 34,
+                      child: Center(
+                        child: Icon(
+                          _videoPreviewEnabled
+                              ? Icons.videocam_rounded
+                              : Icons.videocam_off_rounded,
+                          color: Colors.white,
+                          size: 18,
+                          shadows: const [
+                            Shadow(color: Colors.black87, blurRadius: 7),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (widget.showMute)
             Positioned(
               bottom: 8,
@@ -483,7 +544,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                   unlockDeckMedia();
                   ref.read(deckSoundOnProvider.notifier).toggle();
                   _onSoundChanged(ref.read(deckSoundOnProvider));
-                  if (_routeActive &&
+                  if (_videoEnabled &&
+                      _routeActive &&
                       ref.read(deckSoundOnProvider) &&
                       _visibleFraction >= 0.50) {
                     _playIfReady();
