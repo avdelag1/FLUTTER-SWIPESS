@@ -32,11 +32,12 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   final _pages = PageController();
   int _index = 0;
   String _category = 'All';
-  bool _chromeVisible = true;
+  late bool _chromeVisible;
   bool _chromePinned = false;
   Timer? _hideTimer;
   String? _handoffEventId;
   Duration? _handoffPosition;
+  VideoPlayerController? _handoffController;
   bool _handoffApplied = false;
 
   @override
@@ -45,7 +46,18 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final handoff = EventPreviewHandoff.take();
     _handoffEventId = handoff?.eventId;
     _handoffPosition = handoff?.position;
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showChrome());
+    _handoffController = handoff?.controller;
+
+    // A dashboard-preview launch starts completely immersive on frame one. The
+    // video itself is already running and controls can be summoned with a tap.
+    _chromeVisible = handoff == null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (handoff == null) {
+        _showChrome();
+      } else {
+        _hideChrome();
+      }
+    });
   }
 
   @override
@@ -192,6 +204,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     initialPosition: event.id == _handoffEventId
                         ? _handoffPosition
                         : null,
+                    initialController: event.id == _handoffEventId
+                        ? _handoffController
+                        : null,
                     onToggleChrome: _toggleChrome,
                     onChromeInteraction: _touchChrome,
                     onOpenLikes: () {
@@ -301,6 +316,7 @@ class _EventPage extends ConsumerStatefulWidget {
     required this.onOpenLikes,
     required this.onOpen,
     this.initialPosition,
+    this.initialController,
   });
 
   final Event event;
@@ -313,6 +329,7 @@ class _EventPage extends ConsumerStatefulWidget {
   final VoidCallback onOpenLikes;
   final VoidCallback onOpen;
   final Duration? initialPosition;
+  final VideoPlayerController? initialController;
 
   @override
   ConsumerState<_EventPage> createState() => _EventPageState();
@@ -330,14 +347,28 @@ class _EventPageState extends ConsumerState<_EventPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.shouldLoadVideo && _hasVideo) unawaited(_bindVideo());
+    final transferred = widget.initialController;
+    if (transferred != null && transferred.value.isInitialized) {
+      _player = transferred;
+      _initialApplied = true;
+      unawaited(_adoptTransferredVideo(transferred));
+    } else if (widget.shouldLoadVideo && _hasVideo) {
+      unawaited(_bindVideo());
+    }
   }
 
   @override
   void didUpdateWidget(covariant _EventPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.shouldLoadVideo && _hasVideo && _player == null) {
-      unawaited(_bindVideo());
+      final transferred = widget.initialController;
+      if (transferred != null && transferred.value.isInitialized) {
+        _player = transferred;
+        _initialApplied = true;
+        unawaited(_adoptTransferredVideo(transferred));
+      } else {
+        unawaited(_bindVideo());
+      }
     }
     if (!widget.shouldLoadVideo && _player != null) {
       unawaited(_player?.dispose());
@@ -349,6 +380,25 @@ class _EventPageState extends ConsumerState<_EventPage> {
       unawaited(p.play());
     } else {
       unawaited(p.pause());
+    }
+  }
+
+  Future<void> _adoptTransferredVideo(VideoPlayerController player) async {
+    try {
+      // The dashboard already initialized and buffered this exact controller.
+      // Do not seek or reconnect: preserve the current frame/position and only
+      // switch it into the full-screen feed's looping/audio behavior.
+      await player.setLooping(true);
+      await player.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
+      if (widget.active) await player.play();
+      if (mounted && identical(_player, player)) setState(() {});
+    } catch (_) {
+      if (!mounted || !identical(_player, player)) return;
+      try {
+        await player.dispose();
+      } catch (_) {}
+      _player = null;
+      if (widget.shouldLoadVideo && _hasVideo) unawaited(_bindVideo());
     }
   }
 
