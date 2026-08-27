@@ -20,7 +20,7 @@ abstract final class MapBasemap {
 
   static String urlTemplate(bool isLight) {
     if (_mapbox) {
-      final style = isLight ? 'light-v11' : 'dark-v11';
+      final style = isLight ? 'streets-v12' : 'dark-v11';
       return 'https://api.mapbox.com/styles/v1/mapbox/$style/tiles/256/{z}/{x}/{y}@2x?access_token={accessToken}';
     }
     return isLight ? fallbackLightUrl : fallbackDarkUrl;

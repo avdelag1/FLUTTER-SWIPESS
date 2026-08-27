@@ -148,15 +148,15 @@ const _filters = <_FilterDef>[
   _FilterDef('properties', 'Properties', Icons.home_outlined),
   _FilterDef('services', 'Services', Icons.handyman_outlined),
   _FilterDef('dining', 'Dining', Icons.restaurant_rounded),
-  _FilterDef('jets', 'Jets', Icons.flight_rounded),
-  _FilterDef('yachts', 'Yachts', Icons.sailing_rounded),
-  _FilterDef('motorcycles', 'Motos', Icons.two_wheeler_rounded),
-  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike_rounded),
-  _FilterDef('roommates', 'Roommates', Icons.group_outlined),
-  _FilterDef('seekers', 'Seekers', Icons.travel_explore_rounded),
-  _FilterDef('buyers', 'Buyers', Icons.shopping_bag_outlined),
-  _FilterDef('renters', 'Renters', Icons.key_rounded),
-  _FilterDef('people', 'People', Icons.person_outline_rounded),
+  _FilterDef('jets', 'Jets', Icons.flight),
+  _FilterDef('yachts', 'Yachts', Icons.directions_boat),
+  _FilterDef('motorcycles', 'Motos', Icons.motorcycle),
+  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike),
+  _FilterDef('roommates', 'Roommates', Icons.people),
+  _FilterDef('seekers', 'Seekers', Icons.search),
+  _FilterDef('buyers', 'Buyers', Icons.shopping_bag),
+  _FilterDef('renters', 'Renters', Icons.key),
+  _FilterDef('people', 'People', Icons.person),
 ];
 
 class _WebDiscoveryMapScreenV7State
@@ -465,17 +465,7 @@ class _WebDiscoveryMapScreenV7State
     }
     setState(() {
       _selected = item.key;
-      if (_trayLevel == 0) _trayLevel = 1;
     });
-    try {
-      final targetZoom = math.max(_zoom, 13.2).toDouble();
-      _map.move(
-        LatLng(item.lat, item.lng),
-        targetZoom,
-        offset: const Offset(0, 80),
-      );
-      _zoom = targetZoom;
-    } catch (_) {}
     final index = items.indexWhere((e) => e.key == item.key);
     if (index >= 0 && _cards.hasClients) {
       _cards.animateTo(
@@ -601,7 +591,15 @@ class _WebDiscoveryMapScreenV7State
                       useRadiusInMeter: true,
                       color: const Color(0x123B82F6),
                       borderColor: const Color(0x88147DFF),
-                      borderStrokeWidth: 1.2,
+                      borderStrokeWidth: 1.5,
+                    ),
+                    CircleMarker(
+                      point: LatLng(loc.latitude, loc.longitude),
+                      radius: 8.0,
+                      useRadiusInMeter: false,
+                      color: const Color(0xFF3B82F6),
+                      borderColor: Colors.white,
+                      borderStrokeWidth: 2,
                     ),
                   ],
                 ),
@@ -617,12 +615,12 @@ class _WebDiscoveryMapScreenV7State
                   for (final item in items)
                     Marker(
                       point: LatLng(item.lat, item.lng),
-                      width: item.key == _selected ? 60 : 52,
-                      height: item.key == _selected ? 70 : 62,
+                      width: item.key == _selected ? 240 : 52,
+                      height: item.key == _selected ? 140 : 62,
                       rotate: true,
                       alignment: Alignment.bottomCenter,
                       child: _Pin(
-                        kind: item.kind,
+                        item: item,
                         selected: item.key == _selected,
                         onTap: () => _select(item, items),
                       ),
@@ -719,13 +717,6 @@ class _WebDiscoveryMapScreenV7State
                     tooltip: 'Recenter on ${loc.city}',
                     icon: Icons.my_location_rounded,
                     onTap: () => _recenter(loc),
-                  ),
-                  const SizedBox(height: 12),
-                  _CircleAction(
-                    tooltip: 'Replay world-to-city flight',
-                    icon: Icons.flight_takeoff_rounded,
-                    dark: true,
-                    onTap: () => _startWorldFlight(loc),
                   ),
                   const SizedBox(height: 12),
                   _CircleAction(
@@ -849,14 +840,13 @@ class _Header extends StatelessWidget {
             itemBuilder: (context, index) {
               final f = _filters[index];
               final active = f.id == filter;
-              return Material(
-                color: active ? Colors.black : const Color(0xF8FFFFFF),
-                borderRadius: BorderRadius.circular(24),
-                elevation: 2,
-                shadowColor: Colors.black12,
-                child: InkWell(
+              return GestureDetector(
+                onTap: () => onFilter(f.id),
+                child: Material(
+                  color: active ? Colors.black87 : Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  onTap: () => onFilter(f.id),
+                  elevation: 2,
+                  shadowColor: Colors.black12,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -1033,67 +1023,73 @@ class _LocationDot extends StatelessWidget {
 
 class _Pin extends StatelessWidget {
   const _Pin({
-    required this.kind,
+    required this.item,
     required this.selected,
     required this.onTap,
   });
 
-  final _Kind kind;
+  final _Item item;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: kind.label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedScale(
-          scale: selected ? 1.14 : 1,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutBack,
-          child: SizedBox(
-            width: 52,
-            height: 62,
-            child: Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                Positioned(
-                  top: 31,
-                  child: Transform.rotate(
-                    angle: math.pi / 4,
-                    child: Container(
-                      width: 19,
-                      height: 19,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x30000000),
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
+    final kind = item.kind;
+    
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          // The actual Pin
+          AnimatedScale(
+            scale: selected ? 1.14 : 1,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutBack,
+            child: SizedBox(
+              width: 52,
+              height: 62,
+              child: Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  Positioned(
+                    top: 31,
+                    child: Transform.rotate(
+                      angle: math.pi / 4,
+                      child: Container(
+                        width: 19,
+                        height: 19,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x30000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x30000000),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x30000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: kind.color,
@@ -1105,7 +1101,54 @@ class _Pin extends StatelessWidget {
               ],
             ),
           ),
-        ),
+          
+          // The Popup Window (if selected)
+          if (selected)
+            Positioned(
+              bottom: 66, // Place above the pin
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x30000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black87,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1128,14 +1171,13 @@ class _CircleAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: dark ? Colors.black : Colors.white,
-        shape: const CircleBorder(),
-        elevation: 4,
-        shadowColor: Colors.black26,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Material(
+          color: dark ? Colors.black : Colors.white,
+          shape: const CircleBorder(),
+          elevation: 4,
+          shadowColor: Colors.black26,
           child: SizedBox(
             width: 52,
             height: 52,
@@ -1150,6 +1192,7 @@ class _CircleAction extends StatelessWidget {
     );
   }
 }
+
 
 class _Tray extends StatelessWidget {
   const _Tray({
