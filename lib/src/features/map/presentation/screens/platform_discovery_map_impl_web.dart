@@ -121,7 +121,7 @@ class _WebDiscoveryMapBootstrapState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final active = TickerMode.of(context);
+    final active = TickerMode.valuesOf(context).enabled;
     if (_lastRouteActive == active) return;
     _lastRouteActive = active;
     if (active) {
