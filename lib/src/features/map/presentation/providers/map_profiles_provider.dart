@@ -9,7 +9,7 @@ import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final userId = ref.watch(currentUserProvider)?.id;
-  final likedPeopleFuture = ref.watch(likedPeopleProvider.future);
+  final likedIdsFuture = ref.watch(likedPeopleIdsProvider.future);
   final client = Supabase.instance.client;
   final limit = loc.radiusKm >= 5000
       ? 1000
@@ -62,13 +62,12 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final inArea = _forMap(merged.values.toList(growable: false), loc);
   final discoverable = await _filterDiscoverable(client, inArea);
 
-  // People already liked/saved are part of the user's Likes library, not map
-  // discovery. Remove them here so every map renderer (web/iOS/Android) gets
-  // the same unseen-only profile feed automatically.
+  // Keep the map unseen-only by filtering against the raw canonical liked IDs.
+  // Do not rebuild complete ProfileLike objects just to know which IDs to hide;
+  // legacy/malformed profile rows must never make liked people reappear.
   try {
-    final liked = await likedPeopleFuture;
-    if (liked.isEmpty) return discoverable;
-    final likedIds = liked.map((person) => person.userId).toSet();
+    final likedIds = await likedIdsFuture;
+    if (likedIds.isEmpty) return discoverable;
     return discoverable
         .where((profile) => !likedIds.contains(profile.id))
         .toList(growable: false);
