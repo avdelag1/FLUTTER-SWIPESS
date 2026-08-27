@@ -702,8 +702,8 @@ class _WebDiscoveryMapScreenV8State
                   markers: [
                     Marker(
                       point: LatLng(loc.latitude, loc.longitude),
-                      width: 32,
-                      height: 32,
+                      width: 48,
+                      height: 48,
                       rotate: true,
                       child: const _LocationDot(),
                     ),
@@ -1146,24 +1146,83 @@ class _HeaderCircle extends StatelessWidget {
   }
 }
 
-class _LocationDot extends StatelessWidget {
+class _LocationDot extends StatefulWidget {
   const _LocationDot();
 
   @override
+  State<_LocationDot> createState() => _LocationDotState();
+}
+
+class _LocationDotState extends State<_LocationDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 17,
-        height: 17,
-        decoration: BoxDecoration(
-          color: const Color(0xFF147DFF),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: const [
-            BoxShadow(color: Color(0x44000000), blurRadius: 10),
-          ],
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final pulse = math.sin(t * math.pi * 2) * 0.5 + 0.5;
+        final ringScale = 1.0 + pulse * 1.8;
+        final ringOpacity = (0.35 - pulse * 0.30).clamp(0.0, 1.0);
+
+        return Center(
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Breathing outer ring
+                Transform.scale(
+                  scale: ringScale,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color.fromRGBO(20, 125, 255, ringOpacity),
+                    ),
+                  ),
+                ),
+                // Core blue dot
+                Container(
+                  width: 17,
+                  height: 17,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF147DFF),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color.fromRGBO(20, 125, 255, 0.3 + pulse * 0.2),
+                        blurRadius: 8 + pulse * 6,
+                        spreadRadius: pulse * 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

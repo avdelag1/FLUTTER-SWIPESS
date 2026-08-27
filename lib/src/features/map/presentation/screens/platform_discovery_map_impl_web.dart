@@ -167,9 +167,74 @@ class _WebDiscoveryMapBootstrapState
 
   @override
   Widget build(BuildContext context) {
-    return WebDiscoveryMapScreenV5(
-      onClose: widget.onClose,
-      showCitiesOnOpen: widget.showCitiesOnOpen,
+    return FutureBuilder<bool>(
+      future: _mapboxReady,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const ColoredBox(
+            color: Color(0xFFF5F8FA),
+            child: Center(
+              child: SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final discoveryMap = WebDiscoveryMapScreenV5(
+          onClose: widget.onClose,
+          showCitiesOnOpen: widget.showCitiesOnOpen,
+        );
+
+        // Returning to Map later in the same running app goes straight back to
+        // the existing discovery experience. No repeated intro interruption.
+        if (!_playIntro) return discoveryMap;
+
+        _armIntroWatchdog();
+
+        // A true Mapbox sphere requires WebGL2. If the browser is CPU-only,
+        // preserve the same round-world experience with the CPU-safe basemap
+        // globe instead of ever showing a broken/grey Mapbox surface.
+        if (snapshot.data != true || !_globeReady) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              discoveryMap,
+              if (!_introComplete)
+                Positioned.fill(
+                  child: _CpuSafeWorldIntro(onComplete: _finishIntro),
+                ),
+            ],
+          );
+        }
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            discoveryMap,
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 520),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: _introComplete
+                    ? const SizedBox.expand(
+                        key: ValueKey('mapbox-world-intro-complete'),
+                      )
+                    : MapboxWorldIntroScreen(
+                        key: const ValueKey('mapbox-world-intro'),
+                        onComplete: _finishIntro,
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
