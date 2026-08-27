@@ -544,23 +544,33 @@ class _EventPageState extends ConsumerState<_EventPage> {
         fit: StackFit.expand,
         children: [
           if (ready)
-            FittedBox(
-              fit: BoxFit.cover,
-              child: SizedBox(
-                width: player.value.size.width,
-                height: player.value.size.height,
-                child: VideoPlayer(player),
+            AnimatedScale(
+              scale: widget.chromeVisible ? 1.0 : 1.06,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: player.value.size.width,
+                  height: player.value.size.height,
+                  child: VideoPlayer(player),
+                ),
               ),
             )
           else if (image.isNotEmpty)
-            Image.network(
-              image,
-              fit: BoxFit.cover,
-              cacheWidth: (MediaQuery.sizeOf(context).width * 2)
-                  .round()
-                  .clamp(640, 1800),
-              errorBuilder: (_, _, _) =>
-                  const ColoredBox(color: Color(0xFF16161C)),
+            AnimatedScale(
+              scale: widget.chromeVisible ? 1.0 : 1.06,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              child: Image.network(
+                image,
+                fit: BoxFit.cover,
+                cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                    .round()
+                    .clamp(640, 1800),
+                errorBuilder: (_, _, _) =>
+                    const ColoredBox(color: Color(0xFF16161C)),
+              ),
             )
           else
             const ColoredBox(color: Color(0xFF16161C)),

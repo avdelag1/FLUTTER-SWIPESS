@@ -345,7 +345,7 @@ class _WebDiscoveryMapScreenV8State
     if (permission == LocationPermission.deniedForever) return;
 
     final position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.medium,
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.best),
     );
     
     if (mounted) {

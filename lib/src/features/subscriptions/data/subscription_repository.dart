@@ -107,7 +107,11 @@ class SubscriptionRepository {
           )
           .eq('campaign_key', 'new_user_premium_trial')
           .maybeSingle();
-      if (row == null) return null;
+      if (row == null) {
+        final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
+        if (createdAt != null) return _addCalendarMonths(createdAt, 3);
+        return null;
+      }
 
       final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
       final resetAt = DateTime.tryParse(
@@ -137,6 +141,8 @@ class SubscriptionRepository {
       )).toInt();
       return _addCalendarMonths(accessStartsAt, months);
     } catch (_) {
+      final createdAt = DateTime.tryParse(user.createdAt)?.toUtc();
+      if (createdAt != null) return _addCalendarMonths(createdAt, 3);
       return null;
     }
   }

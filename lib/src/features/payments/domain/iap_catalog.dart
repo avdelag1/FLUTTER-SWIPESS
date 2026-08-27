@@ -25,7 +25,7 @@ abstract final class IapCatalog {
     ),
     IapOffer(
       id: 'client-unlimited-6-months',
-      name: 'Semi-Annual',
+      name: '6 Months',
       label: 'LIVE LOCAL',
       appleProductId: 'Swipess.plus.semestral.v3',
       googleProductId: 'swipess.plus.semestral.v2',
@@ -46,7 +46,7 @@ abstract final class IapCatalog {
     ),
     IapOffer(
       id: 'client-unlimited-1-year',
-      name: 'Yearly',
+      name: '1 Year Unlimited',
       label: 'PRO',
       appleProductId: 'Swipess.plus.annual.v3',
       googleProductId: 'swipess.plus.annual.v2',
