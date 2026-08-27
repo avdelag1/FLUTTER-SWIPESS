@@ -38,6 +38,71 @@ class LikesRepository {
 
   final SupabaseClient _client;
 
+  /// Map hearts use the same `likes` rows as the swipe deck, so saving from
+  /// Map immediately becomes part of the existing Likes library and the item
+  /// disappears from discovery on the next provider refresh.
+  Future<void> likeTarget({
+    required String targetType,
+    required String targetId,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null || targetId.trim().isEmpty) return;
+
+    final existing = await _client
+        .from('likes')
+        .select('target_id')
+        .eq('user_id', userId)
+        .eq('target_id', targetId)
+        .eq('target_type', targetType)
+        .maybeSingle();
+
+    if (existing != null) {
+      await _client
+          .from('likes')
+          .update({
+            'direction': 'right',
+            'dismiss_count': 0,
+            'dismissed_at': null,
+          })
+          .eq('user_id', userId)
+          .eq('target_id', targetId)
+          .eq('target_type', targetType);
+      return;
+    }
+
+    await _client.from('likes').insert({
+      'user_id': userId,
+      'target_id': targetId,
+      'target_type': targetType,
+      'direction': 'right',
+      'dismiss_count': 0,
+    });
+  }
+
+  Future<void> likeListing(String listingId) =>
+      likeTarget(targetType: 'listing', targetId: listingId);
+
+  Future<void> likePerson(String userId) =>
+      likeTarget(targetType: 'profile', targetId: userId);
+
+  Future<void> likeEvent(String eventId) =>
+      likeTarget(targetType: 'event', targetId: eventId);
+
+  Future<Set<String>> fetchLikedEventIds() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return const <String>{};
+    final rows = await _client
+        .from('likes')
+        .select('target_id')
+        .eq('user_id', userId)
+        .eq('target_type', 'event')
+        .eq('direction', 'right');
+    return (rows as List)
+        .map((row) => (row as Map<String, dynamic>)['target_id'] as String?)
+        .whereType<String>()
+        .toSet();
+  }
+
   Future<List<Listing>> fetchLikedListings() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return [];
@@ -125,6 +190,21 @@ class LikesRepository {
         .eq('user_id', userId)
         .eq('target_id', listingId)
         .eq('target_type', 'listing');
+  }
+
+  Future<void> removeLikedEvent(String eventId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    await _client
+        .from('likes')
+        .update({
+          'direction': 'left',
+          'dismiss_count': 1,
+          'dismissed_at': DateTime.now().toIso8601String(),
+        })
+        .eq('user_id', userId)
+        .eq('target_id', eventId)
+        .eq('target_type', 'event');
   }
 
   /// Capacitor OwnerInterestedClients — people who liked my listings.
