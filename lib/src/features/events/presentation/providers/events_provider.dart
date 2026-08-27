@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/data/repositories/event_repository.dart';
 
@@ -24,7 +25,29 @@ class EventsNotifier extends AsyncNotifier<List<Event>> {
   @override
   Future<List<Event>> build() async {
     final repo = ref.read(eventRepositoryProvider);
-    return repo.fetchEvents();
+    final hideSavedOnMap = ref.watch(
+      overlayModalsProvider.select((state) => state.showPassportMap),
+    );
+    final savedFuture =
+        hideSavedOnMap ? ref.watch(favoritedEventsProvider.future) : null;
+
+    final events = await repo.fetchEvents();
+    if (!hideSavedOnMap || savedFuture == null) return events;
+
+    // The map is an unseen-discovery surface. Events the user already saved
+    // stay available in Likes, but are removed from the active map feed so the
+    // pins are always new things to discover.
+    try {
+      final saved = await savedFuture;
+      if (saved.isEmpty) return events;
+      final savedIds = saved.map((event) => event.id).toSet();
+      return events
+          .where((event) => !savedIds.contains(event.id))
+          .toList(growable: false);
+    } catch (_) {
+      // Never blank the public events feed because the Likes read failed.
+      return events;
+    }
   }
 
   Future<void> refresh() async {
