@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
 final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
+  final likedListingsFuture = ref.watch(likedListingsProvider.future);
   final client = Supabase.instance.client;
   final limit = loc.radiusKm >= 5000
       ? 1000
@@ -50,7 +52,22 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   }
 
   final inArea = _forMap(merged.values.toList(growable: false), loc);
-  return _filterDiscoverable(client, inArea);
+  final discoverable = await _filterDiscoverable(client, inArea);
+
+  // The discovery map is for finding something new. Anything the current user
+  // already liked/saved belongs in Likes and must not be shown again as a map
+  // discovery pin or tray card.
+  try {
+    final liked = await likedListingsFuture;
+    if (liked.isEmpty) return discoverable;
+    final likedIds = liked.map((listing) => listing.id).toSet();
+    return discoverable
+        .where((listing) => !likedIds.contains(listing.id))
+        .toList(growable: false);
+  } catch (_) {
+    // A temporary Likes read failure must not make the entire map unavailable.
+    return discoverable;
+  }
 });
 
 Future<List<Listing>> _filterDiscoverable(
