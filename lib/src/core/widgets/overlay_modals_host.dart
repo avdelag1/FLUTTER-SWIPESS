@@ -26,12 +26,20 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   void initState() {
     super.initState();
     _router = ref.read(appRouterProvider);
-    _lastRoute = _router.state.uri.toString();
+
+    // Do not read GoRouter.state here. This host is created above the routed
+    // child, so the router can still have an empty match list during startup.
+    // Reading state at that moment throws "Bad state: No element" and replaces
+    // the whole web app with Flutter's grey error surface.
+    _lastRoute = _router.routeInformationProvider.value.uri.toString();
     _router.routeInformationProvider.addListener(_handleRouteChange);
   }
 
   void _handleRouteChange() {
-    final nextRoute = _router.state.uri.toString();
+    // RouteInformationProvider is safe even while GoRouter is transitioning
+    // between match lists; GoRouter.state is not.
+    final nextRoute =
+        _router.routeInformationProvider.value.uri.toString();
     if (nextRoute == _lastRoute) return;
     _lastRoute = nextRoute;
     if (!mounted) return;
@@ -60,10 +68,17 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
         if (modals.showVapId) const VapIdModal(),
         if (modals.showPassportMap)
           Positioned.fill(
-            child: PlatformDiscoveryMapScreen(
-              onClose: () =>
-                  ref.read(overlayModalsProvider.notifier).closePassportMap(),
-              showCitiesOnOpen: modals.mapShowCities,
+            // Only the global map overlay needs an inherited GoRouter because
+            // it lives beside (not under) the routed child. Keep this scope
+            // local so the app itself never gets a duplicate router ancestor.
+            child: InheritedGoRouter(
+              goRouter: _router,
+              child: PlatformDiscoveryMapScreen(
+                onClose: () => ref
+                    .read(overlayModalsProvider.notifier)
+                    .closePassportMap(),
+                showCitiesOnOpen: modals.mapShowCities,
+              ),
             ),
           ),
         if (modals.showConcierge)
