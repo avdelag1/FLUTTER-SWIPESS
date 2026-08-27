@@ -149,15 +149,15 @@ const _filters = <_FilterDef>[
   _FilterDef('properties', 'Properties', Icons.home_outlined),
   _FilterDef('services', 'Services', Icons.handyman_outlined),
   _FilterDef('dining', 'Dining', Icons.restaurant_rounded),
-  _FilterDef('jets', 'Jets', Icons.flight_rounded),
-  _FilterDef('yachts', 'Yachts', Icons.sailing_rounded),
-  _FilterDef('motorcycles', 'Motos', Icons.two_wheeler_rounded),
-  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike_rounded),
-  _FilterDef('roommates', 'Roommates', Icons.group_outlined),
-  _FilterDef('seekers', 'Seekers', Icons.travel_explore_rounded),
-  _FilterDef('buyers', 'Buyers', Icons.shopping_bag_outlined),
-  _FilterDef('renters', 'Renters', Icons.key_rounded),
-  _FilterDef('people', 'People', Icons.person_outline_rounded),
+  _FilterDef('jets', 'Jets', Icons.flight),
+  _FilterDef('yachts', 'Yachts', Icons.directions_boat),
+  _FilterDef('motorcycles', 'Motos', Icons.motorcycle),
+  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike),
+  _FilterDef('roommates', 'Roommates', Icons.people),
+  _FilterDef('seekers', 'Seekers', Icons.search),
+  _FilterDef('buyers', 'Buyers', Icons.shopping_bag),
+  _FilterDef('renters', 'Renters', Icons.key),
+  _FilterDef('people', 'People', Icons.person),
 ];
 
 class _WebDiscoveryMapScreenV8State
@@ -179,7 +179,7 @@ class _WebDiscoveryMapScreenV8State
   String _filter = 'all';
   String _query = '';
   String? _selected;
-  int _trayLevel = 0;
+  int _trayLevel = -1;
   double _zoom = 11.2;
 
   double _fromLat = 18;
@@ -223,6 +223,7 @@ class _WebDiscoveryMapScreenV8State
   }
 
   double get _trayHeight => switch (_trayLevel) {
+        -1 => 0,
         0 => 52,
         2 => 318,
         _ => 198,
@@ -773,6 +774,17 @@ class _WebDiscoveryMapScreenV8State
                   },
                   onClose: widget.onClose ??
                       () => context.go(AppPaths.clientDashboard),
+                  trayVisible: _trayLevel >= 0,
+                  onToggleTray: () {
+                    setState(() {
+                      if (_trayLevel >= 0) {
+                        _trayLevel = -1;
+                      } else {
+                        _trayLevel = 0;
+                      }
+                      _menuOpen = false;
+                    });
+                  },
                 ),
               ),
             if (_citiesOpen)
@@ -807,24 +819,25 @@ class _WebDiscoveryMapScreenV8State
                 onTap: () => _recenter(loc),
               ),
             ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: pad.bottom + 12,
-              child: _Tray(
-                city: loc.city,
-                items: items,
-                controller: _cards,
-                selectedKey: _selected,
-                height: _trayHeight,
-                level: _trayLevel,
-                onTap: (item) => _select(item, items),
-                onOpen: _open,
-                onSeeAll: _seeAll,
-                onExpand: () => _changeTray(1),
-                onCollapse: () => _changeTray(-1),
+            if (_trayLevel >= 0)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: pad.bottom + 12,
+                child: _Tray(
+                  city: loc.city,
+                  items: items,
+                  controller: _cards,
+                  selectedKey: _selected,
+                  height: _trayHeight,
+                  level: _trayLevel,
+                  onTap: (item) => _select(item, items),
+                  onOpen: _open,
+                  onSeeAll: _seeAll,
+                  onExpand: () => _changeTray(1),
+                  onCollapse: () => _changeTray(-1),
+                ),
               ),
-            ),
           ] else if (!_openingFlight)
             Positioned(
               top: pad.top + 10,
@@ -949,14 +962,20 @@ class _Header extends StatelessWidget {
             itemBuilder: (context, index) {
               final f = _filters[index];
               final active = f.id == filter;
-              return Material(
-                color: active ? Colors.black : const Color(0xF8FFFFFF),
-                borderRadius: BorderRadius.circular(17),
-                elevation: 1,
-                shadowColor: Colors.black12,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(17),
-                  onTap: () => onFilter(f.id),
+              return GestureDetector(
+                onTap: () => onFilter(f.id),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: active ? Colors.black : const Color(0xF8FFFFFF),
+                    borderRadius: BorderRadius.circular(17),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 2,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 9,
@@ -999,6 +1018,8 @@ class _MapMenu extends StatelessWidget {
     required this.onRecenter,
     required this.onReplayFlight,
     required this.onClose,
+    required this.onToggleTray,
+    required this.trayVisible,
   });
 
   final VoidCallback onHide;
@@ -1006,12 +1027,15 @@ class _MapMenu extends StatelessWidget {
   final VoidCallback onRecenter;
   final VoidCallback onReplayFlight;
   final VoidCallback onClose;
+  final VoidCallback onToggleTray;
+  final bool trayVisible;
 
   @override
   Widget build(BuildContext context) {
-    Widget row(IconData icon, String label, VoidCallback onTap) => InkWell(
+    Widget row(IconData icon, String label, VoidCallback onTap) =>
+        GestureDetector(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Row(
@@ -1031,26 +1055,39 @@ class _MapMenu extends StatelessWidget {
           ),
         );
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 7,
-      shadowColor: Colors.black26,
-      child: SizedBox(
-        width: 188,
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              row(Icons.location_city_rounded, 'Choose city', onCities),
-              row(Icons.my_location_rounded, 'Recenter', onRecenter),
-              row(Icons.flight_takeoff_rounded, 'Replay world flight', onReplayFlight),
-              row(Icons.visibility_off_rounded, 'Hide controls', onHide),
-              const Divider(height: 8),
-              row(Icons.close_rounded, 'Close map', onClose),
-            ],
+    return Container(
+      width: 188,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 14,
+            offset: Offset(0, 6),
           ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            row(Icons.location_city_rounded, 'Choose city', onCities),
+            row(Icons.my_location_rounded, 'Recenter', onRecenter),
+            row(
+              trayVisible
+                  ? Icons.visibility_off_rounded
+                  : Icons.view_carousel_rounded,
+              trayVisible ? 'Hide listings' : 'Show listings',
+              onToggleTray,
+            ),
+            row(Icons.flight_takeoff_rounded, 'Replay world flight',
+                onReplayFlight),
+            row(Icons.visibility_off_rounded, 'Hide controls', onHide),
+            const Divider(height: 8),
+            row(Icons.close_rounded, 'Close map', onClose),
+          ],
         ),
       ),
     );
@@ -1085,19 +1122,24 @@ class _HeaderCircle extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: Material(
-        color: Colors.white,
-        shape: const CircleBorder(),
-        elevation: 2,
-        shadowColor: Colors.black26,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(icon, color: Colors.black87, size: 17),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
+          child: Icon(icon, color: Colors.black87, size: 17),
         ),
       ),
     );
@@ -1211,18 +1253,24 @@ class _Pin extends StatelessWidget {
         if (selected)
           Positioned(
             bottom: 64,
-            child: Material(
-              color: Colors.white,
-              elevation: 8,
-              shadowColor: Colors.black26,
-              borderRadius: BorderRadius.circular(14),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: onOpen,
-                child: SizedBox(
-                  width: 224,
-                  height: 82,
-                  child: Row(
+            child: GestureDetector(
+              onTap: onOpen,
+              child: Container(
+                width: 224,
+                height: 82,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Row(
                     children: [
                       _Image(url: item.image, width: 72),
                       Expanded(
@@ -1295,7 +1343,6 @@ class _Pin extends StatelessWidget {
                 ),
               ),
             ),
-          ),
       ],
     );
   }
@@ -1317,19 +1364,24 @@ class _CircleAction extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: Material(
-        color: Colors.white,
-        shape: const CircleBorder(),
-        elevation: 3,
-        shadowColor: Colors.black26,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: 36,
-            height: 36,
-            child: Icon(icon, color: Colors.black87, size: 17),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 6,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
+          child: Icon(icon, color: Colors.black87, size: 17),
         ),
       ),
     );
@@ -1405,9 +1457,9 @@ class _Tray extends StatelessWidget {
                 ),
               ),
             ),
-          InkWell(
+          GestureDetector(
             onTap: level == 0 ? onExpand : null,
-            borderRadius: BorderRadius.circular(15),
+            behavior: HitTestBehavior.opaque,
             child: SizedBox(
               height: level == 0 ? 42 : 40,
               child: Row(
@@ -1513,17 +1565,24 @@ class _MiniCard extends StatelessWidget {
     return AnimatedScale(
       scale: selected ? 1.02 : 1,
       duration: const Duration(milliseconds: 150),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        elevation: selected ? 4 : 1,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          onDoubleTap: onOpen,
-          child: SizedBox(
-            width: 216,
-            child: Row(
+      child: GestureDetector(
+        onTap: onTap,
+        onDoubleTap: onOpen,
+        child: Container(
+          width: 216,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: selected ? 0.15 : 0.06),
+                blurRadius: selected ? 8 : 3,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Row(
               children: [
                 Stack(
                   children: [
@@ -1618,7 +1677,6 @@ class _MiniCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
