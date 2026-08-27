@@ -274,7 +274,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       fill: const Color(0xFF14B8A6),
     );
     _peopleIcon ??= await _buildMarkerIcon(
-      icon: Icons.music_note_rounded,
+      icon: Icons.person_rounded,
       fill: const Color(0xFF8B5CF6),
     );
     _locationIcon ??= await _buildMarkerIcon(
@@ -938,9 +938,9 @@ class _ListingCard extends StatelessWidget {
     if (pin.isListing && pin.listing != null) {
       title = pin.listing!.title ?? '';
       subtitle = pin.listing!.city ?? '';
-      price = pin.listing!.price ?? '';
-      if (pin.listing!.images != null && pin.listing!.images!.isNotEmpty) {
-        imageUrl = pin.listing!.images!.first.url;
+      price = pin.listing!.formattedPrice;
+      if (pin.listing!.images.isNotEmpty) {
+        imageUrl = pin.listing!.images.first;
       }
       final cat = (pin.listing!.category ?? '').toLowerCase();
       if (cat == 'event') {

@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
@@ -304,17 +307,63 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   }
 
   void _openEvents(List<Event> videos) {
-    if (videos.isNotEmpty && _index < videos.length) {
-      final player = _current;
-      EventPreviewHandoff.set(
-        eventId: videos[_index].id,
-        position: player != null && player.value.isInitialized
-            ? player.value.position
-            : Duration.zero,
-      );
+    if (videos.isEmpty || _index >= videos.length) {
+      AppHaptics.medium();
+      widget.onTap?.call();
+      return;
     }
+
+    final event = videos[_index];
+    final player = _current;
+    final transferable =
+        player != null && player.value.isInitialized ? player : null;
+
+    EventPreviewHandoff.set(
+      eventId: event.id,
+      position: transferable?.value.position ?? Duration.zero,
+      controller: transferable,
+    );
+
+    // Hide the dashboard header/dock before navigation so the very first Events
+    // frame is already edge-to-edge instead of animating through an inset card.
+    ref.read(chromeVisibilityProvider.notifier).hide();
     AppHaptics.medium();
+
+    // Temporarily release ownership without pausing. The full-screen Events page
+    // can adopt the exact initialized controller during the route change, so the
+    // movie continues instead of reconnecting/buffering from the network.
+    if (transferable != null && identical(_current, transferable)) {
+      _current = null;
+      _completionQueued = false;
+    }
+
     widget.onTap?.call();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final location = GoRouterState.of(context).matchedLocation;
+      final openedEvents = location == AppPaths.exploreEvents;
+
+      if (openedEvents) {
+        final preloaded = _preloaded;
+        _preloaded = null;
+        _preloadedIndex = null;
+        if (preloaded != null) unawaited(preloaded.dispose());
+        return;
+      }
+
+      // Access may have been blocked by Premium/market gating. In that case the
+      // user never left the dashboard: cancel the handoff and restore the same
+      // player immediately so the preview does not flash or restart.
+      EventPreviewHandoff.clear();
+      ref.read(chromeVisibilityProvider.notifier).show();
+      if (transferable != null && _current == null) {
+        _current = transferable;
+        unawaited(_applySound());
+        if (_canPlay) unawaited(transferable.play());
+        setState(() {});
+      }
+    });
   }
 
   @override
