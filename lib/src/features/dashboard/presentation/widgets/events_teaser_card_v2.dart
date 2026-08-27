@@ -39,9 +39,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _completionQueued = false;
   bool _routeActive = true;
   bool _appActive = true;
+  bool _videoPreviewEnabled = true;
   double _dragDx = 0;
 
-  bool get _canPlay => _routeActive && _appActive;
+  bool get _canPlay => _routeActive && _appActive && _videoPreviewEnabled;
 
   List<Event> _uniqueVideos(Iterable<Event> source) {
     final seen = <String>{};
@@ -85,7 +86,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     switch (state) {
       case AppLifecycleState.resumed:
         _appActive = true;
-        if (mounted) unawaited(_resumePlayback());
+        if (mounted && _videoPreviewEnabled) unawaited(_resumePlayback());
         break;
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
@@ -154,7 +155,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     if (videos.isEmpty) return;
 
     if (_current != null && _index < videos.length) {
-      await _resumePlayback();
+      if (_videoPreviewEnabled) await _resumePlayback();
       return;
     }
 
@@ -181,7 +182,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         await _applySound();
         if (_canPlay) await controller.play();
         if (mounted) setState(() {});
-        unawaited(_preloadNext(videos));
+        if (_videoPreviewEnabled) unawaited(_preloadNext(videos));
         return;
       }
     } finally {
@@ -190,6 +191,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   }
 
   Future<void> _resumePlayback() async {
+    if (!_videoPreviewEnabled) return;
     final current = _current;
     if (current == null || !current.value.isInitialized) {
       await _ensureLoaded();
@@ -210,10 +212,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   }
 
   Future<void> _preloadNext(List<Event> videos) async {
-    if (!mounted || videos.length < 2) return;
+    if (!mounted || !_videoPreviewEnabled || videos.length < 2) return;
     final target = (_index + 1) % videos.length;
     final prepared = await _prepare(videos[target]);
-    if (!mounted) {
+    if (!mounted || !_videoPreviewEnabled) {
       await prepared?.dispose();
       return;
     }
@@ -281,7 +283,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
           });
         }
 
-        unawaited(_preloadNext(videos));
+        if (_videoPreviewEnabled) unawaited(_preloadNext(videos));
         return;
       }
     } finally {
@@ -304,6 +306,28 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final next = !ref.read(deckSoundOnProvider);
     ref.read(deckSoundOnProvider.notifier).setSoundOn(next);
     unawaited(_applySound());
+  }
+
+  void _toggleVideoPreview() {
+    AppHaptics.selection();
+    final next = !_videoPreviewEnabled;
+    setState(() => _videoPreviewEnabled = next);
+
+    if (!next) {
+      // Keep the initialized current controller as a frozen poster frame, but
+      // stop playback and throw away the hidden preloaded decoder immediately.
+      unawaited(_current?.pause() ?? Future<void>.value());
+      unawaited(_applySound());
+      final preloaded = _preloaded;
+      _preloaded = null;
+      _preloadedIndex = null;
+      if (preloaded != null) unawaited(preloaded.dispose());
+      return;
+    }
+
+    unawaited(_resumePlayback());
+    final videos = _videos;
+    if (videos.length > 1) unawaited(_preloadNext(videos));
   }
 
   void _openEvents(List<Event> videos) {
@@ -487,7 +511,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                   border: Border.all(color: Colors.white.withAlpha(42)),
                 ),
                 child: Text(
-                  'EVENTS  •  LIVE',
+                  _videoPreviewEnabled ? 'EVENTS  •  LIVE' : 'EVENTS  •  PAUSED',
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontSize: 9,
@@ -497,7 +521,41 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                 ),
               ),
             ),
-
+            Positioned(
+              top: 5,
+              right: 5,
+              child: Semantics(
+                button: true,
+                label: _videoPreviewEnabled
+                    ? 'Turn video preview off'
+                    : 'Turn video preview on',
+                child: Tooltip(
+                  message: _videoPreviewEnabled
+                      ? 'Video preview on'
+                      : 'Video preview off',
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _toggleVideoPreview,
+                    child: SizedBox(
+                      width: 34,
+                      height: 34,
+                      child: Center(
+                        child: Icon(
+                          _videoPreviewEnabled
+                              ? Icons.videocam_rounded
+                              : Icons.videocam_off_rounded,
+                          color: Colors.white,
+                          size: 18,
+                          shadows: const [
+                            Shadow(color: Colors.black87, blurRadius: 7),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               left: 15,
               right: 15,
@@ -526,9 +584,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          videos.length > 1
-                              ? 'Live event stream · swipe left or right'
-                              : 'Tap to explore events',
+                          _videoPreviewEnabled
+                              ? (videos.length > 1
+                                  ? 'Live event stream · swipe left or right'
+                                  : 'Tap to explore events')
+                              : 'Video preview off · tap camera to resume',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontSize: 9.5,
@@ -540,7 +600,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
-                    onTap: ready ? _toggleSound : null,
+                    onTap: ready && _videoPreviewEnabled ? _toggleSound : null,
                     behavior: HitTestBehavior.opaque,
                     child: Container(
                       padding: const EdgeInsets.all(6),
@@ -551,7 +611,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ),
                       child: Icon(
                         soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                        color: Colors.white,
+                        color: _videoPreviewEnabled
+                            ? Colors.white
+                            : Colors.white.withAlpha(90),
                         size: 16,
                       ),
                     ),
