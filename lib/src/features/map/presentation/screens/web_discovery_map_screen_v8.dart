@@ -152,15 +152,15 @@ const _filters = <_FilterDef>[
   _FilterDef('properties', 'Properties', Icons.home_outlined),
   _FilterDef('services', 'Services', Icons.handyman_outlined),
   _FilterDef('dining', 'Dining', Icons.restaurant_rounded),
-  _FilterDef('jets', 'Jets', Icons.flight_rounded),
-  _FilterDef('yachts', 'Yachts', Icons.sailing_rounded),
-  _FilterDef('motorcycles', 'Motos', Icons.two_wheeler_rounded),
-  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike_rounded),
-  _FilterDef('roommates', 'Roommates', Icons.group_outlined),
-  _FilterDef('seekers', 'Seekers', Icons.travel_explore_rounded),
-  _FilterDef('buyers', 'Buyers', Icons.shopping_bag_outlined),
-  _FilterDef('renters', 'Renters', Icons.key_rounded),
-  _FilterDef('people', 'People', Icons.person_outline_rounded),
+  _FilterDef('jets', 'Jets', Icons.flight),
+  _FilterDef('yachts', 'Yachts', Icons.directions_boat),
+  _FilterDef('motorcycles', 'Motos', Icons.motorcycle),
+  _FilterDef('bicycles', 'Bikes', Icons.pedal_bike),
+  _FilterDef('roommates', 'Roommates', Icons.people),
+  _FilterDef('seekers', 'Seekers', Icons.search),
+  _FilterDef('buyers', 'Buyers', Icons.shopping_bag),
+  _FilterDef('renters', 'Renters', Icons.key),
+  _FilterDef('people', 'People', Icons.person),
 ];
 
 class _WebDiscoveryMapScreenV8State
@@ -529,22 +529,11 @@ class _WebDiscoveryMapScreenV8State
     }
     setState(() {
       _selected = item.key;
-      if (_trayLevel == 0) _trayLevel = 1;
     });
-    try {
-      final targetZoom = math.max(_zoom, 13.2).toDouble();
-      _map.move(
-        LatLng(item.lat, item.lng),
-        targetZoom,
-        offset: const Offset(0, 76),
-      );
-      _zoom = targetZoom;
-      _remember(item.lat, item.lng, targetZoom, 0);
-    } catch (_) {}
     final index = items.indexWhere((e) => e.key == item.key);
     if (index >= 0 && _cards.hasClients) {
       _cards.animateTo(
-        index * 224.0,
+        index * 234.0,
         duration: const Duration(milliseconds: 190),
         curve: Curves.easeOutCubic,
       );
@@ -717,12 +706,12 @@ class _WebDiscoveryMapScreenV8State
                     for (final item in items)
                       Marker(
                         point: LatLng(item.lat, item.lng),
-                        width: item.key == _selected ? 58 : 50,
-                        height: item.key == _selected ? 68 : 60,
+                        width: item.key == _selected ? 240 : 50,
+                        height: item.key == _selected ? 140 : 60,
                         rotate: true,
                         alignment: Alignment.bottomCenter,
                         child: _Pin(
-                          kind: item.kind,
+                          item: item,
                           selected: item.key == _selected,
                           onTap: () => _select(item, items),
                         ),
@@ -1137,79 +1126,133 @@ class _LocationDot extends StatelessWidget {
 
 class _Pin extends StatelessWidget {
   const _Pin({
-    required this.kind,
+    required this.item,
     required this.selected,
     required this.onTap,
   });
 
-  final _Kind kind;
+  final _Item item;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: kind.label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedScale(
-          scale: selected ? 1.12 : 1,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOutBack,
-          child: SizedBox(
-            width: 50,
-            height: 60,
-            child: Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                Positioned(
-                  top: 30,
-                  child: Transform.rotate(
-                    angle: math.pi / 4,
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x26000000),
-                            blurRadius: 7,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
+    final kind = item.kind;
+    
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          // The actual Pin
+          AnimatedScale(
+            scale: selected ? 1.12 : 1,
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutBack,
+            child: SizedBox(
+              width: 50,
+              height: 60,
+              child: Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  Positioned(
+                    top: 30,
+                    child: Transform.rotate(
+                      angle: math.pi / 4,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x26000000),
+                              blurRadius: 7,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Container(
-                  width: 46,
-                  height: 46,
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x28000000),
-                        blurRadius: 9,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: kind.color,
+                  Container(
+                    width: 46,
+                    height: 46,
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x28000000),
+                          blurRadius: 9,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: Icon(kind.icon, color: Colors.white, size: 20),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: kind.color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(kind.icon, color: Colors.white, size: 20),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+          
+          // The Popup Window (if selected)
+          if (selected)
+            Positioned(
+              bottom: 64, // Place above the pin
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x30000000),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black87,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1220,28 +1263,33 @@ class _CircleAction extends StatelessWidget {
     required this.tooltip,
     required this.icon,
     required this.onTap,
+    this.dark = false,
   });
 
   final String tooltip;
   final IconData icon;
   final VoidCallback onTap;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: const Color(0xF8FFFFFF),
-        shape: const CircleBorder(),
-        elevation: 3,
-        shadowColor: Colors.black26,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Material(
+          color: dark ? Colors.black : Colors.white,
+          shape: const CircleBorder(),
+          elevation: 4,
+          shadowColor: Colors.black26,
           child: SizedBox(
-            width: 38,
-            height: 38,
-            child: Icon(icon, color: Colors.black87, size: 18),
+            width: 50,
+            height: 50,
+            child: Icon(
+              icon,
+              color: dark ? Colors.white : Colors.black,
+              size: 24,
+            ),
           ),
         ),
       ),
