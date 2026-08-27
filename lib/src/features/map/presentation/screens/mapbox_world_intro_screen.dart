@@ -5,12 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-/// A short, real Mapbox globe opening used before the discovery map.
+/// A cinematic real-Mapbox globe opening used before the discovery map.
 ///
-/// The discovery map is always prewarmed underneath this widget. The globe is
-/// intentionally transparent until Mapbox confirms that the style has loaded;
-/// if WebGL/style initialization stalls or fails, a short watchdog removes the
-/// intro without ever painting a grey/blank layer over the working map.
+/// The discovery map is prewarmed underneath this widget. The globe remains
+/// transparent until Mapbox confirms the style is loaded, so a failed WebGL
+/// surface can never cover the working map with a grey/blank layer.
 class MapboxWorldIntroScreen extends ConsumerStatefulWidget {
   const MapboxWorldIntroScreen({
     super.key,
@@ -33,15 +32,15 @@ class _MapboxWorldIntroScreenState
   bool _completed = false;
   bool _loaded = false;
 
-  static const double _worldZoom = 0.7;
+  // A little farther out than before so the whole spherical Earth is obvious.
+  static const double _worldZoom = 0.52;
 
   @override
   void initState() {
     super.initState();
-    // This is intentionally much shorter than the outer bootstrap watchdog.
-    // If the Mapbox web renderer cannot become ready, reveal the already-live
-    // discovery map immediately instead of leaving an opaque platform surface.
-    _loadWatchdog = Timer(const Duration(milliseconds: 2200), () {
+    // Only guards initialization. Once Mapbox is really loaded, the full
+    // cinematic hold + flight is intentionally allowed to run.
+    _loadWatchdog = Timer(const Duration(milliseconds: 2800), () {
       if (!_loaded) _finish();
     });
   }
@@ -64,14 +63,14 @@ class _MapboxWorldIntroScreenState
   Future<void> _setupMap(MapboxMap map) async {
     _map = map;
     try {
-      // Atlantic-centered world framing keeps the spherical Earth immediately
-      // legible while leaving the Americas and Europe visible at launch.
+      // Atlantic-centered framing keeps the Americas, Europe and Africa visible
+      // while making the round Earth immediately legible.
       await map.setCamera(
         CameraOptions(
           center: _point(18, -28),
           zoom: _worldZoom,
           pitch: 0,
-          bearing: 0,
+          bearing: -8,
         ),
       );
     } catch (_) {
@@ -90,7 +89,9 @@ class _MapboxWorldIntroScreenState
     if (_started || !mounted) return;
     _started = true;
     _startTimer?.cancel();
-    _startTimer = Timer(const Duration(milliseconds: 420), () async {
+
+    // Let the user actually enjoy the globe before moving toward the city.
+    _startTimer = Timer(const Duration(milliseconds: 1900), () async {
       if (!mounted || _completed) return;
       final map = _map;
       if (map == null) {
@@ -107,7 +108,8 @@ class _MapboxWorldIntroScreenState
             pitch: 0,
             bearing: 0,
           ),
-          MapAnimationOptions(duration: 2550, startDelay: 0),
+          // Deliberately slower than the old 2.55s flight.
+          MapAnimationOptions(duration: 4800, startDelay: 0),
         );
       } catch (_) {
         _finish();
@@ -115,7 +117,7 @@ class _MapboxWorldIntroScreenState
       }
 
       if (!mounted || _completed) return;
-      await Future<void>.delayed(const Duration(milliseconds: 140));
+      await Future<void>.delayed(const Duration(milliseconds: 260));
       _finish();
     });
   }
@@ -139,11 +141,8 @@ class _MapboxWorldIntroScreenState
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: AnimatedOpacity(
-        // Never reveal the Mapbox web surface until its style is really ready.
-        // This is the critical guard against the grey full-screen layer seen on
-        // browsers where WebGL initialization fails after widget construction.
         opacity: _loaded ? 1 : 0,
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
         child: MapWidget(
           key: const ValueKey('swipess-mapbox-world-intro'),

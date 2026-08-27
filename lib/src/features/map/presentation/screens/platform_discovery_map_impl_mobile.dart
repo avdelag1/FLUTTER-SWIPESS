@@ -6,6 +6,8 @@ import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_worl
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v5.dart';
 
+bool _nativeGlobePlayedThisSession = false;
+
 Widget buildPlatformDiscoveryMap({
   required VoidCallback? onClose,
   required bool showCitiesOnOpen,
@@ -33,6 +35,7 @@ class _NativeDiscoveryMapBootstrap extends StatefulWidget {
 class _NativeDiscoveryMapBootstrapState
     extends State<_NativeDiscoveryMapBootstrap> {
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
+  late final bool _playIntro;
   Timer? _introWatchdog;
   Timer? _mapLoadWatchdog;
   bool _introWatchdogArmed = false;
@@ -41,10 +44,17 @@ class _NativeDiscoveryMapBootstrapState
   bool _nativeMapReportedReady = false;
   bool _useFallback = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _playIntro = !_nativeGlobePlayedThisSession;
+    if (_playIntro) _nativeGlobePlayedThisSession = true;
+  }
+
   void _armIntroWatchdog() {
     if (_introWatchdogArmed || _introComplete || _useFallback) return;
     _introWatchdogArmed = true;
-    _introWatchdog = Timer(const Duration(seconds: 7), _finishIntro);
+    _introWatchdog = Timer(const Duration(seconds: 10), _finishIntro);
   }
 
   void _finishIntro() {
@@ -105,7 +115,7 @@ class _NativeDiscoveryMapBootstrapState
         }
 
         if (snapshot.data == true && !_useFallback) {
-          if (!_introComplete) {
+          if (_playIntro && !_introComplete) {
             _armIntroWatchdog();
             return _transition(
               MapboxWorldIntroScreen(onComplete: _finishIntro),
@@ -124,9 +134,8 @@ class _NativeDiscoveryMapBootstrapState
           );
         }
 
-        // Safety only: if the native Mapbox SDK cannot initialize, keep the
-        // user inside the working discovery experience rather than presenting
-        // a blank surface.
+        // Safety only: if native Mapbox cannot initialize, use the working
+        // Flutter-rendered discovery map rather than a blank surface.
         return _transition(
           WebDiscoveryMapScreenV5(
             onClose: widget.onClose,
