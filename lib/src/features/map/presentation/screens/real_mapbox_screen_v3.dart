@@ -24,6 +24,19 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
+const _swipessBuildSha = String.fromEnvironment(
+  'SWIPESS_BUILD_SHA',
+  defaultValue: 'unknown',
+);
+const _swipessBuildNumber = String.fromEnvironment(
+  'SWIPESS_BUILD_NUMBER',
+  defaultValue: 'unknown',
+);
+const _swipessBuildChannel = String.fromEnvironment(
+  'SWIPESS_BUILD_CHANNEL',
+  defaultValue: 'local',
+);
+
 /// Native Mapbox discovery UI for iOS/Android.
 /// Compact, borderless, searchable and state-preserving.
 class RealMapboxScreenV3 extends ConsumerStatefulWidget {
@@ -657,6 +670,12 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               child: Row(
                 children: [
                   _IconOnly(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    label: 'Back',
+                    onTap: _closeMap,
+                  ),
+                  const SizedBox(width: 2),
+                  _IconOnly(
                     icon: _menu ? Icons.close_rounded : Icons.menu_rounded,
                     label: 'Map menu',
                     onTap: () => setState(() {
@@ -688,6 +707,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                       _cities = false;
                     }),
                   ),
+                  const SizedBox(width: 38),
                 ],
               ),
             ),
@@ -981,6 +1001,9 @@ class _Menu extends StatelessWidget {
             ]),
           ),
         );
+    final shortSha = _swipessBuildSha.length > 12
+        ? _swipessBuildSha.substring(0, 12)
+        : _swipessBuildSha;
     return Container(
       width: 190,
       padding: const EdgeInsets.symmetric(vertical: 5),
@@ -995,6 +1018,22 @@ class _Menu extends StatelessWidget {
         row(trayVisible ? Icons.visibility_off_rounded : Icons.view_carousel_rounded, trayVisible ? 'Hide discovery tray' : 'Show discovery tray', onTray),
         row(Icons.visibility_off_rounded, 'Hide map controls', onHide),
         row(Icons.close_rounded, 'Close map', onClose),
+        const Divider(height: 10),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(11, 2, 11, 7),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$_swipessBuildChannel • build $_swipessBuildNumber • $shortSha',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.black45,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+        ),
       ]),
     );
   }
