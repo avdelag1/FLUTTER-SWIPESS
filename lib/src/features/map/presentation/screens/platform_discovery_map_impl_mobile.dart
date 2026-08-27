@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v4.dart';
+import 'package:flutter_swipes/src/features/map/presentation/screens/web_discovery_map_screen_v5.dart';
 
 Widget buildPlatformDiscoveryMap({
   required VoidCallback? onClose,
@@ -87,10 +87,9 @@ class _NativeDiscoveryMapBootstrapState
           );
         }
 
-        // Missing token, failed style load, or a native platform-view startup
-        // problem must never leave a user staring at controls over a blank map.
-        // Fall back to the Flutter-rendered map with the same live data.
-        return WebDiscoveryMapScreenV4(
+        // If native Mapbox startup ever fails, keep the user inside the same
+        // premium discovery design instead of dropping back to the old dark UI.
+        return WebDiscoveryMapScreenV5(
           onClose: widget.onClose,
           showCitiesOnOpen: widget.showCitiesOnOpen,
         );
