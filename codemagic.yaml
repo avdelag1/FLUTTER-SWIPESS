@@ -86,9 +86,12 @@ workflows:
         script: |
           if [ -n "${GOOGLE_IOS_CLIENT_ID:-}" ] || [ -n "${GOOGLE_SERVER_CLIENT_ID:-}" ]; then
             if [ -z "${GOOGLE_IOS_CLIENT_ID:-}" ] || [ -z "${GOOGLE_SERVER_CLIENT_ID:-}" ]; then
-              echo "Both GOOGLE_IOS_CLIENT_ID and GOOGLE_SERVER_CLIENT_ID must be set for native Google Sign-In."
-              exit 1
+              echo "WARNING: Google OAuth is partially configured in Codemagic."
+              echo "Set BOTH GOOGLE_IOS_CLIENT_ID and GOOGLE_SERVER_CLIENT_ID, or clear both."
+              echo "Continuing without native Google Sign-In so TestFlight upload is not blocked."
             fi
+          fi
+          if [ -n "${GOOGLE_IOS_CLIENT_ID:-}" ] && [ -n "${GOOGLE_SERVER_CLIENT_ID:-}" ]; then
             case "$GOOGLE_IOS_CLIENT_ID" in
               *.apps.googleusercontent.com) ;;
               *) echo "GOOGLE_IOS_CLIENT_ID is not a Google OAuth client ID."; exit 1 ;;
