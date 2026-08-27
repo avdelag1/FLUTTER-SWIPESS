@@ -22,6 +22,14 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   late final GoRouter _router;
   late String _lastRoute;
 
+  // When a user opens a listing/profile/event from Map, keep the actual Map
+  // widget alive offstage instead of destroying it. Going Back then reveals the
+  // same camera, pins, filters, selected preview and already-loaded provider data
+  // instantly. This also guarantees the world intro is never replayed simply
+  // because the user inspected a result.
+  bool _mapHeldForDetail = false;
+  String? _mapReturnRoute;
+
   @override
   void initState() {
     super.initState();
@@ -35,20 +43,65 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     _router.routeInformationProvider.addListener(_handleRouteChange);
   }
 
+  bool _isMapDetailRoute(String route) {
+    final path = Uri.tryParse(route)?.path ?? route;
+    return path.startsWith('/listing/') ||
+        path.startsWith('/profile/') ||
+        path.startsWith('/explore/events/') ||
+        path.startsWith('/preview/listing/') ||
+        path.startsWith('/preview/profile/');
+  }
+
   void _handleRouteChange() {
     // RouteInformationProvider is safe even while GoRouter is transitioning
     // between match lists; GoRouter.state is not.
-    final nextRoute =
-        _router.routeInformationProvider.value.uri.toString();
+    final nextRoute = _router.routeInformationProvider.value.uri.toString();
     if (nextRoute == _lastRoute) return;
+
+    final previousRoute = _lastRoute;
     _lastRoute = nextRoute;
     if (!mounted) return;
 
-    // The passport map is a global overlay above the routed page. When a map
-    // preview opens its listing/profile/event route, close the overlay so the
-    // destination is immediately visible instead of remaining hidden below it.
-    if (ref.read(overlayModalsProvider).showPassportMap) {
+    final modals = ref.read(overlayModalsProvider);
+
+    if (modals.showPassportMap) {
+      // Preview navigation is special: hide the map visually, but keep it
+      // mounted. Back navigation restores this exact live instance.
+      if (_isMapDetailRoute(nextRoute)) {
+        setState(() {
+          _mapHeldForDetail = true;
+          _mapReturnRoute = previousRoute;
+        });
+      } else {
+        setState(() {
+          _mapHeldForDetail = false;
+          _mapReturnRoute = null;
+        });
+      }
       ref.read(overlayModalsProvider.notifier).closePassportMap();
+      return;
+    }
+
+    if (_mapHeldForDetail) {
+      if (nextRoute == _mapReturnRoute) {
+        // User pressed Back from the detail/insight page: reveal the already
+        // mounted map immediately, with no re-fetch and no intro replay.
+        setState(() {
+          _mapHeldForDetail = false;
+          _mapReturnRoute = null;
+        });
+        ref.read(overlayModalsProvider.notifier).openPassportMap();
+        return;
+      }
+
+      // If the user leaves the detail flow for another unrelated destination,
+      // release the preserved map instead of keeping a hidden screen forever.
+      if (!_isMapDetailRoute(nextRoute)) {
+        setState(() {
+          _mapHeldForDetail = false;
+          _mapReturnRoute = null;
+        });
+      }
     }
   }
 
@@ -61,23 +114,36 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   @override
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
+    final keepMapAlive = modals.showPassportMap || _mapHeldForDetail;
+
     return Stack(
       fit: StackFit.expand,
       children: [
         widget.child,
         if (modals.showVapId) const VapIdModal(),
-        if (modals.showPassportMap)
+        if (keepMapAlive)
           Positioned.fill(
-            // Only the global map overlay needs an inherited GoRouter because
-            // it lives beside (not under) the routed child. Keep this scope
-            // local so the app itself never gets a duplicate router ancestor.
-            child: InheritedGoRouter(
-              goRouter: _router,
-              child: PlatformDiscoveryMapScreen(
-                onClose: () => ref
-                    .read(overlayModalsProvider.notifier)
-                    .closePassportMap(),
-                showCitiesOnOpen: modals.mapShowCities,
+            child: Offstage(
+              offstage: !modals.showPassportMap,
+              child: TickerMode(
+                enabled: modals.showPassportMap,
+                // Only the global map overlay needs an inherited GoRouter
+                // because it lives beside (not under) the routed child.
+                child: InheritedGoRouter(
+                  goRouter: _router,
+                  child: PlatformDiscoveryMapScreen(
+                    onClose: () {
+                      setState(() {
+                        _mapHeldForDetail = false;
+                        _mapReturnRoute = null;
+                      });
+                      ref
+                          .read(overlayModalsProvider.notifier)
+                          .closePassportMap();
+                    },
+                    showCitiesOnOpen: modals.mapShowCities,
+                  ),
+                ),
               ),
             ),
           ),
