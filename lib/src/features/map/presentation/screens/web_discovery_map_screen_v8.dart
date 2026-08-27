@@ -1,3 +1,4 @@
+import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -327,6 +328,37 @@ class _WebDiscoveryMapScreenV8State
       });
     }
     _flight.forward(from: 0);
+  }
+
+  Future<void> _findMyExactLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+    if (permission == LocationPermission.deniedForever) return;
+
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.medium,
+    );
+    
+    if (mounted) {
+      ref.read(discoveryLocationProvider.notifier).setCoordinates(
+        city: 'My Location',
+        country: '',
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+      
+      // Also zoom in slightly closer for personal location
+      ref.read(discoveryLocationProvider.notifier).setRadiusKm(10);
+    }
   }
 
   void _recenter(DiscoveryLocation loc) {
@@ -814,9 +846,9 @@ class _WebDiscoveryMapScreenV8State
               right: 12,
               bottom: _trayHeight + pad.bottom + 18,
               child: _CircleAction(
-                label: 'Recenter on ${loc.city}',
+                label: 'Find My Location',
                 icon: Icons.my_location_rounded,
-                onTap: () => _recenter(loc),
+                onTap: _findMyExactLocation,
               ),
             ),
             if (_trayLevel >= 0)
@@ -1074,7 +1106,7 @@ class _MapMenu extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             row(Icons.location_city_rounded, 'Choose city', onCities),
-            row(Icons.my_location_rounded, 'Recenter', onRecenter),
+            row(Icons.my_location_rounded, 'My Exact Location', onRecenter),
             row(
               trayVisible
                   ? Icons.visibility_off_rounded
