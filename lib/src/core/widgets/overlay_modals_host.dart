@@ -1,24 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/widgets/app_notification_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/platform_discovery_map_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_modal.dart';
+import 'package:go_router/go_router.dart';
 
 /// Root overlay stack for VAP, map, and concierge overlays.
-class OverlayModalsHost extends ConsumerWidget {
+class OverlayModalsHost extends ConsumerStatefulWidget {
   const OverlayModalsHost({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OverlayModalsHost> createState() => _OverlayModalsHostState();
+}
+
+class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
+  late final GoRouter _router;
+  late String _lastRoute;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = ref.read(appRouterProvider);
+    _lastRoute = _router.state.uri.toString();
+    _router.routeInformationProvider.addListener(_handleRouteChange);
+  }
+
+  void _handleRouteChange() {
+    final nextRoute = _router.state.uri.toString();
+    if (nextRoute == _lastRoute) return;
+    _lastRoute = nextRoute;
+    if (!mounted) return;
+
+    // The passport map is a global overlay above the routed page. When a map
+    // preview opens its listing/profile/event route, close the overlay so the
+    // destination is immediately visible instead of remaining hidden below it.
+    if (ref.read(overlayModalsProvider).showPassportMap) {
+      ref.read(overlayModalsProvider.notifier).closePassportMap();
+    }
+  }
+
+  @override
+  void dispose() {
+    _router.routeInformationProvider.removeListener(_handleRouteChange);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
     return Stack(
       fit: StackFit.expand,
       children: [
-        child,
+        widget.child,
         if (modals.showVapId) const VapIdModal(),
         if (modals.showPassportMap)
           Positioned.fill(
