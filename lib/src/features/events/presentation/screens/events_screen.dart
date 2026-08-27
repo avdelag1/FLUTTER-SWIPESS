@@ -54,16 +54,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _handoffPosition = handoff?.position;
     _handoffController = handoff?.controller;
 
-    // Dashboard launches begin edge-to-edge. The video is already playing and
-    // the user can reveal the chrome with one tap.
-    _chromeVisible = handoff == null;
+    // Always show chrome initially, then hide after 7 seconds
+    _chromeVisible = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (handoff == null) {
-        _showChrome();
-      } else {
-        _hideChrome();
-      }
+      _showChrome();
     });
   }
 
