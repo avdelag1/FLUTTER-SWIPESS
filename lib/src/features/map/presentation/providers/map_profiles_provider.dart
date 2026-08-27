@@ -3,11 +3,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 
 final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final userId = ref.watch(currentUserProvider)?.id;
+  final likedPeopleFuture = ref.watch(likedPeopleProvider.future);
   final client = Supabase.instance.client;
   final limit = loc.radiusKm >= 5000
       ? 1000
@@ -37,25 +39,42 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
         )
         .timeout(const Duration(seconds: 8));
     for (final profile in _parseRows(data)) {
-      if (profile.id != userId && profile.id.isNotEmpty)
+      if (profile.id != userId && profile.id.isNotEmpty) {
         merged[profile.id] = profile;
+      }
     }
   } catch (_) {}
 
   for (final profile in await cityProfilesFuture) {
-    if (profile.id != userId && profile.id.isNotEmpty)
+    if (profile.id != userId && profile.id.isNotEmpty) {
       merged[profile.id] = profile;
+    }
   }
 
   if (merged.isEmpty) {
     for (final profile in await _fallbackProfiles(client, limit, userId)) {
-      if (profile.id != userId && profile.id.isNotEmpty)
+      if (profile.id != userId && profile.id.isNotEmpty) {
         merged[profile.id] = profile;
+      }
     }
   }
 
   final inArea = _forMap(merged.values.toList(growable: false), loc);
-  return _filterDiscoverable(client, inArea);
+  final discoverable = await _filterDiscoverable(client, inArea);
+
+  // People already liked/saved are part of the user's Likes library, not map
+  // discovery. Remove them here so every map renderer (web/iOS/Android) gets
+  // the same unseen-only profile feed automatically.
+  try {
+    final liked = await likedPeopleFuture;
+    if (liked.isEmpty) return discoverable;
+    final likedIds = liked.map((person) => person.userId).toSet();
+    return discoverable
+        .where((profile) => !likedIds.contains(profile.id))
+        .toList(growable: false);
+  } catch (_) {
+    return discoverable;
+  }
 });
 
 Future<List<Profile>> _filterDiscoverable(
