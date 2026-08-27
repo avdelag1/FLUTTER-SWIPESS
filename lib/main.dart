@@ -18,6 +18,17 @@ import 'src/app.dart';
 Future<void> main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
 
+  // Flutter's release ErrorWidget paints a large grey rectangle when a widget
+  // throws during build/layout. That is useful for debugging but unacceptable
+  // in the shipped app. Keep the exception in the console/crash pipeline while
+  // making the failed leaf disappear instead of covering the user's screen.
+  if (kReleaseMode) {
+    ErrorWidget.builder = (details) {
+      debugPrint('Suppressed release ErrorWidget: ${details.exceptionAsString()}');
+      return const SizedBox.shrink();
+    };
+  }
+
   if (!kIsWeb) {
     FlutterNativeSplash.preserve(widgetsBinding: binding);
   }
