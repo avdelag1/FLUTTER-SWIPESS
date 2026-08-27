@@ -10,9 +10,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
-import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
-import 'package:record/record.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
@@ -59,7 +57,7 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   final _random = math.Random();
-  StreamSubscription<Amplitude>? _amplitudeSub;
+  final _voice = LiveVoiceInput.instance;
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -79,7 +77,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   int? _countdown;
   double _voiceLevel = 0;
   bool _voiceActive = false;
-  bool _transcribing = false;
   bool _submittingVoice = false;
   bool _inlineAiLoading = false;
   String? _inlineQuestion;
@@ -138,7 +135,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   void dispose() {
     _promptTimer?.cancel();
     _countdownTimer?.cancel();
-    _amplitudeSub?.cancel();
+    unawaited(_voice.cancel(owner: this));
     widget.controller?.removeListener(_refresh);
     _focusNode.removeListener(_refresh);
     _focusNode.dispose();
@@ -199,94 +196,89 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
 
-    final repo = ref.read(voiceTranscribeRepositoryProvider);
-
-    if (_voiceActive) {
+    if (_voice.isOwnedBy(this) || _voiceActive) {
       _cancelCountdown();
-      _amplitudeSub?.cancel();
-      _amplitudeSub = null;
-      setState(() {
-        _voiceActive = false;
-        _transcribing = true;
-        _voiceLevel = 0;
-      });
-      try {
-        final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
-        final text = await repo.stop(language: lang);
-        if (text.trim().isNotEmpty && mounted) {
-          final controller = widget.controller;
-          if (controller != null) {
-            final existing = controller.text.trim();
-            final updated = existing.isEmpty ? text.trim() : '$existing ${text.trim()}';
-            controller.value = TextEditingValue(
-              text: updated,
-              selection: TextSelection.collapsed(offset: updated.length),
-            );
-          }
-          widget.onChanged?.call(widget.controller?.text ?? '');
-        }
-      } on VoiceTranscribeException catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.message)));
-        }
-      } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Voice transcription failed'),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _transcribing = false);
-          // Auto-submit after voice ends if we have text
-          if ((widget.controller?.text ?? '').trim().isNotEmpty) {
-             _submitSearch(widget.controller!.text);
-          }
-        }
+      await _voice.cancel(owner: this);
+      if (mounted) {
+        setState(() {
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
       }
       return;
     }
 
     AppHaptics.light();
     _focusNode.requestFocus();
+
+    // Mute any background app audio (e.g., video reels) so it doesn't bleed into the mic
     ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
 
-    final ok = await repo.start();
-    if (!ok) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Microphone permission denied'),
-          ),
-        );
-      }
-      return;
-    }
+    final started = await _voice.start(
+      languageCode: ref.read(voiceLanguageProvider).localeCode,
+      owner: this,
+      initialText: widget.controller?.text ?? '',
+      onText: (text) {
+        if (!mounted) return;
+        _cancelCountdown();
+        final controller = widget.controller;
+        if (controller != null) {
+          controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          );
+        }
+        widget.onChanged?.call(text);
+        setState(() => _voiceActive = true);
+      },
+      onSilence: _beginCountdown,
+      onListeningChanged: (listening) {
+        if (!mounted) return;
+        setState(() {
+          _voiceActive = listening;
+          if (!listening) _voiceLevel = 0;
+        });
+      },
+      onSoundLevel: (level) {
+        if (!mounted) return;
+        // Real speech during the visible countdown cancels auto-send. Keep the
+        // threshold high enough that ordinary room noise does not reset it.
+        if (_countdown != null && level > -24.0) _cancelCountdown();
+        final normalized = ((level + 45) / 45).clamp(0.0, 1.0).toDouble();
+        setState(() => _voiceLevel = normalized);
+      },
+      onError: (message) {
+        if (!mounted) return;
+        setState(() {
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      },
+    );
 
     if (mounted) {
       setState(() {
-        _voiceActive = true;
-        _voiceLevel = 0;
-      });
-      _amplitudeSub = repo.amplitudeStream(interval: const Duration(milliseconds: 100)).listen((amp) {
-        if (!mounted) return;
-        final level = amp.current;
-        final normalized = ((level + 45) / 45).clamp(0.0, 1.0).toDouble();
-        setState(() => _voiceLevel = normalized);
+        _voiceActive = started;
+        if (!started) _voiceLevel = 0;
       });
     }
   }
 
   Future<void> _submitVoiceSearch() async {
-    if (_voiceActive) {
-       await _toggleVoice(); // stop and transcribe
-    } else {
-       final text = widget.controller?.text ?? '';
-       _submitSearch(text);
+    if (_submittingVoice) return;
+    _submittingVoice = true;
+    _cancelCountdown();
+    await _voice.finish(owner: this);
+    if (mounted) {
+      setState(() {
+        _voiceActive = false;
+        _voiceLevel = 0;
+      });
     }
+    final text = widget.controller?.text ?? '';
+    _submitSearch(text);
+    _submittingVoice = false;
   }
 
   void _submitSearch(String raw) {
@@ -621,7 +613,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     final blue = isLight ? const Color(0xFF2563EB) : const Color(0xFF60A5FA);
     final prompts = _rotatingPrompts;
     final displayHint = prompts[_promptIndex % prompts.length];
-    final voiceVisible = _voiceActive || _countdown != null || _transcribing;
+    final voiceVisible = _voiceActive || _countdown != null;
 
     if (!_isEditableSearch) {
       return Padding(
@@ -766,11 +758,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                _transcribing
-                    ? 'Transcribing...'
-                    : _countdown != null
-                        ? 'Sending in $_countdown · speak again to keep recording'
-                        : 'Listening... Tap mic again to send',
+                _countdown != null
+                    ? 'Sending in $_countdown · speak again to keep recording'
+                    : 'Listening · your words appear above',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
