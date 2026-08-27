@@ -723,9 +723,9 @@ class _WebDiscoveryMapScreenV8State
                       point: LatLng(loc.latitude, loc.longitude),
                       radius: loc.radiusKm * 1000.0,
                       useRadiusInMeter: true,
-                      color: Colors.transparent,
-                      borderColor: const Color(0x30147DFF),
-                      borderStrokeWidth: 1,
+                      color: const Color(0x10147DFF),
+                      borderColor: const Color(0x40147DFF),
+                      borderStrokeWidth: 1.5,
                     ),
                   ],
                 ),
@@ -760,8 +760,8 @@ class _WebDiscoveryMapScreenV8State
           if (_controlsVisible && !_openingFlight) ...[
             Positioned(
               top: pad.top + 8,
-              left: 12,
-              right: 12,
+              left: 0,
+              right: 0,
               child: _Header(
                 filter: _filter,
                 searchOpen: _searchOpen,
@@ -912,7 +912,9 @@ class _Header extends StatelessWidget {
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
-            child: Row(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
               children: [
                 _HeaderCircle(
                   label: 'Back',
@@ -946,6 +948,7 @@ class _Header extends StatelessWidget {
                 ),
               ],
             ),
+            ),
           ),
         ),
         if (searchOpen) ...[
@@ -953,7 +956,9 @@ class _Header extends StatelessWidget {
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
-              child: Container(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Container(
                 height: 38,
                 decoration: _whitePanel(19),
                 child: TextField(
@@ -980,18 +985,33 @@ class _Header extends StatelessWidget {
                   ),
                 ),
               ),
+              ),
             ),
           ),
         ],
         const SizedBox(height: 7),
         SizedBox(
           height: 34,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: _filters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 6),
-            itemBuilder: (context, index) {
+          child: ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return const LinearGradient(
+                colors: [
+                  Color(0x00000000),
+                  Color(0xFFFFFFFF),
+                  Color(0xFFFFFFFF),
+                  Color(0x00000000),
+                ],
+                stops: [0.0, 0.06, 0.94, 1.0],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.dstIn,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: _filters.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, index) {
               final f = _filters[index];
               final active = f.id == filter;
               return GestureDetector(
@@ -1036,6 +1056,7 @@ class _Header extends StatelessWidget {
                 ),
               );
             },
+            ),
           ),
         ),
       ],
