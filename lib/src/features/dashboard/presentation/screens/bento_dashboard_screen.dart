@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
@@ -21,19 +22,63 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-final newItemsCountProvider = Provider<Map<String, int>>((ref) {
-  return {
-    'property': 12,
-    'events': 5,
-    'recommended': 3,
-    'services': 8,
-    'popular': 2,
-    'yacht': 4,
-    'dining': 7,
-    'motos': 1,
-    'jets': 2,
-    'people': 9,
+final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
+  final client = Supabase.instance.client;
+  final counts = <String, int>{};
+
+  // Map bento IDs to their Supabase 'category' column values
+  const categoryMap = {
+    'property': 'property',
+    'events': null, // events are separate table
+    'recommended': null,
+    'services': 'services',
+    'popular': null,
+    'yacht': 'yacht',
+    'dining': 'dining',
+    'motos': 'motorcycles',
+    'jets': 'jets',
+    'people': 'people',
   };
+
+  // Fetch listing counts per category in one query
+  try {
+    final rows = await client
+        .from('listings')
+        .select('category')
+        .eq('is_active', true)
+        .eq('status', 'active');
+
+    final listings = rows as List;
+    final grouped = <String, int>{};
+    for (final row in listings) {
+      final cat = row['category']?.toString() ?? '';
+      grouped[cat] = (grouped[cat] ?? 0) + 1;
+    }
+
+    for (final entry in categoryMap.entries) {
+      if (entry.value != null) {
+        counts[entry.key] = grouped[entry.value] ?? 0;
+      }
+    }
+
+    // Events count from events table
+    try {
+      final eventRows = await client
+          .from('events')
+          .select('id')
+          .eq('is_active', true);
+      counts['events'] = (eventRows as List).length;
+    } catch (_) {}
+
+    // Popular = total active listings
+    counts['popular'] = listings.length;
+    // Recommended = same as popular for now
+    counts['recommended'] = listings.length;
+  } catch (_) {
+    // Fallback to zeros if query fails
+  }
+
+  return counts;
 });
 
 class AccessedCategoriesNotifier extends Notifier<Set<String>> {
@@ -60,7 +105,7 @@ class _CategoryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4D00),
+        color: const Color(0xFFE5484D),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
         boxShadow: const [
@@ -758,7 +803,7 @@ class _BentoTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final accessed = ref.watch(accessedCategoriesProvider);
-    final counts = ref.watch(newItemsCountProvider);
+    final counts = ref.watch(newItemsCountProvider).value ?? const {};
     final unreadCount = accessed.contains(item.id) ? 0 : (counts[item.id] ?? 0);
     
     final badgeWidget = unreadCount > 0 

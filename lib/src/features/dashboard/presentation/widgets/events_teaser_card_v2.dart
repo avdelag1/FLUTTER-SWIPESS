@@ -497,19 +497,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                 ),
               ),
             ),
-            Positioned(
-              right: 10,
-              top: 8,
-              child: IconButton(
-                tooltip: soundOn ? 'Mute' : 'Sound on',
-                onPressed: ready ? _toggleSound : null,
-                icon: Icon(
-                  soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ),
+
             Positioned(
               left: 15,
               right: 15,
@@ -551,7 +539,23 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                  GestureDetector(
+                    onTap: ready ? _toggleSound : null,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(100),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withAlpha(40)),
+                      ),
+                      child: Icon(
+                        soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
