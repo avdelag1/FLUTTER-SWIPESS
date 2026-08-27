@@ -1,15 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Cap `state/notificationStore.ts` + `utils/appNotification.ts`.
-///
-/// Cap routes every piece of app feedback through one premium top banner
-/// instead of scattered toasts. This is the queue behind it.
+/// One premium notification queue for every in-app feedback event.
 enum AppToastType {
   like,
   superLike,
   message,
   match,
   newUser,
+  reward,
   info,
   success,
   error,
@@ -22,6 +20,7 @@ class AppToast {
     required this.type,
     required this.title,
     this.message = '',
+    this.tokens,
     required this.at,
   });
 
@@ -29,7 +28,10 @@ class AppToast {
   final AppToastType type;
   final String title;
   final String message;
+  final int? tokens;
   final DateTime at;
+
+  bool get isReward => type == AppToastType.reward || (tokens ?? 0) > 0;
 }
 
 class AppNotificationsNotifier extends Notifier<List<AppToast>> {
@@ -41,12 +43,11 @@ class AppNotificationsNotifier extends Notifier<List<AppToast>> {
   @override
   List<AppToast> build() => const [];
 
-  /// Adds a banner. Cap drops a repeat of the same type + message inside ten
-  /// seconds, which is what keeps a flapping connection from spamming the user.
   void show({
     required String title,
     String message = '',
     AppToastType type = AppToastType.info,
+    int? tokens,
   }) {
     final now = DateTime.now();
     final duplicate = state.any(
@@ -54,6 +55,7 @@ class AppNotificationsNotifier extends Notifier<List<AppToast>> {
           n.type == type &&
           n.message == message &&
           n.title == title &&
+          n.tokens == tokens &&
           now.difference(n.at) < _dedupeWindow,
     );
     if (duplicate) return;
@@ -63,9 +65,25 @@ class AppNotificationsNotifier extends Notifier<List<AppToast>> {
       type: type,
       title: title,
       message: message,
+      tokens: tokens,
       at: now,
     );
     state = [toast, ...state].take(_maxQueued).toList(growable: false);
+  }
+
+  /// Reward feedback is intentionally explicit: users should always understand
+  /// that an action increased their Swipess token balance.
+  void showTokenReward({
+    required int tokens,
+    required String reason,
+  }) {
+    if (tokens <= 0) return;
+    show(
+      title: 'You earned +$tokens tokens',
+      message: reason,
+      tokens: tokens,
+      type: AppToastType.reward,
+    );
   }
 
   void success(String title, [String message = '']) =>
