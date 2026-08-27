@@ -81,18 +81,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
     setState(() => _enhancing = true);
     AppHaptics.light();
-    final polished = await ref
-        .read(aiEdgeRepositoryProvider)
-        .enhanceText(text: raw, type: 'profile');
-    if (!mounted) return;
-    setState(() => _enhancing = false);
-    if (polished == null || polished.isEmpty) {
+    try {
+      final polished = await ref
+          .read(aiEdgeRepositoryProvider)
+          .enhanceText(text: raw, type: 'profile');
+      if (!mounted) return;
+      setState(() => _enhancing = false);
+      if (polished == null || polished.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('AI could not enhance — please try again')),
+        );
+        return;
+      }
+      _bioController.text = polished;
+      AppHaptics.medium();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _enhancing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not enhance — try again')),
+        const SnackBar(content: Text('AI enhance failed — check your connection and try again')),
       );
-      return;
     }
-    _bioController.text = polished;
   }
 
   Future<void> _saveProfile() async {

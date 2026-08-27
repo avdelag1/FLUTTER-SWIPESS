@@ -125,40 +125,70 @@ class AiEdgeRepository {
   }) async {
     final trimmed = text.trim();
     if (trimmed.length < 5) return null;
+
+    // ── Primary path: dedicated Edge Function ──
     try {
       final raw = await _postEdge('ai-enhance-text', {
         'text': trimmed,
         'type': type,
       }, stream: false);
       final out = _parseEnhanceText(raw);
-      if (out != null && out.isNotEmpty) return out;
+      if (out != null && out.isNotEmpty && !_isGenericGreeting(out)) return out;
     } on AiUnavailableException {
-      // Fall through to concierge architect.
+      // Fall through to concierge.
     }
+
+    // ── Fallback: concierge with aggressive "rewrite only" prompt ──
+    final systemPrompt = type == 'profile'
+        ? 'You are an elite profile copywriter. Your ONLY job is to rewrite the user text into a '
+          'polished, cinematic bio. Return ONLY the rewritten bio text. Do NOT greet the user, '
+          'do NOT say "Here is your bio", do NOT act like a chat assistant. Do NOT introduce yourself. '
+          'Do NOT ask questions. ONLY return the enhanced text.'
+        : 'You are an elite listing architect for Swipess. Transform '
+          'raw input into a professional, cinematic listing '
+          'description. Return ONLY the description. Do NOT greet the user, do NOT chat, '
+          'do NOT introduce yourself. ONLY return the enhanced text.';
+
     try {
       final reply = await chatConcierge(
         messages: [
+          AiChatMessage(role: 'system', content: systemPrompt),
           AiChatMessage(
-            role: 'system',
-            content: type == 'profile'
-                ? 'You are an elite profile copywriter. Your ONLY job is to rewrite the user text into a '
-                  'polished, cinematic bio. Return ONLY the rewritten bio text. Do NOT greet the user, do NOT say "Here is your bio", do NOT act like a chat assistant.'
-                : 'You are an elite listing architect for Swipess. Transform '
-                  'raw input into a professional, cinematic listing '
-                  'description. Return ONLY the description. Do NOT greet the user or chat.',
-          ),
-          AiChatMessage(
-            role: 'user', 
-            content: 'CRITICAL INSTRUCTION: Rewrite this text and return ONLY the new text. Do not chat with me. TEXT:\n$trimmed'
+            role: 'user',
+            content: 'CRITICAL: You MUST rewrite this text and return ONLY the new text. '
+                'Do NOT respond with a greeting or introduction. '
+                'Do NOT mention SWIPESS features. '
+                'TEXT TO ENHANCE:\n$trimmed',
           ),
         ],
         character: type == 'profile' ? 'profile_copywriter' : 'listing_architect',
         stream: false,
       );
-      return reply.trim().isEmpty ? null : reply.trim();
+      final cleaned = reply.trim();
+      if (cleaned.isNotEmpty && !_isGenericGreeting(cleaned)) {
+        return cleaned;
+      }
     } on AiUnavailableException {
-      return null;
+      // Continue to null.
     }
+
+    return null;
+  }
+
+  /// Returns true if the reply looks like the concierge's default greeting
+  /// rather than actual enhanced text.
+  static bool _isGenericGreeting(String text) {
+    final lower = text.toLowerCase();
+    return lower.contains("i'm here") ||
+        lower.contains('ask me normally') ||
+        lower.contains('tell me what you want to find') ||
+        lower.contains('what you want to find on swipess') ||
+        lower.contains('how can i help') ||
+        lower.contains('what can i do for you') ||
+        lower.contains('welcome to swipess') ||
+        lower.contains('here is your enhanced') ||
+        lower.contains('here is the enhanced') ||
+        lower.contains('here\'s your enhanced');
   }
 
   /// Cap Intel Core / `useConciergeAI`.
