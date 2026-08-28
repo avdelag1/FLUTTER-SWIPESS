@@ -145,16 +145,10 @@ class _EventDetailShell extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: CapBackButton(
-                onTap: () {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).pop();
-                  } else {
-                    context.go(AppPaths.exploreEvents);
-                  }
-                },
+                fallbackPath: AppPaths.exploreEvents,
               ),
             ),
             Expanded(
