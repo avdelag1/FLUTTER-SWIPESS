@@ -428,11 +428,11 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                   strokeWidth: 2,
                 ),
               )
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.auto_awesome_rounded, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.auto_awesome_rounded, size: 20),
+                  const SizedBox(width: 8),
                   Text(
                     'Enter',
                     style: GoogleFonts.plusJakartaSans(
