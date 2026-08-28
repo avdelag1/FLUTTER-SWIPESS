@@ -81,18 +81,6 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
       color: canvas,
       child: Stack(
         children: [
-          if (widget.onBack != null)
-            Positioned(
-              top: 12,
-              left: 16,
-              child: SafeArea(
-                bottom: false,
-                child: _RoundAction(
-                  icon: Icons.chevron_left_rounded,
-                  onTap: widget.onBack!,
-                ),
-              ),
-            ),
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 76, 24, 34),
@@ -179,6 +167,20 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
               ),
             ),
           ),
+          // Keep the back button LAST so Flutter Web/PWA's scroll gesture layer
+          // can never sit above it and steal the tap while leaving it visible.
+          if (widget.onBack != null)
+            Positioned(
+              top: 12,
+              left: 16,
+              child: SafeArea(
+                bottom: false,
+                child: _RoundAction(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: widget.onBack!,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -467,6 +469,7 @@ class _RoundAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: busy
           ? null
           : () {
