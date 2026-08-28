@@ -810,7 +810,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                       ),
 
               // Selected marker is above regular markers.
-              if (selected != null &&
+              if (!_openingFlight &&
+                  selected != null &&
                   selectedPixel != null &&
                   onScreen(selectedPixel))
                 Positioned(
