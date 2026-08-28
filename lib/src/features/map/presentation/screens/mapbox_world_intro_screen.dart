@@ -8,8 +8,9 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 /// Cinematic native Mapbox opening.
 ///
 /// Mapbox Standard renders a true globe at low zoom. This screen is shown only
-/// once by the native bootstrap, then flies from the round Earth into the active
-/// discovery location. Re-opening Map during the same app session skips it.
+/// once per app session by the native bootstrap, then flies from the round Earth
+/// into the active discovery location. The animation stays deliberately short:
+/// it should feel premium, never like a loading screen.
 class MapboxWorldIntroScreen extends ConsumerStatefulWidget {
   const MapboxWorldIntroScreen({
     super.key,
@@ -38,7 +39,7 @@ class _MapboxWorldIntroScreenState
   void initState() {
     super.initState();
     // Never trap the user behind the cinematic if Mapbox cannot load.
-    _loadWatchdog = Timer(const Duration(seconds: 7), () {
+    _loadWatchdog = Timer(const Duration(seconds: 3), () {
       if (!_loaded) _finish();
     });
   }
@@ -86,8 +87,8 @@ class _MapboxWorldIntroScreenState
     _started = true;
     _startTimer?.cancel();
 
-    // Give the globe a short hero moment before the geographic flight.
-    _startTimer = Timer(const Duration(milliseconds: 1250), () async {
+    // Keep just enough globe hero time to register visually, then arrive fast.
+    _startTimer = Timer(const Duration(milliseconds: 320), () async {
       if (!mounted || _completed) return;
       final map = _map;
       if (map == null) {
@@ -101,12 +102,10 @@ class _MapboxWorldIntroScreenState
           CameraOptions(
             center: _point(loc.latitude, loc.longitude),
             zoom: _zoomForRadius(loc.radiusKm),
-            // A little pitch at destination makes the arrival feel spatial
-            // without leaving the discovery map in an awkward camera angle.
             pitch: loc.radiusKm <= 50 ? 38 : 18,
             bearing: loc.radiusKm <= 50 ? 18 : 0,
           ),
-          MapAnimationOptions(duration: 3900, startDelay: 0),
+          MapAnimationOptions(duration: 1450, startDelay: 0),
         );
       } catch (_) {
         _finish();
@@ -114,7 +113,7 @@ class _MapboxWorldIntroScreenState
       }
 
       if (!mounted || _completed) return;
-      await Future<void>.delayed(const Duration(milliseconds: 260));
+      await Future<void>.delayed(const Duration(milliseconds: 90));
       _finish();
     });
   }
@@ -136,18 +135,32 @@ class _MapboxWorldIntroScreenState
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: AnimatedOpacity(
-        opacity: _loaded ? 1 : 0,
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOut,
-        child: MapWidget(
-          key: const ValueKey('swipess-mapbox-world-intro'),
-          // Standard is intentional: low zoom uses the native globe projection.
-          styleUri: MapboxStyles.STANDARD,
-          onMapCreated: _setupMap,
-          onMapLoadedListener: (_) => _onMapLoaded(),
-        ),
+    return ColoredBox(
+      color: const Color(0xFFF1F4F7),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          IgnorePointer(
+            child: MapWidget(
+              key: const ValueKey('swipess-mapbox-world-intro'),
+              // Standard is intentional: low zoom uses the native globe projection.
+              styleUri: MapboxStyles.STANDARD,
+              onMapCreated: _setupMap,
+              onMapLoadedListener: (_) => _onMapLoaded(),
+            ),
+          ),
+          if (!_loaded)
+            const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF111318),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
