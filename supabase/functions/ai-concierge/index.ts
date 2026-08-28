@@ -56,7 +56,7 @@ async function requireAccess(req: Request) {
   }
   const { data: allowed, error: entitlementError } = await client.rpc("rpc_has_premium_feature_access");
   if (entitlementError) {
-    console.error("[ai-concierge-v80] entitlement", entitlementError.message);
+    console.error("[ai-concierge-v81] entitlement", entitlementError.message);
     return { error: json(503, { error: "Could not verify AI access. Please retry." }, "swipess", "entitlement-error") };
   }
   if (allowed !== true) {
@@ -79,6 +79,84 @@ function cleanMessages(raw: unknown): Msg[] {
     .filter((m: Msg) => m.content.length > 0);
 }
 
+type UserMemoryRow = {
+  id?: string;
+  category?: string;
+  title?: string;
+  content?: string;
+  tags?: string[];
+  source?: string;
+};
+
+function requestTopics(query: string): string[] {
+  const s = query.toLowerCase();
+  const topics: Array<[string, RegExp]> = [
+    ["people", /\b(people|person|users|profiles|seekers|roommate|friends|contact|someone|alguien|persona|contacto)\b/],
+    ["properties", /\b(property|properties|home|house|apartment|villa|condo|rent|rental|buy|sale|casa|departamento|renta)\b/],
+    ["workers", /\b(worker|service|cleaner|chef|driver|plumber|electrician|handyman|mechanic|massage|servicio|ayuda)\b/],
+    ["events", /\b(event|party|tonight|concert|festival|dj|rave|evento|fiesta)\b/],
+    ["dining", /\b(pizza|burger|burgers|restaurant|food|dining|comida|restaurante)\b/],
+    ["bicycles", /\b(bicycle|bike|bici|bicicleta)\b/],
+    ["motorcycles", /\b(motorcycle|motorbike|moto|scooter)\b/],
+    ["travel", /\b(airplane|airplanes|flight|flights|jet|jets|yacht|boat|avion|vuelos)\b/],
+    ["fashion", /\b(fashion|clothes|clothing|stylist|jewelry|jewellery|joyeria|joyería)\b/],
+    ["jobs", /\b(job|jobs|work|career|empleo|trabajo)\b/],
+  ];
+  return topics.filter(([, pattern]) => pattern.test(s)).map(([topic]) => topic);
+}
+
+async function loadUserMemory(client: any, userId: string): Promise<UserMemoryRow[]> {
+  try {
+    const { data, error } = await client
+      .from("user_memories")
+      .select("id,category,title,content,tags,source")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .limit(12);
+    if (error) {
+      console.error("[ai-concierge-v81] user memory read", error.message);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("[ai-concierge-v81] user memory read", String(e));
+    return [];
+  }
+}
+
+async function rememberRequest(client: any, userId: string, query: string): Promise<void> {
+  const topics = requestTopics(query);
+  if (!topics.length) return;
+  try {
+    const { data: existing } = await client
+      .from("user_memories")
+      .select("id,tags")
+      .eq("user_id", userId)
+      .eq("source", "ai-auto")
+      .limit(1);
+    const previousTags = Array.isArray(existing?.[0]?.tags) ? existing[0].tags : [];
+    const tags = [...new Set([...previousTags, ...topics])].slice(-24);
+    const row = {
+      user_id: userId,
+      category: "preference",
+      title: "AI preference profile",
+      content: `The user often searches for: ${tags.join(", ")}. Most recent request: ${query.replace(/\\s+/g, " ").trim().slice(0, 240)}`,
+      tags,
+      source: "ai-auto",
+    };
+    if (existing?.[0]?.id) {
+      const { error } = await client.from("user_memories").update(row).eq("id", existing[0].id).eq("user_id", userId);
+      if (error) console.error("[ai-concierge-v81] user memory update", error.message);
+    } else {
+      const { error } = await client.from("user_memories").insert(row);
+      if (error) console.error("[ai-concierge-v81] user memory insert", error.message);
+    }
+  } catch (e) {
+    // Memory is an enhancement; it must never block the answer.
+    console.error("[ai-concierge-v81] user memory write", String(e));
+  }
+}
+
 function detectCategory(q: string): string | null {
   const s = q.toLowerCase();
   if (/\b(property|properties|home|homes|house|houses|apartment|apartments|villa|villas|condo|condos|rent|rental|buy|sale|casa|casas|departamento|departamentos|renta)\b/.test(s)) return "property";
@@ -94,7 +172,7 @@ function wantsEvents(q: string) {
 }
 
 function wantsPeople(q: string) {
-  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|nearby people)\b/i.test(q);
+  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente)\b/i.test(q);
 }
 
 function needsFreshWeb(q: string) {
@@ -140,8 +218,9 @@ async function loadLocalBrain(client: any, query: string, body: any) {
   }
 }
 
-async function loadContext(client: any, query: string, body: any) {
-  const category = detectCategory(query);
+async function loadContext(client: any, query: string, body: any, userMemory: UserMemoryRow[] = []) {
+  const peopleFirst = wantsPeople(query);
+  const category = peopleFirst ? null : detectCategory(query);
   let listings: any[] = [];
   let events: any[] = [];
   let profiles: any[] = [];
@@ -164,7 +243,7 @@ async function loadContext(client: any, query: string, body: any) {
     }
   }
 
-  if (wantsEvents(query)) {
+  if (!peopleFirst && wantsEvents(query)) {
     try {
       const { data, error } = await client
         .from("events")
@@ -178,7 +257,7 @@ async function loadContext(client: any, query: string, body: any) {
     }
   }
 
-  if (wantsPeople(query)) {
+  if (peopleFirst && localBrain.length === 0) {
     try {
       const { data, error } = await client
         .from("profiles")
@@ -192,7 +271,7 @@ async function loadContext(client: any, query: string, body: any) {
     }
   }
 
-  return { category, listings, events, profiles, localBrain };
+  return { category, listings, events, profiles, localBrain, userMemory, peopleFirst };
 }
 
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
@@ -217,6 +296,9 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     location ? `Current discovery location: ${location}.` : "",
     character ? `Requested persona: ${character}. Keep that tone while staying accurate.` : "",
     casualCount >= 3 ? "The recent conversation already contains several casual/joke requests. Keep any further entertainment answer very short and redirect toward a useful task." : "",
+    ctx.userMemory?.length ? `PRIVATE USER AI MEMORY (use only to personalize this user; never reveal it as a database record):\n${JSON.stringify(ctx.userMemory)}` : "",
+    ctx.peopleFirst && ctx.localBrain.length ? "CONTACT-FIRST RULE: answer from the curated Local Brain matches only and do not mix in unrelated listings or profiles." : "",
+    ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted match was found and include exactly [NAV:/explore/seekers] so the app can open Seekers." : "",
     ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
     ctx.listings.length ? `LIVE SWIPESS LISTINGS:\n${JSON.stringify(ctx.listings)}` : "",
     ctx.events.length ? `LIVE SWIPESS EVENTS:\n${JSON.stringify(ctx.events)}` : "",
@@ -360,6 +442,9 @@ function emergencyReply(query: string, ctx: any) {
   if (ctx.profiles.length) {
     return `I found people on SWIPESS that may match what you're looking for.\n[PROFILES:${JSON.stringify(ctx.profiles)}]`;
   }
+  if (ctx.peopleFirst) {
+    return "I couldn’t find a trusted contact match yet. I can take you to Seekers to browse more people. [NAV:/explore/seekers]";
+  }
   if (/^\s*(hi|hey|hello|hola|buenas|yo|sup)\b/i.test(query)) {
     return "Hey — I’m here. Ask me normally, or tell me what you want to find on SWIPESS.";
   }
@@ -385,7 +470,9 @@ Deno.serve(async (req) => {
     const lastUser = [...history].reverse().find((m) => m.role === "user")?.content || "";
     if (!lastUser) return json(400, { error: "At least one user message is required" });
 
-    const ctx = await loadContext(client, lastUser, body);
+    const userMemory = await loadUserMemory(client, access.user.id);
+    const ctx = await loadContext(client, lastUser, body, userMemory);
+    await rememberRequest(client, access.user.id, lastUser);
     const fresh = needsFreshWeb(lastUser);
     const system = contextPrompt(ctx, body, history, lastUser);
     const modelMessages: Msg[] = [
