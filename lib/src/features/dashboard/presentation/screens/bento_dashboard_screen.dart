@@ -132,7 +132,7 @@ class _CategoryBadge extends StatelessWidget {
         ],
       ),
       child: Text(
-        '+$count',
+        count > 99 ? '99+' : '$count',
         style: GoogleFonts.plusJakartaSans(
           color: Colors.white,
           fontSize: 10,
