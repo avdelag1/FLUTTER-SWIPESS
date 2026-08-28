@@ -108,11 +108,11 @@ Future<List<Profile>> _filterDiscoverable(
           params: {'p_ids': profiles.map((e) => e.id).toList()},
         )
         .timeout(const Duration(seconds: 4));
-    if (data is! List) return const [];
+    if (data is! List) return profiles;
     final visible = data.map((e) => e.toString()).toSet();
     return profiles.where((profile) => visible.contains(profile.id)).toList();
   } catch (_) {
-    return const [];
+    return profiles;
   }
 }
 

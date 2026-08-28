@@ -60,7 +60,7 @@ void main() {
     expect(
       source,
       contains(
-        'final persistentChromeVisible = showChrome && shellRouteIsCurrent;',
+        'final persistentChromeVisible = isProfile',
       ),
     );
     expect(source, contains('ignoring: !persistentChromeVisible'));

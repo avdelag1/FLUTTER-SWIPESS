@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
@@ -612,6 +613,10 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
       }
     }
     if (best == null) return;
+    if (_selected == best.key) {
+      _openItem(best);
+      return;
+    }
     AppHaptics.selection();
     setState(() {
       _selected = best!.key;
@@ -711,6 +716,28 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
       if (mounted) setState(() => _search = false);
       return;
     }
+
+    final results = await MapboxPlaceSearch.search(q);
+    if (!mounted) return;
+    if (results.isNotEmpty) {
+      final result = results.first;
+      ref.read(discoveryLocationProvider.notifier).setCoordinates(
+            city: result.name,
+            country: result.country,
+            latitude: result.latitude,
+            longitude: result.longitude,
+          );
+      ref
+          .read(discoveryLocationProvider.notifier)
+          .setRadiusKm(result.suggestedRadiusKm);
+      setState(() {
+        _search = false;
+        _query = '';
+        _selected = null;
+      });
+      return;
+    }
+
     setState(() => _query = q);
     await _render();
   }
@@ -980,10 +1007,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               city: loc.city,
               selected: _selected,
               expanded: _tray == 1,
-              onSelect: (item) {
-                setState(() => _selected = item.key);
-                unawaited(_render());
-              },
+              onSelect: (item) => _selectNearest(item.lat, item.lng),
               onOpen: _openItem,
               onSave: (item) => unawaited(_save(item)),
               onUp: () => setState(() => _tray = 1),

@@ -150,7 +150,7 @@ const eventFeedCategories = <EventFeedCategory>[
     color: Color(0xFFF97316),
   ),
   EventFeedCategory(
-    key: 'Nightlife',
+    key: 'Beach',
     label: 'Beach',
     icon: Icons.beach_access_rounded,
     image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=200&q=80',

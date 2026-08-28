@@ -711,13 +711,13 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
 
     if (!tokenReady) {
       return const Material(
-        color: Color(0xFFF3F8FB),
+        color: Color(0xFF06182B),
         child: Center(child: Text('Mapbox is not configured')),
       );
     }
 
     return Material(
-      color: const Color(0xFFF3F8FB),
+      color: const Color(0xFF06182B),
       child: LayoutBuilder(
         builder: (context, constraints) {
           bool onScreen(Offset point, {double margin = 100}) =>
