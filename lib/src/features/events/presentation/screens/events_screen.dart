@@ -897,19 +897,15 @@ class _EventProgressScrubber extends StatelessWidget {
               _seek(context, details.localPosition.dx, constraints.maxWidth),
             ),
             child: Align(
-              alignment: Alignment.center,
+              alignment: Alignment.bottomCenter,
               child: SizedBox(
-                height: 32,
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: SizedBox(
-                    height: 5,
-                    child: Stack(
+                height: 5,
+                child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(225),
+                        color: Colors.white.withAlpha(230),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: const SizedBox.expand(),
@@ -918,13 +914,11 @@ class _EventProgressScrubber extends StatelessWidget {
                       widthFactor: progress,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Colors.white, Colors.white],
-                          ),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x99FF4D78),
+                              color: Color(0x88FFFFFF),
                               blurRadius: 8,
                             ),
                           ],
@@ -932,18 +926,23 @@ class _EventProgressScrubber extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      left: (constraints.maxWidth * progress - 4)
-                          .clamp(-4.0, constraints.maxWidth - 4),
-                      top: -2,
+                      left: (constraints.maxWidth * progress - 5)
+                          .clamp(-5.0, constraints.maxWidth - 5),
+                      top: -3,
                       child: Container(
-                        width: 8,
-                        height: 8,
+                        width: 11,
+                        height: 11,
                         decoration: const BoxDecoration(
-                          color: const Color(0xFFFF4D78),
+                          color: Color(0xFFFF4D78),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xAAFF4D78),
+                              blurRadius: 6,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
                     ),
                   ],
                 ),
