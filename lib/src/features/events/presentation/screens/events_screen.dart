@@ -673,7 +673,7 @@ class _EventPageState extends ConsumerState<_EventPage>
   Future<void> _share() async {
     widget.onChromeInteraction();
     final box = context.findRenderObject() as RenderBox?;
-    await Share.share(
+    await SharePlus.share(
       'Check out ${event.title} on Swipess! ${event.shareUrl}',
       sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
     );
