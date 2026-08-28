@@ -9,7 +9,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
@@ -17,13 +17,14 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:record/record.dart';
 
 /// Dashboard AI field.
 ///
-/// Dashboard voice uses the same live speech coordinator as Intel Core. Words
-/// appear while the user speaks; 3.5 seconds of silence starts a visible
-/// 3 -> 2 -> 1 countdown, then the request submits automatically. Speaking
-/// again during the countdown cancels it and continues the same dictation.
+/// Dashboard voice records the actual microphone audio and sends it to the
+/// high-accuracy Whisper transcription backend. The amplitude stream keeps the
+/// UI reactive while the user speaks; silence starts the existing 3 -> 2 -> 1
+/// countdown, and speaking again cancels the countdown before transcription.
 class GlowSearchBar extends ConsumerStatefulWidget {
   const GlowSearchBar({
     super.key,
@@ -64,10 +65,14 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
   final _random = math.Random();
 
-  final _voice = LiveVoiceInput.instance;
+  late final VoiceTranscribeRepository _voiceRecorder;
   late final DeckAudioNotifier _audioNotifier;
+  StreamSubscription<Amplitude>? _voiceAmplitudeSub;
+  Timer? _voiceSilenceTimer;
   Timer? _countdownTimer;
   int? _countdown;
+  bool _voiceHasSpeech = false;
+  String _voiceInitialText = '';
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -125,6 +130,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   @override
   void initState() {
     super.initState();
+    _voiceRecorder = ref.read(voiceTranscribeRepositoryProvider);
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
@@ -147,7 +153,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   void dispose() {
     _promptTimer?.cancel();
     _countdownTimer?.cancel();
-    unawaited(_voice.cancel(owner: this));
+    _voiceSilenceTimer?.cancel();
+    unawaited(_voiceAmplitudeSub?.cancel());
+    unawaited(_voiceRecorder.cancel());
     _restoreVoiceAudio();
     widget.controller?.removeListener(_refresh);
     _focusNode.removeListener(_refresh);
@@ -203,11 +211,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   }
 
   void _beginVoiceCountdown() {
-    if (!mounted ||
-        !_voice.isOwnedBy(this) ||
-        !_voice.active ||
-        (widget.controller?.text.trim().isEmpty ?? true) ||
-        _inlineAiLoading) {
+    if (!mounted || !_voiceActive || !_voiceHasSpeech || _inlineAiLoading) {
       return;
     }
     _countdownTimer?.cancel();
@@ -235,21 +239,69 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
   Future<void> _finishVoiceAndSubmit() async {
     _cancelVoiceCountdown();
-    if (_voice.isOwnedBy(this)) {
-      await _voice.finish(owner: this);
+    _voiceSilenceTimer?.cancel();
+    _voiceSilenceTimer = null;
+    await _voiceAmplitudeSub?.cancel();
+    _voiceAmplitudeSub = null;
+
+    if (!_voiceActive) return;
+    _voiceActive = false;
+    if (mounted) {
+      setState(() {
+        _transcribing = true;
+        _voiceLevel = 0;
+      });
     }
+
+    String transcript = '';
+    String? voiceError;
+    try {
+      final language = ref.read(voiceLanguageProvider);
+      transcript = await _voiceRecorder.stop(language: language.localeCode);
+    } on VoiceTranscribeException catch (error) {
+      voiceError = error.message;
+    } catch (_) {
+      voiceError = 'Could not transcribe that audio. Please try again.';
+    }
+
     if (!mounted) {
       _restoreVoiceAudio();
       return;
     }
+
     setState(() {
-      _voiceActive = false;
       _transcribing = false;
       _voiceLevel = 0;
+      _voiceHasSpeech = false;
     });
     _restoreVoiceAudio();
-    final text = widget.controller?.text.trim() ?? '';
-    if (text.isNotEmpty) _submitSearch(text);
+
+    if (voiceError != null) {
+      _showVoiceError(voiceError);
+      return;
+    }
+
+    final spoken = transcript.trim();
+    if (spoken.isEmpty) {
+      _showVoiceError('I did not catch that. Please try speaking again.');
+      return;
+    }
+
+    final text = [_voiceInitialText.trim(), spoken]
+        .where((part) => part.isNotEmpty)
+        .join(' ')
+        .trim();
+    _voiceInitialText = '';
+
+    final controller = widget.controller;
+    if (controller != null) {
+      controller.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+      widget.onChanged?.call(text);
+    }
+    _submitSearch(text);
   }
 
   Future<void> _toggleVoice() async {
@@ -259,7 +311,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     }
     if (_inlineAiLoading || _transcribing) return;
 
-    if (_voice.isOwnedBy(this) || _voiceActive) {
+    if (_voiceActive) {
       await _finishVoiceAndSubmit();
       return;
     }
@@ -267,6 +319,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     unawaited(AppHaptics.voiceStart());
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
+    _voiceInitialText = widget.controller?.text.trim() ?? '';
+    _voiceHasSpeech = false;
 
     setState(() {
       _transcribing = true;
@@ -274,78 +328,62 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     });
 
     try {
-      final started = await _voice.start(
-        owner: this,
-        initialText: widget.controller?.text ?? '',
-        languageCode: ref.read(voiceLanguageProvider).localeCode,
-        listenMode: ListenMode.dictation,
-        onText: (text) {
-          if (!mounted) return;
-          _cancelVoiceCountdown();
-          final controller = widget.controller;
-          if (controller != null) {
-            controller.value = TextEditingValue(
-              text: text,
-              selection: TextSelection.collapsed(offset: text.length),
-            );
-            widget.onChanged?.call(text);
-          }
-          if (!_voiceActive || _transcribing) {
-            setState(() {
-              _voiceActive = true;
-              _transcribing = false;
-            });
-          }
-        },
-        onSilence: _beginVoiceCountdown,
-        onListeningChanged: (listening) {
-          if (!mounted) return;
-          if (listening) {
-            setState(() {
-              _voiceActive = true;
-              _transcribing = false;
-            });
-            return;
-          }
-          // PWA browsers briefly end recognition between phrases — keep the
-          // mic session visually active while this widget still owns it.
-          if (_voice.isOwnedBy(this) && _voice.active) return;
-          setState(() {
-            _voiceActive = false;
-            _transcribing = false;
-            _voiceLevel = 0;
-          });
-        },
-        onSoundLevel: (level) {
-          if (!mounted) return;
-          final normalized = level <= 0
-              ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
-              : (level / 10).clamp(0.0, 1.0).toDouble();
-          if ((_voiceLevel - normalized).abs() > .01) {
-            setState(() => _voiceLevel = normalized);
-          }
-        },
-        onError: _showVoiceError,
-      );
-
+      final started = await _voiceRecorder.start();
       if (!mounted) return;
-      setState(() {
-        _transcribing = false;
-        _voiceActive = started;
-        _voiceLevel = 0;
-      });
       if (!started) {
+        setState(() {
+          _transcribing = false;
+          _voiceActive = false;
+          _voiceLevel = 0;
+        });
         _restoreVoiceAudio();
         _showVoiceError(
-          'Voice search could not start. Check microphone and speech permissions in Settings.',
+          'Voice search could not start. Check microphone permission in Settings.',
         );
+        return;
       }
+
+      setState(() {
+        _transcribing = false;
+        _voiceActive = true;
+        _voiceLevel = 0;
+      });
+
+      await _voiceAmplitudeSub?.cancel();
+      _voiceAmplitudeSub = _voiceRecorder
+          .amplitudeStream(interval: const Duration(milliseconds: 80))
+          .listen((amplitude) {
+            if (!mounted || !_voiceActive) return;
+            final raw = amplitude.current;
+            final normalized = raw.isFinite
+                ? ((raw + 60) / 60).clamp(0.0, 1.0).toDouble()
+                : 0.0;
+            if ((_voiceLevel - normalized).abs() > .01) {
+              setState(() => _voiceLevel = normalized);
+            }
+
+            // Typical speech is comfortably above -48 dBFS. Only arm silence
+            // after actual voice energy so an open mic never auto-submits noise.
+            if (raw.isFinite && raw > -48) {
+              _voiceHasSpeech = true;
+              _cancelVoiceCountdown();
+              _voiceSilenceTimer?.cancel();
+              _voiceSilenceTimer = Timer(
+                const Duration(milliseconds: 2800),
+                _beginVoiceCountdown,
+              );
+            }
+          });
     } catch (_) {
+      try {
+        await _voiceRecorder.cancel();
+      } catch (_) {}
       if (!mounted) return;
       setState(() {
         _transcribing = false;
         _voiceActive = false;
         _voiceLevel = 0;
+        _voiceHasSpeech = false;
       });
       _restoreVoiceAudio();
       _showVoiceError('Could not start voice search. Please try again.');
@@ -353,7 +391,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   }
 
   void _submitSearch(String raw) {
-    if (_voice.isOwnedBy(this) || _voiceActive) {
+    if (_voiceActive) {
       unawaited(_finishVoiceAndSubmit());
       return;
     }
