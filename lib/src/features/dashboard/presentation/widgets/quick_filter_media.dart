@@ -242,7 +242,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   Future<void> _playIfReady() async {
-    if (!_routeActive || !_videoEnabled) return;
+    if (!_routeActive || !_videoEnabled || !_videoPreviewEnabled) return;
     final player = _video;
     if (player == null || !player.value.isInitialized) {
       await _syncVideo(autoPlay: true);
@@ -330,7 +330,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       if (mounted) setState(() {});
     } finally {
       _binding = false;
-      await previous?.dispose();
+      if (previous != null) {
+        try {
+          await previous.dispose();
+        } catch (_) {}
+      }
     }
   }
 
