@@ -7,6 +7,10 @@ import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart'
 import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
 
+// The globe is a cinematic arrival, not a loading tax. Show it once per app
+// process; every later Map open goes straight to the live discovery map.
+bool _nativeMapIntroShownThisSession = false;
+
 /// Native iOS/Android map entry point.
 ///
 /// Native must stay on the Mapbox SDK. Before creating any Mapbox surface we
@@ -41,10 +45,10 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
   late Future<bool> _mapboxReady;
   late final DeckAudioNotifier _audioNotifier;
 
-  // A newly opened map route gets the cinematic globe. Pushing a listing on
-  // top keeps this State alive, so Back returns to the exact live map without
-  // replaying the intro or rebuilding the navigation stack.
-  bool _showIntro = true;
+  // A newly opened map route gets the cinematic globe only once per app
+  // session. Pushing a listing on top keeps this State alive, so Back returns
+  // to the exact live map without replaying the intro or navigation stack.
+  late bool _showIntro;
   bool _audioSuppressed = false;
   bool? _lastTickerActive;
 
@@ -52,15 +56,16 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
+    _showIntro = !_nativeMapIntroShownThisSession;
     _mapboxReady = _configureMapbox();
   }
 
   Future<bool> _configureMapbox() => MapboxRuntimeConfig.ensureConfigured()
-      .timeout(const Duration(seconds: 6), onTimeout: () => false);
+      .timeout(const Duration(seconds: 5), onTimeout: () => false);
 
   void _retryMapbox() {
     setState(() {
-      _showIntro = true;
+      _showIntro = !_nativeMapIntroShownThisSession;
       _mapboxReady = _configureMapbox();
     });
   }
@@ -169,31 +174,38 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _mapboxReady,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return _loading();
-        }
+    // Always paint an opaque map canvas. The intro MapWidget used to fade from
+    // transparent, which exposed the dashboard underneath and looked exactly
+    // like the map had crashed/closed before reappearing a few seconds later.
+    return ColoredBox(
+      color: const Color(0xFFF1F4F7),
+      child: FutureBuilder<bool>(
+        future: _mapboxReady,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return _loading();
+          }
 
-        if (snapshot.data != true) {
-          return _unavailable();
-        }
+          if (snapshot.data != true) {
+            return _unavailable();
+          }
 
-        if (_showIntro) {
-          return MapboxWorldIntroScreen(
-            onComplete: () {
-              if (!mounted) return;
-              setState(() => _showIntro = false);
-            },
+          if (_showIntro) {
+            return MapboxWorldIntroScreen(
+              onComplete: () {
+                if (!mounted) return;
+                _nativeMapIntroShownThisSession = true;
+                setState(() => _showIntro = false);
+              },
+            );
+          }
+
+          return RealMapboxScreenV2(
+            onClose: widget.onClose,
+            showCitiesOnOpen: widget.showCitiesOnOpen,
           );
-        }
-
-        return RealMapboxScreenV2(
-          onClose: widget.onClose,
-          showCitiesOnOpen: widget.showCitiesOnOpen,
-        );
-      },
+        },
+      ),
     );
   }
 }
