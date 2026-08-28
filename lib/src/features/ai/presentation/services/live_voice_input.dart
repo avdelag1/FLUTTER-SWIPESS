@@ -40,7 +40,7 @@ class LiveVoiceInput {
   String _committed = '';
   String _lastPublished = '';
   String _nativeSessionText = '';
-  String _languageCode = 'en-US';
+  String _languageCode = '';
   bool _segmentHasSpeech = false;
   bool _silenceDeliveredForSegment = false;
   bool _nativeSegmentCommitted = false;
@@ -86,8 +86,7 @@ class LiveVoiceInput {
   }
 
   void setLanguage(String langCode) {
-    final clean = langCode.trim();
-    if (clean.isNotEmpty) _languageCode = clean;
+    _languageCode = langCode.trim();
     if (kIsWeb) _browser.setLanguage(_languageCode);
   }
 
@@ -249,6 +248,14 @@ class LiveVoiceInput {
       final locales = await _nativeSpeech.locales();
       if (locales.isEmpty) return preferred;
 
+      if (preferred.trim().isEmpty || preferred == 'auto') {
+        final system = await _nativeSpeech.systemLocale();
+        if (system != null && system.localeId.trim().isNotEmpty) {
+          return system.localeId;
+        }
+        return locales.first.localeId;
+      }
+
       final exact = locales.where((l) => l.localeId == preferred);
       if (exact.isNotEmpty) return exact.first.localeId;
 
@@ -258,7 +265,8 @@ class LiveVoiceInput {
       );
       if (languageMatch.isNotEmpty) return languageMatch.first.localeId;
 
-      return locales.first.localeId;
+      final system = await _nativeSpeech.systemLocale();
+      return system?.localeId ?? locales.first.localeId;
     } catch (_) {
       return preferred;
     }

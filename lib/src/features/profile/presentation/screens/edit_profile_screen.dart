@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';

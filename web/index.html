@@ -379,7 +379,7 @@
 
       window.SwipessSpeech = {
         setLanguage: function(lang) {
-          selectedLang = lang;
+          selectedLang = (lang && lang !== 'auto') ? lang : null;
         },
         isSupported: function () {
           return !!(window.SpeechRecognition || window.webkitSpeechRecognition);

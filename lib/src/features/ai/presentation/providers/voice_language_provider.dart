@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Supported voice recognition languages.
+///
+/// [auto] is the default so dashboard dictation can preserve bilingual and
+/// code-switched speech instead of forcing every new session through en-US.
 enum VoiceLanguage {
+  auto('', 'AUTO', '🌐 Auto detect'),
   english('en-US', 'EN', '🇺🇸 English'),
   spanish('es-MX', 'ES', '🇲🇽 Español'),
   french('fr-FR', 'FR', '🇫🇷 Français'),
@@ -18,6 +22,8 @@ enum VoiceLanguage {
   final String localeCode;
   final String shortCode;
   final String displayName;
+
+  bool get isAutomatic => this == VoiceLanguage.auto;
 }
 
 /// Global provider for the user's selected voice recognition language.
@@ -28,7 +34,7 @@ final voiceLanguageProvider =
 
 class VoiceLanguageNotifier extends Notifier<VoiceLanguage> {
   @override
-  VoiceLanguage build() => VoiceLanguage.english;
+  VoiceLanguage build() => VoiceLanguage.auto;
 
   void setLanguage(VoiceLanguage lang) {
     state = lang;

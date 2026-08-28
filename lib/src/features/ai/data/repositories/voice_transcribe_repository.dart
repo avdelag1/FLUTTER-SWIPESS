@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:http/http.dart' as http;
@@ -14,7 +15,11 @@ final voiceTranscribeRepositoryProvider = Provider<VoiceTranscribeRepository>((
   return VoiceTranscribeRepository();
 });
 
-/// Cap `useVoiceTranscribe` — MediaRecorder / `record`, then `voice-transcribe`.
+/// High-accuracy voice capture backed by the `voice-transcribe` Edge Function.
+///
+/// The default language is automatic. Passing a concrete locale such as
+/// `es-MX` or `en-US` gives Whisper a useful hint, while an empty value lets it
+/// auto-detect bilingual/code-switched speech.
 class VoiceTranscribeRepository {
   VoiceTranscribeRepository({
     AudioRecorder? recorder,
@@ -47,14 +52,27 @@ class VoiceTranscribeRepository {
   Future<bool> start() async {
     if (!await _recorder.hasPermission()) return false;
     if (await _recorder.isRecording()) return true;
+
+    // Chrome/Edge/Firefox do not reliably support AAC MediaRecorder output,
+    // while WAV works across modern browsers. Native iOS/Android use compact
+    // AAC/M4A. Auto gain / echo cancellation / noise suppression are best-effort
+    // and are ignored on platforms that do not support them.
+    final config = RecordConfig(
+      encoder: kIsWeb ? AudioEncoder.wav : AudioEncoder.aacLc,
+      numChannels: 1,
+      sampleRate: 16000,
+      autoGain: true,
+      echoCancel: true,
+      noiseSuppress: true,
+    );
     await _recorder.start(
-      const RecordConfig(numChannels: 1, sampleRate: 16000),
-      path: 'swipess_voice.m4a',
+      config,
+      path: kIsWeb ? '' : 'swipess_voice.m4a',
     );
     return true;
   }
 
-  Future<String> stop({String language = 'en-US'}) async {
+  Future<String> stop({String language = ''}) async {
     final path = await _recorder.stop();
     if (path == null || path.isEmpty) return '';
     final bytes = await _readBytes(path);
@@ -68,7 +86,7 @@ class VoiceTranscribeRepository {
 
   Future<void> cancel() async {
     if (await _recorder.isRecording()) {
-      await _recorder.stop();
+      await _recorder.cancel();
     }
   }
 
@@ -92,12 +110,21 @@ class VoiceTranscribeRepository {
   Future<String> transcribe(
     Uint8List bytes, {
     required String mimeType,
-    String language = 'en-US',
+    String language = '',
   }) async {
     final url = Uri.parse(
       '${SupabaseService.supabaseUrl}/functions/v1/voice-transcribe',
     );
     final token = _authorizationToken();
+    final requestedLanguage = language.trim();
+    final payload = <String, Object>{
+      'audio': base64Encode(bytes),
+      'mimeType': mimeType,
+    };
+    if (requestedLanguage.isNotEmpty) {
+      payload['language'] = requestedLanguage;
+    }
+
     late http.Response resp;
     try {
       resp = await _http
@@ -108,11 +135,7 @@ class VoiceTranscribeRepository {
               'Authorization': 'Bearer $token',
               'apikey': SupabaseService.anonKey,
             },
-            body: jsonEncode({
-              'audio': base64Encode(bytes),
-              'mimeType': mimeType,
-              'language': language,
-            }),
+            body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 45));
     } catch (_) {
@@ -137,6 +160,7 @@ class VoiceTranscribeRepository {
   }
 
   static String _mimeFor(String path) {
+    if (kIsWeb) return 'audio/wav';
     final lower = path.toLowerCase();
     if (lower.contains('.wav')) return 'audio/wav';
     if (lower.contains('.mp4') || lower.contains('.m4a')) return 'audio/mp4';
