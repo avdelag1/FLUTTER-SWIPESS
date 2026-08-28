@@ -159,7 +159,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       Text(
                         tokensLabel,
                         style: GoogleFonts.plusJakartaSans(
-                          color: ink,
+                          color: AppTheme.brandPrimary,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w900,
                         ),
@@ -193,15 +193,36 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       ref.watch(unreadNotificationsProvider).when(
                             data: (count) => count <= 0
                                 ? const SizedBox.shrink()
-                                : const Positioned(
-                                    right: -1,
-                                    top: -1,
-                                    child: DecoratedBox(
+                                : Positioned(
+                                    right: -8,
+                                    top: -7,
+                                    child: Container(
+                                      constraints: const BoxConstraints(
+                                        minWidth: 17,
+                                        minHeight: 17,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      alignment: Alignment.center,
                                       decoration: BoxDecoration(
                                         color: AppTheme.brandPrimary,
-                                        shape: BoxShape.circle,
+                                        borderRadius: BorderRadius.circular(999),
+                                        border: Border.all(
+                                          color: ink,
+                                          width: 1.5,
+                                        ),
                                       ),
-                                      child: SizedBox(width: 7, height: 7),
+                                      child: Text(
+                                        count > 99 ? '99+' : '$count',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: Colors.white,
+                                          fontSize: 8,
+                                          height: 1,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
                                     ),
                                   ),
                             loading: () => const SizedBox.shrink(),
