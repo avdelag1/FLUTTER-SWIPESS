@@ -7,16 +7,45 @@ import 'package:go_router/go_router.dart';
 
 /// Shared back-navigation helper for phone pages and overlays.
 ///
-/// Never rely on [GoRouter.canPop] on web/PWA — browser history can report a
-/// poppable stack that silently ignores [GoRouter.pop].
+/// GoRouter pages in Swipess are frequently entered with `context.go()`. In
+/// web/PWA builds Flutter's Navigator can still report `canPop == true` for an
+/// internal route that is not the user's previous screen. Popping that route
+/// can immediately redirect back to the same location, which makes the back
+/// button look dead.
+///
+/// For an app-routed page we therefore navigate declaratively to a known safe
+/// parent first. Navigator.pop is reserved for local/pushed routes where there
+/// is no GoRouter location available.
 abstract final class NavBack {
   static String resolvedFallback(BuildContext context, {String? fallbackPath}) {
     if (fallbackPath != null && fallbackPath.isNotEmpty) return fallbackPath;
     final path = _currentPath(context);
+
+    // Keep detail pages inside the section the user came from whenever there
+    // is a deterministic parent route.
+    if (path == AppPaths.exploreEventsLikes ||
+        path.startsWith('${AppPaths.exploreEvents}/')) {
+      return AppPaths.exploreEvents;
+    }
+    if (path.startsWith('${AppPaths.messages}/')) return AppPaths.messages;
+    if (path == AppPaths.clientVapIdEdit) return AppPaths.clientVapId;
+
+    // Workspace-safe fallbacks.
     if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
     if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
     if (path.startsWith('/business/')) return AppPaths.businessDashboard;
     if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
+
+    // Profile/settings pages should return to profile rather than jumping
+    // through an unrelated navigator stack.
+    if (path == AppPaths.clientSettings ||
+        path == AppPaths.clientSavedSearches ||
+        path == AppPaths.clientSecurity ||
+        path == AppPaths.clientAdvertise ||
+        path == AppPaths.clientPerks) {
+      return AppPaths.clientProfile;
+    }
+
     return AppPaths.clientDashboard;
   }
 
@@ -39,6 +68,20 @@ abstract final class NavBack {
       return;
     }
 
+    final currentPath = _currentPath(context);
+    final fallback = resolvedFallback(context, fallbackPath: fallbackPath);
+    final router = GoRouter.maybeOf(context);
+
+    // This is the critical PWA/native parity rule: if this widget belongs to a
+    // GoRouter page, do not trust Navigator.canPop(). Move to the deterministic
+    // parent route immediately. It is synchronous and cannot silently pop into
+    // a redirect loop.
+    if (router != null && currentPath.isNotEmpty && currentPath != fallback) {
+      router.go(fallback);
+      return;
+    }
+
+    // Only local routes/dialog-style pages should reach Navigator.pop.
     final nearest = Navigator.of(context);
     if (nearest.canPop()) {
       nearest.pop();
@@ -51,7 +94,9 @@ abstract final class NavBack {
       return;
     }
 
-    context.go(resolvedFallback(context, fallbackPath: fallbackPath));
+    if (router != null && currentPath != fallback) {
+      router.go(fallback);
+    }
   }
 }
 
