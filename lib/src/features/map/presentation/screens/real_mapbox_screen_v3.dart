@@ -782,27 +782,28 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 ),
               ),
             ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 125,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xDFFFFFFF),
-                      Color(0x72FFFFFF),
-                      Color(0x00FFFFFF),
-                    ],
+          if (_loaded)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 125,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xDFFFFFFF),
+                        Color(0x72FFFFFF),
+                        Color(0x00FFFFFF),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           if (_controls) ...[
             if (_menu || _cities || _search)
               Positioned.fill(
