@@ -486,6 +486,58 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         ),
                       ),
               ),
+            Positioned(
+              right: 8,
+              bottom: 9,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: ready && _videoPreviewEnabled ? _toggleSound : null,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(108),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withAlpha(50)),
+                      ),
+                      child: Icon(
+                        soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                        color: _videoPreviewEnabled
+                            ? Colors.white
+                            : Colors.white.withAlpha(90),
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: _toggleVideoPreview,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(108),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withAlpha(50)),
+                      ),
+                      child: Icon(
+                        _videoPreviewEnabled
+                            ? Icons.videocam_rounded
+                            : Icons.videocam_off_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -517,41 +569,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.1,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 5,
-              right: 5,
-              child: Semantics(
-                button: true,
-                label: _videoPreviewEnabled
-                    ? 'Turn video preview off'
-                    : 'Turn video preview on',
-                child: Tooltip(
-                  message: _videoPreviewEnabled
-                      ? 'Video preview on'
-                      : 'Video preview off',
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _toggleVideoPreview,
-                    child: SizedBox(
-                      width: 34,
-                      height: 34,
-                      child: Center(
-                        child: Icon(
-                          _videoPreviewEnabled
-                              ? Icons.videocam_rounded
-                              : Icons.videocam_off_rounded,
-                          color: Colors.white,
-                          size: 18,
-                          shadows: const [
-                            Shadow(color: Colors.black87, blurRadius: 7),
-                          ],
-                        ),
-                      ),
-                    ),
                   ),
                 ),
               ),
@@ -598,26 +615,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: ready && _videoPreviewEnabled ? _toggleSound : null,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(100),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(40)),
-                      ),
-                      child: Icon(
-                        soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                        color: _videoPreviewEnabled
-                            ? Colors.white
-                            : Colors.white.withAlpha(90),
-                        size: 16,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 42),
                 ],
               ),
             ),
