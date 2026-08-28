@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -96,10 +97,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (_dismissed || !mounted) return;
     _dismissed = true;
     AppHaptics.medium();
-    final router = GoRouter.of(context);
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) navigator.pop();
-    router.go(AppPaths.clientDashboard);
+    GoRouter.of(context).go(AppPaths.clientDashboard);
   }
 
   bool _handlePullDown(ScrollNotification notification) {
@@ -355,7 +353,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     children: [
                                       _GlassBtn(
                                         icon: Icons.arrow_back_ios_new_rounded,
-                                        onTap: () => Navigator.pop(context),
+                                        onTap: () => NavBack.popOrGo(context, fallbackPath: AppPaths.exploreEvents),
                                       ),
                                       const Spacer(),
                                       _GlassBtn(
@@ -445,7 +443,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   _SiblingChip(
                                     label: 'More events',
                                     highlighted: true,
-                                    onTap: () => Navigator.pop(context),
+                                    onTap: () => NavBack.popOrGo(context, fallbackPath: AppPaths.exploreEvents),
                                   ),
                                   const Spacer(),
                                   _SiblingChip(
