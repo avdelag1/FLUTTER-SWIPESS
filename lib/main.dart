@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/app_splash_screen.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -121,6 +122,10 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 300), () {
         if (!mounted) return;
+        // TestFlight builds may not receive dart-defines. Start Mapbox token
+        // restoration/fetching before the user taps Map so the native map can
+        // open immediately instead of waiting on configuration at tap time.
+        if (!kIsWeb) unawaited(MapboxRuntimeConfig.ensureConfigured());
         unawaited(flushOfflineSwipeQueue());
         unawaited(_initializePayments());
       });
