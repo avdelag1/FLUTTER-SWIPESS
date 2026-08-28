@@ -42,8 +42,8 @@ abstract final class SwipessGlassLook {
 
   static const Color accent = Color(0xFFFF3D78);
   static const Color accentWarm = Color(0xFFFF5A36);
-  static const Color ai = Color(0xFF4F6BFF);
-  static const Color aiSoft = Color(0xFF7B8DFF);
+  static const Color ai = Color(0xFFFF4D78);
+  static const Color aiSoft = Color(0xFFFF9A68);
 
   static List<BoxShadow> shadow(BuildContext context, {bool strong = false}) => [
         BoxShadow(
