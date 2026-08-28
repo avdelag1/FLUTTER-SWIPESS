@@ -495,7 +495,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   GestureDetector(
-                    onTap: ready && _videoPreviewEnabled ? _toggleSound : null,
+                    onTap: _toggleSound,
                     behavior: HitTestBehavior.opaque,
                     child: Container(
                       width: 30,
@@ -508,9 +508,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ),
                       child: Icon(
                         soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                        color: _videoPreviewEnabled
-                            ? Colors.white
-                            : Colors.white.withAlpha(90),
+                        color: Colors.white,
                         size: 16,
                       ),
                     ),
@@ -540,17 +538,19 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                 ],
               ),
             ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x18000000),
-                    Color(0x00000000),
-                    Color(0xB8000000),
+            const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x18000000),
+                      Color(0x00000000),
+                      Color(0xB8000000),
+                    ],
+                    stops: [0, .48, 1],
                   ],
-                  stops: [0, .48, 1],
                 ),
               ),
             ),
