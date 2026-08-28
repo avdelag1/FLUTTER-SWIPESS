@@ -1042,16 +1042,20 @@ class _SavedEventsButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
-                Icons.bookmarks_rounded,
-                size: 19,
-                color: Color(0xFFFF8A65),
+                Icons.favorite_rounded,
+                size: 20,
+                color: Color(0xFFFF3040),
+                shadows: [
+                  Shadow(color: Color(0x99FF3040), blurRadius: 8),
+                  Shadow(color: Color(0xCC000000), blurRadius: 3),
+                ],
               ),
               if (count > 0) ...[
                 const SizedBox(width: 4),
                 Text(
                   '$count',
                   style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFFFF6B7A),
+                    color: const Color(0xFFFFB3BE),
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),
