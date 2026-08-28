@@ -11,10 +11,10 @@ import 'package:go_router/go_router.dart';
 /// forced through an empty listing deck. They route directly to their section.
 ///
 /// IMPORTANT: this helper is also called from Intel Core, which lives inside a
-/// root overlay. Capture the router/navigator first, close the concierge, then
-/// navigate with the captured objects. Using the overlay BuildContext after it
-/// is dismissed can crash Flutter Web with a null-check error and make an
-/// "Open Listings" tap appear to do nothing.
+/// root overlay. Capture the router/navigator first, close the concierge only
+/// when it is actually open, then navigate with the captured objects. Normal
+/// dashboard taps deliberately avoid an async yield so the destination appears
+/// in the same frame and feels immediate in web/PWA/native builds.
 Future<T?> openClientSwipeDeck<T extends Object?>(
   BuildContext context, {
   required String categoryId,
@@ -25,13 +25,13 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   final nav = Navigator.of(context, rootNavigator: true);
   final container = ProviderScope.containerOf(context, listen: false);
 
-  // Harmless when Intel Core is not open; essential when this action comes
-  // from an AI follow-up chip so the destination is not hidden underneath it.
-  container.read(overlayModalsProvider.notifier).closeConcierge();
-
-  // Let the overlay leave the tree before pushing the next full-screen deck.
-  // We deliberately do not touch the caller BuildContext after this point.
-  await Future<void>.delayed(Duration.zero);
+  final overlay = container.read(overlayModalsProvider);
+  if (overlay.showConcierge) {
+    container.read(overlayModalsProvider.notifier).closeConcierge();
+    // Only overlay-originated navigation needs a yield so its route can leave
+    // the tree. Dashboard quick-filter taps do not wait here.
+    await Future<void>.delayed(Duration.zero);
+  }
 
   switch (categoryId) {
     case 'legal':
@@ -50,12 +50,29 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
 
   if (!nav.mounted) return null;
 
-  final route = MaterialPageRoute<T>(
-    builder: (_) => ClientSwipeContainer(
+  // Keep the previous frame visible under a very short fade instead of using
+  // MaterialPageRoute's longer platform transition. This removes the dark/
+  // black beat users could see after tapping a dashboard video/card.
+  final route = PageRouteBuilder<T>(
+    opaque: true,
+    transitionDuration: const Duration(milliseconds: 90),
+    reverseTransitionDuration: const Duration(milliseconds: 110),
+    pageBuilder: (_, __, ___) => ClientSwipeContainer(
       categoryId: categoryId,
       categoryTitle: categoryTitle,
     ),
+    transitionsBuilder: (_, animation, __, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        ),
+        child: child,
+      );
+    },
   );
+
   if (replace) return nav.pushReplacement(route);
   return nav.push(route);
 }
