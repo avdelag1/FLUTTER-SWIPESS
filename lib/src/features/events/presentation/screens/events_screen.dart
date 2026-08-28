@@ -12,18 +12,18 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
-import 'package:flutter_swipes/src/features/events/presentation/widgets/event_mute_button.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/promote_cta_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:video_player/video_player.dart';
 
-/// Reels-style Events feed with Instagram-like heart interactions.
+/// Reels-style Events feed.
 ///
-/// Dashboard event previews can hand their already-buffered player into this
-/// screen, so opening an event feels immediate instead of reconnecting to the
-/// same video URL and buffering again.
+/// Event categories stay out of the way until the top-right menu is opened.
+/// Likes sit beside that menu, while the per-event action rail stays tight to
+/// the right edge. Dashboard video previews can hand their buffered player into
+/// this screen so opening Events does not restart the same stream.
 class EventsScreen extends ConsumerStatefulWidget {
   const EventsScreen({super.key});
 
@@ -39,6 +39,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   String _category = 'All';
   late bool _chromeVisible;
   bool _chromePinned = false;
+  bool _categoryMenuOpen = false;
   Timer? _hideTimer;
 
   String? _handoffEventId;
@@ -49,16 +50,15 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   @override
   void initState() {
     super.initState();
+    _category = ref.read(selectedCategoryProvider);
     final handoff = EventPreviewHandoff.take();
     _handoffEventId = handoff?.eventId;
     _handoffPosition = handoff?.position;
     _handoffController = handoff?.controller;
 
-    // Always show chrome initially, then hide after 7 seconds
     _chromeVisible = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _showChrome();
+      if (mounted) _showChrome();
     });
   }
 
@@ -74,19 +74,25 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _hideTimer?.cancel();
     if (!_chromeVisible) setState(() => _chromeVisible = true);
     ref.read(chromeVisibilityProvider.notifier).show();
-    if (schedule && !_chromePinned) {
+    if (schedule && !_chromePinned && !_categoryMenuOpen) {
       _hideTimer = Timer(_chromeTimeout, _hideChrome);
     }
   }
 
   void _hideChrome() {
     _hideTimer?.cancel();
-    if (!mounted || _chromePinned) return;
+    if (!mounted || _chromePinned || _categoryMenuOpen) return;
     if (_chromeVisible) setState(() => _chromeVisible = false);
     ref.read(chromeVisibilityProvider.notifier).hide();
   }
 
   void _toggleChrome() {
+    if (_categoryMenuOpen) {
+      AppHaptics.light();
+      setState(() => _categoryMenuOpen = false);
+      _showChrome();
+      return;
+    }
     if (_chromePinned) return;
     AppHaptics.light();
     if (_chromeVisible) {
@@ -103,6 +109,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       setState(() {
         _chromeVisible = false;
         _chromePinned = false;
+        _categoryMenuOpen = false;
       });
       ref.read(chromeVisibilityProvider.notifier).hide();
     } else {
@@ -115,7 +122,39 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   }
 
   void _touchChrome() {
-    if (!_chromePinned && _chromeVisible) _showChrome();
+    if (!_chromePinned && _chromeVisible && !_categoryMenuOpen) _showChrome();
+  }
+
+  void _toggleCategoryMenu() {
+    AppHaptics.light();
+    _hideTimer?.cancel();
+    setState(() {
+      _categoryMenuOpen = !_categoryMenuOpen;
+      _chromeVisible = true;
+    });
+    ref.read(chromeVisibilityProvider.notifier).show();
+    if (!_categoryMenuOpen) _showChrome();
+  }
+
+  void _selectCategory(EventFeedCategory category) {
+    AppHaptics.selection();
+    setState(() {
+      _category = category.key;
+      _categoryMenuOpen = false;
+      _index = 0;
+    });
+    ref.read(selectedCategoryProvider.notifier).setCategory(category.key);
+    if (_pages.hasClients) _pages.jumpToPage(0);
+    _showChrome();
+  }
+
+  void _goBack(BuildContext context) {
+    ref.read(chromeVisibilityProvider.notifier).show();
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppPaths.clientDashboard);
+    }
   }
 
   @override
@@ -123,7 +162,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final async = ref.watch(filteredEventsProvider);
     final categories = ref.watch(eventCategoriesProvider);
     final likedCount = ref.watch(favoritedEventsProvider).value?.length ?? 0;
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final safe = MediaQuery.paddingOf(context);
 
     return ColoredBox(
       color: Colors.black,
@@ -155,12 +194,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         style: const TextStyle(color: Colors.white),
                       ),
                       TextButton(
-                        onPressed: () {
-                          setState(() => _category = 'All');
-                          ref
-                              .read(selectedCategoryProvider.notifier)
-                              .setCategory('All');
-                        },
+                        onPressed: () => _selectCategory(categories.first),
                         child: const Text('Show all'),
                       ),
                     ],
@@ -176,9 +210,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 if (target >= 0) {
                   _index = target;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && _pages.hasClients) {
-                      _pages.jumpToPage(target);
-                    }
+                    if (mounted && _pages.hasClients) _pages.jumpToPage(target);
                   });
                 }
               }
@@ -192,7 +224,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 itemCount: events.length + 1,
                 onPageChanged: (index) {
                   AppHaptics.selection();
-                  setState(() => _index = index);
+                  setState(() {
+                    _index = index;
+                    _categoryMenuOpen = false;
+                  });
                   _touchChrome();
                 },
                 itemBuilder: (context, index) {
@@ -209,7 +244,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     active: index == _index,
                     shouldLoadVideo: (index - _index).abs() <= 1,
                     chromeVisible: _chromeVisible,
-                    likedCount: likedCount,
                     initialPosition: event.id == _handoffEventId
                         ? _handoffPosition
                         : null,
@@ -218,10 +252,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         : null,
                     onToggleChrome: _toggleChrome,
                     onChromeInteraction: _touchChrome,
-                    onOpenLikes: () {
-                      _touchChrome();
-                      context.push(AppPaths.exploreEventsLikes);
-                    },
                     onOpen: () {
                       _touchChrome();
                       context.push(AppPaths.exploreEvent(event.id));
@@ -231,6 +261,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               );
             },
           ),
+
+          // Minimal permanent event chrome: back at the far left, saved events
+          // + category menu at the far right. Category bubbles do not consume
+          // horizontal space until explicitly requested.
           Positioned(
             top: 0,
             left: 0,
@@ -239,66 +273,38 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ignoring: !_chromeVisible,
               child: AnimatedSlide(
                 offset: _chromeVisible ? Offset.zero : const Offset(0, -1),
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: _chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 180),
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+                      padding: const EdgeInsets.fromLTRB(2, 3, 2, 0),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _GlassIcon(
-                            icon: Icons.arrow_back_rounded,
+                          _EdgeGlassButton(
+                            icon: Icons.arrow_back_ios_new_rounded,
+                            tooltip: 'Back',
+                            onTap: () => _goBack(context),
+                          ),
+                          const Spacer(),
+                          _SavedEventsButton(
+                            count: likedCount,
                             onTap: () {
-                              ref
-                                  .read(chromeVisibilityProvider.notifier)
-                                  .show();
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go(AppPaths.clientDashboard);
-                              }
+                              _touchChrome();
+                              context.push(AppPaths.exploreEventsLikes);
                             },
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: SizedBox(
-                              height: 64,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: categories.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: 7),
-                                itemBuilder: (context, i) {
-                                  final category = categories[i];
-                                  return _CategoryChip(
-                                    category: category,
-                                    active: _category == category.key,
-                                    onTap: () {
-                                      AppHaptics.light();
-                                      setState(() {
-                                        _category = category.key;
-                                        _index = 0;
-                                      });
-                                      ref
-                                          .read(
-                                            selectedCategoryProvider.notifier,
-                                          )
-                                          .setCategory(category.key);
-                                      if (_pages.hasClients) {
-                                        _pages.jumpToPage(0);
-                                      }
-                                      _touchChrome();
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
+                          const SizedBox(width: 3),
+                          _EdgeGlassButton(
+                            icon: _categoryMenuOpen
+                                ? Icons.close_rounded
+                                : Icons.tune_rounded,
+                            tooltip: 'Event categories',
+                            active: _categoryMenuOpen,
+                            onTap: _toggleCategoryMenu,
                           ),
                         ],
                       ),
@@ -308,15 +314,71 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ),
             ),
           ),
+
+          // Categories materialize from the right edge and flow left. They sit
+          // almost flush with the viewport instead of living permanently in a
+          // padded top rail.
           Positioned(
-            right: 12,
-            bottom: safeBottom + 18,
-            child: _GlassIcon(
+            top: safe.top + 45,
+            left: 42,
+            right: 1,
+            height: 61,
+            child: IgnorePointer(
+              ignoring: !_chromeVisible || !_categoryMenuOpen,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeOutBack,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final slide = Tween<Offset>(
+                    begin: const Offset(.22, 0),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(position: slide, child: child),
+                  );
+                },
+                child: _categoryMenuOpen
+                    ? Align(
+                        key: const ValueKey('event-category-menu-open'),
+                        alignment: Alignment.topRight,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          reverse: true,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (final category in categories.reversed) ...[
+                                _CategoryBubble(
+                                  category: category,
+                                  active: _category == category.key,
+                                  onTap: () => _selectCategory(category),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(
+                        key: ValueKey('event-category-menu-closed'),
+                      ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            right: 1,
+            bottom: safe.bottom + 4,
+            child: _EdgeGlassButton(
               icon: _chromeVisible
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
+              tooltip: _chromeVisible ? 'Hide controls' : 'Show controls',
+              size: 34,
               onTap: _togglePin,
-              size: 38,
             ),
           ),
         ],
@@ -331,10 +393,8 @@ class _EventPage extends ConsumerStatefulWidget {
     required this.active,
     required this.shouldLoadVideo,
     required this.chromeVisible,
-    required this.likedCount,
     required this.onToggleChrome,
     required this.onChromeInteraction,
-    required this.onOpenLikes,
     required this.onOpen,
     this.initialPosition,
     this.initialController,
@@ -344,10 +404,8 @@ class _EventPage extends ConsumerStatefulWidget {
   final bool active;
   final bool shouldLoadVideo;
   final bool chromeVisible;
-  final int likedCount;
   final VoidCallback onToggleChrome;
   final VoidCallback onChromeInteraction;
-  final VoidCallback onOpenLikes;
   final VoidCallback onOpen;
   final Duration? initialPosition;
   final VideoPlayerController? initialController;
@@ -540,8 +598,8 @@ class _EventPageState extends ConsumerState<_EventPage> {
         children: [
           if (ready)
             AnimatedScale(
-              scale: widget.chromeVisible ? 1.0 : 1.06,
-              duration: const Duration(milliseconds: 400),
+              scale: widget.chromeVisible ? 1.0 : 1.055,
+              duration: const Duration(milliseconds: 380),
               curve: Curves.easeOutCubic,
               child: FittedBox(
                 fit: BoxFit.cover,
@@ -554,8 +612,8 @@ class _EventPageState extends ConsumerState<_EventPage> {
             )
           else if (image.isNotEmpty)
             AnimatedScale(
-              scale: widget.chromeVisible ? 1.0 : 1.06,
-              duration: const Duration(milliseconds: 400),
+              scale: widget.chromeVisible ? 1.0 : 1.055,
+              duration: const Duration(milliseconds: 380),
               curve: Curves.easeOutCubic,
               child: Image.network(
                 image,
@@ -575,62 +633,68 @@ class _EventPageState extends ConsumerState<_EventPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0x22000000),
+                  Color(0x18000000),
                   Colors.transparent,
-                  Color(0xB0000000),
+                  Color(0xB3000000),
                 ],
-                stops: [0, .55, 1],
+                stops: [0, .52, 1],
               ),
             ),
           ),
+
+          // Tight, bright, right-edge action rail. Saved-library navigation was
+          // moved to the top-right header, so this rail contains only actions
+          // for the current event.
           Positioned(
-            right: 12,
-            bottom: bottom + 105,
+            right: 0,
+            bottom: bottom + 80,
             child: IgnorePointer(
               ignoring: !widget.chromeVisible,
               child: AnimatedSlide(
                 offset: widget.chromeVisible
                     ? Offset.zero
-                    : const Offset(1, 0),
-                duration: const Duration(milliseconds: 300),
+                    : const Offset(.8, 0),
+                duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: widget.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 180),
                   child: Column(
                     children: [
-                      _HeartLibraryButton(
-                        count: widget.likedCount,
-                        onTap: widget.onOpenLikes,
-                      ),
-                      const SizedBox(height: 10),
-                      _HeartButton(
-                        active: favorited,
+                      _RailAction(
+                        icon: favorited
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: favorited
+                            ? const Color(0xFFFF3040)
+                            : Colors.white,
                         onTap: _toggleFavorite,
                       ),
-                      const SizedBox(height: 10),
-                      EventMuteButton(
-                        soundOn: soundOn,
-                        onToggle: () {
+                      const SizedBox(height: 3),
+                      _RailAction(
+                        icon: soundOn
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded,
+                        onTap: () {
                           widget.onChromeInteraction();
                           ref
                               .read(deckSoundOnProvider.notifier)
                               .setSoundOn(!soundOn);
                         },
                       ),
-                      const SizedBox(height: 10),
-                      _RailButton(
+                      const SizedBox(height: 3),
+                      _RailAction(
                         icon: Icons.info_outline_rounded,
                         onTap: widget.onOpen,
                       ),
-                      const SizedBox(height: 6),
-                      _RailButton(
+                      const SizedBox(height: 3),
+                      _RailAction(
                         icon: Icons.chat_bubble_outline_rounded,
                         onTap: _whatsApp,
                       ),
-                      const SizedBox(height: 6),
-                      _RailButton(
-                        icon: Icons.share_rounded,
+                      const SizedBox(height: 3),
+                      _RailAction(
+                        icon: Icons.ios_share_rounded,
                         onTap: _share,
                       ),
                     ],
@@ -639,51 +703,52 @@ class _EventPageState extends ConsumerState<_EventPage> {
               ),
             ),
           ),
+
           Positioned(
-            left: 18,
-            right: 82,
-            bottom: bottom + 26,
+            left: 12,
+            right: 48,
+            bottom: bottom + 18,
             child: IgnorePointer(
               ignoring: !widget.chromeVisible,
               child: AnimatedSlide(
                 offset: widget.chromeVisible
                     ? Offset.zero
-                    : const Offset(0, 1),
-                duration: const Duration(milliseconds: 300),
+                    : const Offset(0, .7),
+                duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: widget.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 180),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                        spacing: 5,
+                        runSpacing: 5,
                         children: [
                           _MetaPill(label: event.category.toUpperCase()),
                           if (event.isFree) const _MetaPill(label: 'FREE'),
                           if (_hasVideo) const _MetaPill(label: 'VIDEO'),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Text(
                         event.title,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
-                          fontSize: 26,
-                          height: 1.04,
+                          fontSize: 25,
+                          height: 1.03,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: -0.7,
+                          letterSpacing: -.7,
                           shadows: const [
                             Shadow(color: Colors.black, blurRadius: 12),
                           ],
                         ),
                       ),
                       if ((event.organizerName ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
                         Text(
                           'by ${event.organizerName}',
                           style: GoogleFonts.plusJakartaSans(
@@ -693,21 +758,21 @@ class _EventPageState extends ConsumerState<_EventPage> {
                         ),
                       ],
                       if ((event.promoText ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 5),
                         Text(
                           event.promoText!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white70,
-                            height: 1.3,
+                            height: 1.28,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 9),
+                      const SizedBox(height: 8),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
+                        spacing: 6,
+                        runSpacing: 5,
                         children: [
                           if (event.eventDate != null)
                             _InfoChip(
@@ -734,97 +799,51 @@ class _EventPageState extends ConsumerState<_EventPage> {
   }
 }
 
-class _HeartLibraryButton extends StatelessWidget {
-  const _HeartLibraryButton({required this.count, required this.onTap});
+class _SavedEventsButton extends StatelessWidget {
+  const _SavedEventsButton({required this.count, required this.onTap});
 
   final int count;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 52,
-        child: Column(
-          children: [
-            const Icon(
-              Icons.favorite_rounded,
-              color: Color(0xFFFF3040),
-              size: 31,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '$count',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFFF3040),
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeartButton extends StatelessWidget {
-  const _HeartButton({required this.active, required this.onTap});
-
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: Center(
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 150),
-            scale: active ? 1.08 : 1,
-            child: Icon(
-              active
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: active ? const Color(0xFFFF3040) : Colors.white,
-              size: 31,
-              shadows: const [
-                Shadow(color: Colors.black54, blurRadius: 10),
-              ],
-            ),
+    return Semantics(
+      button: true,
+      label: 'Saved events, $count',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          height: 38,
+          constraints: const BoxConstraints(minWidth: 42),
+          padding: EdgeInsets.symmetric(horizontal: count > 0 ? 9 : 7),
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(72),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withAlpha(44), width: .7),
+            boxShadow: const [
+              BoxShadow(color: Color(0x33000000), blurRadius: 12),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RailButton extends StatelessWidget {
-  const _RailButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 22,
-            shadows: const [
-              Shadow(color: Colors.black87, blurRadius: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.favorite_rounded,
+                size: 19,
+                color: Color(0xFFFF3040),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 4),
+                Text(
+                  '$count',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -833,33 +852,51 @@ class _RailButton extends StatelessWidget {
   }
 }
 
-class _GlassIcon extends StatelessWidget {
-  const _GlassIcon({
+class _EdgeGlassButton extends StatelessWidget {
+  const _EdgeGlassButton({
     required this.icon,
     required this.onTap,
-    this.size = 40,
+    required this.tooltip,
+    this.size = 38,
+    this.active = false,
   });
 
   final IconData icon;
   final VoidCallback onTap;
+  final String tooltip;
   final double size;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Center(
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: active
+                ? Colors.white.withAlpha(38)
+                : Colors.black.withAlpha(68),
+            border: Border.all(
+              color: Colors.white.withAlpha(active ? 94 : 42),
+              width: .7,
+            ),
+            boxShadow: const [
+              BoxShadow(color: Color(0x33000000), blurRadius: 12),
+            ],
+          ),
           child: Icon(
             icon,
             color: Colors.white,
-            size: 21,
-            shadows: const [
-              Shadow(color: Colors.black87, blurRadius: 10),
-            ],
+            size: size <= 34 ? 18 : 20,
+            shadows: const [Shadow(color: Colors.black87, blurRadius: 8)],
           ),
         ),
       ),
@@ -867,8 +904,8 @@ class _GlassIcon extends StatelessWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
+class _CategoryBubble extends StatelessWidget {
+  const _CategoryBubble({
     required this.category,
     required this.active,
     required this.onTap,
@@ -881,36 +918,47 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
-        width: 50,
+        width: 47,
+        height: 59,
         child: Column(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              padding: const EdgeInsets.all(2),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 39,
+              height: 39,
+              padding: EdgeInsets.all(active ? 2.2 : 1.2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: active
                     ? const LinearGradient(
-                        colors: [Color(0xFFFF3040), Color(0xFFEB4898)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFF3040), Color(0xFFEF48A6)],
                       )
                     : null,
-                color: active ? null : Colors.black54,
+                color: active ? null : Colors.black.withAlpha(90),
+                border: active
+                    ? null
+                    : Border.all(color: Colors.white.withAlpha(62), width: .7),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x55000000), blurRadius: 10),
+                ],
               ),
               child: ClipOval(
                 child: category.image.startsWith('assets/')
                     ? Image.asset(
                         category.image,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(category.icon),
+                        errorBuilder: (_, _, _) => _CategoryFallback(category),
                       )
                     : Image.network(
                         category.image,
                         fit: BoxFit.cover,
-                        cacheWidth: 140,
-                        errorBuilder: (_, _, _) => Icon(category.icon),
+                        cacheWidth: 120,
+                        errorBuilder: (_, _, _) => _CategoryFallback(category),
                       ),
               ),
             ),
@@ -920,12 +968,63 @@ class _CategoryChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: active ? Colors.white : Colors.white70,
-                fontSize: 8.5,
-                fontWeight: active ? FontWeight.w900 : FontWeight.w600,
+                color: active ? Colors.white : Colors.white.withAlpha(205),
+                fontSize: 8,
+                height: 1,
+                fontWeight: active ? FontWeight.w900 : FontWeight.w700,
+                shadows: const [Shadow(color: Colors.black, blurRadius: 6)],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryFallback extends StatelessWidget {
+  const _CategoryFallback(this.category);
+
+  final EventFeedCategory category;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: category.color,
+      child: Icon(category.icon, size: 19, color: Colors.white),
+    );
+  }
+}
+
+class _RailAction extends StatelessWidget {
+  const _RailAction({
+    required this.icon,
+    required this.onTap,
+    this.color = Colors.white,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: 37,
+        height: 35,
+        child: Center(
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+            shadows: const [
+              Shadow(color: Colors.black87, blurRadius: 9),
+              Shadow(color: Colors.white24, blurRadius: 2),
+            ],
+          ),
         ),
       ),
     );
@@ -940,16 +1039,16 @@ class _MetaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
       decoration: BoxDecoration(
-        color: AppTheme.brandPrimary.withAlpha(55),
+        color: AppTheme.brandPrimary.withAlpha(60),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 9,
+          fontSize: 8.5,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -966,16 +1065,17 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withAlpha(90),
+        color: Colors.black.withAlpha(92),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withAlpha(24), width: .5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Colors.white),
-          const SizedBox(width: 5),
+          Icon(icon, size: 11, color: Colors.white),
+          const SizedBox(width: 4),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 150),
             child: Text(
@@ -984,7 +1084,7 @@ class _InfoChip extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 10.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
             ),
