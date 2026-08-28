@@ -3,14 +3,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 
 final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final userId = ref.watch(currentUserProvider)?.id;
-  final likedIdsFuture = ref.watch(likedPeopleIdsProvider.future);
   final client = Supabase.instance.client;
+  final decidedIdsFuture = _fetchDecidedTargetIds(client, 'profile');
   final limit = loc.radiusKm >= 5000
       ? 1000
       : loc.radiusKm >= 500
@@ -37,7 +36,7 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
             'p_exclude_user_id': userId,
           },
         )
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 5));
     for (final profile in _parseRows(data)) {
       if (profile.id != userId && profile.id.isNotEmpty) {
         merged[profile.id] = profile;
@@ -62,19 +61,40 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final inArea = _forMap(merged.values.toList(growable: false), loc);
   final discoverable = await _filterDiscoverable(client, inArea);
 
-  // Keep the map unseen-only by filtering against the raw canonical liked IDs.
-  // Do not rebuild complete ProfileLike objects just to know which IDs to hide;
-  // legacy/malformed profile rows must never make liked people reappear.
-  try {
-    final likedIds = await likedIdsFuture;
-    if (likedIds.isEmpty) return discoverable;
-    return discoverable
-        .where((profile) => !likedIds.contains(profile.id))
-        .toList(growable: false);
-  } catch (_) {
-    return discoverable;
-  }
+  // People follow the same strict unseen-only Map rule as listings: once the
+  // user has made either a right/save or left/dismiss decision, do not recycle
+  // that person in the map tray or pins.
+  final decidedIds = await decidedIdsFuture;
+  if (decidedIds == null || decidedIds.isEmpty) return discoverable;
+  return discoverable
+      .where((profile) => !decidedIds.contains(profile.id))
+      .toList(growable: false);
 });
+
+Future<Set<String>?> _fetchDecidedTargetIds(
+  SupabaseClient client,
+  String targetType,
+) async {
+  final userId = client.auth.currentUser?.id;
+  if (userId == null) return const <String>{};
+
+  try {
+    final rows = await client
+        .from('likes')
+        .select('target_id')
+        .eq('user_id', userId)
+        .eq('target_type', targetType)
+        .timeout(const Duration(seconds: 4));
+
+    return (rows as List)
+        .map((row) => (row as Map<String, dynamic>)['target_id']?.toString())
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+  } catch (_) {
+    return null;
+  }
+}
 
 Future<List<Profile>> _filterDiscoverable(
   SupabaseClient client,
@@ -82,10 +102,12 @@ Future<List<Profile>> _filterDiscoverable(
 ) async {
   if (profiles.isEmpty || client.auth.currentUser == null) return profiles;
   try {
-    final data = await client.rpc(
-      'rpc_filter_discoverable_profile_ids',
-      params: {'p_ids': profiles.map((e) => e.id).toList()},
-    );
+    final data = await client
+        .rpc(
+          'rpc_filter_discoverable_profile_ids',
+          params: {'p_ids': profiles.map((e) => e.id).toList()},
+        )
+        .timeout(const Duration(seconds: 4));
     if (data is! List) return const [];
     final visible = data.map((e) => e.toString()).toSet();
     return profiles.where((profile) => visible.contains(profile.id)).toList();
@@ -144,7 +166,7 @@ Future<List<Profile>> _fetchRegisteredCityProfiles(
         );
     query = query.ilike('city', '%$city%');
     if (userId != null) query = query.neq('user_id', userId);
-    final data = await query.limit(limit).timeout(const Duration(seconds: 8));
+    final data = await query.limit(limit).timeout(const Duration(seconds: 5));
     return _parseRows(data);
   } catch (_) {
     return const [];
@@ -163,7 +185,7 @@ Future<List<Profile>> _fallbackProfiles(
           'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
         );
     if (userId != null) query = query.neq('user_id', userId);
-    final data = await query.limit(limit).timeout(const Duration(seconds: 8));
+    final data = await query.limit(limit).timeout(const Duration(seconds: 5));
     return _parseRows(data);
   } catch (_) {
     return const [];
