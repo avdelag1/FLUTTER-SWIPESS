@@ -166,16 +166,16 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
 
   void _goDashboard() {
     ref.read(navTabProvider.notifier).set(NavTab.dashboard);
-    final nav = Navigator.of(context, rootNavigator: true);
-    if (nav.canPop()) nav.pop();
-    context.go(AppPaths.clientDashboard);
+    // This deck can be hosted inside a nested MaterialPageRoute. Popping the
+    // root navigator first can dispose this context before go() runs, leaving
+    // the visible back controls unresponsive. A direct router transition is
+    // deterministic from every quick-filter entry point.
+    GoRouter.of(context).go(AppPaths.clientDashboard);
   }
 
   void _goMessages() {
     ref.read(navTabProvider.notifier).set(NavTab.messages);
-    final nav = Navigator.of(context, rootNavigator: true);
-    if (nav.canPop()) nav.pop();
-    context.go(AppPaths.messages);
+    GoRouter.of(context).go(AppPaths.messages);
   }
 
   void _invalidateDecisionCaches() {
