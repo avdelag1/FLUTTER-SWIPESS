@@ -170,7 +170,7 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       children: [
         SwipessLogo(
           height: isDesktop ? 56 : 48,
-          variant: SwipessLogoVariant.outline,
+          variant: SwipessLogoVariant.transparent,
         ),
         const SizedBox(height: 24),
         Text(
@@ -344,63 +344,58 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
   }
 
   Widget _buildCodeInput() {
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withAlpha(30), width: 1),
+    return TextField(
+      controller: _codeController,
+      obscureText: !_revealed,
+      textCapitalization: TextCapitalization.characters,
+      style: GoogleFonts.plusJakartaSans(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 2,
       ),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          Icon(
-            Icons.lock_outline_rounded,
-            color: Colors.white.withAlpha(180),
-            size: 20,
+      decoration: InputDecoration(
+        hintText: 'ENTER ACCESS CODE',
+        hintStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.white.withAlpha(115),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0,
+        ),
+        filled: true,
+        fillColor: Colors.white.withAlpha(15),
+        contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        prefixIcon: Icon(
+          Icons.lock_outline_rounded,
+          color: Colors.white.withAlpha(180),
+          size: 20,
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _revealed
+                ? Icons.visibility_off_rounded
+                : Icons.visibility_rounded,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _codeController,
-              obscureText: !_revealed,
-              textCapitalization: TextCapitalization.characters,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 2,
-              ),
-              decoration: InputDecoration(
-                hintText: 'ENTER ACCESS CODE',
-                hintStyle: GoogleFonts.plusJakartaSans(
-                  color: Colors.white.withAlpha(115),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-              onChanged: (_) {
-                if (_error != null) setState(() => _error = null);
-              },
-              onSubmitted: (_) => _handleSubmit(),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              _revealed
-                  ? Icons.visibility_off_rounded
-                  : Icons.visibility_rounded,
-            ),
-            color: Colors.white.withAlpha(180),
-            iconSize: 20,
-            onPressed: () => setState(() => _revealed = !_revealed),
-          ),
-          const SizedBox(width: 4),
-        ],
+          color: Colors.white.withAlpha(180),
+          iconSize: 20,
+          onPressed: () => setState(() => _revealed = !_revealed),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide(color: Colors.white.withAlpha(30), width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide(color: Colors.white.withAlpha(30), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: const BorderSide(color: Colors.white, width: 1),
+        ),
       ),
+      onChanged: (_) {
+        if (_error != null) setState(() => _error = null);
+      },
+      onSubmitted: (_) => _handleSubmit(),
     );
   }
 
@@ -623,25 +618,30 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     String hint, {
     bool isEmail = false,
   }) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(30), width: 1),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TextField(
-        controller: controller,
-        keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
-        style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.plusJakartaSans(
-            color: Colors.white.withAlpha(150),
-            fontSize: 14,
-          ),
-          border: InputBorder.none,
+    return TextField(
+      controller: controller,
+      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+      style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.white.withAlpha(150),
+          fontSize: 14,
+        ),
+        filled: true,
+        fillColor: Colors.white.withAlpha(15),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withAlpha(30), width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withAlpha(30), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white, width: 1),
         ),
       ),
     );
