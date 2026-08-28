@@ -631,7 +631,9 @@ class _SectionPill extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             gradient: selected
-                ? const LinearGradient(colors: [_accent, _accent2])
+                ? const LinearGradient(
+                    colors: [SwipessGlassLook.accent, Color(0xFF7C5CFF)],
+                  )
                 : null,
             borderRadius: BorderRadius.circular(17),
           ),
