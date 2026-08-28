@@ -674,6 +674,33 @@ class _EventPageState extends ConsumerState<_EventPage> {
               ),
             ),
           ),
+          if (_playbackFeedback != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Center(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(112),
+                      shape: BoxShape.circle,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x66000000),
+                          blurRadius: 22,
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Icon(
+                        _playbackFeedback,
+                        color: Colors.white,
+                        size: 38,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
           // Tight, bright, right-edge action rail. Saved-library navigation was
           // moved to the top-right header, so this rail contains only actions
