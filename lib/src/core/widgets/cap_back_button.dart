@@ -7,15 +7,16 @@ import 'package:go_router/go_router.dart';
 
 /// Shared back-navigation helper for phone pages and overlays.
 ///
-/// GoRouter pages in Swipess are frequently entered with `context.go()`. In
-/// web/PWA builds Flutter's Navigator can still report `canPop == true` for an
-/// internal route that is not the user's previous screen. Popping that route
-/// can immediately redirect back to the same location, which makes the back
-/// button look dead.
+/// Swipess mixes three navigation layers:
+/// - GoRouter pages (`context.go`) used by web/PWA and deep links.
+/// - Locally pushed Flutter routes (`Navigator.push`) used by detail flows.
+/// - Popup routes used by dialogs/sheets.
 ///
-/// For an app-routed page we therefore navigate declaratively to a known safe
-/// parent first. Navigator.pop is reserved for local/pushed routes where there
-/// is no GoRouter location available.
+/// Web/PWA GoRouter stacks can report `canPop == true` for an internal route
+/// that is not the user's previous screen. Popping that internal route may
+/// redirect straight back to the same page, making a visible back button look
+/// dead. We therefore identify the route type first instead of blindly trusting
+/// Navigator.canPop().
 abstract final class NavBack {
   static String resolvedFallback(BuildContext context, {String? fallbackPath}) {
     if (fallbackPath != null && fallbackPath.isNotEmpty) return fallbackPath;
@@ -68,21 +69,39 @@ abstract final class NavBack {
       return;
     }
 
+    final nearest = Navigator.of(context);
+    final modalRoute = ModalRoute.of(context);
+
+    // Dialogs, sheets and other popup routes are real local overlays. Closing
+    // them must never replace the underlying GoRouter location.
+    if (modalRoute is PopupRoute && nearest.canPop()) {
+      nearest.pop();
+      return;
+    }
+
+    // A route pushed manually with Navigator.push/PageRouteBuilder has ordinary
+    // RouteSettings. Router-managed routes carry a Page as their settings.
+    // Prefer the real local pop for those manually pushed detail flows.
+    final isLocalPushedRoute = modalRoute != null && modalRoute.settings is! Page;
+    if (isLocalPushedRoute && nearest.canPop()) {
+      nearest.pop();
+      return;
+    }
+
     final currentPath = _currentPath(context);
     final fallback = resolvedFallback(context, fallbackPath: fallbackPath);
     final router = GoRouter.maybeOf(context);
 
-    // This is the critical PWA/native parity rule: if this widget belongs to a
-    // GoRouter page, do not trust Navigator.canPop(). Move to the deterministic
-    // parent route immediately. It is synchronous and cannot silently pop into
-    // a redirect loop.
+    // Critical PWA/native parity rule: a router-managed page uses a known app
+    // parent instead of trusting a potentially misleading browser Navigator
+    // stack. This prevents pop -> redirect -> same-page loops.
     if (router != null && currentPath.isNotEmpty && currentPath != fallback) {
       router.go(fallback);
       return;
     }
 
-    // Only local routes/dialog-style pages should reach Navigator.pop.
-    final nearest = Navigator.of(context);
+    // Last-resort Flutter navigator fallbacks for contexts without a GoRouter
+    // state (for example isolated test routes).
     if (nearest.canPop()) {
       nearest.pop();
       return;
