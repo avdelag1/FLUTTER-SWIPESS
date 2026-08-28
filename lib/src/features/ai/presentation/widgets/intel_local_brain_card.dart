@@ -15,7 +15,7 @@ class IntelLocalBrainCard extends StatelessWidget {
 
   final Map<String, dynamic> data;
 
-  static const _blue = Color(0xFF2563EB);
+  static const _blue = Color(0xFFFF4D78);
 
   String _text(String key) => data[key]?.toString().trim() ?? '';
 
