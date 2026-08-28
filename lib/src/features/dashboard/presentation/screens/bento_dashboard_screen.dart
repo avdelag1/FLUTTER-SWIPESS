@@ -954,49 +954,60 @@ class _BentoCardState extends State<_BentoCard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.985 : 1,
-        duration: const Duration(milliseconds: 90),
-        curve: Curves.easeOutCubic,
-        child: Container(
-          height: widget.height,
-          decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),
-          child: ClipRRect(
-            borderRadius: AppTheme.qfNeoFrameRadius,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                ColorFiltered(
-                  colorFilter: const ColorFilter.matrix(_clarityMatrix),
-                  child: QuickFilterMedia(
-                    sources: widget.media,
-                    enableVideo: widget.enableVideo,
+    return AnimatedScale(
+      scale: _pressed ? 0.985 : 1,
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOutCubic,
+      child: Container(
+        height: widget.height,
+        decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),
+        child: ClipRRect(
+          borderRadius: AppTheme.qfNeoFrameRadius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ColorFiltered(
+                colorFilter: const ColorFilter.matrix(_clarityMatrix),
+                child: QuickFilterMedia(
+                  sources: widget.media,
+                  enableVideo: widget.enableVideo,
+                ),
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.transparent,
+                      Color(0x4D000000),
+                    ],
+                    stops: [0, 0.82, 1],
                   ),
                 ),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.transparent,
-                        Color(0x4D000000),
-                      ],
-                      stops: [0, 0.82, 1],
-                    ),
-                  ),
+              ),
+              // Open the category from the card body, but leave the bottom-right
+              // control stack free so volume/play taps are never stolen.
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 52,
+                bottom: 52,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (_) => setState(() => _pressed = true),
+                  onTapUp: (_) => setState(() => _pressed = false),
+                  onTapCancel: () => setState(() => _pressed = false),
+                  onTap: widget.onTap,
+                  child: const SizedBox.expand(),
                 ),
-                Positioned(
-                  left: 8,
-                  right: 75,
-                  bottom: 8,
+              ),
+              Positioned(
+                left: 8,
+                right: 75,
+                bottom: 8,
+                child: IgnorePointer(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1024,8 +1035,8 @@ class _BentoCardState extends State<_BentoCard> {
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

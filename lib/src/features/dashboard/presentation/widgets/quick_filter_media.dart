@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
@@ -81,6 +80,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   bool _binding = false;
   bool _routeActive = true;
   bool _videoPreviewEnabled = true;
+  bool _userPaused = false;
+  bool _lastReportedPlaying = false;
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
@@ -164,22 +165,48 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     _index = 0;
   }
 
-  void _toggleVideoPreview() {
+  void _togglePlayPause() {
     AppHaptics.selection();
-    final next = !_videoPreviewEnabled;
-    setState(() {
-      _videoPreviewEnabled = next;
-      _index = 0;
-    });
-    if (!next) {
-      // Releasing the controller immediately saves CPU/GPU/network instead of
-      // merely hiding a video that is still decoding behind the still image.
-      _disposeVideo();
-    } else {
-      // Start binding immediately after the user's tap. The visibility pass
-      // remains as a guard for cards that are not actually on screen.
+
+    if (!_videoPreviewEnabled) {
+      setState(() {
+        _videoPreviewEnabled = true;
+        _userPaused = false;
+      });
       unawaited(_syncVideo(autoPlay: true));
       _scheduleVisibilityCheck();
+      return;
+    }
+
+    final player = _video;
+    if (player == null || !player.value.isInitialized) {
+      _userPaused = false;
+      unawaited(_syncVideo(autoPlay: true));
+      return;
+    }
+
+    if (player.value.isPlaying) {
+      player.pause();
+      setState(() => _userPaused = true);
+      return;
+    }
+
+    setState(() => _userPaused = false);
+    unawaited(_playIfReady());
+  }
+
+  void _toggleSound() {
+    AppHaptics.selection();
+    unlockDeckMedia();
+    final nextSoundOn = !ref.read(deckSoundOnProvider);
+    ref.read(deckSoundOnProvider.notifier).setSoundOn(nextSoundOn);
+    _onSoundChanged(nextSoundOn);
+    if (_videoEnabled &&
+        _routeActive &&
+        nextSoundOn &&
+        _visibleFraction >= 0.50 &&
+        !_userPaused) {
+      unawaited(_playIfReady());
     }
   }
 
@@ -246,7 +273,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   Future<void> _playIfReady() async {
-    if (!_routeActive || !_videoEnabled || !_videoPreviewEnabled) return;
+    if (!_routeActive || !_videoEnabled || !_videoPreviewEnabled || _userPaused) {
+      return;
+    }
     final player = _video;
     if (player == null || !player.value.isInitialized) {
       await _syncVideo(autoPlay: true);
@@ -260,7 +289,26 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     await player.play();
   }
 
+  void _onPlayerTick() {
+    final playing = _video?.value.isPlaying ?? false;
+    if (playing == _lastReportedPlaying || !mounted) return;
+    _lastReportedPlaying = playing;
+    setState(() {});
+  }
+
+  void _attachPlayerListener(VideoPlayerController player) {
+    player.removeListener(_onPlayerTick);
+    _lastReportedPlaying = player.value.isPlaying;
+    player.addListener(_onPlayerTick);
+  }
+
+  void _detachPlayerListener(VideoPlayerController? player) {
+    player?.removeListener(_onPlayerTick);
+    _lastReportedPlaying = false;
+  }
+
   void _disposeVideo() {
+    _detachPlayerListener(_video);
     _VideoPlaybackCoordinator.release(this);
     if (_holdsBudgetSlot) {
       _VideoBudget.release();
@@ -270,6 +318,30 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     _video = null;
     _boundVideoUrl = null;
     _binding = false;
+    _userPaused = false;
+  }
+
+  Widget _mediaControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(132),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withAlpha(48)),
+          ),
+          child: Icon(icon, color: Colors.white, size: 18),
+        ),
+      ),
+    );
   }
 
   void _advance(int delta) {
@@ -277,6 +349,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     setState(() {
       _index = (_index + delta) % _sources.length;
       if (_index < 0) _index += _sources.length;
+      _userPaused = false;
     });
     _disposeVideo();
     _scheduleVisibilityCheck();
@@ -317,6 +390,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       }
       await next.setLooping(true);
       await next.setVolume(0);
+      _attachPlayerListener(next);
       if (autoPlay && _visibleFraction >= 0.50) {
         _VideoPlaybackCoordinator.activate(this);
         await _playIfReady();
@@ -445,6 +519,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
     }
     final current = sources[_index % sources.length];
     final soundOn = ref.watch(deckSoundOnProvider);
+    final player = _video;
+    final videoPlaying = _videoPreviewEnabled &&
+        player != null &&
+        player.value.isInitialized &&
+        player.value.isPlaying;
     ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
 
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
@@ -459,34 +538,39 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       (_) => _scheduleVisibilityCheck(),
     );
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onHorizontalDragStart: (_) => _dragDx = 0,
-      onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
-      onHorizontalDragEnd: (details) {
-        final velocity = details.primaryVelocity ?? 0;
-        final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
-        if (_sources.length > 1 && (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
-          AppHaptics.selection();
-          _advance(gesture < 0 ? 1 : -1);
-        }
-        _dragDx = 0;
-      },
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          AnimatedSwitcher(
-            duration: Duration(milliseconds: kIsWeb ? 120 : 180),
-            child: KeyedSubtree(
-              key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
-              child: _buildMedia(current),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragStart: (_) => _dragDx = 0,
+            onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
+            onHorizontalDragEnd: (details) {
+              final velocity = details.primaryVelocity ?? 0;
+              final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
+              if (_sources.length > 1 &&
+                  (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
+                AppHaptics.selection();
+                _advance(gesture < 0 ? 1 : -1);
+              }
+              _dragDx = 0;
+            },
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: kIsWeb ? 120 : 180),
+              child: KeyedSubtree(
+                key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
+                child: _buildMedia(current),
+              ),
             ),
           ),
-          if (sources.length > 1)
-            Positioned(
-              top: 10,
-              left: 10,
-              right: 44,
+        ),
+        if (sources.length > 1)
+          Positioned(
+            top: 10,
+            left: 10,
+            right: 52,
+            child: IgnorePointer(
               child: Row(
                 children: [
                   for (var i = 0; i < sources.length; i++) ...[
@@ -506,82 +590,34 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                 ],
               ),
             ),
-          if (widget.showMute || (widget.enableVideo && _hasVideo))
-            Positioned(
-              bottom: 8,
-              right: 8,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.showMute)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        AppHaptics.selection();
-                        unlockDeckMedia();
-                        final nextSoundOn = !ref.read(deckSoundOnProvider);
-                        ref
-                            .read(deckSoundOnProvider.notifier)
-                            .setSoundOn(nextSoundOn);
-                        _onSoundChanged(nextSoundOn);
-                        if (_videoEnabled &&
-                            _routeActive &&
-                            nextSoundOn &&
-                            _visibleFraction >= 0.50) {
-                          unawaited(_playIfReady());
-                        }
-                      },
-                      child: BreathingWidget(
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withAlpha(110),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            soundOn
-                                ? Icons.volume_up_rounded
-                                : Icons.volume_off_rounded,
-                            color: Colors.white,
-                            size: 15,
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (widget.showMute && widget.enableVideo && _hasVideo)
-                    const SizedBox(height: 4),
-                  if (widget.enableVideo && _hasVideo)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        AppHaptics.selection();
-                        _toggleVideoPreview();
-                      },
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(110),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _videoPreviewEnabled
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 15,
-                        ),
-                      ),
-                    ),
-
-                ],
-              ),
+          ),
+        if (widget.showMute || (widget.enableVideo && _hasVideo))
+          Positioned(
+            bottom: 6,
+            right: 6,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.showMute)
+                  _mediaControlButton(
+                    icon: soundOn
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    onTap: _toggleSound,
+                  ),
+                if (widget.showMute && widget.enableVideo && _hasVideo)
+                  const SizedBox(height: 6),
+                if (widget.enableVideo && _hasVideo)
+                  _mediaControlButton(
+                    icon: videoPlaying
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                    onTap: _togglePlayPause,
+                  ),
+              ],
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

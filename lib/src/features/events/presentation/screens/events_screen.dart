@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
+import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
@@ -769,59 +770,71 @@ class _EventPageState extends ConsumerState<_EventPage> {
           Positioned(
             right: 0,
             bottom: bottom + 80,
-            child: IgnorePointer(
-              ignoring: !widget.chromeVisible,
-              child: AnimatedSlide(
-                offset: widget.chromeVisible
-                    ? Offset.zero
-                    : const Offset(.8, 0),
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                child: AnimatedOpacity(
-                  opacity: widget.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 180),
-                  child: Column(
-                    children: [
-                      _RailAction(
-                        icon: favorited
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        color: favorited
-                            ? const Color(0xFFFF3040)
-                            : Colors.white,
-                        onTap: _toggleFavorite,
+            child: Column(
+              children: [
+                IgnorePointer(
+                  ignoring: !widget.chromeVisible,
+                  child: AnimatedSlide(
+                    offset: widget.chromeVisible
+                        ? Offset.zero
+                        : const Offset(.8, 0),
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedOpacity(
+                      opacity: widget.chromeVisible ? 1 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Column(
+                        children: [
+                          _RailAction(
+                            icon: favorited
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: favorited
+                                ? const Color(0xFFFF3040)
+                                : Colors.white,
+                            onTap: _toggleFavorite,
+                          ),
+                          const SizedBox(height: 3),
+                          _RailAction(
+                            icon: Icons.info_outline_rounded,
+                            onTap: widget.onOpen,
+                          ),
+                          const SizedBox(height: 3),
+                          _RailAction(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            onTap: _whatsApp,
+                          ),
+                          const SizedBox(height: 3),
+                          _RailAction(
+                            icon: Icons.ios_share_rounded,
+                            onTap: _share,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      _RailAction(
-                        icon: soundOn
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
-                        onTap: () {
-                          widget.onChromeInteraction();
-                          ref
-                              .read(deckSoundOnProvider.notifier)
-                              .setSoundOn(!soundOn);
-                        },
-                      ),
-                      const SizedBox(height: 3),
-                      _RailAction(
-                        icon: Icons.info_outline_rounded,
-                        onTap: widget.onOpen,
-                      ),
-                      const SizedBox(height: 3),
-                      _RailAction(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        onTap: _whatsApp,
-                      ),
-                      const SizedBox(height: 3),
-                      _RailAction(
-                        icon: Icons.ios_share_rounded,
-                        onTap: _share,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 3),
+                _RailAction(
+                  icon: soundOn
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_rounded,
+                  onTap: () {
+                    widget.onChromeInteraction();
+                    unlockDeckMedia();
+                    ref
+                        .read(deckSoundOnProvider.notifier)
+                        .setSoundOn(!soundOn);
+                    final player = _player;
+                    if (player != null && player.value.isInitialized) {
+                      player.setVolume(soundOn ? 0 : 1);
+                      if (!soundOn && widget.active) {
+                        unawaited(player.play());
+                      }
+                    }
+                  },
+                ),
+              ],
             ),
           ),
 
@@ -1230,21 +1243,24 @@ class _RailAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: 37,
-        height: 35,
-        child: Center(
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
-            shadows: const [
-              Shadow(color: Colors.black87, blurRadius: 9),
-              Shadow(color: Colors.white24, blurRadius: 2),
-            ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Ink(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Icon(
+              icon,
+              color: color,
+              size: 22,
+              shadows: const [
+                Shadow(color: Colors.black87, blurRadius: 9),
+                Shadow(color: Colors.white24, blurRadius: 2),
+              ],
+            ),
           ),
         ),
       ),
