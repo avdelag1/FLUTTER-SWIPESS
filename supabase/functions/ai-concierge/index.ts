@@ -140,7 +140,7 @@ async function rememberRequest(client: any, userId: string, query: string): Prom
       user_id: userId,
       category: "preference",
       title: "AI preference profile",
-      content: `The user often searches for: ${tags.join(", ")}. Most recent request: ${query.replace(/\\s+/g, " ").trim().slice(0, 240)}`,
+      content: `The user often searches for: ${tags.join(", ")}. Most recent request: ${query.replace(/\s+/g, " ").trim().slice(0, 240)}`,
       tags,
       source: "ai-auto",
     };
