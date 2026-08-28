@@ -150,13 +150,18 @@ class _MapboxWorldIntroScreenState
             ),
           ),
           if (!_loaded)
-            const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFFFF4D78),
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Color(0xFF06182B),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFFFF4D78),
+                    ),
+                  ),
                 ),
               ),
             ),
