@@ -126,12 +126,12 @@ class _WebDiscoveryMapBootstrapState
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Material(
-            color: Color(0xFFF3F8FB),
+            color: Color(0xFF06182B),
             child: Center(
               child: SizedBox(
                 width: 26,
                 height: 26,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF4D78)),
               ),
             ),
           );
