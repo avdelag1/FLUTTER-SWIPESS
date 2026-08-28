@@ -1,0 +1,91 @@
+name: One-shot PWA back hit-target fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Put empty-state back button above scroll hit layer
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('lib/src/features/swipes/presentation/widgets/swipe_exhausted_state.dart')
+          text = path.read_text()
+
+          old_head = '''        children: [
+          if (widget.onBack != null)
+            Positioned(
+              top: 12,
+              left: 16,
+              child: SafeArea(
+                bottom: false,
+                child: _RoundAction(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: widget.onBack!,
+                ),
+              ),
+            ),
+          Center(
+'''
+          new_head = '''        children: [
+          Center(
+'''
+          if old_head not in text:
+            raise SystemExit('Expected back-button head block not found')
+          text = text.replace(old_head, new_head, 1)
+
+          old_tail = '''          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadiusCard'''
+          new_tail = '''          ),
+          // Keep this control LAST in the Stack. Scrollable uses an opaque
+          // gesture layer on Flutter Web/PWA; when the back control was painted
+          // underneath it, the button looked correct but its taps were stolen.
+          if (widget.onBack != null)
+            Positioned(
+              top: 12,
+              left: 16,
+              child: SafeArea(
+                bottom: false,
+                child: _RoundAction(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: widget.onBack!,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadiusCard'''
+          if old_tail not in text:
+            raise SystemExit('Expected back-button tail anchor not found')
+          text = text.replace(old_tail, new_tail, 1)
+          path.write_text(text)
+      - name: Remove one-shot workflow
+        run: git rm .github/workflows/hotfix-pwa-back-hit-target.yml
+      - name: Commit hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/swipes/presentation/widgets/swipe_exhausted_state.dart
+          git commit -m "fix(pwa): keep empty-state back button above scroll hit layer"
+          git push
