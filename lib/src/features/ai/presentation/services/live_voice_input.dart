@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/browser_live_speech.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 enum ListenMode { dictation, search, confirmation }
@@ -54,7 +55,7 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  static const silenceBeforeCountdown = Duration(milliseconds: 3500);
+  static const silenceBeforeCountdown = Duration(milliseconds: 2800);
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -185,27 +186,133 @@ class LiveVoiceInput {
   }
 
   Future<bool> _initializeNative() async {
-    if (_nativeInitialized) return true;
+    if (_nativeInitialized && _nativeSpeech.isAvailable) {
+      return _ensureNativePermission();
+    }
+
     _nativeInitialized = await _nativeSpeech.initialize(
       onStatus: _handleNativeStatus,
       onError: (error) {
         if (!_active || _intentionalStop) return;
         final msg = error.errorMsg.toLowerCase();
-        if (msg.contains('no_match') || msg.contains('speech_timeout')) {
+        if (msg.contains('no_match') ||
+            msg.contains('speech_timeout') ||
+            msg.contains('timeout')) {
           _finishNativeSegmentAndRestart();
+          return;
+        }
+        if (msg.contains('permission') || msg.contains('not authorized')) {
+          _nativeInitialized = false;
+          _onError?.call(
+            'Microphone access is required. Open Settings → Swipess and allow Microphone and Speech Recognition.',
+          );
           return;
         }
         _onError?.call('Voice recognition stopped. Please try again.');
       },
     );
-    return _nativeInitialized;
+    if (!_nativeInitialized) return false;
+    return _ensureNativePermission();
+  }
+
+  Future<bool> _ensureNativePermission() async {
+    try {
+      var granted = await _nativeSpeech.hasPermission;
+      if (!granted) {
+        // Re-run initialize once; on iOS this is what surfaces the system
+        // microphone + speech recognition permission sheet.
+        _nativeInitialized = await _nativeSpeech.initialize(
+          onStatus: _handleNativeStatus,
+          onError: (_) {},
+        );
+        granted = await _nativeSpeech.hasPermission;
+      }
+      if (!granted) {
+        _nativeInitialized = false;
+        _onError?.call(
+          'Microphone access is required. Open Settings → Swipess and allow Microphone and Speech Recognition.',
+        );
+        return false;
+      }
+      return _nativeSpeech.isAvailable;
+    } catch (_) {
+      _nativeInitialized = false;
+      return false;
+    }
+  }
+
+  Future<String> _resolveLocale(String preferred) async {
+    try {
+      final locales = await _nativeSpeech.locales();
+      if (locales.isEmpty) return preferred;
+
+      final exact = locales.where((l) => l.localeId == preferred);
+      if (exact.isNotEmpty) return exact.first.localeId;
+
+      final language = preferred.split('-').first.toLowerCase();
+      final languageMatch = locales.where(
+        (l) => l.localeId.toLowerCase().startsWith('$language-'),
+      );
+      if (languageMatch.isNotEmpty) return languageMatch.first.localeId;
+
+      return locales.first.localeId;
+    } catch (_) {
+      return preferred;
+    }
+  }
+
+  void _handleNativeResult(SpeechRecognitionResult result) {
+    if (!_active || _intentionalStop || _usingBrowser) return;
+    if (_nativeSegmentCommitted) return;
+
+    final speech = result.recognizedWords.trim();
+    if (speech.isEmpty) return;
+
+    _nativeSessionText = speech;
+    _segmentHasSpeech = true;
+    _silenceDeliveredForSegment = false;
+    final total = _join(_committed, speech);
+    if (total != _lastPublished) {
+      _lastPublished = total;
+      _onText?.call(total);
+    }
+
+    if (result.finalResult) {
+      _commitNativeSegment();
+    }
+  }
+
+  stt.SpeechListenOptions _nativeListenOptions(String localeId) {
+    return stt.SpeechListenOptions(
+      partialResults: true,
+      cancelOnError: false,
+      autoPunctuation: true,
+      listenMode: _nativeListenMode,
+      pauseFor: silenceBeforeCountdown,
+      listenFor: const Duration(minutes: 2),
+      localeId: localeId,
+      onDevice: false,
+    );
+  }
+
+  Future<void> _attachNativeListen(String localeId) async {
+    await _nativeSpeech.listen(
+      onResult: _handleNativeResult,
+      onSoundLevelChange: (level) {
+        if (!_active || _intentionalStop) return;
+        _publishSoundLevel(level);
+      },
+      listenOptions: _nativeListenOptions(localeId),
+    );
   }
 
   Future<void> _startNativeListen() async {
     if (!_active || _intentionalStop || _usingBrowser) return;
+
     if (_nativeSpeech.isListening) {
-      _publishListening(true);
-      return;
+      try {
+        await _nativeSpeech.stop();
+      } catch (_) {}
     }
 
     _nativeSessionText = '';
@@ -213,49 +320,26 @@ class LiveVoiceInput {
     _silenceDeliveredForSegment = false;
     _nativeSegmentCommitted = false;
 
-    await _nativeSpeech.listen(
-      onResult: (result) {
-        if (!_active || _intentionalStop || _usingBrowser) return;
+    final localeId = await _resolveLocale(_languageCode);
+    await _attachNativeListen(localeId);
 
-        // iOS can deliver the same final result more than once while the
-        // recognizer transitions from `finalResult` to `done/notListening`.
-        // Once this native segment has been committed, ignore any additional
-        // callbacks until the next listen session starts. Without this guard a
-        // phrase such as "Hola" can become "Hola Hola" in the composer.
-        if (_nativeSegmentCommitted) return;
+    if (!_active || _intentionalStop) return;
 
-        final speech = result.recognizedWords.trim();
-        if (speech.isEmpty) return;
+    if (!_nativeSpeech.isListening) {
+      await Future<void>.delayed(const Duration(milliseconds: 220));
+      if (!_active || _intentionalStop) return;
+      if (!_nativeSpeech.isListening) {
+        await _attachNativeListen(localeId);
+      }
+    }
 
-        _nativeSessionText = speech;
-        _segmentHasSpeech = true;
-        _silenceDeliveredForSegment = false;
-        final total = _join(_committed, speech);
-        if (total != _lastPublished) {
-          _lastPublished = total;
-          _onText?.call(total);
-        }
+    if (_nativeSpeech.isListening) {
+      _publishListening(true);
+      return;
+    }
 
-        if (result.finalResult) {
-          _commitNativeSegment();
-        }
-      },
-      onSoundLevelChange: (level) {
-        if (!_active || _intentionalStop) return;
-        _publishSoundLevel(level);
-      },
-      listenOptions: stt.SpeechListenOptions(
-        partialResults: true,
-        cancelOnError: false,
-        autoPunctuation: true,
-        listenMode: _nativeListenMode,
-        pauseFor: silenceBeforeCountdown,
-        listenFor: const Duration(minutes: 2),
-        localeId: _languageCode,
-      ),
-    );
-
-    if (_active && !_intentionalStop) _publishListening(true);
+    _onError?.call('Could not start listening. Tap the microphone again.');
+    _clearSession(keepOwner: false);
   }
 
   stt.ListenMode get _nativeListenMode {

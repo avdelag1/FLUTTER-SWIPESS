@@ -262,12 +262,17 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
 
+    setState(() {
+      _transcribing = true;
+      _voiceLevel = 0;
+    });
+
     try {
       final started = await _voice.start(
         owner: this,
         initialText: widget.controller?.text ?? '',
         languageCode: ref.read(voiceLanguageProvider).localeCode,
-        listenMode: ListenMode.search,
+        listenMode: ListenMode.dictation,
         onText: (text) {
           if (!mounted) return;
           _cancelVoiceCountdown();
@@ -279,15 +284,23 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
             );
             widget.onChanged?.call(text);
           }
-          if (!_voiceActive) setState(() => _voiceActive = true);
+          if (!_voiceActive || _transcribing) {
+            setState(() {
+              _voiceActive = true;
+              _transcribing = false;
+            });
+          }
         },
         onSilence: _beginVoiceCountdown,
         onListeningChanged: (listening) {
           if (!mounted) return;
-          final active = _voice.isOwnedBy(this);
-          if (_voiceActive != active || (!listening && _voiceLevel != 0)) {
+          final active = listening && _voice.isOwnedBy(this);
+          if (_voiceActive != active ||
+              _transcribing ||
+              (!listening && _voiceLevel != 0)) {
             setState(() {
               _voiceActive = active;
+              _transcribing = false;
               if (!listening) _voiceLevel = 0;
             });
           }
@@ -306,11 +319,23 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
       if (!mounted) return;
       setState(() {
+        _transcribing = false;
         _voiceActive = started;
         _voiceLevel = 0;
       });
-      if (!started) _restoreVoiceAudio();
+      if (!started) {
+        _restoreVoiceAudio();
+        _showVoiceError(
+          'Voice search could not start. Check microphone and speech permissions in Settings.',
+        );
+      }
     } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _transcribing = false;
+        _voiceActive = false;
+        _voiceLevel = 0;
+      });
       _restoreVoiceAudio();
       _showVoiceError('Could not start voice search. Please try again.');
     }

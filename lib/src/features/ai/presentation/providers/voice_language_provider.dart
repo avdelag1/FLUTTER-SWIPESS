@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Supported voice recognition languages.
 enum VoiceLanguage {
   english('en-US', 'EN', '🇺🇸 English'),
-  spanish('es-ES', 'ES', '🇪🇸 Español'),
+  spanish('es-MX', 'ES', '🇲🇽 Español'),
   french('fr-FR', 'FR', '🇫🇷 Français'),
   german('de-DE', 'DE', '🇩🇪 Deutsch'),
   italian('it-IT', 'IT', '🇮🇹 Italiano'),

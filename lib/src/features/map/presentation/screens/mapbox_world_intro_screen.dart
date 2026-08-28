@@ -2,15 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 /// Cinematic native Mapbox opening.
 ///
 /// Mapbox Standard renders a true globe at low zoom. This screen is shown only
 /// once per app session by the native bootstrap, then flies from the round Earth
-/// into the active discovery location. The animation stays deliberately short:
-/// it should feel premium, never like a loading screen.
+/// into the active discovery location. The animation is deliberately paced so
+/// users can enjoy the globe-to-city zoom before the live map takes over.
 class MapboxWorldIntroScreen extends ConsumerStatefulWidget {
   const MapboxWorldIntroScreen({
     super.key,
@@ -34,12 +36,15 @@ class _MapboxWorldIntroScreenState
   bool _loaded = false;
 
   static const double _worldZoom = 0.62;
+  static const _globeHold = Duration(milliseconds: 1100);
+  static const _flightDuration = Duration(milliseconds: 3200);
+  static const _arrivalHold = Duration(milliseconds: 420);
 
   @override
   void initState() {
     super.initState();
     // Never trap the user behind the cinematic if Mapbox cannot load.
-    _loadWatchdog = Timer(const Duration(seconds: 3), () {
+    _loadWatchdog = Timer(const Duration(seconds: 8), () {
       if (!_loaded) _finish();
     });
   }
@@ -87,8 +92,7 @@ class _MapboxWorldIntroScreenState
     _started = true;
     _startTimer?.cancel();
 
-    // Keep just enough globe hero time to register visually, then arrive fast.
-    _startTimer = Timer(const Duration(milliseconds: 220), () async {
+    _startTimer = Timer(_globeHold, () async {
       if (!mounted || _completed) return;
       final map = _map;
       if (map == null) {
@@ -105,7 +109,10 @@ class _MapboxWorldIntroScreenState
             pitch: loc.radiusKm <= 50 ? 38 : 18,
             bearing: loc.radiusKm <= 50 ? 18 : 0,
           ),
-          MapAnimationOptions(duration: 1100, startDelay: 0),
+          MapAnimationOptions(
+            duration: _flightDuration.inMilliseconds,
+            startDelay: 0,
+          ),
         );
       } catch (_) {
         _finish();
@@ -113,7 +120,7 @@ class _MapboxWorldIntroScreenState
       }
 
       if (!mounted || _completed) return;
-      await Future<void>.delayed(const Duration(milliseconds: 90));
+      await Future<void>.delayed(_arrivalHold);
       _finish();
     });
   }
@@ -135,6 +142,8 @@ class _MapboxWorldIntroScreenState
 
   @override
   Widget build(BuildContext context) {
+    final safe = MediaQuery.paddingOf(context);
+
     return ColoredBox(
       color: const Color(0xFF06182B),
       child: Stack(
@@ -143,7 +152,6 @@ class _MapboxWorldIntroScreenState
           IgnorePointer(
             child: MapWidget(
               key: const ValueKey('swipess-mapbox-world-intro'),
-              // Standard is intentional: low zoom uses the native globe projection.
               styleUri: MapboxStyles.STANDARD,
               onMapCreated: _setupMap,
               onMapLoadedListener: (_) => _onMapLoaded(),
@@ -161,6 +169,45 @@ class _MapboxWorldIntroScreenState
                       strokeWidth: 2,
                       color: Color(0xFFFF4D78),
                     ),
+                  ),
+                ),
+              ),
+            ),
+          Positioned(
+            top: safe.top + 10,
+            right: 14,
+            child: TextButton(
+              onPressed: () {
+                AppHaptics.light();
+                _finish();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color(0x66111827),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              ),
+              child: Text(
+                'Skip',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          if (_loaded)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: safe.bottom + 28,
+              child: Center(
+                child: Text(
+                  'Flying to your area…',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white.withAlpha(210),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    letterSpacing: .3,
                   ),
                 ),
               ),

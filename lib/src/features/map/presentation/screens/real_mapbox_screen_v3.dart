@@ -284,7 +284,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           pitch: _pitch(loc.radiusKm),
           bearing: loc.radiusKm <= 50 ? 10 : 0,
         ),
-        MapAnimationOptions(duration: 650, startDelay: 0),
+        MapAnimationOptions(duration: 900, startDelay: 0),
       );
     } catch (_) {}
   }
@@ -629,7 +629,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           bearing: 10,
           padding: MbxEdgeInsets(bottom: 190, left: 0, top: 0, right: 0),
         ),
-        MapAnimationOptions(duration: 360, startDelay: 0),
+        MapAnimationOptions(duration: 520, startDelay: 0),
       ),
     );
   }
