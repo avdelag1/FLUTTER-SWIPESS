@@ -1,0 +1,152 @@
+name: Apply deterministic global back hotfix
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch-back-navigation:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch back navigation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path_name, old, new):
+              path = Path(path_name)
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected block not found: {path_name}")
+              path.write_text(text.replace(old, new, 1))
+
+          # Quick-filter decks are pushed routes. Back must pop the deck and stop;
+          # routing again on the next frame races PWA route disposal.
+          replace_once(
+              "lib/src/features/swipes/presentation/screens/client_swipe_container.dart",
+              """  void _goDashboard() {
+            AppHaptics.light();
+            ref.read(navTabProvider.notifier).set(NavTab.dashboard);
+            ref.read(chromeRevealProvider.notifier).reveal();
+            ref.read(chromeVisibilityProvider.notifier).show();
+        
+            final router = GoRouter.of(context);
+            final rootNav = Navigator.of(context, rootNavigator: true);
+            final shouldPop = rootNav.canPop();
+            if (shouldPop) {
+              rootNav.pop();
+            }
+            // Pop can dispose this route first on web/PWA stacks — schedule navigation
+            // on the next frame so back always returns to the dashboard shell.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              router.go(AppPaths.clientDashboard);
+            });
+          }
+        """,
+              """  void _goDashboard() {
+            AppHaptics.light();
+            ref.read(navTabProvider.notifier).set(NavTab.dashboard);
+            ref.read(chromeRevealProvider.notifier).reveal();
+            ref.read(chromeVisibilityProvider.notifier).show();
+        
+            final rootNav = Navigator.of(context, rootNavigator: true);
+            if (rootNav.canPop()) {
+              rootNav.pop();
+              return;
+            }
+            GoRouter.of(context).go(AppPaths.clientDashboard);
+          }
+        """,
+          )
+
+          # Profile header previously bypassed the shared back helper.
+          app_top = Path("lib/src/core/widgets/app_top_bar.dart")
+          text = app_top.read_text()
+          cap_import = "import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';\n"
+          anchor = "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n"
+          if cap_import not in text:
+              if anchor not in text:
+                  raise SystemExit("AppTopBar import anchor not found")
+              text = text.replace(anchor, anchor + cap_import, 1)
+          old = """  void _backFromProfile(BuildContext context) {
+            AppHaptics.light();
+            final nearest = Navigator.of(context);
+            if (nearest.canPop()) {
+              nearest.pop();
+              return;
+            }
+            context.go(AppPaths.clientDashboard);
+          }
+        """
+          new = """  void _backFromProfile(BuildContext context) {
+            NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
+          }
+        """
+          if old not in text:
+              raise SystemExit("AppTopBar profile-back block not found")
+          app_top.write_text(text.replace(old, new, 1))
+
+          # Event route empty/error shell must use the same deterministic helper.
+          replace_once(
+              "lib/src/features/events/presentation/screens/event_detail_route_screen.dart",
+              """              child: CapBackButton(
+                onTap: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go(AppPaths.exploreEvents);
+                  }
+                },
+              ),
+        """,
+              """              child: const CapBackButton(
+                fallbackPath: AppPaths.exploreEvents,
+              ),
+        """,
+          )
+
+          # Event detail has two visible back controls using raw Navigator.pop.
+          event_detail = Path("lib/src/features/events/presentation/screens/event_detail_screen.dart")
+          text = event_detail.read_text()
+          cap_import = "import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';\n"
+          anchor = "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n"
+          if cap_import not in text:
+              if anchor not in text:
+                  raise SystemExit("Event detail import anchor not found")
+              text = text.replace(anchor, anchor + cap_import, 1)
+          old_tap = "onTap: () => Navigator.pop(context),"
+          replacement = "onTap: () => NavBack.popOrGo(context, fallbackPath: AppPaths.exploreEvents),"
+          count = text.count(old_tap)
+          if count != 2:
+              raise SystemExit(f"Expected 2 event-detail back callbacks, found {count}")
+          event_detail.write_text(text.replace(old_tap, replacement))
+          PY
+
+      - name: Verify patched source
+        run: |
+          grep -q "rootNav.pop();" lib/src/features/swipes/presentation/screens/client_swipe_container.dart
+          grep -q "NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard)" lib/src/core/widgets/app_top_bar.dart
+          grep -q "fallbackPath: AppPaths.exploreEvents" lib/src/features/events/presentation/screens/event_detail_route_screen.dart
+          test "$(grep -c "NavBack.popOrGo(context, fallbackPath: AppPaths.exploreEvents)" lib/src/features/events/presentation/screens/event_detail_screen.dart)" -eq 2
+
+      - name: Commit source hotfix and remove one-shot workflow
+        run: |
+          git config user.name "Swipess Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/apply-back-navigation-hotfix.yml
+          git add lib/src/core/widgets/app_top_bar.dart
+          git add lib/src/features/swipes/presentation/screens/client_swipe_container.dart
+          git add lib/src/features/events/presentation/screens/event_detail_screen.dart
+          git add lib/src/features/events/presentation/screens/event_detail_route_screen.dart
+          git commit -m "fix(nav): make every visible back control deterministic"
+          git push origin HEAD:main
