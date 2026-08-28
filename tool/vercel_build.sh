@@ -37,6 +37,11 @@ add_public_define GOOGLE_IOS_CLIENT_ID
 
 flutter build "${build_args[@]}"
 
+# Replace Flutter's cache-first generated service worker with the Swipess
+# freshness-first worker. Installed PWAs must follow the current production
+# bundle instead of pinning main.dart.js/assets from a previous deployment.
+cp web/swipess_service_worker.js build/web/flutter_service_worker.js
+
 # Mapbox `pk.` access tokens are public client configuration. Publish the same
 # token already embedded in the web app as a tiny runtime config file so native
 # Xcode/TestFlight builds can configure Mapbox even when they were archived
@@ -68,4 +73,5 @@ cp web/account-deletion.html build/web/account-deletion.html
 
 test -f build/web/index.html
 test -f build/web/flutter_bootstrap.js
+test -f build/web/flutter_service_worker.js
 test -f build/web/.well-known/apple-app-site-association
