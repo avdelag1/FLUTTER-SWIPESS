@@ -257,7 +257,7 @@ class _UserBubble extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF526EFF), Color(0xFF725DFF)],
+          colors: [Color(0xFFFF4D78), Color(0xFF9B5DE5)],
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
@@ -321,7 +321,7 @@ class _AssistantBubble extends StatelessWidget {
                 height: 28,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF536DFF), Color(0xFF7B8DFF)],
+                    colors: [Color(0xFFFF5C8A), Color(0xFFFF9A68)],
                   ),
                   shape: BoxShape.circle,
                 ),
