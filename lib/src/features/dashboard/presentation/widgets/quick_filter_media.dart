@@ -175,6 +175,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
       // merely hiding a video that is still decoding behind the still image.
       _disposeVideo();
     } else {
+      // Start binding immediately after the user's tap. The visibility pass
+      // remains as a guard for cards that are not actually on screen.
+      unawaited(_syncVideo(autoPlay: true));
       _scheduleVisibilityCheck();
     }
   }
@@ -511,6 +514,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                 children: [
                   if (widget.showMute)
                     GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
                         AppHaptics.selection();
                         unlockDeckMedia();
