@@ -793,6 +793,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 }
