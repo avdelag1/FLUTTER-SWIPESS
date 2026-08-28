@@ -409,19 +409,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final controller = _current;
     final ready = controller != null && controller.value.isInitialized;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _openEvents(videos),
-      onHorizontalDragStart: (_) => _dragDx = 0,
-      onHorizontalDragUpdate: (details) => _dragDx += details.delta.dx,
-      onHorizontalDragEnd: (details) {
-        final velocity = details.primaryVelocity ?? 0;
-        final signal = velocity.abs() > 120 ? velocity : _dragDx;
-        if (signal.abs() < 12) return;
-        AppHaptics.selection();
-        unawaited(_advance(signal < 0 ? 1 : -1));
-      },
-      child: ClipRRect(
+    return ClipRRect(
         borderRadius: BorderRadius.circular(26),
         child: Stack(
           fit: StackFit.expand,
@@ -486,6 +474,20 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         ),
                       ),
               ),
+            // Keep navigation in its own tap-only layer. The former
+            // parent drag recognizer competed with this tap and made opening
+            // the full event feed feel delayed after media controls were added.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 52,
+              bottom: 52,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _openEvents(videos),
+                child: const SizedBox.expand(),
+              ),
+            ),
             Positioned(
               right: 8,
               bottom: 9,
