@@ -1,0 +1,42 @@
+name: Patch public preview back controls
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch public preview navigation
+        run: |
+          LISTING=lib/src/features/preview/presentation/screens/public_listing_preview_screen.dart
+          PROFILE=lib/src/features/preview/presentation/screens/public_profile_preview_screen.dart
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/utils/app_share.dart';#import 'package:flutter_swipes/src/core/utils/app_share.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$LISTING"
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/utils/app_share.dart';#import 'package:flutter_swipes/src/core/utils/app_share.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$PROFILE"
+
+          perl -0pi -e "s#onPressed: \(\) \{\n                    if \(Navigator\.of\(context\)\.canPop\(\)\) \{\n                      Navigator\.of\(context\)\.pop\(\);\n                    \} else \{\n                      context\.go\('/welcome'\);\n                    \}\n                  \},#onPressed: () => NavBack.popOrGo(context, fallbackPath: '/welcome'),#" "$LISTING"
+
+          perl -0pi -e "s#onPressed: \(\) \{\n                              if \(Navigator\.of\(context\)\.canPop\(\)\) \{\n                                Navigator\.of\(context\)\.pop\(\);\n                              \} else \{\n                                context\.go\('/welcome'\);\n                              \}\n                            \},#onPressed: () => NavBack.popOrGo(context, fallbackPath: '/welcome'),#" "$PROFILE"
+
+      - name: Verify public preview patch
+        run: |
+          grep -q "NavBack.popOrGo(context, fallbackPath: '/welcome')" lib/src/features/preview/presentation/screens/public_listing_preview_screen.dart
+          grep -q "NavBack.popOrGo(context, fallbackPath: '/welcome')" lib/src/features/preview/presentation/screens/public_profile_preview_screen.dart
+      - name: Commit patch
+        run: |
+          git config user.name "Swipess Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src/features/preview/presentation/screens/public_listing_preview_screen.dart
+          git add lib/src/features/preview/presentation/screens/public_profile_preview_screen.dart
+          git commit -m "fix(nav): make public preview back deterministic"
+          git push origin HEAD:main
