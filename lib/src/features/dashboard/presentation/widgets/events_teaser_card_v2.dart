@@ -476,11 +476,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
             // Keep navigation in its own tap-only layer. The former
             // parent drag recognizer competed with this tap and made opening
             // the full event feed feel delayed after media controls were added.
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 52,
-              bottom: 52,
+            Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _openEvents(videos),
@@ -501,9 +497,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       height: 30,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(108),
+                        color: Colors.black.withAlpha(132),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(50)),
+                        border: Border.all(color: Colors.white.withAlpha(48)),
                       ),
                       child: Icon(
                         soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
@@ -512,7 +508,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   GestureDetector(
                     onTap: _toggleVideoPreview,
                     behavior: HitTestBehavior.opaque,
@@ -521,14 +517,14 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       height: 30,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(108),
+                        color: Colors.black.withAlpha(132),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(50)),
+                        border: Border.all(color: Colors.white.withAlpha(48)),
                       ),
                       child: Icon(
                         _videoPreviewEnabled
-                            ? Icons.videocam_rounded
-                            : Icons.videocam_off_rounded,
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
                         color: Colors.white,
                         size: 16,
                       ),
@@ -556,20 +552,22 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
             Positioned(
               left: 14,
               top: 13,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(125),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white.withAlpha(42)),
-                ),
-                child: Text(
-                  _videoPreviewEnabled ? 'EVENTS  •  LIVE' : 'EVENTS  •  PAUSED',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(125),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white.withAlpha(42)),
+                  ),
+                  child: Text(
+                    _videoPreviewEnabled ? 'EVENTS  •  LIVE' : 'EVENTS  •  PAUSED',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                    ),
                   ),
                 ),
               ),
@@ -578,46 +576,48 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
               left: 15,
               right: 15,
               bottom: 15,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          event?.title.trim().isNotEmpty == true
-                              ? event!.title.toUpperCase()
-                              : 'WHAT\'S HAPPENING',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 16,
-                            height: 1.02,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -.35,
+              child: IgnorePointer(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            event?.title.trim().isNotEmpty == true
+                                ? event!.title.toUpperCase()
+                                : 'WHAT\'S HAPPENING',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 16,
+                              height: 1.02,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -.35,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _videoPreviewEnabled
-                              ? (videos.length > 1
-                                  ? 'Live event stream · swipe left or right'
-                                  : 'Tap to explore events')
-                              : 'Video preview off · tap camera to resume',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
+                          const SizedBox(height: 4),
+                          Text(
+                            _videoPreviewEnabled
+                                ? (videos.length > 1
+                                    ? 'Live event stream · swipe left or right'
+                                    : 'Tap to explore events')
+                                : 'Video preview off · tap play to resume',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 42),
-                ],
+                    const SizedBox(width: 42),
+                  ],
+                ),
               ),
             ),
           ],

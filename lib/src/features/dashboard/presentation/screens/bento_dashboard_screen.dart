@@ -838,11 +838,13 @@ class _BentoTile extends ConsumerWidget {
     final counts = ref.watch(newItemsCountProvider).value ?? const {};
     final unreadCount = counts[item.id] ?? 0;
     
-    final badgeWidget = unreadCount > 0 
+    final badgeWidget = unreadCount > 0
       ? Positioned(
           top: 10,
           right: 10,
-          child: _CategoryBadge(count: unreadCount),
+          child: IgnorePointer(
+            child: _CategoryBadge(count: unreadCount),
+          ),
         )
       : const SizedBox.shrink();
 

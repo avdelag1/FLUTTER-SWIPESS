@@ -184,8 +184,15 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 
   void _goMessages() {
+    final router = GoRouter.of(context);
+    final rootNav = Navigator.of(context, rootNavigator: true);
     ref.read(navTabProvider.notifier).set(NavTab.messages);
-    GoRouter.of(context).go(AppPaths.messages);
+    ref.read(chromeRevealProvider.notifier).reveal();
+    ref.read(chromeVisibilityProvider.notifier).show();
+    if (rootNav.canPop()) rootNav.pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.go(AppPaths.messages);
+    });
   }
 
   void _invalidateDecisionCaches() {
@@ -249,8 +256,15 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       onOpenAi: () => showMagicAiProfileSheet(context),
       onCategoryChange: (cat) {
         if (cat == 'events') {
-          Navigator.of(context).pop();
+          final router = GoRouter.of(context);
+          final rootNav = Navigator.of(context, rootNavigator: true);
           ref.read(navTabProvider.notifier).set(NavTab.events);
+          ref.read(chromeRevealProvider.notifier).reveal();
+          ref.read(chromeVisibilityProvider.notifier).show();
+          if (rootNav.canPop()) rootNav.pop();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            router.go(AppPaths.exploreEvents);
+          });
           return;
         }
         setState(() {
