@@ -85,6 +85,8 @@ void main() {
       );
       expect(
         source.contains('Navigator.pop(context)') ||
+            source.contains('Navigator.of(context).pop()') ||
+            source.contains('Navigator.of(context).pop();') ||
             source.contains('context.pop()') ||
             source.contains('CapBackButton'),
         isTrue,
