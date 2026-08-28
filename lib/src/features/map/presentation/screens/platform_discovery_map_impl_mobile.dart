@@ -1,15 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
 
 /// Native iOS/Android map entry point.
 ///
-/// Native must stay on the Mapbox SDK. The web implementation uses browser
-/// fallbacks, but compiling that implementation into iOS/Android turns the live
-/// discovery experience into a 2D FlutterMap and also drags web-only APIs into
-/// the native build.
+/// Native must stay on the Mapbox SDK. Before creating any Mapbox surface we
+/// guarantee that a public access token is configured. Store/TestFlight builds
+/// do not always receive Flutter dart-defines, so relying only on main.dart can
+/// create a native map with no token and leave the user on a permanent loader.
 Widget buildPlatformDiscoveryMap({
   required VoidCallback? onClose,
   required bool showCitiesOnOpen,
@@ -35,13 +38,13 @@ class _NativeMapBootstrap extends ConsumerStatefulWidget {
 }
 
 class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
-  /// Intro is cinematic welcome, not navigation chrome. It plays only once for
-  /// the lifetime of the running Flutter process. Re-opening Map, returning
-  /// from a listing, or switching tabs goes directly to the live Mapbox map.
-  static bool _introPlayedThisSession = false;
-
-  late bool _showIntro;
+  late Future<bool> _mapboxReady;
   late final DeckAudioNotifier _audioNotifier;
+
+  // A newly opened map route gets the cinematic globe. Pushing a listing on
+  // top keeps this State alive, so Back returns to the exact live map without
+  // replaying the intro or rebuilding the navigation stack.
+  bool _showIntro = true;
   bool _audioSuppressed = false;
   bool? _lastTickerActive;
 
@@ -49,8 +52,17 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    _showIntro = !_introPlayedThisSession;
-    if (_showIntro) _introPlayedThisSession = true;
+    _mapboxReady = _configureMapbox();
+  }
+
+  Future<bool> _configureMapbox() => MapboxRuntimeConfig.ensureConfigured()
+      .timeout(const Duration(seconds: 6), onTimeout: () => false);
+
+  void _retryMapbox() {
+    setState(() {
+      _showIntro = true;
+      _mapboxReady = _configureMapbox();
+    });
   }
 
   @override
@@ -80,25 +92,108 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
 
   @override
   void dispose() {
-    // The notifier is captured while mounted; never call ref.read from dispose.
     _restoreAudio();
     super.dispose();
   }
 
+  Widget _loading() {
+    return const Material(
+      color: Color(0xFFF1F4F7),
+      child: Center(
+        child: SizedBox(
+          width: 26,
+          height: 26,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFF111318),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _unavailable() {
+    return Material(
+      color: const Color(0xFFF1F4F7),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.map_outlined,
+                  size: 34,
+                  color: Color(0xFF111318),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Map could not connect',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF111318),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Check your connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF5F6670),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _retryMapbox,
+                  child: const Text('Retry'),
+                ),
+                if (widget.onClose != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: widget.onClose,
+                    child: const Text('Back'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_showIntro) {
-      return MapboxWorldIntroScreen(
-        onComplete: () {
-          if (!mounted) return;
-          setState(() => _showIntro = false);
-        },
-      );
-    }
+    return FutureBuilder<bool>(
+      future: _mapboxReady,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return _loading();
+        }
 
-    return RealMapboxScreenV2(
-      onClose: widget.onClose,
-      showCitiesOnOpen: widget.showCitiesOnOpen,
+        if (snapshot.data != true) {
+          return _unavailable();
+        }
+
+        if (_showIntro) {
+          return MapboxWorldIntroScreen(
+            onComplete: () {
+              if (!mounted) return;
+              setState(() => _showIntro = false);
+            },
+          );
+        }
+
+        return RealMapboxScreenV2(
+          onClose: widget.onClose,
+          showCitiesOnOpen: widget.showCitiesOnOpen,
+        );
+      },
     );
   }
 }
