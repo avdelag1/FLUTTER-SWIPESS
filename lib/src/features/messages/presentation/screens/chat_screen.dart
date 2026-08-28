@@ -556,7 +556,7 @@ class _ThreadAtmosphere extends StatelessWidget {
             center: const Alignment(-1.05, -1.05),
             radius: 1.5,
             colors: [
-              (light ? const Color(0xFFE9ECFF) : const Color(0xFF151A2A))
+              (light ? const Color(0xFFFFF0F5) : const Color(0xFF20151C))
                   .withAlpha(light ? 215 : 130),
               SwipessGlassLook.canvas(context),
             ],
