@@ -1,21 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_glass.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_documents_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
-import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Swipess thread with native chat actions and live message stream.
+/// Premium Swipess peer-to-peer conversation surface.
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.conversation, this.onBack});
 
@@ -30,56 +32,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   final _search = TextEditingController();
+
   bool _sending = false;
   bool _showEmoji = false;
   bool _showSearch = false;
   bool _recording = false;
   bool _transcribing = false;
 
-  static const _orange = AppTheme.brandPrimary;
   static const _emojis = [
-    '👋',
-    '😊',
-    '😄',
-    '😂',
-    '🥰',
-    '😍',
-    '🤩',
-    '😎',
-    '🙏',
-    '👍',
-    '🔥',
-    '❤️',
-    '🎉',
-    '✨',
-    '💯',
-    '🤝',
-    '💪',
-    '👏',
-    '🥳',
-    '😇',
-    '🤗',
-    '😁',
-    '🌟',
-    '📬',
+    '👋', '😊', '😄', '😂', '🥰', '😍', '🤩', '😎', '🙏', '👍', '🔥', '❤️',
+    '🎉', '✨', '💯', '🤝', '💪', '👏', '🥳', '😇', '🤗', '😁', '🌟', '📬',
   ];
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_composerChanged);
+    _controller.addListener(_refresh);
   }
 
-  void _composerChanged() {
+  void _refresh() {
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_composerChanged);
+    _controller.removeListener(_refresh);
     _controller.dispose();
     _scroll.dispose();
     _search.dispose();
+    unawaited(ref.read(voiceTranscribeRepositoryProvider).cancel());
     super.dispose();
   }
 
@@ -88,7 +69,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!_scroll.hasClients) return;
       _scroll.animateTo(
         _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 220),
+        duration: const Duration(milliseconds: 240),
         curve: Curves.easeOutCubic,
       );
     });
@@ -96,6 +77,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _toggleVoice() async {
     final repo = ref.read(voiceTranscribeRepositoryProvider);
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (_recording) {
       setState(() {
         _recording = false;
@@ -104,16 +87,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       try {
         final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
         final text = await repo.stop(language: lang);
-        if (text.trim().isNotEmpty && mounted) {
-          _controller.text = text.trim();
-          _controller.selection = TextSelection.collapsed(
-            offset: _controller.text.length,
+        final clean = text.trim();
+        if (clean.isNotEmpty && mounted) {
+          final existing = _controller.text.trim();
+          final next = existing.isEmpty ? clean : '$existing $clean';
+          _controller.value = TextEditingValue(
+            text: next,
+            selection: TextSelection.collapsed(offset: next.length),
           );
         }
       } on VoiceTranscribeException catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.message)));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (mounted) {
@@ -131,20 +116,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
-    final ok = await repo.start();
-    if (!ok) {
+    AppHaptics.light();
+    try {
+      final ok = await repo.start();
+      if (!ok) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                t(ref, 'flutter.micDenied', 'Microphone permission denied'),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      if (mounted) setState(() => _recording = true);
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              t(ref, 'flutter.micDenied', 'Microphone permission denied'),
-            ),
-          ),
+          const SnackBar(content: Text('Could not start the microphone')),
         );
       }
-      return;
     }
-    setState(() => _recording = true);
   }
 
   Future<void> _send([String? preset]) async {
@@ -161,8 +155,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(messageRepositoryProvider)
           .sendMessage(conversationId: widget.conversation.id, text: text);
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
+      ref.invalidate(conversationsProvider);
       ref.read(dailyQuestsProvider.notifier).increment('message');
       _scrollToEnd();
+    } catch (_) {
+      if (mounted && preset == null && _controller.text.isEmpty) {
+        _controller.text = text;
+        _controller.selection = TextSelection.collapsed(offset: text.length);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message not sent — try again')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -170,13 +173,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _replyTo(ChatMessage msg) {
     final excerpt = msg.text.trim().replaceAll('\n', ' ');
-    final short = excerpt.length > 80
-        ? '${excerpt.substring(0, 80)}…'
-        : excerpt;
+    final short = excerpt.length > 80 ? '${excerpt.substring(0, 80)}…' : excerpt;
     _controller.text = '↪ $short\n';
-    _controller.selection = TextSelection.collapsed(
-      offset: _controller.text.length,
-    );
+    _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
   }
 
   Future<void> _unsend(ChatMessage msg) async {
@@ -211,8 +210,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
       ref.invalidate(conversationsProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Message unsent')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message unsent')),
+        );
       }
     } catch (_) {
       if (mounted) {
@@ -233,14 +233,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         return SafeArea(
-          child: Container(
+          child: SwipessGlassPanel(
             margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            decoration: BoxDecoration(
-              color: const Color(0xF516171C),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white24),
-            ),
+            radius: 30,
+            strong: true,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -249,21 +246,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white30,
+                    color: SwipessGlassLook.faint(sheetContext).withAlpha(110),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    for (final emoji in const [
-                      '❤️',
-                      '😂',
-                      '👍',
-                      '🔥',
-                      '👏',
-                      '🙏',
-                    ])
+                    for (final emoji in const ['❤️', '😂', '👍', '🔥', '👏', '🙏'])
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(sheetContext);
@@ -271,10 +261,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 25),
-                          ),
+                          child: Text(emoji, style: const TextStyle(fontSize: 25)),
                         ),
                       ),
                   ],
@@ -354,470 +341,591 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     final myId = Supabase.instance.client.auth.currentUser?.id;
-    final online = widget.conversation.isOnline;
     final q = _search.text.trim().toLowerCase();
-    final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1015),
-      body: Column(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: SwipessGlassLook.canvas(context),
+      body: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(12, top + 8, 8, 8),
-            child: Row(
+          const Positioned.fill(child: _ThreadAtmosphere()),
+          SafeArea(
+            bottom: false,
+            child: Column(
               children: [
-                CapBackButton(onTap: widget.onBack),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Stack(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  Color(0xFF60A5FA),
-                                  Color(0xFF7C3AED),
-                                  Color(0xFFF43F5E),
-                                ],
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundImage:
-                                  widget.conversation.avatarUrl != null
-                                  ? NetworkImage(widget.conversation.avatarUrl!)
-                                  : null,
-                              child: widget.conversation.avatarUrl == null
-                                  ? Text(
-                                      widget.conversation.name.isNotEmpty
-                                          ? widget.conversation.name[0]
-                                                .toUpperCase()
-                                          : '?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 12,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: online
-                                    ? const Color(0xFFA78BFA)
-                                    : const Color(0xFF64748B),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppTheme.dashBg,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.conversation.name.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              online ? 'ACTIVE NOW' : 'OFFLINE',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: online
-                                    ? const Color(0xFFA78BFA)
-                                    : Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                _RoundIcon(
-                  icon: Icons.ios_share_rounded,
-                  onTap: () => AppShare.profile(
+                _ChatHeader(
+                  conversation: widget.conversation,
+                  searchActive: _showSearch,
+                  onBack: widget.onBack,
+                  onShare: () => AppShare.profile(
                     id: widget.conversation.otherUserId,
                     name: widget.conversation.name,
                   ),
-                ),
-                const SizedBox(width: 6),
-                _RoundIcon(
-                  icon: Icons.search_rounded,
-                  active: _showSearch,
-                  onTap: () => setState(() {
+                  onSearch: () => setState(() {
                     _showSearch = !_showSearch;
                     if (!_showSearch) _search.clear();
                   }),
                 ),
+                if (_showSearch)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                    child: _ThreadSearch(
+                      controller: _search,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                Expanded(
+                  child: messagesAsync.when(
+                    loading: () => Center(
+                      child: CircularProgressIndicator(
+                        color: SwipessGlassLook.accent,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    error: (_, _) => _ThreadEmpty(
+                      icon: Icons.shield_outlined,
+                      title: "Couldn't load messages",
+                      description:
+                          'The connection stalled. Check your network and try again.',
+                      actionLabel: 'RETRY',
+                      onAction: () => ref.invalidate(
+                        conversationMessagesProvider(widget.conversation.id),
+                      ),
+                    ),
+                    data: (messages) {
+                      final visible = q.isEmpty
+                          ? messages
+                          : messages
+                              .where((m) => m.text.toLowerCase().contains(q))
+                              .toList();
+                      if (messages.isEmpty) {
+                        return const _ThreadEmpty(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          title: 'Start the conversation',
+                          description:
+                              'Say hello, ask a question or share a document securely.',
+                        );
+                      }
+                      if (q.isNotEmpty && visible.isEmpty) {
+                        return _ThreadEmpty(
+                          icon: Icons.search_rounded,
+                          title: 'No matches',
+                          description: 'No messages contain “${_search.text.trim()}”',
+                        );
+                      }
+
+                      return ListView.builder(
+                        controller: _scroll,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+                        itemCount: visible.length,
+                        itemBuilder: (context, index) {
+                          final msg = visible[index];
+                          final mine = msg.senderId == myId;
+                          return _MessageRow(
+                            message: msg,
+                            mine: mine,
+                            time: _relTime(msg.createdAt),
+                            onActions: () => _showMessageActions(msg, mine: mine),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                _Composer(
+                  controller: _controller,
+                  emojis: _emojis,
+                  showEmoji: _showEmoji,
+                  recording: _recording,
+                  transcribing: _transcribing,
+                  sending: _sending,
+                  onToggleEmoji: () => setState(() => _showEmoji = !_showEmoji),
+                  onVoice: _transcribing ? null : _toggleVoice,
+                  onDocument: () => showChatDocumentsSheet(
+                    context,
+                    conversationId: widget.conversation.id,
+                    otherUserName: widget.conversation.name,
+                    otherUserId: widget.conversation.otherUserId,
+                  ),
+                  onEmoji: (emoji) {
+                    AppHaptics.selection();
+                    _controller.text += emoji;
+                    _controller.selection = TextSelection.collapsed(
+                      offset: _controller.text.length,
+                    );
+                  },
+                  onSend: () => _send(),
+                ),
               ],
             ),
           ),
-          if (_showSearch)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: TextField(
-                controller: _search,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Search in this chat…',
-                  hintStyle: const TextStyle(color: Colors.white),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: _orange,
-                    size: 18,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withAlpha(10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(25)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: Colors.white.withAlpha(25)),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                    borderSide: BorderSide(color: Color(0x66EB4898)),
-                  ),
-                ),
-              ),
-            ),
-          Expanded(
-            child: messagesAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              ),
-              error: (e, _) => _ThreadEmpty(
-                icon: Icons.shield_outlined,
-                title: "Couldn't load messages",
-                description:
-                    'The connection stalled. Check your network and try again.',
-                actionLabel: 'RETRY',
-                onAction: () => ref.invalidate(
-                  conversationMessagesProvider(widget.conversation.id),
-                ),
-              ),
-              data: (messages) {
-                final visible = q.isEmpty
-                    ? messages
-                    : messages
-                          .where((m) => m.text.toLowerCase().contains(q))
-                          .toList();
-                if (messages.isEmpty) {
-                  return const _ThreadEmpty(
-                    icon: Icons.auto_awesome_rounded,
-                    title: 'Swipes Stream',
-                    description:
-                        'Initialize the connection stream with a greeting',
-                  );
-                }
-                if (q.isNotEmpty && visible.isEmpty) {
-                  return _ThreadEmpty(
-                    icon: Icons.search_rounded,
-                    title: 'No matches',
-                    description: 'No messages contain “${_search.text.trim()}”',
-                  );
-                }
+        ],
+      ),
+    );
+  }
+}
 
-                return ListView.builder(
-                  controller: _scroll,
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  itemCount: visible.length,
-                  itemBuilder: (context, index) {
-                    final msg = visible[index];
-                    final mine = msg.senderId == myId;
-                    return Align(
-                      alignment: mine
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.sizeOf(context).width * 0.78,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: mine
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onLongPress: () =>
-                                    _showMessageActions(msg, mine: mine),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: mine
-                                        ? const LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              _orange,
-                                              Color(0xFFC0392B),
-                                            ],
-                                          )
-                                        : null,
-                                    color: mine
-                                        ? null
-                                        : const Color(0xFF16161C),
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(24),
-                                      topRight: const Radius.circular(24),
-                                      bottomLeft: Radius.circular(
-                                        mine ? 24 : 6,
-                                      ),
-                                      bottomRight: Radius.circular(
-                                        mine ? 6 : 24,
-                                      ),
-                                    ),
-                                    boxShadow: mine
-                                        ? const [
-                                            BoxShadow(
-                                              color: Color(0x3DEB4898),
-                                              blurRadius: 14,
-                                              offset: Offset(0, 3),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: msg.isDocument
-                                      ? _DocumentBubble(msg: msg)
-                                      : Text(
-                                          msg.text,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _relTime(msg.createdAt),
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white30,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    GestureDetector(
-                                      onTap: () =>
-                                          _showMessageActions(msg, mine: mine),
-                                      child: const Icon(
-                                        Icons.more_horiz_rounded,
-                                        color: Colors.white30,
-                                        size: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+class _ThreadAtmosphere extends StatelessWidget {
+  const _ThreadAtmosphere();
+
+  @override
+  Widget build(BuildContext context) {
+    final light = SwipessGlassLook.isLight(context);
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-1.05, -1.05),
+            radius: 1.5,
+            colors: [
+              (light ? const Color(0xFFE9ECFF) : const Color(0xFF151A2A))
+                  .withAlpha(light ? 215 : 130),
+              SwipessGlassLook.canvas(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatHeader extends StatelessWidget {
+  const _ChatHeader({
+    required this.conversation,
+    required this.searchActive,
+    required this.onBack,
+    required this.onShare,
+    required this.onSearch,
+  });
+
+  final ChatConversation conversation;
+  final bool searchActive;
+  final VoidCallback? onBack;
+  final VoidCallback onShare;
+  final VoidCallback onSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = SwipessGlassLook.ink(context);
+    final muted = SwipessGlassLook.muted(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+      child: Row(
+        children: [
+          CapBackButton(onTap: onBack),
+          const SizedBox(width: 8),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: conversation.isOnline
+                      ? const LinearGradient(
+                          colors: [
+                            SwipessGlassLook.accentWarm,
+                            SwipessGlassLook.accent,
+                          ],
+                        )
+                      : null,
+                  color: conversation.isOnline
+                      ? null
+                      : SwipessGlassLook.hairline(context),
+                ),
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: SwipessGlassLook.field(context),
+                  backgroundImage: conversation.avatarUrl?.isNotEmpty == true
+                      ? NetworkImage(conversation.avatarUrl!)
+                      : null,
+                  child: conversation.avatarUrl?.isNotEmpty == true
+                      ? null
+                      : Text(
+                          conversation.name.isNotEmpty
+                              ? conversation.name[0].toUpperCase()
+                              : '?',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
+                ),
+              ),
+              Positioned(
+                right: -1,
+                bottom: 1,
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: conversation.isOnline
+                        ? const Color(0xFF43D17A)
+                        : SwipessGlassLook.faint(context),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: SwipessGlassLook.canvas(context),
+                      width: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  conversation.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    letterSpacing: -.25,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  conversation.isOnline ? 'Active now' : 'Offline',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: conversation.isOnline
+                        ? const Color(0xFF43D17A)
+                        : muted,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-              child: Column(
-                children: [
-                  if (_showEmoji)
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xE6121214),
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          for (final e in _emojis)
-                            GestureDetector(
-                              onTap: () {
-                                AppHaptics.selection();
-                                _controller.text += e;
-                                _controller.selection = TextSelection.collapsed(
-                                  offset: _controller.text.length,
-                                );
-                              },
-                              child: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Center(
-                                  child: Text(
-                                    e,
-                                    style: const TextStyle(fontSize: 22),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+          SwipessGlassIconButton(
+            icon: Icons.ios_share_rounded,
+            tooltip: 'Share profile',
+            onTap: onShare,
+          ),
+          const SizedBox(width: 6),
+          SwipessGlassIconButton(
+            icon: searchActive ? Icons.close_rounded : Icons.search_rounded,
+            tooltip: 'Search chat',
+            active: searchActive,
+            onTap: onSearch,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThreadSearch extends StatelessWidget {
+  const _ThreadSearch({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwipessGlassPanel(
+      radius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Icon(Icons.search_rounded, color: SwipessGlassLook.muted(context), size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                onChanged: onChanged,
+                style: TextStyle(color: SwipessGlassLook.ink(context), fontSize: 13),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Search in this chat…',
+                  hintStyle: TextStyle(
+                    color: SwipessGlassLook.muted(context),
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageRow extends StatelessWidget {
+  const _MessageRow({
+    required this.message,
+    required this.mine,
+    required this.time,
+    required this.onActions,
+  });
+
+  final ChatMessage message;
+  final bool mine;
+  final String time;
+  final VoidCallback onActions;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final ink = SwipessGlassLook.ink(context);
+    final muted = SwipessGlassLook.muted(context);
+
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: width * .78),
+          child: Column(
+            crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onLongPress: onActions,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                  decoration: BoxDecoration(
+                    gradient: mine
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              SwipessGlassLook.accentWarm,
+                              SwipessGlassLook.accent,
+                            ],
+                          )
+                        : null,
+                    color: mine ? null : SwipessGlassLook.panelStrong(context),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(23),
+                      topRight: const Radius.circular(23),
+                      bottomLeft: Radius.circular(mine ? 23 : 8),
+                      bottomRight: Radius.circular(mine ? 8 : 23),
+                    ),
+                    border: Border.all(
+                      color: mine
+                          ? SwipessGlassLook.accent.withAlpha(65)
+                          : SwipessGlassLook.hairline(context),
+                    ),
+                    boxShadow: mine ? SwipessGlassLook.shadow(context) : null,
+                  ),
+                  child: message.isDocument
+                      ? _DocumentBubble(msg: message, mine: mine)
+                      : Text(
+                          message.text,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: mine ? Colors.white : ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      time,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: muted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      _RoundIcon(
-                        icon: Icons.description_outlined,
-                        onTap: () => showChatDocumentsSheet(
-                          context,
-                          conversationId: widget.conversation.id,
-                          otherUserName: widget.conversation.name,
-                          otherUserId: widget.conversation.otherUserId,
-                        ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: onActions,
+                      child: Icon(Icons.more_horiz_rounded, color: muted, size: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Composer extends StatelessWidget {
+  const _Composer({
+    required this.controller,
+    required this.emojis,
+    required this.showEmoji,
+    required this.recording,
+    required this.transcribing,
+    required this.sending,
+    required this.onToggleEmoji,
+    required this.onDocument,
+    required this.onEmoji,
+    required this.onSend,
+    this.onVoice,
+  });
+
+  final TextEditingController controller;
+  final List<String> emojis;
+  final bool showEmoji;
+  final bool recording;
+  final bool transcribing;
+  final bool sending;
+  final VoidCallback onToggleEmoji;
+  final VoidCallback onDocument;
+  final ValueChanged<String> onEmoji;
+  final VoidCallback onSend;
+  final VoidCallback? onVoice;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = controller.text.trim().isNotEmpty && !sending;
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 4),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 3, 10, 7),
+        child: Column(
+          children: [
+            if (recording || transcribing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: recording
+                            ? SwipessGlassLook.accent
+                            : SwipessGlassLook.aiSoft,
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 6),
-                      _RoundIcon(
-                        icon: Icons.sentiment_satisfied_alt_rounded,
-                        active: _showEmoji,
-                        onTap: () => setState(() => _showEmoji = !_showEmoji),
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      recording ? 'LISTENING · TAP MIC TO FINISH' : 'TRANSCRIBING…',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: SwipessGlassLook.muted(context),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .65,
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          minLines: 1,
-                          maxLines: 4,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: capCopy(
-                              ref,
-                              'Type a message...',
-                              'Escribe un mensaje...',
-                            ),
-                            hintStyle: const TextStyle(color: Colors.white),
-                            filled: true,
-                            fillColor: Colors.white.withAlpha(10),
-                            contentPadding: const EdgeInsets.fromLTRB(
-                              16,
-                              13,
-                              14,
-                              13,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: const BorderSide(
-                                color: Color(0x66EB4898),
-                              ),
-                            ),
-                          ),
-                          onSubmitted: (_) => _send(),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      _RoundIcon(
-                        icon: _recording
-                            ? Icons.mic_rounded
-                            : Icons.mic_none_rounded,
-                        active: _recording || _transcribing,
-                        onTap: _transcribing ? () {} : _toggleVoice,
-                      ),
-                      const SizedBox(width: 6),
+                    ),
+                  ],
+                ),
+              ),
+            if (showEmoji)
+              SwipessGlassPanel(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                radius: 24,
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final emoji in emojis)
                       GestureDetector(
-                        onTap: _sending || _controller.text.trim().isEmpty
-                            ? null
-                            : () => _send(),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: _controller.text.trim().isNotEmpty
-                                ? const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    colors: [
-                                      Color(0xFFFF4D00),
-                                      Color(0xFFEB4898),
-                                    ],
-                                  )
-                                : null,
-                            color: _controller.text.trim().isEmpty
-                                ? Colors.white.withAlpha(28)
-                                : null,
-                          ),
-                          child: const Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 20,
+                        onTap: () => onEmoji(emoji),
+                        child: SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: Center(
+                            child: Text(emoji, style: const TextStyle(fontSize: 21)),
                           ),
                         ),
                       ),
-                    ],
+                  ],
+                ),
+              ),
+            SwipessGlassPanel(
+              radius: 28,
+              blur: 24,
+              strong: true,
+              padding: const EdgeInsets.fromLTRB(6, 6, 5, 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SwipessGlassIconButton(
+                    icon: Icons.description_outlined,
+                    tooltip: 'Documents',
+                    size: 38,
+                    iconSize: 18,
+                    onTap: onDocument,
+                  ),
+                  const SizedBox(width: 4),
+                  SwipessGlassIconButton(
+                    icon: Icons.sentiment_satisfied_alt_rounded,
+                    tooltip: 'Emoji',
+                    active: showEmoji,
+                    size: 38,
+                    iconSize: 18,
+                    onTap: onToggleEmoji,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) {
+                        if (enabled) onSend();
+                      },
+                      style: GoogleFonts.plusJakartaSans(
+                        color: SwipessGlassLook.ink(context),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Type a message…',
+                        hintStyle: TextStyle(color: SwipessGlassLook.muted(context)),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  SwipessGlassIconButton(
+                    icon: recording ? Icons.mic_rounded : Icons.mic_none_rounded,
+                    tooltip: transcribing ? 'Transcribing' : 'Voice message',
+                    active: recording || transcribing,
+                    size: 38,
+                    iconSize: 18,
+                    onTap: onVoice ?? () {},
+                  ),
+                  const SizedBox(width: 5),
+                  SwipessSendButton(
+                    enabled: enabled,
+                    loading: sending,
+                    size: 48,
+                    onTap: onSend,
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -838,7 +946,9 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? const Color(0xFFFF6B6B) : Colors.white;
+    final color = destructive
+        ? const Color(0xFFFF6B6B)
+        : SwipessGlassLook.ink(context);
     return ListTile(
       dense: true,
       minLeadingWidth: 28,
@@ -853,46 +963,6 @@ class _ActionTile extends StatelessWidget {
         ),
       ),
       onTap: onTap,
-    );
-  }
-}
-
-class _RoundIcon extends StatelessWidget {
-  const _RoundIcon({
-    required this.icon,
-    required this.onTap,
-    this.active = false,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.light();
-        onTap();
-      },
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: active ? const Color(0x26F43F5E) : Colors.white.withAlpha(14),
-          border: Border.all(
-            color: active
-                ? const Color(0x66F43F5E)
-                : Colors.white.withAlpha(26),
-          ),
-        ),
-        child: Icon(
-          icon,
-          color: active ? const Color(0xFFFB7185) : Colors.white,
-          size: 19,
-        ),
-      ),
     );
   }
 }
@@ -921,40 +991,43 @@ class _ThreadEmpty extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 70,
+              height: 70,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                gradient: const LinearGradient(
-                  colors: [Color(0x33F43F5E), Color(0x337C3AED)],
+                borderRadius: BorderRadius.circular(27),
+                gradient: LinearGradient(
+                  colors: [
+                    SwipessGlassLook.accentWarm.withAlpha(40),
+                    SwipessGlassLook.accent.withAlpha(26),
+                  ],
                 ),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: SwipessGlassLook.hairline(context)),
               ),
-              child: Icon(icon, color: Colors.white, size: 32),
+              child: Icon(icon, color: SwipessGlassLook.ink(context), size: 31),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
             Text(
               title,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 22,
+                color: SwipessGlassLook.ink(context),
+                fontSize: 20,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 9),
             Text(
               description,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 11,
+                color: SwipessGlassLook.muted(context),
+                fontSize: 11.5,
                 fontWeight: FontWeight.w600,
                 height: 1.5,
               ),
             ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               FilledButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
@@ -965,8 +1038,10 @@ class _ThreadEmpty extends StatelessWidget {
 }
 
 class _DocumentBubble extends StatelessWidget {
-  const _DocumentBubble({required this.msg});
+  const _DocumentBubble({required this.msg, required this.mine});
+
   final ChatMessage msg;
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
@@ -978,6 +1053,7 @@ class _DocumentBubble extends StatelessWidget {
             ),
           ]
         : msg.attachments;
+    final ink = mine ? Colors.white : SwipessGlassLook.ink(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -987,17 +1063,13 @@ class _DocumentBubble extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.description_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                Icon(Icons.description_rounded, color: ink, size: 18),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     doc.title,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: ink,
                       fontWeight: FontWeight.w800,
                       fontSize: 13,
                     ),
@@ -1009,8 +1081,8 @@ class _DocumentBubble extends StatelessWidget {
         Text(
           docs.first.status.toUpperCase(),
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 10,
+            color: ink.withAlpha(180),
+            fontSize: 9.5,
             fontWeight: FontWeight.w700,
           ),
         ),
