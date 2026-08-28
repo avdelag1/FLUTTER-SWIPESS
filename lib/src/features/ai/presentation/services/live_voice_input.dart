@@ -448,7 +448,7 @@ class LiveVoiceInput {
   }
 
   static String _normalizeTranscript(String input) {
-    var clean = input.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    var clean = input.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (clean.isEmpty) return clean;
 
     final words = clean.split(' ');
@@ -477,6 +477,6 @@ class LiveVoiceInput {
   }
 
   static String _wordKey(String word) {
-    return word.toLowerCase().replaceAll(RegExp(r'[^\\p{L}\\p{N}\\']', unicode: true), '');
+    return word.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}\']', unicode: true), '');
   }
 }
