@@ -470,9 +470,16 @@ Deno.serve(async (req) => {
     const lastUser = [...history].reverse().find((m) => m.role === "user")?.content || "";
     if (!lastUser) return json(400, { error: "At least one user message is required" });
 
-    const userMemory = await loadUserMemory(client, access.user.id);
-    const ctx = await loadContext(client, lastUser, body, userMemory);
-    await rememberRequest(client, access.user.id, lastUser);
+    const userId = access.user.id;
+    // Read memory and marketplace context concurrently so personalization does
+    // not add another startup round-trip to the user's AI request.
+    const [userMemory, ctx] = await Promise.all([
+      loadUserMemory(client, userId),
+      loadContext(client, lastUser, body),
+    ]);
+    ctx.userMemory = userMemory;
+    // Preference capture is best-effort and never delays the first token.
+    void rememberRequest(client, userId, lastUser);
     const fresh = needsFreshWeb(lastUser);
     const system = contextPrompt(ctx, body, history, lastUser);
     const modelMessages: Msg[] = [
