@@ -56,7 +56,7 @@ async function requireAccess(req: Request) {
   }
   const { data: allowed, error: entitlementError } = await client.rpc("rpc_has_premium_feature_access");
   if (entitlementError) {
-    console.error("[ai-concierge-v79] entitlement", entitlementError.message);
+    console.error("[ai-concierge-v80] entitlement", entitlementError.message);
     return { error: json(503, { error: "Could not verify AI access. Please retry." }, "swipess", "entitlement-error") };
   }
   if (allowed !== true) {
@@ -130,12 +130,12 @@ async function loadLocalBrain(client: any, query: string, body: any) {
       p_limit: 8,
     });
     if (error) {
-      console.error("[ai-concierge-v79] local brain context", error.message);
+      console.error("[ai-concierge-v80] local brain context", error.message);
       return [];
     }
     return Array.isArray(data) ? data : [];
   } catch (e) {
-    console.error("[ai-concierge-v79] local brain context", String(e));
+    console.error("[ai-concierge-v80] local brain context", String(e));
     return [];
   }
 }
@@ -160,7 +160,7 @@ async function loadContext(client: any, query: string, body: any) {
         .limit(3);
       if (!error && Array.isArray(data)) listings = data;
     } catch (e) {
-      console.error("[ai-concierge-v79] listings context", String(e));
+      console.error("[ai-concierge-v80] listings context", String(e));
     }
   }
 
@@ -174,7 +174,7 @@ async function loadContext(client: any, query: string, body: any) {
         .limit(3);
       if (!error && Array.isArray(data)) events = data;
     } catch (e) {
-      console.error("[ai-concierge-v79] events context", String(e));
+      console.error("[ai-concierge-v80] events context", String(e));
     }
   }
 
@@ -188,7 +188,7 @@ async function loadContext(client: any, query: string, body: any) {
         .limit(3);
       if (!error && Array.isArray(data)) profiles = data;
     } catch (e) {
-      console.error("[ai-concierge-v79] profiles context", String(e));
+      console.error("[ai-concierge-v80] profiles context", String(e));
     }
   }
 
@@ -263,11 +263,18 @@ function localBrainCardRows(ctx: any) {
   }));
 }
 
+function base64Utf8(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
 function withLocalBrainCards(text: string, ctx: any) {
   const rows = localBrainCardRows(ctx);
   if (!rows.length) return text.trim();
-  const clean = text.replace(/\[LOCAL_BRAIN:[\s\S]*?\]\s*$/g, "").trim();
-  return `${clean}\n[LOCAL_BRAIN:${JSON.stringify(rows)}]`;
+  const payload = base64Utf8(JSON.stringify(rows));
+  return `${text.trim()}\n[DRAFT:local_brain:{"payload":"${payload}"}]`;
 }
 
 function openAiText(data: any): string {
@@ -364,7 +371,7 @@ function emergencyReply(query: string, ctx: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-flexible-local-brain-cards" }, "swipess", "health");
+  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-flexible-local-brain-cards-v2" }, "swipess", "health");
   if (req.method !== "POST") return json(405, { error: "POST required" });
   if (Number(req.headers.get("content-length") || "0") > 128 * 1024) return json(413, { error: "Request too large" });
 
@@ -410,15 +417,15 @@ Deno.serve(async (req) => {
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         errors.push(`${provider}:${message}`);
-        console.error(`[ai-concierge-v79] ${provider} failed`, message);
+        console.error(`[ai-concierge-v80] ${provider} failed`, message);
       }
     }
 
-    console.error("[ai-concierge-v79] all providers failed", errors.join(" | "));
+    console.error("[ai-concierge-v80] all providers failed", errors.join(" | "));
     const local = emergencyReply(lastUser, ctx);
     return json(200, { choices: [{ message: { content: local } }] }, "swipess-local", "emergency-local");
   } catch (e) {
-    console.error("[ai-concierge-v79] fatal", e instanceof Error ? e.message : String(e));
+    console.error("[ai-concierge-v80] fatal", e instanceof Error ? e.message : String(e));
     return json(200, {
       choices: [{ message: { content: "I’m here. Ask me normally, or tell me what you want to find on SWIPESS." } }],
     }, "swipess-local", "fatal-local");
