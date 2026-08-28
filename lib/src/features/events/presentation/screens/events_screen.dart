@@ -828,11 +828,6 @@ class _EventPageState extends ConsumerState<_EventPage>
                           ),
                           const SizedBox(height: 3),
                           _RailAction(
-                            icon: Icons.info_outline_rounded,
-                            onTap: widget.onOpen,
-                          ),
-                          const SizedBox(height: 3),
-                          _RailAction(
                             icon: Icons.chat_bubble_outline_rounded,
                             onTap: _contactOrganizer,
                           ),
