@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/widgets/promote_cta_card.dart';
 import 'package:go_router/go_router.dart';
@@ -671,29 +672,31 @@ class _EventPageState extends ConsumerState<_EventPage>
 
   Future<void> _share() async {
     widget.onChromeInteraction();
-    await Clipboard.setData(
-      ClipboardData(
-        text: 'Check out ${event.title} on Swipess! ${event.shareUrl}',
-      ),
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Event link copied')),
+    final box = context.findRenderObject() as RenderBox?;
+    await Share.share(
+      'Check out ${event.title} on Swipess! ${event.shareUrl}',
+      sharePositionOrigin: box != null ? box.localToGlobal(Offset.zero) & box.size : null,
     );
   }
 
-  Future<void> _whatsApp() async {
+  Future<void> _contactOrganizer() async {
     widget.onChromeInteraction();
-    if (!event.hasWhatsApp) {
-      widget.onOpen();
-      return;
+    if (event.hasWhatsApp) {
+      await EventConnect.open(
+        EventConnect.whatsAppUri(
+          event.organizerWhatsapp,
+          message: 'Hola, vi tu evento "${event.title}" en Swipess 🔥',
+        ),
+      );
+    } else if ((event.organizerInstagram ?? '').isNotEmpty) {
+      await EventConnect.open(EventConnect.instagramUri(event.organizerInstagram));
+    } else if ((event.organizerFacebook ?? '').isNotEmpty) {
+      await EventConnect.open(EventConnect.facebookUri(event.organizerFacebook));
+    } else if ((event.organizerWebsite ?? '').isNotEmpty) {
+      await EventConnect.open(EventConnect.websiteUri(event.organizerWebsite));
+    } else {
+      widget.onOpen(); // Fallback to info panel if no contact info
     }
-    await EventConnect.open(
-      EventConnect.whatsAppUri(
-        event.organizerWhatsapp,
-        message: 'Hola, vi tu evento "${event.title}" en Swipess 🔥',
-      ),
-    );
   }
 
   @override
@@ -828,7 +831,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                           const SizedBox(height: 3),
                           _RailAction(
                             icon: Icons.chat_bubble_outline_rounded,
-                            onTap: _whatsApp,
+                            onTap: _contactOrganizer,
                           ),
                           const SizedBox(height: 3),
                           _RailAction(
