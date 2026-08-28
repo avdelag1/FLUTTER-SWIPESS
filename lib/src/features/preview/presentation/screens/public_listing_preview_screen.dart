@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -48,13 +49,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 expandedHeight: 360,
                 pinned: true,
                 leading: IconButton(
-                  onPressed: () {
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    } else {
-                      context.go('/welcome');
-                    }
-                  },
+                  onPressed: () => NavBack.popOrGo(context, fallbackPath: '/welcome'),
                   icon: const Icon(Icons.close_rounded),
                 ),
                 actions: [

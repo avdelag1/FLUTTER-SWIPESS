@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -64,13 +65,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                       child: Row(
                         children: [
                           IconButton(
-                            onPressed: () {
-                              if (Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              } else {
-                                context.go('/welcome');
-                              }
-                            },
+                            onPressed: () => NavBack.popOrGo(context, fallbackPath: '/welcome'),
                             icon: Icon(
                               Icons.close_rounded,
                               color: MatteSurface.ink(context),
