@@ -680,8 +680,9 @@ class _EventPageState extends ConsumerState<_EventPage> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      // A single center tap must stay immediate. Favorite remains available
+      // from the dedicated rail, so double-tap cannot delay play/pause.
       onTap: _togglePlayback,
-      onDoubleTap: _toggleFavorite,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -737,7 +738,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
                 child: Center(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(112),
+                      color: const Color(0xE6FF4D78),
                       shape: BoxShape.circle,
                       boxShadow: const [
                         BoxShadow(
@@ -751,7 +752,10 @@ class _EventPageState extends ConsumerState<_EventPage> {
                       child: Icon(
                         _playbackFeedback,
                         color: Colors.white,
-                        size: 38,
+                        size: 40,
+                        shadows: const [
+                          Shadow(color: Color(0x99000000), blurRadius: 5),
+                        ],
                       ),
                     ),
                   ),
