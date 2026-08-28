@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/bulk_selection_bar.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
@@ -98,7 +99,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       body: async.when(
         loading: () => Column(
           children: [
-            _Header(top: top, onBack: () => Navigator.of(context).maybePop()),
+            _Header(top: top, onBack: () => NavBack.popOrGo(context)),
             const Expanded(child: NotificationListSkeleton()),
           ],
         ),
@@ -116,7 +117,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 top: top,
                 onBack: _selecting
                     ? _cancelSelection
-                    : () => Navigator.of(context).maybePop(),
+                    : () => NavBack.popOrGo(context),
                 selecting: _selecting,
                 onSelect: items.isEmpty ? null : () => _beginSelection(),
                 onMarkRead: !_selecting && items.any((n) => !n.isRead)

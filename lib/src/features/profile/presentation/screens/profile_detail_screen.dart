@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,6 @@ import 'package:flutter_swipes/src/features/moderation/presentation/widgets/repo
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final publicProfileProvider =
@@ -244,13 +244,7 @@ class _BodyState extends State<_Body> {
                     children: [
                       _Round(
                         icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
-                          } else {
-                            context.go('/dashboard');
-                          }
-                        },
+                        onTap: () => NavBack.popOrGo(context),
                       ),
                       const Spacer(),
                       _Round(

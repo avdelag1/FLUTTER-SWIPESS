@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
@@ -46,17 +47,7 @@ class SettingsScreen extends ConsumerWidget {
                     child: Align(
                       alignment: Alignment.topLeft,
                       child: _RoundBack(
-                        onTap: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
-                          } else {
-                            context.go(
-                              _isOwner
-                                  ? AppPaths.ownerDashboard
-                                  : AppPaths.clientProfile,
-                            );
-                          }
-                        },
+                        onTap: () => NavBack.popOrGo(context),
                       ),
                     ),
                   ),

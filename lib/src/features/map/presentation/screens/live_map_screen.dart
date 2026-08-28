@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/platform_discovery_map_screen.dart';
-import 'package:go_router/go_router.dart';
 
 /// Compatibility entry point for the discovery map.
 ///
@@ -49,23 +49,11 @@ class _LiveMapScreenState extends ConsumerState<LiveMapScreen> {
       return;
     }
 
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-      return;
-    }
-
-    context.go(AppPaths.clientDashboard);
+    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
-  VoidCallback _defaultClose(BuildContext context) => () {
-    final navigator = Navigator.of(context);
-    if (navigator.canPop()) {
-      navigator.pop();
-    } else {
-      context.go(AppPaths.clientDashboard);
-    }
-  };
+  VoidCallback _defaultClose(BuildContext context) => () =>
+      NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
 
   @override
   Widget build(BuildContext context) {

@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
@@ -213,13 +214,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         _PearlRoundBtn(
                           icon: Icons.close_rounded,
                           tooltip: 'Close',
-                          onTap: () {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                            } else {
-                              context.go(AppPaths.clientDashboard);
-                            }
-                          },
+                          onTap: () => NavBack.popOrGo(context),
                         ),
                       ],
                     ),
