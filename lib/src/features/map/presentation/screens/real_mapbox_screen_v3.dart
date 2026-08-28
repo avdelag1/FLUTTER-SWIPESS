@@ -276,25 +276,35 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   }
 
   Future<Uint8List> _makePin(_Kind kind) async {
-    const size = 88.0;
+    // Keep the marker readable at the wide camera distances used by the
+    // globe/local-map transition. The old 88px asset rendered as a tiny dot
+    // on iPhone and gave every category the same visual weight.
+    const canvasSize = 128.0;
+    const center = ui.Offset(64, 56);
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
-    const center = ui.Offset(44, 38);
+
     canvas.drawCircle(
-      center.translate(0, 3),
-      27,
+      center.translate(0, 5),
+      43,
       ui.Paint()
-        ..color = Colors.black.withAlpha(46)
-        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 7),
+        ..color = kind.color.withAlpha(58)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 10),
     );
-    canvas.drawCircle(center, 26, ui.Paint()..color = Colors.white);
-    canvas.drawCircle(center, 22, ui.Paint()..color = kind.color);
+    canvas.drawCircle(center, 40, ui.Paint()..color = Colors.white);
+    canvas.drawCircle(center, 35, ui.Paint()..color = kind.color);
+    canvas.drawCircle(
+      center.translate(-10, -11),
+      13,
+      ui.Paint()..color = Colors.white.withAlpha(42),
+    );
+
     final painter = TextPainter(
       text: TextSpan(
         text: String.fromCharCode(kind.icon.codePoint),
         style: TextStyle(
           color: Colors.white,
-          fontSize: 22,
+          fontSize: 29,
           fontFamily: kind.icon.fontFamily,
           package: kind.icon.fontPackage,
         ),
@@ -303,9 +313,13 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     )..layout();
     painter.paint(
       canvas,
-      ui.Offset(44 - painter.width / 2, 38 - painter.height / 2),
+      ui.Offset(
+        center.dx - painter.width / 2,
+        center.dy - painter.height / 2,
+      ),
     );
-    final image = await recorder.endRecording().toImage(88, 88);
+
+    final image = await recorder.endRecording().toImage(128, 128);
     return (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
         .asUint8List();
   }
@@ -547,7 +561,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           PointAnnotationOptions(
             geometry: _point(item.lat, item.lng),
             image: _pinImages[item.kind],
-            iconSize: item.key == _selected ? 1.12 : .92,
+            iconSize: item.key == _selected ? 1.14 : 1.0,
             symbolSortKey: item.key == _selected ? 9000 : 5000,
           ),
       ];
@@ -561,6 +575,15 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
       if (item.key == _selected) return item;
     }
     return null;
+  }
+
+  void _dismissOverlays() {
+    if (!_menu && !_cities && !_search) return;
+    setState(() {
+      _menu = false;
+      _cities = false;
+      _search = false;
+    });
   }
 
   void _selectNearest(double lat, double lng) {
@@ -765,6 +788,14 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
             ),
           ),
           if (_controls) ...[
+            if (_menu || _cities || _search)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _dismissOverlays,
+                  child: const SizedBox.expand(),
+                ),
+              ),
             Positioned(
               top: pad.top + 4,
               left: 7,
@@ -1172,28 +1203,51 @@ class _Menu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget row(IconData icon, String text, VoidCallback tap) => GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: tap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        child: Row(
-          children: [
-            Icon(icon, size: 17, color: const Color(0xFF111318)),
-            const SizedBox(width: 10),
-            Text(
-              text,
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF111318),
-                fontSize: 11.2,
-                fontWeight: FontWeight.w800,
-                decoration: TextDecoration.none,
-              ),
+    Widget row(
+      IconData icon,
+      String text,
+      VoidCallback tap, {
+      required Color accent,
+    }) =>
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: tap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            child: Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: accent.withAlpha(28),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: SizedBox(
+                    width: 31,
+                    height: 31,
+                    child: Icon(icon, size: 17, color: accent),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF111318),
+                      fontSize: 11.2,
+                      fontWeight: FontWeight.w800,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: accent.withAlpha(170),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
     final shortSha = _swipessBuildSha.length > 12
         ? _swipessBuildSha.substring(0, 12)
         : _swipessBuildSha;
@@ -1201,8 +1255,12 @@ class _Menu extends StatelessWidget {
       width: 204,
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFAFFFFFF),
-        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFFFFF), Color(0xFFF3F0FF)],
+        ),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0x12000000)),
         boxShadow: const [
           BoxShadow(
@@ -1231,17 +1289,38 @@ class _Menu extends StatelessWidget {
               ),
             ),
           ),
-          row(Icons.location_city_rounded, 'Choose city', onCities),
-          row(Icons.my_location_rounded, 'My exact location', onGps),
+          row(
+            Icons.location_city_rounded,
+            'Choose city',
+            onCities,
+            accent: const Color(0xFF8B5CF6),
+          ),
+          row(
+            Icons.my_location_rounded,
+            'My exact location',
+            onGps,
+            accent: const Color(0xFF147DFF),
+          ),
           row(
             trayVisible
                 ? Icons.visibility_off_rounded
                 : Icons.view_carousel_rounded,
             trayVisible ? 'Hide discovery tray' : 'Show discovery tray',
             onTray,
+            accent: const Color(0xFFE84D68),
           ),
-          row(Icons.visibility_off_rounded, 'Hide map controls', onHide),
-          row(Icons.close_rounded, 'Close map', onClose),
+          row(
+            Icons.visibility_off_rounded,
+            'Hide map controls',
+            onHide,
+            accent: const Color(0xFFFF7A18),
+          ),
+          row(
+            Icons.close_rounded,
+            'Close map',
+            onClose,
+            accent: const Color(0xFF111318),
+          ),
           const Divider(height: 10),
           Padding(
             padding: const EdgeInsets.fromLTRB(11, 2, 11, 7),
