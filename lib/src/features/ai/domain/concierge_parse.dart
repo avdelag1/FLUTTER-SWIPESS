@@ -29,6 +29,9 @@ class ConciergeParse {
   static final _profiles = RegExp(r'\[PROFILES:(\[[\s\S]*?\])\]');
   static final _events = RegExp(r'\[EVENTS:(\[[\s\S]*?\])\]');
   static final _localBrain = RegExp(r'\[LOCAL_BRAIN:(\[[\s\S]*?\])\]');
+  static final _localBrainDraft = RegExp(
+    r'\[DRAFT:local_brain:(\{[\s\S]*?\})\]',
+  );
   static final _passport = RegExp(r'\[PASSPORT:(\{[\s\S]*?\})\]');
   static final _draft = RegExp(r'\[DRAFT:[^:]+:(\{[\s\S]*?\})\]');
   static final _filter = RegExp(r'\[FILTER:(\{[\s\S]*?\})\]');
@@ -88,6 +91,17 @@ class ConciergeParse {
     });
     clean = clean.replaceAllMapped(_localBrain, (m) {
       localBrain = _jsonList(m.group(1)!);
+      return '';
+    });
+    clean = clean.replaceAllMapped(_localBrainDraft, (m) {
+      try {
+        final wrapper = jsonDecode(m.group(1)!) as Map<String, dynamic>;
+        final payload = wrapper['payload']?.toString() ?? '';
+        if (payload.isNotEmpty) {
+          final decoded = utf8.decode(base64Decode(payload));
+          localBrain = _jsonList(decoded);
+        }
+      } catch (_) {}
       return '';
     });
     clean = clean.replaceAllMapped(_passport, (m) {
