@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -446,20 +447,10 @@ class _BodyState extends State<_Body> {
                               const SizedBox(width: 10),
                               _Round(
                                 icon: Icons.share_rounded,
-                                onTap: () async {
-                                  final url =
-                                      'https://www.swipess.com/u/${p.userId}';
-                                  await Clipboard.setData(
-                                    ClipboardData(text: url),
-                                  );
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Profile link copied'),
-                                      ),
-                                    );
-                                  }
-                                },
+                                onTap: () => AppShare.profile(
+                                  id: p.userId,
+                                  name: p.name,
+                                ),
                               ),
                             ],
                           ),

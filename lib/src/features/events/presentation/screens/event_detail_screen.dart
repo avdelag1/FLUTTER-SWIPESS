@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
@@ -183,14 +184,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         event,
         'tap_share',
         source: 'event_detail',
-        metadata: const <String, dynamic>{'method': 'copy_link'},
+        metadata: const <String, dynamic>{'method': 'native_share'},
       ),
     );
-    final text = 'Check out ${event.title} on Swipess! ${event.shareUrl}';
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Event link copied')));
+    await AppShare.event(id: event.id, title: event.title);
   }
 
   Future<void> _addToCalendar() async {

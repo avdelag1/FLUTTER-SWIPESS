@@ -1,7 +1,9 @@
 import 'package:share_plus/share_plus.dart';
 
 abstract final class AppShare {
-  static const _origin = 'https://swipess.com';
+  static const origin = 'https://www.swipess.com';
+
+  static const _origin = origin;
 
   static String listingUrl(String id) => '$_origin/s/listing/$id';
   static String profileUrl(String id) => '$_origin/u/$id';

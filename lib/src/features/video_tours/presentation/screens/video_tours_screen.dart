@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
@@ -185,11 +186,10 @@ class _TourPageState extends State<_TourPage> {
   }
 
   Future<void> _share() async {
-    final url = 'https://www.swipess.com/listing/${widget.listing.id}';
-    await Clipboard.setData(ClipboardData(text: url));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Tour link copied')));
+    await AppShare.listing(
+      id: widget.listing.id,
+      title: widget.listing.title,
+    );
   }
 
   Future<void> _like() async {

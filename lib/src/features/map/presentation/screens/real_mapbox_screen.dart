@@ -429,6 +429,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       }
     }
     if (best == null) return;
+    if (_selected?.id == best.id && _selected?.isListing == best.isListing) {
+      _openSelected();
+      return;
+    }
     AppHaptics.selection();
     setState(() => _selected = best);
     _map?.easeTo(

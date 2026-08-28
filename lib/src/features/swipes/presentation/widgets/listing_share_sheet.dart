@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -20,9 +21,9 @@ class _ShareSheet extends StatelessWidget {
   const _ShareSheet({required this.listing});
   final Listing listing;
 
-  String get _url => 'https://www.swipess.com/listing/${listing.id}';
+  String get _url => AppShare.listingUrl(listing.id);
   String get _text =>
-      'Check out ${listing.title ?? 'this listing'} on Swipess — $_url';
+      'Check out ${listing.title ?? 'this listing'} on Swipess\n$_url';
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +31,7 @@ class _ShareSheet extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 20),
       decoration: const BoxDecoration(
-        color: Color(0xFF0A0A0D),
+        color: AppTheme.dashBg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
       ),

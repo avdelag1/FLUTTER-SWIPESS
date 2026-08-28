@@ -40,7 +40,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _routeActive = true;
   bool _appActive = true;
   bool _videoPreviewEnabled = true;
-  double _dragDx = 0;
 
   bool get _canPlay => _routeActive && _appActive && _videoPreviewEnabled;
 

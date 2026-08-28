@@ -26,6 +26,17 @@
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/profile/:id"
     },
     {
+      "source": "/explore/events/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+        }
+      ],
+      "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/event/:id"
+    },
+    {
       "source": "/explore/eventos/:id",
       "has": [
         {
@@ -35,6 +46,17 @@
         }
       ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/event/:id"
+    },
+    {
+      "source": "/u/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+        }
+      ],
+      "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/profile/:id"
     },
     {
       "source": "/s/listing/:id",

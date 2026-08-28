@@ -822,16 +822,16 @@ class _EventPageState extends ConsumerState<_EventPage>
                                 ? Icons.favorite_rounded
                                 : Icons.favorite_border_rounded,
                             color: favorited
-                                ? const Color(0xFFFF3040)
+                                ? AppTheme.brandPrimary
                                 : Colors.white,
                             onTap: _toggleFavorite,
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 8),
                           _RailAction(
                             icon: Icons.chat_bubble_outline_rounded,
                             onTap: _contactOrganizer,
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 8),
                           _RailAction(
                             icon: Icons.ios_share_rounded,
                             onTap: _share,
@@ -841,7 +841,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                     ),
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 8),
                 _RailAction(
                   icon: soundOn
                       ? Icons.volume_up_rounded
@@ -1085,12 +1085,12 @@ class _SavedEventsButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.favorite_rounded,
                 size: 20,
-                color: Color(0xFFFF3040),
+                color: AppTheme.brandPrimary,
                 shadows: [
-                  Shadow(color: Color(0x99FF3040), blurRadius: 8),
+                  Shadow(color: AppTheme.brandPrimary.withAlpha(153), blurRadius: 8),
                   Shadow(color: Color(0xCC000000), blurRadius: 3),
                 ],
               ),
@@ -1194,10 +1194,10 @@ class _CategoryBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: active
-                    ? const LinearGradient(
+                    ? LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFFFF3040), Color(0xFFEF48A6)],
+                        colors: [AppTheme.brandPrimary, AppTheme.brandPrimary2],
                       )
                     : null,
                 color: active ? null : Colors.black.withAlpha(90),

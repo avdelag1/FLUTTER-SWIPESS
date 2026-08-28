@@ -12,8 +12,8 @@ import 'package:url_launcher/url_launcher.dart';
 /// Referral URL used by the profile invite card and the invite sheet.
 abstract final class InviteLinks {
   static String referralUrl(String? userId) {
-    if (userId == null || userId.isEmpty) return 'https://www.swipess.com';
-    return 'https://www.swipess.com/?ref=$userId';
+    if (userId == null || userId.isEmpty) return AppShare.origin;
+    return '${AppShare.origin}/?ref=$userId';
   }
 
   static String message(String link, {String? fromName}) {

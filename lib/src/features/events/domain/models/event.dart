@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_swipes/src/core/utils/app_share.dart';
 
 @immutable
 class Event {
@@ -70,7 +71,7 @@ class Event {
     return out;
   }
 
-  String get shareUrl => 'https://www.swipess.com/explore/events/$id';
+  String get shareUrl => AppShare.eventUrl(id);
 
   bool get hasWhatsApp {
     final d = (organizerWhatsapp ?? '').replaceAll(RegExp(r'\D'), '');
