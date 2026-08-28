@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/starfield_background.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_controller.dart';
@@ -157,14 +158,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     label: 'Back',
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        AppHaptics.light();
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        } else {
-                          context.go(AppPaths.welcome);
-                        }
-                      },
+                      onTap: () => NavBack.popOrGo(
+                        context,
+                        fallbackPath: AppPaths.welcome,
+                      ),
                       child: Container(
                         width: 44,
                         height: 44,

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 
 class RoleDashboardAction {
   const RoleDashboardAction({
@@ -68,13 +69,7 @@ class RoleControlCenter extends StatelessWidget {
                             _RoundIconButton(
                               icon: Icons.arrow_back_rounded,
                               isLight: isLight,
-                              onTap: () {
-                                if (Navigator.of(context).canPop()) {
-                                  Navigator.of(context).pop();
-                                } else {
-                                  context.go('/client/dashboard');
-                                }
-                              },
+                              onTap: () => NavBack.popOrGo(context),
                             ),
                             const Spacer(),
                             Container(
