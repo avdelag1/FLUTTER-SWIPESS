@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:http/http.dart' as http;
@@ -51,9 +52,22 @@ class VoiceTranscribeRepository {
   Future<bool> start() async {
     if (!await _recorder.hasPermission()) return false;
     if (await _recorder.isRecording()) return true;
+
+    // Chrome/Edge/Firefox do not reliably support AAC MediaRecorder output,
+    // while WAV works across modern browsers. Native iOS/Android use compact
+    // AAC/M4A. Auto gain / echo cancellation / noise suppression are best-effort
+    // and are ignored on platforms that do not support them.
+    final config = RecordConfig(
+      encoder: kIsWeb ? AudioEncoder.wav : AudioEncoder.aacLc,
+      numChannels: 1,
+      sampleRate: 16000,
+      autoGain: true,
+      echoCancel: true,
+      noiseSuppress: true,
+    );
     await _recorder.start(
-      const RecordConfig(numChannels: 1, sampleRate: 16000),
-      path: 'swipess_voice.m4a',
+      config,
+      path: kIsWeb ? '' : 'swipess_voice.m4a',
     );
     return true;
   }
@@ -72,7 +86,7 @@ class VoiceTranscribeRepository {
 
   Future<void> cancel() async {
     if (await _recorder.isRecording()) {
-      await _recorder.stop();
+      await _recorder.cancel();
     }
   }
 
@@ -146,6 +160,7 @@ class VoiceTranscribeRepository {
   }
 
   static String _mimeFor(String path) {
+    if (kIsWeb) return 'audio/wav';
     final lower = path.toLowerCase();
     if (lower.contains('.wav')) return 'audio/wav';
     if (lower.contains('.mp4') || lower.contains('.m4a')) return 'audio/mp4';
