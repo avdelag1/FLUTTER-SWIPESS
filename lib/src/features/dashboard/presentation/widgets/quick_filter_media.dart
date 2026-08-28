@@ -70,7 +70,8 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   ConsumerState<QuickFilterMedia> createState() => _QuickFilterMediaState();
 }
 
-class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
+class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
+    with WidgetsBindingObserver {
   int _index = 0;
   late List<String> _pool;
   VideoPlayerController? _video;
@@ -79,6 +80,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   bool _holdsBudgetSlot = false;
   bool _binding = false;
   bool _routeActive = true;
+  bool _appActive = true;
   bool _videoPreviewEnabled = true;
   bool _userPaused = false;
   bool _lastReportedPlaying = false;
@@ -87,6 +89,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   bool _visibilityCheckScheduled = false;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
+  bool get _canPlay => _routeActive && _appActive && _videoEnabled;
   bool get _hasVideo => _pool.any(isQuickFilterVideoUrl);
 
   List<String> get _sources {
@@ -101,6 +104,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _reshuffle(widget.sources);
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _scheduleVisibilityCheck(),
@@ -142,7 +146,27 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _appActive = true;
+        _scheduleVisibilityCheck();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _appActive = false;
+        _video?.setVolume(0);
+        _video?.pause();
+        _VideoPlaybackCoordinator.release(this);
+        break;
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollPosition?.removeListener(_scheduleVisibilityCheck);
     _VideoPlaybackCoordinator.release(this);
     _disposeVideo();
@@ -221,7 +245,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   void _updateVisibilityAndPlayback() {
-    if (!_routeActive) {
+    if (!_routeActive || !_appActive) {
       _visibleFraction = 0;
       _video?.setVolume(0);
       _pauseForCoordinator();
@@ -273,7 +297,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   }
 
   Future<void> _playIfReady() async {
-    if (!_routeActive || !_videoEnabled || !_videoPreviewEnabled || _userPaused) {
+    if (!_canPlay || _userPaused) {
       return;
     }
     final player = _video;
@@ -419,7 +443,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_videoEnabled && _routeActive && _visibleFraction >= 0.50) {
+    if (_canPlay && _visibleFraction >= 0.50) {
       final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
       player.setVolume(soundOn && (unlocked || !kIsWeb) ? 1 : 0);
     } else {
