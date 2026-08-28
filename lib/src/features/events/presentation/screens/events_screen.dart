@@ -128,7 +128,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _hideTimer?.cancel();
     if (!mounted || _chromePinned || _categoryMenuOpen) return;
     if (_chromeVisible) setState(() => _chromeVisible = false);
-    ref.read(chromeVisibilityProvider.notifier).hide();
   }
 
   void _toggleChrome() {
@@ -156,7 +155,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         _chromePinned = false;
         _categoryMenuOpen = false;
       });
-      ref.read(chromeVisibilityProvider.notifier).hide();
     } else {
       setState(() {
         _chromeVisible = true;
@@ -315,9 +313,24 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             },
           ),
 
-          // Minimal permanent event chrome: back at the far left, saved events
-          // + category menu at the far right. Category bubbles do not consume
-          // horizontal space until explicitly requested.
+          // Back must stay tappable even when event chrome auto-hides.
+          Positioned(
+            top: 0,
+            left: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(2, 3, 0, 0),
+                child: _EdgeGlassButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  tooltip: 'Back',
+                  onTap: () => _goBack(context),
+                ),
+              ),
+            ),
+          ),
+
+          // Saved events + category menu hide with immersive chrome.
           Positioned(
             top: 0,
             left: 0,
@@ -337,11 +350,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       padding: const EdgeInsets.fromLTRB(2, 3, 2, 0),
                       child: Row(
                         children: [
-                          _EdgeGlassButton(
-                            icon: Icons.arrow_back_ios_new_rounded,
-                            tooltip: 'Back',
-                            onTap: () => _goBack(context),
-                          ),
+                          const SizedBox(width: 48),
                           const Spacer(),
                           _SavedEventsButton(
                             count: likedCount,

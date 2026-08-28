@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/providers/app_notification_provider.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:go_router/go_router.dart';
@@ -164,12 +165,22 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 
   void _goDashboard() {
+    AppHaptics.light();
     ref.read(navTabProvider.notifier).set(NavTab.dashboard);
-    // This deck can be hosted inside a nested MaterialPageRoute. Popping the
-    // root navigator first can dispose this context before go() runs, leaving
-    // the visible back controls unresponsive. A direct router transition is
-    // deterministic from every quick-filter entry point.
-    GoRouter.of(context).go(AppPaths.clientDashboard);
+    ref.read(chromeRevealProvider.notifier).reveal();
+    ref.read(chromeVisibilityProvider.notifier).show();
+
+    final router = GoRouter.of(context);
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    final shouldPop = rootNav.canPop();
+    if (shouldPop) {
+      rootNav.pop();
+    }
+    // Pop can dispose this route first on web/PWA stacks — schedule navigation
+    // on the next frame so back always returns to the dashboard shell.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      router.go(AppPaths.clientDashboard);
+    });
   }
 
   void _goMessages() {

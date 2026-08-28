@@ -1,7 +1,7 @@
 {
     "name": "Swipess",
     "short_name": "Swipess",
-    "start_url": ".",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#FF4D00",
