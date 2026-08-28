@@ -519,13 +519,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                       onTap: () {
                         AppHaptics.selection();
                         unlockDeckMedia();
-                        ref.read(deckSoundOnProvider.notifier).toggle();
-                        _onSoundChanged(ref.read(deckSoundOnProvider));
+                        final nextSoundOn = !ref.read(deckSoundOnProvider);
+                        ref
+                            .read(deckSoundOnProvider.notifier)
+                            .setSoundOn(nextSoundOn);
+                        _onSoundChanged(nextSoundOn);
                         if (_videoEnabled &&
                             _routeActive &&
-                            ref.read(deckSoundOnProvider) &&
+                            nextSoundOn &&
                             _visibleFraction >= 0.50) {
-                          _playIfReady();
+                          unawaited(_playIfReady());
                         }
                       },
                       child: BreathingWidget(
