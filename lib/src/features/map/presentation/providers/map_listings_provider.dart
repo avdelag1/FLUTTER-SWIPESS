@@ -2,13 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
 final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
-  final likedIdsFuture = ref.watch(likedListingIdsProvider.future);
   final client = Supabase.instance.client;
+  final decidedIdsFuture = _fetchDecidedTargetIds(client, 'listing');
   final limit = loc.radiusKm >= 5000
       ? 1000
       : loc.radiusKm >= 500
@@ -32,7 +31,7 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
             'p_exclude_owner_id': client.auth.currentUser?.id,
           },
         )
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 5));
     rpcSucceeded = true;
     for (final listing in _parseRows(data)) {
       if (listing.id.isNotEmpty) merged[listing.id] = listing;
@@ -54,23 +53,43 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final inArea = _forMap(merged.values.toList(growable: false), loc);
   final discoverable = await _filterDiscoverable(client, inArea);
 
-  // The map is an unseen-only discovery surface. Exclude right-swiped/saved
-  // listing IDs directly from the canonical `likes` decision rows. Do not rely
-  // on re-loading full liked Listing models here: one malformed legacy listing
-  // used to make that model fetch fail and the map would then show every liked
-  // item again.
-  try {
-    final likedIds = await likedIdsFuture;
-    if (likedIds.isEmpty) return discoverable;
-    return discoverable
-        .where((listing) => !likedIds.contains(listing.id))
-        .toList(growable: false);
-  } catch (_) {
-    // Discovery stays usable if the likes service is temporarily unavailable.
-    // The server-side discoverability RPC above remains a second exclusion gate.
-    return discoverable;
-  }
+  // The map is a strict unseen-only surface. Any canonical swipe decision is
+  // enough to remove a listing here: right means saved, left means dismissed.
+  // The normal swipe deck may apply its own cooldown/reconsideration rules, but
+  // Map must never recycle something the user has already acted on.
+  final decidedIds = await decidedIdsFuture;
+  if (decidedIds == null || decidedIds.isEmpty) return discoverable;
+  return discoverable
+      .where((listing) => !decidedIds.contains(listing.id))
+      .toList(growable: false);
 });
+
+Future<Set<String>?> _fetchDecidedTargetIds(
+  SupabaseClient client,
+  String targetType,
+) async {
+  final userId = client.auth.currentUser?.id;
+  if (userId == null) return const <String>{};
+
+  try {
+    final rows = await client
+        .from('likes')
+        .select('target_id')
+        .eq('user_id', userId)
+        .eq('target_type', targetType)
+        .timeout(const Duration(seconds: 4));
+
+    return (rows as List)
+        .map((row) => (row as Map<String, dynamic>)['target_id']?.toString())
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+  } catch (_) {
+    // The server-side discoverability RPC below is still a safe fallback for
+    // current decisions if this raw ID fetch is temporarily unavailable.
+    return null;
+  }
+}
 
 Future<List<Listing>> _filterDiscoverable(
   SupabaseClient client,
@@ -78,10 +97,12 @@ Future<List<Listing>> _filterDiscoverable(
 ) async {
   if (listings.isEmpty || client.auth.currentUser == null) return listings;
   try {
-    final data = await client.rpc(
-      'rpc_filter_discoverable_listing_ids',
-      params: {'p_ids': listings.map((e) => e.id).toList()},
-    );
+    final data = await client
+        .rpc(
+          'rpc_filter_discoverable_listing_ids',
+          params: {'p_ids': listings.map((e) => e.id).toList()},
+        )
+        .timeout(const Duration(seconds: 4));
     if (data is! List) return const [];
     final visible = data.map((e) => e.toString()).toSet();
     return listings.where((listing) => visible.contains(listing.id)).toList();
@@ -142,7 +163,7 @@ Future<List<Listing>> _fetchRegisteredCityListings(
         );
     query = query.eq('is_active', true).ilike('city', '%$city%');
     if (withStatus) query = query.eq('status', 'active');
-    final data = await query.limit(limit).timeout(const Duration(seconds: 8));
+    final data = await query.limit(limit).timeout(const Duration(seconds: 5));
     return _parseRows(data);
   }
 
@@ -169,7 +190,7 @@ Future<List<Listing>> _fallbackListings(
         );
     query = query.eq('is_active', true);
     if (withStatus) query = query.eq('status', 'active');
-    final data = await query.limit(limit).timeout(const Duration(seconds: 8));
+    final data = await query.limit(limit).timeout(const Duration(seconds: 5));
     return _parseRows(data);
   }
 
