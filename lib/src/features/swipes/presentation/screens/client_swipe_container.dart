@@ -170,17 +170,12 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     ref.read(chromeRevealProvider.notifier).reveal();
     ref.read(chromeVisibilityProvider.notifier).show();
 
-    final router = GoRouter.of(context);
     final rootNav = Navigator.of(context, rootNavigator: true);
-    final shouldPop = rootNav.canPop();
-    if (shouldPop) {
+    if (rootNav.canPop()) {
       rootNav.pop();
+      return;
     }
-    // Pop can dispose this route first on web/PWA stacks — schedule navigation
-    // on the next frame so back always returns to the dashboard shell.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      router.go(AppPaths.clientDashboard);
-    });
+    GoRouter.of(context).go(AppPaths.clientDashboard);
   }
 
   void _goMessages() {
