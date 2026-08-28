@@ -195,28 +195,57 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
         ),
         const SizedBox(height: 32),
         Wrap(
+          spacing: 16,
+          runSpacing: 16,
           alignment: isDesktop ? WrapAlignment.start : WrapAlignment.center,
           children: [
-            Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-              alignment: Alignment.center,
-              child: const Text(
-                'Download on the App Store',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            _buildStoreButton(Icons.apple, 'App Store'),
+            _buildStoreButton(Icons.android, 'Google Play'),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildStoreButton(IconData icon, String storeName) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(150),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withAlpha(30), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 28),
+          const SizedBox(width: 12),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Coming soon',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white.withAlpha(160),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Text(
+                storeName,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -224,12 +253,12 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Container(
       width: 400,
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: const Color(0xFF15171C).withAlpha(kIsWeb ? 255 : 180),
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: Colors.transparent, width: 1),
+        border: Border.all(color: Colors.white.withAlpha(20), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(100),
+            color: Colors.black.withAlpha(180),
             blurRadius: 40,
             offset: const Offset(0, 20),
           ),
@@ -268,19 +297,19 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
           child: const Icon(Icons.lock_rounded, color: Colors.white, size: 24),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Enter Access Code',
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
             fontSize: 24,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           'Authorized access only',
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             color: Colors.white.withAlpha(160),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -318,9 +347,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: Colors.white.withAlpha(15),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withAlpha(30), width: 1),
       ),
       child: Row(
         children: [
@@ -336,15 +365,15 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
               controller: _codeController,
               obscureText: !_revealed,
               textCapitalization: TextCapitalization.characters,
-              style: const TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 2,
               ),
               decoration: InputDecoration(
                 hintText: 'ENTER ACCESS CODE',
-                hintStyle: TextStyle(
+                hintStyle: GoogleFonts.plusJakartaSans(
                   color: Colors.white.withAlpha(115),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0,
@@ -382,19 +411,20 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       child: ElevatedButton(
         onPressed: _verifying ? null : _handleSubmit,
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFFFF4D00),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
-          elevation: 8,
-          shadowColor: Colors.black.withAlpha(100),
+          elevation: 12,
+          shadowColor: const Color(0xFFFF4D00).withAlpha(100),
         ),
         child: _verifying
             ? const SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(
-                  color: Colors.black,
+                  color: Colors.white,
                   strokeWidth: 2,
                 ),
               )
@@ -405,7 +435,11 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                   SizedBox(width: 8),
                   Text(
                     'Enter',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ],
               ),
@@ -420,9 +454,9 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white, width: 1.5),
+          color: Colors.white.withAlpha(10),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withAlpha(20), width: 1),
         ),
         child: Row(
           children: [
@@ -445,10 +479,10 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                 _showRequest
                     ? 'Hide request form'
                     : "Don't have a code? Request one",
-                style: const TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -492,18 +526,18 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Request sent successfully!',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'We will reach out to you soon.',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   color: Colors.white.withAlpha(150),
                   fontSize: 14,
                 ),
@@ -519,24 +553,24 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.black.withAlpha(50),
+          color: Colors.black.withAlpha(80),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white, width: 1.5),
+          border: Border.all(color: Colors.white.withAlpha(20), width: 1),
         ),
         child: Column(
           children: [
-            const Text(
+            Text(
               'Request Access',
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'We will review and send your code within 24h',
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 color: Colors.white.withAlpha(150),
                 fontSize: 12,
               ),
@@ -564,15 +598,16 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
                 onPressed: _requesting ? null : _handleRequest,
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
+                  backgroundColor: const Color(0xFFFF4D00),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: Text(
                   _requesting ? 'Sending…' : 'Submit Request',
-                  style: const TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -591,18 +626,18 @@ class _AccessCodeGateScreenState extends ConsumerState<AccessCodeGateScreen> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: Colors.white.withAlpha(15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: Colors.white.withAlpha(30), width: 1),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         controller: controller,
         keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 14),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
+          hintStyle: GoogleFonts.plusJakartaSans(
             color: Colors.white.withAlpha(150),
             fontSize: 14,
           ),
