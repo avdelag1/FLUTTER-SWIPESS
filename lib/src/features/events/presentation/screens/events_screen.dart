@@ -899,13 +899,17 @@ class _EventProgressScrubber extends StatelessWidget {
             child: Align(
               alignment: Alignment.center,
               child: SizedBox(
-                height: 4,
-                child: Stack(
+                height: 32,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    height: 5,
+                    child: Stack(
                   clipBehavior: Clip.none,
                   children: [
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(92),
+                        color: Colors.white.withAlpha(225),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: const SizedBox.expand(),
@@ -915,7 +919,7 @@ class _EventProgressScrubber extends StatelessWidget {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFFF4D78), Color(0xFFFF9A68)],
+                            colors: [Colors.white, Colors.white],
                           ),
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: const [
@@ -935,10 +939,11 @@ class _EventProgressScrubber extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFFFF4D78),
                           shape: BoxShape.circle,
                         ),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -990,7 +995,7 @@ class _SavedEventsButton extends StatelessWidget {
                 Text(
                   '$count',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: const Color(0xFFFF6B7A),
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),
