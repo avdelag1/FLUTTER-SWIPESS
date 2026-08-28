@@ -8,6 +8,7 @@ class ConciergeParse {
     required this.listings,
     required this.profiles,
     required this.events,
+    required this.localBrain,
     this.passportCity,
     this.filterAction,
     this.passportAction,
@@ -18,6 +19,7 @@ class ConciergeParse {
   final List<Map<String, dynamic>> listings;
   final List<Map<String, dynamic>> profiles;
   final List<Map<String, dynamic>> events;
+  final List<Map<String, dynamic>> localBrain;
   final String? passportCity;
   final Map<String, dynamic>? filterAction;
   final Map<String, dynamic>? passportAction;
@@ -26,6 +28,7 @@ class ConciergeParse {
   static final _listings = RegExp(r'\[LISTINGS:(\[[\s\S]*?\])\]');
   static final _profiles = RegExp(r'\[PROFILES:(\[[\s\S]*?\])\]');
   static final _events = RegExp(r'\[EVENTS:(\[[\s\S]*?\])\]');
+  static final _localBrain = RegExp(r'\[LOCAL_BRAIN:(\[[\s\S]*?\])\]');
   static final _passport = RegExp(r'\[PASSPORT:(\{[\s\S]*?\})\]');
   static final _draft = RegExp(r'\[DRAFT:[^:]+:(\{[\s\S]*?\})\]');
   static final _filter = RegExp(r'\[FILTER:(\{[\s\S]*?\})\]');
@@ -62,6 +65,7 @@ class ConciergeParse {
     var listings = <Map<String, dynamic>>[];
     var profiles = <Map<String, dynamic>>[];
     var events = <Map<String, dynamic>>[];
+    var localBrain = <Map<String, dynamic>>[];
     String? passportCity;
     Map<String, dynamic>? filterAction;
     Map<String, dynamic>? passportAction;
@@ -80,6 +84,10 @@ class ConciergeParse {
     });
     clean = clean.replaceAllMapped(_events, (m) {
       events = _jsonList(m.group(1)!);
+      return '';
+    });
+    clean = clean.replaceAllMapped(_localBrain, (m) {
+      localBrain = _jsonList(m.group(1)!);
       return '';
     });
     clean = clean.replaceAllMapped(_passport, (m) {
@@ -102,6 +110,7 @@ class ConciergeParse {
     clean = clean.replaceAll(_draft, '');
 
     final tags = [
+      '[LOCAL_BRAIN:',
       '[LISTINGS:',
       '[PROFILES:',
       '[EVENTS:',
@@ -124,6 +133,7 @@ class ConciergeParse {
       listings: listings,
       profiles: profiles,
       events: events,
+      localBrain: localBrain,
       passportCity: passportCity,
       filterAction: filterAction,
       passportAction: passportAction,
