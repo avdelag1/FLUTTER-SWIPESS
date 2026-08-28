@@ -1,12 +1,15 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
-import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_glass.dart';
 
+/// Floating host for Intel Core. The page underneath remains subtly visible,
+/// matching the frosted assistant reference while keeping keyboard avoidance
+/// and drag-to-dismiss behavior deterministic.
 class ConciergeSheetHost extends ConsumerStatefulWidget {
   const ConciergeSheetHost({
     super.key,
@@ -56,12 +59,12 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
   @override
   Widget build(BuildContext context) {
     final m = MediaQuery.of(context);
-    final isLight = Theme.of(context).brightness == Brightness.light;
+    final isLight = SwipessGlassLook.isLight(context);
     final keyboardBottom = m.viewInsets.bottom;
     final sheetBottom = keyboardBottom > 0
         ? keyboardBottom + 4
-        : m.padding.bottom + 4;
-    final sheetTop = m.padding.top + 4;
+        : m.padding.bottom + 5;
+    final sheetTop = m.padding.top + 5;
     final maxBottom = math.max(4.0, m.size.height - sheetTop - 180);
     final resolvedBottom = sheetBottom.clamp(4.0, maxBottom).toDouble();
 
@@ -71,14 +74,21 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
         Positioned.fill(
           child: GestureDetector(
             onTap: _close,
-            child: ColoredBox(color: Colors.black.withAlpha(110)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+              child: ColoredBox(
+                color: isLight
+                    ? Colors.white.withAlpha(62)
+                    : Colors.black.withAlpha(105),
+              ),
+            ),
           ),
         ),
         AnimatedPositioned(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          left: 6,
-          right: 6,
+          left: 7,
+          right: 7,
           top: sheetTop,
           bottom: resolvedBottom,
           child: SlideTransition(
@@ -94,74 +104,71 @@ class _ConciergeSheetHostState extends ConsumerState<ConciergeSheetHost>
                 offset: Offset(0, _drag),
                 child: Material(
                   color: Colors.transparent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isLight
-                          ? const Color(0xFFF7F8FA)
-                          : const Color(0xFF10141B),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: isLight
-                            ? Colors.black.withAlpha(22)
-                            : Colors.white.withAlpha(36),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(isLight ? 44 : 130),
-                          blurRadius: 40,
-                          offset: const Offset(0, -10),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isLight
+                              ? const Color(0xEAF8F8FA)
+                              : const Color(0xE5141820),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: SwipessGlassLook.hairline(context),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(isLight ? 40 : 145),
+                              blurRadius: 46,
+                              offset: const Offset(0, -8),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onVerticalDragUpdate: (d) {
-                            if (d.delta.dy <= 0 || keyboardBottom > 0) return;
-                            setState(
-                              () => _drag = (_drag + d.delta.dy).clamp(0, 260),
-                            );
-                          },
-                          onVerticalDragEnd: (_) {
-                            if (keyboardBottom > 0) return;
-                            if (_drag > 82) {
-                              _close();
-                            } else {
-                              setState(() => _drag = 0);
-                            }
-                          },
-                          onDoubleTap: _close,
-                          child: SizedBox(
-                            height: 24,
-                            child: Center(
-                              child: Container(
-                                width: 42,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: isLight
-                                      ? Colors.black.withAlpha(80)
-                                      : Colors.white.withAlpha(115),
-                                  borderRadius: BorderRadius.circular(999),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onVerticalDragUpdate: (d) {
+                                if (d.delta.dy <= 0 || keyboardBottom > 0) return;
+                                setState(
+                                  () => _drag = (_drag + d.delta.dy).clamp(0, 260),
+                                );
+                              },
+                              onVerticalDragEnd: (_) {
+                                if (keyboardBottom > 0) return;
+                                if (_drag > 82) {
+                                  _close();
+                                } else {
+                                  setState(() => _drag = 0);
+                                }
+                              },
+                              onDoubleTap: _close,
+                              child: SizedBox(
+                                height: 25,
+                                child: Center(
+                                  child: Container(
+                                    width: 42,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: SwipessGlassLook.faint(context)
+                                          .withAlpha(isLight ? 90 : 135),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: TooltipVisibility(
-                                  visible: false,
-                                  child: widget.child,
-                                ),
+                            Expanded(
+                              child: TooltipVisibility(
+                                visible: false,
+                                child: widget.child,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
