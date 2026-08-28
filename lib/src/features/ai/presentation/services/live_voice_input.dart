@@ -477,6 +477,6 @@ class LiveVoiceInput {
   }
 
   static String _wordKey(String word) {
-    return word.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}\']', unicode: true), '');
+    return word.toLowerCase().replaceAll(RegExp(r"[^\p{L}\p{N}']", unicode: true), '');
   }
 }
