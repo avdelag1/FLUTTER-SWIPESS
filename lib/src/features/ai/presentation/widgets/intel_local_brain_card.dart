@@ -331,18 +331,18 @@ class _MiniBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF2563EB).withAlpha(18),
+        color: const Color(0xFFFF4D78).withAlpha(18),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: const Color(0xFF2563EB)),
+          Icon(icon, size: 11, color: const Color(0xFFFF4D78)),
           const SizedBox(width: 4),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFF2563EB),
+              color: const Color(0xFFFF4D78),
               fontSize: 8.5,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.6,
