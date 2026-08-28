@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -11,11 +13,25 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 /// Cap VideoTours — vertical immersive feed with share / like / mute / details.
-class VideoToursScreen extends ConsumerWidget {
+class VideoToursScreen extends ConsumerStatefulWidget {
   const VideoToursScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VideoToursScreen> createState() => _VideoToursScreenState();
+}
+
+class _VideoToursScreenState extends ConsumerState<VideoToursScreen> {
+  final PageController _pages = PageController();
+  int _index = 0;
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(videoToursProvider);
 
     return Scaffold(
@@ -73,10 +89,19 @@ class VideoToursScreen extends ConsumerWidget {
           }
 
           return PageView.builder(
+            controller: _pages,
             scrollDirection: Axis.vertical,
+            onPageChanged: (index) {
+              AppHaptics.selection();
+              setState(() => _index = index);
+            },
             itemCount: listings.length,
             itemBuilder: (context, index) {
-              return _TourPage(listing: listings[index]);
+              return _TourPage(
+                listing: listings[index],
+                active: index == _index,
+                shouldLoadVideo: (index - _index).abs() <= 1,
+              );
             },
           );
         },
@@ -86,8 +111,15 @@ class VideoToursScreen extends ConsumerWidget {
 }
 
 class _TourPage extends StatefulWidget {
-  const _TourPage({required this.listing});
+  const _TourPage({
+    required this.listing,
+    required this.active,
+    required this.shouldLoadVideo,
+  });
+
   final Listing listing;
+  final bool active;
+  final bool shouldLoadVideo;
 
   @override
   State<_TourPage> createState() => _TourPageState();
@@ -101,16 +133,48 @@ class _TourPageState extends State<_TourPage> {
   @override
   void initState() {
     super.initState();
-    final url = widget.listing.videoUrl;
-    if (url != null && url.trim().isNotEmpty) {
-      final player = VideoPlayerController.networkUrl(Uri.parse(url));
-      _player = player;
-      player.initialize().then((_) async {
-        await player.setLooping(true);
-        await player.setVolume(0);
-        await player.play();
-        if (mounted) setState(() {});
-      });
+    if (widget.shouldLoadVideo) {
+      unawaited(_bindVideo());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TourPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.shouldLoadVideo && _player == null) {
+      unawaited(_bindVideo());
+    } else if (!widget.shouldLoadVideo && _player != null) {
+      unawaited(_player?.dispose());
+      _player = null;
+    }
+
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
+    if (widget.active) {
+      unawaited(player.play());
+    } else {
+      unawaited(player.pause());
+    }
+  }
+
+  Future<void> _bindVideo() async {
+    final url = widget.listing.videoUrl?.trim();
+    if (url == null || url.isEmpty) return;
+
+    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    _player = next;
+    try {
+      await next.initialize();
+      await next.setLooping(true);
+      await next.setVolume(_muted ? 0 : 1);
+      if (widget.active) await next.play();
+      if (mounted && identical(_player, next)) setState(() {});
+    } catch (_) {
+      try {
+        await next.dispose();
+      } catch (_) {}
+      if (identical(_player, next)) _player = null;
     }
   }
 
@@ -136,6 +200,9 @@ class _TourPageState extends State<_TourPage> {
     } catch (_) {}
   }
 
+  int _posterCacheWidth(BuildContext context) =>
+      (MediaQuery.sizeOf(context).width * 2).round().clamp(640, 1800);
+
   @override
   Widget build(BuildContext context) {
     final listing = widget.listing;
@@ -145,16 +212,24 @@ class _TourPageState extends State<_TourPage> {
       fit: StackFit.expand,
       children: [
         if (ready)
-          FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: _player!.value.size.width,
-              height: _player!.value.size.height,
-              child: VideoPlayer(_player!),
+          RepaintBoundary(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _player!.value.size.width,
+                height: _player!.value.size.height,
+                child: VideoPlayer(_player!),
+              ),
             ),
           )
         else if (listing.primaryImage != null)
-          Image.network(listing.primaryImage!, fit: BoxFit.cover)
+          Image.network(
+            listing.primaryImage!,
+            fit: BoxFit.cover,
+            cacheWidth: _posterCacheWidth(context),
+            errorBuilder: (_, _, _) =>
+                const ColoredBox(color: Color(0xFF16161C)),
+          )
         else
           const ColoredBox(color: Color(0xFF16161C)),
         const DecoratedBox(

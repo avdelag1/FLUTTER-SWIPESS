@@ -610,12 +610,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget _videoWidget() {
     final player = _video;
     if (player == null || !player.value.isInitialized) return _fallback();
-    return FittedBox(
-      fit: BoxFit.cover,
-      child: SizedBox(
-        width: player.value.size.width,
-        height: player.value.size.height,
-        child: VideoPlayer(player),
+    return RepaintBoundary(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: player.value.size.width,
+          height: player.value.size.height,
+          child: VideoPlayer(player),
+        ),
       ),
     );
   }

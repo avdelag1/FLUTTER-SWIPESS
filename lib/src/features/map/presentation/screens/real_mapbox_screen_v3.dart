@@ -1742,6 +1742,9 @@ class _Photo extends StatelessWidget {
         ? Image.network(
             item.image,
             fit: BoxFit.cover,
+            cacheWidth: ((size ?? MediaQuery.sizeOf(context).width) * 2)
+                .round()
+                .clamp(320, 1200),
             errorBuilder: (_, __, ___) => ColoredBox(
               color: const Color(0xFFF0F2F5),
               child: Center(

@@ -46,6 +46,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   Duration? _handoffPosition;
   VideoPlayerController? _handoffController;
   bool _handoffApplied = false;
+  VideoPlayerController? _preloadedNext;
+  int? _preloadedNextIndex;
 
   @override
   void initState() {
@@ -65,8 +67,49 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _preloadedNext?.dispose();
     _pages.dispose();
     super.dispose();
+  }
+
+  void _preloadNextEventVideo(List<Event> events) {
+    if (events.isEmpty) return;
+    final nextIndex = _index + 1;
+    if (nextIndex >= events.length) return;
+    if (_preloadedNextIndex == nextIndex &&
+        _preloadedNext != null &&
+        _preloadedNext!.value.isInitialized) {
+      return;
+    }
+
+    unawaited(() async {
+      final event = events[nextIndex];
+      final url = event.videoUrl?.trim();
+      if (url == null || url.isEmpty) return;
+
+      final player = VideoPlayerController.networkUrl(Uri.parse(url));
+      try {
+        await player.initialize();
+        await player.setLooping(true);
+        await player.setVolume(0);
+        if (!mounted || _index + 1 != nextIndex) {
+          await player.dispose();
+          return;
+        }
+        final old = _preloadedNext;
+        _preloadedNext = player;
+        _preloadedNextIndex = nextIndex;
+        await old?.dispose();
+      } catch (_) {
+        await player.dispose();
+      }
+    }());
+  }
+
+  void _consumePreparedVideo(int index) {
+    if (_preloadedNextIndex != index) return;
+    _preloadedNext = null;
+    _preloadedNextIndex = null;
   }
 
   void _showChrome({bool schedule = true}) {
@@ -215,6 +258,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 }
               }
 
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _preloadNextEventVideo(events);
+              });
+
               return PageView.builder(
                 controller: _pages,
                 scrollDirection: Axis.vertical,
@@ -229,6 +276,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     _categoryMenuOpen = false;
                   });
                   _touchChrome();
+                  _preloadNextEventVideo(events);
                 },
                 itemBuilder: (context, index) {
                   if (index == events.length) {
@@ -244,6 +292,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     active: index == _index,
                     shouldLoadVideo: (index - _index).abs() <= 1,
                     chromeVisible: _chromeVisible,
+                    preparedController:
+                        _preloadedNextIndex == index ? _preloadedNext : null,
+                    onPreparedConsumed: () => _consumePreparedVideo(index),
                     initialPosition: event.id == _handoffEventId
                         ? _handoffPosition
                         : null,
@@ -398,6 +449,8 @@ class _EventPage extends ConsumerStatefulWidget {
     required this.onOpen,
     this.initialPosition,
     this.initialController,
+    this.preparedController,
+    this.onPreparedConsumed,
   });
 
   final Event event;
@@ -409,6 +462,8 @@ class _EventPage extends ConsumerStatefulWidget {
   final VoidCallback onOpen;
   final Duration? initialPosition;
   final VideoPlayerController? initialController;
+  final VideoPlayerController? preparedController;
+  final VoidCallback? onPreparedConsumed;
 
   @override
   ConsumerState<_EventPage> createState() => _EventPageState();
@@ -433,6 +488,11 @@ class _EventPageState extends ConsumerState<_EventPage> {
       _player = transferred;
       _initialApplied = true;
       unawaited(_adoptTransferredVideo(transferred));
+    } else if (widget.preparedController != null &&
+        widget.preparedController!.value.isInitialized) {
+      _player = widget.preparedController;
+      widget.onPreparedConsumed?.call();
+      unawaited(_adoptTransferredVideo(widget.preparedController!));
     } else if (widget.shouldLoadVideo && _hasVideo) {
       unawaited(_bindVideo());
     }
@@ -448,6 +508,11 @@ class _EventPageState extends ConsumerState<_EventPage> {
         _player = transferred;
         _initialApplied = true;
         unawaited(_adoptTransferredVideo(transferred));
+      } else if (widget.preparedController != null &&
+          widget.preparedController!.value.isInitialized) {
+        _player = widget.preparedController;
+        widget.onPreparedConsumed?.call();
+        unawaited(_adoptTransferredVideo(widget.preparedController!));
       } else {
         unawaited(_bindVideo());
       }
@@ -621,10 +686,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
         fit: StackFit.expand,
         children: [
           if (ready)
-            AnimatedScale(
-              scale: widget.chromeVisible ? 1.0 : 1.055,
-              duration: const Duration(milliseconds: 380),
-              curve: Curves.easeOutCubic,
+            RepaintBoundary(
               child: FittedBox(
                 fit: BoxFit.cover,
                 child: SizedBox(
@@ -635,19 +697,14 @@ class _EventPageState extends ConsumerState<_EventPage> {
               ),
             )
           else if (image.isNotEmpty)
-            AnimatedScale(
-              scale: widget.chromeVisible ? 1.0 : 1.055,
-              duration: const Duration(milliseconds: 380),
-              curve: Curves.easeOutCubic,
-              child: Image.network(
-                image,
-                fit: BoxFit.cover,
-                cacheWidth: (MediaQuery.sizeOf(context).width * 2)
-                    .round()
-                    .clamp(640, 1800),
-                errorBuilder: (_, _, _) =>
-                    const ColoredBox(color: Color(0xFF16161C)),
-              ),
+            Image.network(
+              image,
+              fit: BoxFit.cover,
+              cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                  .round()
+                  .clamp(640, 1800),
+              errorBuilder: (_, _, _) =>
+                  const ColoredBox(color: Color(0xFF16161C)),
             )
           else
             const ColoredBox(color: Color(0xFF16161C)),

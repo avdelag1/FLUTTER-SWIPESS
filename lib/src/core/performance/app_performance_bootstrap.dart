@@ -5,8 +5,10 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Global runtime tuning so photos, map pins, and feeds feel instant on iOS.
@@ -40,6 +42,9 @@ abstract final class AppPerformanceBootstrap {
       _safe(() => container.read(mapListingsProvider.future)),
       _safe(() => container.read(mapProfilesProvider.future)),
       _safe(() => container.read(eventsListProvider.future)),
+      _safe(() => container.read(dashboardVideoEventsProvider.future)),
+      _safe(() => container.read(swipeListingsProvider('property').future)),
+      _safe(() => container.read(likedListingIdsProvider.future)),
     ]);
   }
 
