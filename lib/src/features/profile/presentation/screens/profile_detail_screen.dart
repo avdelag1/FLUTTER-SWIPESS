@@ -245,8 +245,8 @@ class _BodyState extends State<_Body> {
                       _Round(
                         icon: Icons.arrow_back_ios_new_rounded,
                         onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
                           } else {
                             context.go('/dashboard');
                           }

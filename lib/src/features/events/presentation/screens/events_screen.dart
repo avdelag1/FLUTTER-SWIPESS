@@ -193,8 +193,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   void _goBack(BuildContext context) {
     ref.read(chromeVisibilityProvider.notifier).show();
-    if (context.canPop()) {
-      context.pop();
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
     } else {
       context.go(AppPaths.clientDashboard);
     }

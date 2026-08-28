@@ -134,7 +134,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ref.invalidate(currentProfileProvider);
       ref.invalidate(mapProfilesProvider);
       if (!mounted) return;
-      context.pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        context.go(AppPaths.clientProfile);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -166,7 +170,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   color: Colors.white,
                   size: 20,
                 ),
-                onPressed: () => context.pop(),
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go(AppPaths.clientProfile);
+                  }
+                },
               ),
               title: Text(
                 'EDIT IDENTITY',

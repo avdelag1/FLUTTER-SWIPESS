@@ -59,14 +59,9 @@ class CapBackButton extends ConsumerWidget {
       return;
     }
 
-    try {
-      final router = GoRouter.of(context);
-      if (router.canPop()) {
-        router.pop();
-        return;
-      }
-    } catch (_) {}
-
+    // Ignore GoRouter's canPop() because on iOS PWA (standalone) mode,
+    // window.history.back() will silently fail if the browser stack is isolated.
+    // Instead, always use a declarative fallback if the local Navigator stack is empty.
     context.go(_resolvedFallback(context));
   }
 

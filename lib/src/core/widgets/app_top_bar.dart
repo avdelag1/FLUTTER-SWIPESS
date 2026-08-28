@@ -47,8 +47,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
   void _backFromProfile(BuildContext context) {
     AppHaptics.light();
-    if (context.canPop()) {
-      context.pop();
+    final nearest = Navigator.of(context);
+    if (nearest.canPop()) {
+      nearest.pop();
       return;
     }
     context.go(AppPaths.clientDashboard);

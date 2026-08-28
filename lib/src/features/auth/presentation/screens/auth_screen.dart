@@ -159,7 +159,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
                         AppHaptics.light();
-                        context.pop();
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          context.go(AppPaths.welcome);
+                        }
                       },
                       child: Container(
                         width: 44,

@@ -510,7 +510,11 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                                   .read(overlayModalsProvider.notifier)
                                   .openConcierge();
                             } else {
-                              context.pop();
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else {
+                                context.go(AppPaths.pathForTab(id));
+                              }
                               ref.read(navTabProvider.notifier).set(id);
                             }
                           },

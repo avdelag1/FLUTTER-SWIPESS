@@ -214,8 +214,8 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                           icon: Icons.close_rounded,
                           tooltip: 'Close',
                           onTap: () {
-                            if (context.canPop()) {
-                              context.pop();
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
                             } else {
                               context.go(AppPaths.clientDashboard);
                             }

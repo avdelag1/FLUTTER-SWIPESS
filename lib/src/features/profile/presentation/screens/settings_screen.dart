@@ -47,8 +47,8 @@ class SettingsScreen extends ConsumerWidget {
                       alignment: Alignment.topLeft,
                       child: _RoundBack(
                         onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
                           } else {
                             context.go(
                               _isOwner

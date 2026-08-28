@@ -70,7 +70,7 @@ class RoleControlCenter extends StatelessWidget {
                               isLight: isLight,
                               onTap: () {
                                 if (Navigator.of(context).canPop()) {
-                                  context.pop();
+                                  Navigator.of(context).pop();
                                 } else {
                                   context.go('/client/dashboard');
                                 }

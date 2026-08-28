@@ -844,8 +844,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 8),
       TextButton(
         onPressed: () {
-          if (context.canPop()) {
-            context.pop();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
           } else {
             context.go(AppPaths.clientProfile);
           }
@@ -989,8 +989,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       _primaryBtn(
         label: 'Done',
         onPressed: () {
-          if (context.canPop()) {
-            context.pop();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
           } else {
             context.go(AppPaths.clientProfile);
           }

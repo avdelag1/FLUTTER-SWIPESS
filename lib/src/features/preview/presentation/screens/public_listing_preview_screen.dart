@@ -49,8 +49,8 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 pinned: true,
                 leading: IconButton(
                   onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
                     } else {
                       context.go('/welcome');
                     }

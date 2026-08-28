@@ -65,8 +65,8 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                         children: [
                           IconButton(
                             onPressed: () {
-                              if (context.canPop()) {
-                                context.pop();
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
                               } else {
                                 context.go('/welcome');
                               }
