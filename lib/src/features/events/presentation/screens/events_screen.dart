@@ -470,11 +470,13 @@ class _EventPage extends ConsumerStatefulWidget {
   ConsumerState<_EventPage> createState() => _EventPageState();
 }
 
-class _EventPageState extends ConsumerState<_EventPage> {
+class _EventPageState extends ConsumerState<_EventPage>
+    with WidgetsBindingObserver {
   VideoPlayerController? _player;
   bool? _favoritedOverride;
   bool _busy = false;
   bool _initialApplied = false;
+  bool _appActive = true;
   IconData? _playbackFeedback;
   Timer? _playbackFeedbackTimer;
 
@@ -484,6 +486,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final transferred = widget.initialController;
     if (transferred != null && transferred.value.isInitialized) {
       _player = transferred;
@@ -537,7 +540,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
     try {
       await player.setLooping(true);
       await player.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      if (widget.active) await player.play();
+      if (widget.active && _appActive) await player.play();
       if (mounted && identical(_player, player)) setState(() {});
     } catch (_) {
       if (!mounted || !identical(_player, player)) return;
@@ -571,7 +574,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
       }
 
       await next.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      if (widget.active) await next.play();
+      if (widget.active && _appActive) await next.play();
       if (mounted && identical(_player, next)) setState(() {});
     } catch (_) {
       try {
@@ -582,7 +585,39 @@ class _EventPageState extends ConsumerState<_EventPage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _appActive = true;
+        if (mounted && widget.active) unawaited(_resumeAfterBackground());
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _appActive = false;
+        final player = _player;
+        if (player != null) {
+          unawaited(player.setVolume(0));
+          unawaited(player.pause());
+        }
+        break;
+    }
+  }
+
+  Future<void> _resumeAfterBackground() async {
+    final player = _player;
+    if (!mounted || !_appActive || !widget.active || player == null) return;
+    try {
+      final soundOn = ref.read(deckSoundOnProvider);
+      await player.setVolume(soundOn ? 1 : 0);
+      if (_appActive && widget.active) await player.play();
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _playbackFeedbackTimer?.cancel();
     _player?.dispose();
     super.dispose();
@@ -669,7 +704,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
 
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _player?.setVolume(on ? 1 : 0);
-      if (on && widget.active) _player?.play();
+      if (on && widget.active && _appActive) _player?.play();
     });
 
     final player = _player;
