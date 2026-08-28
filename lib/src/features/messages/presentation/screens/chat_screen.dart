@@ -8,7 +8,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_glass.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_documents_sheet.dart';
@@ -32,16 +32,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   final _search = TextEditingController();
+  final _voice = LiveVoiceInput.instance;
 
   bool _sending = false;
   bool _showEmoji = false;
   bool _showSearch = false;
   bool _recording = false;
   bool _transcribing = false;
+  int? _countdown;
+  Timer? _countdownTimer;
 
   static const _emojis = [
-    '👋', '😊', '😄', '😂', '🥰', '😍', '🤩', '😎', '🙏', '👍', '🔥', '❤️',
-    '🎉', '✨', '💯', '🤝', '💪', '👏', '🥳', '😇', '🤗', '😁', '🌟', '📬',
+    '👋',
+    '😊',
+    '😄',
+    '😂',
+    '🥰',
+    '😍',
+    '🤩',
+    '😎',
+    '🙏',
+    '👍',
+    '🔥',
+    '❤️',
+    '🎉',
+    '✨',
+    '💯',
+    '🤝',
+    '💪',
+    '👏',
+    '🥳',
+    '😇',
+    '🤗',
+    '😁',
+    '🌟',
+    '📬',
   ];
 
   @override
@@ -60,7 +85,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _controller.dispose();
     _scroll.dispose();
     _search.dispose();
-    unawaited(ref.read(voiceTranscribeRepositoryProvider).cancel());
+    _countdownTimer?.cancel();
+    unawaited(_voice.cancel(owner: this));
     super.dispose();
   }
 
@@ -75,63 +101,89 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  void _cancelVoiceCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    if (_countdown != null && mounted) setState(() => _countdown = null);
+  }
+
+  void _beginVoiceCountdown() {
+    if (!mounted ||
+        !_recording ||
+        _controller.text.trim().isEmpty ||
+        _sending) {
+      return;
+    }
+    _countdownTimer?.cancel();
+    setState(() => _countdown = 3);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final current = _countdown ?? 0;
+      if (current > 1) {
+        setState(() => _countdown = current - 1);
+        return;
+      }
+      timer.cancel();
+      _countdownTimer = null;
+      setState(() => _countdown = null);
+      unawaited(_finishVoiceAndSend());
+    });
+  }
+
+  Future<void> _finishVoiceAndSend() async {
+    _cancelVoiceCountdown();
+    if (_voice.isOwnedBy(this)) {
+      await _voice.finish(owner: this);
+    }
+    if (!mounted) return;
+    setState(() {
+      _recording = false;
+      _transcribing = false;
+    });
+    if (_controller.text.trim().isNotEmpty) await _send();
+  }
+
   Future<void> _toggleVoice() async {
-    final repo = ref.read(voiceTranscribeRepositoryProvider);
     FocusManager.instance.primaryFocus?.unfocus();
 
-    if (_recording) {
-      setState(() {
-        _recording = false;
-        _transcribing = true;
-      });
-      try {
-        final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
-        final text = await repo.stop(language: lang);
-        final clean = text.trim();
-        if (clean.isNotEmpty && mounted) {
-          final existing = _controller.text.trim();
-          final next = existing.isEmpty ? clean : '$existing $clean';
-          _controller.value = TextEditingValue(
-            text: next,
-            selection: TextSelection.collapsed(offset: next.length),
-          );
-        }
-      } on VoiceTranscribeException catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-        }
-      } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                t(ref, 'flutter.voiceFailed', 'Voice transcription failed'),
-              ),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _transcribing = false);
-      }
+    if (_voice.isOwnedBy(this) || _recording) {
+      await _finishVoiceAndSend();
       return;
     }
 
     AppHaptics.light();
     try {
-      final ok = await repo.start();
-      if (!ok) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                t(ref, 'flutter.micDenied', 'Microphone permission denied'),
-              ),
-            ),
+      final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
+      final started = await _voice.start(
+        owner: this,
+        initialText: _controller.text,
+        languageCode: lang,
+        listenMode: ListenMode.dictation,
+        onText: (text) {
+          if (!mounted) return;
+          _cancelVoiceCountdown();
+          _controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
           );
-        }
-        return;
-      }
-      if (mounted) setState(() => _recording = true);
+          if (!_recording) setState(() => _recording = true);
+        },
+        onSilence: _beginVoiceCountdown,
+        onListeningChanged: (_) {
+          if (!mounted) return;
+          final active = _voice.isOwnedBy(this);
+          if (_recording != active) setState(() => _recording = active);
+        },
+        onError: (message) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
+        },
+      );
+      if (mounted) setState(() => _recording = started);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,6 +194,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _send([String? preset]) async {
+    if (preset == null && (_voice.isOwnedBy(this) || _recording)) {
+      _cancelVoiceCountdown();
+      await _voice.finish(owner: this);
+      if (mounted) setState(() => _recording = false);
+    }
     final text = (preset ?? _controller.text).trim();
     if (text.isEmpty || _sending) return;
     AppHaptics.selection();
@@ -173,9 +230,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   void _replyTo(ChatMessage msg) {
     final excerpt = msg.text.trim().replaceAll('\n', ' ');
-    final short = excerpt.length > 80 ? '${excerpt.substring(0, 80)}…' : excerpt;
+    final short = excerpt.length > 80
+        ? '${excerpt.substring(0, 80)}…'
+        : excerpt;
     _controller.text = '↪ $short\n';
-    _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
   }
 
   Future<void> _unsend(ChatMessage msg) async {
@@ -210,9 +271,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ref.invalidate(conversationMessagesProvider(widget.conversation.id));
       ref.invalidate(conversationsProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message unsent')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Message unsent')));
       }
     } catch (_) {
       if (mounted) {
@@ -253,7 +313,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    for (final emoji in const ['❤️', '😂', '👍', '🔥', '👏', '🙏'])
+                    for (final emoji in const [
+                      '❤️',
+                      '😂',
+                      '👍',
+                      '🔥',
+                      '👏',
+                      '🙏',
+                    ])
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(sheetContext);
@@ -261,7 +328,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(emoji, style: const TextStyle(fontSize: 25)),
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 25),
+                          ),
                         ),
                       ),
                   ],
@@ -385,8 +455,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     error: (_, _) => _ThreadEmpty(
                       icon: Icons.shield_outlined,
                       title: "Couldn't load messages",
-                      description:
-                          'The connection stalled. Check your network and try again.',
+                      description: 'The connection stalled. Check your network and try again.',
                       actionLabel: 'RETRY',
                       onAction: () => ref.invalidate(
                         conversationMessagesProvider(widget.conversation.id),
@@ -396,21 +465,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       final visible = q.isEmpty
                           ? messages
                           : messages
-                              .where((m) => m.text.toLowerCase().contains(q))
-                              .toList();
+                                .where((m) => m.text.toLowerCase().contains(q))
+                                .toList();
                       if (messages.isEmpty) {
                         return const _ThreadEmpty(
                           icon: Icons.chat_bubble_outline_rounded,
                           title: 'Start the conversation',
-                          description:
-                              'Say hello, ask a question or share a document securely.',
+                          description: 'Say hello, ask a question or share a document securely.',
                         );
                       }
                       if (q.isNotEmpty && visible.isEmpty) {
                         return _ThreadEmpty(
                           icon: Icons.search_rounded,
                           title: 'No matches',
-                          description: 'No messages contain “${_search.text.trim()}”',
+                          description:
+                              'No messages contain “${_search.text.trim()}”',
                         );
                       }
 
@@ -428,7 +497,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             message: msg,
                             mine: mine,
                             time: _relTime(msg.createdAt),
-                            onActions: () => _showMessageActions(msg, mine: mine),
+                            onActions: () =>
+                                _showMessageActions(msg, mine: mine),
                           );
                         },
                       );
@@ -441,9 +511,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   showEmoji: _showEmoji,
                   recording: _recording,
                   transcribing: _transcribing,
+                  countdown: _countdown,
                   sending: _sending,
                   onToggleEmoji: () => setState(() => _showEmoji = !_showEmoji),
-                  onVoice: _transcribing ? null : _toggleVoice,
+                  onVoice: _toggleVoice,
                   onDocument: () => showChatDocumentsSheet(
                     context,
                     conversationId: widget.conversation.id,
@@ -640,14 +711,21 @@ class _ThreadSearch extends StatelessWidget {
         height: 44,
         child: Row(
           children: [
-            Icon(Icons.search_rounded, color: SwipessGlassLook.muted(context), size: 18),
+            Icon(
+              Icons.search_rounded,
+              color: SwipessGlassLook.muted(context),
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: controller,
                 autofocus: true,
                 onChanged: onChanged,
-                style: TextStyle(color: SwipessGlassLook.ink(context), fontSize: 13),
+                style: TextStyle(
+                  color: SwipessGlassLook.ink(context),
+                  fontSize: 13,
+                ),
                 decoration: InputDecoration(
                   border: InputBorder.none,
                   hintText: 'Search in this chat…',
@@ -691,13 +769,18 @@ class _MessageRow extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: width * .78),
           child: Column(
-            crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: mine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onLongPress: onActions,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 11,
+                  ),
                   decoration: BoxDecoration(
                     gradient: mine
                         ? const LinearGradient(
@@ -753,7 +836,11 @@ class _MessageRow extends StatelessWidget {
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: onActions,
-                      child: Icon(Icons.more_horiz_rounded, color: muted, size: 14),
+                      child: Icon(
+                        Icons.more_horiz_rounded,
+                        color: muted,
+                        size: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -773,6 +860,7 @@ class _Composer extends StatelessWidget {
     required this.showEmoji,
     required this.recording,
     required this.transcribing,
+    required this.countdown,
     required this.sending,
     required this.onToggleEmoji,
     required this.onDocument,
@@ -786,6 +874,7 @@ class _Composer extends StatelessWidget {
   final bool showEmoji;
   final bool recording;
   final bool transcribing;
+  final int? countdown;
   final bool sending;
   final VoidCallback onToggleEmoji;
   final VoidCallback onDocument;
@@ -803,7 +892,7 @@ class _Composer extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(10, 3, 10, 7),
         child: Column(
           children: [
-            if (recording || transcribing)
+            if (recording || transcribing || countdown != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 7),
                 child: Row(
@@ -821,7 +910,11 @@ class _Composer extends StatelessWidget {
                     ),
                     const SizedBox(width: 7),
                     Text(
-                      recording ? 'LISTENING · TAP MIC TO FINISH' : 'TRANSCRIBING…',
+                      countdown != null
+                          ? 'SILENCE · SENDING IN $countdown…'
+                          : recording
+                          ? 'LISTENING · SPEAK NATURALLY'
+                          : 'TRANSCRIBING…',
                       style: GoogleFonts.plusJakartaSans(
                         color: SwipessGlassLook.muted(context),
                         fontSize: 9,
@@ -849,7 +942,10 @@ class _Composer extends StatelessWidget {
                           width: 38,
                           height: 38,
                           child: Center(
-                            child: Text(emoji, style: const TextStyle(fontSize: 21)),
+                            child: Text(
+                              emoji,
+                              style: const TextStyle(fontSize: 21),
+                            ),
                           ),
                         ),
                       ),
@@ -897,19 +993,30 @@ class _Composer extends StatelessWidget {
                       ),
                       decoration: InputDecoration(
                         hintText: 'Type a message…',
-                        hintStyle: TextStyle(color: SwipessGlassLook.muted(context)),
+                        hintStyle: TextStyle(
+                          color: SwipessGlassLook.muted(context),
+                        ),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 4),
                   SwipessGlassIconButton(
-                    icon: recording ? Icons.mic_rounded : Icons.mic_none_rounded,
-                    tooltip: transcribing ? 'Transcribing' : 'Voice message',
-                    active: recording || transcribing,
+                    icon: recording
+                        ? Icons.mic_rounded
+                        : Icons.mic_none_rounded,
+                    tooltip: countdown != null
+                        ? 'Sending in $countdown'
+                        : recording
+                        ? 'Finish voice message now'
+                        : 'Voice message',
+                    active: recording || transcribing || countdown != null,
                     size: 38,
                     iconSize: 18,
                     onTap: onVoice ?? () {},

@@ -13,7 +13,7 @@ enum ListenMode { dictation, search, confirmation }
 /// speech recognizer through `speech_to_text`, including partial results, so
 /// words appear in the composer while the user is still speaking.
 ///
-/// After roughly four seconds of silence callers receive [onSilence] and can
+/// After 3.5 seconds of silence callers receive [onSilence] and can
 /// render the existing 3 -> 2 -> 1 auto-send countdown. Native recognition is
 /// immediately restarted after silence so speaking again can cancel that
 /// countdown and continue the same message.
@@ -54,7 +54,7 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  static const silenceBeforeCountdown = Duration(seconds: 4);
+  static const silenceBeforeCountdown = Duration(milliseconds: 3500);
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);

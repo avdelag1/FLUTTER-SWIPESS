@@ -8,7 +8,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
@@ -16,15 +16,13 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:record/record.dart';
 
 /// Dashboard AI field.
 ///
-/// Native voice uses the same record -> server transcription pipeline used by
-/// the reliable voice-note flow instead of depending on iOS SpeechRecognizer
-/// staying alive while Flutter focus/keyboard state changes. The microphone is
-/// deliberately started with the keyboard unfocused; tapping it again stops,
-/// transcribes and submits the recognized text through the normal AI search.
+/// Dashboard voice uses the same live speech coordinator as Intel Core. Words
+/// appear while the user speaks; 3.5 seconds of silence starts a visible
+/// 3 -> 2 -> 1 countdown, then the request submits automatically. Speaking
+/// again during the countdown cancels it and continues the same dictation.
 class GlowSearchBar extends ConsumerStatefulWidget {
   const GlowSearchBar({
     super.key,
@@ -60,9 +58,10 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   final _random = math.Random();
 
-  late final VoiceTranscribeRepository _voiceRepo;
+  final _voice = LiveVoiceInput.instance;
   late final DeckAudioNotifier _audioNotifier;
-  StreamSubscription<Amplitude>? _amplitudeSub;
+  Timer? _countdownTimer;
+  int? _countdown;
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -94,6 +93,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       !_focusNode.hasFocus &&
       !_voiceActive &&
       !_transcribing &&
+      _countdown == null &&
       !_inlineAiLoading;
 
   String get _place {
@@ -102,24 +102,23 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   }
 
   List<String> get _rotatingPrompts => <String>[
-        'What are you looking for today?',
-        'Show me something nearby',
-        'Find a beautiful property in $_place',
-        'What’s happening around $_place tonight?',
-        'Find trusted workers near me',
-        'Show me homes for rent',
-        'Find a trusted mechanic',
-        'Show me yachts nearby',
-        'Find motorcycles around $_place',
-        'Need local legal help in $_place?',
-        'What’s popular around $_place right now?',
-        'Show me something worth swiping',
-      ];
+    'What are you looking for today?',
+    'Show me something nearby',
+    'Find a beautiful property in $_place',
+    'What’s happening around $_place tonight?',
+    'Find trusted workers near me',
+    'Show me homes for rent',
+    'Find a trusted mechanic',
+    'Show me yachts nearby',
+    'Find motorcycles around $_place',
+    'Need local legal help in $_place?',
+    'What’s popular around $_place right now?',
+    'Show me something worth swiping',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _voiceRepo = ref.read(voiceTranscribeRepositoryProvider);
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
@@ -141,8 +140,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   @override
   void dispose() {
     _promptTimer?.cancel();
-    _amplitudeSub?.cancel();
-    unawaited(_voiceRepo.cancel());
+    _countdownTimer?.cancel();
+    unawaited(_voice.cancel(owner: this));
     _restoreVoiceAudio();
     widget.controller?.removeListener(_refresh);
     _focusNode.removeListener(_refresh);
@@ -156,18 +155,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
   void _schedulePrompt() {
     _promptTimer?.cancel();
-    _promptTimer = Timer(Duration(milliseconds: 6000 + _random.nextInt(2001)), () {
-      if (!mounted) return;
-      if (_showPrompt) {
-        final prompts = _rotatingPrompts;
-        var next = _random.nextInt(prompts.length);
-        while (next == _promptIndex && prompts.length > 1) {
-          next = _random.nextInt(prompts.length);
+    _promptTimer = Timer(
+      Duration(milliseconds: 6000 + _random.nextInt(2001)),
+      () {
+        if (!mounted) return;
+        if (_showPrompt) {
+          final prompts = _rotatingPrompts;
+          var next = _random.nextInt(prompts.length);
+          while (next == _promptIndex && prompts.length > 1) {
+            next = _random.nextInt(prompts.length);
+          }
+          setState(() => _promptIndex = next);
         }
-        setState(() => _promptIndex = next);
-      }
-      _schedulePrompt();
-    });
+        _schedulePrompt();
+      },
+    );
   }
 
   void _suppressVoiceAudio() {
@@ -184,9 +186,59 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _cancelVoiceCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    if (_countdown != null && mounted) setState(() => _countdown = null);
+  }
+
+  void _beginVoiceCountdown() {
+    if (!mounted ||
+        !_voiceActive ||
+        (widget.controller?.text.trim().isEmpty ?? true) ||
+        _inlineAiLoading) {
+      return;
+    }
+    _countdownTimer?.cancel();
+    setState(() => _countdown = 3);
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final current = _countdown ?? 0;
+      if (current > 1) {
+        setState(() => _countdown = current - 1);
+        return;
+      }
+      timer.cancel();
+      _countdownTimer = null;
+      setState(() => _countdown = null);
+      unawaited(_finishVoiceAndSubmit());
+    });
+  }
+
+  Future<void> _finishVoiceAndSubmit() async {
+    _cancelVoiceCountdown();
+    if (_voice.isOwnedBy(this)) {
+      await _voice.finish(owner: this);
+    }
+    if (!mounted) {
+      _restoreVoiceAudio();
+      return;
+    }
+    setState(() {
+      _voiceActive = false;
+      _transcribing = false;
+      _voiceLevel = 0;
+    });
+    _restoreVoiceAudio();
+    final text = widget.controller?.text.trim() ?? '';
+    if (text.isNotEmpty) _submitSearch(text);
   }
 
   Future<void> _toggleVoice() async {
@@ -194,115 +246,77 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       widget.onTap?.call();
       return;
     }
-    if (_transcribing) return;
+    if (_inlineAiLoading || _transcribing) return;
 
-    if (_voiceActive) {
-      await _stopVoiceAndSubmit();
+    if (_voice.isOwnedBy(this) || _voiceActive) {
+      await _finishVoiceAndSubmit();
       return;
     }
 
     AppHaptics.light();
-
-    // iOS can interrupt microphone initialization if the keyboard starts an
-    // input-session transition at the same time. Voice always starts with text
-    // focus released and never requests keyboard focus automatically.
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
 
     try {
-      final started = await _voiceRepo.start();
-      if (!started) {
-        _restoreVoiceAudio();
-        _showVoiceError(
-          'Microphone access is required for voice search. Enable it in Settings and try again.',
-        );
-        return;
-      }
+      final started = await _voice.start(
+        owner: this,
+        initialText: widget.controller?.text ?? '',
+        languageCode: ref.read(voiceLanguageProvider).localeCode,
+        listenMode: ListenMode.search,
+        onText: (text) {
+          if (!mounted) return;
+          _cancelVoiceCountdown();
+          final controller = widget.controller;
+          if (controller != null) {
+            controller.value = TextEditingValue(
+              text: text,
+              selection: TextSelection.collapsed(offset: text.length),
+            );
+            widget.onChanged?.call(text);
+          }
+          if (!_voiceActive) setState(() => _voiceActive = true);
+        },
+        onSilence: _beginVoiceCountdown,
+        onListeningChanged: (listening) {
+          if (!mounted) return;
+          final active = _voice.isOwnedBy(this);
+          if (_voiceActive != active || (!listening && _voiceLevel != 0)) {
+            setState(() {
+              _voiceActive = active;
+              if (!listening) _voiceLevel = 0;
+            });
+          }
+        },
+        onSoundLevel: (level) {
+          if (!mounted) return;
+          final normalized = level <= 0
+              ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
+              : (level / 10).clamp(0.0, 1.0).toDouble();
+          if ((_voiceLevel - normalized).abs() > .01) {
+            setState(() => _voiceLevel = normalized);
+          }
+        },
+        onError: _showVoiceError,
+      );
 
-      if (!mounted) {
-        await _voiceRepo.cancel();
-        _restoreVoiceAudio();
-        return;
-      }
-
+      if (!mounted) return;
       setState(() {
-        _voiceActive = true;
+        _voiceActive = started;
         _voiceLevel = 0;
       });
-
-      await _amplitudeSub?.cancel();
-      _amplitudeSub = _voiceRepo
-          .amplitudeStream(interval: const Duration(milliseconds: 90))
-          .listen(
-            (amp) {
-              if (!mounted || !_voiceActive) return;
-              final normalized = ((amp.current + 45) / 45)
-                  .clamp(0.0, 1.0)
-                  .toDouble();
-              if ((_voiceLevel - normalized).abs() > .01) {
-                setState(() => _voiceLevel = normalized);
-              }
-            },
-            onError: (_) {
-              if (mounted && _voiceActive) {
-                setState(() => _voiceLevel = 0);
-              }
-            },
-          );
+      if (!started) _restoreVoiceAudio();
     } catch (_) {
       _restoreVoiceAudio();
       _showVoiceError('Could not start voice search. Please try again.');
     }
   }
 
-  Future<void> _stopVoiceAndSubmit() async {
-    if (!_voiceActive || _transcribing) return;
-
-    await _amplitudeSub?.cancel();
-    _amplitudeSub = null;
-    if (mounted) {
-      setState(() {
-        _voiceActive = false;
-        _transcribing = true;
-        _voiceLevel = 0;
-      });
-    }
-
-    var addedText = false;
-    try {
-      final language = ref.read(voiceLanguageProvider).localeCode;
-      final text = await _voiceRepo.stop(language: language);
-      final clean = text.trim();
-      if (clean.isNotEmpty && mounted) {
-        final controller = widget.controller;
-        if (controller != null) {
-          final existing = controller.text.trim();
-          final updated = existing.isEmpty ? clean : '$existing $clean';
-          controller.value = TextEditingValue(
-            text: updated,
-            selection: TextSelection.collapsed(offset: updated.length),
-          );
-          widget.onChanged?.call(updated);
-          addedText = true;
-        }
-      }
-    } on VoiceTranscribeException catch (error) {
-      _showVoiceError(error.message);
-    } catch (_) {
-      _showVoiceError('Voice transcription failed. Please try again.');
-    } finally {
-      _restoreVoiceAudio();
-      if (mounted) {
-        setState(() => _transcribing = false);
-      }
-    }
-
-    if (!mounted || !addedText) return;
-    final text = widget.controller?.text.trim() ?? '';
-    if (text.isNotEmpty) _submitSearch(text);
-  }
-
   void _submitSearch(String raw) {
+    if (_voice.isOwnedBy(this) || _voiceActive) {
+      unawaited(_finishVoiceAndSubmit());
+      return;
+    }
+    _cancelVoiceCountdown();
     final input = raw.trim();
     if (input.isEmpty || _inlineAiLoading) return;
 
@@ -322,27 +336,29 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     widget.controller?.clear();
 
     try {
-      final reply = await ref.read(aiEdgeRepositoryProvider).chatConcierge(
-        messages: [
-          const AiChatMessage(
-            role: 'system',
-            content:
-                'This reply is shown in the compact SWIPESS dashboard search area. '
-                'Answer in 1-3 short sentences. Be useful and direct. Preserve useful '
-                'SWIPESS action tags when needed.\n\n'
-                'IMPORTANT: If the user asks to add or create a listing, property, or event, '
-                'gently explain that they must tap the "+" icon in the top right menu, '
-                'or say "I can only help you browse from here! Please tap the + icon in the top right menu to create a listing."',
-          ),
-          AiChatMessage(role: 'user', content: input),
-        ],
-        locationContext: {
-          'passportMode': true,
-          'passportLabel': widget.locationLabel,
-          'radiusKm': 50,
-        },
-        stream: false,
-      );
+      final reply = await ref
+          .read(aiEdgeRepositoryProvider)
+          .chatConcierge(
+            messages: [
+              const AiChatMessage(
+                role: 'system',
+                content:
+                    'This reply is shown in the compact SWIPESS dashboard search area. '
+                    'Answer in 1-3 short sentences. Be useful and direct. Preserve useful '
+                    'SWIPESS action tags when needed.\n\n'
+                    'IMPORTANT: If the user asks to add or create a listing, property, or event, '
+                    'gently explain that they must tap the "+" icon in the top right menu, '
+                    'or say "I can only help you browse from here! Please tap the + icon in the top right menu to create a listing."',
+              ),
+              AiChatMessage(role: 'user', content: input),
+            ],
+            locationContext: {
+              'passportMode': true,
+              'passportLabel': widget.locationLabel,
+              'radiusKm': 50,
+            },
+            stream: false,
+          );
       if (!mounted) return;
       final parsed = ConciergeParse.of(reply);
       final clean = parsed.cleanContent.trim();
@@ -390,30 +406,52 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     final q = _normalize(raw);
     if (q.isEmpty) return false;
 
-    final isQuestion = q.contains('?') ||
-        RegExp(r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b')
-            .hasMatch(q);
+    final isQuestion =
+        q.contains('?') ||
+        RegExp(
+          r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b',
+        ).hasMatch(q);
     if (isQuestion && q.split(' ').length > 2) return false;
 
     bool has(String pattern) => RegExp(pattern).hasMatch(q);
 
-    if (has(r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b')) {
+    if (has(
+      r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b',
+    )) {
       context.go(AppPaths.exploreEvents);
-    } else if (has(r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b')) {
+    } else if (has(
+      r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b',
+    )) {
       context.go(AppPaths.documents);
-    } else if (has(r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b')) {
+    } else if (has(
+      r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b',
+    )) {
       context.go(AppPaths.clientLegalServices);
-    } else if (has(r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b')) {
+    } else if (has(
+      r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b',
+    )) {
       context.go(AppPaths.clientServices);
-    } else if (has(r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b')) {
+    } else if (has(
+      r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b',
+    )) {
       context.go(AppPaths.exploreSeekers);
     } else if (has(r'\b(messages?|chat|inbox)\b')) {
       context.go(AppPaths.messages);
-    } else if (has(r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b')) {
+    } else if (has(
+      r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b',
+    )) {
       context.go(AppPaths.map);
-    } else if (has(r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b')) {
-      openClientSwipeDeck(context, categoryId: 'yacht', categoryTitle: 'YACHTS');
-    } else if (has(r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b')) {
+    } else if (has(
+      r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b',
+    )) {
+      openClientSwipeDeck(
+        context,
+        categoryId: 'yacht',
+        categoryTitle: 'YACHTS',
+      );
+    } else if (has(
+      r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'motorcycle',
@@ -425,7 +463,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         categoryId: 'bicycle',
         categoryTitle: 'BICYCLES',
       );
-    } else if (has(r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b')) {
+    } else if (has(
+      r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b',
+    )) {
       openClientSwipeDeck(
         context,
         categoryId: 'property',
@@ -443,14 +483,14 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     final pulse = 1.0 + (_voiceLevel * .08);
     return Semantics(
       button: true,
-      label: _transcribing
-          ? 'Transcribing voice search'
+      label: _countdown != null
+          ? 'Voice search sends in $_countdown'
           : _voiceActive
-              ? 'Stop and transcribe voice search'
-              : 'Start voice search',
+          ? 'Finish voice search now'
+          : 'Start voice search',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _transcribing ? null : _toggleVoice,
+        onTap: _toggleVoice,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 110),
           scale: _voiceActive ? pulse : 1,
@@ -485,17 +525,17 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                     ),
                   )
                 : _voiceActive
-                    ? BreathingWidget(
-                        duration: const Duration(milliseconds: 1050),
-                        minOpacity: .55,
-                        maxOpacity: 1,
-                        child: const Icon(
-                          Icons.mic_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      )
-                    : Icon(Icons.mic_rounded, color: blue, size: 18),
+                ? BreathingWidget(
+                    duration: const Duration(milliseconds: 1050),
+                    minOpacity: .55,
+                    maxOpacity: 1,
+                    child: const Icon(
+                      Icons.mic_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  )
+                : Icon(Icons.mic_rounded, color: blue, size: 18),
           ),
         ),
       ),
@@ -599,7 +639,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                       behavior: HitTestBehavior.opaque,
                       onTap: _continueInChat,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: blue.withAlpha(isLight ? 18 : 32),
                           borderRadius: BorderRadius.circular(999),
@@ -629,7 +672,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     final blue = isLight ? const Color(0xFF2563EB) : const Color(0xFF60A5FA);
     final prompts = _rotatingPrompts;
     final displayHint = prompts[_promptIndex % prompts.length];
-    final voiceVisible = _voiceActive || _transcribing;
+    final voiceVisible = _voiceActive || _transcribing || _countdown != null;
 
     if (!_isEditableSearch) {
       return Padding(
@@ -642,11 +685,16 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: isLight ? Colors.white.withAlpha(205) : const Color(0xFF121822),
+              color: isLight
+                  ? Colors.white.withAlpha(205)
+                  : const Color(0xFF121822),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: blue.withAlpha(130)),
             ),
-            child: Text(displayHint, style: GoogleFonts.plusJakartaSans(color: ink)),
+            child: Text(
+              displayHint,
+              style: GoogleFonts.plusJakartaSans(color: ink),
+            ),
           ),
         ),
       );
@@ -667,7 +715,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                   : const Color(0xFF121822).withAlpha(230),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
-                color: voiceVisible ? blue : blue.withAlpha(isLight ? 125 : 145),
+                color: voiceVisible
+                    ? blue
+                    : blue.withAlpha(isLight ? 125 : 145),
                 width: voiceVisible ? 1.5 : .9,
               ),
               boxShadow: voiceVisible
@@ -699,15 +749,17 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                               alignment: Alignment.centerLeft,
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 380),
-                                layoutBuilder: (currentChild, previousChildren) {
-                                  return Stack(
-                                    alignment: Alignment.centerLeft,
-                                    children: <Widget>[
-                                      ...previousChildren,
-                                      if (currentChild != null) currentChild,
-                                    ],
-                                  );
-                                },
+                                layoutBuilder:
+                                    (currentChild, previousChildren) {
+                                      return Stack(
+                                        alignment: Alignment.centerLeft,
+                                        children: <Widget>[
+                                          ...previousChildren,
+                                          if (currentChild != null)
+                                            currentChild,
+                                        ],
+                                      );
+                                    },
                                 child: Text(
                                   displayHint,
                                   key: ValueKey<String>(displayHint),
@@ -736,12 +788,13 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                         ),
                         cursorColor: blue,
                         decoration: InputDecoration(
-                          hintText: _voiceActive &&
-                                  (widget.controller?.text.trim().isEmpty ?? true)
+                          hintText: _countdown != null
+                              ? 'Sending in $_countdown…'
+                              : _voiceActive &&
+                                    (widget.controller?.text.trim().isEmpty ??
+                                        true)
                               ? 'Listening…'
-                              : _transcribing
-                                  ? 'Transcribing…'
-                                  : null,
+                              : null,
                           hintStyle: GoogleFonts.plusJakartaSans(
                             color: blue.withAlpha(210),
                             fontWeight: FontWeight.w700,
@@ -753,7 +806,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                           disabledBorder: InputBorder.none,
                           filled: false,
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 11),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 11,
+                          ),
                         ),
                       ),
                     ],
@@ -762,9 +817,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   tooltip: 'Send',
-                  onPressed: _transcribing
-                      ? null
-                      : () => _submitSearch(widget.controller?.text ?? ''),
+                  onPressed: () => _submitSearch(widget.controller?.text ?? ''),
                   icon: Icon(Icons.arrow_forward_rounded, size: 19, color: ink),
                 ),
               ],
@@ -775,9 +828,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                _transcribing
-                    ? 'Transcribing your voice…'
-                    : 'Listening… tap the microphone when you finish',
+                _countdown != null
+                    ? 'Silence detected · sending in $_countdown…'
+                    : 'Listening… speak naturally',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
