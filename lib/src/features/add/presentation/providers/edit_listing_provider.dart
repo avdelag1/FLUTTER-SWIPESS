@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
@@ -320,6 +321,7 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
       ref.invalidate(swipeListingsProvider);
+      ref.invalidate(mapListingsProvider);
       state = null;
       return true;
     } catch (error) {
