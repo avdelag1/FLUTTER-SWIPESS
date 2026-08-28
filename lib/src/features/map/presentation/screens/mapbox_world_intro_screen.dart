@@ -136,7 +136,7 @@ class _MapboxWorldIntroScreenState
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFF1F4F7),
+      color: const Color(0xFF06182B),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -156,7 +156,7 @@ class _MapboxWorldIntroScreenState
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xFF111318),
+                  color: Color(0xFFFF4D78),
                 ),
               ),
             ),
