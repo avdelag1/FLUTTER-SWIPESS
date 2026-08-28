@@ -1,0 +1,271 @@
+name: One-shot global back navigation hotfix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch deterministic back navigation
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path_str, old, new):
+              path = Path(path_str)
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f'Expected block not found in {path_str}')
+              path.write_text(text.replace(old, new, 1))
+
+          # Quick-filter listing decks are real pushed routes. Back must pop the
+          # pushed deck and STOP. The previous implementation popped and then
+          # scheduled router.go(), which races Flutter Web/PWA route disposal.
+          replace_once(
+              'lib/src/features/swipes/presentation/screens/client_swipe_container.dart',
+              '''  void _goDashboard() {
+            AppHaptics.light();
+            ref.read(navTabProvider.notifier).set(NavTab.dashboard);
+            ref.read(chromeRevealProvider.notifier).reveal();
+            ref.read(chromeVisibilityProvider.notifier).show();
+        
+            final router = GoRouter.of(context);
+            final rootNav = Navigator.of(context, rootNavigator: true);
+            final shouldPop = rootNav.canPop();
+            if (shouldPop) {
+              rootNav.pop();
+            }
+            // Pop can dispose this route first on web/PWA stacks — schedule navigation
+            // on the next frame so back always returns to the dashboard shell.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              router.go(AppPaths.clientDashboard);
+            });
+          }
+        ''',
+              '''  void _goDashboard() {
+            AppHaptics.light();
+            ref.read(navTabProvider.notifier).set(NavTab.dashboard);
+            ref.read(chromeRevealProvider.notifier).reveal();
+            ref.read(chromeVisibilityProvider.notifier).show();
+        
+            final rootNav = Navigator.of(context, rootNavigator: true);
+            if (rootNav.canPop()) {
+              rootNav.pop();
+              return;
+            }
+            GoRouter.of(context).go(AppPaths.clientDashboard);
+          }
+        ''',
+          )
+
+          # Non-back destinations from the deck may still need a route change
+          # after the pushed deck is removed. Capture the router, pop, then use a
+          # microtask rather than a full-frame callback/disposed BuildContext.
+          replace_once(
+              'lib/src/features/swipes/presentation/screens/client_swipe_container.dart',
+              '''  void _goMessages() {
+            final router = GoRouter.of(context);
+            final rootNav = Navigator.of(context, rootNavigator: true);
+            ref.read(navTabProvider.notifier).set(NavTab.messages);
+            ref.read(chromeRevealProvider.notifier).reveal();
+            ref.read(chromeVisibilityProvider.notifier).show();
+            if (rootNav.canPop()) rootNav.pop();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              router.go(AppPaths.messages);
+            });
+          }
+        ''',
+              '''  void _goMessages() {
+            final router = GoRouter.of(context);
+            final rootNav = Navigator.of(context, rootNavigator: true);
+            ref.read(navTabProvider.notifier).set(NavTab.messages);
+            ref.read(chromeRevealProvider.notifier).reveal();
+            ref.read(chromeVisibilityProvider.notifier).show();
+            if (rootNav.canPop()) rootNav.pop();
+            scheduleMicrotask(() => router.go(AppPaths.messages));
+          }
+        ''',
+          )
+
+          replace_once(
+              'lib/src/features/swipes/presentation/screens/client_swipe_container.dart',
+              '''        if (cat == 'events') {
+                  final router = GoRouter.of(context);
+                  final rootNav = Navigator.of(context, rootNavigator: true);
+                  ref.read(navTabProvider.notifier).set(NavTab.events);
+                  ref.read(chromeRevealProvider.notifier).reveal();
+                  ref.read(chromeVisibilityProvider.notifier).show();
+                  if (rootNav.canPop()) rootNav.pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    router.go(AppPaths.exploreEvents);
+                  });
+                  return;
+                }
+        ''',
+              '''        if (cat == 'events') {
+                  final router = GoRouter.of(context);
+                  final rootNav = Navigator.of(context, rootNavigator: true);
+                  ref.read(navTabProvider.notifier).set(NavTab.events);
+                  ref.read(chromeRevealProvider.notifier).reveal();
+                  ref.read(chromeVisibilityProvider.notifier).show();
+                  if (rootNav.canPop()) rootNav.pop();
+                  scheduleMicrotask(() => router.go(AppPaths.exploreEvents));
+                  return;
+                }
+        ''',
+          )
+
+          replace_once(
+              'lib/src/features/swipes/presentation/screens/client_swipe_container.dart',
+              '''                          onProfileTap: () {
+                            final rootNav =
+                                Navigator.of(context, rootNavigator: true);
+                            if (rootNav.canPop()) {
+                              rootNav.pop();
+                            }
+                            context.go(AppPaths.clientProfile);
+                          },
+        ''',
+              '''                          onProfileTap: () {
+                            final router = GoRouter.of(context);
+                            final rootNav =
+                                Navigator.of(context, rootNavigator: true);
+                            if (rootNav.canPop()) rootNav.pop();
+                            scheduleMicrotask(
+                              () => router.go(AppPaths.clientProfile),
+                            );
+                          },
+        ''',
+          )
+
+          replace_once(
+              'lib/src/features/swipes/presentation/screens/client_swipe_container.dart',
+              '''                              final router = GoRouter.of(context);
+                              final rootNav =
+                                  Navigator.of(context, rootNavigator: true);
+                              if (rootNav.canPop()) {
+                                rootNav.pop();
+                              }
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                router.go(AppPaths.pathForTab(id));
+                              });
+                              ref.read(navTabProvider.notifier).set(id);
+        ''',
+              '''                              final router = GoRouter.of(context);
+                              final rootNav =
+                                  Navigator.of(context, rootNavigator: true);
+                              if (rootNav.canPop()) rootNav.pop();
+                              scheduleMicrotask(
+                                () => router.go(AppPaths.pathForTab(id)),
+                              );
+                              ref.read(navTabProvider.notifier).set(id);
+        ''',
+          )
+
+          # The persistent profile header used its own Navigator-first back
+          # implementation, bypassing the shared deterministic helper.
+          path = Path('lib/src/core/widgets/app_top_bar.dart')
+          text = path.read_text()
+          import_anchor = "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n"
+          import_line = "import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';\n"
+          if import_line not in text:
+              if import_anchor not in text:
+                  raise SystemExit('AppTopBar import anchor missing')
+              text = text.replace(import_anchor, import_anchor + import_line, 1)
+          old = '''  void _backFromProfile(BuildContext context) {
+            AppHaptics.light();
+            final nearest = Navigator.of(context);
+            if (nearest.canPop()) {
+              nearest.pop();
+              return;
+            }
+            context.go(AppPaths.clientDashboard);
+          }
+        '''
+          new = '''  void _backFromProfile(BuildContext context) {
+            NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
+          }
+        '''
+          if old not in text:
+              raise SystemExit('AppTopBar profile-back block missing')
+          path.write_text(text.replace(old, new, 1))
+
+          # Event details had two raw Navigator.pop callbacks. Routed event
+          # details must return to the Events feed deterministically.
+          path = Path('lib/src/features/events/presentation/screens/event_detail_screen.dart')
+          text = path.read_text()
+          import_anchor = "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n"
+          import_line = "import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';\n"
+          if import_line not in text:
+              if import_anchor not in text:
+                  raise SystemExit('Event detail import anchor missing')
+              text = text.replace(import_anchor, import_anchor + import_line, 1)
+          old_back = '                                        onTap: () => Navigator.pop(context),\n'
+          new_back = '''                                        onTap: () => NavBack.popOrGo(
+                                          context,
+                                          fallbackPath: AppPaths.exploreEvents,
+                                        ),
+        '''
+          if text.count(old_back) < 2:
+              raise SystemExit('Expected two event-detail Navigator.pop callbacks')
+          text = text.replace(old_back, new_back, 2)
+          path.write_text(text)
+
+          # Error/empty event detail shell must not override CapBackButton with
+          # another Navigator-first callback.
+          replace_once(
+              'lib/src/features/events/presentation/screens/event_detail_route_screen.dart',
+              '''              child: CapBackButton(
+                onTap: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go(AppPaths.exploreEvents);
+                  }
+                },
+              ),
+        ''',
+              '''              child: const CapBackButton(
+                fallbackPath: AppPaths.exploreEvents,
+              ),
+        ''',
+          )
+
+      - name: Format changed Dart files
+        run: |
+          dart format \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/events/presentation/screens/event_detail_screen.dart \
+            lib/src/features/events/presentation/screens/event_detail_route_screen.dart
+
+      - name: Verify back-navigation hotfix
+        run: |
+          grep -q "rootNav.pop();" lib/src/features/swipes/presentation/screens/client_swipe_container.dart
+          grep -q "NavBack.popOrGo" lib/src/core/widgets/app_top_bar.dart
+          grep -q "fallbackPath: AppPaths.exploreEvents" lib/src/features/events/presentation/screens/event_detail_screen.dart
+
+      - name: Remove one-shot workflow
+        run: git rm .github/workflows/hotfix-global-back-navigation.yml
+
+      - name: Commit hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/events/presentation/screens/event_detail_screen.dart \
+            lib/src/features/events/presentation/screens/event_detail_route_screen.dart
+          git commit -m "fix(nav): eliminate global back races in quick filters and details"
+          git push
