@@ -623,7 +623,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
             ),
           ],
         ),
-      ),
     );
   }
 }
