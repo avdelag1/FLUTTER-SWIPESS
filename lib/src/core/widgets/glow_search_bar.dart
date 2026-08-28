@@ -205,6 +205,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     }
     _countdownTimer?.cancel();
     setState(() => _countdown = 3);
+    unawaited(AppHaptics.countdownTick(3));
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -212,12 +213,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       }
       final current = _countdown ?? 0;
       if (current > 1) {
-        setState(() => _countdown = current - 1);
+        final next = current - 1;
+        setState(() => _countdown = next);
+        unawaited(AppHaptics.countdownTick(next));
         return;
       }
       timer.cancel();
       _countdownTimer = null;
       setState(() => _countdown = null);
+      unawaited(AppHaptics.voiceCommit());
       unawaited(_finishVoiceAndSubmit());
     });
   }
@@ -253,7 +257,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
 
-    AppHaptics.light();
+    unawaited(AppHaptics.voiceStart());
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
 
@@ -515,7 +519,18 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                   : null,
             ),
             alignment: Alignment.center,
-            child: _transcribing
+            child: _countdown != null
+                ? Text(
+                    '$_countdown',
+                    key: ValueKey<int>(_countdown!),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  )
+                : _transcribing
                 ? SizedBox(
                     width: 15,
                     height: 15,

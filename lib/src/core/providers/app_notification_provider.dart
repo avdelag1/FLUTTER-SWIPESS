@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
 /// One premium notification queue for every in-app feedback event.
 enum AppToastType {
@@ -69,14 +72,19 @@ class AppNotificationsNotifier extends Notifier<List<AppToast>> {
       at: now,
     );
     state = [toast, ...state].take(_maxQueued).toList(growable: false);
+
+    final important =
+        type == AppToastType.message ||
+        type == AppToastType.match ||
+        type == AppToastType.newUser ||
+        type == AppToastType.error ||
+        type == AppToastType.warning;
+    unawaited(AppHaptics.notification(important: important));
   }
 
   /// Reward feedback is intentionally explicit: users should always understand
   /// that an action increased their Swipess token balance.
-  void showTokenReward({
-    required int tokens,
-    required String reason,
-  }) {
+  void showTokenReward({required int tokens, required String reason}) {
     if (tokens <= 0) return;
     show(
       title: 'You earned +$tokens tokens',

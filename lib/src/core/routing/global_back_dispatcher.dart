@@ -27,6 +27,16 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
 
   @override
   Future<bool> didPopRoute() async {
+    final modals = ref.read(overlayModalsProvider);
+
+    // The map overlay deliberately stays mounted while a pushed listing, event,
+    // or profile detail is visible. In that state Back belongs to the detail
+    // route first; closing the overlay first loses the user's map context and
+    // makes the next screen look like a jump to Dashboard.
+    if (modals.showPassportMap && _isMapDetailRoute(_currentLocation())) {
+      if (await super.didPopRoute()) return true;
+    }
+
     if (_closeOpenOverlay()) return true;
     if (await super.didPopRoute()) return true;
 
@@ -34,6 +44,14 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
     if (parent == null) return false;
     router.go(parent);
     return true;
+  }
+
+  bool _isMapDetailRoute(String route) {
+    return route.startsWith('/listing/') ||
+        route.startsWith('/profile/') ||
+        route.startsWith('/explore/events/') ||
+        route.startsWith('/preview/listing/') ||
+        route.startsWith('/preview/profile/');
   }
 
   bool _closeOpenOverlay() {

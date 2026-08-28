@@ -116,6 +116,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     _countdownTimer?.cancel();
     setState(() => _countdown = 3);
+    unawaited(AppHaptics.countdownTick(3));
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -123,12 +124,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
       final current = _countdown ?? 0;
       if (current > 1) {
-        setState(() => _countdown = current - 1);
+        final next = current - 1;
+        setState(() => _countdown = next);
+        unawaited(AppHaptics.countdownTick(next));
         return;
       }
       timer.cancel();
       _countdownTimer = null;
       setState(() => _countdown = null);
+      unawaited(AppHaptics.voiceCommit());
       unawaited(_finishVoiceAndSend());
     });
   }
@@ -154,7 +158,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
-    AppHaptics.light();
+    unawaited(AppHaptics.voiceStart());
     try {
       final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
       final started = await _voice.start(

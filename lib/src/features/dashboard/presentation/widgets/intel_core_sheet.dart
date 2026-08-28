@@ -248,7 +248,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
-    AppHaptics.light();
+    unawaited(AppHaptics.voiceStart());
     ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
 
     final started = await _voice.start(
@@ -281,9 +281,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       },
       onError: (message) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
       },
     );
 
@@ -718,6 +717,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
     _countdownTimer?.cancel();
     setState(() => _countdown = 3);
+    unawaited(AppHaptics.countdownTick(3));
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -725,12 +725,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       }
       final current = _countdown ?? 0;
       if (current > 1) {
-        setState(() => _countdown = current - 1);
+        final next = current - 1;
+        setState(() => _countdown = next);
+        unawaited(AppHaptics.countdownTick(next));
         return;
       }
       timer.cancel();
       _countdownTimer = null;
       setState(() => _countdown = null);
+      unawaited(AppHaptics.voiceCommit());
       unawaited(_submit());
     });
   }
@@ -799,7 +802,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 (_messages.isEmpty ||
                                     _messages.last.content.trim().isEmpty))
                               Padding(
-                                padding: const EdgeInsets.only(left: 16, top: 4),
+                                padding: const EdgeInsets.only(
+                                  left: 16,
+                                  top: 4,
+                                ),
                                 child: Text(
                                   t(ref, 'flutter.thinking', 'Thinking…'),
                                   style: GoogleFonts.plusJakartaSans(

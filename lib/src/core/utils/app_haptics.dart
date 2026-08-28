@@ -43,4 +43,39 @@ class AppHaptics {
     await Future.delayed(const Duration(milliseconds: 40));
     await HapticFeedback.lightImpact();
   }
+
+  /// Tiny native-style acknowledgement when voice input opens. This deliberately
+  /// uses the platform sound API instead of an audio package/asset so it is
+  /// instant, respects the device's sound policy, and adds no playback engine.
+  static Future<void> voiceStart() async {
+    await SystemSound.play(SystemSoundType.click);
+    await HapticFeedback.lightImpact();
+  }
+
+  /// One crisp tick for the visible 3 → 2 → 1 hands-free countdown.
+  static Future<void> countdownTick(int value) async {
+    await SystemSound.play(SystemSoundType.click);
+    if (value <= 1) {
+      await HapticFeedback.mediumImpact();
+    } else {
+      await HapticFeedback.selectionClick();
+    }
+  }
+
+  /// Confirms an automatic voice send without introducing a long sound effect.
+  static Future<void> voiceCommit() async {
+    await SystemSound.play(SystemSoundType.click);
+    await HapticFeedback.mediumImpact();
+  }
+
+  /// Shared in-app notification tone. Important events get the platform alert;
+  /// routine confirmations stay on the subtle system click.
+  static Future<void> notification({bool important = false}) async {
+    await SystemSound.play(
+      important ? SystemSoundType.alert : SystemSoundType.click,
+    );
+    if (important) {
+      await HapticFeedback.selectionClick();
+    }
+  }
 }
