@@ -57,6 +57,11 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 }
 
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
+  static final _directoryIntent = RegExp(
+    r'\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|jeweler|jewellery|jewelry|joyeria|joyería|plumber|plomero|electrician|electricista|mechanic|mecanico|mecánico|cleaner|limpieza|chef|driver|chauffeur|nanny|handyman|gardener|contractor|painter|carpenter|welder|technician|lawyer|abogado|attorney|doctor|dentist|stylist|barber|massage|masaje|hire|contratar|recommend|recomienda|recomendar|numero|número|whatsapp|phone|call|trusted|local help|directory|directorio)\b',
+    caseSensitive: false,
+  );
+
   final _random = math.Random();
 
   final _voice = LiveVoiceInput.instance;
@@ -347,13 +352,48 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
     _cancelVoiceCountdown();
-    final input = raw.trim();
+    final input = _normalizeVoiceTranscript(raw.trim());
     if (input.isEmpty || _inlineAiLoading) return;
+
+    if (_wantsDirectoryContact(input)) {
+      widget.controller?.clear();
+      _dismissInlineAi();
+      ref.read(overlayModalsProvider.notifier).openConcierge(input);
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
 
     if (!_runDirectSearch(input)) {
       unawaited(_runInlineAi(input));
     }
     FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  String _normalizeVoiceTranscript(String raw) {
+    var text = raw;
+    const fixes = <(String, String)>[
+      ('context', 'contact'),
+      ('contacts info', 'contact'),
+      ('con tact', 'contact'),
+      ('whats app', 'whatsapp'),
+      ("what's app", 'whatsapp'),
+    ];
+    for (final (from, to) in fixes) {
+      text = text.replaceAll(RegExp(from, caseSensitive: false), to);
+    }
+    return text;
+  }
+
+  bool _wantsDirectoryContact(String raw) {
+    final q = _normalize(_normalizeVoiceTranscript(raw));
+    if (q.isEmpty) return false;
+    return _directoryIntent.hasMatch(q);
+  }
+
+  void _openDirectoryConcierge(String query) {
+    widget.controller?.clear();
+    _dismissInlineAi();
+    ref.read(overlayModalsProvider.notifier).openConcierge(query);
   }
 
   Future<void> _runInlineAi(String input) async {
@@ -391,6 +431,17 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
           );
       if (!mounted) return;
       final parsed = ConciergeParse.of(reply);
+      if (parsed.localBrain.isNotEmpty ||
+          parsed.profiles.isNotEmpty ||
+          parsed.navPaths.any((path) => path.contains('seekers'))) {
+        setState(() {
+          _inlineAiLoading = false;
+          _inlineQuestion = null;
+          _inlineAnswer = null;
+        });
+        _openDirectoryConcierge(input);
+        return;
+      }
       final clean = parsed.cleanContent.trim();
       setState(() {
         _inlineAiLoading = false;
@@ -457,14 +508,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b',
     )) {
       context.go(AppPaths.clientLegalServices);
-    } else if (has(
-      r'\b(workers?|hire|services?|maintenance|plumber|cleaner|cleaning|maid|chef|cook|driver|chauffeur|nanny|electrician|handyman|gardener|mechanic|contractor|painter|carpenter|welder|technician)\b',
-    )) {
-      context.go(AppPaths.clientServices);
-    } else if (has(
-      r'\b(people|persons?|profiles?|users?|roommates?|seekers?|friends?|buyers?|renters?|gente|personas|amigos?)\b',
-    )) {
-      context.go(AppPaths.exploreSeekers);
     } else if (has(r'\b(messages?|chat|inbox)\b')) {
       context.go(AppPaths.messages);
     } else if (has(

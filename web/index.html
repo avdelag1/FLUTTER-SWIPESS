@@ -259,10 +259,10 @@
           // Prefer selected language; fallback to OS language; fallback to en-US.
           try {
             var lang = selectedLang || navigator.language || 'en-US';
-            // Normalize: 'en' → 'en-US', 'es' → 'es-ES', etc.
+            // Normalize bare language codes; keep full locales like es-MX intact.
             if (lang.indexOf('-') === -1) {
               if (lang.toLowerCase() === 'en') lang = 'en-US';
-              else if (lang.toLowerCase() === 'es') lang = 'es-ES';
+              else if (lang.toLowerCase() === 'es') lang = 'es-MX';
               else if (lang.toLowerCase() === 'fr') lang = 'fr-FR';
               else if (lang.toLowerCase() === 'pt') lang = 'pt-BR';
               else if (lang.toLowerCase() === 'zh') lang = 'zh-CN';

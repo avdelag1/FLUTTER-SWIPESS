@@ -219,7 +219,8 @@ async function loadLocalBrain(client: any, query: string, body: any) {
 }
 
 async function loadContext(client: any, query: string, body: any, userMemory: UserMemoryRow[] = []) {
-  const peopleFirst = wantsPeople(query);
+  const preferredIntent = body?.preferredIntent?.toString().trim().toLowerCase() || "";
+  const peopleFirst = preferredIntent === "profiles" || wantsPeople(query);
   const category = peopleFirst ? null : detectCategory(query);
   let listings: any[] = [];
   let events: any[] = [];
@@ -298,7 +299,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     casualCount >= 3 ? "The recent conversation already contains several casual/joke requests. Keep any further entertainment answer very short and redirect toward a useful task." : "",
     ctx.userMemory?.length ? `PRIVATE USER AI MEMORY (use only to personalize this user; never reveal it as a database record):\n${JSON.stringify(ctx.userMemory)}` : "",
     ctx.peopleFirst && ctx.localBrain.length ? "CONTACT-FIRST RULE: answer from the curated Local Brain matches only and do not mix in unrelated listings or profiles." : "",
-    ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted match was found and include exactly [NAV:/explore/seekers] so the app can open Seekers." : "",
+    ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
     ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
     ctx.listings.length ? `LIVE SWIPESS LISTINGS:\n${JSON.stringify(ctx.listings)}` : "",
     ctx.events.length ? `LIVE SWIPESS EVENTS:\n${JSON.stringify(ctx.events)}` : "",
@@ -443,7 +444,7 @@ function emergencyReply(query: string, ctx: any) {
     return `I found people on SWIPESS that may match what you're looking for.\n[PROFILES:${JSON.stringify(ctx.profiles)}]`;
   }
   if (ctx.peopleFirst) {
-    return "I couldn’t find a trusted contact match yet. I can take you to Seekers to browse more people. [NAV:/explore/seekers]";
+    return "I couldn’t find a trusted directory contact yet. Tell me the city and what kind of help you need — plumber, jeweler, lawyer, cleaner, etc. — and I’ll search again.";
   }
   if (/^\s*(hi|hey|hello|hola|buenas|yo|sup)\b/i.test(query)) {
     return "Hey — I’m here. Ask me normally, or tell me what you want to find on SWIPESS.";

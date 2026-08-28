@@ -24,7 +24,7 @@ class AiEdgeRepository {
 
   static const _timeout = Duration(seconds: 60);
   static final _profileIntent = RegExp(
-    r'\b(seekers|workers|buyers|renters|people|users|pros|professionals)\b',
+    r'\b(seekers|workers|buyers|renters|people|users|pros|professionals|contact|contacts|contacto|contactos|plumber|electrician|mechanic|jeweler|joyeria|joyería|lawyer|abogado|someone|alguien|gente|hire|servicio|service)\b',
     caseSensitive: false,
   );
 
