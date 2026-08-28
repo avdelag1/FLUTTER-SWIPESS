@@ -771,12 +771,14 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
             onMapLoadedListener: (_) => unawaited(_onLoaded()),
           ),
           if (!_loaded)
-            const ColoredBox(
-              color: Color(0xFF06182B),
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFFFF4D78),
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Color(0xFF06182B),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFFF4D78),
+                  ),
                 ),
               ),
             ),
