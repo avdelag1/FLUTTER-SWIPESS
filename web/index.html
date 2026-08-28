@@ -200,12 +200,52 @@
         window.SwipessSpeechQueue.push({ type: type, payload: payload || '' });
       }
 
+      function wordKey(word) {
+        return (word || '').toLowerCase().replace(/[^\\p{L}\\p{N}']/gu, '');
+      }
+
+      function normalizeTranscript(value) {
+        var clean = (value || '').replace(/\\s+/g, ' ').trim();
+        if (!clean) return '';
+        var words = clean.split(' ');
+        var output = [];
+        words.forEach(function (word) {
+          if (!output.length || wordKey(output[output.length - 1]) !== wordKey(word)) {
+            output.push(word);
+          }
+        });
+        for (var size = Math.floor(output.length / 2); size >= 2; size--) {
+          var start = output.length - (size * 2);
+          var first = output.slice(start, start + size).map(wordKey).join(' ');
+          var second = output.slice(start + size).map(wordKey).join(' ');
+          if (first === second) {
+            output.splice(start + size);
+            break;
+          }
+        }
+        return output.join(' ');
+      }
+
       function join(a, b) {
-        a = (a || '').trim();
-        b = (b || '').trim();
+        a = normalizeTranscript(a);
+        b = normalizeTranscript(b);
         if (!a) return b;
         if (!b) return a;
-        return a + ' ' + b;
+        var left = a.split(' ');
+        var right = b.split(' ');
+        var leftKey = left.map(wordKey).join(' ');
+        var rightKey = right.map(wordKey).join(' ');
+        if (leftKey === rightKey) return a;
+        if (rightKey.indexOf(leftKey + ' ') === 0) return b;
+        if (leftKey.indexOf(rightKey + ' ') === 0) return a;
+        var max = Math.min(left.length, right.length);
+        for (var overlap = max; overlap > 0; overlap--) {
+          if (left.slice(left.length - overlap).map(wordKey).join(' ') ===
+              right.slice(0, overlap).map(wordKey).join(' ')) {
+            return normalizeTranscript(a + ' ' + right.slice(overlap).join(' '));
+          }
+        }
+        return normalizeTranscript(a + ' ' + b);
       }
 
       function startRecognition() {
