@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v3.dart';
-import 'package:go_router/go_router.dart';
 
 /// Backwards-compatible native map entry point.
 ///
-/// V3 owns the actual native Mapbox experience. This wrapper deliberately adds
-/// two release-safety affordances without forking the map again:
-/// - a dedicated Back button, separate from the hamburger menu;
-/// - a tiny Codemagic build fingerprint so TestFlight can prove which Git
-///   commit/build is actually installed on the phone.
-///
-/// The fingerprint only appears when CI injects SWIPESS_BUILD_SHA, so local
-/// development stays clean.
+/// V3 owns every interactive map control, including Back and the hamburger
+/// menu. This wrapper must stay pointer-transparent so it can never intercept a
+/// V3 control again. Its only responsibility is the optional CI build
+/// fingerprint used to prove which TestFlight build is installed.
 class RealMapboxScreenV2 extends StatelessWidget {
   const RealMapboxScreenV2({
     super.key,
@@ -24,14 +18,6 @@ class RealMapboxScreenV2 extends StatelessWidget {
   final VoidCallback? onClose;
   final bool showCitiesOnOpen;
   final VoidCallback? onMapReady;
-
-  void _closeMap(BuildContext context) {
-    if (onClose != null) {
-      onClose!();
-    } else {
-      context.go(AppPaths.clientDashboard);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,43 +35,6 @@ class RealMapboxScreenV2 extends StatelessWidget {
           showCitiesOnOpen: showCitiesOnOpen,
           onMapReady: onMapReady,
         ),
-
-        // Separate map exit control. The hamburger inside V3 remains a menu
-        // toggle only; it must never double as Back/Close.
-        Positioned(
-          top: top,
-          left: 43,
-          child: Semantics(
-            button: true,
-            label: 'Back from map',
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _closeMap(context),
-              child: Container(
-                width: 36,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .92),
-                  borderRadius: BorderRadius.circular(17),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x18000000),
-                      blurRadius: 9,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 17,
-                  color: Color(0xFF111318),
-                ),
-              ),
-            ),
-          ),
-        ),
-
         if (buildSha.isNotEmpty)
           Positioned(
             top: top + 82,
