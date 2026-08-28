@@ -549,7 +549,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       Color(0xB8000000),
                     ],
                     stops: [0, .48, 1],
-                  ],
+                  ),
                 ),
               ),
             ),
