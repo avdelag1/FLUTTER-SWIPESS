@@ -1,0 +1,33 @@
+name: Profile routing compile fix
+
+on:
+  push:
+    branches:
+      - fix/dashboard-whisper-accuracy
+    paths:
+      - .github/workflows/one-shot-profile-routing-compile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/dashboard-whisper-accuracy
+          fetch-depth: 0
+
+      - name: Apply missing AppPaths import
+        run: python3 .github/patch_missing_apppaths_import.py
+
+      - name: Commit source fix
+        run: |
+          git config user.name "Swipess Compile Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(profile): restore AppPaths import for edit profile routing"
+          git push origin HEAD:fix/dashboard-whisper-accuracy
