@@ -506,35 +506,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
             Positioned(
               bottom: 8,
               right: 8,
-              child: Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.enableVideo && _hasVideo) ...[
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        AppHaptics.selection();
-                        _toggleVideoPreview();
-                      },
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(110),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          _videoPreviewEnabled
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          color: Colors.white,
-                          size: 15,
-                        ),
-                      ),
-                    ),
-                    if (widget.showMute) const SizedBox(width: 6),
-                  ],
                   if (widget.showMute)
                     GestureDetector(
                       onTap: () {
@@ -568,6 +542,33 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia> {
                         ),
                       ),
                     ),
+                  if (widget.showMute && widget.enableVideo && _hasVideo)
+                    const SizedBox(height: 4),
+                  if (widget.enableVideo && _hasVideo)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        AppHaptics.selection();
+                        _toggleVideoPreview();
+                      },
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withAlpha(110),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _videoPreviewEnabled
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 15,
+                        ),
+                      ),
+                    ),
+
                 ],
               ),
             ),
