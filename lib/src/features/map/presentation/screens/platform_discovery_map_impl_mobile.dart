@@ -103,14 +103,14 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
 
   Widget _loading() {
     return const Material(
-      color: Color(0xFFF1F4F7),
+      color: Color(0xFF06182B),
       child: Center(
         child: SizedBox(
           width: 26,
           height: 26,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Color(0xFF111318),
+            color: Color(0xFFFF4D78),
           ),
         ),
       ),
