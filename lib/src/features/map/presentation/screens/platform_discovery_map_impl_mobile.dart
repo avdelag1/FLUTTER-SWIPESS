@@ -178,7 +178,9 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
     // transparent, which exposed the dashboard underneath and looked exactly
     // like the map had crashed/closed before reappearing a few seconds later.
     return ColoredBox(
-      color: const Color(0xFFF1F4F7),
+      // Keep the route opaque and dark while Mapbox is attaching. The previous
+      // light canvas flashed as a full white frame before the first map tile.
+      color: const Color(0xFF06182B),
       child: FutureBuilder<bool>(
         future: _mapboxReady,
         builder: (context, snapshot) {
