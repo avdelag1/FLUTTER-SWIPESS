@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/profile_camera_screen.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -131,6 +132,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         monthlyBudget: parsedBudget,
       );
       ref.invalidate(currentProfileProvider);
+      ref.invalidate(mapProfilesProvider);
       if (!mounted) return;
       context.pop();
     } catch (e) {
