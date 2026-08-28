@@ -118,7 +118,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final conversations = ref.watch(conversationsProvider);
     final ink = SwipessGlassLook.ink(context);
     final muted = SwipessGlassLook.muted(context);
-    final isLight = SwipessGlassLook.isLight(context);
 
     return Scaffold(
       backgroundColor: SwipessGlassLook.canvas(context),
@@ -154,7 +153,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                                 style: GoogleFonts.plusJakartaSans(
                                   color: muted,
                                   fontSize: 10.5,
-                                  fontWeight: FontWeight.w650,
+                                  fontWeight: FontWeight.w600,
                                   letterSpacing: .15,
                                 ),
                               ),
@@ -299,10 +298,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             ],
                             Expanded(
                               child: filtered.isEmpty
-                                  ? _EmptyInbox(
-                                      archived: _filter == 'archived',
-                                      isLight: isLight,
-                                    )
+                                  ? _EmptyInbox(archived: _filter == 'archived')
                                   : ListView.separated(
                                       keyboardDismissBehavior:
                                           ScrollViewKeyboardDismissBehavior.onDrag,
@@ -482,7 +478,7 @@ class _ConversationTile extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         color: muted,
                         fontSize: 11.5,
-                        fontWeight: unread ? FontWeight.w750 : FontWeight.w550,
+                        fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                     if (conversation.listingTag?.isNotEmpty == true) ...[
@@ -500,7 +496,7 @@ class _ConversationTile extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             color: SwipessGlassLook.accent,
                             fontSize: 8.8,
-                            fontWeight: FontWeight.w850,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -702,7 +698,7 @@ class _FilterPill extends StatelessWidget {
                   ? SwipessGlassLook.accent
                   : SwipessGlassLook.ink(context),
               fontSize: 9.3,
-              fontWeight: FontWeight.w850,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -779,10 +775,9 @@ class _InboxLoading extends StatelessWidget {
 }
 
 class _EmptyInbox extends StatelessWidget {
-  const _EmptyInbox({required this.archived, required this.isLight});
+  const _EmptyInbox({required this.archived});
 
   final bool archived;
-  final bool isLight;
 
   @override
   Widget build(BuildContext context) {
@@ -817,7 +812,7 @@ class _EmptyInbox extends StatelessWidget {
               style: GoogleFonts.plusJakartaSans(
                 color: SwipessGlassLook.ink(context),
                 fontSize: 17,
-                fontWeight: FontWeight.w850,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 6),
@@ -830,7 +825,7 @@ class _EmptyInbox extends StatelessWidget {
                 color: SwipessGlassLook.muted(context),
                 fontSize: 11.5,
                 height: 1.45,
-                fontWeight: FontWeight.w550,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
