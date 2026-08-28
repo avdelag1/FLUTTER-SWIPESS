@@ -1,0 +1,81 @@
+name: Route remaining custom back controls globally
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch custom screen back controls
+        run: |
+          SETTINGS=lib/src/features/profile/presentation/screens/settings_screen.dart
+          TOURS=lib/src/features/video_tours/presentation/screens/video_tours_screen.dart
+          PROFILE=lib/src/features/profile/presentation/screens/profile_detail_screen.dart
+          NOTIFS=lib/src/features/notifications/presentation/screens/notifications_screen.dart
+          VAP=lib/src/features/profile/presentation/screens/vap_id_screen.dart
+          MAP=lib/src/features/map/presentation/screens/live_map_screen.dart
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$SETTINGS"
+          perl -0pi -e 's#child: _RoundBack\(\s+onTap: \(\) \{.*?\s+\},\s+\),#child: _RoundBack(\n                        onTap: () => NavBack.popOrGo(context),\n                      ),#s' "$SETTINGS"
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$TOURS"
+          perl -0pi -e 's#onPressed: \(\) => Navigator\.of\(context\)\.pop\(\),#onPressed: () => NavBack.popOrGo(context),#g' "$TOURS"
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$PROFILE"
+          perl -0pi -e 's#(_Round\(\s+icon: Icons\.arrow_back_ios_new_rounded,\s+)onTap: \(\) \{.*?\s+\},#$1onTap: () => NavBack.popOrGo(context),#s' "$PROFILE"
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';#import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$NOTIFS"
+          perl -0pi -e 's#\(\) => Navigator\.of\(context\)\.maybePop\(\)#() => NavBack.popOrGo(context)#g' "$NOTIFS"
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';#import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$VAP"
+          perl -0pi -e 's#(_PearlRoundBtn\(\s+icon: Icons\.close_rounded,\s+tooltip: [^\n]+,\s+)onTap: \(\) \{.*?\s+\},#$1onTap: () => NavBack.popOrGo(context),#s' "$VAP"
+
+          perl -0pi -e "s#import 'package:flutter_swipes/src/core/routing/app_paths.dart';#import 'package:flutter_swipes/src/core/routing/app_paths.dart';\nimport 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';#" "$MAP"
+          perl -0pi -e 's#    final navigator = Navigator\.of\(context\);\n    if \(navigator\.canPop\(\)\) \{\n      navigator\.pop\(\);\n      return;\n    \}\n\n    context\.go\(AppPaths\.clientDashboard\);#    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);#' "$MAP"
+          perl -0pi -e 's#  VoidCallback _defaultClose\(BuildContext context\) => \(\) \{.*?\n  \};#  VoidCallback _defaultClose(BuildContext context) => () =>\n      NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);#s' "$MAP"
+          sed -i "/package:go_router\/go_router.dart/d" "$MAP"
+
+          if ! grep -Eq 'context\.(go|push|replace)|GoRouter' "$PROFILE"; then
+            sed -i "/package:go_router\/go_router.dart/d" "$PROFILE"
+          fi
+
+      - name: Verify custom back controls
+        run: |
+          SETTINGS=lib/src/features/profile/presentation/screens/settings_screen.dart
+          TOURS=lib/src/features/video_tours/presentation/screens/video_tours_screen.dart
+          PROFILE=lib/src/features/profile/presentation/screens/profile_detail_screen.dart
+          NOTIFS=lib/src/features/notifications/presentation/screens/notifications_screen.dart
+          VAP=lib/src/features/profile/presentation/screens/vap_id_screen.dart
+          MAP=lib/src/features/map/presentation/screens/live_map_screen.dart
+
+          grep -q 'NavBack.popOrGo(context)' "$SETTINGS"
+          test "$(grep -c 'onPressed: () => NavBack.popOrGo(context)' "$TOURS")" -eq 2
+          grep -q 'NavBack.popOrGo(context)' "$PROFILE"
+          test "$(grep -c 'NavBack.popOrGo(context)' "$NOTIFS")" -ge 2
+          grep -q 'NavBack.popOrGo(context)' "$VAP"
+          test "$(grep -c 'NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard)' "$MAP")" -eq 2
+
+      - name: Commit patches
+        run: |
+          git config user.name "Swipess Fix Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            lib/src/features/profile/presentation/screens/settings_screen.dart \
+            lib/src/features/video_tours/presentation/screens/video_tours_screen.dart \
+            lib/src/features/profile/presentation/screens/profile_detail_screen.dart \
+            lib/src/features/notifications/presentation/screens/notifications_screen.dart \
+            lib/src/features/profile/presentation/screens/vap_id_screen.dart \
+            lib/src/features/map/presentation/screens/live_map_screen.dart
+          git commit -m "fix(nav): route custom headers through global back helper"
+          git push origin HEAD:main
