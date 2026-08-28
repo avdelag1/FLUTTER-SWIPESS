@@ -151,7 +151,21 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   double? _userLat;
   double? _userLng;
   int _renderGeneration = 0;
+  Timer? _renderDebounce;
   final Set<String> _hidden = {};
+
+  @override
+  void dispose() {
+    _renderDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRender() {
+    _renderDebounce?.cancel();
+    _renderDebounce = Timer(const Duration(milliseconds: 140), () {
+      if (mounted) unawaited(_render());
+    });
+  }
 
   @override
   void initState() {
@@ -276,25 +290,25 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   }
 
   Future<Uint8List> _makePin(_Kind kind) async {
-    // Keep the marker readable at the wide camera distances used by the
-    // globe/local-map transition. The old 88px asset rendered as a tiny dot
-    // on iPhone and gave every category the same visual weight.
-    const center = ui.Offset(64, 56);
+    // Render at 192px (@1.5x the previous 128px) so pins stay crisp and
+    // readable on iPhone Retina at the wide zoom levels used by the globe.
+    const size = 192.0;
+    const center = ui.Offset(96, 84);
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
 
     canvas.drawCircle(
-      center.translate(0, 5),
-      43,
+      center.translate(0, 7),
+      64,
       ui.Paint()
         ..color = kind.color.withAlpha(58)
-        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 10),
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 14),
     );
-    canvas.drawCircle(center, 40, ui.Paint()..color = Colors.white);
-    canvas.drawCircle(center, 35, ui.Paint()..color = kind.color);
+    canvas.drawCircle(center, 60, ui.Paint()..color = Colors.white);
+    canvas.drawCircle(center, 52, ui.Paint()..color = kind.color);
     canvas.drawCircle(
-      center.translate(-10, -11),
-      13,
+      center.translate(-15, -16),
+      19,
       ui.Paint()..color = Colors.white.withAlpha(42),
     );
 
@@ -303,7 +317,8 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
         text: String.fromCharCode(kind.icon.codePoint),
         style: TextStyle(
           color: Colors.white,
-          fontSize: 29,
+          fontSize: 43,
+          fontWeight: FontWeight.w600,
           fontFamily: kind.icon.fontFamily,
           package: kind.icon.fontPackage,
         ),
@@ -318,20 +333,20 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
       ),
     );
 
-    final image = await recorder.endRecording().toImage(128, 128);
+    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
     return (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
         .asUint8List();
   }
 
   Future<Uint8List> _makeUserPin() async {
-    const size = 76.0;
+    const size = 114.0;
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
-    const c = ui.Offset(38, 38);
-    canvas.drawCircle(c, 27, ui.Paint()..color = const Color(0x24147DFF));
-    canvas.drawCircle(c, 17, ui.Paint()..color = Colors.white);
-    canvas.drawCircle(c, 12, ui.Paint()..color = const Color(0xFF147DFF));
-    final image = await recorder.endRecording().toImage(76, 76);
+    const c = ui.Offset(57, 57);
+    canvas.drawCircle(c, 40, ui.Paint()..color = const Color(0x24147DFF));
+    canvas.drawCircle(c, 25, ui.Paint()..color = Colors.white);
+    canvas.drawCircle(c, 18, ui.Paint()..color = const Color(0xFF147DFF));
+    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
     return (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
         .asUint8List();
   }
@@ -550,7 +565,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           PointAnnotationOptions(
             geometry: _point(_userLat!, _userLng!),
             image: _userImage,
-            iconSize: 1,
+            iconSize: 1.2,
             symbolSortKey: 10000,
           ),
         );
@@ -560,7 +575,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           PointAnnotationOptions(
             geometry: _point(item.lat, item.lng),
             image: _pinImages[item.kind],
-            iconSize: item.key == _selected ? 1.14 : 1.0,
+            iconSize: item.key == _selected ? 1.62 : 1.42,
             symbolSortKey: item.key == _selected ? 9000 : 5000,
           ),
       ];
@@ -725,15 +740,15 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           oldValue.radiusKm != next.radiusKm) {
         _selected = null;
         unawaited(_flyToLocation(next));
-        unawaited(_render());
+        _scheduleRender();
       }
     });
-    ref.listen(mapListingsProvider, (_, __) => unawaited(_render()));
-    ref.listen(mapProfilesProvider, (_, __) => unawaited(_render()));
-    ref.listen(eventsListProvider, (_, __) => unawaited(_render()));
-    ref.listen(likedListingIdsProvider, (_, __) => unawaited(_render()));
-    ref.listen(likedPeopleIdsProvider, (_, __) => unawaited(_render()));
-    ref.listen(likedEventIdsProvider, (_, __) => unawaited(_render()));
+    ref.listen(mapListingsProvider, (_, __) => _scheduleRender());
+    ref.listen(mapProfilesProvider, (_, __) => _scheduleRender());
+    ref.listen(eventsListProvider, (_, __) => _scheduleRender());
+    ref.listen(likedListingIdsProvider, (_, __) => _scheduleRender());
+    ref.listen(likedPeopleIdsProvider, (_, __) => _scheduleRender());
+    ref.listen(likedEventIdsProvider, (_, __) => _scheduleRender());
 
     final items = _items();
     final selected = _selectedItem;

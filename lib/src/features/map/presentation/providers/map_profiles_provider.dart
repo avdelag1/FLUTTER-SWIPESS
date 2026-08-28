@@ -11,10 +11,10 @@ final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
   final client = Supabase.instance.client;
   final decidedIdsFuture = _fetchDecidedTargetIds(client, 'profile');
   final limit = loc.radiusKm >= 5000
-      ? 1000
+      ? 400
       : loc.radiusKm >= 500
-      ? 600
-      : 300;
+      ? 250
+      : 180;
 
   final merged = <String, Profile>{};
   final cityProfilesFuture = _fetchRegisteredCityProfiles(

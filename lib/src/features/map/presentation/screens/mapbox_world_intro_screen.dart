@@ -88,7 +88,7 @@ class _MapboxWorldIntroScreenState
     _startTimer?.cancel();
 
     // Keep just enough globe hero time to register visually, then arrive fast.
-    _startTimer = Timer(const Duration(milliseconds: 320), () async {
+    _startTimer = Timer(const Duration(milliseconds: 220), () async {
       if (!mounted || _completed) return;
       final map = _map;
       if (map == null) {
@@ -105,7 +105,7 @@ class _MapboxWorldIntroScreenState
             pitch: loc.radiusKm <= 50 ? 38 : 18,
             bearing: loc.radiusKm <= 50 ? 18 : 0,
           ),
-          MapAnimationOptions(duration: 1450, startDelay: 0),
+          MapAnimationOptions(duration: 1100, startDelay: 0),
         );
       } catch (_) {
         _finish();

@@ -16,7 +16,6 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/live_map_screen.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/direct_request_sheet.dart';
@@ -235,8 +234,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       },
       onOpenFilters: () => FilterBottomSheet.show(context),
       onOpenMap: () {
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const LiveMapScreen()));
+        ref.read(overlayModalsProvider.notifier).openPassportMap();
       },
       onOpenAi: () => showMagicAiProfileSheet(context),
       onCategoryChange: (cat) {
@@ -370,11 +368,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                                 ref
                                     .read(chromeRevealProvider.notifier)
                                     .reveal();
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const LiveMapScreen(),
-                                  ),
-                                );
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .openPassportMap();
                               },
                               onInsights: (listing) {
                                 ref

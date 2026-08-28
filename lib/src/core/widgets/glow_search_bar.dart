@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
@@ -444,7 +445,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     } else if (has(
       r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b',
     )) {
-      context.go(AppPaths.map);
+      ref.read(overlayModalsProvider.notifier).openPassportMap();
     } else if (has(
       r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b',
     )) {

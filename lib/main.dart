@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/screens/app_splash_screen.dart';
+import 'package:flutter_swipes/src/core/performance/app_performance_bootstrap.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
@@ -18,6 +19,7 @@ import 'src/app.dart';
 
 Future<void> main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
+  AppPerformanceBootstrap.configureImagePipeline();
 
   // Flutter's release ErrorWidget paints a large grey rectangle when a widget
   // throws during build/layout. That is useful for debugging but unacceptable
@@ -126,6 +128,7 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         // restoration/fetching before the user taps Map so the native map can
         // open immediately instead of waiting on configuration at tap time.
         if (!kIsWeb) unawaited(MapboxRuntimeConfig.ensureConfigured());
+        unawaited(AppPerformanceBootstrap.warmInteractiveSurfaces(widget.container));
         unawaited(flushOfflineSwipeQueue());
         unawaited(_initializePayments());
       });

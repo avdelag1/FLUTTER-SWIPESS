@@ -209,7 +209,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 ),
                 if (isEvents)
-                  GestureDetector(
+                  TweenAnimationBuilder<double>(
+                    key: const ValueKey('events-panel'),
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, progress, child) => Transform.translate(
+                      offset: Offset(0, 28 * (1 - progress)),
+                      child: Opacity(opacity: progress, child: child),
+                    ),
+                    child: GestureDetector(
                     onVerticalDragUpdate: (details) {
                       // Only track downward drag — upward scroll belongs to
                       // the events screen's own ScrollView.
@@ -281,6 +290,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               ),
                             ),
                           ),
+                  ),
                   ),
                 if (!isDashboard && !isEvents)
                   isProfile

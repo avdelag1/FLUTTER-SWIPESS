@@ -9,10 +9,10 @@ final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
   final client = Supabase.instance.client;
   final decidedIdsFuture = _fetchDecidedTargetIds(client, 'listing');
   final limit = loc.radiusKm >= 5000
-      ? 1000
+      ? 400
       : loc.radiusKm >= 500
-      ? 600
-      : 300;
+      ? 250
+      : 180;
 
   final merged = <String, Listing>{};
   var rpcSucceeded = false;

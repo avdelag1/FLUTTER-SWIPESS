@@ -57,7 +57,11 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _showIntro = !_nativeMapIntroShownThisSession;
-    _mapboxReady = _configureMapbox();
+    // Token is often configured at cold start. Skip the async bootstrap frame
+    // so Map open never flashes a blank/white canvas on iOS.
+    _mapboxReady = MapboxRuntimeConfig.isConfigured
+        ? Future<bool>.value(true)
+        : _configureMapbox();
   }
 
   Future<bool> _configureMapbox() => MapboxRuntimeConfig.ensureConfigured()
@@ -119,7 +123,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
 
   Widget _unavailable() {
     return Material(
-      color: const Color(0xFFF1F4F7),
+      color: const Color(0xFF06182B),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -130,14 +134,14 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
                 const Icon(
                   Icons.map_outlined,
                   size: 34,
-                  color: Color(0xFF111318),
+                  color: Colors.white,
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   'Map could not connect',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFF111318),
+                    color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
                   ),
@@ -147,7 +151,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
                   'Check your connection and try again.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFF5F6670),
+                    color: Color(0xFFB8C4D0),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),

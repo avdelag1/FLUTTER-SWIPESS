@@ -101,6 +101,28 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     super.dispose();
   }
 
+  Widget _buildMapLayer(OverlayModals modals, bool mapVisible) {
+    return IgnorePointer(
+      ignoring: !mapVisible,
+      child: TickerMode(
+        enabled: mapVisible,
+        child: InheritedGoRouter(
+          goRouter: _router,
+          child: PlatformDiscoveryMapScreen(
+            onClose: () {
+              setState(() {
+                _mapHeldForDetail = false;
+                _mapReturnRoute = null;
+              });
+              ref.read(overlayModalsProvider.notifier).closePassportMap();
+            },
+            showCitiesOnOpen: modals.mapShowCities,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
@@ -124,28 +146,18 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
             // the dashboard's light frame and horizontal tray shadow flashing
             // through during the first native/web map frame.
             child: ColoredBox(
-              color: Color(0xFF06182B),
-              child: Offstage(
-                offstage: !mapVisible,
-                child: TickerMode(
-                enabled: mapVisible,
-                child: InheritedGoRouter(
-                  goRouter: _router,
-                  child: PlatformDiscoveryMapScreen(
-                    onClose: () {
-                      setState(() {
-                        _mapHeldForDetail = false;
-                        _mapReturnRoute = null;
-                      });
-                      ref
-                          .read(overlayModalsProvider.notifier)
-                          .closePassportMap();
-                    },
-                    showCitiesOnOpen: modals.mapShowCities,
-                  ),
-                ),
-              ),
-            ),
+              color: const Color(0xFF06182B),
+              child: _mapHeldForDetail
+                  ? Offstage(
+                      offstage: true,
+                      child: _buildMapLayer(modals, mapVisible),
+                    )
+                  : AnimatedOpacity(
+                      opacity: mapVisible ? 1 : 0,
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      child: _buildMapLayer(modals, mapVisible),
+                    ),
             ),
           ),
         if (modals.showConcierge)

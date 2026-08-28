@@ -148,7 +148,13 @@ class _EventDetailShell extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: CapBackButton(
-                onTap: () => context.go(AppPaths.exploreEvents),
+                onTap: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go(AppPaths.exploreEvents);
+                  }
+                },
               ),
             ),
             Expanded(
