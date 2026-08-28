@@ -265,10 +265,10 @@ class _UserBubble extends StatelessWidget {
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(8),
         ),
-        border: Border.all(color: const Color(0x667B8DFF)),
+        border: Border.all(color: const Color(0x66FF9A68)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF526EFF).withAlpha(46),
+            color: const Color(0xFFFF4D78).withAlpha(46),
             blurRadius: 18,
             offset: const Offset(0, 7),
           ),
