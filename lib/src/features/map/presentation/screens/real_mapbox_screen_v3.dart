@@ -279,8 +279,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     // Keep the marker readable at the wide camera distances used by the
     // globe/local-map transition. The old 88px asset rendered as a tiny dot
     // on iPhone and gave every category the same visual weight.
-    const canvasSize = 128.0;
-    const center = ui.Offset(64, 56);
+        const center = ui.Offset(64, 56);
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
 
