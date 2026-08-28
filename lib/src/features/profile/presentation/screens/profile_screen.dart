@@ -81,17 +81,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ref.read(myListingsProvider('all').future),
               ]);
             },
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (n) {
-                if (n is ScrollUpdateNotification) {
-                  ref.read(chromeVisibilityProvider.notifier).onScroll(
-                        pixels: n.metrics.pixels,
-                        delta: n.scrollDelta ?? 0,
-                      );
-                }
-                return false;
-              },
-              child: ListView(
+            child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(
                   parent: BouncingScrollPhysics(),
                 ),
@@ -316,7 +306,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ],
               ),
-            ),
           );
         },
       ),

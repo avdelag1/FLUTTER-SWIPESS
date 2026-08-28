@@ -164,7 +164,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final showChrome = ref.watch(chromeVisibilityProvider);
 
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    final persistentChromeVisible = showChrome && shellRouteIsCurrent;
+    // Profile is a navigation hub — keep header and dock visible while browsing it.
+    final persistentChromeVisible = isProfile
+        ? shellRouteIsCurrent
+        : (showChrome && shellRouteIsCurrent);
     final showHeader = persistentChromeVisible;
     // Events deliberately inherits the exact swipe-deck chrome cadence:
     // reveal in 360ms, hide in 500ms, same cubic curve and slide vectors.
@@ -188,7 +191,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              if (!isEvents && notification is ScrollUpdateNotification) {
+              if (!isEvents &&
+                  !isProfile &&
+                  notification is ScrollUpdateNotification) {
                 ref
                     .read(chromeVisibilityProvider.notifier)
                     .onScroll(

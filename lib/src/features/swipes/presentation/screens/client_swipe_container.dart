@@ -21,7 +21,6 @@ import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_p
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/direct_request_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_screen.dart';
 
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/chrome_reveal_provider.dart';
@@ -439,11 +438,12 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                           firstName: profile?.name.split(' ').first,
                           avatarUrl: profile?.avatarUrl,
                           onProfileTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const ProfileScreen(),
-                              ),
-                            );
+                            final rootNav =
+                                Navigator.of(context, rootNavigator: true);
+                            if (rootNav.canPop()) {
+                              rootNav.pop();
+                            }
+                            context.go(AppPaths.clientProfile);
                           },
                         ),
                       ),
