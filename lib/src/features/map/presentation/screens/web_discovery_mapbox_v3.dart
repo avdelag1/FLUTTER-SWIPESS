@@ -739,10 +739,10 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   _mapLoaded = true;
                   _scheduleProjection();
                   if (_openingFlight) {
-                    _openingTimer = Timer(const Duration(milliseconds: 900), () {
+                    _openingTimer = Timer(const Duration(milliseconds: 500), () {
                       if (!mounted) return;
                       setState(() => _openingFlight = false);
-                      unawaited(_flyTo(loc, duration: 2800));
+                      unawaited(_flyTo(loc, duration: 1600));
                     });
                   }
                 },
@@ -763,7 +763,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
-              if (_locationPixel != null &&
+              if (!_openingFlight && _locationPixel != null &&
                   _radiusPixels != null &&
                   loc.radiusKm <= 250 &&
                   onScreen(_locationPixel!, margin: _radiusPixels!))
@@ -786,7 +786,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
-              if (_locationPixel != null && onScreen(_locationPixel!))
+              if (!_openingFlight && _locationPixel != null && onScreen(_locationPixel!))
                 Positioned(
                   left: _locationPixel!.dx - 10,
                   top: _locationPixel!.dy - 10,
@@ -794,7 +794,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                 ),
 
               // Every regular marker paints first.
-              for (final item in items)
+              if (!_openingFlight)
+                for (final item in items)
                 if (item.key != _selectedKey)
                   if (_pixels[item.key] case final Offset pixel)
                     if (onScreen(pixel))
