@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -46,13 +47,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   void _backFromProfile(BuildContext context) {
-    AppHaptics.light();
-    final nearest = Navigator.of(context);
-    if (nearest.canPop()) {
-      nearest.pop();
-      return;
-    }
-    context.go(AppPaths.clientDashboard);
+    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
   String get _label {
