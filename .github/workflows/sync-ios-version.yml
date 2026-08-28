@@ -1,0 +1,59 @@
+name: Sync iOS version from Flutter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - pubspec.yaml
+      - .github/workflows/sync-ios-version.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-ios-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync Info.plist version from pubspec.yaml
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import plistlib
+          import re
+
+          pubspec = Path('pubspec.yaml').read_text()
+          match = re.search(r'^version:\s*([^+\s]+)\+(\d+)\s*$', pubspec, re.M)
+          if not match:
+              raise SystemExit('Could not parse version: x.y.z+build from pubspec.yaml')
+
+          version, build = match.groups()
+          plist_path = Path('ios/Runner/Info.plist')
+          with plist_path.open('rb') as f:
+              data = plistlib.load(f)
+
+          data['CFBundleShortVersionString'] = version
+          data['CFBundleVersion'] = build
+
+          with plist_path.open('wb') as f:
+              plistlib.dump(data, f, sort_keys=False)
+
+          print(f'Synced iOS archive version to {version} ({build})')
+          PY
+
+      - name: Commit synchronized iOS version
+        run: |
+          if git diff --quiet -- ios/Runner/Info.plist; then
+            echo "Info.plist already matches pubspec.yaml"
+            exit 0
+          fi
+          git config user.name "swipess-version-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add ios/Runner/Info.plist
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          git commit -m "chore(ios): sync archive version to ${VERSION}"
+          git push origin main
