@@ -371,7 +371,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
           Positioned(
             right: 1,
-            bottom: safe.bottom + 4,
+            bottom: safe.bottom + 32,
             child: _EdgeGlassButton(
               icon: _chromeVisible
                   ? Icons.visibility_off_outlined
@@ -419,6 +419,8 @@ class _EventPageState extends ConsumerState<_EventPage> {
   bool? _favoritedOverride;
   bool _busy = false;
   bool _initialApplied = false;
+  IconData? _playbackFeedback;
+  Timer? _playbackFeedbackTimer;
 
   Event get event => widget.event;
   bool get _hasVideo => (event.videoUrl ?? '').trim().isNotEmpty;
@@ -515,8 +517,30 @@ class _EventPageState extends ConsumerState<_EventPage> {
 
   @override
   void dispose() {
+    _playbackFeedbackTimer?.cancel();
     _player?.dispose();
     super.dispose();
+  }
+
+  Future<void> _togglePlayback() async {
+    final player = _player;
+    if (player == null || !player.value.isInitialized) return;
+    final shouldPlay = !player.value.isPlaying;
+    try {
+      if (shouldPlay) {
+        await player.play();
+      } else {
+        await player.pause();
+      }
+      if (!mounted) return;
+      _playbackFeedbackTimer?.cancel();
+      setState(() => _playbackFeedback = shouldPlay
+          ? Icons.play_arrow_rounded
+          : Icons.pause_rounded);
+      _playbackFeedbackTimer = Timer(const Duration(milliseconds: 620), () {
+        if (mounted) setState(() => _playbackFeedback = null);
+      });
+    } catch (_) {}
   }
 
   Future<void> _toggleFavorite() async {
@@ -591,7 +615,7 @@ class _EventPageState extends ConsumerState<_EventPage> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: widget.onToggleChrome,
+      onTap: _togglePlayback,
       onDoubleTap: _toggleFavorite,
       child: Stack(
         fit: StackFit.expand,
@@ -627,6 +651,15 @@ class _EventPageState extends ConsumerState<_EventPage> {
             )
           else
             const ColoredBox(color: Color(0xFF16161C)),
+          if (ready)
+            Positioned(
+              left: 2,
+              right: 2,
+              bottom: bottom + 2,
+              height: 24,
+              child: _EventProgressScrubber(player: player),
+            ),
+
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -799,6 +832,98 @@ class _EventPageState extends ConsumerState<_EventPage> {
   }
 }
 
+class _EventProgressScrubber extends StatelessWidget {
+  const _EventProgressScrubber({required this.player});
+
+  final VideoPlayerController player;
+
+  Future<void> _seek(BuildContext context, double dx, double width) async {
+    final value = player.value;
+    if (!value.isInitialized || value.duration <= Duration.zero) return;
+    final ratio = (dx / width).clamp(0.0, 1.0);
+    await player.seekTo(
+      Duration(
+        milliseconds: (value.duration.inMilliseconds * ratio).round(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<VideoPlayerValue>(
+      valueListenable: player,
+      builder: (context, value, _) {
+        if (!value.isInitialized || value.duration <= Duration.zero) {
+          return const SizedBox.shrink();
+        }
+        final progress = (value.position.inMilliseconds /
+                value.duration.inMilliseconds)
+            .clamp(0.0, 1.0);
+        return LayoutBuilder(
+          builder: (context, constraints) => GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {},
+            onTapDown: (details) => unawaited(
+              _seek(context, details.localPosition.dx, constraints.maxWidth),
+            ),
+            onHorizontalDragUpdate: (details) => unawaited(
+              _seek(context, details.localPosition.dx, constraints.maxWidth),
+            ),
+            child: Align(
+              alignment: Alignment.center,
+              child: SizedBox(
+                height: 4,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(92),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: progress,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF4D78), Color(0xFFFF9A68)],
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x99FF4D78),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: (constraints.maxWidth * progress - 4)
+                          .clamp(-4.0, constraints.maxWidth - 4),
+                      top: -2,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _SavedEventsButton extends StatelessWidget {
   const _SavedEventsButton({required this.count, required this.onTap});
 
@@ -829,9 +954,9 @@ class _SavedEventsButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
-                Icons.favorite_rounded,
+                Icons.bookmarks_rounded,
                 size: 19,
-                color: Color(0xFFFF3040),
+                color: Color(0xFFFF8A65),
               ),
               if (count > 0) ...[
                 const SizedBox(width: 4),
