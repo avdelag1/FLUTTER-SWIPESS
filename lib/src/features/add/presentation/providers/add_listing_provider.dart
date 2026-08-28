@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 class AddListingNotifier extends Notifier<ListingDraft> {
@@ -200,6 +201,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         );
       }
       ref.invalidate(swipeListingsProvider);
+      ref.invalidate(mapListingsProvider);
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
       state = const ListingDraft();
