@@ -56,7 +56,7 @@ async function requireAccess(req: Request) {
   }
   const { data: allowed, error: entitlementError } = await client.rpc("rpc_has_premium_feature_access");
   if (entitlementError) {
-    console.error("[ai-concierge-v75] entitlement", entitlementError.message);
+    console.error("[ai-concierge-v78] entitlement", entitlementError.message);
     return { error: json(503, { error: "Could not verify AI access. Please retry." }, "swipess", "entitlement-error") };
   }
   if (allowed !== true) {
@@ -112,11 +112,41 @@ function recentCasualCount(history: Msg[]) {
     .filter((m) => isCasualLowValue(m.content)).length;
 }
 
-async function loadContext(client: any, query: string) {
+function finiteOrNull(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function loadLocalBrain(client: any, query: string, body: any) {
+  try {
+    const city = body?.locationContext?.passportLabel?.toString().trim() || null;
+    const lat = finiteOrNull(body?.locationContext?.userLatitude);
+    const lon = finiteOrNull(body?.locationContext?.userLongitude);
+    const { data, error } = await client.rpc("rpc_search_local_brain", {
+      p_query: query,
+      p_city: city,
+      p_lat: lat,
+      p_lon: lon,
+      p_limit: 8,
+    });
+    if (error) {
+      console.error("[ai-concierge-v78] local brain context", error.message);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("[ai-concierge-v78] local brain context", String(e));
+    return [];
+  }
+}
+
+async function loadContext(client: any, query: string, body: any) {
   const category = detectCategory(query);
   let listings: any[] = [];
   let events: any[] = [];
   let profiles: any[] = [];
+
+  const localBrain = await loadLocalBrain(client, query, body);
 
   if (category) {
     try {
@@ -130,7 +160,7 @@ async function loadContext(client: any, query: string) {
         .limit(3);
       if (!error && Array.isArray(data)) listings = data;
     } catch (e) {
-      console.error("[ai-concierge-v75] listings context", String(e));
+      console.error("[ai-concierge-v78] listings context", String(e));
     }
   }
 
@@ -144,7 +174,7 @@ async function loadContext(client: any, query: string) {
         .limit(3);
       if (!error && Array.isArray(data)) events = data;
     } catch (e) {
-      console.error("[ai-concierge-v75] events context", String(e));
+      console.error("[ai-concierge-v78] events context", String(e));
     }
   }
 
@@ -158,11 +188,11 @@ async function loadContext(client: any, query: string) {
         .limit(3);
       if (!error && Array.isArray(data)) profiles = data;
     } catch (e) {
-      console.error("[ai-concierge-v75] profiles context", String(e));
+      console.error("[ai-concierge-v78] profiles context", String(e));
     }
   }
 
-  return { category, listings, events, profiles };
+  return { category, listings, events, profiles, localBrain };
 }
 
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
@@ -181,10 +211,12 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     "Never mention model/provider implementation details.",
     fresh ? "This request may depend on current information. Prefer grounded web information when available and clearly distinguish live web results from SWIPESS marketplace data." : "",
     "When live SWIPESS context is present, use it as truth and preserve the structured tags exactly.",
+    "CURATED SWIPESS LOCAL BRAIN is trusted admin-maintained local knowledge about people, professionals, businesses, services and places. When matching Local Brain entries are present, use them as the primary local answer. Never invent missing details and never imply that a Local Brain person is a registered Swipess user unless other context proves it. You may share only the fields supplied in the Local Brain context.",
     "Useful SWIPESS categories: properties, workers/services, yachts, motorcycles, bicycles, events, people/seekers, legal, documents.",
     location ? `Current discovery location: ${location}.` : "",
     character ? `Requested persona: ${character}. Keep that tone while staying accurate.` : "",
     casualCount >= 3 ? "The recent conversation already contains several casual/joke requests. Keep any further entertainment answer very short and redirect toward a useful task." : "",
+    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
     ctx.listings.length ? `LIVE SWIPESS LISTINGS:\n${JSON.stringify(ctx.listings)}` : "",
     ctx.events.length ? `LIVE SWIPESS EVENTS:\n${JSON.stringify(ctx.events)}` : "",
     ctx.profiles.length ? `LIVE SWIPESS PEOPLE:\n${JSON.stringify(ctx.profiles)}` : "",
@@ -258,6 +290,20 @@ async function minimax(messages: Msg[]) {
 }
 
 function emergencyReply(query: string, ctx: any) {
+  if (ctx.localBrain.length) {
+    const rows = ctx.localBrain.map((entry: any) => {
+      const place = [entry.neighborhood, entry.city].filter(Boolean).join(", ");
+      const contact = [
+        entry.phone ? `Phone: ${entry.phone}` : "",
+        entry.whatsapp ? `WhatsApp: ${entry.whatsapp}` : "",
+        entry.instagram ? `Instagram: ${entry.instagram}` : "",
+        entry.website ? `Website: ${entry.website}` : "",
+      ].filter(Boolean).join(" · ");
+      return [`${entry.name} — ${entry.category}`, place, entry.description, entry.recommendation_note, contact]
+        .filter(Boolean).join("\n");
+    });
+    return `I found this in the Swipess Local Brain:\n\n${rows.join("\n\n")}`;
+  }
   if (ctx.listings.length) {
     return `I found live ${ctx.category ?? "matching"} options for you.\n[LISTINGS:${JSON.stringify(ctx.listings)}]`;
   }
@@ -278,7 +324,7 @@ function emergencyReply(query: string, ctx: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-flexible" }, "swipess", "health");
+  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-flexible-local-brain" }, "swipess", "health");
   if (req.method !== "POST") return json(405, { error: "POST required" });
   if (Number(req.headers.get("content-length") || "0") > 128 * 1024) return json(413, { error: "Request too large" });
 
@@ -292,7 +338,7 @@ Deno.serve(async (req) => {
     const lastUser = [...history].reverse().find((m) => m.role === "user")?.content || "";
     if (!lastUser) return json(400, { error: "At least one user message is required" });
 
-    const ctx = await loadContext(client, lastUser);
+    const ctx = await loadContext(client, lastUser, body);
     const fresh = needsFreshWeb(lastUser);
     const system = contextPrompt(ctx, body, history, lastUser);
     const modelMessages: Msg[] = [
@@ -323,15 +369,15 @@ Deno.serve(async (req) => {
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         errors.push(`${provider}:${message}`);
-        console.error(`[ai-concierge-v75] ${provider} failed`, message);
+        console.error(`[ai-concierge-v78] ${provider} failed`, message);
       }
     }
 
-    console.error("[ai-concierge-v75] all providers failed", errors.join(" | "));
+    console.error("[ai-concierge-v78] all providers failed", errors.join(" | "));
     const local = emergencyReply(lastUser, ctx);
     return json(200, { choices: [{ message: { content: local } }] }, "swipess-local", "emergency-local");
   } catch (e) {
-    console.error("[ai-concierge-v75] fatal", e instanceof Error ? e.message : String(e));
+    console.error("[ai-concierge-v78] fatal", e instanceof Error ? e.message : String(e));
     return json(200, {
       choices: [{ message: { content: "I’m here. Ask me normally, or tell me what you want to find on SWIPESS." } }],
     }, "swipess-local", "fatal-local");
