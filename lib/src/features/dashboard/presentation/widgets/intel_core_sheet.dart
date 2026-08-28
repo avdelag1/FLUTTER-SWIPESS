@@ -72,9 +72,9 @@ class _IntelCoreSheet extends ConsumerStatefulWidget {
 }
 
 class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
-  static const _aiBlue = Color(0xFF2563EB);
-  static const _aiBlueSoft = Color(0xFF60A5FA);
-  static const _aiCyan = Color(0xFF38BDF8);
+  static const _aiBlue = Color(0xFFFF4D78);
+  static const _aiBlueSoft = Color(0xFFFF9A68);
+  static const _aiCyan = Color(0xFFFFD166);
 
   final _controller = TextEditingController();
   final _scroll = ScrollController();
