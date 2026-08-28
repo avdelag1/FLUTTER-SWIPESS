@@ -416,9 +416,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   String _normalizeVoiceTranscript(String raw) {
     var text = raw;
     const fixes = <(String, String)>[
-      ('context', 'contact'),
-      ('contacts info', 'contact'),
-      ('con tact', 'contact'),
       ('whats app', 'whatsapp'),
       ("what's app", 'whatsapp'),
     ];
