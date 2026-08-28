@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_local_brain_card.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -71,7 +72,8 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
 
   bool _hasStructuredPayload(ConciergeParse? parsed) {
     if (parsed == null) return false;
-    return parsed.listings.isNotEmpty ||
+    return parsed.localBrain.isNotEmpty ||
+        parsed.listings.isNotEmpty ||
         parsed.profiles.isNotEmpty ||
         parsed.events.isNotEmpty ||
         parsed.navPaths.isNotEmpty ||
@@ -85,6 +87,11 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
     if (clean.isNotEmpty) return clean;
 
     if (parsed != null && _hasStructuredPayload(parsed)) {
+      if (parsed.localBrain.isNotEmpty) {
+        return parsed.localBrain.length == 1
+            ? 'I found a trusted local match for you.'
+            : 'I found trusted local matches for you.';
+      }
       if (parsed.profiles.isNotEmpty) {
         return 'I found matching people for you.';
       }
@@ -239,6 +246,8 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                 ),
               ),
             if (!isUser && parsed != null) ...[
+              for (final entry in parsed.localBrain)
+                IntelLocalBrainCard(data: entry),
               if (!preferProfiles)
                 for (final listing in parsed.listings)
                   Padding(
