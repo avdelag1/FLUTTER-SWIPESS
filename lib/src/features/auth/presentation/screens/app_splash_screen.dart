@@ -1,34 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
 
-/// Minimal Swipess startup surface: thin wordmark + three-dot loader.
-/// Keep this visually aligned with the web bootstrap so startup feels like one
-/// continuous branded moment instead of switching between different loaders.
-class AppSplashScreen extends StatefulWidget {
+/// One consistent startup surface shared by web and native boot.
+/// The native launch screen, this frame, and the welcome page all use the same
+/// brand mark so startup feels continuous instead of changing logos.
+class AppSplashScreen extends StatelessWidget {
   const AppSplashScreen({super.key});
-
-  @override
-  State<AppSplashScreen> createState() => _AppSplashScreenState();
-}
-
-class _AppSplashScreenState extends State<AppSplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,53 +31,20 @@ class _AppSplashScreenState extends State<AppSplashScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 6.8),
-                  child: Text(
-                    'SWIPESS',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      height: 1,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: 6.8,
+                const SwipessLogo(
+                  width: 220,
+                  variant: SwipessLogoVariant.white,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFFFF4D78),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(3, (index) {
-                        final phase =
-                            (_controller.value - (index * 0.13)) % 1.0;
-                        double pulse = 0;
-                        if (phase < 0.6) {
-                          final local = phase / 0.6;
-                          pulse = local <= 0.5 ? local * 2 : (1 - local) * 2;
-                        }
-                        return Padding(
-                          padding: EdgeInsets.only(right: index == 2 ? 0 : 7),
-                          child: Transform.translate(
-                            offset: Offset(0, -5 * pulse),
-                            child: Opacity(
-                              opacity: 0.38 + (0.62 * pulse),
-                              child: const DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: SizedBox(width: 4, height: 4),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    );
-                  },
                 ),
               ],
             ),
