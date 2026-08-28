@@ -102,11 +102,11 @@ final likedPeopleIdsProvider = FutureProvider<Set<String>>((ref) async {
   return _fetchLikedTargetIds('profile');
 });
 
-/// Events use the same generic likes table but do not need a full event model
-/// just to keep discovery unseen-only. The ID set is enough for every map
-/// renderer to remove saved events immediately.
+/// Events are intentionally persistent on the map. Unlike marketplace cards,
+/// they are time-based context: saving an event should not erase it from the
+/// geographic/event layer while it is still relevant.
 final likedEventIdsProvider = FutureProvider<Set<String>>(
-  (ref) => _fetchLikedTargetIds('event'),
+  (ref) async => const <String>{},
 );
 
 class InterestedClientsNotifier extends AsyncNotifier<List<InterestedClient>> {
