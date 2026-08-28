@@ -11,7 +11,8 @@ import 'package:flutter_swipes/src/features/map/presentation/providers/map_profi
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Global runtime tuning so photos, map pins, and feeds feel instant on iOS.
+/// Global runtime tuning so photos, map pins, feeds, and dashboard destinations
+/// are already warm by the time the user taps them.
 abstract final class AppPerformanceBootstrap {
   static bool _configured = false;
 
@@ -29,6 +30,11 @@ abstract final class AppPerformanceBootstrap {
   }
 
   /// Quietly warm the surfaces users open most often right after dashboard boot.
+  ///
+  /// These providers are intentionally non-autoDispose, so one background read
+  /// keeps the fetched deck in the Riverpod container. A later quick-filter tap
+  /// can therefore paint its destination immediately instead of waiting for the
+  /// first Supabase round-trip after navigation.
   static Future<void> warmInteractiveSurfaces(ProviderContainer container) async {
     configureImagePipeline();
 
@@ -43,7 +49,18 @@ abstract final class AppPerformanceBootstrap {
       _safe(() => container.read(mapProfilesProvider.future)),
       _safe(() => container.read(eventsListProvider.future)),
       _safe(() => container.read(dashboardVideoEventsProvider.future)),
+
+      // Warm every marketplace quick filter, not only Properties. This is
+      // deliberately scheduled after the first usable frame in main.dart so it
+      // improves tap latency without delaying app startup.
       _safe(() => container.read(swipeListingsProvider('property').future)),
+      _safe(() => container.read(swipeListingsProvider('services').future)),
+      _safe(() => container.read(swipeListingsProvider('yacht').future)),
+      _safe(() => container.read(swipeListingsProvider('motorcycle').future)),
+      _safe(() => container.read(swipeListingsProvider('bicycle').future)),
+      _safe(() => container.read(swipeListingsProvider('recommended').future)),
+      _safe(() => container.read(swipeListingsProvider('popular').future)),
+
       _safe(() => container.read(likedListingIdsProvider.future)),
     ]);
   }
