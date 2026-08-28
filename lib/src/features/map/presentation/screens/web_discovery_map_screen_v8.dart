@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
@@ -422,17 +423,12 @@ class _WebDiscoveryMapScreenV8State
   }
 
   void _goBack() {
-    final router = GoRouter.of(context);
-    if (router.canPop()) {
-      router.pop();
-      return;
-    }
     final close = widget.onClose;
     if (close != null) {
       close();
       return;
     }
-    context.go(AppPaths.clientDashboard);
+    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
   ({double lat, double lng}) _spread(

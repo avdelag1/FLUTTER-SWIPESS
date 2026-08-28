@@ -5,6 +5,56 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 
+/// Shared back-navigation helper for phone pages and overlays.
+///
+/// Never rely on [GoRouter.canPop] on web/PWA — browser history can report a
+/// poppable stack that silently ignores [GoRouter.pop].
+abstract final class NavBack {
+  static String resolvedFallback(BuildContext context, {String? fallbackPath}) {
+    if (fallbackPath != null && fallbackPath.isNotEmpty) return fallbackPath;
+    final path = _currentPath(context);
+    if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
+    if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
+    if (path.startsWith('/business/')) return AppPaths.businessDashboard;
+    if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
+    return AppPaths.clientDashboard;
+  }
+
+  static String _currentPath(BuildContext context) {
+    try {
+      return GoRouterState.of(context).uri.path;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static void popOrGo(
+    BuildContext context, {
+    String? fallbackPath,
+    VoidCallback? onTap,
+  }) {
+    AppHaptics.light();
+    if (onTap != null) {
+      onTap();
+      return;
+    }
+
+    final nearest = Navigator.of(context);
+    if (nearest.canPop()) {
+      nearest.pop();
+      return;
+    }
+
+    final root = Navigator.of(context, rootNavigator: true);
+    if (root.canPop()) {
+      root.pop();
+      return;
+    }
+
+    context.go(resolvedFallback(context, fallbackPath: fallbackPath));
+  }
+}
+
 /// Shared compact back control used across phone pages.
 ///
 /// The visual is intentionally just a floating icon. The invisible 44pt hit
@@ -30,39 +80,12 @@ class CapBackButton extends ConsumerWidget {
     }
   }
 
-  String _resolvedFallback(BuildContext context) {
-    if (fallbackPath != null && fallbackPath!.isNotEmpty) return fallbackPath!;
-    final path = _currentPath(context);
-    if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
-    if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
-    if (path.startsWith('/business/')) return AppPaths.businessDashboard;
-    if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
-    return AppPaths.clientDashboard;
-  }
-
   void _handleTap(BuildContext context) {
-    AppHaptics.light();
-    if (onTap != null) {
-      onTap!();
-      return;
-    }
-
-    final nearest = Navigator.of(context);
-    if (nearest.canPop()) {
-      nearest.pop();
-      return;
-    }
-
-    final root = Navigator.of(context, rootNavigator: true);
-    if (root.canPop()) {
-      root.pop();
-      return;
-    }
-
-    // Ignore GoRouter's canPop() because on iOS PWA (standalone) mode,
-    // window.history.back() will silently fail if the browser stack is isolated.
-    // Instead, always use a declarative fallback if the local Navigator stack is empty.
-    context.go(_resolvedFallback(context));
+    NavBack.popOrGo(
+      context,
+      fallbackPath: fallbackPath,
+      onTap: onTap,
+    );
   }
 
   bool _followsProfileChrome(BuildContext context) {
@@ -82,7 +105,7 @@ class CapBackButton extends ConsumerWidget {
         : Colors.black.withAlpha(170);
 
     return IgnorePointer(
-      ignoring: !visible,
+      ignoring: false,
       child: AnimatedOpacity(
         opacity: visible ? 1 : 0,
         duration: const Duration(milliseconds: 220),

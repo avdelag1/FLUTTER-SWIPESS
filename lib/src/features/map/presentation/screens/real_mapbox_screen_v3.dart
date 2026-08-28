@@ -211,7 +211,11 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   }
 
   Future<void> _onLoaded() async {
-    _loaded = true;
+    if (mounted) {
+      setState(() => _loaded = true);
+    } else {
+      _loaded = true;
+    }
     if (!_readySent) {
       _readySent = true;
       widget.onMapReady?.call();
@@ -846,11 +850,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               right: 7,
               child: Row(
                 children: [
-                  _IconOnly(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    label: 'Back',
-                    onTap: _closeMap,
-                  ),
+                  const SizedBox(width: 44),
                   const SizedBox(width: 2),
                   _IconOnly(
                     icon: _menu ? Icons.close_rounded : Icons.menu_rounded,
@@ -971,6 +971,15 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 onTap: () => setState(() => _controls = true),
               ),
             ),
+          Positioned(
+            top: pad.top + 4,
+            left: 7,
+            child: _IconOnly(
+              icon: Icons.arrow_back_ios_new_rounded,
+              label: 'Back',
+              onTap: _closeMap,
+            ),
+          ),
           Positioned(
             right: 7,
             bottom: trayHeight + pad.bottom + 11,

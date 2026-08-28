@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
@@ -99,30 +100,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   }
 
   void _goBackOrDashboard() {
-    AppHaptics.light();
     ref.read(chromeVisibilityProvider.notifier).show();
-
-    final nearest = Navigator.of(context);
-    if (nearest.canPop()) {
-      nearest.pop();
-      return;
-    }
-
-    final root = Navigator.of(context, rootNavigator: true);
-    if (root.canPop()) {
-      root.pop();
-      return;
-    }
-
-    try {
-      final router = GoRouter.of(context);
-      if (router.canPop()) {
-        router.pop();
-        return;
-      }
-    } catch (_) {}
-
-    context.go(AppPaths.clientDashboard);
+    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
   @override
@@ -339,12 +318,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             Positioned(
               top: MediaQuery.paddingOf(context).top + _headerInset,
               left: 16,
-              child: IgnorePointer(
-                ignoring: !persistentChromeVisible,
-                child: AnimatedOpacity(
-                  opacity: persistentChromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 180),
-                  child: Material(
+              child: AnimatedOpacity(
+                opacity: persistentChromeVisible ? 1 : 0.72,
+                duration: const Duration(milliseconds: 180),
+                child: Material(
                     color: isLight ? Colors.white : const Color(0xFF111111),
                     shape: CircleBorder(
                       side: BorderSide(
@@ -363,7 +340,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 ),
               ),
-            ),
           Positioned(
             bottom: 16,
             left: 0,

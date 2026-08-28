@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/utils/event_connect.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
@@ -193,11 +194,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   void _goBack(BuildContext context) {
     ref.read(chromeVisibilityProvider.notifier).show();
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      context.go(AppPaths.clientDashboard);
-    }
+    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
   @override

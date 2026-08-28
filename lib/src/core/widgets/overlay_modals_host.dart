@@ -21,6 +21,7 @@ class OverlayModalsHost extends ConsumerStatefulWidget {
 class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   late final GoRouter _router;
   late String _lastRoute;
+  bool _mapEverOpened = false;
 
   // Opening a result from Map must not destroy or close the map overlay. We
   // simply hold the exact live instance offstage while the routed detail page is
@@ -35,6 +36,10 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     _router = ref.read(appRouterProvider);
     _lastRoute = _router.routeInformationProvider.value.uri.toString();
     _router.routeInformationProvider.addListener(_handleRouteChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(mapSurfaceWarmProvider.notifier).enable();
+    });
   }
 
   bool _isMapDetailRoute(String route) {
@@ -126,7 +131,10 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   @override
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
-    final keepMapAlive = modals.showPassportMap || _mapHeldForDetail;
+    if (modals.showPassportMap) _mapEverOpened = true;
+    final mapSurfaceWarm = ref.watch(mapSurfaceWarmProvider);
+    final keepMapAlive =
+        modals.showPassportMap || _mapHeldForDetail || _mapEverOpened || mapSurfaceWarm;
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
     final pauseRoutedMedia = mapVisible ||
         modals.showVapId ||
@@ -142,21 +150,13 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
         if (modals.showVapId) const VapIdModal(),
         if (keepMapAlive)
           Positioned.fill(
-            // Paint the modal surface before Mapbox attaches. This prevents
-            // the dashboard's light frame and horizontal tray shadow flashing
-            // through during the first native/web map frame.
             child: ColoredBox(
               color: const Color(0xFF06182B),
-              child: _mapHeldForDetail
-                  ? Offstage(
+              child: mapVisible
+                  ? _buildMapLayer(modals, true)
+                  : Offstage(
                       offstage: true,
-                      child: _buildMapLayer(modals, mapVisible),
-                    )
-                  : AnimatedOpacity(
-                      opacity: mapVisible ? 1 : 0,
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeOutCubic,
-                      child: _buildMapLayer(modals, mapVisible),
+                      child: _buildMapLayer(modals, false),
                     ),
             ),
           ),

@@ -1,5 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+final mapSurfaceWarmProvider =
+    NotifierProvider<MapSurfaceWarmNotifier, bool>(MapSurfaceWarmNotifier.new);
+
+class MapSurfaceWarmNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void enable() {
+    if (!state) state = true;
+  }
+}
+
 /// Cap `modalStore` — PEARL, Passport map, and Concierge are overlays, not tabs.
 class OverlayModals {
   const OverlayModals({

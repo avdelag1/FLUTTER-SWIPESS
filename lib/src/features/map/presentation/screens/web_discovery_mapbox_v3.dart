@@ -202,7 +202,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   @override
   void initState() {
     super.initState();
-    _openingFlight = !_webMapboxOpenedThisSession;
+    // Skip the globe fly-in on open — it exposed a white Mapbox canvas on PWA.
+    _openingFlight = false;
     _webMapboxOpenedThisSession = true;
     unawaited(_loadGps(silent: true));
   }
@@ -736,7 +737,11 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                 styleUri: _lightStyle,
                 onMapCreated: _setupMap,
                 onMapLoadedListener: (_) {
-                  _mapLoaded = true;
+                  if (!_mapLoaded && mounted) {
+                    setState(() => _mapLoaded = true);
+                  } else {
+                    _mapLoaded = true;
+                  }
                   _scheduleProjection();
                   if (_openingFlight) {
                     _openingTimer = Timer(const Duration(milliseconds: 500), () {
@@ -748,6 +753,33 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                 },
                 onCameraChangeListener: (_) => _scheduleProjection(),
                 onMapIdleListener: (_) => _scheduleProjection(),
+              ),
+
+              if (!_mapLoaded)
+                const Positioned.fill(
+                  child: ColoredBox(
+                    color: Color(0xFF06182B),
+                    child: Center(
+                      child: SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFFFF4D78),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              Positioned(
+                top: pad.top + 8,
+                left: 10,
+                child: _FloatingIcon(
+                  label: 'Back',
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: _closeMap,
+                ),
               ),
 
               // When a preview is open, one background tap dismisses it. This
@@ -827,15 +859,9 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
               if (_controlsVisible && !_openingFlight) ...[
                 Positioned(
                   top: pad.top + 8,
-                  left: 10,
+                  left: 58,
                   child: Row(
                     children: [
-                      _FloatingIcon(
-                        label: 'Back',
-                        icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: _closeMap,
-                      ),
-                      const SizedBox(width: 8),
                       _FloatingIcon(
                         label: 'Map options',
                         icon: Icons.menu_rounded,
