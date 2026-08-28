@@ -120,9 +120,14 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
         if (modals.showVapId) const VapIdModal(),
         if (keepMapAlive)
           Positioned.fill(
-            child: Offstage(
-              offstage: !mapVisible,
-              child: TickerMode(
+            // Paint the modal surface before Mapbox attaches. This prevents
+            // the dashboard's light frame and horizontal tray shadow flashing
+            // through during the first native/web map frame.
+            child: ColoredBox(
+              color: Color(0xFF06182B),
+              child: Offstage(
+                offstage: !mapVisible,
+                child: TickerMode(
                 enabled: mapVisible,
                 child: InheritedGoRouter(
                   goRouter: _router,
@@ -140,6 +145,7 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
                   ),
                 ),
               ),
+            ),
             ),
           ),
         if (modals.showConcierge)
