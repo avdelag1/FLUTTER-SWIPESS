@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -705,10 +706,27 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
       child: SafeArea(
         bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
+        child: RefreshIndicator(
+          color: const Color(0xFFFF4D00),
+          backgroundColor: isLight ? Colors.white : const Color(0xFF15171C),
+          onRefresh: () async {
+            try {
+              AppHaptics.light();
+            } catch (_) {}
+            ref.invalidate(newItemsCountProvider);
+            ref.invalidate(appMarketProvider);
+            try {
+              await Future.wait([
+                ref.read(newItemsCountProvider.future),
+                ref.read(appMarketProvider.future),
+              ]);
+            } catch (_) {}
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
                 // SafeArea already accounts for the status bar. Keep the AI
                 // field tucked directly under the compact persistent header.
                 padding: const EdgeInsets.fromLTRB(16, 48, 16, 8),
