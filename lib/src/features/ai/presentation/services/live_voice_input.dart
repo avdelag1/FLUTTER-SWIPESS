@@ -408,11 +408,75 @@ class LiveVoiceInput {
     _resetPublishedVoiceState();
   }
 
+  /// Merge recognizer output without echoing cumulative or overlapping
+  /// callbacks. Native iOS and browser engines may resend the current phrase,
+  /// repeat the final phrase, or start the next segment with the last word.
   static String _join(String a, String b) {
-    final left = a.trim();
-    final right = b.trim();
+    final left = _normalizeTranscript(a);
+    final right = _normalizeTranscript(b);
     if (left.isEmpty) return right;
     if (right.isEmpty) return left;
-    return '$left $right';
+
+    final leftWords = left.split(' ');
+    final rightWords = right.split(' ');
+    final leftKey = leftWords.map(_wordKey).join(' ');
+    final rightKey = rightWords.map(_wordKey).join(' ');
+
+    if (leftKey == rightKey) return left;
+    if (rightKey.startsWith('$leftKey ')) return right;
+    if (leftKey.startsWith('$rightKey ')) return left;
+
+    final maxOverlap = leftWords.length < rightWords.length
+        ? leftWords.length
+        : rightWords.length;
+    for (var overlap = maxOverlap; overlap > 0; overlap--) {
+      final leftTail = leftWords
+          .sublist(leftWords.length - overlap)
+          .map(_wordKey)
+          .join(' ');
+      final rightHead = rightWords
+          .take(overlap)
+          .map(_wordKey)
+          .join(' ');
+      if (leftTail == rightHead) {
+        return _normalizeTranscript(
+          '$left ${rightWords.skip(overlap).join(' ')}',
+        );
+      }
+    }
+    return _normalizeTranscript('$left $right');
+  }
+
+  static String _normalizeTranscript(String input) {
+    var clean = input.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    if (clean.isEmpty) return clean;
+
+    final words = clean.split(' ');
+    final output = <String>[];
+    for (final word in words) {
+      if (output.isNotEmpty && _wordKey(output.last) == _wordKey(word)) {
+        continue;
+      }
+      output.add(word);
+    }
+
+    // Some recognizers repeat a whole short phrase at a segment boundary:
+    // “find people find people”. Remove only an exact repeated prefix/suffix,
+    // leaving intentional non-adjacent repetition intact.
+    for (var size = output.length ~/ 2; size >= 2; size--) {
+      final start = output.length - (size * 2);
+      if (start < 0) continue;
+      final first = output.sublist(start, start + size).map(_wordKey).join(' ');
+      final second = output.sublist(start + size).map(_wordKey).join(' ');
+      if (first == second) {
+        output.removeRange(start + size, output.length);
+        break;
+      }
+    }
+    return output.join(' ');
+  }
+
+  static String _wordKey(String word) {
+    return word.toLowerCase().replaceAll(RegExp(r'[^\\p{L}\\p{N}\\']', unicode: true), '');
   }
 }
