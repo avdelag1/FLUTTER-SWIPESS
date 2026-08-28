@@ -22,11 +22,17 @@ class VoiceTranscribeRepository {
     SupabaseClient? client,
   }) : _recorder = recorder ?? AudioRecorder(),
        _http = httpClient ?? http.Client(),
-       _client = client ?? Supabase.instance.client;
+       _client = client;
 
   final AudioRecorder _recorder;
   final http.Client _http;
-  final SupabaseClient _client;
+
+  // Keep Supabase lazy. The Dashboard creates this repository when the search
+  // field is mounted, including in widget tests and during very early app boot.
+  // Resolving Supabase.instance in the constructor used to throw before
+  // Supabase.initialize() had completed, which could prevent the whole search
+  // field from rendering. We only need the client when transcription is sent.
+  final SupabaseClient? _client;
 
   Future<bool> hasPermission() => _recorder.hasPermission();
 
@@ -66,6 +72,23 @@ class VoiceTranscribeRepository {
     }
   }
 
+  String _authorizationToken() {
+    final injected = _client;
+    if (injected != null) {
+      return injected.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
+    }
+
+    try {
+      return Supabase.instance.client.auth.currentSession?.accessToken ??
+          SupabaseService.anonKey;
+    } catch (_) {
+      // Early boot/tests can legitimately have no global Supabase instance yet.
+      // The edge function accepts the public anon JWT, so voice remains usable
+      // as soon as networking is available instead of crashing the dashboard.
+      return SupabaseService.anonKey;
+    }
+  }
+
   Future<String> transcribe(
     Uint8List bytes, {
     required String mimeType,
@@ -74,8 +97,7 @@ class VoiceTranscribeRepository {
     final url = Uri.parse(
       '${SupabaseService.supabaseUrl}/functions/v1/voice-transcribe',
     );
-    final token =
-        _client.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
+    final token = _authorizationToken();
     late http.Response resp;
     try {
       resp = await _http
