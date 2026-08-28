@@ -33,42 +33,25 @@ jobs:
               p.write_text(text.replace(old, new, 1))
               print(f'patched: {label}')
 
-          # 1) Root swipe decks are pushed imperatively. Capture GoRouter BEFORE
-          # popping the deck, then navigate using that stable router object.
-          # This avoids using a disposed BuildContext while also ensuring the
-          # pushed MaterialPageRoute is actually removed from the screen.
+          # Keep the newer dashboard-back fix already on main. Complete the same
+          # root-deck logic for Messages and for switching an exhausted deck to Events.
           path = 'lib/src/features/swipes/presentation/screens/client_swipe_container.dart'
-          old = '''  void _goDashboard() {
-            ref.read(navTabProvider.notifier).set(NavTab.dashboard);
-            // This deck can be hosted inside a nested MaterialPageRoute. Popping the
-            // root navigator first can dispose this context before go() runs, leaving
-            // the visible back controls unresponsive. A direct router transition is
-            // deterministic from every quick-filter entry point.
-            GoRouter.of(context).go(AppPaths.clientDashboard);
-          }
-
-          void _goMessages() {
+          old = '''  void _goMessages() {
             ref.read(navTabProvider.notifier).set(NavTab.messages);
             GoRouter.of(context).go(AppPaths.messages);
           }
 '''
-          new = '''  void _goDashboard() {
+          new = '''  void _goMessages() {
             final router = GoRouter.of(context);
-            final root = Navigator.of(context, rootNavigator: true);
-            ref.read(navTabProvider.notifier).set(NavTab.dashboard);
-            if (root.canPop()) root.pop();
-            router.go(AppPaths.clientDashboard);
-          }
-
-          void _goMessages() {
-            final router = GoRouter.of(context);
-            final root = Navigator.of(context, rootNavigator: true);
+            final rootNav = Navigator.of(context, rootNavigator: true);
             ref.read(navTabProvider.notifier).set(NavTab.messages);
-            if (root.canPop()) root.pop();
-            router.go(AppPaths.messages);
+            if (rootNav.canPop()) rootNav.pop();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              router.go(AppPaths.messages);
+            });
           }
 '''
-          replace_once(path, old, new, 'root swipe-deck back/messages navigation')
+          replace_once(path, old, new, 'root swipe-deck messages navigation')
 
           old = '''        if (cat == 'events') {
                   Navigator.of(context).pop();
@@ -78,31 +61,37 @@ jobs:
 '''
           new = '''        if (cat == 'events') {
                   final router = GoRouter.of(context);
-                  final root = Navigator.of(context, rootNavigator: true);
+                  final rootNav = Navigator.of(context, rootNavigator: true);
                   ref.read(navTabProvider.notifier).set(NavTab.events);
-                  if (root.canPop()) root.pop();
-                  router.go(AppPaths.exploreEvents);
+                  if (rootNav.canPop()) rootNav.pop();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    router.go(AppPaths.exploreEvents);
+                  });
                   return;
                 }
 '''
           replace_once(path, old, new, 'exhausted deck events navigation')
 
-          # 2) Events teaser: one full-card instant tap target. Only the media
-          # controls consume taps; visual labels are pointer-transparent.
+          # Events teaser: full-card instant navigation, with only media buttons
+          # consuming taps. Static overlays must never steal the gesture.
           path = 'lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart'
-          old = '''            Positioned(
+          replace_once(
+              path,
+              '''            Positioned(
               top: 0,
               left: 0,
               right: 52,
               bottom: 52,
               child: GestureDetector(
-'''
-          new = '''            Positioned.fill(
+''',
+              '''            Positioned.fill(
               child: GestureDetector(
-'''
-          replace_once(path, old, new, 'events full-card tap target')
+''',
+              'events full-card tap target')
 
-          old = '''            Positioned(
+          replace_once(
+              path,
+              '''            Positioned(
               left: 14,
               top: 13,
               child: Container(
@@ -123,8 +112,8 @@ jobs:
                 ),
               ),
             ),
-'''
-          new = '''            IgnorePointer(
+''',
+              '''            IgnorePointer(
               child: Positioned(
                 left: 14,
                 top: 13,
@@ -147,10 +136,12 @@ jobs:
                 ),
               ),
             ),
-'''
-          replace_once(path, old, new, 'events live label pointer transparency')
+''',
+              'events live label pointer transparency')
 
-          old = '''            Positioned(
+          replace_once(
+              path,
+              '''            Positioned(
               left: 15,
               right: 15,
               bottom: 15,
@@ -196,8 +187,8 @@ jobs:
                 ],
               ),
             ),
-'''
-          new = '''            IgnorePointer(
+''',
+              '''            IgnorePointer(
               child: Positioned(
                 left: 15,
                 right: 15,
@@ -245,8 +236,8 @@ jobs:
                 ),
               ),
             ),
-'''
-          replace_once(path, old, new, 'events title pointer transparency')
+''',
+              'events title pointer transparency')
 
           p = Path(path)
           text = p.read_text()
@@ -271,17 +262,19 @@ jobs:
           p.write_text(text)
           print('patched: events media controls visual parity')
 
-          # 3) New-count badges are decorative and must never block the card tap.
+          # Decorative +new badges must not block the underlying quick-filter tap.
           path = 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
-          old = '''    final badgeWidget = unreadCount > 0 
+          replace_once(
+              path,
+              '''    final badgeWidget = unreadCount > 0 
       ? Positioned(
           top: 10,
           right: 10,
           child: _CategoryBadge(count: unreadCount),
         )
       : const SizedBox.shrink();
-'''
-          new = '''    final badgeWidget = unreadCount > 0
+''',
+              '''    final badgeWidget = unreadCount > 0
       ? IgnorePointer(
           child: Positioned(
             top: 10,
@@ -290,10 +283,9 @@ jobs:
           ),
         )
       : const SizedBox.shrink();
-'''
-          replace_once(path, old, new, 'quick-filter badge pointer transparency')
+''',
+              'quick-filter badge pointer transparency')
 
-          # Remove this temporary workflow from the resulting source commit.
           Path('.github/workflows/one-shot-fix-dashboard-controls.yml').unlink()
           PY
 
@@ -304,5 +296,5 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add -A
           git diff --cached --check
-          git commit -m "fix(dashboard): make media controls and back navigation deterministic"
+          git commit -m "fix(dashboard): make media controls and deck exits deterministic"
           git push origin HEAD:main
