@@ -773,25 +773,16 @@ class _EventPageState extends ConsumerState<_EventPage>
               child: IgnorePointer(
                 child: Center(
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xE6FF4D78),
+                    decoration: const BoxDecoration(
+                      color: Colors.black45,
                       shape: BoxShape.circle,
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x66000000),
-                          blurRadius: 22,
-                        ),
-                      ],
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(18),
                       child: Icon(
                         _playbackFeedback,
                         color: Colors.white,
-                        size: 40,
-                        shadows: const [
-                          Shadow(color: Color(0x99000000), blurRadius: 5),
-                        ],
+                        size: 44,
                       ),
                     ),
                   ),
