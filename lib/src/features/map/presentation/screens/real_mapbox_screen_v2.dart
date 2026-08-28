@@ -35,29 +35,6 @@ class RealMapboxScreenV2 extends StatelessWidget {
           showCitiesOnOpen: showCitiesOnOpen,
           onMapReady: onMapReady,
         ),
-        if (buildSha.isNotEmpty)
-          Positioned(
-            top: top + 82,
-            right: 9,
-            child: IgnorePointer(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xD9111317),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '${buildChannel.isEmpty ? 'CI' : buildChannel}${buildNumber.isEmpty ? '' : ' #$buildNumber'} • $shortSha',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
