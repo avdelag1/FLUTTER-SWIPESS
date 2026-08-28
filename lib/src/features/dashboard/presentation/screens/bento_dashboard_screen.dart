@@ -973,17 +973,19 @@ class _BentoCardState extends State<_BentoCard> {
                   enableVideo: widget.enableVideo,
                 ),
               ),
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.transparent,
-                      Color(0x4D000000),
-                    ],
-                    stops: [0, 0.82, 1],
+              const IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        Color(0x4D000000),
+                      ],
+                      stops: [0, 0.82, 1],
+                    ),
                   ),
                 ),
               ),
