@@ -744,7 +744,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     final trayHeight = _tray < 0 ? 0.0 : (_tray == 0 ? compact : expanded);
 
     return Material(
-      color: const Color(0xFFF1F4F7),
+      color: const Color(0xFF06182B),
       child: Stack(
         fit: StackFit.expand,
         clipBehavior: Clip.hardEdge,
@@ -757,11 +757,11 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           ),
           if (!_loaded)
             const ColoredBox(
-              color: Color(0xFFF1F4F7),
+              color: Color(0xFF06182B),
               child: Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black87,
+                  color: Color(0xFFFF4D78),
                 ),
               ),
             ),
