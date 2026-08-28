@@ -355,14 +355,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: Ink(
-          width: 40,
-          height: 40,
+          width: 30,
+          height: 30,
           decoration: BoxDecoration(
             color: Colors.black.withAlpha(132),
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white.withAlpha(48)),
           ),
-          child: Icon(icon, color: Colors.white, size: 18),
+          child: Icon(icon, color: Colors.white, size: 16),
         ),
       ),
     );
