@@ -36,10 +36,6 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     _router = ref.read(appRouterProvider);
     _lastRoute = _router.routeInformationProvider.value.uri.toString();
     _router.routeInformationProvider.addListener(_handleRouteChange);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(mapSurfaceWarmProvider.notifier).enable();
-    });
   }
 
   bool _isMapDetailRoute(String route) {
@@ -132,9 +128,8 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
     if (modals.showPassportMap) _mapEverOpened = true;
-    final mapSurfaceWarm = ref.watch(mapSurfaceWarmProvider);
     final keepMapAlive =
-        modals.showPassportMap || _mapHeldForDetail || _mapEverOpened || mapSurfaceWarm;
+        modals.showPassportMap || _mapHeldForDetail || _mapEverOpened;
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
     final pauseRoutedMedia = mapVisible ||
         modals.showVapId ||
@@ -148,16 +143,19 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
           child: widget.child,
         ),
         if (modals.showVapId) const VapIdModal(),
-        if (keepMapAlive)
+        if (keepMapAlive && mapVisible)
           Positioned.fill(
             child: ColoredBox(
               color: const Color(0xFF06182B),
-              child: mapVisible
-                  ? _buildMapLayer(modals, true)
-                  : Offstage(
-                      offstage: true,
-                      child: _buildMapLayer(modals, false),
-                    ),
+              child: _buildMapLayer(modals, true),
+            ),
+          )
+        else if (keepMapAlive)
+          Offstage(
+            child: SizedBox(
+              width: 1,
+              height: 1,
+              child: _buildMapLayer(modals, false),
             ),
           ),
         if (modals.showConcierge)
