@@ -269,9 +269,14 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       },
       onListeningChanged: (listening) {
         if (!mounted) return;
+        if (listening) {
+          setState(() => _recording = true);
+          return;
+        }
+        if (_voice.isOwnedBy(this) && _voice.active) return;
         setState(() {
-          _recording = listening;
-          if (!listening) _voiceLevel = 0;
+          _recording = false;
+          _voiceLevel = 0;
         });
       },
       onSoundLevel: (level) {

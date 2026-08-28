@@ -57,6 +57,9 @@ class LiveVoiceInput {
 
   static const silenceBeforeCountdown = Duration(milliseconds: 2800);
 
+  Duration get _effectiveSilenceBeforeCountdown =>
+      kIsWeb ? const Duration(milliseconds: 4500) : silenceBeforeCountdown;
+
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
 
@@ -288,7 +291,7 @@ class LiveVoiceInput {
       cancelOnError: false,
       autoPunctuation: true,
       listenMode: _nativeListenMode,
-      pauseFor: silenceBeforeCountdown,
+      pauseFor: _effectiveSilenceBeforeCountdown,
       listenFor: const Duration(minutes: 2),
       localeId: localeId,
       onDevice: false,
@@ -408,7 +411,7 @@ class LiveVoiceInput {
   void _armBrowserSilence() {
     _browserSilenceTimer?.cancel();
     if (!_active || _intentionalStop || !_usingBrowser) return;
-    _browserSilenceTimer = Timer(silenceBeforeCountdown, () {
+    _browserSilenceTimer = Timer(_effectiveSilenceBeforeCountdown, () {
       _browserSilenceTimer = null;
       if (!_active || _intentionalStop || !_usingBrowser) return;
       if (_segmentHasSpeech && !_silenceDeliveredForSegment) {

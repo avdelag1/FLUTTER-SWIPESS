@@ -204,7 +204,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
   void _beginVoiceCountdown() {
     if (!mounted ||
-        !_voiceActive ||
+        !_voice.isOwnedBy(this) ||
+        !_voice.active ||
         (widget.controller?.text.trim().isEmpty ?? true) ||
         _inlineAiLoading) {
       return;
@@ -299,16 +300,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         onSilence: _beginVoiceCountdown,
         onListeningChanged: (listening) {
           if (!mounted) return;
-          final active = listening && _voice.isOwnedBy(this);
-          if (_voiceActive != active ||
-              _transcribing ||
-              (!listening && _voiceLevel != 0)) {
+          if (listening) {
             setState(() {
-              _voiceActive = active;
+              _voiceActive = true;
               _transcribing = false;
-              if (!listening) _voiceLevel = 0;
             });
+            return;
           }
+          // PWA browsers briefly end recognition between phrases — keep the
+          // mic session visually active while this widget still owns it.
+          if (_voice.isOwnedBy(this) && _voice.active) return;
+          setState(() {
+            _voiceActive = false;
+            _transcribing = false;
+            _voiceLevel = 0;
+          });
         },
         onSoundLevel: (level) {
           if (!mounted) return;

@@ -15,6 +15,7 @@ class BrowserLiveSpeech {
   bool _active = false;
   bool _intentionalStop = false;
   Timer? _pollTimer;
+  Timer? _listeningFalseDebounce;
 
   BrowserSpeechTextCallback? _onText;
   BrowserSpeechListeningCallback? _onListening;
@@ -104,7 +105,17 @@ class BrowserLiveSpeech {
           _onText?.call(payload.trim(), false);
         }
       case 'listening':
-        _onListening?.call(payload == 'true');
+        if (payload == 'true') {
+          _listeningFalseDebounce?.cancel();
+          _onListening?.call(true);
+          return;
+        }
+        // PWA browsers drop listening briefly between recognition segments.
+        _listeningFalseDebounce?.cancel();
+        _listeningFalseDebounce = Timer(const Duration(milliseconds: 900), () {
+          if (!_active || _intentionalStop) return;
+          _onListening?.call(false);
+        });
       case 'error':
         _onError?.call(payload);
     }
@@ -115,6 +126,8 @@ class BrowserLiveSpeech {
     _active = false;
     _pollTimer?.cancel();
     _pollTimer = null;
+    _listeningFalseDebounce?.cancel();
+    _listeningFalseDebounce = null;
     try {
       if (_bridgeReady) {
         (js.context['SwipessSpeech'] as js.JsObject).callMethod('stop');
@@ -129,6 +142,8 @@ class BrowserLiveSpeech {
     _active = false;
     _pollTimer?.cancel();
     _pollTimer = null;
+    _listeningFalseDebounce?.cancel();
+    _listeningFalseDebounce = null;
     try {
       if (_bridgeReady) {
         (js.context['SwipessSpeech'] as js.JsObject).callMethod('abort');

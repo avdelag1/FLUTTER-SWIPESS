@@ -192,6 +192,10 @@
       var finalText = '';
       var restartTimer = null;
       var selectedLang = null;
+      var restartAttempts = 0;
+      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+      var restartDelay = isMobile ? 380 : 120;
+      var maxRestartAttempts = 12;
 
       // Shared event queue. Dart drains this via polling.
       window.SwipessSpeechQueue = [];
@@ -248,8 +252,27 @@
         return normalizeTranscript(a + ' ' + b);
       }
 
+      function disposeRecognition() {
+        if (!recognition) return;
+        try { recognition.onstart = null; } catch(e) {}
+        try { recognition.onresult = null; } catch(e) {}
+        try { recognition.onerror = null; } catch(e) {}
+        try { recognition.onend = null; } catch(e) {}
+        try { recognition.abort(); } catch(e) {}
+        recognition = null;
+      }
+
+      function scheduleRestart(delay) {
+        if (!active || intentionalStop) return;
+        clearTimeout(restartTimer);
+        restartTimer = setTimeout(function () {
+          if (active && !intentionalStop) startRecognition();
+        }, delay);
+      }
+
       function startRecognition() {
         if (!active || intentionalStop || !SR) return;
+        disposeRecognition();
         try {
           recognition = new SR();
           recognition.continuous = true;
@@ -273,6 +296,7 @@
 
           recognition.onstart = function () {
             if (!active || intentionalStop) return;
+            restartAttempts = 0;
             push('listening', 'true');
           };
 
@@ -324,7 +348,11 @@
               push('error', 'Chrome could not access a microphone on this device.');
               return;
             }
-            // no-speech is normal — recognition auto-restarts via onend
+            // PWA/mobile browsers end sessions quickly — restart instead of dying.
+            if (code === 'no-speech' || code === 'aborted' || code === 'network') {
+              scheduleRestart(restartDelay);
+              return;
+            }
           };
 
           recognition.onend = function () {
@@ -332,15 +360,17 @@
               push('listening', 'false');
               return;
             }
-            // Chrome closes sessions every ~60s. Restart invisibly.
-            clearTimeout(restartTimer);
-            restartTimer = setTimeout(function () {
-              if (active && !intentionalStop) startRecognition();
-            }, 100);
+            // Keep the mic session alive across short browser/PWA segment boundaries.
+            scheduleRestart(restartDelay);
           };
 
           recognition.start();
         } catch (e) {
+          restartAttempts++;
+          if (active && !intentionalStop && restartAttempts < maxRestartAttempts) {
+            scheduleRestart(Math.min(restartDelay * restartAttempts, 1400));
+            return;
+          }
           active = false;
           push('listening', 'false');
           push('error', 'Speech recognition failed to start: ' + e);
@@ -361,29 +391,28 @@
           }
           intentionalStop = false;
           finalText = '';
+          restartAttempts = 0;
           window.SwipessSpeechQueue = [];
           clearTimeout(restartTimer);
-          if (recognition) {
-            try { recognition.abort(); } catch(e) {}
-            recognition = null;
-          }
+          disposeRecognition();
           active = true;
           startRecognition();
         },
         stop: function () {
           intentionalStop = true;
           active = false;
+          restartAttempts = 0;
           clearTimeout(restartTimer);
           try { if (recognition) recognition.stop(); } catch(e) {}
-          recognition = null;
+          disposeRecognition();
           push('listening', 'false');
         },
         abort: function () {
           intentionalStop = true;
           active = false;
+          restartAttempts = 0;
           clearTimeout(restartTimer);
-          try { if (recognition) recognition.abort(); } catch(e) {}
-          recognition = null;
+          disposeRecognition();
           push('listening', 'false');
         }
       };
