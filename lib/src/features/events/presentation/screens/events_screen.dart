@@ -35,7 +35,7 @@ class EventsScreen extends ConsumerStatefulWidget {
 }
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
-  static const _chromeTimeout = Duration(seconds: 7);
+  static const _chromeTimeout = Duration(seconds: 3);
 
   final PageController _pages = PageController();
   int _index = 0;
@@ -129,6 +129,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _hideTimer?.cancel();
     if (!mounted || _chromePinned || _categoryMenuOpen) return;
     if (_chromeVisible) setState(() => _chromeVisible = false);
+    ref.read(chromeVisibilityProvider.notifier).hide();
   }
 
   void _toggleChrome() {

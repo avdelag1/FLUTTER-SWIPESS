@@ -22,8 +22,8 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
   Timer? _chromeTimer;
   Timer? _railTimer;
 
-  static const chromeHideMs = 7000;
-  static const railHideMs = 7000;
+  static const chromeHideMs = 3000;
+  static const railHideMs = 3000;
 
   @override
   ChromeRevealState build() {
