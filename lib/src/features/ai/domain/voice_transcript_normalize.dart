@@ -78,5 +78,11 @@ bool shouldCancelVoiceCountdownForText({
   }
   // Recognizer echo during segment restart can resend a shorter prefix.
   if (frozen.startsWith(next)) return false;
-  return next.length > frozen.length;
+  
+  // Sometimes the native recognizer re-evaluates the last word (e.g. "plummer" -> "plumber").
+  // This causes the text to change slightly (and sometimes grow by 1-2 chars) without adding new words.
+  // We only cancel the countdown if the user actually added more words.
+  final nextWords = next.split(RegExp(r'\s+'));
+  final frozenWords = frozen.split(RegExp(r'\s+'));
+  return nextWords.length > frozenWords.length;
 }
