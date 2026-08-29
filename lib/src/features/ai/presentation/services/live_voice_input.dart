@@ -43,7 +43,6 @@ class LiveVoiceInput {
   String _languageCode = '';
   bool _segmentHasSpeech = false;
   bool _silenceDeliveredForSegment = false;
-  bool _nativeSegmentCommitted = false;
 
   Timer? _browserSilenceTimer;
   Timer? _nativeRestartTimer;
@@ -124,7 +123,6 @@ class LiveVoiceInput {
     _nativeSessionText = '';
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
-    _nativeSegmentCommitted = false;
     _intentionalStop = false;
 
     try {
@@ -273,7 +271,6 @@ class LiveVoiceInput {
 
   void _handleNativeResult(SpeechRecognitionResult result) {
     if (!_active || _intentionalStop || _usingBrowser) return;
-    if (_nativeSegmentCommitted) return;
 
     final speech = result.recognizedWords.trim();
     if (speech.isEmpty) return;
@@ -287,6 +284,10 @@ class LiveVoiceInput {
       _onText?.call(total);
     }
 
+    // Android can emit more than one final chunk before the recognizer reports
+    // that the session has fully stopped. Commit each final chunk, but keep
+    // accepting subsequent partial/final callbacks so dictation never freezes
+    // after the first phrase. _join makes repeated final callbacks idempotent.
     if (result.finalResult) {
       _commitNativeSegment();
     }
@@ -328,7 +329,6 @@ class LiveVoiceInput {
     _nativeSessionText = '';
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
-    _nativeSegmentCommitted = false;
 
     final localeId = await _resolveLocale(_languageCode);
     await _attachNativeListen(localeId);
@@ -405,14 +405,12 @@ class LiveVoiceInput {
   }
 
   void _commitNativeSegment() {
-    if (_nativeSegmentCommitted) return;
     final clean = _nativeSessionText.trim();
     if (clean.isEmpty) return;
     final total = _join(_committed, clean);
     _committed = total;
     _lastPublished = total;
     _nativeSessionText = '';
-    _nativeSegmentCommitted = true;
   }
 
   void _armBrowserSilence() {
@@ -489,7 +487,6 @@ class LiveVoiceInput {
     _nativeRestarting = false;
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
-    _nativeSegmentCommitted = false;
     _nativeSessionText = '';
     if (!keepOwner) _owner = null;
     _lastPublished = '';
