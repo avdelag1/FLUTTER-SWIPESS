@@ -119,7 +119,7 @@ jobs:
                   },
                 ),
               ),
-"""
+          """
           bento = bento[:start] + replacement + bento[end:]
           bento_path.write_text(bento)
 
