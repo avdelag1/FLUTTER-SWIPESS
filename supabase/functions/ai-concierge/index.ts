@@ -286,7 +286,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
   const applyFilters = (queryBuilder: any) => {
     if (seenIds.size > 0) {
       // Supabase not.in expects a comma-separated list or an array depending on the SDK.
-      queryBuilder = queryBuilder.not("id", "in", `(${Array.from(seenIds).map(id => `"${id}"`).join(",")})`);
+      queryBuilder = queryBuilder.not("id", "in", `(${Array.from(seenIds).join(",")})`);
     }
     return queryBuilder.limit(30);
   };
@@ -329,7 +329,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
       // profiles use user_id instead of id for PK, so applyFilters will fail on id not in
       const applyProfiles = (qb: any) => {
          if (seenIds.size > 0) {
-            qb = qb.not("user_id", "in", `(${Array.from(seenIds).map(id => `"${id}"`).join(",")})`);
+            qb = qb.not("user_id", "in", `(${Array.from(seenIds).join(",")})`);
          }
          return qb.limit(30);
       };

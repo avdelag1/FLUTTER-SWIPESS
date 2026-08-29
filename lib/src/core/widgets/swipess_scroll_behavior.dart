@@ -30,7 +30,7 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
     return switch (defaultTargetPlatform) {
       TargetPlatform.iOS ||
       TargetPlatform.macOS => const RangeMaintainingScrollPhysics(
-        parent: BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        parent: ClampingScrollPhysics(),
       ),
       _ => const RangeMaintainingScrollPhysics(parent: ClampingScrollPhysics()),
     };
