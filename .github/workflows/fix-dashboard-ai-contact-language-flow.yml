@@ -57,23 +57,14 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           glow = Path('lib/src/core/widgets/glow_search_bar.dart')
           s = glow.read_text()
           if "import 'dart:convert';" not in s:
               s = s.replace("import 'dart:async';\n", "import 'dart:async';\nimport 'dart:convert';\n", 1)
 
-          old = """  void _openContactInChat(Map<String, dynamic> data) {
-            final name = (data['name'] ?? data['full_name'] ?? data['title'])
-                ?.toString()
-                .trim();
-            if (name == null || name.isEmpty) return;
-            AppHaptics.selection();
-            _dismissInlineAi();
-            widget.onSubmitted?.call('Tell me only about this person: $name');
-          }
-          """
-          new = """  void _openContactInChat(Map<String, dynamic> data) {
+          contact_fn = r'''  void _openContactInChat(Map<String, dynamic> data) {
             final name = (data['name'] ?? data['full_name'] ?? data['title'])
                 ?.toString()
                 .trim();
@@ -83,26 +74,21 @@ jobs:
             _dismissInlineAi();
             widget.onSubmitted?.call('__swipess_contact__:$encoded');
           }
-          """
-          if old not in s:
-              raise SystemExit('compact contact drilldown block not found')
-          s = s.replace(old, new, 1)
+          '''
+          s, count = re.subn(
+              r"  void _openContactInChat\(Map<String, dynamic> data\) \{.*?\n  \}\n\n(?=  Widget _inlineAiPanel)",
+              lambda _: contact_fn + "\n",
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'contact drilldown function match count={count}')
           glow.write_text(s)
 
           intel = Path('lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart')
           s = intel.read_text()
-          old = """    final seed = widget.initialQuery.trim();
-            if (seed.isNotEmpty) _privacyAccepted = true;
-            if (seed.isNotEmpty) {
-              _controller.text = seed;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted || _bootstrapped) return;
-                _bootstrapped = true;
-                _submit(seed);
-              });
-            }
-          """
-          new = """    final seed = widget.initialQuery.trim();
+          new_seed = r'''    final seed = widget.initialQuery.trim();
             if (seed.isNotEmpty) _privacyAccepted = true;
             if (seed.isNotEmpty) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -134,7 +120,7 @@ jobs:
                               role: 'assistant',
                               content:
                                   'Here is ${name.isEmpty ? 'this contact' : name}. '
-                                  'This chat is focused only on this contact.\\n'
+                                  'This chat is focused only on this contact.\n'
                                   '[DRAFT:local_brain:{"payload":"$payload"}]',
                             ),
                           );
@@ -160,10 +146,19 @@ jobs:
                 _submit(seed);
               });
             }
-          """
-          if old not in s:
-              raise SystemExit('Intel initial seed block not found')
-          s = s.replace(old, new, 1)
+          }
+
+          @override
+          void dispose'''
+          s, count = re.subn(
+              r"    final seed = widget\.initialQuery\.trim\(\);.*?\n  \}\n\n  @override\n  void dispose",
+              lambda _: new_seed,
+              s,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'Intel seed block match count={count}')
           intel.write_text(s)
 
           bubble = Path('lib/src/features/ai/presentation/widgets/intel_message_bubble.dart')
