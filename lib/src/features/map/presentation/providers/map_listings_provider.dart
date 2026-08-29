@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 
-final mapListingsProvider = FutureProvider<List<Listing>>((ref) async {
+final mapListingsProvider = FutureProvider.autoDispose<List<Listing>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final client = Supabase.instance.client;
   final decidedIdsFuture = _fetchDecidedTargetIds(client, 'listing');

@@ -5,7 +5,7 @@ import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_pro
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 
-final mapProfilesProvider = FutureProvider<List<Profile>>((ref) async {
+final mapProfilesProvider = FutureProvider.autoDispose<List<Profile>>((ref) async {
   final loc = ref.watch(discoveryLocationProvider);
   final userId = ref.watch(currentUserProvider)?.id;
   final client = Supabase.instance.client;

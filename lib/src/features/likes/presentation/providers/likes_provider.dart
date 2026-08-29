@@ -8,7 +8,7 @@ final likesRepositoryProvider = Provider<LikesRepository>((ref) {
   return LikesRepository();
 });
 
-class LikedListingsNotifier extends AsyncNotifier<List<Listing>> {
+class LikedListingsNotifier extends AutoDisposeAsyncNotifier<List<Listing>> {
   @override
   Future<List<Listing>> build() {
     return ref.read(likesRepositoryProvider).fetchLikedListings();
@@ -33,11 +33,11 @@ class LikedListingsNotifier extends AsyncNotifier<List<Listing>> {
 }
 
 final likedListingsProvider =
-    AsyncNotifierProvider<LikedListingsNotifier, List<Listing>>(
+    AsyncNotifierProvider.autoDispose<LikedListingsNotifier, List<Listing>>(
       LikedListingsNotifier.new,
     );
 
-class LikedPeopleNotifier extends AsyncNotifier<List<ProfileLike>> {
+class LikedPeopleNotifier extends AutoDisposeAsyncNotifier<List<ProfileLike>> {
   @override
   Future<List<ProfileLike>> build() {
     return ref.read(likesRepositoryProvider).fetchLikedPeople();
@@ -62,7 +62,7 @@ class LikedPeopleNotifier extends AsyncNotifier<List<ProfileLike>> {
 }
 
 final likedPeopleProvider =
-    AsyncNotifierProvider<LikedPeopleNotifier, List<ProfileLike>>(
+    AsyncNotifierProvider.autoDispose<LikedPeopleNotifier, List<ProfileLike>>(
       LikedPeopleNotifier.new,
     );
 
@@ -89,7 +89,7 @@ Future<Set<String>> _fetchLikedTargetIds(String targetType) async {
 /// one old/saved listing has malformed or legacy columns, which used to make the
 /// map fail open and show liked items again. These providers query the canonical
 /// `likes` decision rows directly so a right-swipe always stays excluded.
-final likedListingIdsProvider = FutureProvider<Set<String>>((ref) async {
+final likedListingIdsProvider = FutureProvider.autoDispose<Set<String>>((ref) async {
   // The map save flow already invalidates likedListingsProvider. Watching it
   // here makes the canonical ID set refresh in the same frame, so a saved item
   // cannot reappear after closing/reopening Map.
@@ -97,14 +97,14 @@ final likedListingIdsProvider = FutureProvider<Set<String>>((ref) async {
   return _fetchLikedTargetIds('listing');
 });
 
-final likedPeopleIdsProvider = FutureProvider<Set<String>>((ref) async {
+final likedPeopleIdsProvider = FutureProvider.autoDispose<Set<String>>((ref) async {
   ref.watch(likedPeopleProvider);
   return _fetchLikedTargetIds('profile');
 });
 
 /// Map discovery excludes every target already saved/right-swiped by the user,
 /// including events. Likes is the source of truth across all discovery types.
-final likedEventIdsProvider = FutureProvider<Set<String>>(
+final likedEventIdsProvider = FutureProvider.autoDispose<Set<String>>(
   (ref) => _fetchLikedTargetIds('event'),
 );
 
