@@ -205,13 +205,26 @@ async function loadLocalBrain(client: any, query: string, body: any) {
       p_city: city,
       p_lat: lat,
       p_lon: lon,
-      p_limit: 8,
+      p_limit: body?.locationContext?.compactDashboard === true ? 5 : 8,
     });
     if (error) {
       console.error("[ai-concierge-v80] local brain context", error.message);
       return [];
     }
-    return Array.isArray(data) ? data : [];
+    const rows = Array.isArray(data) ? data : [];
+    const normalize = (value: unknown) => String(value ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9áéíóúñü\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const normalizedQuery = normalize(query);
+    const exactNamed = rows.filter((row: any) => {
+      const name = normalize(row?.name);
+      return name.length >= 3 && normalizedQuery.includes(name);
+    });
+    if (exactNamed.length) return exactNamed.slice(0, 1);
+    const maxRows = body?.locationContext?.compactDashboard === true ? 3 : 5;
+    return rows.slice(0, maxRows);
   } catch (e) {
     console.error("[ai-concierge-v80] local brain context", String(e));
     return [];
@@ -220,6 +233,7 @@ async function loadLocalBrain(client: any, query: string, body: any) {
 
 async function loadContext(client: any, query: string, body: any, userMemory: UserMemoryRow[] = []) {
   const preferredIntent = body?.preferredIntent?.toString().trim().toLowerCase() || "";
+  const compactDashboard = body?.locationContext?.compactDashboard === true;
   const peopleFirst = preferredIntent === "profiles" || wantsPeople(query);
   const category = peopleFirst ? null : detectCategory(query);
   let listings: any[] = [];
@@ -272,19 +286,26 @@ async function loadContext(client: any, query: string, body: any, userMemory: Us
     }
   }
 
-  return { category, listings, events, profiles, localBrain, userMemory, peopleFirst };
+  return { category, listings, events, profiles, localBrain, userMemory, peopleFirst, compactDashboard };
 }
 
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
   const location = body?.locationContext?.passportLabel?.toString().trim();
   const character = body?.character?.toString().trim();
+  const responseLanguage = body?.locationContext?.responseLanguage?.toString().trim();
+  const compactDashboard = body?.locationContext?.compactDashboard === true;
   const casualCount = recentCasualCount(history);
   const fresh = needsFreshWeb(lastUser);
 
   return [
     "You are SWIPESS AI, the central concierge for the SWIPESS marketplace and a capable general-purpose assistant.",
-    "Reply in the same language as the user's latest message unless they ask for another language.",
+    responseLanguage
+      ? `LANGUAGE LOCK: Reply only in ${responseLanguage}. The user explicitly selected this language; do not auto-detect or switch languages unless they explicitly ask you to translate.`
+      : "Reply in the same language as the user's latest message unless they ask for another language.",
     "Be concise, useful, conversational, friendly, and action-oriented.",
+    compactDashboard
+      ? "DASHBOARD COMPACT MODE: Keep the visible prose to 1-2 short sentences. Never dump every profile or every saved detail into prose. Contact cards render separately. If one person is clearly the best match, mention only that person in prose; otherwise briefly say there are a few good matches."
+      : "",
     "You may answer normal general questions, explain things, tell an occasional joke, brainstorm, and chat naturally. Do not act like every message must be a marketplace search.",
     "If the user repeatedly asks low-value entertainment questions, answer briefly but gently redirect toward something useful after roughly the third repeated request. Do not scold, shame, or invent charges; simply say that repeated casual prompts use their AI allowance and suggest a useful next topic.",
     "Never invent listing IDs, prices, users, events, phone numbers, sources, live facts, or completed actions.",
@@ -299,6 +320,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     casualCount >= 3 ? "The recent conversation already contains several casual/joke requests. Keep any further entertainment answer very short and redirect toward a useful task." : "",
     ctx.userMemory?.length ? `PRIVATE USER AI MEMORY (use only to personalize this user; never reveal it as a database record):\n${JSON.stringify(ctx.userMemory)}` : "",
     ctx.peopleFirst && ctx.localBrain.length ? "CONTACT-FIRST RULE: answer from the curated Local Brain matches only and do not mix in unrelated listings or profiles." : "",
+    compactDashboard && ctx.peopleFirst && ctx.localBrain.length ? "RANKING RULE: trust the Local Brain relevance order. Recommend the first/best match first. Do not describe all matches unless the user explicitly asks for options." : "",
     ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
     ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
     ctx.listings.length ? `LIVE SWIPESS LISTINGS:\n${JSON.stringify(ctx.listings)}` : "",
@@ -429,7 +451,9 @@ async function minimax(messages: Msg[]) {
 function emergencyReply(query: string, ctx: any) {
   if (ctx.localBrain.length) {
     const first = ctx.localBrain[0];
-    const intro = ctx.localBrain.length === 1
+    const intro = ctx.compactDashboard
+      ? `Best match: ${first?.name || "this contact"}.`
+      : ctx.localBrain.length === 1
       ? `I found a trusted local match: ${first?.name || "this contact"}.`
       : `I found ${ctx.localBrain.length} trusted local matches for you.`;
     return withLocalBrainCards(intro, ctx);
@@ -457,7 +481,7 @@ function emergencyReply(query: string, ctx: any) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-flexible-local-brain-cards-v2" }, "swipess", "health");
+  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-compact-local-brain-cards-v3" }, "swipess", "health");
   if (req.method !== "POST") return json(405, { error: "POST required" });
   if (Number(req.headers.get("content-length") || "0") > 128 * 1024) return json(413, { error: "Request too large" });
 

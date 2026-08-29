@@ -128,10 +128,57 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     final seed = widget.initialQuery.trim();
     if (seed.isNotEmpty) _privacyAccepted = true;
     if (seed.isNotEmpty) {
-      _controller.text = seed;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _bootstrapped) return;
         _bootstrapped = true;
+        const prefix = '__swipess_contact__:';
+        if (seed.startsWith(prefix)) {
+          try {
+            final decoded = jsonDecode(
+              utf8.decode(base64Url.decode(seed.substring(prefix.length))),
+            );
+            if (decoded is Map) {
+              final data = Map<String, dynamic>.from(decoded);
+              final name =
+                  (data['name'] ??
+                          data['full_name'] ??
+                          data['title'] ??
+                          'this contact')
+                      .toString()
+                      .trim();
+              final payload = base64Encode(utf8.encode(jsonEncode([data])));
+              setState(() {
+                _messages
+                  ..clear()
+                  ..add(
+                    IntelChatBubble(
+                      id: _newId(),
+                      role: 'assistant',
+                      content:
+                          'Here is ${name.isEmpty ? 'this contact' : name}. '
+                          'This chat is focused only on this contact.\n'
+                          '[DRAFT:local_brain:{"payload":"$payload"}]',
+                    ),
+                  );
+              });
+              _scrollToEnd();
+              return;
+            }
+          } catch (_) {}
+          setState(() {
+            _messages
+              ..clear()
+              ..add(
+                IntelChatBubble(
+                  id: _newId(),
+                  role: 'assistant',
+                  content: 'I could not open that contact. Please try again.',
+                ),
+              );
+          });
+          return;
+        }
+        _controller.text = seed;
         _submit(seed);
       });
     }
@@ -358,6 +405,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   'userLatitude': loc.latitude,
                   'userLongitude': loc.longitude,
                   'radiusKm': loc.radiusKm,
+                  'responseLanguage': ref
+                      .read(voiceLanguageProvider)
+                      .displayName,
                 },
               )) {
         if (!mounted) return;
@@ -381,6 +431,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 'userLatitude': loc.latitude,
                 'userLongitude': loc.longitude,
                 'radiusKm': loc.radiusKm,
+                'responseLanguage': ref.read(voiceLanguageProvider).displayName,
               },
               stream: false,
             );

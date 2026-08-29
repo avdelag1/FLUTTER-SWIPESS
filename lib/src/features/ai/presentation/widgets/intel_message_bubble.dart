@@ -67,9 +67,8 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
   bool _copied = false;
 
   Color get _ink => widget.isLight ? const Color(0xFF0A0A0D) : Colors.white;
-  Color get _muted => widget.isLight
-      ? const Color(0xFF73737D)
-      : const Color(0xFFB8C0CE);
+  Color get _muted =>
+      widget.isLight ? const Color(0xFF73737D) : const Color(0xFFB8C0CE);
 
   bool _hasStructuredPayload(ConciergeParse? parsed) {
     if (parsed == null) return false;
@@ -94,7 +93,8 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
             : 'I found trusted local matches for you.';
       }
       if (parsed.profiles.isNotEmpty) return 'I found matching people for you.';
-      if (parsed.listings.isNotEmpty) return 'I found matching listings for you.';
+      if (parsed.listings.isNotEmpty)
+        return 'I found matching listings for you.';
       if (parsed.events.isNotEmpty) return 'I found matching events for you.';
       return 'Done — I prepared that action for you.';
     }
@@ -132,8 +132,9 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
         child: Padding(
           padding: const EdgeInsets.only(bottom: 11),
           child: Column(
-            crossAxisAlignment:
-                isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isUser
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -154,18 +155,18 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
               ),
               if (!isUser && parsed != null) ...[
                 const SizedBox(height: 5),
-                for (final entry in parsed.localBrain)
+                for (final entry in parsed.localBrain.take(5))
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: IntelLocalBrainCard(data: entry),
                   ),
                 if (!preferProfiles)
-                  for (final listing in parsed.listings)
+                  for (final listing in parsed.listings.take(3))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: IntelListingCard(data: listing),
                     ),
-                for (final profile in parsed.profiles)
+                for (final profile in parsed.profiles.take(5))
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: IntelProfileCard(data: profile),
@@ -191,9 +192,7 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                                 icon: _copied
                                     ? Icons.check_rounded
                                     : Icons.copy_rounded,
-                                color: _copied
-                                    ? const Color(0xFF42C978)
-                                    : _ink,
+                                color: _copied ? const Color(0xFF42C978) : _ink,
                                 onTap: () {
                                   widget.onCopy();
                                   setState(() => _copied = true);

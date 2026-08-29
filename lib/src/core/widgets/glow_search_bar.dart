@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart'
@@ -12,9 +13,10 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_local_brain_card.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -57,7 +59,6 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     with TickerProviderStateMixin {
-  static const _voiceLocale = 'en-US';
   // Bright coral-red reads as active/recording without the harsh blood-red UI.
   static const _recordRed = Color(0xFFFF4D6D);
   static const _recordRedDeep = Color(0xFFE11D48);
@@ -107,6 +108,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   late final Animation<double> _micPopScale;
   late final AnimationController _micBreathCtrl;
   late final Animation<double> _micBreathScale;
+
+  VoiceLanguage get _voiceLanguage => ref.read(voiceLanguageProvider);
+  String get _voiceLocale => _voiceLanguage.localeCode;
 
   bool get _isListeningSession =>
       _micSessionActive &&
@@ -765,6 +769,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               'passportMode': true,
               'passportLabel': widget.locationLabel,
               'radiusKm': 50,
+              'compactDashboard': true,
+              'responseLanguage': ref.read(voiceLanguageProvider).displayName,
             },
             stream: false,
           );
@@ -978,24 +984,43 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     );
   }
 
+  void _openContactInChat(Map<String, dynamic> data) {
+    final name = (data['name'] ?? data['full_name'] ?? data['title'])
+        ?.toString()
+        .trim();
+    if (name == null || name.isEmpty) return;
+    AppHaptics.selection();
+    final encoded = base64UrlEncode(utf8.encode(jsonEncode(data)));
+    _dismissInlineAi();
+    widget.onSubmitted?.call('__swipess_contact__:$encoded');
+  }
+
   Widget _inlineAiPanel({
     required bool isLight,
     required Color ink,
     required Color blue,
   }) {
     final answer = _inlineAnswer;
-    final hasContacts =
-        _inlineLocalBrain.isNotEmpty ||
-        _inlineProfiles.isNotEmpty ||
-        _inlineListings.isNotEmpty;
+    final brain = _inlineLocalBrain.take(3).toList(growable: false);
+    final profileSlots = math.max(0, 3 - brain.length).toInt();
+    final profiles = _inlineProfiles.take(profileSlots).toList(growable: false);
+    final listings = _inlineListings.take(2).toList(growable: false);
+    final hasResults =
+        brain.isNotEmpty || profiles.isNotEmpty || listings.isNotEmpty;
     if (!_inlineAiLoading &&
         (answer == null || answer.trim().isEmpty) &&
-        !hasContacts) {
+        !hasResults) {
       return const SizedBox.shrink();
     }
 
+    final maxPanelHeight = math.min(
+      360.0,
+      MediaQuery.sizeOf(context).height * .42,
+    );
+
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 210),
+      curve: Curves.easeOutCubic,
       width: double.infinity,
       margin: const EdgeInsets.only(top: 7),
       padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
@@ -1003,6 +1028,13 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         color: isLight ? blue.withAlpha(10) : blue.withAlpha(20),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: blue.withAlpha(isLight ? 70 : 90)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isLight ? 10 : 34),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
       ),
       child: _inlineAiLoading
           ? Row(
@@ -1023,106 +1055,124 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                 ),
               ],
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxPanelHeight),
+              child: SingleChildScrollView(
+                primary: false,
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'GOOGLE GEMINI',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: blue,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _dismissInlineAi,
-                      child: Padding(
-                        padding: const EdgeInsets.all(3),
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 16,
-                          color: ink.withAlpha(120),
+                    Row(
+                      children: [
+                        Text(
+                          'GOOGLE GEMINI',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: blue,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.1,
+                          ),
                         ),
-                      ),
+                        const Spacer(),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _dismissInlineAi,
+                          child: Padding(
+                            padding: const EdgeInsets.all(3),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: ink.withAlpha(120),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                if (answer != null && answer.trim().isNotEmpty)
-                  Text(
-                    answer,
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: ink,
-                      fontSize: 12.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                if (hasContacts) ...[
-                  if (answer != null && answer.trim().isNotEmpty)
-                    const SizedBox(height: 10),
-                  for (final entry in _inlineLocalBrain.take(3))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: IntelLocalBrainCard(data: entry),
-                    ),
-                  for (final profile in _inlineProfiles.take(2))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: IntelProfileCard(data: profile),
-                    ),
-                  for (final listing in _inlineListings.take(2))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: IntelListingCard(data: listing),
-                    ),
-                ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Answer stays on Dashboard',
+                    if (answer != null && answer.trim().isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        answer,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: ink.withAlpha(120),
-                          fontSize: 9.5,
+                          color: ink,
+                          fontSize: 12.5,
+                          height: 1.35,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _continueInChat,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: blue.withAlpha(isLight ? 18 : 32),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: blue.withAlpha(75)),
-                        ),
-                        child: Text(
-                          'Continue in chat',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: blue,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
+                    ],
+                    if (hasResults) ...[
+                      if (answer != null && answer.trim().isNotEmpty)
+                        const SizedBox(height: 9),
+                      for (final entry in brain)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 7),
+                          child: _DashboardContactPreview(
+                            data: entry,
+                            isLight: isLight,
+                            accent: blue,
+                            onTap: () => _openContactInChat(entry),
                           ),
                         ),
-                      ),
+                      for (final profile in profiles)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 7),
+                          child: _DashboardContactPreview(
+                            data: profile,
+                            isLight: isLight,
+                            accent: blue,
+                            onTap: () => _openContactInChat(profile),
+                          ),
+                        ),
+                      for (final listing in listings)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: IntelListingCard(data: listing),
+                        ),
+                    ],
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Answer stays on Dashboard',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: ink.withAlpha(120),
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _continueInChat,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: blue.withAlpha(isLight ? 18 : 32),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: blue.withAlpha(75)),
+                            ),
+                            child: Text(
+                              'Continue in chat',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: blue,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
     );
   }
@@ -1281,6 +1331,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                     ],
                   ),
                 ),
+                const SizedBox(width: 4),
+                VoiceLanguageSelector(isLight: isLight),
+                const SizedBox(width: 2),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   tooltip: 'Send',
@@ -1395,6 +1448,153 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: pill,
+      ),
+    );
+  }
+}
+
+class _DashboardContactPreview extends StatelessWidget {
+  const _DashboardContactPreview({
+    required this.data,
+    required this.isLight,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final Map<String, dynamic> data;
+  final bool isLight;
+  final Color accent;
+  final VoidCallback onTap;
+
+  String _first(List<String> keys) {
+    for (final key in keys) {
+      final value = data[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = isLight ? const Color(0xFF101014) : Colors.white;
+    final name = _first(['name', 'full_name', 'title']);
+    final category = _first(['category', 'active_mode']);
+    final city = _first(['city', 'location']);
+    final description = _first(['recommendation_note', 'description']);
+    final image = _first([
+      'card_image_url',
+      'photo_url',
+      'avatar_url',
+      'image',
+    ]);
+    final channels = <String>[
+      if (_first(['whatsapp']).isNotEmpty) 'WhatsApp',
+      if (_first(['instagram']).isNotEmpty) 'Instagram',
+    ];
+    final subtitle = [
+      if (category.isNotEmpty) category,
+      if (city.isNotEmpty && city.toLowerCase() != 'global') city,
+    ].join(' · ');
+
+    return Material(
+      color: isLight ? Colors.white.withAlpha(180) : Colors.white.withAlpha(7),
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(9, 9, 8, 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: accent.withAlpha(isLight ? 34 : 48)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 39,
+                height: 39,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: accent.withAlpha(isLight ? 16 : 28),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: image.isNotEmpty
+                    ? Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        cacheWidth: 150,
+                        errorBuilder: (_, _, _) =>
+                            Icon(Icons.person_rounded, color: accent, size: 20),
+                      )
+                    : Icon(Icons.person_rounded, color: accent, size: 20),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name.isEmpty ? 'Contact' : name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty)
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: accent,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    if (description.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink.withAlpha(170),
+                            fontSize: 10.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    if (channels.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          channels.join(' · '),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: ink.withAlpha(115),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 12,
+                color: ink.withAlpha(95),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
