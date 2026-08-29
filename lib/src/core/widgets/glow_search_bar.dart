@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_persona_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -617,10 +618,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     widget.controller?.clear();
 
     final contactQuery = _wantsDirectoryContact(input);
+    final character = ref.read(aiPersonaProvider).value ?? 'default';
     try {
       final reply = await ref
           .read(aiEdgeRepositoryProvider)
           .chatConcierge(
+            character: character == 'default' ? null : character,
             messages: [
               const AiChatMessage(
                 role: 'system',

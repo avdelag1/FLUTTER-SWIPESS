@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_persona_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -93,7 +94,6 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   double _voiceLevel = 0;
   int? _countdown;
   Timer? _countdownTimer;
-  String _character = 'default';
   String? _speakingId;
   final _tts = FlutterTts();
 
@@ -402,7 +402,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
           .read(aiEdgeRepositoryProvider)
           .chatConcierge(
             messages: history,
-            character: _character == 'default' ? null : _character,
+            character: (ref.read(aiPersonaProvider).value ?? 'default') == 'default' ? null : (ref.read(aiPersonaProvider).value ?? 'default'),
             locationContext: {
               'passportMode': false,
               'passportLabel': loc.label,
@@ -780,8 +780,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   }
 
   (String, String, String, Color) get _activePersona {
+    final char = ref.watch(aiPersonaProvider).value ?? 'default';
     for (final p in _personas) {
-      if (p.$1 == _character) return p;
+      if (p.$1 == char) return p;
     }
     return _personas.first;
   }
@@ -1488,10 +1489,12 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               for (final p in _personas)
                 ListTile(
                   dense: true,
-                  onTap: () => setState(() {
-                    _character = p.$1;
-                    _showPersona = false;
-                  }),
+                  onTap: () {
+                    ref.read(aiPersonaProvider.notifier).setPersona(p.$1);
+                    setState(() {
+                      _showPersona = false;
+                    });
+                  },
                   leading: CircleAvatar(
                     radius: 14,
                     backgroundColor: p.$4.withAlpha(40),
@@ -1504,7 +1507,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   title: Text(
                     p.$2.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: p.$1 == _character
+                      color: p.$1 == (ref.watch(aiPersonaProvider).value ?? 'default')
                           ? (isLight ? _aiBlue : _aiBlueSoft)
                           : ink,
                       fontWeight: FontWeight.w900,
@@ -1519,7 +1522,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  trailing: p.$1 == _character
+                  trailing: p.$1 == (ref.watch(aiPersonaProvider).value ?? 'default')
                       ? Icon(
                           Icons.circle,
                           size: 8,
