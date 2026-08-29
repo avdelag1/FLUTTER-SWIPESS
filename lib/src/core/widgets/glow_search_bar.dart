@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
@@ -55,8 +54,11 @@ class GlowSearchBar extends ConsumerStatefulWidget {
   ConsumerState<GlowSearchBar> createState() => _GlowSearchBarState();
 }
 
-class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
+class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
+    with TickerProviderStateMixin {
   static const _voiceLocale = 'en-US';
+  static const _recordRed = Color(0xFFFF1F1F);
+  static const _recordRedDeep = Color(0xFFCC0000);
 
   final _random = math.Random();
 
@@ -69,6 +71,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   int? _countdown;
   bool _voiceHasSpeech = false;
   bool _whisperRecording = false;
+  bool _micSessionActive = false;
   String _liveTranscript = '';
   String? _pendingVoiceSubmit;
   bool _voiceSubmitting = false;
@@ -98,12 +101,25 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   List<Map<String, dynamic>> _inlineProfiles = const [];
   List<Map<String, dynamic>> _inlineListings = const [];
 
+  late final AnimationController _micPopCtrl;
+  late final Animation<double> _micPopScale;
+  late final AnimationController _micBreathCtrl;
+  late final Animation<double> _micBreathScale;
+
+  bool get _isListeningSession =>
+      _micSessionActive &&
+      (_whisperRecording || _voiceActive || _voice.isOwnedBy(this));
+
+  bool get _isRecordingGlow =>
+      _isListeningSession && _countdown == null && !_transcribing;
+
   bool get _isEditableSearch => widget.controller != null;
 
   bool get _showPrompt =>
       _isEditableSearch &&
       (widget.controller?.text.trim().isEmpty ?? true) &&
       !_focusNode.hasFocus &&
+      !_micSessionActive &&
       !_voiceActive &&
       !_transcribing &&
       _countdown == null &&
@@ -134,6 +150,29 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _voiceRepo = ref.read(voiceTranscribeRepositoryProvider);
+    _micPopCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _micPopScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween(begin: 0.62, end: 1.34)
+            .chain(CurveTween(curve: Curves.elasticOut)),
+        weight: 72,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: 1.34, end: 1.14)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 28,
+      ),
+    ]).animate(_micPopCtrl);
+    _micBreathCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _micBreathScale = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _micBreathCtrl, curve: Curves.easeInOut),
+    );
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
     _schedulePrompt();
@@ -157,6 +196,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     _countdownTimer?.cancel();
     _silenceTimer?.cancel();
     _ampSub?.cancel();
+    _micPopCtrl.dispose();
+    _micBreathCtrl.dispose();
     if (_whisperRecording) {
       unawaited(_voiceRepo.cancel());
     }
@@ -209,6 +250,84 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _triggerMicPop() {
+    unawaited(_micPopCtrl.forward(from: 0));
+    if (!_micBreathCtrl.isAnimating) _micBreathCtrl.repeat(reverse: true);
+  }
+
+  void _stopMicBreathing() {
+    if (_micBreathCtrl.isAnimating) {
+      _micBreathCtrl.stop();
+      _micBreathCtrl.value = 0;
+    }
+  }
+
+  Future<void> _endContinuousSession() async {
+    _cancelVoiceCountdown();
+    _micSessionActive = false;
+    _stopMicBreathing();
+    if (kIsWeb) {
+      await _voice.cancel(owner: this);
+    } else if (_whisperRecording) {
+      await _stopWhisperCapture(cancel: true);
+    }
+    if (!mounted) return;
+    setState(() {
+      _voiceActive = false;
+      _transcribing = false;
+      _voiceLevel = 0;
+      _voiceHasSpeech = false;
+      _liveTranscript = '';
+    });
+    _restoreVoiceAudio();
+  }
+
+  void _handleVoiceLevel(double normalized, {double? rawLevel}) {
+    if (!mounted) return;
+    final speaking = normalized > 0.06 ||
+        (rawLevel != null && rawLevel > -54);
+    if (_countdown != null && speaking) {
+      _cancelVoiceCountdown();
+      setState(() => _voiceActive = true);
+    }
+    if ((_voiceLevel - normalized).abs() > .01) {
+      setState(() => _voiceLevel = normalized);
+    }
+    if (speaking) {
+      _voiceHasSpeech = true;
+      if (_countdown == null && _isListeningSession) {
+        if (kIsWeb) {
+          // silence handled by LiveVoiceInput
+        } else {
+          _armWhisperSilence();
+        }
+      }
+    }
+  }
+
+  Future<void> _resumeListeningAfterSend() async {
+    if (!_micSessionActive || !mounted) return;
+    _voiceHasSpeech = false;
+    _liveTranscript = '';
+    _pendingVoiceSubmit = null;
+    widget.controller?.clear();
+    _cancelVoiceCountdown();
+    if (kIsWeb) {
+      await _voice.cancel(owner: this);
+      if (!mounted || !_micSessionActive) return;
+      await _startWebListening(animatePop: false);
+      return;
+    }
+    if (!_whisperRecording) {
+      await _startWhisperCapture(animatePop: false);
+    } else {
+      setState(() {
+        _voiceActive = true;
+        _transcribing = false;
+      });
+    }
+  }
+
   void _cancelVoiceCountdown() {
     _countdownTimer?.cancel();
     _countdownTimer = null;
@@ -231,7 +350,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         : (level / 10).clamp(0.0, 1.0).toDouble();
   }
 
-  Future<void> _startWhisperCapture() async {
+  Future<void> _startWhisperCapture({bool animatePop = true}) async {
     final repo = _voiceRepo;
     if (!await repo.hasPermission()) {
       _showVoiceError(
@@ -240,13 +359,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
 
-    unawaited(AppHaptics.voiceStart());
+    if (animatePop) unawaited(AppHaptics.voiceStart());
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
-    _voiceHasSpeech = false;
-    _liveTranscript = '';
-    _pendingVoiceSubmit = null;
-    _cancelVoiceCountdown();
+    if (animatePop) {
+      _voiceHasSpeech = false;
+      _liveTranscript = '';
+      _pendingVoiceSubmit = null;
+      _cancelVoiceCountdown();
+    }
 
     if (!await repo.start()) {
       _restoreVoiceAudio();
@@ -254,27 +375,23 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
 
+    if (animatePop) _triggerMicPop();
+
     setState(() {
       _whisperRecording = true;
       _voiceActive = true;
       _transcribing = false;
       _voiceLevel = 0;
+      _micSessionActive = true;
     });
 
     await _ampSub?.cancel();
     _ampSub = repo
-        .amplitudeStream(interval: const Duration(milliseconds: 80))
+        .amplitudeStream(interval: const Duration(milliseconds: 60))
         .listen((amp) {
       if (!mounted || !_whisperRecording) return;
       final normalized = _normalizeAmplitude(amp.current);
-      if (amp.current > -48) {
-        if (_countdown != null) _cancelVoiceCountdown();
-        _voiceHasSpeech = true;
-      }
-      if ((_voiceLevel - normalized).abs() > .01) {
-        setState(() => _voiceLevel = normalized);
-      }
-      if (_voiceHasSpeech && _countdown == null) _armWhisperSilence();
+      _handleVoiceLevel(normalized, rawLevel: amp.current);
     });
   }
 
@@ -322,7 +439,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     _countdownTimer?.cancel();
     setState(() {
       _countdown = 3;
-      _voiceActive = false;
+      _voiceActive = true;
       _transcribing = false;
     });
     unawaited(AppHaptics.countdownTick(3));
@@ -381,31 +498,24 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         });
         if (text.isEmpty) {
           _showVoiceError('I did not catch that. Please try speaking again.');
+          await _resumeListeningAfterSend();
           return;
         }
         widget.controller?.text = text;
-        _submitSearch(text);
+        await _submitSearch(text);
       } on VoiceTranscribeException catch (error) {
         await _stopWhisperCapture(cancel: true);
+        _micSessionActive = false;
         _voiceSubmitting = false;
         if (mounted) _showVoiceError(error.message);
       } catch (_) {
         await _stopWhisperCapture(cancel: true);
+        _micSessionActive = false;
         _voiceSubmitting = false;
         if (mounted) {
           _showVoiceError('Voice transcription failed. Please try again.');
         }
       }
-      return;
-    }
-
-    try {
-      await _voice.finish(owner: this);
-    } catch (_) {}
-
-    if (!mounted) {
-      _voiceSubmitting = false;
-      _restoreVoiceAudio();
       return;
     }
 
@@ -420,69 +530,25 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     setState(() {
       _countdown = null;
       _transcribing = false;
-      _voiceActive = false;
       _voiceLevel = 0;
       _voiceHasSpeech = false;
     });
-    _restoreVoiceAudio();
     _voiceSubmitting = false;
 
     if (text.isEmpty) {
       _showVoiceError('I did not catch that. Please try speaking again.');
+      await _resumeListeningAfterSend();
       return;
     }
 
     final controller = widget.controller;
-    if (controller != null && controller.text.trim().isEmpty) {
+    if (controller != null) {
       controller.value = TextEditingValue(
         text: text,
         selection: TextSelection.collapsed(offset: text.length),
       );
     }
-    _submitSearch(text);
-  }
-
-  Future<void> _finishVoiceAndSubmit() async {
-    _cancelVoiceCountdown();
-    if (!_voiceActive && !_voice.isOwnedBy(this)) return;
-
-    final beforeFinish = widget.controller?.text.trim() ?? '';
-    if (mounted) {
-      setState(() {
-        _voiceActive = false;
-        _transcribing = true;
-        _voiceLevel = 0;
-      });
-    }
-
-    try {
-      await _voice.finish(owner: this);
-    } catch (_) {}
-
-    if (!mounted) {
-      _restoreVoiceAudio();
-      return;
-    }
-
-    final current = widget.controller?.text.trim() ?? '';
-    final text = current.isNotEmpty
-        ? current
-        : _liveTranscript.trim().isNotEmpty
-        ? _liveTranscript.trim()
-        : beforeFinish;
-    setState(() {
-      _transcribing = false;
-      _voiceActive = false;
-      _voiceLevel = 0;
-      _voiceHasSpeech = false;
-    });
-    _restoreVoiceAudio();
-
-    if (text.isEmpty) {
-      _showVoiceError('I did not catch that. Please try speaking again.');
-      return;
-    }
-    _submitSearch(text);
+    await _submitSearch(text);
   }
 
   Future<void> _toggleVoice() async {
@@ -490,40 +556,40 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       widget.onTap?.call();
       return;
     }
-    if (_inlineAiLoading || _transcribing) return;
+    if (_inlineAiLoading) return;
 
-    if (!kIsWeb) {
-      if (_whisperRecording || _countdown != null) {
-        if (_countdown != null) {
-          _cancelVoiceCountdown();
-          return;
-        }
-        if (_voiceHasSpeech) {
-          _beginVoiceCountdown();
-        } else {
-          await _stopWhisperCapture(cancel: true);
-        }
-        return;
-      }
-      await _startWhisperCapture();
+    if (_micSessionActive ||
+        _voiceActive ||
+        _whisperRecording ||
+        _voice.isOwnedBy(this)) {
+      await _endContinuousSession();
       return;
     }
 
-    if (_voiceActive || _voice.isOwnedBy(this)) {
-      await _finishVoiceAndSubmit();
-      return;
+    _micSessionActive = true;
+    if (kIsWeb) {
+      await _startWebListening(animatePop: true);
+    } else {
+      await _startWhisperCapture(animatePop: true);
     }
+  }
 
-    unawaited(AppHaptics.voiceStart());
+  Future<void> _startWebListening({bool animatePop = true}) async {
+    if (animatePop) unawaited(AppHaptics.voiceStart());
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
-    _voiceHasSpeech = false;
-    _liveTranscript = widget.controller?.text.trim() ?? '';
-    _pendingVoiceSubmit = null;
-    _cancelVoiceCountdown();
+    if (animatePop) {
+      _voiceHasSpeech = false;
+      _liveTranscript = widget.controller?.text.trim() ?? '';
+      _pendingVoiceSubmit = null;
+      _cancelVoiceCountdown();
+      _triggerMicPop();
+    }
+
     setState(() {
       _transcribing = true;
       _voiceLevel = 0;
+      _micSessionActive = true;
     });
 
     final controller = widget.controller;
@@ -535,9 +601,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         if (!mounted) return;
         final clean = text.trim();
         if (clean.isEmpty) return;
-        if (_countdown != null) {
-          _cancelVoiceCountdown();
-        }
+        if (_countdown != null) _cancelVoiceCountdown();
         _voiceHasSpeech = true;
         _liveTranscript = clean;
 
@@ -567,7 +631,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
           }
           return;
         }
-        if (_voice.isOwnedBy(this) && _voice.active) return;
+        if (_micSessionActive && _voice.isOwnedBy(this)) return;
         setState(() {
           _voiceActive = false;
           _transcribing = false;
@@ -579,20 +643,20 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         final normalized = level <= 0
             ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
             : (level / 10).clamp(0.0, 1.0).toDouble();
-        if ((_voiceLevel - normalized).abs() > .01) {
-          setState(() => _voiceLevel = normalized);
-        }
+        _handleVoiceLevel(normalized, rawLevel: level);
       },
       onError: (message) {
         if (!mounted) return;
         _cancelVoiceCountdown();
         unawaited(_voice.cancel(owner: this));
+        _micSessionActive = false;
         setState(() {
           _voiceActive = false;
           _transcribing = false;
           _voiceLevel = 0;
           _voiceHasSpeech = false;
         });
+        _stopMicBreathing();
         _restoreVoiceAudio();
         _showVoiceError(message);
       },
@@ -604,25 +668,29 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       _voiceActive = started && _voice.isOwnedBy(this) && _voice.active;
       if (!_voiceActive) _voiceLevel = 0;
     });
-    if (!started) _restoreVoiceAudio();
+    if (!started) {
+      _micSessionActive = false;
+      _stopMicBreathing();
+      _restoreVoiceAudio();
+    }
   }
 
-  void _submitSearch(String raw) {
-    if (_voiceActive) {
-      unawaited(_finishVoiceAndSubmit());
-      return;
-    }
+  Future<void> _submitSearch(String raw) async {
     _cancelVoiceCountdown();
     final input = normalizeVoiceTranscript(raw.trim());
     if (input.isEmpty || _inlineAiLoading) return;
 
+    final keepListening = _micSessionActive;
+
     if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
       FocusManager.instance.primaryFocus?.unfocus();
+      if (keepListening) await _resumeListeningAfterSend();
       return;
     }
 
-    unawaited(_runInlineAi(input));
+    await _runInlineAi(input);
     FocusManager.instance.primaryFocus?.unfocus();
+    if (keepListening) await _resumeListeningAfterSend();
   }
 
   bool _wantsDirectoryContact(String raw) {
@@ -777,74 +845,80 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   }
 
   Widget _micButton({required bool isLight, required Color blue}) {
-    final pulse = 1.0 + (_voiceLevel * .08);
+    final sessionActive = _micSessionActive;
+    final glow = sessionActive ? _recordRed : blue;
+    final deepGlow = sessionActive ? _recordRedDeep : blue;
+    final pulse = 1.0 + (_voiceLevel * .1);
+
     return Semantics(
       button: true,
       label: _countdown != null
           ? 'Voice search sends in $_countdown'
-          : _voiceActive
-          ? 'Finish voice search now'
+          : sessionActive
+          ? 'Stop voice search'
           : 'Start voice search',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _toggleVoice,
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 110),
-          scale: _voiceActive ? pulse : 1,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: _voiceActive ? blue : blue.withAlpha(isLight ? 18 : 34),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: _voiceActive ? blue : blue.withAlpha(90),
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_micPopCtrl, _micBreathCtrl]),
+          builder: (context, child) {
+            final pop = _micPopCtrl.isAnimating || _micPopCtrl.value > 0
+                ? _micPopScale.value
+                : 1.0;
+            final breath = _isRecordingGlow ? _micBreathScale.value : 1.0;
+            final scale = pop * breath * (sessionActive ? pulse : 1.0);
+
+            return Transform.scale(
+              scale: scale,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: sessionActive
+                      ? glow
+                      : blue.withAlpha(isLight ? 18 : 34),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: sessionActive ? glow : blue.withAlpha(90),
+                    width: sessionActive ? 1.6 : 1,
+                  ),
+                  boxShadow: sessionActive
+                      ? [
+                          BoxShadow(
+                            color: glow.withAlpha(110),
+                            blurRadius: 14 + (_voiceLevel * 12),
+                            spreadRadius: 1 + (_voiceLevel * 2.2),
+                          ),
+                          BoxShadow(
+                            color: deepGlow.withAlpha(70),
+                            blurRadius: 22 + (_voiceLevel * 8),
+                            spreadRadius: -1,
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: _transcribing
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : sessionActive
+                    ? const Icon(
+                        Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 15,
+                      )
+                    : Icon(Icons.mic_none_rounded, color: blue, size: 16),
               ),
-              boxShadow: _voiceActive
-                  ? [
-                      BoxShadow(
-                        color: blue.withAlpha(58),
-                        blurRadius: 11 + (_voiceLevel * 9),
-                        spreadRadius: _voiceLevel * 1.3,
-                      ),
-                    ]
-                  : null,
-            ),
-            alignment: Alignment.center,
-            child: _countdown != null
-                ? Text(
-                    '$_countdown',
-                    key: ValueKey<int>(_countdown!),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
-                    ),
-                  )
-                : _transcribing
-                ? SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: blue,
-                    ),
-                  )
-                : _voiceActive
-                ? BreathingWidget(
-                    duration: const Duration(milliseconds: 1050),
-                    minOpacity: .55,
-                    maxOpacity: 1,
-                    child: const Icon(
-                      Icons.mic_rounded,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                  )
-                : Icon(Icons.mic_none_rounded, color: blue, size: 16),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -1004,7 +1078,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     final prompts = _rotatingPrompts;
     final displayHint = prompts[_promptIndex % prompts.length];
     final voiceVisible =
-        _voiceActive || _transcribing || _countdown != null || _whisperRecording;
+        _micSessionActive || _transcribing || _countdown != null;
+    final sessionGlow = _micSessionActive ? _recordRed : blue;
+    final sessionGlowDeep = _micSessionActive ? _recordRedDeep : blue;
 
     if (!_isEditableSearch) {
       return Padding(
@@ -1048,16 +1124,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: voiceVisible
-                    ? blue
+                    ? sessionGlow
                     : blue.withAlpha(isLight ? 125 : 145),
-                width: voiceVisible ? 1.5 : .9,
+                width: voiceVisible ? 2 : .9,
               ),
               boxShadow: voiceVisible
                   ? [
                       BoxShadow(
-                        color: blue.withAlpha(38),
-                        blurRadius: 15 + (_voiceLevel * 8),
-                        spreadRadius: -2,
+                        color: sessionGlow.withAlpha(72),
+                        blurRadius: 18 + (_voiceLevel * 10),
+                        spreadRadius: -1,
+                      ),
+                      BoxShadow(
+                        color: sessionGlowDeep.withAlpha(48),
+                        blurRadius: 28 + (_voiceLevel * 6),
+                        spreadRadius: -4,
                       ),
                     ]
                   : null,
@@ -1103,6 +1184,44 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                             ),
                           ),
                         ),
+                      if (_countdown != null)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Center(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 220),
+                                switchInCurve: Curves.elasticOut,
+                                switchOutCurve: Curves.easeIn,
+                                transitionBuilder: (child, animation) {
+                                  return ScaleTransition(
+                                    scale: animation,
+                                    child: FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  '$_countdown',
+                                  key: ValueKey<int>(_countdown!),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: _recordRed,
+                                    fontSize: 34,
+                                    fontWeight: FontWeight.w900,
+                                    height: 1,
+                                    letterSpacing: -1.2,
+                                    shadows: [
+                                      Shadow(
+                                        color: _recordRed.withAlpha(160),
+                                        blurRadius: 14,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       TextField(
                         focusNode: _focusNode,
                         controller: widget.controller,
@@ -1126,9 +1245,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                               ? 'Listening… speak naturally'
                               : null,
                           hintStyle: GoogleFonts.plusJakartaSans(
-                            color: blue.withAlpha(210),
+                            color: _countdown != null
+                                ? _recordRed.withAlpha(220)
+                                : sessionGlow.withAlpha(210),
                             fontWeight: FontWeight.w700,
-                            fontSize: 13.5,
+                            fontSize: _countdown != null ? 15 : 13.5,
                           ),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -1173,9 +1294,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                 style: GoogleFonts.plusJakartaSans(
                   color: _liveTranscript.trim().isNotEmpty && _countdown == null
                       ? ink.withAlpha(225)
-                      : blue,
+                      : _countdown != null
+                      ? _recordRed
+                      : sessionGlow,
                   fontWeight: FontWeight.w700,
-                  fontSize: 10.5,
+                  fontSize: _countdown != null ? 11.5 : 10.5,
                   height: 1.25,
                 ),
               ),
