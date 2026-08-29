@@ -2,7 +2,8 @@ name: Apply dashboard runtime hotfix
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - .github/workflows/apply-dashboard-runtime-hotfix.yml
 
@@ -13,384 +14,34 @@ jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Patch dashboard voice, navigation and map
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
+      - name: Apply source patch
+        run: python3 .github/scripts/dashboard_runtime_hotfix.py
 
-          def must_replace(text, old, new, label):
-              if old not in text:
-                  raise SystemExit(f"missing expected block: {label}")
-              return text.replace(old, new, 1)
-
-          # 1) Dashboard AI search: switch from post-recording Whisper-only UX
-          # to the shared live speech recognizer so partial words render while
-          # speaking and silence drives the visible 3-2-1 auto-send countdown.
-          path = Path('lib/src/core/widgets/glow_search_bar.dart')
-          s = path.read_text()
-          s = must_replace(
-              s,
-              "import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';\n",
-              "import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';\n",
-              'live voice import',
-          )
-          s = s.replace("import 'package:record/record.dart';\n", '')
-
-          s, count = re.subn(
-              r"  static final _directoryIntent = RegExp\(\n.*?\n  \);\n\n",
-              '',
-              s,
-              count=1,
-              flags=re.S,
-          )
-          if count != 1:
-              raise SystemExit('directory intent block not found')
-
-          s = must_replace(
-              s,
-              "  late final VoiceTranscribeRepository _voiceRecorder;\n"
-              "  late final DeckAudioNotifier _audioNotifier;\n"
-              "  StreamSubscription<Amplitude>? _voiceAmplitudeSub;\n"
-              "  Timer? _voiceSilenceTimer;\n"
-              "  Timer? _countdownTimer;\n"
-              "  int? _countdown;\n"
-              "  bool _voiceHasSpeech = false;\n"
-              "  String _voiceInitialText = '';\n",
-              "  final LiveVoiceInput _voice = LiveVoiceInput.instance;\n"
-              "  late final DeckAudioNotifier _audioNotifier;\n"
-              "  Timer? _countdownTimer;\n"
-              "  int? _countdown;\n"
-              "  bool _voiceHasSpeech = false;\n",
-              'voice state',
-          )
-          s = s.replace("    _voiceRecorder = ref.read(voiceTranscribeRepositoryProvider);\n", '')
-          s = must_replace(
-              s,
-              "    _voiceSilenceTimer?.cancel();\n"
-              "    unawaited(_voiceAmplitudeSub?.cancel());\n"
-              "    unawaited(_voiceRecorder.cancel());\n",
-              "    unawaited(_voice.cancel(owner: this));\n",
-              'voice dispose',
-          )
-
-          replacement = r'''  void _beginVoiceCountdown() {
-    if (!mounted ||
-        !_voice.isOwnedBy(this) ||
-        !_voice.active ||
-        !_voiceHasSpeech ||
-        _inlineAiLoading) {
-      return;
-    }
-    _countdownTimer?.cancel();
-    setState(() => _countdown = 3);
-    unawaited(AppHaptics.countdownTick(3));
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final current = _countdown ?? 0;
-      if (current > 1) {
-        final next = current - 1;
-        setState(() => _countdown = next);
-        unawaited(AppHaptics.countdownTick(next));
-        return;
-      }
-      timer.cancel();
-      _countdownTimer = null;
-      setState(() => _countdown = null);
-      unawaited(AppHaptics.voiceCommit());
-      unawaited(_finishVoiceAndSubmit());
-    });
-  }
-
-  Future<void> _finishVoiceAndSubmit() async {
-    _cancelVoiceCountdown();
-    if (!_voiceActive && !_voice.isOwnedBy(this)) return;
-
-    final beforeFinish = widget.controller?.text.trim() ?? '';
-    if (mounted) {
-      setState(() {
-        _voiceActive = false;
-        _transcribing = true;
-        _voiceLevel = 0;
-      });
-    }
-
-    try {
-      await _voice.finish(owner: this);
-    } catch (_) {}
-
-    if (!mounted) {
-      _restoreVoiceAudio();
-      return;
-    }
-
-    final text = (widget.controller?.text.trim().isNotEmpty ?? false)
-        ? widget.controller!.text.trim()
-        : beforeFinish;
-
-    setState(() {
-      _transcribing = false;
-      _voiceActive = false;
-      _voiceLevel = 0;
-      _voiceHasSpeech = false;
-    });
-    _restoreVoiceAudio();
-
-    if (text.isEmpty) {
-      _showVoiceError('I did not catch that. Please try speaking again.');
-      return;
-    }
-
-    _submitSearch(text);
-  }
-
-  Future<void> _toggleVoice() async {
-    if (!_isEditableSearch) {
-      widget.onTap?.call();
-      return;
-    }
-    if (_inlineAiLoading || _transcribing) return;
-
-    if (_voiceActive || _voice.isOwnedBy(this)) {
-      await _finishVoiceAndSubmit();
-      return;
-    }
-
-    unawaited(AppHaptics.voiceStart());
-    FocusManager.instance.primaryFocus?.unfocus();
-    _suppressVoiceAudio();
-    _voiceHasSpeech = false;
-    _cancelVoiceCountdown();
-
-    setState(() {
-      _transcribing = true;
-      _voiceLevel = 0;
-    });
-
-    final controller = widget.controller;
-    final started = await _voice.start(
-      owner: this,
-      initialText: controller?.text.trim() ?? '',
-      languageCode: ref.read(voiceLanguageProvider).localeCode,
-      listenMode: ListenMode.dictation,
-      onText: (text) {
-        if (!mounted) return;
-        _voiceHasSpeech = text.trim().isNotEmpty;
-        _cancelVoiceCountdown();
-        if (controller != null) {
-          controller.value = TextEditingValue(
-            text: text,
-            selection: TextSelection.collapsed(offset: text.length),
-          );
-          widget.onChanged?.call(text);
-        }
-        if (!_voiceActive || _transcribing) {
-          setState(() {
-            _voiceActive = true;
-            _transcribing = false;
-          });
-        }
-      },
-      onSilence: _beginVoiceCountdown,
-      onListeningChanged: (listening) {
-        if (!mounted) return;
-        if (listening) {
-          if (!_voiceActive || _transcribing) {
-            setState(() {
-              _voiceActive = true;
-              _transcribing = false;
-            });
-          }
-          return;
-        }
-        if (_voice.isOwnedBy(this) && _voice.active) return;
-        setState(() {
-          _voiceActive = false;
-          _transcribing = false;
-          _voiceLevel = 0;
-        });
-      },
-      onSoundLevel: (level) {
-        if (!mounted) return;
-        final normalized = level <= 0
-            ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
-            : (level / 10).clamp(0.0, 1.0).toDouble();
-        if ((_voiceLevel - normalized).abs() > .01) {
-          setState(() => _voiceLevel = normalized);
-        }
-      },
-      onError: (message) {
-        if (!mounted) return;
-        _cancelVoiceCountdown();
-        unawaited(_voice.cancel(owner: this));
-        setState(() {
-          _voiceActive = false;
-          _transcribing = false;
-          _voiceLevel = 0;
-          _voiceHasSpeech = false;
-        });
-        _restoreVoiceAudio();
-        _showVoiceError(message);
-      },
-    );
-
-    if (!mounted) return;
-    setState(() {
-      _transcribing = false;
-      _voiceActive = started && _voice.isOwnedBy(this) && _voice.active;
-      if (!_voiceActive) _voiceLevel = 0;
-    });
-    if (!started) {
-      _restoreVoiceAudio();
-    }
-  }
-'''
-
-          s, count = re.subn(
-              r"  void _beginVoiceCountdown\(\) \{.*?\n  void _submitSearch",
-              replacement + "\n  void _submitSearch",
-              s,
-              count=1,
-              flags=re.S,
-          )
-          if count != 1:
-              raise SystemExit('voice function block not found')
-
-          directory_submit = '''    if (_wantsDirectoryContact(input)) {
-      widget.controller?.clear();
-      _dismissInlineAi();
-      ref.read(overlayModalsProvider.notifier).openConcierge(input);
-      FocusManager.instance.primaryFocus?.unfocus();
-      return;
-    }
-
-'''
-          if directory_submit not in s:
-              raise SystemExit('directory auto-open submit block not found')
-          s = s.replace(directory_submit, '', 1)
-
-          s, count = re.subn(
-              r"  bool _wantsDirectoryContact\(String raw\) \{.*?\n  \}\n\n  void _openDirectoryConcierge\(String query\) \{.*?\n  \}\n\n",
-              '',
-              s,
-              count=1,
-              flags=re.S,
-          )
-          if count != 1:
-              raise SystemExit('directory helper block not found')
-
-          s = s.replace(
-              "                    'Answer in 1-3 short sentences. Be useful and direct. Preserve useful '\n"
-              "                    'SWIPESS action tags when needed.\\n\\n'\n",
-              "                    'Answer in 1-3 short sentences. Be useful and direct. '\n"
-              "                    'Keep this answer on the Dashboard. Never force-open chat or another page. '\n"
-              "                    'Do not return Local Brain/profile/contact cards unless the user explicitly asks for a contact; '\n"
-              "                    'even then, keep the answer compact here and let the user tap Continue in chat for full cards.\\n\\n'\n",
-              1,
-          )
-
-          auto_open = '''      if (parsed.localBrain.isNotEmpty ||
-          parsed.profiles.isNotEmpty ||
-          parsed.navPaths.any((path) => path.contains('seekers'))) {
-        setState(() {
-          _inlineAiLoading = false;
-          _inlineQuestion = null;
-          _inlineAnswer = null;
-        });
-        _openDirectoryConcierge(input);
-        return;
-      }
-      final clean = parsed.cleanContent.trim();
-      setState(() {
-        _inlineAiLoading = false;
-        _inlineAnswer = clean.isNotEmpty ? clean : reply.trim();
-      });
-'''
-          inline_stay = '''      final clean = parsed.cleanContent.trim();
-      final hasDirectoryResults =
-          parsed.localBrain.isNotEmpty || parsed.profiles.isNotEmpty;
-      setState(() {
-        _inlineAiLoading = false;
-        _inlineAnswer = clean.isNotEmpty
-            ? clean
-            : hasDirectoryResults
-            ? 'I found matching local contacts. Tap Continue in chat to view their full contact cards.'
-            : reply.trim();
-      });
-'''
-          s = must_replace(s, auto_open, inline_stay, 'inline answer must stay dashboard')
-          path.write_text(s)
-
-          # 2) Make the voice language AUTO pill smaller everywhere it appears.
-          path = Path('lib/src/features/ai/presentation/widgets/voice_language_selector.dart')
-          s = path.read_text()
-          s = s.replace('borderRadius: BorderRadius.circular(16)', 'borderRadius: BorderRadius.circular(12)')
-          s = s.replace('            height: 36,', '            height: 28,', 1)
-          s = s.replace('            padding: const EdgeInsets.symmetric(horizontal: 12),', '            padding: const EdgeInsets.symmetric(horizontal: 8),', 1)
-          s = s.replace('                fontSize: 13,', '                fontSize: 10.5,', 1)
-          path.write_text(s)
-
-          # 3) Remove perceptible navigation delay on dashboard -> events/decks.
-          path = Path('lib/src/features/dashboard/presentation/screens/dashboard_shell.dart')
-          s = path.read_text()
-          s = s.replace('Duration(milliseconds: persistentChromeVisible ? 360 : 500)', 'Duration(milliseconds: persistentChromeVisible ? 140 : 170)', 1)
-          s = s.replace(': const Duration(milliseconds: 220);', ': const Duration(milliseconds: 120);', 1)
-          s = s.replace('duration: const Duration(milliseconds: 420),', 'duration: const Duration(milliseconds: 110),', 1)
-          path.write_text(s)
-
-          path = Path('lib/src/features/swipes/presentation/utils/open_swipe_deck.dart')
-          s = path.read_text()
-          s = s.replace('transitionDuration: const Duration(milliseconds: 90),', 'transitionDuration: Duration.zero,', 1)
-          s = s.replace('reverseTransitionDuration: const Duration(milliseconds: 110),', 'reverseTransitionDuration: const Duration(milliseconds: 80),', 1)
-          path.write_text(s)
-
-          # 4) Guarantee a dark map canvas underneath the renderer so no white
-          # first-frame flash can appear while Mapbox/Flutter map initializes.
-          path = Path('lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart')
-          s = path.read_text()
-          marker = '''          children: [
-            buildPlatformDiscoveryMap(
-'''
-          replacement_map = '''          children: [
-            const ColoredBox(color: Color(0xFF06182B)),
-            buildPlatformDiscoveryMap(
-'''
-          s = must_replace(s, marker, replacement_map, 'map background canvas')
-          path.write_text(s)
-          PY
-
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Format changed Dart files
+      - name: Format
         run: dart format lib/src/core/widgets/glow_search_bar.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart lib/src/features/dashboard/presentation/screens/dashboard_shell.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart
 
-      - name: Install dependencies
+      - name: Dependencies
         run: flutter pub get
 
-      - name: Analyze hotfix files
+      - name: Analyze changed files
         run: flutter analyze lib/src/core/widgets/glow_search_bar.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart lib/src/features/dashboard/presentation/screens/dashboard_shell.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart
 
-      - name: Commit hotfix
-        shell: bash
+      - name: Commit and push
         run: |
-          git config user.name "swipess-hotfix-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add lib/src/core/widgets/glow_search_bar.dart \
-                  lib/src/features/ai/presentation/widgets/voice_language_selector.dart \
-                  lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
-                  lib/src/features/swipes/presentation/utils/open_swipe_deck.dart \
-                  lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart
-          git diff --cached --quiet && exit 0
-          git commit -m "Fix dashboard live voice, inline AI and instant navigation"
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git add lib/src/core/widgets/glow_search_bar.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart lib/src/features/dashboard/presentation/screens/dashboard_shell.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix: live dashboard voice and instant navigation"
           git push origin HEAD:main
