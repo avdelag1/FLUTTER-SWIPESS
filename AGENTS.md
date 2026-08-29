@@ -55,4 +55,47 @@ lib/
 - Document any complex business logic with clear docstrings.
 - Always handle loading states and error states gracefully (never just show a blank screen).
 
+## 5. Native dashboard + map regression guardrails (non-negotiable)
+
+These rules capture regressions fixed on **2026-08-29**. Read them before changing dashboard chrome, AI results, Mapbox, Likes discovery, or map preview controls. Functional reference commit: `b0f65262d08c429ffe8e07e39d1ee8c524214af6`.
+
+### Never blur the whole native app
+- Do **not** put an unbounded `BackdropFilter` around `AppTopBar`, persistent dashboard chrome, the navigation dock, or another always-visible native layer.
+- On iOS, a backdrop filter can escape the apparent widget area and blur the entire composited screen, making the app look as if a modal is permanently open.
+- Persistent header/dock chrome should use painted translucent/opaque backgrounds without live global blur.
+- If blur is truly needed for a temporary modal, clip it explicitly to that modal's exact bounds and remove it when the modal closes.
+- Diagnostic rule: if the page is blurred while the header is visible and becomes clear when scrolling hides the header, treat it as a leaked/unbounded backdrop filter — **never** as an intentional scroll effect.
+
+### Dashboard AI result behavior
+- Keep the dashboard AI answer in a **medium-sized result window**; do not expand it into a giant page-length response.
+- The AI result window must be able to scroll internally.
+- Internal/nested AI scrolling must **not** trigger the global dashboard header/dock hide behavior.
+- Genuine dashboard scrolling may hide/reveal chrome with a soft professional fade/slide/ghost transition, but it must never blur the whole page or leave a giant empty black gap.
+- Keep dashboard answers concise; extended interaction belongs behind **Continue in chat**.
+
+### Native Mapbox cinematic is intentional
+- Every **fresh native Map open** must start on the real Mapbox **3D globe/world**, visibly hold long enough to read as intentional, then perform the cinematic flight/zoom into the active/current area.
+- Do **not** hard-code `playIntro` or `_showIntro` off on a fresh Map open.
+- Do not replace this with an instant jump, fake/static map, or generic 2D substitute when Mapbox is available.
+- When a listing/profile/event is opened from Map, preserve the existing live map instance offstage. Back must reveal the **same map state** without replaying the intro, refetching, or resetting camera/pins.
+- Opening Map temporarily suppresses dashboard/deck audio; closing Map resumes audio **only if it was playing before Map opened**.
+
+### Already-liked items stay out of Map discovery
+- Listings and people already right-swiped/saved by the current user must not reappear in Map discovery.
+- Use canonical Like IDs plus loaded liked models as a fallback.
+- Do not paint discovery listings while canonical liked-listing state is unresolved if that can cause already-liked items to flash/reappear.
+- Saving from Map must invalidate the appropriate Likes + Map providers and remove the saved item immediately.
+
+### Map preview buttons are isolated actions
+- Only the preview photo/text content area may open the listing/profile/event.
+- Heart/save and close (`X`) are independent hit targets. Never wrap them inside one giant parent tap target that navigates to detail.
+- Pressing `X` means **close the preview only**. It must never open the listing, Insights, or another route.
+- Give close/save controls explicit opaque hit regions so taps cannot fall through or bubble into navigation.
+
+### Verification before merging related work
+- Format touched Dart files.
+- Run `flutter analyze` on touched code.
+- Run relevant regression/widget tests, especially persistent chrome overlap/scroll behavior.
+- Do not "improve" these flows by reintroducing native global blur, disabling the globe cinematic, showing saved items in discovery, or coupling close/save controls to navigation.
+
 Follow these rules exactly. Close the Swipess design. Do not invent a replacement.
