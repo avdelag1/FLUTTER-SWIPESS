@@ -38,9 +38,45 @@ String normalizeVoiceTranscript(String raw) {
 
 /// Directory / trusted contact lookup — not page navigation.
 final directoryContactIntent = RegExp(
-  r'\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|find someone|need someone|who is|named|gente|jeweler|jewellery|jewelry|joyeria|joyería|plumber|plomero|electrician|electricista|mechanic|mecanico|mecánico|cleaner|limpieza|chef|driver|chauffeur|nanny|handyman|gardener|contractor|painter|carpenter|welder|technician|lawyer|abogado|attorney|doctor|dentist|stylist|barber|massage|masaje|hire|contratar|recommend|recomienda|recomendar|numero|número|whatsapp|phone|call|trusted|local help|directory|directorio|number for|contact for|info for)\b',
+  r'\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|find someone|need someone|who is|named|gente|girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|jeweler|jewellery|jewelry|joyeria|joyería|plumber|plomero|electrician|electricista|mechanic|mecanico|mecánico|cleaner|limpieza|chef|driver|chauffeur|nanny|handyman|gardener|contractor|painter|carpenter|welder|technician|lawyer|abogado|attorney|doctor|dentist|stylist|barber|massage|masaje|hire|contratar|recommend|recomienda|recomendar|numero|número|whatsapp|phone|call|trusted|local help|directory|directorio|number for|contact for|info for)\b',
   caseSensitive: false,
 );
+
+/// Demographic / trait descriptors — "canadian girl", "fitness coach", etc.
+final personDescriptorIntent = RegExp(
+  r'\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|american|british|australian|spanish|french|italian|colombian|brazilian|argentinian|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b',
+  caseSensitive: false,
+);
+
+/// Specific person lookup — return one best match, not a 3-card batch.
+bool isSpecificPersonSearch(String raw) {
+  final q = normalizeVoiceTranscript(raw).toLowerCase();
+  if (q.isEmpty) return false;
+  if (RegExp(r'\b(who is|named|called)\b', caseSensitive: false).hasMatch(q)) {
+    return true;
+  }
+  if (personDescriptorIntent.hasMatch(q)) return true;
+  final words = q.split(RegExp(r'\s+')).where((w) => w.length >= 3).toList();
+  if (words.length >= 2 &&
+      !RegExp(
+        r'\b(find|show|list|browse|search)\s+(me\s+)?(people|persons|contacts?|properties|listings|events|workers|services)\b',
+        caseSensitive: false,
+      ).hasMatch(q)) {
+    return true;
+  }
+  return false;
+}
+
+/// Broad discovery — batch up to 3 results (people, properties, etc.).
+bool isGeneralDiscoveryBrowse(String raw) {
+  final q = normalizeVoiceTranscript(raw).toLowerCase();
+  if (q.isEmpty) return false;
+  if (isSpecificPersonSearch(raw)) return false;
+  return RegExp(
+    r'\b(find|show|give|get|list|search|browse)\s+(me\s+)?(people|persons|contacts?|properties|listings|homes|houses|events|workers|services|yachts|bikes|motorcycles)\b',
+    caseSensitive: false,
+  ).hasMatch(q);
+}
 
 /// User explicitly asked to leave the dashboard for another section.
 bool wantsExplicitNavigation(String raw) {

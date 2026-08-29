@@ -213,7 +213,132 @@ function wantsEvents(q: string) {
 }
 
 function wantsPeople(q: string) {
-  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente)\b/i.test(q);
+  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b/i.test(q);
+}
+
+function isSpecificPersonSearch(q: string) {
+  const s = q.toLowerCase();
+  if (/\b(who is|named|called)\b/.test(s)) return true;
+  if (/\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b/.test(s)) {
+    return true;
+  }
+  const words = s.split(/\s+/).filter((w) => w.length >= 3);
+  if (
+    words.length >= 2 &&
+    !/\b(find|show|list|browse|search)\s+(me\s+)?(people|persons|contacts?|properties|listings|events|workers|services)\b/.test(s)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function normalizeSearchText(value: unknown) {
+  return String(value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9áéíóúñü\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nameMatchesQuery(name: string, query: string) {
+  const normalizedName = normalizeSearchText(name);
+  const normalizedQuery = normalizeSearchText(query);
+  if (normalizedName.length < 3) return false;
+  if (normalizedQuery.includes(normalizedName)) return true;
+  const parts = normalizedName.split(" ").filter((w) => w.length >= 3);
+  return parts.length >= 2 && parts.every((part) => normalizedQuery.includes(part));
+}
+
+function expandPersonQueryTokens(query: string) {
+  const stop = new Set([
+    "the", "and", "for", "with", "from", "that", "this", "what", "where", "who", "find", "best", "near", "nearby",
+    "local", "please", "want", "need", "looking", "around", "give", "show", "get", "can", "you", "me", "somebody",
+    "someone", "something",
+  ]);
+  const raw = normalizeSearchText(query).split(" ").filter((t) => t.length >= 3 && !stop.has(t));
+  const out = new Set(raw);
+  const synonyms: Record<string, string[]> = {
+    girl: ["women", "woman", "female"],
+    girls: ["women", "woman", "female"],
+    guy: ["men", "man", "male"],
+    guys: ["men", "man", "male"],
+    woman: ["women", "female"],
+    man: ["men", "male"],
+    boy: ["men", "man"],
+    lady: ["women", "woman"],
+    ladies: ["women", "woman"],
+    canadian: ["canada"],
+    mexican: ["mexico"],
+  };
+  for (const token of raw) {
+    for (const synonym of synonyms[token] ?? []) out.add(synonym);
+  }
+  return [...out];
+}
+
+function personQuerySignals(query: string) {
+  const s = query.toLowerCase();
+  return {
+    wantsFemale: /\b(girl|girls|woman|women|lady|ladies|female|mamacita)\b/.test(s),
+    wantsMale: /\b(guy|guys|man|men|male|dude|dudes|boy|boys)\b/.test(s),
+  };
+}
+
+function localBrainBlob(row: any) {
+  const tags = Array.isArray(row?.tags) ? row.tags.join(" ") : "";
+  return normalizeSearchText(
+    `${row?.name ?? ""} ${row?.category ?? ""} ${row?.description ?? ""} ${row?.country ?? ""} ${row?.city ?? ""} ${tags} ${row?.recommendation_note ?? ""}`,
+  );
+}
+
+function scoreLocalBrainRow(row: any, query: string, tokens: string[], signals: { wantsFemale: boolean; wantsMale: boolean }) {
+  const blob = localBrainBlob(row);
+  let score = 0;
+  for (const token of tokens) {
+    if (blob.includes(token)) score += 12;
+  }
+  if (nameMatchesQuery(String(row?.name ?? ""), query)) score += 200;
+  if (signals.wantsFemale) {
+    if (/\b(men'?s?|male|guy|man)\b/.test(blob)) score -= 80;
+    if (/\b(women|woman|female|girl|ladies)\b/.test(blob)) score += 25;
+  }
+  if (signals.wantsMale) {
+    if (/\b(women'?s?|female|girl|lady|ladies)\b/.test(blob)) score -= 80;
+    if (/\b(men|man|male|guy)\b/.test(blob)) score += 25;
+  }
+  if (row?.is_featured === true) score += 2;
+  const priority = Number(row?.priority);
+  if (Number.isFinite(priority)) score += Math.min(priority / 50, 4);
+  return score;
+}
+
+function refineLocalBrainRows(rows: any[], query: string, compactDashboard: boolean, peopleFirst: boolean, specificPersonSearch: boolean) {
+  if (!rows.length) return [];
+
+  const exactNamed = rows.filter((row) => nameMatchesQuery(String(row?.name ?? ""), query));
+  if (exactNamed.length) return exactNamed.slice(0, 1);
+
+  if (!peopleFirst) return rows.slice(0, compactDashboard ? 3 : 5);
+
+  const tokens = expandPersonQueryTokens(query);
+  const signals = personQuerySignals(query);
+  const scored = rows
+    .map((row) => ({ row, score: scoreLocalBrainRow(row, query, tokens, signals) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (!scored.length) {
+    return rows.slice(0, specificPersonSearch ? 1 : compactDashboard ? 3 : 5);
+  }
+
+  if (specificPersonSearch) {
+    const winner = scored[0];
+    const runner = scored[1];
+    if (!runner || winner.score - runner.score >= 8) return [winner.row];
+    return [winner.row];
+  }
+
+  return scored.slice(0, compactDashboard ? 3 : 5).map((item) => item.row);
 }
 
 function needsFreshWeb(q: string) {
@@ -236,36 +361,25 @@ function finiteOrNull(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-async function loadLocalBrain(client: any, query: string, body: any) {
+async function loadLocalBrain(client: any, query: string, body: any, peopleFirst: boolean, specificPersonSearch: boolean) {
   try {
     const city = body?.locationContext?.passportLabel?.toString().trim() || null;
     const lat = finiteOrNull(body?.locationContext?.userLatitude);
     const lon = finiteOrNull(body?.locationContext?.userLongitude);
+    const compactDashboard = body?.locationContext?.compactDashboard === true;
     const { data, error } = await client.rpc("rpc_search_local_brain", {
       p_query: query,
       p_city: city,
       p_lat: lat,
       p_lon: lon,
-      p_limit: body?.locationContext?.compactDashboard === true ? 5 : 8,
+      p_limit: compactDashboard ? 8 : 12,
     });
     if (error) {
       console.error("[ai-concierge-v80] local brain context", error.message);
       return [];
     }
     const rows = Array.isArray(data) ? data : [];
-    const normalize = (value: unknown) => String(value ?? "")
-      .toLowerCase()
-      .replace(/[^a-z0-9áéíóúñü\s-]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    const normalizedQuery = normalize(query);
-    const exactNamed = rows.filter((row: any) => {
-      const name = normalize(row?.name);
-      return name.length >= 3 && normalizedQuery.includes(name);
-    });
-    if (exactNamed.length) return exactNamed.slice(0, 1);
-    const maxRows = body?.locationContext?.compactDashboard === true ? 3 : 5;
-    return rows.slice(0, maxRows);
+    return refineLocalBrainRows(rows, query, compactDashboard, peopleFirst, specificPersonSearch);
   } catch (e) {
     console.error("[ai-concierge-v80] local brain context", String(e));
     return [];
@@ -276,12 +390,15 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
   const preferredIntent = body?.preferredIntent?.toString().trim().toLowerCase() || "";
   const compactDashboard = body?.locationContext?.compactDashboard === true;
   const peopleFirst = preferredIntent === "profiles" || wantsPeople(query);
+  const specificPersonSearch =
+    body?.locationContext?.specificPersonSearch === true ||
+    (peopleFirst && isSpecificPersonSearch(query));
   const category = peopleFirst ? null : detectCategory(query);
   let listings: any[] = [];
   let events: any[] = [];
   let profiles: any[] = [];
 
-  const localBrain = await loadLocalBrain(client, query, body);
+  const localBrain = await loadLocalBrain(client, query, body, peopleFirst, specificPersonSearch);
 
   const applyFilters = (queryBuilder: any) => {
     if (seenIds.size > 0) {
@@ -345,7 +462,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
     }
   }
 
-  return { category, listings, events, profiles, localBrain, peopleFirst, compactDashboard };
+  return { category, listings, events, profiles, localBrain, peopleFirst, specificPersonSearch, compactDashboard };
 }
 
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
@@ -379,6 +496,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     casualCount >= 3 ? "The recent conversation already contains several casual/joke requests. Keep any further entertainment answer very short and redirect toward a useful task." : "",
     ctx.userMemory?.length ? `PRIVATE USER AI MEMORY (use only to personalize this user; never reveal it as a database record):\n${JSON.stringify(ctx.userMemory)}` : "",
     ctx.peopleFirst && ctx.localBrain.length ? "CONTACT-FIRST RULE: answer from the curated Local Brain matches only and do not mix in unrelated listings or profiles." : "",
+    ctx.specificPersonSearch && ctx.localBrain.length ? "SPECIFIC PERSON SEARCH: recommend only the single best Local Brain match. Do not mention, imply, or offer other people. Never add unrelated contacts." : "",
     compactDashboard && ctx.peopleFirst && ctx.localBrain.length ? "RANKING RULE: trust the Local Brain relevance order. Recommend the first/best match first. Do not describe all matches unless the user explicitly asks for options." : "",
     ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
     ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
@@ -475,6 +593,7 @@ function withBestMatches(text: string, ctx: any) {
 }
 
 function withLocalBrainCards(text: string, ctx: any) {
+  if (!ctx.peopleFirst) return text.trim();
   const rows = localBrainCardRows(ctx);
   if (!rows.length) return text.trim();
   const payload = base64Utf8(JSON.stringify(rows));

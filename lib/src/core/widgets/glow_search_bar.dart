@@ -631,8 +631,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   bool _wantsDirectoryContact(String raw) {
     final q = _normalize(normalizeVoiceTranscript(raw));
     if (q.isEmpty) return false;
-    return directoryContactIntent.hasMatch(q);
+    return directoryContactIntent.hasMatch(q) ||
+        personDescriptorIntent.hasMatch(q);
   }
+
+  bool _isSpecificPersonSearch(String raw) => isSpecificPersonSearch(raw);
 
   Future<void> _runInlineAi(String input) async {
     if (_inlineAiLoading) return;
@@ -657,6 +660,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     widget.controller?.clear();
 
     final contactQuery = _wantsDirectoryContact(input);
+    final specificPersonQuery = _isSpecificPersonSearch(input);
     final character = ref.read(aiPersonaProvider).value ?? 'default';
     try {
       final reply = await ref
@@ -688,6 +692,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               'userLongitude': loc.longitude,
               'radiusKm': loc.radiusKm,
               'compactDashboard': true,
+              'specificPersonSearch': specificPersonQuery,
               'responseLanguage': ref.read(voiceLanguageProvider).displayName,
             },
             stream: false,
@@ -703,8 +708,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             : fallback.isNotEmpty
             ? fallback
             : 'I heard you. Try asking in a different way or tap Continue in chat.';
-        _inlineLocalBrain = parsed.localBrain;
-        _inlineProfiles = parsed.profiles;
+        _inlineLocalBrain = specificPersonQuery
+            ? parsed.localBrain.take(1).toList(growable: false)
+            : parsed.localBrain;
+        _inlineProfiles = specificPersonQuery
+            ? const []
+            : parsed.profiles;
         _inlineListings = parsed.listings;
       });
     } on AiUnavailableException catch (error) {
@@ -925,8 +934,13 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     required Color blue,
   }) {
     final answer = _inlineAnswer;
-    final brain = _inlineLocalBrain.take(3).toList(growable: false);
-    final profileSlots = math.max(0, 3 - brain.length).toInt();
+    final specificPerson = _isSpecificPersonSearch(_inlineQuestion ?? '');
+    final brain = specificPerson
+        ? _inlineLocalBrain.take(1).toList(growable: false)
+        : _inlineLocalBrain.take(3).toList(growable: false);
+    final profileSlots = specificPerson || brain.isNotEmpty
+        ? 0
+        : math.max(0, 3 - brain.length).toInt();
     final profiles = _inlineProfiles.take(profileSlots).toList(growable: false);
     final listings = _inlineListings.take(2).toList(growable: false);
     final hasResults =
