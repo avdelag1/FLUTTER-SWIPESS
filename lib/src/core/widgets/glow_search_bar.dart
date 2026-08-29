@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +9,6 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
@@ -22,9 +19,8 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:record/record.dart';
 
-/// Dashboard AI field — English voice with 3-2-1 auto-send on silence.
+/// Dashboard AI field — live voice with 3-2-1 auto-send on silence.
 class GlowSearchBar extends ConsumerStatefulWidget {
   const GlowSearchBar({
     super.key,
@@ -67,13 +63,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   final LiveVoiceInput _voice = LiveVoiceInput.instance;
   late final DeckAudioNotifier _audioNotifier;
-  late final VoiceTranscribeRepository _voiceRepo;
   Timer? _countdownTimer;
-  Timer? _silenceTimer;
-  StreamSubscription<Amplitude>? _ampSub;
   int? _countdown;
-  bool _voiceHasSpeech = false;
-  bool _whisperRecording = false;
   bool _micSessionActive = false;
   String _liveTranscript = '';
   String? _pendingVoiceSubmit;
@@ -113,16 +104,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   String get _voiceLocale => _voiceLanguage.localeCode;
 
   bool get _isListeningSession =>
-      _micSessionActive &&
-      (_whisperRecording || _voiceActive || _voice.isOwnedBy(this));
+      _micSessionActive && (_voiceActive || _voice.isOwnedBy(this));
 
   bool get _isRecordingGlow =>
       _isListeningSession && _countdown == null && !_transcribing;
-
-  // Android + web provide true live partial transcription. iOS stays on
-  // the Whisper recorder path for accuracy/stability.
-  bool get _useLiveSpeech =>
-      kIsWeb || (!kIsWeb && defaultTargetPlatform == TargetPlatform.android);
 
   bool get _isEditableSearch => widget.controller != null;
 
@@ -160,7 +145,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    _voiceRepo = ref.read(voiceTranscribeRepositoryProvider);
     _micPopCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 480),
@@ -216,13 +200,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void dispose() {
     _promptTimer?.cancel();
     _countdownTimer?.cancel();
-    _silenceTimer?.cancel();
-    _ampSub?.cancel();
     _micPopCtrl.dispose();
     _micBreathCtrl.dispose();
-    if (_whisperRecording) {
-      unawaited(_voiceRepo.cancel());
-    }
     unawaited(_voice.cancel(owner: this));
     _restoreVoiceAudio();
     widget.controller?.removeListener(_refresh);
@@ -297,17 +276,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _cancelVoiceCountdown();
     _micSessionActive = false;
     _stopMicBreathing();
-    if (_useLiveSpeech) {
-      await _voice.cancel(owner: this);
-    } else if (_whisperRecording) {
-      await _stopWhisperCapture(cancel: true);
-    }
+    await _voice.cancel(owner: this);
     if (!mounted) return;
     setState(() {
       _voiceActive = false;
       _transcribing = false;
       _voiceLevel = 0;
-      _voiceHasSpeech = false;
       _liveTranscript = '';
     });
     _restoreVoiceAudio();
@@ -323,39 +297,17 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     if ((_voiceLevel - normalized).abs() > .01) {
       setState(() => _voiceLevel = normalized);
     }
-    if (speaking) {
-      _voiceHasSpeech = true;
-      if (_countdown == null && _isListeningSession) {
-        if (_useLiveSpeech) {
-          // silence handled by LiveVoiceInput
-        } else {
-          _armWhisperSilence();
-        }
-      }
-    }
   }
 
   Future<void> _resumeListeningAfterSend() async {
     if (!_micSessionActive || !mounted) return;
-    _voiceHasSpeech = false;
     _liveTranscript = '';
     _pendingVoiceSubmit = null;
     widget.controller?.clear();
     _cancelVoiceCountdown();
-    if (_useLiveSpeech) {
-      await _voice.cancel(owner: this);
-      if (!mounted || !_micSessionActive) return;
-      await _startWebListening(animatePop: false);
-      return;
-    }
-    if (!_whisperRecording) {
-      await _startWhisperCapture(animatePop: false);
-    } else {
-      setState(() {
-        _voiceActive = true;
-        _transcribing = false;
-      });
-    }
+    await _voice.cancel(owner: this);
+    if (!mounted || !_micSessionActive) return;
+    await _startLiveListening(animatePop: false);
   }
 
   void _cancelVoiceCountdown() {
@@ -364,98 +316,13 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     if (_countdown != null && mounted) setState(() => _countdown = null);
   }
 
-  void _armWhisperSilence() {
-    _silenceTimer?.cancel();
-    if (!_whisperRecording || !_voiceHasSpeech || _countdown != null) return;
-    _silenceTimer = Timer(const Duration(milliseconds: 3500), () {
-      if (mounted && _whisperRecording && _countdown == null) {
-        _beginVoiceCountdown();
-      }
-    });
-  }
-
-  double _normalizeAmplitude(double level) {
-    return level <= 0
-        ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
-        : (level / 10).clamp(0.0, 1.0).toDouble();
-  }
-
-  Future<void> _startWhisperCapture({bool animatePop = true}) async {
-    final repo = _voiceRepo;
-    if (!await repo.hasPermission()) {
-      _showVoiceError(
-        'Microphone access is required. Allow Microphone in Settings and try again.',
-      );
-      return;
-    }
-
-    if (animatePop) unawaited(AppHaptics.voiceStart());
-    FocusManager.instance.primaryFocus?.unfocus();
-    _suppressVoiceAudio();
-    if (animatePop) {
-      _voiceHasSpeech = false;
-      _liveTranscript = '';
-      _pendingVoiceSubmit = null;
-      _cancelVoiceCountdown();
-    }
-
-    if (!await repo.start()) {
-      _restoreVoiceAudio();
-      _showVoiceError('Could not start recording. Try again.');
-      return;
-    }
-
-    if (animatePop) _triggerMicPop();
-
-    setState(() {
-      _whisperRecording = true;
-      _voiceActive = true;
-      _transcribing = false;
-      _voiceLevel = 0;
-      _micSessionActive = true;
-    });
-
-    await _ampSub?.cancel();
-    _ampSub = repo
-        .amplitudeStream(interval: const Duration(milliseconds: 60))
-        .listen((amp) {
-          if (!mounted || !_whisperRecording) return;
-          final normalized = _normalizeAmplitude(amp.current);
-          _handleVoiceLevel(normalized, rawLevel: amp.current);
-        });
-  }
-
-  Future<void> _stopWhisperCapture({required bool cancel}) async {
-    _silenceTimer?.cancel();
-    await _ampSub?.cancel();
-    _ampSub = null;
-    final repo = _voiceRepo;
-    if (cancel) {
-      await repo.cancel();
-    }
-    _whisperRecording = false;
-    if (mounted) {
-      setState(() {
-        _voiceActive = false;
-        _transcribing = false;
-        _voiceLevel = 0;
-      });
-    }
-    _restoreVoiceAudio();
-  }
-
   void _beginVoiceCountdown() {
     if (!mounted ||
         _inlineAiLoading ||
         _countdown != null ||
         _voiceSubmitting ||
-        !_voiceHasSpeech) {
-      return;
-    }
-
-    if (_useLiveSpeech) {
-      if (!_voice.isOwnedBy(this) || !_voice.active) return;
-    } else if (!_whisperRecording) {
+        !_voice.isOwnedBy(this) ||
+        !_voice.active) {
       return;
     }
 
@@ -463,9 +330,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final captured = controllerText.isNotEmpty
         ? controllerText
         : _liveTranscript.trim();
-    if (_useLiveSpeech && captured.isEmpty) return;
+    if (captured.isEmpty) return;
 
-    _pendingVoiceSubmit = captured.isEmpty ? null : captured;
+    _pendingVoiceSubmit = captured;
     _countdownTimer?.cancel();
     setState(() {
       _countdown = 3;
@@ -499,56 +366,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _countdownTimer?.cancel();
     _countdownTimer = null;
 
-    if (_whisperRecording) {
-      if (!mounted) {
-        _voiceSubmitting = false;
-        return;
-      }
-      setState(() {
-        _countdown = null;
-        _transcribing = true;
-        _voiceActive = false;
-      });
-      try {
-        final repo = _voiceRepo;
-        final text = normalizeVoiceTranscript(
-          await repo.stop(language: _voiceLocale),
-        );
-        _whisperRecording = false;
-        await _ampSub?.cancel();
-        _ampSub = null;
-        _silenceTimer?.cancel();
-        _restoreVoiceAudio();
-        _voiceSubmitting = false;
-        if (!mounted) return;
-        setState(() {
-          _transcribing = false;
-          _voiceLevel = 0;
-          _voiceHasSpeech = false;
-        });
-        if (text.isEmpty) {
-          _showVoiceError('I did not catch that. Please try speaking again.');
-          await _resumeListeningAfterSend();
-          return;
-        }
-        widget.controller?.text = text;
-        await _submitSearch(text);
-      } on VoiceTranscribeException catch (error) {
-        await _stopWhisperCapture(cancel: true);
-        _micSessionActive = false;
-        _voiceSubmitting = false;
-        if (mounted) _showVoiceError(error.message);
-      } catch (_) {
-        await _stopWhisperCapture(cancel: true);
-        _micSessionActive = false;
-        _voiceSubmitting = false;
-        if (mounted) {
-          _showVoiceError('Voice transcription failed. Please try again.');
-        }
-      }
-      return;
-    }
-
     final controllerText = widget.controller?.text.trim() ?? '';
     final text = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
         ? _pendingVoiceSubmit!.trim()
@@ -561,7 +378,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       _countdown = null;
       _transcribing = false;
       _voiceLevel = 0;
-      _voiceHasSpeech = false;
     });
     _voiceSubmitting = false;
 
@@ -588,28 +404,20 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     }
     if (_inlineAiLoading) return;
 
-    if (_micSessionActive ||
-        _voiceActive ||
-        _whisperRecording ||
-        _voice.isOwnedBy(this)) {
+    if (_micSessionActive || _voiceActive || _voice.isOwnedBy(this)) {
       await _endContinuousSession();
       return;
     }
 
     _micSessionActive = true;
-    if (_useLiveSpeech) {
-      await _startWebListening(animatePop: true);
-    } else {
-      await _startWhisperCapture(animatePop: true);
-    }
+    await _startLiveListening(animatePop: true);
   }
 
-  Future<void> _startWebListening({bool animatePop = true}) async {
+  Future<void> _startLiveListening({bool animatePop = true}) async {
     if (animatePop) unawaited(AppHaptics.voiceStart());
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
     if (animatePop) {
-      _voiceHasSpeech = false;
       _liveTranscript = widget.controller?.text.trim() ?? '';
       _pendingVoiceSubmit = null;
       _cancelVoiceCountdown();
@@ -626,23 +434,18 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final started = await _voice.start(
       languageCode: _voiceLocale,
       owner: this,
-      initialText: controller?.text.trim() ?? '',
+      initialText: controller?.text ?? '',
       onText: (text) {
-        if (!mounted) return;
-        final clean = text.trim();
-        if (clean.isEmpty) return;
+        if (!mounted || _voiceSubmitting) return;
         if (_countdown != null) _cancelVoiceCountdown();
-        _voiceHasSpeech = true;
-        _liveTranscript = clean;
-
-        if (_voiceSubmitting) return;
+        _liveTranscript = text;
 
         if (controller != null) {
           controller.value = TextEditingValue(
-            text: clean,
-            selection: TextSelection.collapsed(offset: clean.length),
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
           );
-          widget.onChanged?.call(clean);
+          widget.onChanged?.call(text);
         }
         setState(() {
           _voiceActive = true;
@@ -670,9 +473,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       },
       onSoundLevel: (level) {
         if (!mounted) return;
-        final normalized = level <= 0
-            ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
-            : (level / 10).clamp(0.0, 1.0).toDouble();
+        final normalized = ((level + 45) / 45).clamp(0.0, 1.0).toDouble();
         _handleVoiceLevel(normalized, rawLevel: level);
       },
       onError: (message) {
@@ -684,7 +485,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
           _voiceActive = false;
           _transcribing = false;
           _voiceLevel = 0;
-          _voiceHasSpeech = false;
         });
         _stopMicBreathing();
         _restoreVoiceAudio();
