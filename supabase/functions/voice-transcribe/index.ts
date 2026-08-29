@@ -12,7 +12,7 @@ const corsHeaders = {
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
 const MAX_AUDIO_B64_BYTES = 10 * 1024 * 1024;
 const TRANSCRIPTION_PROMPT =
-  "Transcribe exactly what the speaker says. Preserve code-switching between English and Spanish, names, numbers, places, and brand terms. Common SWIPESS vocabulary includes Swipess, Tulum, Riviera Maya, WhatsApp, yacht, property, listing, events, workers, lawyer, legal, motorcycles, bicycles, seekers, roommates, and Mapbox. Do not translate, summarize, or invent missing words.";
+  "Transcribe exactly what the speaker says in the requested recognition language. Preserve names, numbers, places, brand terms, and any words the speaker actually says in another language, but never translate, summarize, or invent missing words. Common SWIPESS vocabulary includes Swipess, Tulum, Riviera Maya, WhatsApp, yacht, property, listing, events, workers, lawyer, legal, motorcycles, bicycles, seekers, roommates, and Mapbox.";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -60,21 +60,21 @@ serve(async (req) => {
     });
 
     const formData = new FormData();
-    formData.append("file", file);
     // Accuracy is more important than the small Turbo latency advantage for
-    // short dashboard queries. Groq recommends Large V3 for error-sensitive,
-    // multilingual transcription.
+    // short dashboard queries. Large V3 also follows an explicit language hint
+    // consistently across iOS recordings.
+    formData.append("file", file);
     formData.append("model", "whisper-large-v3");
     formData.append("temperature", "0");
     formData.append("response_format", "json");
     formData.append("prompt", TRANSCRIPTION_PROMPT);
 
-    const languageHint = typeof language === "string"
+    // No auto detector: callers select a language explicitly. English is the
+    // safe fallback for older clients that do not yet send the field.
+    const languageHint = typeof language === "string" && language.trim()
       ? language.trim().toLowerCase()
-      : "";
-    if (languageHint && languageHint !== "auto") {
-      formData.append("language", languageHint.split("-")[0]);
-    }
+      : "en-us";
+    formData.append("language", languageHint.split("-")[0]);
 
     const response = await fetch(
       "https://api.groq.com/openai/v1/audio/transcriptions",
