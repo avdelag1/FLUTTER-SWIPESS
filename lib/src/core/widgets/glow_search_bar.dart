@@ -9,7 +9,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
@@ -19,7 +19,6 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:record/record.dart';
 
 /// Dashboard AI field.
 ///
@@ -60,18 +59,13 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 }
 
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
-  static const _silenceBeforeCountdown = Duration(milliseconds: 3200);
-
   final _random = math.Random();
 
-  late final VoiceTranscribeRepository _voiceRecorder;
+  final LiveVoiceInput _voice = LiveVoiceInput.instance;
   late final DeckAudioNotifier _audioNotifier;
-  StreamSubscription<Amplitude>? _voiceAmplitudeSub;
-  Timer? _voiceSilenceTimer;
   Timer? _countdownTimer;
   int? _countdown;
   bool _voiceHasSpeech = false;
-  String _voiceInitialText = '';
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -130,7 +124,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   @override
   void initState() {
     super.initState();
-    _voiceRecorder = ref.read(voiceTranscribeRepositoryProvider);
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
@@ -153,9 +146,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   void dispose() {
     _promptTimer?.cancel();
     _countdownTimer?.cancel();
-    _voiceSilenceTimer?.cancel();
-    unawaited(_voiceAmplitudeSub?.cancel());
-    unawaited(_voiceRecorder.cancel());
+    unawaited(_voice.cancel(owner: this));
     _restoreVoiceAudio();
     widget.controller?.removeListener(_refresh);
     _focusNode.removeListener(_refresh);
@@ -211,7 +202,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   }
 
   void _beginVoiceCountdown() {
-    if (!mounted || !_voiceActive || !_voiceHasSpeech || _inlineAiLoading) {
+    if (!mounted ||
+        !_voice.isOwnedBy(this) ||
+        !_voice.active ||
+        !_voiceHasSpeech ||
+        _inlineAiLoading) {
       return;
     }
     _countdownTimer?.cancel();
@@ -239,68 +234,39 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
   Future<void> _finishVoiceAndSubmit() async {
     _cancelVoiceCountdown();
-    _voiceSilenceTimer?.cancel();
-    _voiceSilenceTimer = null;
-    await _voiceAmplitudeSub?.cancel();
-    _voiceAmplitudeSub = null;
+    if (!_voiceActive && !_voice.isOwnedBy(this)) return;
 
-    if (!_voiceActive) return;
-    _voiceActive = false;
+    final beforeFinish = widget.controller?.text.trim() ?? '';
     if (mounted) {
       setState(() {
+        _voiceActive = false;
         _transcribing = true;
         _voiceLevel = 0;
       });
     }
 
-    String transcript = '';
-    String? voiceError;
     try {
-      final language = ref.read(voiceLanguageProvider);
-      final locale = language.isAutomatic ? '' : language.localeCode;
-      transcript = await _voiceRecorder.stop(language: locale);
-    } on VoiceTranscribeException catch (error) {
-      voiceError = error.message;
-    } catch (_) {
-      voiceError = 'Could not transcribe that audio. Please try again.';
-    }
+      await _voice.finish(owner: this);
+    } catch (_) {}
 
     if (!mounted) {
       _restoreVoiceAudio();
       return;
     }
 
+    final current = widget.controller?.text.trim() ?? '';
+    final text = current.isNotEmpty ? current : beforeFinish;
     setState(() {
       _transcribing = false;
+      _voiceActive = false;
       _voiceLevel = 0;
       _voiceHasSpeech = false;
     });
     _restoreVoiceAudio();
 
-    if (voiceError != null) {
-      _showVoiceError(voiceError);
-      return;
-    }
-
-    final spoken = normalizeVoiceTranscript(transcript.trim());
-    if (spoken.isEmpty) {
+    if (text.isEmpty) {
       _showVoiceError('I did not catch that. Please try speaking again.');
       return;
-    }
-
-    final text = [_voiceInitialText.trim(), spoken]
-        .where((part) => part.isNotEmpty)
-        .join(' ')
-        .trim();
-    _voiceInitialText = '';
-
-    final controller = widget.controller;
-    if (controller != null) {
-      controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-      widget.onChanged?.call(text);
     }
     _submitSearch(text);
   }
@@ -312,7 +278,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     }
     if (_inlineAiLoading || _transcribing) return;
 
-    if (_voiceActive) {
+    if (_voiceActive || _voice.isOwnedBy(this)) {
       await _finishVoiceAndSubmit();
       return;
     }
@@ -320,75 +286,86 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     unawaited(AppHaptics.voiceStart());
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
-    _voiceInitialText = widget.controller?.text.trim() ?? '';
     _voiceHasSpeech = false;
-
+    _cancelVoiceCountdown();
     setState(() {
       _transcribing = true;
       _voiceLevel = 0;
     });
 
-    try {
-      final started = await _voiceRecorder.start();
-      if (!mounted) return;
-      if (!started) {
+    final controller = widget.controller;
+    final started = await _voice.start(
+      languageCode: ref.read(voiceLanguageProvider).localeCode,
+      owner: this,
+      initialText: controller?.text.trim() ?? '',
+      onText: (text) {
+        if (!mounted) return;
+        _voiceHasSpeech = text.trim().isNotEmpty;
+        _cancelVoiceCountdown();
+        if (controller != null) {
+          controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          );
+          widget.onChanged?.call(text);
+        }
+        if (!_voiceActive || _transcribing) {
+          setState(() {
+            _voiceActive = true;
+            _transcribing = false;
+          });
+        }
+      },
+      onSilence: _beginVoiceCountdown,
+      onListeningChanged: (listening) {
+        if (!mounted) return;
+        if (listening) {
+          if (!_voiceActive || _transcribing) {
+            setState(() {
+              _voiceActive = true;
+              _transcribing = false;
+            });
+          }
+          return;
+        }
+        if (_voice.isOwnedBy(this) && _voice.active) return;
         setState(() {
-          _transcribing = false;
           _voiceActive = false;
+          _transcribing = false;
           _voiceLevel = 0;
         });
+      },
+      onSoundLevel: (level) {
+        if (!mounted) return;
+        final normalized = level <= 0
+            ? ((level + 45) / 45).clamp(0.0, 1.0).toDouble()
+            : (level / 10).clamp(0.0, 1.0).toDouble();
+        if ((_voiceLevel - normalized).abs() > .01) {
+          setState(() => _voiceLevel = normalized);
+        }
+      },
+      onError: (message) {
+        if (!mounted) return;
+        _cancelVoiceCountdown();
+        unawaited(_voice.cancel(owner: this));
+        setState(() {
+          _voiceActive = false;
+          _transcribing = false;
+          _voiceLevel = 0;
+          _voiceHasSpeech = false;
+        });
         _restoreVoiceAudio();
-        _showVoiceError(
-          'Voice search could not start. Check microphone permission in Settings.',
-        );
-        return;
-      }
+        _showVoiceError(message);
+      },
+    );
 
-      setState(() {
-        _transcribing = false;
-        _voiceActive = true;
-        _voiceLevel = 0;
-      });
-
-      await _voiceAmplitudeSub?.cancel();
-      _voiceAmplitudeSub = _voiceRecorder
-          .amplitudeStream(interval: const Duration(milliseconds: 80))
-          .listen((amplitude) {
-            if (!mounted || !_voiceActive) return;
-            final raw = amplitude.current;
-            final normalized = raw.isFinite
-                ? ((raw + 60) / 60).clamp(0.0, 1.0).toDouble()
-                : 0.0;
-            if ((_voiceLevel - normalized).abs() > .01) {
-              setState(() => _voiceLevel = normalized);
-            }
-
-            // Typical speech is comfortably above -48 dBFS. Only arm silence
-            // after actual voice energy so an open mic never auto-submits noise.
-            if (raw.isFinite && raw > -50) {
-              _voiceHasSpeech = true;
-              _cancelVoiceCountdown();
-              _voiceSilenceTimer?.cancel();
-              _voiceSilenceTimer = Timer(
-                _silenceBeforeCountdown,
-                _beginVoiceCountdown,
-              );
-            }
-          });
-    } catch (_) {
-      try {
-        await _voiceRecorder.cancel();
-      } catch (_) {}
-      if (!mounted) return;
-      setState(() {
-        _transcribing = false;
-        _voiceActive = false;
-        _voiceLevel = 0;
-        _voiceHasSpeech = false;
-      });
-      _restoreVoiceAudio();
-      _showVoiceError('Could not start voice search. Please try again.');
-    }
+    if (!mounted) return;
+    setState(() {
+      _transcribing = false;
+      _voiceActive = started && _voice.isOwnedBy(this) && _voice.active;
+      if (!_voiceActive) _voiceLevel = 0;
+    });
+    if (!started) _restoreVoiceAudio();
   }
 
   void _submitSearch(String raw) {
@@ -438,10 +415,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                     'Keep replies to 1-3 short sentences. Be direct and useful.\n\n'
                     'STAY ON DASHBOARD: never include [NAV:...] unless the user '
                     'explicitly asks to open another page or section.\n\n'
-                    'CONTACT REQUESTS: when the user wants a person, worker, or '
-                    'business contact, return trusted Local Brain matches with '
-                    'their contact cards. Never send them to Seekers or another '
-                    'page for contacts — cards render inline on the dashboard.\n\n'
+                    'CONTACT REQUESTS: only when the user explicitly asks for a person, worker, '
+                    'business, recommendation, or contact, return trusted Local Brain matches. '
+                    'For ordinary conversation, questions, greetings, or checks like are you there, '
+                    'never return Local Brain/profile/contact cards. Keep the answer on Dashboard.\n\n'
                     'If the user asks to create a listing or event, tell them to '
                     'tap the + icon in the top right menu.',
               ),
@@ -461,7 +438,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       setState(() {
         _inlineAiLoading = false;
         _inlineAnswer = clean.isNotEmpty ? clean : reply.trim();
-        _inlineLocalBrain = parsed.localBrain;
+        _inlineLocalBrain = contactQuery ? parsed.localBrain : const [];
       });
     } on AiUnavailableException catch (error) {
       if (!mounted) return;
@@ -519,7 +496,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     } else if (has(r'\b(map|maps)\b')) {
       ref.read(overlayModalsProvider.notifier).openPassportMap();
     } else if (has(r'\b(yachts?|boats?)\b')) {
-      openClientSwipeDeck(context, categoryId: 'yacht', categoryTitle: 'YACHTS');
+      openClientSwipeDeck(
+        context,
+        categoryId: 'yacht',
+        categoryTitle: 'YACHTS',
+      );
     } else if (has(r'\b(motorcycles?|motos?)\b')) {
       openClientSwipeDeck(
         context,

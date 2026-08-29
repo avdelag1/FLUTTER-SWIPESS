@@ -40,18 +40,18 @@ class PlatformDiscoveryMapScreen extends StatelessWidget {
       ),
       iconButtonTheme: IconButtonThemeData(
         style: ButtonStyle(
-          foregroundColor:
-              const WidgetStatePropertyAll<Color>(Color(0xFF111318)),
-          overlayColor:
-              const WidgetStatePropertyAll<Color>(Colors.transparent),
+          foregroundColor: const WidgetStatePropertyAll<Color>(
+            Color(0xFF111318),
+          ),
+          overlayColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          foregroundColor:
-              const WidgetStatePropertyAll<Color>(Color(0xFF111318)),
-          overlayColor:
-              const WidgetStatePropertyAll<Color>(Colors.transparent),
+          foregroundColor: const WidgetStatePropertyAll<Color>(
+            Color(0xFF111318),
+          ),
+          overlayColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
         ),
       ),
     );
@@ -63,6 +63,7 @@ class PlatformDiscoveryMapScreen extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            const ColoredBox(color: Color(0xFF06182B)),
             buildPlatformDiscoveryMap(
               onClose: onClose,
               showCitiesOnOpen: showCitiesOnOpen,

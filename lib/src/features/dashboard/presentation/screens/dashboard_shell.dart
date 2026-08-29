@@ -151,8 +151,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     // Events deliberately inherits the exact swipe-deck chrome cadence:
     // reveal in 360ms, hide in 500ms, same cubic curve and slide vectors.
     final chromeMotionDuration = isEvents
-        ? Duration(milliseconds: persistentChromeVisible ? 360 : 500)
-        : const Duration(milliseconds: 220);
+        ? Duration(milliseconds: persistentChromeVisible ? 140 : 170)
+        : const Duration(milliseconds: 120);
 
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
@@ -196,85 +196,90 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   TweenAnimationBuilder<double>(
                     key: const ValueKey('events-panel'),
                     tween: Tween(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 420),
+                    duration: const Duration(milliseconds: 110),
                     curve: Curves.easeOutCubic,
                     builder: (context, progress, child) => Transform.translate(
                       offset: Offset(0, 28 * (1 - progress)),
                       child: Opacity(opacity: progress, child: child),
                     ),
                     child: GestureDetector(
-                    onVerticalDragUpdate: (details) {
-                      // Only track downward drag — upward scroll belongs to
-                      // the events screen's own ScrollView.
-                      if (details.delta.dy > 0) {
-                        setState(() {
-                          _eventsSwipeOffset = (_eventsSwipeOffset +
-                                  details.delta.dy)
-                              .clamp(0, 320);
-                        });
-                      }
-                    },
-                    onVerticalDragEnd: (details) {
-                      if (_eventsSwipeOffset >= _dismissThreshold ||
-                          (details.primaryVelocity ?? 0) > 800) {
-                        _dismissEventsWithSwipe();
-                      } else {
-                        // Snap back with spring-like animation.
+                      onVerticalDragUpdate: (details) {
+                        // Only track downward drag — upward scroll belongs to
+                        // the events screen's own ScrollView.
+                        if (details.delta.dy > 0) {
+                          setState(() {
+                            _eventsSwipeOffset =
+                                (_eventsSwipeOffset + details.delta.dy).clamp(
+                                  0,
+                                  320,
+                                );
+                          });
+                        }
+                      },
+                      onVerticalDragEnd: (details) {
+                        if (_eventsSwipeOffset >= _dismissThreshold ||
+                            (details.primaryVelocity ?? 0) > 800) {
+                          _dismissEventsWithSwipe();
+                        } else {
+                          // Snap back with spring-like animation.
+                          setState(() => _eventsSwipeOffset = 0);
+                        }
+                      },
+                      onVerticalDragCancel: () {
                         setState(() => _eventsSwipeOffset = 0);
-                      }
-                    },
-                    onVerticalDragCancel: () {
-                      setState(() => _eventsSwipeOffset = 0);
-                    },
-                    child: _eventsSwipeOffset == 0
-                        ? AnimatedContainer(
-                            duration: chromeMotionDuration,
-                            curve: Curves.easeOutCubic,
-                            margin: persistentChromeVisible
-                                ? EdgeInsets.fromLTRB(
-                                    8,
-                                    safe.top + 58,
-                                    8,
-                                    safe.bottom + 70,
-                                  )
-                                : EdgeInsets.zero,
-                            clipBehavior: Clip.antiAlias,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(
-                                persistentChromeVisible ? 24 : 0,
-                              ),
-                            ),
-                            child: const EventsScreen(),
-                          )
-                        : Transform.translate(
-                            offset: Offset(0, _eventsSwipeOffset),
-                            child: Opacity(
-                              // Fade out slightly as user pulls down, like Instagram.
-                              opacity: (1 - (_eventsSwipeOffset / 320)).clamp(0.4, 1.0),
-                              child: AnimatedContainer(
-                                duration: chromeMotionDuration,
-                                curve: Curves.easeOutCubic,
-                                margin: persistentChromeVisible
-                                    ? EdgeInsets.fromLTRB(
-                                        8,
-                                        safe.top + 58,
-                                        8,
-                                        safe.bottom + 70,
-                                      )
-                                    : EdgeInsets.zero,
-                                clipBehavior: Clip.antiAlias,
-                                decoration: BoxDecoration(
-                                  color: Colors.black,
-                                  borderRadius: BorderRadius.circular(
-                                    persistentChromeVisible ? 24 : 0,
-                                  ),
+                      },
+                      child: _eventsSwipeOffset == 0
+                          ? AnimatedContainer(
+                              duration: chromeMotionDuration,
+                              curve: Curves.easeOutCubic,
+                              margin: persistentChromeVisible
+                                  ? EdgeInsets.fromLTRB(
+                                      8,
+                                      safe.top + 58,
+                                      8,
+                                      safe.bottom + 70,
+                                    )
+                                  : EdgeInsets.zero,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(
+                                  persistentChromeVisible ? 24 : 0,
                                 ),
-                                child: const EventsScreen(),
+                              ),
+                              child: const EventsScreen(),
+                            )
+                          : Transform.translate(
+                              offset: Offset(0, _eventsSwipeOffset),
+                              child: Opacity(
+                                // Fade out slightly as user pulls down, like Instagram.
+                                opacity: (1 - (_eventsSwipeOffset / 320)).clamp(
+                                  0.4,
+                                  1.0,
+                                ),
+                                child: AnimatedContainer(
+                                  duration: chromeMotionDuration,
+                                  curve: Curves.easeOutCubic,
+                                  margin: persistentChromeVisible
+                                      ? EdgeInsets.fromLTRB(
+                                          8,
+                                          safe.top + 58,
+                                          8,
+                                          safe.bottom + 70,
+                                        )
+                                      : EdgeInsets.zero,
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.circular(
+                                      persistentChromeVisible ? 24 : 0,
+                                    ),
+                                  ),
+                                  child: const EventsScreen(),
+                                ),
                               ),
                             ),
-                          ),
-                  ),
+                    ),
                   ),
                 if (!isDashboard && !isEvents)
                   isProfile
@@ -322,24 +327,24 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 opacity: persistentChromeVisible ? 1 : 0.72,
                 duration: const Duration(milliseconds: 180),
                 child: Material(
-                    color: isLight ? Colors.white : const Color(0xFF111111),
-                    shape: CircleBorder(
-                      side: BorderSide(
-                        color: isLight
-                            ? Colors.black.withAlpha(22)
-                            : Colors.white.withAlpha(32),
-                      ),
+                  color: isLight ? Colors.white : const Color(0xFF111111),
+                  shape: CircleBorder(
+                    side: BorderSide(
+                      color: isLight
+                          ? Colors.black.withAlpha(22)
+                          : Colors.white.withAlpha(32),
                     ),
-                    child: IconButton(
-                      tooltip: 'Back',
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      iconSize: 18,
-                      color: isLight ? Colors.black : Colors.white,
-                      onPressed: _goBackOrDashboard,
-                    ),
+                  ),
+                  child: IconButton(
+                    tooltip: 'Back',
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    iconSize: 18,
+                    color: isLight ? Colors.black : Colors.white,
+                    onPressed: _goBackOrDashboard,
                   ),
                 ),
               ),
+            ),
           Positioned(
             bottom: 16,
             left: 0,
@@ -364,7 +369,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             .value;
                         final market = ref.watch(appMarketProvider).value;
                         final dockItems = defaultDashboardNavItems
-                            .where((item) => _dockFeatureEnabled(market, item.id))
+                            .where(
+                              (item) => _dockFeatureEnabled(market, item.id),
+                            )
                             .toList(growable: false);
                         return DashboardDock(
                           items: dockItems,
@@ -399,7 +406,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             if (id == NavTab.ai) {
                               if (subscription != null &&
                                   subscription.effectiveTier.canUseAI != true) {
-                                showPaywall(context, featureName: 'Google Gemini');
+                                showPaywall(
+                                  context,
+                                  featureName: 'Google Gemini',
+                                );
                                 return;
                               }
 
@@ -485,13 +495,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 }
 
 String? _featureForTab(NavTab tab) => switch (tab) {
-      NavTab.ai => 'ai',
-      NavTab.idCard => 'local_id',
-      NavTab.seekers => 'seekers',
-      NavTab.legal => 'legal',
-      NavTab.events => 'events',
-      _ => null,
-    };
+  NavTab.ai => 'ai',
+  NavTab.idCard => 'local_id',
+  NavTab.seekers => 'seekers',
+  NavTab.legal => 'legal',
+  NavTab.events => 'events',
+  _ => null,
+};
 
 bool _dockFeatureEnabled(AppMarketContext? market, NavTab tab) {
   final feature = _featureForTab(tab);

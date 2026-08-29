@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -13,7 +14,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
   void _showLanguagePicker(BuildContext context, WidgetRef ref) {
     AppHaptics.light();
     final currentLang = ref.read(voiceLanguageProvider);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -58,7 +59,9 @@ class VoiceLanguageSelector extends ConsumerWidget {
                       return ListTile(
                         onTap: () {
                           AppHaptics.light();
-                          ref.read(voiceLanguageProvider.notifier).setLanguage(lang);
+                          ref
+                              .read(voiceLanguageProvider.notifier)
+                              .setLanguage(lang);
                           Navigator.pop(context);
                         },
                         title: Text(
@@ -66,11 +69,16 @@ class VoiceLanguageSelector extends ConsumerWidget {
                           style: TextStyle(
                             color: isLight ? Colors.black : Colors.white,
                             fontSize: 16,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w400,
                           ),
                         ),
                         trailing: isSelected
-                            ? const Icon(Icons.check_rounded, color: Color(0xFFFF4D00))
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: Color(0xFFFF4D00),
+                              )
                             : null,
                       );
                     },
@@ -92,17 +100,17 @@ class VoiceLanguageSelector extends ConsumerWidget {
     return GestureDetector(
       onTap: () => _showLanguagePicker(context, ref),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               color: isLight
                   ? Colors.black.withOpacity(0.05)
                   : Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isLight
                     ? Colors.black.withOpacity(0.05)
@@ -114,7 +122,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
               currentLang.shortCode,
               style: TextStyle(
                 color: isLight ? Colors.black87 : Colors.white,
-                fontSize: 13,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
               ),

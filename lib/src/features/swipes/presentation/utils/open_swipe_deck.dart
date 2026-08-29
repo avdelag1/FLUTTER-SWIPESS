@@ -55,8 +55,8 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   // black beat users could see after tapping a dashboard video/card.
   final route = PageRouteBuilder<T>(
     opaque: true,
-    transitionDuration: const Duration(milliseconds: 90),
-    reverseTransitionDuration: const Duration(milliseconds: 110),
+    transitionDuration: Duration.zero,
+    reverseTransitionDuration: const Duration(milliseconds: 80),
     pageBuilder: (_, __, ___) => ClientSwipeContainer(
       categoryId: categoryId,
       categoryTitle: categoryTitle,
