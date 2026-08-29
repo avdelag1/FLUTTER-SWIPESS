@@ -17,9 +17,9 @@ final voiceTranscribeRepositoryProvider = Provider<VoiceTranscribeRepository>((
 
 /// High-accuracy voice capture backed by the `voice-transcribe` Edge Function.
 ///
-/// The default language is automatic. Passing a concrete locale such as
-/// `es-MX` or `en-US` gives Whisper a useful hint, while an empty value lets it
-/// auto-detect bilingual/code-switched speech.
+/// Voice recognition always uses an explicit language. Callers should pass the
+/// user's selected locale (for example `es-MX` or `en-US`); English is the safe
+/// fallback for older call sites so Whisper never falls back to auto-detection.
 class VoiceTranscribeRepository {
   VoiceTranscribeRepository({
     AudioRecorder? recorder,
@@ -72,7 +72,7 @@ class VoiceTranscribeRepository {
     return true;
   }
 
-  Future<String> stop({String language = ''}) async {
+  Future<String> stop({String language = 'en-US'}) async {
     final path = await _recorder.stop();
     if (path == null || path.isEmpty) return '';
     final bytes = await _readBytes(path);
@@ -110,20 +110,18 @@ class VoiceTranscribeRepository {
   Future<String> transcribe(
     Uint8List bytes, {
     required String mimeType,
-    String language = '',
+    String language = 'en-US',
   }) async {
     final url = Uri.parse(
       '${SupabaseService.supabaseUrl}/functions/v1/voice-transcribe',
     );
     final token = _authorizationToken();
-    final requestedLanguage = language.trim();
+    final requestedLanguage = language.trim().isEmpty ? 'en-US' : language.trim();
     final payload = <String, Object>{
       'audio': base64Encode(bytes),
       'mimeType': mimeType,
+      'language': requestedLanguage,
     };
-    if (requestedLanguage.isNotEmpty) {
-      payload['language'] = requestedLanguage;
-    }
 
     late http.Response resp;
     try {
