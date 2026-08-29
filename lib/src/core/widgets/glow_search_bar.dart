@@ -11,7 +11,9 @@ import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/voice_transcribe_repository.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
+import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_local_brain_card.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -58,10 +60,7 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 }
 
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
-  static final _directoryIntent = RegExp(
-    r'\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|jeweler|jewellery|jewelry|joyeria|joyería|plumber|plomero|electrician|electricista|mechanic|mecanico|mecánico|cleaner|limpieza|chef|driver|chauffeur|nanny|handyman|gardener|contractor|painter|carpenter|welder|technician|lawyer|abogado|attorney|doctor|dentist|stylist|barber|massage|masaje|hire|contratar|recommend|recomienda|recomendar|numero|número|whatsapp|phone|call|trusted|local help|directory|directorio)\b',
-    caseSensitive: false,
-  );
+  static const _silenceBeforeCountdown = Duration(milliseconds: 3200);
 
   final _random = math.Random();
 
@@ -95,6 +94,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   bool _inlineAiLoading = false;
   String? _inlineQuestion;
   String? _inlineAnswer;
+  List<Map<String, dynamic>> _inlineLocalBrain = const [];
 
   bool get _isEditableSearch => widget.controller != null;
 
@@ -257,7 +257,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     String? voiceError;
     try {
       final language = ref.read(voiceLanguageProvider);
-      transcript = await _voiceRecorder.stop(language: language.localeCode);
+      final locale = language.isAutomatic ? '' : language.localeCode;
+      transcript = await _voiceRecorder.stop(language: locale);
     } on VoiceTranscribeException catch (error) {
       voiceError = error.message;
     } catch (_) {
@@ -281,7 +282,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
 
-    final spoken = transcript.trim();
+    final spoken = normalizeVoiceTranscript(transcript.trim());
     if (spoken.isEmpty) {
       _showVoiceError('I did not catch that. Please try speaking again.');
       return;
@@ -364,12 +365,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
 
             // Typical speech is comfortably above -48 dBFS. Only arm silence
             // after actual voice energy so an open mic never auto-submits noise.
-            if (raw.isFinite && raw > -48) {
+            if (raw.isFinite && raw > -50) {
               _voiceHasSpeech = true;
               _cancelVoiceCountdown();
               _voiceSilenceTimer?.cancel();
               _voiceSilenceTimer = Timer(
-                const Duration(milliseconds: 2800),
+                _silenceBeforeCountdown,
                 _beginVoiceCountdown,
               );
             }
@@ -396,45 +397,22 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       return;
     }
     _cancelVoiceCountdown();
-    final input = _normalizeVoiceTranscript(raw.trim());
+    final input = normalizeVoiceTranscript(raw.trim());
     if (input.isEmpty || _inlineAiLoading) return;
 
-    if (_wantsDirectoryContact(input)) {
-      widget.controller?.clear();
-      _dismissInlineAi();
-      ref.read(overlayModalsProvider.notifier).openConcierge(input);
+    if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
       FocusManager.instance.primaryFocus?.unfocus();
       return;
     }
 
-    if (!_runDirectSearch(input)) {
-      unawaited(_runInlineAi(input));
-    }
+    unawaited(_runInlineAi(input));
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
-  String _normalizeVoiceTranscript(String raw) {
-    var text = raw;
-    const fixes = <(String, String)>[
-      ('whats app', 'whatsapp'),
-      ("what's app", 'whatsapp'),
-    ];
-    for (final (from, to) in fixes) {
-      text = text.replaceAll(RegExp(from, caseSensitive: false), to);
-    }
-    return text;
-  }
-
   bool _wantsDirectoryContact(String raw) {
-    final q = _normalize(_normalizeVoiceTranscript(raw));
+    final q = _normalize(normalizeVoiceTranscript(raw));
     if (q.isEmpty) return false;
-    return _directoryIntent.hasMatch(q);
-  }
-
-  void _openDirectoryConcierge(String query) {
-    widget.controller?.clear();
-    _dismissInlineAi();
-    ref.read(overlayModalsProvider.notifier).openConcierge(query);
+    return directoryContactIntent.hasMatch(q);
   }
 
   Future<void> _runInlineAi(String input) async {
@@ -443,9 +421,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       _inlineAiLoading = true;
       _inlineQuestion = input;
       _inlineAnswer = null;
+      _inlineLocalBrain = const [];
     });
     widget.controller?.clear();
 
+    final contactQuery = _wantsDirectoryContact(input);
     try {
       final reply = await ref
           .read(aiEdgeRepositoryProvider)
@@ -454,15 +434,20 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
               const AiChatMessage(
                 role: 'system',
                 content:
-                    'This reply is shown in the compact SWIPESS dashboard search area. '
-                    'Answer in 1-3 short sentences. Be useful and direct. Preserve useful '
-                    'SWIPESS action tags when needed.\n\n'
-                    'IMPORTANT: If the user asks to add or create a listing, property, or event, '
-                    'gently explain that they must tap the "+" icon in the top right menu, '
-                    'or say "I can only help you browse from here! Please tap the + icon in the top right menu to create a listing."',
+                    'You answer inside the SWIPESS dashboard search bar. '
+                    'Keep replies to 1-3 short sentences. Be direct and useful.\n\n'
+                    'STAY ON DASHBOARD: never include [NAV:...] unless the user '
+                    'explicitly asks to open another page or section.\n\n'
+                    'CONTACT REQUESTS: when the user wants a person, worker, or '
+                    'business contact, return trusted Local Brain matches with '
+                    'their contact cards. Never send them to Seekers or another '
+                    'page for contacts — cards render inline on the dashboard.\n\n'
+                    'If the user asks to create a listing or event, tell them to '
+                    'tap the + icon in the top right menu.',
               ),
               AiChatMessage(role: 'user', content: input),
             ],
+            preferredIntent: contactQuery ? 'profiles' : null,
             locationContext: {
               'passportMode': true,
               'passportLabel': widget.locationLabel,
@@ -472,21 +457,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
           );
       if (!mounted) return;
       final parsed = ConciergeParse.of(reply);
-      if (parsed.localBrain.isNotEmpty ||
-          parsed.profiles.isNotEmpty ||
-          parsed.navPaths.any((path) => path.contains('seekers'))) {
-        setState(() {
-          _inlineAiLoading = false;
-          _inlineQuestion = null;
-          _inlineAnswer = null;
-        });
-        _openDirectoryConcierge(input);
-        return;
-      }
       final clean = parsed.cleanContent.trim();
       setState(() {
         _inlineAiLoading = false;
         _inlineAnswer = clean.isNotEmpty ? clean : reply.trim();
+        _inlineLocalBrain = parsed.localBrain;
       });
     } on AiUnavailableException catch (error) {
       if (!mounted) return;
@@ -514,6 +489,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     setState(() {
       _inlineQuestion = null;
       _inlineAnswer = null;
+      _inlineLocalBrain = const [];
       _inlineAiLoading = false;
     });
   }
@@ -525,71 +501,51 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       .trim();
 
   bool _runDirectSearch(String raw) {
-    final q = _normalize(raw);
+    final q = _normalize(normalizeVoiceTranscript(raw));
     if (q.isEmpty) return false;
-
-    final isQuestion =
-        q.contains('?') ||
-        RegExp(
-          r'^(what|how|why|can|could|would|who|where|when|is|are|do|does)\b',
-        ).hasMatch(q);
-    if (isQuestion && q.split(' ').length > 2) return false;
 
     bool has(String pattern) => RegExp(pattern).hasMatch(q);
 
-    if (has(
-      r'\b(events?|party|parties|nightlife|concert|festival|happening|tonight)\b',
-    )) {
+    if (has(r'\b(events?|party|parties|nightlife|concert|festival)\b')) {
       context.go(AppPaths.exploreEvents);
-    } else if (has(
-      r'\b(documents?|document vault|vault|paperwork|files?|pdfs?|passport files?|ids?)\b',
-    )) {
+    } else if (has(r'\b(documents?|document vault|vault)\b')) {
       context.go(AppPaths.documents);
-    } else if (has(
-      r'\b(legal|lawyer|lawyers|attorney|contract|contracts|lease|leases|fideicomiso|escrow|police help|legal help)\b',
-    )) {
+    } else if (has(r'\b(legal|lawyers?|attorney)\b')) {
       context.go(AppPaths.clientLegalServices);
+    } else if (has(r'\b(seekers?|people page)\b')) {
+      context.go(AppPaths.exploreSeekers);
     } else if (has(r'\b(messages?|chat|inbox)\b')) {
       context.go(AppPaths.messages);
-    } else if (has(
-      r'\b(map|maps|near me|nearby|gps|passport|location|city|ciudad|zona|area)\b',
-    )) {
+    } else if (has(r'\b(map|maps)\b')) {
       ref.read(overlayModalsProvider.notifier).openPassportMap();
-    } else if (has(
-      r'\b(yachts?|boats?|catamarans?|sailboats?|yates?|barcos?)\b',
-    )) {
-      openClientSwipeDeck(
-        context,
-        categoryId: 'yacht',
-        categoryTitle: 'YACHTS',
-      );
-    } else if (has(
-      r'\b(motorcycles?|motorbikes?|motos?|scooters?|vespas?|motocicletas?)\b',
-    )) {
+    } else if (has(r'\b(yachts?|boats?)\b')) {
+      openClientSwipeDeck(context, categoryId: 'yacht', categoryTitle: 'YACHTS');
+    } else if (has(r'\b(motorcycles?|motos?)\b')) {
       openClientSwipeDeck(
         context,
         categoryId: 'motorcycle',
         categoryTitle: 'MOTORCYCLES',
       );
-    } else if (has(r'\b(bicycles?|bikes?|bicis?|bicicletas?)\b')) {
+    } else if (has(r'\b(bicycles?|bikes?)\b')) {
       openClientSwipeDeck(
         context,
         categoryId: 'bicycle',
         categoryTitle: 'BICYCLES',
       );
-    } else if (has(
-      r'\b(properties?|property|listings?|homes?|houses?|apartments?|rooms?|studios?|villas?|condos?|rentals?|rent|buy|sale|renta|casas?|departamentos?)\b',
-    )) {
+    } else if (has(r'\b(properties?|listings?|homes?)\b')) {
       openClientSwipeDeck(
         context,
         categoryId: 'property',
         categoryTitle: 'PROPERTIES',
       );
+    } else if (has(r'\b(workers?|services?)\b')) {
+      context.go(AppPaths.clientServices);
     } else {
       return false;
     }
 
     widget.controller?.clear();
+    _dismissInlineAi();
     return true;
   }
 
@@ -673,7 +629,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     required Color blue,
   }) {
     final answer = _inlineAnswer;
-    if (!_inlineAiLoading && (answer == null || answer.trim().isEmpty)) {
+    final hasContacts = _inlineLocalBrain.isNotEmpty;
+    if (!_inlineAiLoading &&
+        (answer == null || answer.trim().isEmpty) &&
+        !hasContacts) {
       return const SizedBox.shrink();
     }
 
@@ -736,17 +695,27 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  answer!,
-                  maxLines: 5,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: ink,
-                    fontSize: 12.5,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
+                if (answer != null && answer.trim().isNotEmpty)
+                  Text(
+                    answer,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontSize: 12.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                if (hasContacts) ...[
+                  if (answer != null && answer.trim().isNotEmpty)
+                    const SizedBox(height: 10),
+                  for (final entry in _inlineLocalBrain.take(3))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: IntelLocalBrainCard(data: entry),
+                    ),
+                ],
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -915,10 +884,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                         decoration: InputDecoration(
                           hintText: _countdown != null
                               ? 'Sending in $_countdown…'
+                              : _transcribing
+                              ? 'Transcribing your voice…'
                               : _voiceActive &&
                                     (widget.controller?.text.trim().isEmpty ??
                                         true)
-                              ? 'Listening…'
+                              ? 'Listening… speak naturally'
                               : null,
                           hintStyle: GoogleFonts.plusJakartaSans(
                             color: blue.withAlpha(210),

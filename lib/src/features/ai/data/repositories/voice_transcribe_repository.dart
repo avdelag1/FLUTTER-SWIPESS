@@ -76,9 +76,9 @@ class VoiceTranscribeRepository {
     final path = await _recorder.stop();
     if (path == null || path.isEmpty) return '';
     final bytes = await _readBytes(path);
-    if (bytes.length < 800) {
+    if (bytes.length < 500) {
       throw VoiceTranscribeException(
-        'Recording too short — please speak longer',
+        'Recording too short — keep speaking, then wait for 3-2-1',
       );
     }
     return transcribe(bytes, mimeType: _mimeFor(path), language: language);
