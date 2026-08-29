@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/motion/ios_motion.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/widgets/playa_mode_overlay.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 
 class BottomNavItem {
@@ -101,8 +100,8 @@ class DashboardDock extends StatelessWidget {
                     children: [
                       if (selectedTab != null && items.indexWhere((i) => i.id == selectedTab) >= 0)
                         AnimatedPositioned(
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeOutCubic,
+                          duration: IosMotion.fast,
+                          curve: IosMotion.enter,
                           left: items.indexWhere((i) => i.id == selectedTab) * 44.0,
                           bottom: 0,
                           width: 44.0,
@@ -154,7 +153,7 @@ class DashboardDock extends StatelessWidget {
   }
 }
 
-class DockButton extends ConsumerWidget {
+class DockButton extends StatelessWidget {
   const DockButton({
     super.key,
     required this.item,
@@ -184,54 +183,50 @@ class DockButton extends ConsumerWidget {
       };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final emphasized = selected || item.accent;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final iconColor = isLight
         ? Colors.black.withAlpha(emphasized ? 255 : 220)
         : Colors.white.withAlpha(emphasized ? 255 : 238);
 
-    return PlayaChromeFrame(
-      size: 44,
-      seed: item.id.index,
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Semantics(
-          button: true,
-          selected: selected,
-          label: _label,
-          child: Tooltip(
-            message: _label,
-            child: Material(
-              color: Colors.transparent,
-              child: InkResponse(
-                onTap: onTap,
-                containedInkWell: true,
-                highlightShape: BoxShape.circle,
-                radius: 19,
-                splashColor: wash.withAlpha(34),
-                child: Center(
-                  child: AnimatedScale(
-                    scale: emphasized ? 1.12 : 1,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.elasticOut,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      clipBehavior: Clip.none,
-                      children: [
-                        item.useAiIcon
-                            ? CustomPaint(
-                                painter: AiRobotPainter(color: iconColor),
-                                size: const Size(18, 18),
-                              )
-                            : Icon(
-                                item.icon ?? Icons.circle_outlined,
-                                size: item.accent ? 23 : 21,
-                                color: iconColor,
-                              ),
-                      ],
-                    ),
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: _label,
+        child: Tooltip(
+          message: _label,
+          child: Material(
+            color: Colors.transparent,
+            child: InkResponse(
+              onTap: onTap,
+              containedInkWell: true,
+              highlightShape: BoxShape.circle,
+              radius: 19,
+              splashColor: wash.withAlpha(34),
+              child: Center(
+                child: AnimatedScale(
+                  scale: emphasized ? 1.08 : 1,
+                  duration: IosMotion.fast,
+                  curve: IosMotion.enter,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      item.useAiIcon
+                          ? CustomPaint(
+                              painter: AiRobotPainter(color: iconColor),
+                              size: const Size(18, 18),
+                            )
+                          : Icon(
+                              item.icon ?? Icons.circle_outlined,
+                              size: item.accent ? 23 : 21,
+                              color: iconColor,
+                            ),
+                    ],
                   ),
                 ),
               ),

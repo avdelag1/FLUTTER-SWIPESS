@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/motion/ios_motion.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
@@ -151,8 +152,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     // Events deliberately inherits the exact swipe-deck chrome cadence:
     // reveal in 360ms, hide in 500ms, same cubic curve and slide vectors.
     final chromeMotionDuration = isEvents
-        ? Duration(milliseconds: persistentChromeVisible ? 140 : 170)
-        : const Duration(milliseconds: 120);
+        ? Duration(milliseconds: persistentChromeVisible ? 120 : 150)
+        : IosMotion.fast;
 
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
@@ -283,10 +284,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 if (!isDashboard && !isEvents)
                   isProfile
-                      ? widget.child
+                      ? IosMotion.crossFade(key: location, child: widget.child)
                       : _withPersistentChromeInsets(
                           context,
-                          widget.child,
+                          IosMotion.crossFade(key: location, child: widget.child),
                           reserveBackRow: showShellBack,
                         ),
               ],
@@ -299,11 +300,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             child: AnimatedOpacity(
               opacity: showHeader ? 1 : 0,
               duration: chromeMotionDuration,
-              curve: Curves.easeOutCubic,
+              curve: IosMotion.enter,
               child: AnimatedSlide(
                 offset: showHeader ? Offset.zero : const Offset(0, -0.12),
                 duration: chromeMotionDuration,
-                curve: Curves.easeOutCubic,
+                curve: IosMotion.enter,
                 child: IgnorePointer(
                   ignoring: !showHeader,
                   child: AppTopBar(
@@ -354,13 +355,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               child: AnimatedOpacity(
                 opacity: persistentChromeVisible ? 1 : 0,
                 duration: chromeMotionDuration,
-                curve: Curves.easeOutCubic,
+                curve: IosMotion.enter,
                 child: AnimatedSlide(
                   offset: persistentChromeVisible
                       ? Offset.zero
                       : const Offset(0, 1.0),
                   duration: chromeMotionDuration,
-                  curve: Curves.easeOutCubic,
+                  curve: IosMotion.enter,
                   child: SafeArea(
                     child: Consumer(
                       builder: (context, ref, _) {

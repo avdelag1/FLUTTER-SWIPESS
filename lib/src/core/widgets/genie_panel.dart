@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/motion/ios_motion.dart';
 
 /// Cap `genieMotion` — spring open from the bottom, shrink-to-dock on close.
 class GeniePanel extends StatefulWidget {
@@ -29,23 +30,23 @@ class _GeniePanelState extends State<GeniePanel>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 380),
-      reverseDuration: const Duration(milliseconds: 420),
+      duration: IosMotion.medium,
+      reverseDuration: IosMotion.fast,
     );
-    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _fade = CurvedAnimation(parent: _ctrl, curve: IosMotion.enter);
     _scale = Tween<double>(begin: 0.18, end: 1).animate(
       CurvedAnimation(
         parent: _ctrl,
-        curve: const Cubic(0.22, 1.2, 0.36, 1),
-        reverseCurve: const Cubic(0.4, 0, 0.7, 0.2),
+        curve: IosMotion.enter,
+        reverseCurve: IosMotion.exit,
       ),
     );
     _slide = Tween<Offset>(begin: const Offset(0, 0.42), end: Offset.zero)
         .animate(
           CurvedAnimation(
             parent: _ctrl,
-            curve: const Cubic(0.22, 1.1, 0.36, 1),
-            reverseCurve: Curves.easeInCubic,
+            curve: IosMotion.enter,
+            reverseCurve: IosMotion.exit,
           ),
         );
     _ctrl.forward();

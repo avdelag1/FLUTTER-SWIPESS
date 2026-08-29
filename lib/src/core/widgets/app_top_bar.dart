@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
@@ -10,7 +13,6 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/core/widgets/playa_mode_overlay.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
@@ -84,17 +86,68 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final compact = MediaQuery.sizeOf(context).width < 370;
     final chromeGap = compact ? 0.0 : 1.0;
 
+    final headerRow = _headerRow(
+      context,
+      ref,
+      ink: ink,
+      isLight: isLight,
+      isProfileRoute: isProfileRoute,
+      chromeGap: chromeGap,
+      tokensLabel: tokensLabel,
+      tokenSemanticLabel: tokenSemanticLabel,
+    );
+
     return Material(
       type: MaterialType.transparency,
-      child: Container(
-        height: preferredSize.height + MediaQuery.of(context).padding.top,
-        padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top + 6,
-          left: 10,
-          right: 10,
+      child: ClipRect(
+        child: kIsWeb
+            ? _headerChrome(context, isLight: isLight, ink: ink, child: headerRow)
+            : BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                child: _headerChrome(
+                  context,
+                  isLight: isLight,
+                  ink: ink,
+                  child: headerRow,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _headerChrome(
+    BuildContext context, {
+    required bool isLight,
+    required Color ink,
+    required Widget child,
+  }) {
+    final top = MediaQuery.paddingOf(context).top;
+    return Container(
+      height: preferredSize.height + top,
+      padding: EdgeInsets.only(top: top + 6, left: 10, right: 10),
+      decoration: BoxDecoration(
+        color: isLight
+            ? Colors.white.withAlpha(kIsWeb ? 236 : 210)
+            : const Color(0xE80D1015),
+        border: Border(
+          bottom: BorderSide(color: ink.withAlpha(isLight ? 18 : 28)),
         ),
-        color: Colors.transparent,
-        child: Row(
+      ),
+      child: child,
+    );
+  }
+
+  Widget _headerRow(
+    BuildContext context,
+    WidgetRef ref, {
+    required Color ink,
+    required bool isLight,
+    required bool isProfileRoute,
+    required double chromeGap,
+    required String tokensLabel,
+    required String tokenSemanticLabel,
+  }) {
+    return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
@@ -115,7 +168,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   _HudButton(
                     key: const ValueKey('header-map'),
                     semanticLabel: 'Open map',
-                    playaSeed: 1,
                     onTap: () {
                       AppHaptics.medium();
                       ref.read(overlayModalsProvider.notifier).openPassportMap();
@@ -126,7 +178,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-create'),
                   semanticLabel: 'Create a listing',
-                  playaSeed: 2,
                   onTap: () {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
@@ -139,7 +190,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   semanticLabel:
                       'Open Direct Requests, available $tokenSemanticLabel',
                   wide: true,
-                  playaSeed: 3,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -175,7 +225,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-notifications'),
                   semanticLabel: 'Open notifications',
-                  playaSeed: 4,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -233,7 +282,23 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ),
                 ),
                 SizedBox(width: chromeGap),
-                ThemePlayaHudButton(ink: ink, isLight: isLight),
+                _HudButton(
+                  key: const ValueKey('header-theme'),
+                  semanticLabel: isLight
+                      ? 'Switch to dark appearance'
+                      : 'Switch to light appearance',
+                  onTap: () {
+                    AppHaptics.medium();
+                    ref.read(visualThemeProvider.notifier).toggle();
+                  },
+                  child: Icon(
+                    isLight
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    size: 22,
+                    color: ink,
+                  ),
+                ),
                 if (!isProfileRoute) ...[
                   SizedBox(width: chromeGap),
                   _ProfileAvatarButton(
@@ -247,9 +312,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
+        );
   }
 }
 
@@ -290,40 +353,33 @@ class _ProfileAvatarButton extends StatelessWidget {
       );
 }
 
-class _HudButton extends ConsumerWidget {
+class _HudButton extends StatelessWidget {
   const _HudButton({
     super.key,
     required this.child,
     required this.onTap,
     this.wide = false,
     this.semanticLabel,
-    this.playaSeed = 0,
   });
 
   final Widget child;
   final VoidCallback onTap;
   final bool wide;
   final String? semanticLabel;
-  final int playaSeed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 370;
-    final width = wide ? (compact ? 44.0 : 48.0) : AppTopBar._hudSize;
     return Semantics(
       button: true,
       label: semanticLabel,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: PlayaChromeFrame(
-          size: width,
-          seed: playaSeed,
-          child: SizedBox(
-            height: AppTopBar._hudSize,
-            width: width,
-            child: Center(child: child),
-          ),
+        child: SizedBox(
+          height: AppTopBar._hudSize,
+          width: wide ? (compact ? 44 : 48) : AppTopBar._hudSize,
+          child: Center(child: child),
         ),
       ),
     );

@@ -12,7 +12,6 @@ import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/routing/global_back_dispatcher.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/overlay_modals_host.dart';
-import 'package:flutter_swipes/src/core/widgets/playa_mode_overlay.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_scroll_behavior.dart';
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/native/biometric_gate.dart';
@@ -55,10 +54,8 @@ class NativeSwipeApp extends ConsumerWidget {
                 child: AppLifecycleWatcher(
                   child: AppBadgeSync(
                     child: BiometricGate(
-                      child: PlayaModeShell(
-                        child: OverlayModalsHost(
-                          child: child ?? const SizedBox.shrink(),
-                        ),
+                      child: OverlayModalsHost(
+                        child: child ?? const SizedBox.shrink(),
                       ),
                     ),
                   ),
