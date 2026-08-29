@@ -40,6 +40,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _routeActive = true;
   bool _appActive = true;
   bool _videoPreviewEnabled = true;
+  double _dragDx = 0;
 
   bool get _canPlay => _routeActive && _appActive && _videoPreviewEnabled;
 
@@ -473,13 +474,29 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         ),
                       ),
               ),
-            // Keep navigation in its own tap-only layer. The former
-            // parent drag recognizer competed with this tap and made opening
-            // the full event feed feel delayed after media controls were added.
-            Positioned.fill(
+            // Tap + horizontal swipe live in a layer that excludes the media
+            // controls so sound/play stay instant and swiping still advances.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 48,
+              bottom: 72,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _openEvents(videos),
+                onHorizontalDragStart: (_) => _dragDx = 0,
+                onHorizontalDragUpdate: (details) =>
+                    _dragDx += details.delta.dx,
+                onHorizontalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
+                  if (videos.length > 1 &&
+                      (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
+                    AppHaptics.selection();
+                    unawaited(_advance(gesture < 0 ? 1 : -1));
+                  }
+                  _dragDx = 0;
+                },
                 child: const SizedBox.expand(),
               ),
             ),

@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/session/domain/app_market_context.da
 import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
+import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -188,7 +189,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
 
     switch (id) {
       case 'events':
-        context.go(AppPaths.exploreEvents);
+        openEventsFeed(context, ref: ref);
         return;
       case 'seekers':
         context.go(AppPaths.exploreSeekers);

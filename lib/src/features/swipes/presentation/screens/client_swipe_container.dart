@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/create_list
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
@@ -257,15 +258,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       onOpenAi: () => showMagicAiProfileSheet(context),
       onCategoryChange: (cat) {
         if (cat == 'events') {
-          final router = GoRouter.of(context);
-          final rootNav = Navigator.of(context, rootNavigator: true);
-          ref.read(navTabProvider.notifier).set(NavTab.events);
           ref.read(chromeRevealProvider.notifier).reveal();
           ref.read(chromeVisibilityProvider.notifier).show();
-          if (rootNav.canPop()) rootNav.pop();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            router.go(AppPaths.exploreEvents);
-          });
+          openEventsFeed(context, ref: ref, popSwipeDeck: true);
           return;
         }
         setState(() {

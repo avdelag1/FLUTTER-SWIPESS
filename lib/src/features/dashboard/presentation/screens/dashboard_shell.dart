@@ -107,9 +107,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       _lastLocation = location;
       // Auto-cancel microphone any time the user navigates to a new page
       LiveVoiceInput.instance.cancel();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
-      });
+      final enteringEvents = location == AppPaths.exploreEvents;
+      if (!enteringEvents) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
+        });
+      }
     }
 
     final isDashboard =

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
 
@@ -44,7 +45,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
       router.go(AppPaths.exploreSeekers);
       return null;
     case 'events':
-      router.go(AppPaths.exploreEvents);
+      openEventsFeed(context, container: container);
       return null;
   }
 
