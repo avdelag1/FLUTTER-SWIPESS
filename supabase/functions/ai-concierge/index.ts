@@ -67,6 +67,47 @@ async function requireAccess(req: Request) {
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
 
+
+function extractSeenIds(history: Msg[]): Set<string> {
+  const seen = new Set<string>();
+  const tags = [
+    /\[LISTINGS:(\[[\s\S]*?\])\]/g,
+    /\[PROFILES:(\[[\s\S]*?\])\]/g,
+    /\[EVENTS:(\[[\s\S]*?\])\]/g,
+    /\[LOCAL_BRAIN:(\[[\s\S]*?\])\]/g,
+    /\[DRAFT:local_brain:(\{[\s\S]*?\})\]/g
+  ];
+
+  for (const m of history) {
+    if (m.role !== "assistant") continue;
+    for (const regex of tags) {
+      let match;
+      while ((match = regex.exec(m.content)) !== null) {
+        try {
+          const raw = match[1];
+          let parsed;
+          if (raw.startsWith('{')) {
+             const wrapper = JSON.parse(raw);
+             if (wrapper.payload) {
+                parsed = JSON.parse(atob(wrapper.payload));
+             }
+          } else {
+             parsed = JSON.parse(raw);
+          }
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item && typeof item === "object" && item.id) {
+                seen.add(item.id.toString());
+              }
+            }
+          }
+        } catch (e) {}
+      }
+    }
+  }
+  return seen;
+}
+
 function cleanMessages(raw: unknown): Msg[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -231,7 +272,7 @@ async function loadLocalBrain(client: any, query: string, body: any) {
   }
 }
 
-async function loadContext(client: any, query: string, body: any, userMemory: UserMemoryRow[] = []) {
+async function loadContext(client: any, query: string, body: any, seenIds: Set<string>) {
   const preferredIntent = body?.preferredIntent?.toString().trim().toLowerCase() || "";
   const compactDashboard = body?.locationContext?.compactDashboard === true;
   const peopleFirst = preferredIntent === "profiles" || wantsPeople(query);
@@ -244,14 +285,23 @@ async function loadContext(client: any, query: string, body: any, userMemory: Us
 
   if (category) {
     try {
-      const { data, error } = await client
+      
+  const applyFilters = (queryBuilder: any) => {
+    if (seenIds.size > 0) {
+      // Supabase not.in expects a comma-separated list or an array depending on the SDK.
+      queryBuilder = queryBuilder.not("id", "in", `(${Array.from(seenIds).map(id => `"${id}"`).join(",")})`);
+    }
+    return queryBuilder.limit(30);
+  };
+
+      let queryBuilder = client
         .from("listings")
         .select("id,title,price,currency,listing_type,city,neighborhood,category,images")
         .eq("is_active", true)
         .eq("status", "active")
         .eq("category", category)
-        .order("updated_at", { ascending: false })
-        .limit(3);
+        .order("updated_at", { ascending: false });
+      const { data, error } = await applyFilters(queryBuilder);
       if (!error && Array.isArray(data)) listings = data;
     } catch (e) {
       console.error("[ai-concierge-v80] listings context", String(e));
@@ -260,12 +310,12 @@ async function loadContext(client: any, query: string, body: any, userMemory: Us
 
   if (!peopleFirst && wantsEvents(query)) {
     try {
-      const { data, error } = await client
+      let queryBuilder = client
         .from("events")
         .select("id,title,description,event_date,location_name")
         .eq("is_published", true)
-        .order("event_date", { ascending: true })
-        .limit(3);
+        .order("event_date", { ascending: true });
+      const { data, error } = await applyFilters(queryBuilder);
       if (!error && Array.isArray(data)) events = data;
     } catch (e) {
       console.error("[ai-concierge-v80] events context", String(e));
@@ -274,12 +324,19 @@ async function loadContext(client: any, query: string, body: any, userMemory: Us
 
   if (peopleFirst && localBrain.length === 0) {
     try {
-      const { data, error } = await client
+      // profiles use user_id instead of id for PK, so applyFilters will fail on id not in
+      const applyProfiles = (qb: any) => {
+         if (seenIds.size > 0) {
+            qb = qb.not("user_id", "in", `(${Array.from(seenIds).map(id => `"${id}"`).join(",")})`);
+         }
+         return qb.limit(30);
+      };
+      let queryBuilder = client
         .from("profiles")
         .select("user_id,full_name,city,neighborhood,active_mode,avatar_url")
         .eq("is_active", true)
-        .order("updated_at", { ascending: false })
-        .limit(3);
+        .order("updated_at", { ascending: false });
+      const { data, error } = await applyProfiles(queryBuilder);
       if (!error && Array.isArray(data)) profiles = data;
     } catch (e) {
       console.error("[ai-concierge-v80] profiles context", String(e));
@@ -323,9 +380,15 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     compactDashboard && ctx.peopleFirst && ctx.localBrain.length ? "RANKING RULE: trust the Local Brain relevance order. Recommend the first/best match first. Do not describe all matches unless the user explicitly asks for options." : "",
     ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
     ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
-    ctx.listings.length ? `LIVE SWIPESS LISTINGS:\n${JSON.stringify(ctx.listings)}` : "",
-    ctx.events.length ? `LIVE SWIPESS EVENTS:\n${JSON.stringify(ctx.events)}` : "",
-    ctx.profiles.length ? `LIVE SWIPESS PEOPLE:\n${JSON.stringify(ctx.profiles)}` : "",
+    ctx.listings.length ? `LIVE SWIPESS LISTINGS CANDIDATES:\n${JSON.stringify(ctx.listings)}
+
+You must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [LISTINGS] tag.` : "",
+    ctx.events.length ? `LIVE SWIPESS EVENTS CANDIDATES:\n${JSON.stringify(ctx.events)}
+
+You must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output an [EVENTS] tag.` : "",
+    ctx.profiles.length ? `LIVE SWIPESS PEOPLE CANDIDATES:\n${JSON.stringify(ctx.profiles)}
+
+You must select the 1 to 3 best matching options. Output their exact user_ids on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [PROFILES] tag.` : "",
   ].filter(Boolean).join("\n\n");
 }
 
@@ -373,6 +436,40 @@ function base64Utf8(value: string) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
+}
+
+
+function withBestMatches(text: string, ctx: any) {
+  let finalContent = text;
+  const match = /\[BEST_IDS:([^\]]+)\]/.exec(finalContent);
+  if (match) {
+    // Remove the tag from the final prose
+    finalContent = finalContent.replace(match[0], "").trim();
+    
+    // Parse the IDs
+    const ids = match[1].split(",").map(i => i.trim()).filter(Boolean);
+    
+    // Find matching items in candidates
+    if (ctx.listings && ctx.listings.length > 0) {
+      const selected = ctx.listings.filter((l: any) => ids.includes(l.id?.toString()));
+      if (selected.length > 0) {
+        finalContent += `\n[LISTINGS:${JSON.stringify(selected)}]`;
+      }
+    }
+    if (ctx.events && ctx.events.length > 0) {
+      const selected = ctx.events.filter((e: any) => ids.includes(e.id?.toString()));
+      if (selected.length > 0) {
+        finalContent += `\n[EVENTS:${JSON.stringify(selected)}]`;
+      }
+    }
+    if (ctx.profiles && ctx.profiles.length > 0) {
+      const selected = ctx.profiles.filter((p: any) => ids.includes(p.user_id?.toString()));
+      if (selected.length > 0) {
+        finalContent += `\n[PROFILES:${JSON.stringify(selected)}]`;
+      }
+    }
+  }
+  return finalContent;
 }
 
 function withLocalBrainCards(text: string, ctx: any) {
@@ -500,7 +597,7 @@ Deno.serve(async (req) => {
     // not add another startup round-trip to the user's AI request.
     const [userMemory, ctx] = await Promise.all([
       loadUserMemory(client, userId),
-      loadContext(client, lastUser, body),
+      loadContext(client, lastUser, body, extractSeenIds(history)),
     ]);
     ctx.userMemory = userMemory;
     // Preference capture is best-effort and never delays the first token.
@@ -531,7 +628,7 @@ Deno.serve(async (req) => {
       try {
         const text = (await run()).trim();
         if (!text || /^(AI )?temporarily unavailable/i.test(text)) throw new Error("provider returned outage text");
-        const content = withLocalBrainCards(text, ctx);
+        const content = withBestMatches(withLocalBrainCards(text, ctx), ctx);
         return json(200, { choices: [{ message: { content } }] }, provider, fresh ? "grounded-or-fallback" : "provider-json");
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
