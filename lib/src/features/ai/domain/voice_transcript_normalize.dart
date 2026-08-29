@@ -58,3 +58,25 @@ bool wantsExplicitNavigation(String raw) {
     caseSensitive: false,
   ).hasMatch(q);
 }
+
+/// Returns true when [incoming] contains genuinely new words beyond [locked].
+///
+/// Used by the dashboard voice countdown so native recognizer restarts and
+/// microphone-level spikes cannot cancel **3 → 2 → 1** unless the user is
+/// actually adding new speech.
+bool shouldCancelVoiceCountdownForText({
+  required String incoming,
+  required String locked,
+}) {
+  final next = normalizeVoiceTranscript(incoming.trim());
+  final frozen = normalizeVoiceTranscript(locked.trim());
+  if (next.isEmpty) return false;
+  if (frozen.isEmpty) return true;
+  if (next == frozen) return false;
+  if (next.startsWith(frozen)) {
+    return next.substring(frozen.length).trim().isNotEmpty;
+  }
+  // Recognizer echo during segment restart can resend a shorter prefix.
+  if (frozen.startsWith(next)) return false;
+  return next.length > frozen.length;
+}

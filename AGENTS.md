@@ -96,8 +96,8 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Native speech engines may end/restart a recognition segment exactly when silence starts the dashboard **3 → 2 → 1** countdown.
 - Busy/client/network/server/audio recognizer transition errors during that restart are recoverable. Retry them quietly with a short backoff; do **not** cancel the countdown or show `Voice recognition stopped` for a transient segment restart.
 - Permission/authorization failures remain user-facing and fatal for that microphone session.
-- Speaking again during the countdown must still cancel countdown and continue the same transcript.
 - **Only actual new recognized transcript text may cancel an active 3 -> 2 -> 1 countdown.** Native `onSoundLevel` / microphone-energy spikes are noisy and can fire when the recognizer restarts after silence; they must never cancel auto-send.
+- If the recognizer repeats the exact same transcript (or a shorter prefix of the frozen text) during restart, ignore it and keep counting.
 - Once valid text has been captured and the countdown has started, a recognizer stop/restart error must not abort that countdown. The countdown owns the captured text and must reach 3 -> 2 -> 1 -> submit unless genuinely new transcript text arrives or the user explicitly cancels.
 
 ### Notification permission is foreground-only

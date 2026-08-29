@@ -247,8 +247,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _triggerMicPop() {
@@ -436,15 +437,14 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       initialText: controller?.text ?? '',
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
-        final cleanText = text.trim();
-        final pendingText = _pendingVoiceSubmit?.trim();
-        // A recognizer restart can occasionally re-publish the same committed
-        // phrase. Do not treat that as fresh speech. A genuinely changed
-        // transcript still cancels auto-send immediately so the user can keep
-        // talking naturally.
-        if (_countdown != null &&
-            cleanText.isNotEmpty &&
-            cleanText != pendingText) {
+        if (_countdown != null) {
+          final locked = _pendingVoiceSubmit ?? '';
+          if (!shouldCancelVoiceCountdownForText(
+            incoming: text,
+            locked: locked,
+          )) {
+            return;
+          }
           _cancelVoiceCountdown();
         }
         _liveTranscript = text;
