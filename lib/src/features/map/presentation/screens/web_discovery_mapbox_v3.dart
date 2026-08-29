@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/config/app_config.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -662,7 +662,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
 
   @override
   Widget build(BuildContext context) {
-    final tokenReady = AppConfig.mapboxAccessToken.trim().isNotEmpty;
+    final tokenReady = MapboxRuntimeConfig.isConfigured;
     final loc = ref.watch(discoveryLocationProvider);
     final listings = ref.watch(mapListingsProvider).value ?? const <Listing>[];
     final profiles = ref.watch(mapProfilesProvider).value ?? const <Profile>[];

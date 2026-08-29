@@ -248,12 +248,11 @@ class LiveVoiceInput {
       final locales = await _nativeSpeech.locales();
       if (locales.isEmpty) return preferred;
 
-      if (preferred.trim().isEmpty || preferred == 'auto') {
-        final system = await _nativeSpeech.systemLocale();
-        if (system != null && system.localeId.trim().isNotEmpty) {
-          return system.localeId;
-        }
-        return locales.first.localeId;
+      if (preferred.trim().isEmpty ||
+          preferred == 'auto' ||
+          preferred == 'en-US' ||
+          preferred == 'en') {
+        return 'en-US';
       }
 
       final exact = locales.where((l) => l.localeId == preferred);

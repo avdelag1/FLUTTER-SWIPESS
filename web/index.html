@@ -281,7 +281,7 @@
           recognition.maxAlternatives = 3;
           // Prefer selected language; fallback to OS language; fallback to en-US.
           try {
-            var lang = selectedLang || navigator.language || 'en-US';
+            var lang = selectedLang || 'en-US';
             // Normalize bare language codes; keep full locales like es-MX intact.
             if (lang.indexOf('-') === -1) {
               if (lang.toLowerCase() === 'en') lang = 'en-US';
@@ -379,7 +379,7 @@
 
       window.SwipessSpeech = {
         setLanguage: function(lang) {
-          selectedLang = (lang && lang !== 'auto') ? lang : null;
+          selectedLang = (lang && lang !== 'auto') ? lang : 'en-US';
         },
         isSupported: function () {
           return !!(window.SpeechRecognition || window.webkitSpeechRecognition);

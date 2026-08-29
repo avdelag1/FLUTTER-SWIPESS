@@ -21,7 +21,6 @@ class OverlayModalsHost extends ConsumerStatefulWidget {
 class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   late final GoRouter _router;
   late String _lastRoute;
-  bool _mapEverOpened = false;
 
   // Opening a result from Map must not destroy or close the map overlay. We
   // simply hold the exact live instance offstage while the routed detail page is
@@ -127,9 +126,6 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   @override
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
-    if (modals.showPassportMap) _mapEverOpened = true;
-    final keepMapAlive =
-        modals.showPassportMap || _mapHeldForDetail || _mapEverOpened;
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
     final pauseRoutedMedia = mapVisible ||
         modals.showVapId ||
@@ -143,19 +139,11 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
           child: widget.child,
         ),
         if (modals.showVapId) const VapIdModal(),
-        if (keepMapAlive && mapVisible)
+        if (mapVisible)
           Positioned.fill(
             child: ColoredBox(
               color: const Color(0xFF06182B),
               child: _buildMapLayer(modals, true),
-            ),
-          )
-        else if (keepMapAlive)
-          Offstage(
-            child: SizedBox(
-              width: 1,
-              height: 1,
-              child: _buildMapLayer(modals, false),
             ),
           ),
         if (modals.showConcierge)

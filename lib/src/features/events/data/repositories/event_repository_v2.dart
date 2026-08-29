@@ -79,20 +79,24 @@ class EventRepository {
               .order('created_at', ascending: false)
               .limit(100),
         );
-        return (data as List)
+        final events = (data as List)
             .map((json) => Event.fromJson(json as Map<String, dynamic>))
             .toList();
+        if (events.isNotEmpty) return events;
       } on PostgrestException catch (e) {
         if (e.code == '42501' ||
             e.message.contains('permission denied') ||
             e.message.contains('Forbidden')) {
-          return const [];
+          break;
         }
         continue;
       } catch (_) {
         continue;
       }
     }
+
+    final rpcEvents = await _loadEventsFromRpc();
+    if (rpcEvents.isNotEmpty) return rpcEvents;
 
     try {
       final data = await _withSessionRetry(
@@ -105,13 +109,22 @@ class EventRepository {
       return (data as List)
           .map((json) => Event.fromJson(json as Map<String, dynamic>))
           .toList();
-    } on PostgrestException catch (e) {
-      if (e.code == '42501' ||
-          e.message.contains('permission denied') ||
-          e.message.contains('Forbidden')) {
-        return const [];
-      }
+    } catch (_) {
       return const [];
+    }
+  }
+
+  Future<List<Event>> _loadEventsFromRpc() async {
+    try {
+      final rows = await _client.rpc(
+        'rpc_public_events_feed',
+        params: {'p_limit': 100},
+      );
+      if (rows is! List) return const [];
+      return rows
+          .whereType<Map>()
+          .map((row) => Event.fromJson(Map<String, dynamic>.from(row)))
+          .toList(growable: false);
     } catch (_) {
       return const [];
     }

@@ -34,7 +34,7 @@ final voiceLanguageProvider =
 
 class VoiceLanguageNotifier extends Notifier<VoiceLanguage> {
   @override
-  VoiceLanguage build() => VoiceLanguage.auto;
+  VoiceLanguage build() => VoiceLanguage.english;
 
   void setLanguage(VoiceLanguage lang) {
     state = lang;

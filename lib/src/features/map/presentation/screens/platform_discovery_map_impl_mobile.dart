@@ -55,9 +55,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    // The live map now owns the cinematic intro on the same MapWidget, so the
-    // globe can return without recreating Mapbox or flashing between surfaces.
-    _showIntro = !_nativeMapIntroShownThisSession;
+    _showIntro = false;
     // Token is often configured at cold start. Skip the async bootstrap frame
     // so Map open never flashes a blank/white canvas on iOS.
     _mapboxReady = MapboxRuntimeConfig.isConfigured
@@ -70,7 +68,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
 
   void _retryMapbox() {
     setState(() {
-      _showIntro = !_nativeMapIntroShownThisSession;
+      _showIntro = false;
       _mapboxReady = _configureMapbox();
     });
   }

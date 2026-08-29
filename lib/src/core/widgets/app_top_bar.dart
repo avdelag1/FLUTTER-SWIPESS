@@ -99,19 +99,18 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
     return Material(
       type: MaterialType.transparency,
-      child: ClipRect(
-        child: kIsWeb
-            ? _headerChrome(context, isLight: isLight, ink: ink, child: headerRow)
-            : BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-                child: _headerChrome(
-                  context,
-                  isLight: isLight,
-                  ink: ink,
-                  child: headerRow,
-                ),
+      clipBehavior: Clip.none,
+      child: kIsWeb
+          ? _headerChrome(context, isLight: isLight, ink: ink, child: headerRow)
+          : BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+              child: _headerChrome(
+                context,
+                isLight: isLight,
+                ink: ink,
+                child: headerRow,
               ),
-      ),
+            ),
     );
   }
 
@@ -148,9 +147,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     required String tokenSemanticLabel,
   }) {
     return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isProfileRoute)
@@ -219,9 +221,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               ],
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          ),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
                 _HudButton(
                   key: const ValueKey('header-notifications'),
                   semanticLabel: 'Open notifications',
