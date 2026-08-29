@@ -173,6 +173,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             onNotification: (notification) {
               if (!isEvents &&
                   !isProfile &&
+                  notification.depth == 0 &&
+                  notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
                 ref
                     .read(chromeVisibilityProvider.notifier)
@@ -287,7 +289,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                       ? IosMotion.crossFade(key: location, child: widget.child)
                       : _withPersistentChromeInsets(
                           context,
-                          IosMotion.crossFade(key: location, child: widget.child),
+                          IosMotion.crossFade(
+                            key: location,
+                            child: widget.child,
+                          ),
                           reserveBackRow: showShellBack,
                         ),
               ],

@@ -53,14 +53,16 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
         .eq('status', 'active');
 
     final listings = rows as List;
-    
+
     for (final entry in categoryMap.entries) {
       final lastAccessed = getLastAccessed(entry.key);
       int count = 0;
       for (final row in listings) {
         final cat = row['category']?.toString();
         if (cat == entry.value) {
-          final createdAt = DateTime.tryParse(row['created_at']?.toString() ?? '')?.toUtc();
+          final createdAt = DateTime.tryParse(
+            row['created_at']?.toString() ?? '',
+          )?.toUtc();
           if (createdAt != null && createdAt.isAfter(lastAccessed)) {
             count++;
           }
@@ -88,11 +90,11 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
+        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
+            ?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
-
   } catch (_) {}
 
   return counts;
@@ -104,12 +106,17 @@ class AccessedCategoriesManager {
 
   Future<void> markAccessed(String id) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('bento_last_accessed_$id', DateTime.now().toUtc().toIso8601String());
+    await prefs.setString(
+      'bento_last_accessed_$id',
+      DateTime.now().toUtc().toIso8601String(),
+    );
     ref.invalidate(newItemsCountProvider);
   }
 }
 
-final accessedCategoriesProvider = Provider((ref) => AccessedCategoriesManager(ref));
+final accessedCategoriesProvider = Provider(
+  (ref) => AccessedCategoriesManager(ref),
+);
 
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.count});
@@ -124,11 +131,7 @@ class _CategoryBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black45,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black45, blurRadius: 6, offset: Offset(0, 2)),
         ],
       ),
       child: Text(
@@ -726,73 +729,97 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
-                child: Padding(
-                // SafeArea already accounts for the status bar. Keep the AI
-                // field tucked directly under the compact persistent header.
-                padding: const EdgeInsets.fromLTRB(16, 48, 16, 8),
                 child: Consumer(
                   builder: (context, ref, child) {
                     final showChrome = ref.watch(chromeVisibilityProvider);
-                    return IgnorePointer(
-                      ignoring: !showChrome,
-                      child: AnimatedOpacity(
-                        opacity: showChrome ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                        child: GlowSearchBar(
-                          hint: market != null &&
-                                  (!market.effectiveOpen ||
-                                      !market.featureEnabled('ai'))
-                              ? 'AI is not active in this market'
-                              : 'What are you looking for?',
-                          onTap: () => _openAiSearch(),
-                          controller: _aiSearchController,
-                          onSubmitted: (val) => _openAiSearch(val),
-                          locationLabel: discovery.city,
-                          dateLabel: discovery.dateLabel,
-                          guestLabel:
-                              '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
-                          onLocationTap: _pickCity,
-                          onDatesTap: _pickDates,
-                          onGuestsTap: _pickGuests,
-                        ),
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 1, end: showChrome ? 1 : 0),
+                      duration: Duration(milliseconds: showChrome ? 420 : 560),
+                      curve: Curves.easeInOutCubic,
+                      child: GlowSearchBar(
+                        hint:
+                            market != null &&
+                                (!market.effectiveOpen ||
+                                    !market.featureEnabled('ai'))
+                            ? 'AI is not active in this market'
+                            : 'What are you looking for?',
+                        onTap: () => _openAiSearch(),
+                        controller: _aiSearchController,
+                        onSubmitted: (val) => _openAiSearch(val),
+                        locationLabel: discovery.city,
+                        dateLabel: discovery.dateLabel,
+                        guestLabel:
+                            '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
+                        onLocationTap: _pickCity,
+                        onDatesTap: _pickDates,
+                        onGuestsTap: _pickGuests,
                       ),
+                      builder: (context, reveal, child) {
+                        final progress = reveal.clamp(0.0, 1.0).toDouble();
+                        return IgnorePointer(
+                          ignoring: progress < .08,
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              48 * progress,
+                              16,
+                              8 * progress,
+                            ),
+                            child: ClipRect(
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                heightFactor: progress,
+                                child: Opacity(
+                                  opacity: progress,
+                                  child: Transform.translate(
+                                    offset: Offset(0, -12 * (1 - progress)),
+                                    child: Transform.scale(
+                                      scale: .985 + (.015 * progress),
+                                      alignment: Alignment.topCenter,
+                                      child: child,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
               ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-              sliver: SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _BentoColumn(
-                          items: leftItems,
-                          isLight: isLight,
-                          onOpen: _openCategory,
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                sliver: SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _BentoColumn(
+                            items: leftItems,
+                            isLight: isLight,
+                            onOpen: _openCategory,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _BentoColumn(
-                          items: rightItems,
-                          isLight: isLight,
-                          onOpen: _openCategory,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _BentoColumn(
+                            items: rightItems,
+                            isLight: isLight,
+                            onOpen: _openCategory,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -837,16 +864,14 @@ class _BentoTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final counts = ref.watch(newItemsCountProvider).value ?? const {};
     final unreadCount = counts[item.id] ?? 0;
-    
+
     final badgeWidget = unreadCount > 0
-      ? Positioned(
-          top: 10,
-          right: 10,
-          child: IgnorePointer(
-            child: _CategoryBadge(count: unreadCount),
-          ),
-        )
-      : const SizedBox.shrink();
+        ? Positioned(
+            top: 10,
+            right: 10,
+            child: IgnorePointer(child: _CategoryBadge(count: unreadCount)),
+          )
+        : const SizedBox.shrink();
 
     if (item.id == 'events') {
       return Consumer(
@@ -862,7 +887,9 @@ class _BentoTile extends ConsumerWidget {
                   children: [
                     EventsTeaserCard(
                       onTap: () {
-                        ref.read(accessedCategoriesProvider).markAccessed(item.id);
+                        ref
+                            .read(accessedCategoriesProvider)
+                            .markAccessed(item.id);
                         final sub = ref.read(subscriptionProvider).value;
                         if (sub != null &&
                             sub.effectiveTier.canViewEvents != true) {
@@ -1067,17 +1094,17 @@ class _BentoItemData {
 }
 
 String? _featureForBentoId(String id) => switch (id) {
-      'property' => 'properties',
-      'services' => 'workers',
-      'yacht' => 'yachts',
-      'motorcycle' => 'motorcycles',
-      'bicycle' => 'bicycles',
-      'events' => 'events',
-      'seekers' => 'seekers',
-      'legal' => 'legal',
-      'premium' => 'premium',
-      _ => null,
-    };
+  'property' => 'properties',
+  'services' => 'workers',
+  'yacht' => 'yachts',
+  'motorcycle' => 'motorcycles',
+  'bicycle' => 'bicycles',
+  'events' => 'events',
+  'seekers' => 'seekers',
+  'legal' => 'legal',
+  'premium' => 'premium',
+  _ => null,
+};
 
 bool _bentoFeatureEnabled(AppMarketContext? market, String id) {
   final feature = _featureForBentoId(id);
