@@ -1,0 +1,53 @@
+name: Fix dashboard AI contact and language flow
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-dashboard-ai-contact-language-flow.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply dashboard AI flow patch
+        run: python3 .github/scripts/fix_dashboard_ai_contact_language_flow.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format touched Dart files
+        run: dart format lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart lib/src/features/ai/presentation/providers/voice_language_provider.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze touched Dart files
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart lib/src/features/ai/presentation/providers/voice_language_provider.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart
+
+      - name: Sanity-check Edge Function syntax markers
+        run: |
+          grep -q "DASHBOARD COMPACT MODE" supabase/functions/ai-concierge/index.ts
+          grep -q "LANGUAGE LOCK" supabase/functions/ai-concierge/index.ts
+          grep -q "exactNamed" supabase/functions/ai-concierge/index.ts
+
+      - name: Commit AI flow fix
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git add lib/src/core/widgets/glow_search_bar.dart \
+                  lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart \
+                  supabase/functions/ai-concierge/index.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix(ai): compact dashboard contacts and lock voice language"
+          git push origin HEAD:main
