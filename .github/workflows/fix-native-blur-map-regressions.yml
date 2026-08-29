@@ -22,18 +22,13 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import base64
           import re
 
-          # 1) The native AppTopBar BackdropFilter was not clipped to the header
-          # bounds. On iOS it can blur the entire composited page until chrome
-          # hides on scroll. Remove that live filter entirely.
           topbar_path = Path('lib/src/core/widgets/app_top_bar.dart')
           topbar = topbar_path.read_text()
           topbar = topbar.replace("import 'dart:ui';\n\n", '', 1)
-          pattern = re.compile(
-              r"child:\s*kIsWeb\s*\?\s*_headerChrome\(context, isLight: isLight, ink: ink, child: headerRow\)\s*:\s*BackdropFilter\(\s*filter:\s*ImageFilter\.blur\(sigmaX:\s*22,\s*sigmaY:\s*22\),\s*child:\s*_headerChrome\(\s*context,\s*isLight:\s*isLight,\s*ink:\s*ink,\s*child:\s*headerRow,\s*\),\s*\),",
-              re.S,
-          )
+          pattern = re.compile(r"child:\s*kIsWeb\s*\?\s*_headerChrome\(context, isLight: isLight, ink: ink, child: headerRow\)\s*:\s*BackdropFilter\(\s*filter:\s*ImageFilter\.blur\(sigmaX:\s*22,\s*sigmaY:\s*22\),\s*child:\s*_headerChrome\(\s*context,\s*isLight:\s*isLight,\s*ink:\s*ink,\s*child:\s*headerRow,\s*\),\s*\),", re.S)
           replacement = "child: _headerChrome(\n          context,\n          isLight: isLight,\n          ink: ink,\n          child: headerRow,\n        ),"
           topbar, count = pattern.subn(replacement, topbar, count=1)
           if count != 1:
@@ -42,213 +37,45 @@ jobs:
               raise SystemExit('global AppTopBar blur still present')
           topbar_path.write_text(topbar)
 
-          # 2) The native map bootstrap was hard-coded to skip the globe intro.
-          # A fresh map open should always show the cinematic globe, while the
-          # preserved map instance still avoids replaying when returning from a
-          # listing/profile detail.
           mobile_path = Path('lib/src/features/map/presentation/screens/platform_discovery_map_impl_mobile.dart')
           mobile = mobile_path.read_text()
-          mobile = re.sub(
-              r"// The globe is a cinematic arrival, not a loading tax\..*?_nativeMapIntroShownThisSession = false;\n\n",
-              "// Each fresh Map open starts with the cinematic globe. The overlay host\n// keeps the same map State alive while a detail route is pushed, so Back does\n// not replay the intro or reset camera/pins.\n",
-              mobile,
-              count=1,
-              flags=re.S,
-          )
-          old_init = """    _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    _showIntro = false;"""
-          new_init = """    _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    _showIntro = true;"""
+          mobile = re.sub(r"// The globe is a cinematic arrival, not a loading tax\..*?_nativeMapIntroShownThisSession = false;\n\n", "// Each fresh Map open starts with the cinematic globe. The overlay host\n// keeps the same map State alive while a detail route is pushed, so Back does\n// not replay the intro or reset camera/pins.\n", mobile, count=1, flags=re.S)
+          old_init = "    _audioNotifier = ref.read(deckSoundOnProvider.notifier);\n    _showIntro = false;"
+          new_init = "    _audioNotifier = ref.read(deckSoundOnProvider.notifier);\n    _showIntro = true;"
           if old_init not in mobile:
               raise SystemExit('native map init intro assignment not found')
           mobile = mobile.replace(old_init, new_init, 1)
-          old_retry = """    setState(() {
-      _showIntro = false;
-      _mapboxReady = _configureMapbox();
-    });"""
-          new_retry = """    setState(() {
-      _showIntro = true;
-      _mapboxReady = _configureMapbox();
-    });"""
+          old_retry = "    setState(() {\n      _showIntro = false;\n      _mapboxReady = _configureMapbox();\n    });"
+          new_retry = "    setState(() {\n      _showIntro = true;\n      _mapboxReady = _configureMapbox();\n    });"
           if old_retry not in mobile:
               raise SystemExit('native map retry intro assignment not found')
           mobile = mobile.replace(old_retry, new_retry, 1)
-          mobile = mobile.replace(
-              "              _nativeMapIntroShownThisSession = true;\n              _showIntro = false;",
-              "              _showIntro = false;",
-              1,
-          )
+          mobile = mobile.replace("              _nativeMapIntroShownThisSession = true;\n              _showIntro = false;", "              _showIntro = false;", 1)
           if '_nativeMapIntroShownThisSession' in mobile:
               raise SystemExit('stale per-session intro flag remains')
           mobile_path.write_text(mobile)
 
-          # 3) Do not paint known-liked listings while the canonical like IDs are
-          # still loading. Use both the direct ID provider and loaded liked models
-          # as a fallback, then render discovery listings only once that state is
-          # reliable. This prevents saved listings flashing/reappearing on Map.
           map_path = Path('lib/src/features/map/presentation/screens/real_mapbox_screen_v3.dart')
           map_src = map_path.read_text()
-          old_likes = """    final likedListings =
-        ref.read(likedListingIdsProvider).value ?? const <String>{};
-    final likedPeople =
-        ref.read(likedPeopleIdsProvider).value ?? const <String>{};
-    final likedEvents =
-        ref.read(likedEventIdsProvider).value ?? const <String>{};
-    return <_Item>[
-          for (final l in listings)
-            if (!likedListings.contains(l.id)) _listingItem(l, loc),"""
-          new_likes = """    final likedListingIds = ref.read(likedListingIdsProvider);
-    final likedListingModels = ref.read(likedListingsProvider);
-    final likedListings = <String>{};
-    likedListings.addAll(likedListingIds.value ?? const <String>{});
-    likedListings.addAll(
-      (likedListingModels.value ?? const <Listing>[]).map((listing) => listing.id),
-    );
-    final listingLikesStillLoading =
-        likedListingIds.isLoading &&
-        !likedListingIds.hasValue &&
-        !likedListingModels.hasValue;
-    final likedPeople =
-        ref.read(likedPeopleIdsProvider).value ?? const <String>{};
-    final likedEvents =
-        ref.read(likedEventIdsProvider).value ?? const <String>{};
-    return <_Item>[
-          for (final l in listings)
-            if (!listingLikesStillLoading && !likedListings.contains(l.id))
-              _listingItem(l, loc),"""
+          old_likes = "    final likedListings =\n        ref.read(likedListingIdsProvider).value ?? const <String>{};\n    final likedPeople =\n        ref.read(likedPeopleIdsProvider).value ?? const <String>{};\n    final likedEvents =\n        ref.read(likedEventIdsProvider).value ?? const <String>{};\n    return <_Item>[\n          for (final l in listings)\n            if (!likedListings.contains(l.id)) _listingItem(l, loc),"
+          new_likes = "    final likedListingIds = ref.read(likedListingIdsProvider);\n    final likedListingModels = ref.read(likedListingsProvider);\n    final likedListings = <String>{};\n    likedListings.addAll(likedListingIds.value ?? const <String>{});\n    likedListings.addAll(\n      (likedListingModels.value ?? const <Listing>[]).map((listing) => listing.id),\n    );\n    final listingLikesStillLoading =\n        likedListingIds.isLoading &&\n        !likedListingIds.hasValue &&\n        !likedListingModels.hasValue;\n    final likedPeople =\n        ref.read(likedPeopleIdsProvider).value ?? const <String>{};\n    final likedEvents =\n        ref.read(likedEventIdsProvider).value ?? const <String>{};\n    return <_Item>[\n          for (final l in listings)\n            if (!listingLikesStillLoading && !likedListings.contains(l.id))\n              _listingItem(l, loc),"
           if old_likes not in map_src:
               raise SystemExit('map liked-listing block not found')
           map_src = map_src.replace(old_likes, new_likes, 1)
 
-          # 4) The preview card itself was one giant onTap target containing the
-          # X button. Make only photo/text open the detail so close/save actions
-          # are physically isolated and can never bubble into the detail route.
           preview_start = map_src.find('class _Preview extends StatelessWidget {')
           preview_end = map_src.find('class _Tray extends StatefulWidget {', preview_start)
           if preview_start < 0 or preview_end < 0:
               raise SystemExit('map preview class anchors not found')
-          preview = r'''class _Preview extends StatelessWidget {
-  const _Preview({
-    required this.item,
-    required this.onOpen,
-    required this.onSave,
-    required this.onClose,
-  });
-  final _Item item;
-  final VoidCallback onOpen;
-  final VoidCallback onSave;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 86,
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: const Color(0xFAFFFFFF),
-      borderRadius: BorderRadius.circular(18),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x38000000),
-          blurRadius: 24,
-          offset: Offset(0, 10),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onOpen,
-            child: Row(
-              children: [
-                _Photo(item: item, size: 68),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.kind.label,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: item.kind.color,
-                          fontSize: 8.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .45,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.black54,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onSave,
-          child: const SizedBox(
-            width: 38,
-            height: 58,
-            child: Icon(
-              Icons.favorite_border_rounded,
-              color: Color(0xFFFF375F),
-              size: 23,
-            ),
-          ),
-        ),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onClose,
-          child: const SizedBox(
-            width: 34,
-            height: 58,
-            child: Icon(
-              Icons.close_rounded,
-              color: Colors.black54,
-              size: 18,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-'''
+          preview_b64 = 'Y2xhc3MgX1ByZXZpZXcgZXh0ZW5kcyBTdGF0ZWxlc3NXaWRnZXQgewogIGNvbnN0IF9QcmV2aWV3KHsKICAgIHJlcXVpcmVkIHRoaXMuaXRlbSwKICAgIHJlcXVpcmVkIHRoaXMub25PcGVuLAogICAgcmVxdWlyZWQgdGhpcy5vblNhdmUsCiAgICByZXF1aXJlZCB0aGlzLm9uQ2xvc2UsCiAgfSk7CiAgZmluYWwgX0l0ZW0gaXRlbTsKICBmaW5hbCBWb2lkQ2FsbGJhY2sgb25PcGVuOwogIGZpbmFsIFZvaWRDYWxsYmFjayBvblNhdmU7CiAgZmluYWwgVm9pZENhbGxiYWNrIG9uQ2xvc2U7CgogIEBvdmVycmlkZQogIFdpZGdldCBidWlsZChCdWlsZENvbnRleHQgY29udGV4dCkgPT4gQ29udGFpbmVyKAogICAgaGVpZ2h0OiA4NiwKICAgIHBhZGRpbmc6IGNvbnN0IEVkZ2VJbnNldHMuYWxsKDgpLAogICAgZGVjb3JhdGlvbjogQm94RGVjb3JhdGlvbigKICAgICAgY29sb3I6IGNvbnN0IENvbG9yKDB4RkFGRkZGRkYpLAogICAgICBib3JkZXJSYWRpdXM6IEJvcmRlclJhZGl1cy5jaXJjdWxhcigxOCksCiAgICAgIGJveFNoYWRvdzogY29uc3QgWwogICAgICAgIEJveFNoYWRvdygKICAgICAgICAgIGNvbG9yOiBDb2xvcigweDM4MDAwMDAwKSwKICAgICAgICAgIGJsdXJSYWRpdXM6IDI0LAogICAgICAgICAgb2Zmc2V0OiBPZmZzZXQoMCwgMTApLAogICAgICAgICksCiAgICAgIF0sCiAgICApLAogICAgY2hpbGQ6IFJvdygKICAgICAgY2hpbGRyZW46IFsKICAgICAgICBFeHBhbmRlZCgKICAgICAgICAgIGNoaWxkOiBHZXN0dXJlRGV0ZWN0b3IoCiAgICAgICAgICAgIGJlaGF2aW9yOiBIaXRUZXN0QmVoYXZpb3Iub3BhcXVlLAogICAgICAgICAgICBvblRhcDogb25PcGVuLAogICAgICAgICAgICBjaGlsZDogUm93KAogICAgICAgICAgICAgIGNoaWxkcmVuOiBbCiAgICAgICAgICAgICAgICBfUGhvdG8oaXRlbTogaXRlbSwgc2l6ZTogNjgpLAogICAgICAgICAgICAgICAgY29uc3QgU2l6ZWRCb3god2lkdGg6IDEwKSwKICAgICAgICAgICAgICAgIEV4cGFuZGVkKAogICAgICAgICAgICAgICAgICBjaGlsZDogQ29sdW1uKAogICAgICAgICAgICAgICAgICAgIG1haW5BeGlzQWxpZ25tZW50OiBNYWluQXhpc0FsaWdubWVudC5jZW50ZXIsCiAgICAgICAgICAgICAgICAgICAgY3Jvc3NBeGlzQWxpZ25tZW50OiBDcm9zc0F4aXNBbGlnbm1lbnQuc3RhcnQsCiAgICAgICAgICAgICAgICAgICAgY2hpbGRyZW46IFsKICAgICAgICAgICAgICAgICAgICAgIFRleHQoCiAgICAgICAgICAgICAgICAgICAgICAgIGl0ZW0ua2luZC5sYWJlbCwKICAgICAgICAgICAgICAgICAgICAgICAgc3R5bGU6IEdvb2dsZUZvbnRzLnBsdXNKYWthcnRhU2FucygKICAgICAgICAgICAgICAgICAgICAgICAgICBjb2xvcjogaXRlbS5raW5kLmNvbG9yLAogICAgICAgICAgICAgICAgICAgICAgICAgIGZvbnRTaXplOiA4LjUsCiAgICAgICAgICAgICAgICAgICAgICAgICAgZm9udFdlaWdodDogRm9udFdlaWdodC53OTAwLAogICAgICAgICAgICAgICAgICAgICAgICAgIGxldHRlclNwYWNpbmc6IC40NSwKICAgICAgICAgICAgICAgICAgICAgICAgICBkZWNvcmF0aW9uOiBUZXh0RGVjb3JhdGlvbi5ub25lLAogICAgICAgICAgICAgICAgICAgICAgICApLAogICAgICAgICAgICAgICAgICAgICAgKSwKICAgICAgICAgICAgICAgICAgICAgIGNvbnN0IFNpemVkQm94KGhlaWdodDogMiksCiAgICAgICAgICAgICAgICAgICAgICBUZXh0KAogICAgICAgICAgICAgICAgICAgICAgICBpdGVtLnRpdGxlLAogICAgICAgICAgICAgICAgICAgICAgICBtYXhMaW5lczogMSwKICAgICAgICAgICAgICAgICAgICAgICAgb3ZlcmZsb3c6IFRleHRPdmVyZmxvdy5lbGxpcHNpcywKICAgICAgICAgICAgICAgICAgICAgICAgc3R5bGU6IEdvb2dsZUZvbnRzLnBsdXNKYWthcnRhU2FucygKICAgICAgICAgICAgICAgICAgICAgICAgICBmb250U2l6ZTogMTMsCiAgICAgICAgICAgICAgICAgICAgICAgICAgZm9udFdlaWdodDogRm9udFdlaWdodC53OTAwLAogICAgICAgICAgICAgICAgICAgICAgICAgIGRlY29yYXRpb246IFRleHREZWNvcmF0aW9uLm5vbmUsCiAgICAgICAgICAgICAgICAgICAgICAgICksCiAgICAgICAgICAgICAgICAgICAgICApLAogICAgICAgICAgICAgICAgICAgICAgY29uc3QgU2l6ZWRCb3goaGVpZ2h0OiAyKSwKICAgICAgICAgICAgICAgICAgICAgIFRleHQoCiAgICAgICAgICAgICAgICAgICAgICAgIGl0ZW0uc3VidGl0bGUsCiAgICAgICAgICAgICAgICAgICAgICAgIG1heExpbmVzOiAxLAogICAgICAgICAgICAgICAgICAgICAgICBvdmVyZmxvdzogVGV4dE92ZXJmbG93LmVsbGlwc2lzLAogICAgICAgICAgICAgICAgICAgICAgICBzdHlsZTogR29vZ2xlRm9udHMucGx1c0pha2FydGFTYW5zKAogICAgICAgICAgICAgICAgICAgICAgICAgIGNvbG9yOiBDb2xvcnMuYmxhY2s1NCwKICAgICAgICAgICAgICAgICAgICAgICAgICBmb250U2l6ZTogMTAuNSwKICAgICAgICAgICAgICAgICAgICAgICAgICBmb250V2VpZ2h0OiBGb250V2VpZ2h0Lnc2MDAsCiAgICAgICAgICAgICAgICAgICAgICAgICAgZGVjb3JhdGlvbjogVGV4dERlY29yYXRpb24ubm9uZSwKICAgICAgICAgICAgICAgICAgICAgICAgKSwKICAgICAgICAgICAgICAgICAgICAgICksCiAgICAgICAgICAgICAgICAgICAgXSwKICAgICAgICAgICAgICAgICAgKSwKICAgICAgICAgICAgICAgICksCiAgICAgICAgICAgICAgXSwKICAgICAgICAgICAgKSwKICAgICAgICAgICksCiAgICAgICAgKSwKICAgICAgICBHZXN0dXJlRGV0ZWN0b3IoCiAgICAgICAgICBiZWhhdmlvcjogSGl0VGVzdEJlaGF2aW9yLm9wYXF1ZSwKICAgICAgICAgIG9uVGFwOiBvblNhdmUsCiAgICAgICAgICBjaGlsZDogY29uc3QgU2l6ZWRCb3goCiAgICAgICAgICAgIHdpZHRoOiAzOCwKICAgICAgICAgICAgaGVpZ2h0OiA1OCwKICAgICAgICAgICAgY2hpbGQ6IEljb24oCiAgICAgICAgICAgICAgSWNvbnMuZmF2b3JpdGVfYm9yZGVyX3JvdW5kZWQsCiAgICAgICAgICAgICAgY29sb3I6IENvbG9yKDB4RkZGRjM3NUYpLAogICAgICAgICAgICAgIHNpemU6IDIzLAogICAgICAgICAgICApLAogICAgICAgICAgKSwKICAgICAgICApLAogICAgICAgIEdlc3R1cmVEZXRlY3RvcigKICAgICAgICAgIGJlaGF2aW9yOiBIaXRUZXN0QmVoYXZpb3Iub3BhcXVlLAogICAgICAgICAgb25UYXA6IG9uQ2xvc2UsCiAgICAgICAgICBjaGlsZDogY29uc3QgU2l6ZWRCb3goCiAgICAgICAgICAgIHdpZHRoOiAzNCwKICAgICAgICAgICAgaGVpZ2h0OiA1OCwKICAgICAgICAgICAgY2hpbGQ6IEljb24oCiAgICAgICAgICAgICAgSWNvbnMuY2xvc2Vfcm91bmRlZCwKICAgICAgICAgICAgICBjb2xvcjogQ29sb3JzLmJsYWNrNTQsCiAgICAgICAgICAgICAgc2l6ZTogMTgsCiAgICAgICAgICAgICksCiAgICAgICAgICApLAogICAgICAgICksCiAgICAgIF0sCiAgICApLAogICk7Cn0KCg=='
+          preview = base64.b64decode(preview_b64).decode()
           map_src = map_src[:preview_start] + preview + map_src[preview_end:]
           map_path.write_text(map_src)
 
-          # Regression guards.
           assert "child: _headerChrome(" in topbar
           assert "_showIntro = true;" in mobile
           assert "listingLikesStillLoading" in map_src
-          assert "behavior: HitTestBehavior.opaque" in map_src[preview_start:preview_end + 500]
+          assert "onTap: onClose" in preview
           PY
 
       - uses: subosito/flutter-action@v2
