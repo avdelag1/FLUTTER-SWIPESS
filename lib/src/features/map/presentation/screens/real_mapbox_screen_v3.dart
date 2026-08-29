@@ -405,13 +405,13 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     )..layout();
     painter.paint(
       canvas,
-      ui.Offset(
-        center.dx - painter.width / 2,
-        center.dy - painter.height / 2,
-      ),
+      ui.Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
     );
 
-    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
     return (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
         .asUint8List();
   }
@@ -424,7 +424,10 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     canvas.drawCircle(c, 40, ui.Paint()..color = const Color(0x24147DFF));
     canvas.drawCircle(c, 25, ui.Paint()..color = Colors.white);
     canvas.drawCircle(c, 18, ui.Paint()..color = const Color(0xFF147DFF));
-    final image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
     return (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
         .asUint8List();
   }
@@ -579,15 +582,27 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     final listings = ref.read(mapListingsProvider).value ?? const <Listing>[];
     final profiles = ref.read(mapProfilesProvider).value ?? const <Profile>[];
     final events = ref.read(eventsListProvider).value ?? const <Event>[];
-    final likedListings =
-        ref.read(likedListingIdsProvider).value ?? const <String>{};
+    final likedListingIds = ref.read(likedListingIdsProvider);
+    final likedListingModels = ref.read(likedListingsProvider);
+    final likedListings = <String>{};
+    likedListings.addAll(likedListingIds.value ?? const <String>{});
+    likedListings.addAll(
+      (likedListingModels.value ?? const <Listing>[]).map(
+        (listing) => listing.id,
+      ),
+    );
+    final listingLikesStillLoading =
+        likedListingIds.isLoading &&
+        !likedListingIds.hasValue &&
+        !likedListingModels.hasValue;
     final likedPeople =
         ref.read(likedPeopleIdsProvider).value ?? const <String>{};
     final likedEvents =
         ref.read(likedEventIdsProvider).value ?? const <String>{};
     return <_Item>[
           for (final l in listings)
-            if (!likedListings.contains(l.id)) _listingItem(l, loc),
+            if (!listingLikesStillLoading && !likedListings.contains(l.id))
+              _listingItem(l, loc),
           for (final p in profiles)
             if (!likedPeople.contains(p.id)) _profileItem(p, loc),
           for (final e in events)
@@ -798,7 +813,9 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     if (!mounted) return;
     if (results.isNotEmpty) {
       final result = results.first;
-      ref.read(discoveryLocationProvider.notifier).setCoordinates(
+      ref
+          .read(discoveryLocationProvider.notifier)
+          .setCoordinates(
             city: result.name,
             country: result.country,
             latitude: result.latitude,
@@ -1335,46 +1352,45 @@ class _Menu extends StatelessWidget {
       String text,
       VoidCallback tap, {
       required Color accent,
-    }) =>
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: tap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            child: Row(
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: accent.withAlpha(28),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: SizedBox(
-                    width: 31,
-                    height: 31,
-                    child: Icon(icon, size: 17, color: accent),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    text,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF111318),
-                      fontSize: 11.2,
-                      fontWeight: FontWeight.w800,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 16,
-                  color: accent.withAlpha(170),
-                ),
-              ],
+    }) => GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: tap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: accent.withAlpha(28),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: SizedBox(
+                width: 31,
+                height: 31,
+                child: Icon(icon, size: 17, color: accent),
+              ),
             ),
-          ),
-        );
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF111318),
+                  fontSize: 11.2,
+                  fontWeight: FontWeight.w800,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: accent.withAlpha(170),
+            ),
+          ],
+        ),
+      ),
+    );
     final shortSha = _swipessBuildSha.length > 12
         ? _swipessBuildSha.substring(0, 12)
         : _swipessBuildSha;
@@ -1483,89 +1499,98 @@ class _Preview extends StatelessWidget {
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onOpen,
-    child: Container(
-      height: 86,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFAFFFFFF),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x38000000),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _Photo(item: item, size: 68),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => Container(
+    height: 86,
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: const Color(0xFAFFFFFF),
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x38000000),
+          blurRadius: 24,
+          offset: Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onOpen,
+            child: Row(
               children: [
-                Text(
-                  item.kind.label,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: item.kind.color,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .45,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    decoration: TextDecoration.none,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.black54,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.none,
+                _Photo(item: item, size: 68),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.kind.label,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: item.kind.color,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .45,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.black54,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          GestureDetector(
-            onTap: onSave,
-            child: const SizedBox(
-              width: 38,
-              height: 58,
-              child: Icon(
-                Icons.favorite_border_rounded,
-                color: Color(0xFFFF375F),
-                size: 23,
-              ),
+        ),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onSave,
+          child: const SizedBox(
+            width: 38,
+            height: 58,
+            child: Icon(
+              Icons.favorite_border_rounded,
+              color: Color(0xFFFF375F),
+              size: 23,
             ),
           ),
-          GestureDetector(
-            onTap: onClose,
-            child: const SizedBox(
-              width: 30,
-              height: 58,
-              child: Icon(Icons.close_rounded, color: Colors.black45, size: 17),
-            ),
+        ),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onClose,
+          child: const SizedBox(
+            width: 34,
+            height: 58,
+            child: Icon(Icons.close_rounded, color: Colors.black54, size: 18),
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }

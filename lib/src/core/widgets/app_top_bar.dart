@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -100,17 +99,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     return Material(
       type: MaterialType.transparency,
       clipBehavior: Clip.none,
-      child: kIsWeb
-          ? _headerChrome(context, isLight: isLight, ink: ink, child: headerRow)
-          : BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-              child: _headerChrome(
-                context,
-                isLight: isLight,
-                ink: ink,
-                child: headerRow,
-              ),
-            ),
+      child: _headerChrome(
+        context,
+        isLight: isLight,
+        ink: ink,
+        child: headerRow,
+      ),
     );
   }
 
@@ -172,7 +166,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     semanticLabel: 'Open map',
                     onTap: () {
                       AppHaptics.medium();
-                      ref.read(overlayModalsProvider.notifier).openPassportMap();
+                      ref
+                          .read(overlayModalsProvider.notifier)
+                          .openPassportMap();
                     },
                     child: _AnimatedWorldIcon(color: ink),
                   ),
@@ -226,97 +222,90 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-                _HudButton(
-                  key: const ValueKey('header-notifications'),
-                  semanticLabel: 'Open notifications',
-                  onTap: () {
-                    AppHaptics.medium();
-                    showGlassModal(
-                      context: context,
-                      builder: (_) => const NotificationsScreen(),
-                    );
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        Icons.notifications_none_rounded,
-                        size: 23,
-                        color: ink,
-                      ),
-                      ref.watch(unreadNotificationsProvider).when(
-                            data: (count) => count <= 0
-                                ? const SizedBox.shrink()
-                                : Positioned(
-                                    right: -8,
-                                    top: -7,
-                                    child: Container(
-                                      constraints: const BoxConstraints(
-                                        minWidth: 17,
-                                        minHeight: 17,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 2,
-                                      ),
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.brandPrimary,
-                                        borderRadius: BorderRadius.circular(999),
-                                        border: Border.all(
-                                          color: ink,
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        count > 99 ? '99+' : '$count',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white,
-                                          fontSize: 8,
-                                          height: 1,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
+            _HudButton(
+              key: const ValueKey('header-notifications'),
+              semanticLabel: 'Open notifications',
+              onTap: () {
+                AppHaptics.medium();
+                showGlassModal(
+                  context: context,
+                  builder: (_) => const NotificationsScreen(),
+                );
+              },
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(Icons.notifications_none_rounded, size: 23, color: ink),
+                  ref
+                      .watch(unreadNotificationsProvider)
+                      .when(
+                        data: (count) => count <= 0
+                            ? const SizedBox.shrink()
+                            : Positioned(
+                                right: -8,
+                                top: -7,
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 17,
+                                    minHeight: 17,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.brandPrimary,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(color: ink, width: 1.5),
+                                  ),
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      height: 1,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                            loading: () => const SizedBox.shrink(),
-                            error: (_, _) => const SizedBox.shrink(),
-                          ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: chromeGap),
-                _HudButton(
-                  key: const ValueKey('header-theme'),
-                  semanticLabel: isLight
-                      ? 'Switch to dark appearance'
-                      : 'Switch to light appearance',
-                  onTap: () {
-                    AppHaptics.medium();
-                    ref.read(visualThemeProvider.notifier).toggle();
-                  },
-                  child: Icon(
-                    isLight
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
-                    size: 22,
-                    color: ink,
-                  ),
-                ),
-                if (!isProfileRoute) ...[
-                  SizedBox(width: chromeGap),
-                  _ProfileAvatarButton(
-                    key: const ValueKey('header-profile'),
-                    avatarUrl: avatarUrl,
-                    seed: firstName ?? avatarUrl ?? 'swipess-you',
-                    semanticLabel: 'Open profile, $_label',
-                    onTap: () => _openProfile(context),
-                  ),
+                                ),
+                              ),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
+                      ),
                 ],
-              ],
+              ),
             ),
+            SizedBox(width: chromeGap),
+            _HudButton(
+              key: const ValueKey('header-theme'),
+              semanticLabel: isLight
+                  ? 'Switch to dark appearance'
+                  : 'Switch to light appearance',
+              onTap: () {
+                AppHaptics.medium();
+                ref.read(visualThemeProvider.notifier).toggle();
+              },
+              child: Icon(
+                isLight ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                size: 22,
+                color: ink,
+              ),
+            ),
+            if (!isProfileRoute) ...[
+              SizedBox(width: chromeGap),
+              _ProfileAvatarButton(
+                key: const ValueKey('header-profile'),
+                avatarUrl: avatarUrl,
+                seed: firstName ?? avatarUrl ?? 'swipess-you',
+                semanticLabel: 'Open profile, $_label',
+                onTap: () => _openProfile(context),
+              ),
+            ],
           ],
-        );
+        ),
+      ],
+    );
   }
 }
 
@@ -336,25 +325,25 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: semanticLabel,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: SizedBox(
-            width: AppTopBar._hudSize,
-            height: AppTopBar._hudSize,
-            child: Center(
-              child: FunAvatar(
-                seed: seed,
-                imageUrl: avatarUrl,
-                size: 32,
-                semanticLabel: semanticLabel,
-              ),
-            ),
+    button: true,
+    label: semanticLabel,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: AppTopBar._hudSize,
+        height: AppTopBar._hudSize,
+        child: Center(
+          child: FunAvatar(
+            seed: seed,
+            imageUrl: avatarUrl,
+            size: 32,
+            semanticLabel: semanticLabel,
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _HudButton extends StatelessWidget {
@@ -439,7 +428,7 @@ class _AnimatedWorldIconState extends State<_AnimatedWorldIcon>
         final t = _controller.value;
         // 0.0 to 1.0 back to 0.0 smoothly
         final intensity = math.sin(t * math.pi);
-        
+
         return Stack(
           alignment: Alignment.center,
           children: [
@@ -450,7 +439,7 @@ class _AnimatedWorldIconState extends State<_AnimatedWorldIcon>
                 child: Icon(
                   Icons.public_rounded,
                   size: 22,
-                  color: AppTheme.brandPrimary, 
+                  color: AppTheme.brandPrimary,
                 ),
               ),
           ],

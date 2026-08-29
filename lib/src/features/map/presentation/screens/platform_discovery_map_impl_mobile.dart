@@ -6,10 +6,9 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
 
-// The globe is a cinematic arrival, not a loading tax. Show it once per app
-// process; every later Map open goes straight to the live discovery map.
-bool _nativeMapIntroShownThisSession = false;
-
+// Each fresh Map open starts with the cinematic globe. The overlay host
+// keeps the same map State alive while a detail route is pushed, so Back does
+// not replay the intro or reset camera/pins.
 /// Native iOS/Android map entry point.
 ///
 /// Native must stay on the Mapbox SDK. Before creating any Mapbox surface we
@@ -55,7 +54,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    _showIntro = false;
+    _showIntro = true;
     // Token is often configured at cold start. Skip the async bootstrap frame
     // so Map open never flashes a blank/white canvas on iOS.
     _mapboxReady = MapboxRuntimeConfig.isConfigured
@@ -68,7 +67,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
 
   void _retryMapbox() {
     setState(() {
-      _showIntro = false;
+      _showIntro = true;
       _mapboxReady = _configureMapbox();
     });
   }
@@ -130,11 +129,7 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.map_outlined,
-                  size: 34,
-                  color: Colors.white,
-                ),
+                const Icon(Icons.map_outlined, size: 34, color: Colors.white),
                 const SizedBox(height: 12),
                 const Text(
                   'Map could not connect',
@@ -200,7 +195,6 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
             showCitiesOnOpen: widget.showCitiesOnOpen,
             playIntro: _showIntro,
             onIntroComplete: () {
-              _nativeMapIntroShownThisSession = true;
               _showIntro = false;
             },
           );
