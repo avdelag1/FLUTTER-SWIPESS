@@ -1,0 +1,60 @@
+name: Fix dashboard auto sender countdown
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/fix_auto_sender_countdown.py
+      - .github/workflows/fix-auto-sender-countdown.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply guarded auto-sender patch
+        run: python3 .github/scripts/fix_auto_sender_countdown.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format touched Dart file
+        run: dart format lib/src/core/widgets/glow_search_bar.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze dashboard search bar
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/core/widgets/glow_search_bar.dart
+
+      - name: Run chrome regression test
+        run: flutter test test/persistent_chrome_overlap_guard_test.dart --reporter expanded
+
+      - name: Verify auto-sender guards
+        shell: bash
+        run: |
+          grep -q "countdownOwnsCapturedText" lib/src/core/widgets/glow_search_bar.dart
+          grep -q "cleanText != pendingText" lib/src/core/widgets/glow_search_bar.dart
+          grep -q "_handleVoiceLevel(normalized);" lib/src/core/widgets/glow_search_bar.dart
+          grep -q "Only actual new recognized transcript text" AGENTS.md
+
+      - name: Commit fix to main
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git restore pubspec.lock || true
+          git add AGENTS.md lib/src/core/widgets/glow_search_bar.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix(voice): make dashboard auto-sender countdown authoritative"
+          git pull --rebase origin main
+          git push origin HEAD:main
