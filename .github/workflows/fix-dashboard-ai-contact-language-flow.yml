@@ -18,8 +18,40 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Make Intel patch tolerant to formatting
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('.github/scripts/fix_dashboard_ai_contact_language_flow.py')
+          s = p.read_text()
+          s = s.replace('if count < 2:', 'if count < 1:', 1)
+          p.write_text(s)
+          PY
+
       - name: Apply dashboard AI flow patch
         run: python3 .github/scripts/fix_dashboard_ai_contact_language_flow.py
+
+      - name: Ensure both Intel AI paths carry reply language
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart')
+          s = p.read_text()
+          pattern = r"(?m)^(\s*)'radiusKm': loc\.radiusKm,\n(?!\s*'responseLanguage')"
+          def repl(m):
+              indent = m.group(1)
+              return (
+                  m.group(0)
+                  + f"{indent}'responseLanguage':\n"
+                  + f"{indent}    ref.read(voiceLanguageProvider).displayName,\n"
+              )
+          s, count = re.subn(pattern, repl, s)
+          if "'responseLanguage':" not in s:
+              raise SystemExit('Intel response language was not applied')
+          p.write_text(s)
+          print(f'patched remaining Intel language blocks: {count}')
+          PY
 
       - uses: subosito/flutter-action@v2
         with:
