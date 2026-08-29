@@ -1,0 +1,64 @@
+name: Fix iOS voice AI handoff
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/fix_ios_voice_ai_handoff.py
+      - .github/workflows/fix-ios-voice-ai-handoff.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply guarded native iOS voice + AI patch
+        run: python3 .github/scripts/fix_ios_voice_ai_handoff.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format touched Dart files
+        run: dart format lib/src/features/ai/presentation/services/live_voice_input.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze native voice and AI paths
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/ai/presentation/services/live_voice_input.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+
+      - name: Run voice countdown and chrome regression tests
+        run: |
+          flutter test test/voice_countdown_guard_test.dart --reporter expanded
+          flutter test test/persistent_chrome_overlap_guard_test.dart --reporter expanded
+
+      - name: Verify native iOS handoff guards
+        shell: bash
+        run: |
+          grep -q "restartAfterSilence: false" lib/src/core/widgets/glow_search_bar.dart
+          grep -q "restartAfterSilence: false" lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+          grep -q "await _voice.finish(owner: this);" lib/src/core/widgets/glow_search_bar.dart
+          ! grep -q "chatConciergeTokens(" lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+          grep -q "Native iOS/TestFlight voice is the acceptance target" AGENTS.md
+          grep -q "version: 1.2.51+647" pubspec.yaml
+          grep -q "<string>647</string>" ios/Runner/Info.plist
+
+      - name: Commit native iOS fix to main
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git add AGENTS.md pubspec.yaml ios/Runner/Info.plist lib/src/features/ai/presentation/services/live_voice_input.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix(ios): unify voice countdown and AI reply handoff"
+          git pull --rebase origin main
+          git push origin HEAD:main
