@@ -12,7 +12,6 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
-import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
@@ -583,49 +582,23 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     final listings = ref.read(mapListingsProvider).value ?? const <Listing>[];
     final profiles = ref.read(mapProfilesProvider).value ?? const <Profile>[];
     final events = ref.read(eventsListProvider).value ?? const <Event>[];
-    final likedListingIds = ref.read(likedListingIdsProvider);
-    final likedListingModels = ref.read(likedListingsProvider);
-    final likedListings = <String>{};
-    likedListings.addAll(likedListingIds.value ?? const <String>{});
-    likedListings.addAll(
-      (likedListingModels.value ?? const <Listing>[]).map(
-        (listing) => listing.id,
-      ),
-    );
-    final listingLikesStillLoading =
-        likedListingIds.isLoading &&
-        !likedListingIds.hasValue &&
-        !likedListingModels.hasValue;
-    final likedPeopleIds = ref.read(likedPeopleIdsProvider);
-    final likedPeopleModels = ref.read(likedPeopleProvider);
-    final likedPeople = <String>{};
-    likedPeople.addAll(likedPeopleIds.value ?? const <String>{});
-    likedPeople.addAll(
-      (likedPeopleModels.value ?? const <ProfileLike>[]).map(
-        (person) => person.userId,
-      ),
-    );
-    final peopleLikesStillLoading =
-        likedPeopleIds.isLoading &&
-        !likedPeopleIds.hasValue &&
-        !likedPeopleModels.hasValue;
-
-    final likedEventIds = ref.read(likedEventIdsProvider);
-    final likedEvents = likedEventIds.value ?? const <String>{};
-    final eventLikesStillLoading =
-        likedEventIds.isLoading && !likedEventIds.hasValue;
+    final listingExclusions = ref.read(mapExcludedListingIdsProvider);
+    final peopleExclusions = ref.read(mapExcludedPeopleIdsProvider);
+    final eventExclusions = ref.read(mapExcludedEventIdsProvider);
 
     return <_Item>[
           for (final l in listings)
-            if (!listingLikesStillLoading && !likedListings.contains(l.id))
+            if (!listingExclusions.unresolved &&
+                !listingExclusions.ids.contains(l.id))
               _listingItem(l, loc),
           for (final p in profiles)
-            if (!peopleLikesStillLoading && !likedPeople.contains(p.id))
+            if (!peopleExclusions.unresolved &&
+                !peopleExclusions.ids.contains(p.id))
               _profileItem(p, loc),
           for (final e in events)
-            if (!eventLikesStillLoading &&
+            if (!eventExclusions.unresolved &&
                 _eventInCity(e, loc) &&
-                !likedEvents.contains(e.id))
+                !eventExclusions.ids.contains(e.id))
               _eventItem(e, loc),
         ]
         .where((i) => !_hidden.contains(i.key) && _filterItem(i))
@@ -869,9 +842,9 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     ref.watch(mapListingsProvider);
     ref.watch(mapProfilesProvider);
     ref.watch(eventsListProvider);
-    ref.watch(likedListingIdsProvider);
-    ref.watch(likedPeopleIdsProvider);
-    ref.watch(likedEventIdsProvider);
+    ref.watch(mapExcludedListingIdsProvider);
+    ref.watch(mapExcludedPeopleIdsProvider);
+    ref.watch(mapExcludedEventIdsProvider);
 
     ref.listen(discoveryLocationProvider, (oldValue, next) {
       if (oldValue == null ||
@@ -886,9 +859,9 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     ref.listen(mapListingsProvider, (_, __) => _scheduleRender());
     ref.listen(mapProfilesProvider, (_, __) => _scheduleRender());
     ref.listen(eventsListProvider, (_, __) => _scheduleRender());
-    ref.listen(likedListingIdsProvider, (_, __) => _scheduleRender());
-    ref.listen(likedPeopleIdsProvider, (_, __) => _scheduleRender());
-    ref.listen(likedEventIdsProvider, (_, __) => _scheduleRender());
+    ref.listen(mapExcludedListingIdsProvider, (_, __) => _scheduleRender());
+    ref.listen(mapExcludedPeopleIdsProvider, (_, __) => _scheduleRender());
+    ref.listen(mapExcludedEventIdsProvider, (_, __) => _scheduleRender());
 
     final items = _items();
     final selected = _selectedItem;

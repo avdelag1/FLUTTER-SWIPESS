@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/map_basemap.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
@@ -593,12 +594,20 @@ class _WebDiscoveryMapScreenV8State
     DiscoveryLocation loc,
     List<Listing> listings,
     List<Profile> profiles,
-    List<Event> events,
-  ) {
+    List<Event> events, {
+    required Set<String> excludedListingIds,
+    required Set<String> excludedPeopleIds,
+    required Set<String> excludedEventIds,
+  }) {
     final all = <_Item>[
-      for (final listing in listings) _listingItem(listing, loc),
-      for (final profile in profiles) _profileItem(profile, loc),
-      for (final event in events) _eventItem(event, loc),
+      for (final listing in listings)
+        if (!excludedListingIds.contains(listing.id))
+          _listingItem(listing, loc),
+      for (final profile in profiles)
+        if (!excludedPeopleIds.contains(profile.id))
+          _profileItem(profile, loc),
+      for (final event in events)
+        if (!excludedEventIds.contains(event.id)) _eventItem(event, loc),
     ];
     return all.where(_matches).toList(growable: false);
   }
@@ -658,6 +667,9 @@ class _WebDiscoveryMapScreenV8State
     final listings = ref.watch(mapListingsProvider).value ?? const <Listing>[];
     final profiles = ref.watch(mapProfilesProvider).value ?? const <Profile>[];
     final events = ref.watch(eventsListProvider).value ?? const <Event>[];
+    final listingExclusions = ref.watch(mapExcludedListingIdsProvider);
+    final peopleExclusions = ref.watch(mapExcludedPeopleIdsProvider);
+    final eventExclusions = ref.watch(mapExcludedEventIdsProvider);
     final pad = MediaQuery.paddingOf(context);
 
     ref.listen(discoveryLocationProvider, (previous, next) {
@@ -676,7 +688,20 @@ class _WebDiscoveryMapScreenV8State
       }
     });
 
-    final items = _items(loc, listings, profiles, events);
+    final items =
+        listingExclusions.unresolved ||
+            peopleExclusions.unresolved ||
+            eventExclusions.unresolved
+        ? const <_Item>[]
+        : _items(
+            loc,
+            listings,
+            profiles,
+            events,
+            excludedListingIds: listingExclusions.ids,
+            excludedPeopleIds: peopleExclusions.ids,
+            excludedEventIds: eventExclusions.ids,
+          );
     if (_selected != null && !items.any((item) => item.key == _selected)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _selected = null);

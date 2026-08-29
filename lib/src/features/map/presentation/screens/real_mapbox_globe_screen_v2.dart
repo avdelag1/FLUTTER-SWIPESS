@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/config/app_config.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/domain/map_pin.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
@@ -219,13 +220,19 @@ class _RealMapboxGlobeScreenV2State
   List<MapPin> _pinsFor(
     DiscoveryLocation loc,
     List<dynamic> listings,
-    List<dynamic> profiles,
-  ) {
+    List<dynamic> profiles, {
+    required Set<String> excludedListingIds,
+    required Set<String> excludedPeopleIds,
+  }) {
     return [
       if (_layer != 'people')
-        for (final listing in listings) _listingPin(listing, loc),
+        for (final listing in listings)
+          if (!excludedListingIds.contains(listing.id))
+            _listingPin(listing, loc),
       if (_layer != 'listings')
-        for (final profile in profiles) _profilePin(profile, loc),
+        for (final profile in profiles)
+          if (!excludedPeopleIds.contains(profile.id))
+            _profilePin(profile, loc),
     ];
   }
 
@@ -254,7 +261,23 @@ class _RealMapboxGlobeScreenV2State
       final loc = ref.read(discoveryLocationProvider);
       final listingRows = ref.read(mapListingsProvider).value ?? const [];
       final profileRows = ref.read(mapProfilesProvider).value ?? const [];
-      final pins = _pinsFor(loc, listingRows, profileRows);
+      final listingExclusions = ref.read(mapExcludedListingIdsProvider);
+      final peopleExclusions = ref.read(mapExcludedPeopleIdsProvider);
+      if (listingExclusions.unresolved || peopleExclusions.unresolved) {
+        setState(() {
+          _pinPixels = const {};
+          _centerPixel = null;
+          _radiusPixels = null;
+        });
+        return;
+      }
+      final pins = _pinsFor(
+        loc,
+        listingRows,
+        profileRows,
+        excludedListingIds: listingExclusions.ids,
+        excludedPeopleIds: peopleExclusions.ids,
+      );
 
       final points = <Point>[
         _point(loc.latitude, loc.longitude),
@@ -353,6 +376,8 @@ class _RealMapboxGlobeScreenV2State
     final loc = ref.watch(discoveryLocationProvider);
     final listingsAsync = ref.watch(mapListingsProvider);
     final profilesAsync = ref.watch(mapProfilesProvider);
+    final listingExclusions = ref.watch(mapExcludedListingIdsProvider);
+    final peopleExclusions = ref.watch(mapExcludedPeopleIdsProvider);
     final isLight = Theme.of(context).brightness == Brightness.light;
     final tokenReady = AppConfig.mapboxAccessToken.trim().isNotEmpty;
     final pad = MediaQuery.paddingOf(context);
@@ -385,6 +410,8 @@ class _RealMapboxGlobeScreenV2State
       _scheduleProjection();
       _queueInitialFlight();
     });
+    ref.listen(mapExcludedListingIdsProvider, (_, __) => _scheduleProjection());
+    ref.listen(mapExcludedPeopleIdsProvider, (_, __) => _scheduleProjection());
 
     if (!tokenReady) {
       return const Material(
@@ -400,8 +427,21 @@ class _RealMapboxGlobeScreenV2State
 
     final listingRows = listingsAsync.value ?? const [];
     final profileRows = profilesAsync.value ?? const [];
-    final pins = _pinsFor(loc, listingRows, profileRows);
-    final loading = listingsAsync.isLoading || profilesAsync.isLoading;
+    final pins =
+        listingExclusions.unresolved || peopleExclusions.unresolved
+            ? const <MapPin>[]
+            : _pinsFor(
+              loc,
+              listingRows,
+              profileRows,
+              excludedListingIds: listingExclusions.ids,
+              excludedPeopleIds: peopleExclusions.ids,
+            );
+    final loading =
+        listingsAsync.isLoading ||
+        profilesAsync.isLoading ||
+        listingExclusions.unresolved ||
+        peopleExclusions.unresolved;
     final failed = listingsAsync.hasError || profilesAsync.hasError;
 
     return Material(

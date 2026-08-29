@@ -475,15 +475,22 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
 
   List<_Item> _currentItems() {
     final loc = ref.read(discoveryLocationProvider);
+    final listingExclusions = ref.read(mapExcludedListingIdsProvider);
+    final peopleExclusions = ref.read(mapExcludedPeopleIdsProvider);
+    final eventExclusions = ref.read(mapExcludedEventIdsProvider);
+    if (listingExclusions.unresolved ||
+        peopleExclusions.unresolved ||
+        eventExclusions.unresolved) {
+      return const <_Item>[];
+    }
     return _buildItems(
       loc: loc,
       listings: ref.read(mapListingsProvider).value ?? const <Listing>[],
       profiles: ref.read(mapProfilesProvider).value ?? const <Profile>[],
       events: ref.read(eventsListProvider).value ?? const <Event>[],
-      likedListings:
-          ref.read(likedListingIdsProvider).value ?? const <String>{},
-      likedPeople: ref.read(likedPeopleIdsProvider).value ?? const <String>{},
-      likedEvents: ref.read(likedEventIdsProvider).value ?? const <String>{},
+      likedListings: listingExclusions.ids,
+      likedPeople: peopleExclusions.ids,
+      likedEvents: eventExclusions.ids,
     );
   }
 
@@ -667,22 +674,23 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     final listings = ref.watch(mapListingsProvider).value ?? const <Listing>[];
     final profiles = ref.watch(mapProfilesProvider).value ?? const <Profile>[];
     final events = ref.watch(eventsListProvider).value ?? const <Event>[];
-    final likedListings =
-        ref.watch(likedListingIdsProvider).value ?? const <String>{};
-    final likedPeople =
-        ref.watch(likedPeopleIdsProvider).value ?? const <String>{};
-    final likedEvents =
-        ref.watch(likedEventIdsProvider).value ?? const <String>{};
+    final listingExclusions = ref.watch(mapExcludedListingIdsProvider);
+    final peopleExclusions = ref.watch(mapExcludedPeopleIdsProvider);
+    final eventExclusions = ref.watch(mapExcludedEventIdsProvider);
     final pad = MediaQuery.paddingOf(context);
 
-    final items = _buildItems(
+    final items = listingExclusions.unresolved ||
+            peopleExclusions.unresolved ||
+            eventExclusions.unresolved
+        ? const <_Item>[]
+        : _buildItems(
       loc: loc,
       listings: listings,
       profiles: profiles,
       events: events,
-      likedListings: likedListings,
-      likedPeople: likedPeople,
-      likedEvents: likedEvents,
+      likedListings: listingExclusions.ids,
+      likedPeople: peopleExclusions.ids,
+      likedEvents: eventExclusions.ids,
     );
     _Item? selected;
     if (_selectedKey != null) {
@@ -707,9 +715,9 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     ref.listen(mapListingsProvider, (_, _) => _scheduleProjection());
     ref.listen(mapProfilesProvider, (_, _) => _scheduleProjection());
     ref.listen(eventsListProvider, (_, _) => _scheduleProjection());
-    ref.listen(likedListingIdsProvider, (_, _) => _scheduleProjection());
-    ref.listen(likedPeopleIdsProvider, (_, _) => _scheduleProjection());
-    ref.listen(likedEventIdsProvider, (_, _) => _scheduleProjection());
+    ref.listen(mapExcludedListingIdsProvider, (_, _) => _scheduleProjection());
+    ref.listen(mapExcludedPeopleIdsProvider, (_, _) => _scheduleProjection());
+    ref.listen(mapExcludedEventIdsProvider, (_, _) => _scheduleProjection());
 
     if (!tokenReady) {
       return const Material(

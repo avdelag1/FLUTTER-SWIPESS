@@ -195,8 +195,11 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     ref.invalidate(swipeListingsProvider(_categoryId));
     ref.invalidate(mapListingsProvider);
     ref.invalidate(likedListingsProvider);
+    ref.invalidate(likedListingIdsProvider);
     ref.invalidate(mapProfilesProvider);
     ref.invalidate(likedPeopleProvider);
+    ref.invalidate(likedPeopleIdsProvider);
+    ref.invalidate(likedEventIdsProvider);
   }
 
   void _undo() {

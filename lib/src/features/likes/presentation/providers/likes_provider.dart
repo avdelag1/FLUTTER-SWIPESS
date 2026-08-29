@@ -108,6 +108,67 @@ final likedEventIdsProvider = FutureProvider.autoDispose<Set<String>>(
   (ref) => _fetchLikedTargetIds('event'),
 );
 
+/// Canonical like IDs plus loaded models, shared by every map renderer.
+class MapTargetExclusions {
+  const MapTargetExclusions({required this.ids, required this.unresolved});
+
+  final Set<String> ids;
+
+  /// True while likes are still loading with no cached value. Map must not
+  /// paint this target type until resolved so already-liked items never flash.
+  final bool unresolved;
+}
+
+bool _mapExclusionsUnresolved(
+  AsyncValue<Set<String>> canonical,
+  AsyncValue<dynamic> models,
+) {
+  return canonical.isLoading &&
+      !canonical.hasValue &&
+      models.isLoading &&
+      !models.hasValue;
+}
+
+final mapExcludedListingIdsProvider = Provider.autoDispose<MapTargetExclusions>((
+  ref,
+) {
+  final canonical = ref.watch(likedListingIdsProvider);
+  final models = ref.watch(likedListingsProvider);
+  final ids = <String>{
+    ...canonical.value ?? const <String>{},
+    ...(models.value ?? const <Listing>[]).map((listing) => listing.id),
+  };
+  return MapTargetExclusions(
+    ids: ids,
+    unresolved: _mapExclusionsUnresolved(canonical, models),
+  );
+});
+
+final mapExcludedPeopleIdsProvider = Provider.autoDispose<MapTargetExclusions>((
+  ref,
+) {
+  final canonical = ref.watch(likedPeopleIdsProvider);
+  final models = ref.watch(likedPeopleProvider);
+  final ids = <String>{
+    ...canonical.value ?? const <String>{},
+    ...(models.value ?? const <ProfileLike>[]).map((person) => person.userId),
+  };
+  return MapTargetExclusions(
+    ids: ids,
+    unresolved: _mapExclusionsUnresolved(canonical, models),
+  );
+});
+
+final mapExcludedEventIdsProvider = Provider.autoDispose<MapTargetExclusions>((
+  ref,
+) {
+  final canonical = ref.watch(likedEventIdsProvider);
+  return MapTargetExclusions(
+    ids: canonical.value ?? const <String>{},
+    unresolved: canonical.isLoading && !canonical.hasValue,
+  );
+});
+
 class InterestedClientsNotifier extends AsyncNotifier<List<InterestedClient>> {
   @override
   Future<List<InterestedClient>> build() {
