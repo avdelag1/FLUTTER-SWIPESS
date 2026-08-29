@@ -35,6 +35,7 @@ class LiveVoiceInput {
   bool _usingBrowser = false;
   bool _nativeInitialized = false;
   bool _nativeRestarting = false;
+  int _nativeTransientFailures = 0;
   Object? _owner;
 
   String _committed = '';
@@ -123,6 +124,7 @@ class LiveVoiceInput {
     _nativeSessionText = '';
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
+    _nativeTransientFailures = 0;
     _intentionalStop = false;
 
     try {
@@ -192,27 +194,54 @@ class LiveVoiceInput {
 
     _nativeInitialized = await _nativeSpeech.initialize(
       onStatus: _handleNativeStatus,
-      onError: (error) {
-        if (!_active || _intentionalStop) return;
-        final msg = error.errorMsg.toLowerCase();
-        if (msg.contains('no_match') ||
-            msg.contains('speech_timeout') ||
-            msg.contains('timeout')) {
-          _finishNativeSegmentAndRestart();
-          return;
-        }
-        if (msg.contains('permission') || msg.contains('not authorized')) {
-          _nativeInitialized = false;
-          _onError?.call(
-            'Microphone access is required. Open Settings → Swipess and allow Microphone and Speech Recognition.',
-          );
-          return;
-        }
-        _onError?.call('Voice recognition stopped. Please try again.');
-      },
+      onError: (error) => _handleNativeError(error.errorMsg),
     );
     if (!_nativeInitialized) return false;
     return _ensureNativePermission();
+  }
+
+  void _handleNativeError(String rawMessage) {
+    if (!_active || _intentionalStop || _usingBrowser) return;
+    final msg = rawMessage.toLowerCase();
+
+    if (msg.contains('no_match') ||
+        msg.contains('speech_timeout') ||
+        msg.contains('timeout')) {
+      _finishNativeSegmentAndRestart(
+        restartDelay: const Duration(milliseconds: 520),
+      );
+      return;
+    }
+
+    if (msg.contains('permission') || msg.contains('not authorized')) {
+      _nativeInitialized = false;
+      _onError?.call(
+        'Microphone access is required. Open Settings → Swipess and allow Microphone and Speech Recognition.',
+      );
+      return;
+    }
+
+    const transientMarkers = <String>[
+      'busy',
+      'client',
+      'network',
+      'server',
+      'audio',
+      'recognizer',
+      'retry',
+      'temporarily',
+    ];
+    final recoverable =
+        transientMarkers.any(msg.contains) || !_nativeSpeech.isListening;
+    if (recoverable && _nativeTransientFailures < 4) {
+      _nativeTransientFailures += 1;
+      _finishNativeSegmentAndRestart(
+        restartDelay: const Duration(milliseconds: 650),
+      );
+      return;
+    }
+
+    _onError?.call('Voice recognition stopped. Please try again.');
   }
 
   Future<bool> _ensureNativePermission() async {
@@ -277,6 +306,7 @@ class LiveVoiceInput {
 
     _nativeSessionText = speech;
     _segmentHasSpeech = true;
+    _nativeTransientFailures = 0;
     _silenceDeliveredForSegment = false;
     final total = _join(_committed, speech);
     if (total != _lastPublished) {
@@ -348,6 +378,14 @@ class LiveVoiceInput {
       return;
     }
 
+    if (_nativeTransientFailures < 4) {
+      _nativeTransientFailures += 1;
+      _finishNativeSegmentAndRestart(
+        restartDelay: const Duration(milliseconds: 650),
+      );
+      return;
+    }
+
     _onError?.call('Could not start listening. Tap the microphone again.');
     _clearSession(keepOwner: false);
   }
@@ -367,6 +405,7 @@ class LiveVoiceInput {
     if (!_active || _intentionalStop || _usingBrowser) return;
     final normalized = status.toLowerCase();
     if (normalized == stt.SpeechToText.listeningStatus.toLowerCase()) {
+      _nativeTransientFailures = 0;
       _publishListening(true);
       return;
     }
@@ -376,7 +415,9 @@ class LiveVoiceInput {
     }
   }
 
-  void _finishNativeSegmentAndRestart() {
+  void _finishNativeSegmentAndRestart({
+    Duration restartDelay = const Duration(milliseconds: 520),
+  }) {
     if (!_active || _intentionalStop || _usingBrowser) return;
     _commitNativeSegment();
     _publishSoundLevel(0);
@@ -389,7 +430,7 @@ class LiveVoiceInput {
     if (_nativeRestarting) return;
     _nativeRestarting = true;
     _nativeRestartTimer?.cancel();
-    _nativeRestartTimer = Timer(const Duration(milliseconds: 180), () async {
+    _nativeRestartTimer = Timer(restartDelay, () async {
       _nativeRestarting = false;
       if (!_active || _intentionalStop || _usingBrowser) return;
       try {

@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
+import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
@@ -595,18 +596,36 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
         likedListingIds.isLoading &&
         !likedListingIds.hasValue &&
         !likedListingModels.hasValue;
-    final likedPeople =
-        ref.read(likedPeopleIdsProvider).value ?? const <String>{};
-    final likedEvents =
-        ref.read(likedEventIdsProvider).value ?? const <String>{};
+    final likedPeopleIds = ref.read(likedPeopleIdsProvider);
+    final likedPeopleModels = ref.read(likedPeopleProvider);
+    final likedPeople = <String>{};
+    likedPeople.addAll(likedPeopleIds.value ?? const <String>{});
+    likedPeople.addAll(
+      (likedPeopleModels.value ?? const <ProfileLike>[]).map(
+        (person) => person.userId,
+      ),
+    );
+    final peopleLikesStillLoading =
+        likedPeopleIds.isLoading &&
+        !likedPeopleIds.hasValue &&
+        !likedPeopleModels.hasValue;
+
+    final likedEventIds = ref.read(likedEventIdsProvider);
+    final likedEvents = likedEventIds.value ?? const <String>{};
+    final eventLikesStillLoading =
+        likedEventIds.isLoading && !likedEventIds.hasValue;
+
     return <_Item>[
           for (final l in listings)
             if (!listingLikesStillLoading && !likedListings.contains(l.id))
               _listingItem(l, loc),
           for (final p in profiles)
-            if (!likedPeople.contains(p.id)) _profileItem(p, loc),
+            if (!peopleLikesStillLoading && !likedPeople.contains(p.id))
+              _profileItem(p, loc),
           for (final e in events)
-            if (_eventInCity(e, loc) && !likedEvents.contains(e.id))
+            if (!eventLikesStillLoading &&
+                _eventInCity(e, loc) &&
+                !likedEvents.contains(e.id))
               _eventItem(e, loc),
         ]
         .where((i) => !_hidden.contains(i.key) && _filterItem(i))

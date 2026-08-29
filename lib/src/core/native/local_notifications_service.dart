@@ -121,7 +121,9 @@ class LocalNotificationsService {
   Future<void> scheduleReengagement() async {
     if (!isSupported) return;
     await initialize();
-    if (!await ensurePermission()) return;
+    // Backgrounding the app must never open an OS permission prompt. Permission
+    // is requested only from an explicit foreground user action.
+    if (!_permissionGranted) return;
     await cancelReengagement();
 
     const details = NotificationDetails(

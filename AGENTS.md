@@ -81,9 +81,9 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Opening Map temporarily suppresses dashboard/deck audio; closing Map resumes audio **only if it was playing before Map opened**.
 
 ### Already-liked items stay out of Map discovery
-- Listings and people already right-swiped/saved by the current user must not reappear in Map discovery.
+- Listings, people, and events already right-swiped/saved by the current user must not reappear in Map discovery.
 - Use canonical Like IDs plus loaded liked models as a fallback.
-- Do not paint discovery listings while canonical liked-listing state is unresolved if that can cause already-liked items to flash/reappear.
+- Do not paint any discovery type while its canonical Likes state is unresolved if that can cause already-liked items to flash/reappear.
 - Saving from Map must invalidate the appropriate Likes + Map providers and remove the saved item immediately.
 
 ### Map preview buttons are isolated actions
@@ -91,6 +91,17 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Heart/save and close (`X`) are independent hit targets. Never wrap them inside one giant parent tap target that navigates to detail.
 - Pressing `X` means **close the preview only**. It must never open the listing, Insights, or another route.
 - Give close/save controls explicit opaque hit regions so taps cannot fall through or bubble into navigation.
+
+### Voice countdown must survive native recognizer segment restarts
+- Native speech engines may end/restart a recognition segment exactly when silence starts the dashboard **3 → 2 → 1** countdown.
+- Busy/client/network/server/audio recognizer transition errors during that restart are recoverable. Retry them quietly with a short backoff; do **not** cancel the countdown or show `Voice recognition stopped` for a transient segment restart.
+- Permission/authorization failures remain user-facing and fatal for that microphone session.
+- Speaking again during the countdown must still cancel countdown and continue the same transcript.
+
+### Notification permission is foreground-only
+- `AppLifecycleState.paused`, backgrounding, app exit, and reengagement scheduling must **never request notification permission**.
+- OS notification permission may only be requested after a clear foreground user action such as tapping an Enable notifications control.
+- If permission is not already granted, background reengagement scheduling should quietly do nothing.
 
 ### Verification before merging related work
 - Format touched Dart files.
