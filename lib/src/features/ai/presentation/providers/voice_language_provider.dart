@@ -1,11 +1,14 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
-/// Supported voice recognition languages.
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Explicit voice languages supported by SWIPESS AI.
 ///
-/// [auto] is the default so dashboard dictation can preserve bilingual and
-/// code-switched speech instead of forcing every new session through en-US.
+/// There is intentionally no automatic detector. The selected language is the
+/// single source of truth for speech recognition and AI reply language so iOS,
+/// Android and PWA behave consistently.
 enum VoiceLanguage {
-  auto('', 'AUTO', '🌐 Auto detect'),
   english('en-US', 'EN', '🇺🇸 English'),
   spanish('es-MX', 'ES', '🇲🇽 Español'),
   french('fr-FR', 'FR', '🇫🇷 Français'),
@@ -22,21 +25,42 @@ enum VoiceLanguage {
   final String localeCode;
   final String shortCode;
   final String displayName;
-
-  bool get isAutomatic => this == VoiceLanguage.auto;
 }
 
-/// Global provider for the user's selected voice recognition language.
+/// Global explicit language selection used by voice recognition and AI replies.
 final voiceLanguageProvider =
     NotifierProvider<VoiceLanguageNotifier, VoiceLanguage>(() {
-  return VoiceLanguageNotifier();
-});
+      return VoiceLanguageNotifier();
+    });
 
 class VoiceLanguageNotifier extends Notifier<VoiceLanguage> {
+  static const _prefsKey = 'swipess_voice_language';
+
   @override
-  VoiceLanguage build() => VoiceLanguage.english;
+  VoiceLanguage build() {
+    unawaited(_restore());
+    return VoiceLanguage.english;
+  }
+
+  Future<void> _restore() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_prefsKey);
+      if (saved == null || saved.isEmpty) return;
+      final restored = VoiceLanguage.values.where((lang) => lang.name == saved);
+      if (restored.isNotEmpty) state = restored.first;
+    } catch (_) {}
+  }
 
   void setLanguage(VoiceLanguage lang) {
     state = lang;
+    unawaited(_persist(lang));
+  }
+
+  Future<void> _persist(VoiceLanguage lang) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefsKey, lang.name);
+    } catch (_) {}
   }
 }
