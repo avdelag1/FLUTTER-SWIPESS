@@ -91,7 +91,7 @@ class AiDisclosure extends StatelessWidget {
                   ),
                   TextSpan(
                     text:
-                        ', with secure fallbacks ($kAiProviderFallbacks). Content may be inaccurate. Not a substitute for professional legal, real estate, or financial advice. Only your chat messages are sent to AI providers — not your password or payment data.',
+                        ', with secure fallbacks ($kAiProviderFallbacks). Content may be inaccurate and includes third-party business data. Swipess and Apple are not responsible for the accuracy of AI recommendations or business interactions. Not a substitute for professional legal or financial advice. Only your chat messages are sent to AI providers — not your password or payment data.',
                   ),
                 ],
               ),
@@ -102,8 +102,8 @@ class AiDisclosure extends StatelessWidget {
     }
 
     final line = showModelLine
-        ? 'AI · $kAiProviderLabel · Gemini, Moonshot & MiniMax fallbacks · AI can make mistakes — verify important info.'
-        : 'AI-powered · AI can make mistakes — verify important info.';
+        ? 'AI · $kAiProviderLabel · Gemini & MiniMax fallbacks · Apple & Swipess are not liable for 3rd-party business data or AI errors.'
+        : 'AI-powered · Apple & Swipess are not liable for 3rd-party business data or AI errors.';
 
     return Row(
       children: [

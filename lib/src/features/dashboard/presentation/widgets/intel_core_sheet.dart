@@ -1319,7 +1319,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Start Session',
+                    'I Accept Terms',
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
