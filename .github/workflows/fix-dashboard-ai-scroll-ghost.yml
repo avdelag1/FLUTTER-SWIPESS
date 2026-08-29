@@ -22,7 +22,6 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           shell_path = Path('lib/src/features/dashboard/presentation/screens/dashboard_shell.dart')
           shell = shell_path.read_text()
@@ -41,10 +40,17 @@ jobs:
 
           bento_path = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
           bento = bento_path.read_text()
-          pattern = re.compile(
-              r"""              SliverToBoxAdapter\(\s*child: Padding\(\s*// SafeArea already accounts for the status bar\..*?\n            \),\n            SliverPadding\(""",
-              re.S,
-          )
+          slivers_anchor = "            slivers: [\n"
+          start_marker = "              SliverToBoxAdapter(\n"
+          end_marker = "            SliverPadding(\n"
+          slivers_pos = bento.find(slivers_anchor)
+          if slivers_pos < 0:
+              raise SystemExit('dashboard slivers anchor not found')
+          start = bento.find(start_marker, slivers_pos + len(slivers_anchor))
+          end = bento.find(end_marker, start)
+          if start < 0 or end < 0 or end <= start:
+              raise SystemExit(f'dashboard AI block anchors invalid start={start} end={end}')
+
           replacement = """              SliverToBoxAdapter(
                 child: Consumer(
                   builder: (context, ref, child) {
@@ -113,10 +119,8 @@ jobs:
                   },
                 ),
               ),
-            SliverPadding("""
-          bento, count = pattern.subn(replacement, bento, count=1)
-          if count != 1:
-              raise SystemExit(f'dashboard AI chrome block match count={count}')
+"""
+          bento = bento[:start] + replacement + bento[end:]
           bento_path.write_text(bento)
 
           # Guard the exact regression: only the root vertical dashboard scroll
@@ -125,6 +129,7 @@ jobs:
           assert 'notification.metrics.axis == Axis.vertical' in shell
           assert 'TweenAnimationBuilder<double>' in bento
           assert 'heightFactor: progress' in bento
+          assert bento.count('SliverPadding(') >= 1
           PY
 
       - uses: subosito/flutter-action@v2
