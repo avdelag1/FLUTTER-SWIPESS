@@ -15,9 +15,9 @@ enum ListenMode { dictation, search, confirmation }
 /// words appear in the composer while the user is still speaking.
 ///
 /// After 3.5 seconds of silence callers receive [onSilence] and can
-/// render the existing 3 -> 2 -> 1 auto-send countdown. Native recognition is
-/// immediately restarted after silence so speaking again can cancel that
-/// countdown and continue the same message.
+/// render the existing 3 -> 2 -> 1 auto-send countdown. Callers that need a
+/// deterministic hands-free send can disable native restart-after-silence so
+/// iOS cannot start a second recognition segment underneath the countdown.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
@@ -35,6 +35,7 @@ class LiveVoiceInput {
   bool _usingBrowser = false;
   bool _nativeInitialized = false;
   bool _nativeRestarting = false;
+  bool _restartAfterSilence = true;
   int _nativeTransientFailures = 0;
   Object? _owner;
 
@@ -100,6 +101,7 @@ class LiveVoiceInput {
     ValueChanged<String>? onError,
     ListenMode listenMode = ListenMode.dictation,
     String? languageCode,
+    bool restartAfterSilence = true,
   }) async {
     if (languageCode != null) setLanguage(languageCode);
 
@@ -119,6 +121,7 @@ class LiveVoiceInput {
     _onSoundLevel = onSoundLevel;
     _onError = onError;
     _listenMode = listenMode;
+    _restartAfterSilence = restartAfterSilence;
     _committed = initialText.trim();
     _lastPublished = _committed;
     _nativeSessionText = '';
@@ -427,6 +430,19 @@ class LiveVoiceInput {
       _onSilence?.call();
     }
 
+    // Dashboard and Intel Core use one-shot hands-free voice. Once silence has
+    // handed valid text to their visible 3 -> 2 -> 1 countdown, iOS must NOT
+    // start a second SpeechToText segment underneath that countdown. That second
+    // segment was the source of duplicate text, restart callbacks, and the
+    // countdown repeatedly dying at 3.
+    if (!_restartAfterSilence) {
+      _nativeRestartTimer?.cancel();
+      _nativeRestartTimer = null;
+      _nativeRestarting = false;
+      _publishListening(false);
+      return;
+    }
+
     if (_nativeRestarting) return;
     _nativeRestarting = true;
     _nativeRestartTimer?.cancel();
@@ -532,6 +548,7 @@ class LiveVoiceInput {
     _intentionalStop = false;
     _usingBrowser = false;
     _nativeRestarting = false;
+    _restartAfterSilence = true;
     _segmentHasSpeech = false;
     _silenceDeliveredForSegment = false;
     _nativeSessionText = '';

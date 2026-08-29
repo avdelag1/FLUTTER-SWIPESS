@@ -92,6 +92,14 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Pressing `X` means **close the preview only**. It must never open the listing, Insights, or another route.
 - Give close/save controls explicit opaque hit regions so taps cannot fall through or bubble into navigation.
 
+### Native iOS/TestFlight voice is the acceptance target
+- A PWA/web pass does **not** certify the voice flow. Always validate the native iOS/TestFlight path separately because Apple Speech recognition has different stop/restart behavior.
+- Dashboard AI and Intel Core are one-shot hands-free voice entry points: speech -> silence -> freeze captured transcript -> visible 3 -> 2 -> 1 -> fully finish native recognizer -> exactly one AI submit -> visible reply.
+- For those two entry points call `LiveVoiceInput.start(... restartAfterSilence: false)`. Never restart Apple/native recognition underneath an active auto-send countdown.
+- Do not auto-resume the dashboard microphone after an AI answer. A new phrase starts from a new explicit microphone tap; this avoids duplicate recognizer sessions and repeated transcript text.
+- The AI request must happen only after native voice has finished. A successful transcript with no `ai-concierge` request is a client handoff bug, not an AI-provider outage.
+- Keep Intel Core on the same reliable non-streaming `chatConcierge(... stream: false)` response path unless the backend is changed to true streaming and native + web are both regression-tested.
+
 ### Voice countdown must survive native recognizer segment restarts
 - Native speech engines may end/restart a recognition segment exactly when silence starts the dashboard **3 → 2 → 1** countdown.
 - Busy/client/network/server/audio recognizer transition errors during that restart are recoverable. Retry them quietly with a short backoff; do **not** cancel the countdown or show `Voice recognition stopped` for a transient segment restart.

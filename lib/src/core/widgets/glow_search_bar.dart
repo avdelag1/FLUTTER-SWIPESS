@@ -247,9 +247,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _triggerMicPop() {
@@ -374,16 +373,29 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         : _liveTranscript.trim();
 
     _pendingVoiceSubmit = null;
+
+    // Critical iOS handoff: completely finish Apple/native speech recognition
+    // BEFORE starting the AI request. The microphone must not be restarting or
+    // publishing callbacks while the captured text is being submitted.
+    _micSessionActive = false;
+    await _voice.finish(owner: this);
+    _stopMicBreathing();
+    _restoreVoiceAudio();
+
+    if (!mounted) {
+      _voiceSubmitting = false;
+      return;
+    }
     setState(() {
       _countdown = null;
+      _voiceActive = false;
       _transcribing = false;
       _voiceLevel = 0;
     });
-    _voiceSubmitting = false;
 
     if (text.isEmpty) {
+      _voiceSubmitting = false;
       _showVoiceError('I did not catch that. Please try speaking again.');
-      await _resumeListeningAfterSend();
       return;
     }
 
@@ -394,6 +406,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         selection: TextSelection.collapsed(offset: text.length),
       );
     }
+
+    // Unlock only after the recognizer is fully finished, then submit exactly
+    // one request. Do not auto-restart the microphone after the AI responds.
+    _voiceSubmitting = false;
     await _submitSearch(text);
   }
 
@@ -435,6 +451,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       languageCode: _voiceLocale,
       owner: this,
       initialText: controller?.text ?? '',
+      restartAfterSilence: false,
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
         if (_countdown != null) {
@@ -533,17 +550,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final input = normalizeVoiceTranscript(raw.trim());
     if (input.isEmpty || _inlineAiLoading) return;
 
-    final keepListening = _micSessionActive;
-
     if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
       FocusManager.instance.primaryFocus?.unfocus();
-      if (keepListening) await _resumeListeningAfterSend();
       return;
     }
 
+    // One submitted phrase produces one dashboard AI request and one visible
+    // response. Voice is intentionally stopped before this point on native iOS.
     await _runInlineAi(input);
     FocusManager.instance.primaryFocus?.unfocus();
-    if (keepListening) await _resumeListeningAfterSend();
   }
 
   bool _wantsDirectoryContact(String raw) {

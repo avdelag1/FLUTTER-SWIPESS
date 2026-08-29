@@ -302,6 +302,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       languageCode: ref.read(voiceLanguageProvider).localeCode,
       owner: this,
       initialText: _controller.text,
+      restartAfterSilence: false,
       onText: (text) {
         if (!mounted) return;
         _cancelCountdown();
@@ -393,55 +394,33 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
           IntelChatBubble(id: assistantId, role: 'assistant', content: ''),
         );
       });
-      await for (final delta
-          in ref
-              .read(aiEdgeRepositoryProvider)
-              .chatConciergeTokens(
-                messages: history,
-                character: _character == 'default' ? null : _character,
-                locationContext: {
-                  'passportMode': false,
-                  'passportLabel': loc.label,
-                  'userLatitude': loc.latitude,
-                  'userLongitude': loc.longitude,
-                  'radiusKm': loc.radiusKm,
-                  'responseLanguage': ref
-                      .read(voiceLanguageProvider)
-                      .displayName,
-                },
-              )) {
-        if (!mounted) return;
-        reply += delta;
+
+      // Use the same reliable non-streaming concierge path as the dashboard.
+      // The Edge Function currently returns JSON, so waiting on an SSE-style
+      // streaming loop adds a second response brain without any user benefit.
+      reply = await ref
+          .read(aiEdgeRepositoryProvider)
+          .chatConcierge(
+            messages: history,
+            character: _character == 'default' ? null : _character,
+            locationContext: {
+              'passportMode': false,
+              'passportLabel': loc.label,
+              'userLatitude': loc.latitude,
+              'userLongitude': loc.longitude,
+              'radiusKm': loc.radiusKm,
+              'responseLanguage': ref.read(voiceLanguageProvider).displayName,
+            },
+            stream: false,
+          );
+      if (!mounted) return;
+      final assistantIndex = _messages.indexWhere((m) => m.id == assistantId);
+      if (assistantIndex >= 0) {
         setState(() {
-          _messages[_messages.length - 1] = _messages.last.copyWith(
+          _messages[assistantIndex] = _messages[assistantIndex].copyWith(
             content: reply,
           );
         });
-        _scrollToEnd();
-      }
-      if (reply.trim().isEmpty) {
-        reply = await ref
-            .read(aiEdgeRepositoryProvider)
-            .chatConcierge(
-              messages: history,
-              character: _character == 'default' ? null : _character,
-              locationContext: {
-                'passportMode': false,
-                'passportLabel': loc.label,
-                'userLatitude': loc.latitude,
-                'userLongitude': loc.longitude,
-                'radiusKm': loc.radiusKm,
-                'responseLanguage': ref.read(voiceLanguageProvider).displayName,
-              },
-              stream: false,
-            );
-        if (mounted) {
-          setState(() {
-            _messages[_messages.length - 1] = _messages.last.copyWith(
-              content: reply,
-            );
-          });
-        }
       }
     } on AiUnavailableException catch (e) {
       reply = e.message;
