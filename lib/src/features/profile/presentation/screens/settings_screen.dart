@@ -46,9 +46,7 @@ class SettingsScreen extends ConsumerWidget {
                     height: 56,
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: _RoundBack(
-                        onTap: () => NavBack.popOrGo(context),
-                      ),
+                      child: const CapBackButton(),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -569,33 +567,6 @@ class _GradTile extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundBack extends StatelessWidget {
-  const _RoundBack({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white.withAlpha(20)
-              : Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          color: MatteSurface.ink(context),
-          size: 18,
         ),
       ),
     );
