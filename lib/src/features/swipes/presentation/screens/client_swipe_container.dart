@@ -16,6 +16,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
 import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
