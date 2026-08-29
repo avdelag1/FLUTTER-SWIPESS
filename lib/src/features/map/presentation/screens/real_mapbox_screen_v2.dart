@@ -13,11 +13,15 @@ class RealMapboxScreenV2 extends StatelessWidget {
     this.onClose,
     this.showCitiesOnOpen = false,
     this.onMapReady,
+    this.playIntro = false,
+    this.onIntroComplete,
   });
 
   final VoidCallback? onClose;
   final bool showCitiesOnOpen;
   final VoidCallback? onMapReady;
+  final bool playIntro;
+  final VoidCallback? onIntroComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +38,8 @@ class RealMapboxScreenV2 extends StatelessWidget {
           onClose: onClose,
           showCitiesOnOpen: showCitiesOnOpen,
           onMapReady: onMapReady,
+          playIntro: playIntro,
+          onIntroComplete: onIntroComplete,
         ),
       ],
     );

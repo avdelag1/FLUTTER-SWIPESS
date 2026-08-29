@@ -68,34 +68,6 @@ class PlatformDiscoveryMapScreen extends StatelessWidget {
               onClose: onClose,
               showCitiesOnOpen: showCitiesOnOpen,
             ),
-
-            // The top filter rail and optional city rail scroll horizontally.
-            // Give their far-right end a soft optical fade so pills disappear
-            // naturally into the screen edge instead of looking sliced by a
-            // rectangular phone/browser boundary. This is a transparent shade,
-            // not a frame, so there is no visible vertical seam.
-            const Positioned(
-              top: 48,
-              right: 0,
-              width: 30,
-              height: 90,
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Color(0x00FFFFFF),
-                        Color(0x16FFFFFF),
-                        Color(0x6BFFFFFF),
-                      ],
-                      stops: [0, .48, 1],
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
