@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_local_brain_card.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -92,6 +93,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   String? _inlineQuestion;
   String? _inlineAnswer;
   List<Map<String, dynamic>> _inlineLocalBrain = const [];
+  List<Map<String, dynamic>> _inlineProfiles = const [];
+  List<Map<String, dynamic>> _inlineListings = const [];
 
   bool get _isEditableSearch => widget.controller != null;
 
@@ -483,6 +486,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       _inlineQuestion = input;
       _inlineAnswer = null;
       _inlineLocalBrain = const [];
+      _inlineProfiles = const [];
+      _inlineListings = const [];
       _liveTranscript = '';
     });
     widget.controller?.clear();
@@ -524,6 +529,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         _inlineAiLoading = false;
         _inlineAnswer = clean.isNotEmpty ? clean : reply.trim();
         _inlineLocalBrain = contactQuery ? parsed.localBrain : const [];
+        _inlineProfiles = parsed.profiles;
+        _inlineListings = parsed.listings;
       });
     } on AiUnavailableException catch (error) {
       if (!mounted) return;
@@ -552,6 +559,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       _inlineQuestion = null;
       _inlineAnswer = null;
       _inlineLocalBrain = const [];
+      _inlineProfiles = const [];
+      _inlineListings = const [];
       _inlineAiLoading = false;
     });
   }
@@ -695,7 +704,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     required Color blue,
   }) {
     final answer = _inlineAnswer;
-    final hasContacts = _inlineLocalBrain.isNotEmpty;
+    final hasContacts = _inlineLocalBrain.isNotEmpty || _inlineProfiles.isNotEmpty || _inlineListings.isNotEmpty;
     if (!_inlineAiLoading &&
         (answer == null || answer.trim().isEmpty) &&
         !hasContacts) {
@@ -780,6 +789,16 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: IntelLocalBrainCard(data: entry),
+                    ),
+                  for (final profile in _inlineProfiles.take(2))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: IntelProfileCard(data: profile),
+                    ),
+                  for (final listing in _inlineListings.take(2))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: IntelListingCard(data: listing),
                     ),
                 ],
                 const SizedBox(height: 8),
