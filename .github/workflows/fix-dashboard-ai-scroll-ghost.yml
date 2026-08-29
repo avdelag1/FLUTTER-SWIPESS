@@ -22,20 +22,17 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           shell_path = Path('lib/src/features/dashboard/presentation/screens/dashboard_shell.dart')
           shell = shell_path.read_text()
-          old_condition = """              if (!isEvents &&
-                  !isProfile &&
-                  notification is ScrollUpdateNotification) {"""
-          new_condition = """              if (!isEvents &&
-                  !isProfile &&
-                  notification.depth == 0 &&
-                  notification.metrics.axis == Axis.vertical &&
-                  notification is ScrollUpdateNotification) {"""
-          if old_condition not in shell:
-              raise SystemExit('dashboard shell scroll condition not found')
-          shell = shell.replace(old_condition, new_condition, 1)
+          condition_pattern = re.compile(
+              r"if \(!isEvents &&\s*!isProfile &&\s*notification is ScrollUpdateNotification\) \{"
+          )
+          replacement_condition = "if (!isEvents &&\n                  !isProfile &&\n                  notification.depth == 0 &&\n                  notification.metrics.axis == Axis.vertical &&\n                  notification is ScrollUpdateNotification) {"
+          shell, shell_count = condition_pattern.subn(replacement_condition, shell, count=1)
+          if shell_count != 1:
+              raise SystemExit(f'dashboard shell scroll condition match count={shell_count}')
           shell_path.write_text(shell)
 
           bento_path = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
@@ -123,8 +120,6 @@ jobs:
           bento = bento[:start] + replacement + bento[end:]
           bento_path.write_text(bento)
 
-          # Guard the exact regression: only the root vertical dashboard scroll
-          # may hide global chrome; the AI panel's nested scroll must not.
           assert 'notification.depth == 0' in shell
           assert 'notification.metrics.axis == Axis.vertical' in shell
           assert 'TweenAnimationBuilder<double>' in bento
