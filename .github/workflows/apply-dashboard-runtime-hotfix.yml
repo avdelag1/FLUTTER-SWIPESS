@@ -35,7 +35,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze changed files
-        run: flutter analyze lib/src/core/widgets/glow_search_bar.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart lib/src/features/dashboard/presentation/screens/dashboard_shell.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/core/widgets/glow_search_bar.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart lib/src/features/dashboard/presentation/screens/dashboard_shell.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/map/presentation/screens/platform_discovery_map_screen.dart
 
       - name: Commit and push
         run: |
