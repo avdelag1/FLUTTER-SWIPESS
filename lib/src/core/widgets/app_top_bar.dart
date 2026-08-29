@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
+import 'package:flutter_swipes/src/core/widgets/playa_mode_overlay.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
@@ -227,6 +228,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
+                SizedBox(width: chromeGap),
+                PlayaModeToggleButton(inactiveColor: ink),
                 SizedBox(width: chromeGap),
                 _HudButton(
                   key: const ValueKey('header-theme'),
