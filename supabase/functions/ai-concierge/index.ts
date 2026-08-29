@@ -285,7 +285,9 @@ function personQuerySignals(query: string) {
 }
 
 function localBrainBlob(row: any) {
-  const tags = Array.isArray(row?.tags) ? row.tags.join(" ") : "";
+  const manualTags = Array.isArray(row?.tags) ? row.tags.join(" ") : "";
+  const autoTags = Array.isArray(row?.auto_tags) ? row.auto_tags.join(" ") : "";
+  const tags = [manualTags, autoTags].filter(Boolean).join(" ");
   return normalizeSearchText(
     `${row?.name ?? ""} ${row?.category ?? ""} ${row?.description ?? ""} ${row?.country ?? ""} ${row?.city ?? ""} ${tags} ${row?.recommendation_note ?? ""}`,
   );
