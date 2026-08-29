@@ -726,7 +726,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             } catch (_) {}
           },
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
             slivers: [
               SliverToBoxAdapter(
                 child: Consumer(
