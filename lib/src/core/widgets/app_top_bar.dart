@@ -115,6 +115,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   _HudButton(
                     key: const ValueKey('header-map'),
                     semanticLabel: 'Open map',
+                    playaSeed: 1,
                     onTap: () {
                       AppHaptics.medium();
                       ref.read(overlayModalsProvider.notifier).openPassportMap();
@@ -125,6 +126,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-create'),
                   semanticLabel: 'Create a listing',
+                  playaSeed: 2,
                   onTap: () {
                     AppHaptics.medium();
                     showCreateListingChooser(context);
@@ -137,6 +139,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   semanticLabel:
                       'Open Direct Requests, available $tokenSemanticLabel',
                   wide: true,
+                  playaSeed: 3,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -172,6 +175,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-notifications'),
                   semanticLabel: 'Open notifications',
+                  playaSeed: 4,
                   onTap: () {
                     AppHaptics.medium();
                     showGlassModal(
@@ -229,25 +233,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ),
                 ),
                 SizedBox(width: chromeGap),
-                PlayaModeToggleButton(inactiveColor: ink),
-                SizedBox(width: chromeGap),
-                _HudButton(
-                  key: const ValueKey('header-theme'),
-                  semanticLabel: isLight
-                      ? 'Switch to dark appearance'
-                      : 'Switch to light appearance',
-                  onTap: () {
-                    AppHaptics.medium();
-                    ref.read(visualThemeProvider.notifier).toggle();
-                  },
-                  child: Icon(
-                    isLight
-                        ? Icons.light_mode_rounded
-                        : Icons.dark_mode_rounded,
-                    size: 22,
-                    color: ink,
-                  ),
-                ),
+                ThemePlayaHudButton(ink: ink, isLight: isLight),
                 if (!isProfileRoute) ...[
                   SizedBox(width: chromeGap),
                   _ProfileAvatarButton(
@@ -304,33 +290,40 @@ class _ProfileAvatarButton extends StatelessWidget {
       );
 }
 
-class _HudButton extends StatelessWidget {
+class _HudButton extends ConsumerWidget {
   const _HudButton({
     super.key,
     required this.child,
     required this.onTap,
     this.wide = false,
     this.semanticLabel,
+    this.playaSeed = 0,
   });
 
   final Widget child;
   final VoidCallback onTap;
   final bool wide;
   final String? semanticLabel;
+  final int playaSeed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final compact = MediaQuery.sizeOf(context).width < 370;
+    final width = wide ? (compact ? 44.0 : 48.0) : AppTopBar._hudSize;
     return Semantics(
       button: true,
       label: semanticLabel,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: SizedBox(
-          height: AppTopBar._hudSize,
-          width: wide ? (compact ? 44 : 48) : AppTopBar._hudSize,
-          child: Center(child: child),
+        child: PlayaChromeFrame(
+          size: width,
+          seed: playaSeed,
+          child: SizedBox(
+            height: AppTopBar._hudSize,
+            width: width,
+            child: Center(child: child),
+          ),
         ),
       ),
     );

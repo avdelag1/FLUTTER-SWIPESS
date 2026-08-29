@@ -4,9 +4,22 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/playa_mode_provider.dart';
+import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
-/// Wraps the app and paints the animated playa filter when enabled.
+/// Neon palette — playa / arcade energy.
+abstract final class PlayaColors {
+  static const ember = Color(0xFFFF5500);
+  static const flame = Color(0xFFFF8A00);
+  static const gold = Color(0xFFFFD000);
+  static const magenta = Color(0xFFFF00E5);
+  static const cyan = Color(0xFF00F0FF);
+  static const lime = Color(0xFF39FF14);
+
+  static const neon = [ember, flame, gold, magenta, cyan, lime];
+}
+
+/// Wraps the app and paints fast arcade lights when playa mode is on.
 class PlayaModeShell extends ConsumerWidget {
   const PlayaModeShell({super.key, required this.child});
 
@@ -19,70 +32,150 @@ class PlayaModeShell extends ConsumerWidget {
       fit: StackFit.expand,
       children: [
         child,
-        PlayaModeOverlay(enabled: enabled),
+        PlayaLiveLightsOverlay(enabled: enabled),
       ],
     );
   }
 }
 
-/// Neon Mayan-cart lines + black-and-white playa atmosphere.
-class PlayaModeOverlay extends StatefulWidget {
-  const PlayaModeOverlay({super.key, required this.enabled});
+/// Fast random neon streaks — game-border energy, no shade wash.
+class PlayaLiveLightsOverlay extends StatefulWidget {
+  const PlayaLiveLightsOverlay({super.key, required this.enabled});
 
   final bool enabled;
 
   @override
-  State<PlayaModeOverlay> createState() => _PlayaModeOverlayState();
+  State<PlayaLiveLightsOverlay> createState() => _PlayaLiveLightsOverlayState();
 }
 
-class _PlayaModeOverlayState extends State<PlayaModeOverlay>
+class _LightParticle {
+  _LightParticle({
+    required this.pos,
+    required this.vel,
+    required this.color,
+    required this.trail,
+  });
+
+  Offset pos;
+  Offset vel;
+  Color color;
+  final List<Offset> trail;
+}
+
+class _PlayaLiveLightsOverlayState extends State<PlayaLiveLightsOverlay>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  double _visible = 0;
+  late final AnimationController _tick;
+  final _rng = math.Random(42);
+  final List<_LightParticle> _particles = [];
+  double _fade = 0;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _tick = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat();
-    _visible = widget.enabled ? 1 : 0;
-    if (widget.enabled) _controller.repeat();
+      duration: const Duration(milliseconds: 16),
+    );
+    _fade = widget.enabled ? 1 : 0;
+    if (widget.enabled) _start();
+  }
+
+  void _start() {
+    _tick.repeat();
+  }
+
+  void _seedParticles(Size size) {
+    if (_particles.isNotEmpty || size.isEmpty) return;
+    for (var i = 0; i < 14; i++) {
+      final edge = _rng.nextInt(4);
+      final pos = switch (edge) {
+        0 => Offset(_rng.nextDouble() * size.width, 0),
+        1 => Offset(size.width, _rng.nextDouble() * size.height),
+        2 => Offset(_rng.nextDouble() * size.width, size.height),
+        _ => Offset(0, _rng.nextDouble() * size.height),
+      };
+      final speed = 180 + _rng.nextDouble() * 320;
+      final angle = _rng.nextDouble() * math.pi * 2;
+      _particles.add(
+        _LightParticle(
+          pos: pos,
+          vel: Offset(math.cos(angle), math.sin(angle)) * speed,
+          color: PlayaColors.neon[i % PlayaColors.neon.length],
+          trail: [],
+        ),
+      );
+    }
+  }
+
+  void _step(Size size, double dt) {
+    for (final p in _particles) {
+      p.pos += p.vel * dt;
+      p.trail.insert(0, p.pos);
+      if (p.trail.length > 6) p.trail.removeLast();
+
+      if (p.pos.dx < 0 || p.pos.dx > size.width) {
+        p.vel = Offset(-p.vel.dx, p.vel.dy);
+        p.pos = Offset(p.pos.dx.clamp(0, size.width), p.pos.dy);
+      }
+      if (p.pos.dy < 0 || p.pos.dy > size.height) {
+        p.vel = Offset(p.vel.dx, -p.vel.dy);
+        p.pos = Offset(p.pos.dx, p.pos.dy.clamp(0, size.height));
+      }
+
+      if (_rng.nextDouble() < 0.018) {
+        final nudge = (_rng.nextDouble() - 0.5) * 420;
+        p.vel += Offset(nudge, (_rng.nextDouble() - 0.5) * 420);
+        final max = 520.0;
+        if (p.vel.distance > max) p.vel = p.vel / p.vel.distance * max;
+      }
+    }
   }
 
   @override
-  void didUpdateWidget(covariant PlayaModeOverlay oldWidget) {
+  void didUpdateWidget(covariant PlayaLiveLightsOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.enabled && !oldWidget.enabled) {
-      _controller.repeat();
+      _particles.clear();
+      _start();
+    } else if (!widget.enabled && oldWidget.enabled) {
+      _tick.stop();
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _tick.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: _visible, end: widget.enabled ? 1 : 0),
-      duration: const Duration(milliseconds: 520),
-      curve: Curves.easeOutCubic,
-      onEnd: () => _visible = widget.enabled ? 1 : 0,
+      tween: Tween(begin: _fade, end: widget.enabled ? 1 : 0),
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOut,
+      onEnd: () => _fade = widget.enabled ? 1 : 0,
       builder: (context, opacity, _) {
         if (opacity <= 0.01) return const SizedBox.shrink();
         return IgnorePointer(
           child: Opacity(
             opacity: opacity,
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) {
-                return CustomPaint(
-                  painter: _PlayaNeonPainter(phase: _controller.value),
-                  child: const SizedBox.expand(),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final size = constraints.biggest;
+                _seedParticles(size);
+                return AnimatedBuilder(
+                  animation: _tick,
+                  builder: (context, _) {
+                    _step(size, 1 / 60);
+                    return CustomPaint(
+                      size: size,
+                      painter: _ArcadeLightsPainter(
+                        particles: _particles,
+                        framePhase: _tick.value,
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -93,237 +186,472 @@ class _PlayaModeOverlayState extends State<PlayaModeOverlay>
   }
 }
 
-class _PlayaNeonPainter extends CustomPainter {
-  _PlayaNeonPainter({required this.phase});
+class _ArcadeLightsPainter extends CustomPainter {
+  _ArcadeLightsPainter({
+    required this.particles,
+    required this.framePhase,
+  });
 
-  final double phase;
-
-  static const _magenta = Color(0xFFFF00E5);
-  static const _cyan = Color(0xFF00F0FF);
-  static const _ember = Color(0xFFFF6B00);
-  static const _lime = Color(0xFF39FF14);
+  final List<_LightParticle> particles;
+  final double framePhase;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    if (w <= 0 || h <= 0) return;
-
-    // High-contrast playa wash — pushes UI toward black & white.
-    final wash = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.black.withAlpha(72),
-          Colors.white.withAlpha(18),
-          Colors.black.withAlpha(110),
-        ],
-        stops: const [0, 0.45, 1],
-      ).createShader(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, wash);
-
-    final vignette = Paint()
-      ..shader = RadialGradient(
-        center: Alignment.center,
-        radius: 1.1,
-        colors: [Colors.transparent, Colors.black.withAlpha(140)],
-      ).createShader(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, vignette);
-
-    _drawScanlines(canvas, size);
-    _drawMayanBands(canvas, size, phase);
-    _drawCartSpokes(canvas, size, phase);
-    _drawCornerGlyphs(canvas, size, phase);
-    _drawHorizonFlame(canvas, size);
-  }
-
-  void _drawScanlines(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withAlpha(10)
-      ..strokeWidth = 1;
-    for (var y = 0.0; y < size.height; y += 4) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  void _drawMayanBands(Canvas canvas, Size size, double t) {
-    final bands = [
-      (_magenta, 0.12, 0.0),
-      (_cyan, 0.10, 0.18),
-      (_ember, 0.14, 0.36),
-      (_lime, 0.08, 0.55),
-      (_cyan, 0.11, 0.72),
-    ];
-    for (final (color, stroke, offset) in bands) {
-      final paint = Paint()
-        ..color = color.withAlpha((stroke * 255).round().clamp(18, 90))
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
-      final path = Path();
-      final yBase = size.height * (0.18 + offset * 0.55);
-      final amp = 10 + offset * 18;
-      final wave = 28 + offset * 12;
-      final scroll = (t * size.width * 1.4 + offset * 200) % wave;
-      path.moveTo(-wave + scroll, yBase);
-      for (var x = -wave + scroll; x <= size.width + wave; x += wave / 2) {
-        path.lineTo(x, yBase - amp);
-        path.lineTo(x + wave / 4, yBase);
-        path.lineTo(x + wave / 2, yBase + amp);
+    _drawScreenFrame(canvas, size, framePhase);
+    for (final p in particles) {
+      for (var i = 0; i < p.trail.length; i++) {
+        final alpha = ((1 - i / p.trail.length) * 90).round();
+        final trailPaint = Paint()
+          ..color = p.color.withAlpha(alpha)
+          ..strokeWidth = 2.2 - i * 0.25
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+        if (i + 1 < p.trail.length) {
+          canvas.drawLine(p.trail[i], p.trail[i + 1], trailPaint);
+        }
       }
-      canvas.drawPath(path, paint);
+      final core = Paint()
+        ..color = p.color
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+      canvas.drawCircle(p.pos, 3.2, core);
+      final halo = Paint()
+        ..color = p.color.withAlpha(55)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      canvas.drawCircle(p.pos, 9, halo);
     }
   }
 
-  void _drawCartSpokes(Canvas canvas, Size size, double t) {
-    final hub = Offset(size.width * 0.5, size.height * 1.08);
-    final spokes = 16;
-    for (var i = 0; i < spokes; i++) {
-      final angle = (i / spokes) * math.pi * 2 + t * math.pi * 2;
-      final color = i.isEven ? _cyan : _magenta;
-      final paint = Paint()
-        ..color = color.withAlpha(42)
-        ..strokeWidth = 1.2
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-      final end = hub + Offset(math.cos(angle), math.sin(angle)) * size.height * 0.72;
-      canvas.drawLine(hub, end, paint);
-    }
-
-    final ringPaint = Paint()
-      ..color = _ember.withAlpha(55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    canvas.drawCircle(
-      hub,
-      size.width * (0.34 + math.sin(t * math.pi * 2) * 0.02),
-      ringPaint,
+  void _drawScreenFrame(Canvas canvas, Size size, double t) {
+    const inset = 6.0;
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      size.width - inset * 2,
+      size.height - inset * 2,
     );
-  }
+    final perimeter = (rect.width + rect.height) * 2;
+    final travel = (t * perimeter * 3.5) % perimeter;
+    final runner = _pointOnRectPerimeter(rect, travel);
+    final runnerPaint = Paint()
+      ..color = PlayaColors.cyan
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawCircle(runner, 5, runnerPaint);
+    canvas.drawCircle(runner, 12, runnerPaint..color = PlayaColors.magenta.withAlpha(40));
 
-  void _drawCornerGlyphs(Canvas canvas, Size size, double t) {
-    const inset = 14.0;
-    const len = 34.0;
+    final border = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = PlayaColors.ember.withAlpha(45);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(18)),
+      border,
+    );
+
+    final cornerLen = 28.0;
     final corners = [
-      Offset(inset, inset),
-      Offset(size.width - inset, inset),
-      Offset(inset, size.height - inset),
-      Offset(size.width - inset, size.height - inset),
+      rect.topLeft,
+      rect.topRight,
+      rect.bottomLeft,
+      rect.bottomRight,
     ];
-    final colors = [_lime, _magenta, _cyan, _ember];
+    final cornerColors = [PlayaColors.lime, PlayaColors.magenta, PlayaColors.cyan, PlayaColors.gold];
     for (var i = 0; i < corners.length; i++) {
       final c = corners[i];
+      final flicker = math.sin((t * 8 + i) * math.pi) * 0.5 + 0.5;
       final paint = Paint()
-        ..color = colors[i].withAlpha(90)
+        ..color = cornerColors[i].withAlpha((60 + flicker * 80).round())
         ..strokeWidth = 2
-        ..style = PaintingStyle.stroke
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-      final flicker = math.sin((t + i * 0.25) * math.pi * 4) * 4;
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
       if (i == 0) {
-        canvas.drawLine(c, c + Offset(len + flicker, 0), paint);
-        canvas.drawLine(c, c + Offset(0, len + flicker), paint);
+        canvas.drawLine(c, c + Offset(cornerLen, 0), paint);
+        canvas.drawLine(c, c + Offset(0, cornerLen), paint);
       } else if (i == 1) {
-        canvas.drawLine(c, c + Offset(-len - flicker, 0), paint);
-        canvas.drawLine(c, c + Offset(0, len + flicker), paint);
+        canvas.drawLine(c, c + Offset(-cornerLen, 0), paint);
+        canvas.drawLine(c, c + Offset(0, cornerLen), paint);
       } else if (i == 2) {
-        canvas.drawLine(c, c + Offset(len + flicker, 0), paint);
-        canvas.drawLine(c, c + Offset(0, -len - flicker), paint);
+        canvas.drawLine(c, c + Offset(cornerLen, 0), paint);
+        canvas.drawLine(c, c + Offset(0, -cornerLen), paint);
       } else {
-        canvas.drawLine(c, c + Offset(-len - flicker, 0), paint);
-        canvas.drawLine(c, c + Offset(0, -len - flicker), paint);
+        canvas.drawLine(c, c + Offset(-cornerLen, 0), paint);
+        canvas.drawLine(c, c + Offset(0, -cornerLen), paint);
       }
     }
   }
 
-  void _drawHorizonFlame(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-        colors: [
-          _ember.withAlpha(70),
-          _magenta.withAlpha(28),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, size.height - 120, size.width, 120));
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height - 120, size.width, 120),
-      paint,
-    );
+  Offset _pointOnRectPerimeter(Rect r, double d) {
+    final w = r.width;
+    final h = r.height;
+    if (d < w) return Offset(r.left + d, r.top);
+    d -= w;
+    if (d < h) return Offset(r.right, r.top + d);
+    d -= h;
+    if (d < w) return Offset(r.right - d, r.bottom);
+    d -= w;
+    return Offset(r.left, r.bottom - d);
   }
 
   @override
-  bool shouldRepaint(covariant _PlayaNeonPainter oldDelegate) =>
-      oldDelegate.phase != phase;
+  bool shouldRepaint(covariant _ArcadeLightsPainter oldDelegate) => true;
 }
 
-/// Header toggle — stick figure + neon ring (Burning Man silhouette).
-class PlayaModeToggleButton extends ConsumerStatefulWidget {
-  const PlayaModeToggleButton({super.key, required this.inactiveColor});
+enum _PlayaShape { circle, triangle, diamond, hexagon, squircle }
 
-  final Color inactiveColor;
+/// Racing neon frame + random shape morph for HUD buttons and dock icons.
+class PlayaChromeFrame extends ConsumerStatefulWidget {
+  const PlayaChromeFrame({
+    super.key,
+    required this.child,
+    required this.size,
+    this.seed = 0,
+    this.enabled,
+  });
+
+  final Widget child;
+  final double size;
+  final int seed;
+  final bool? enabled;
 
   @override
-  ConsumerState<PlayaModeToggleButton> createState() =>
-      _PlayaModeToggleButtonState();
+  ConsumerState<PlayaChromeFrame> createState() => _PlayaChromeFrameState();
 }
 
-class _PlayaModeToggleButtonState extends ConsumerState<PlayaModeToggleButton>
+class _PlayaChromeFrameState extends ConsumerState<PlayaChromeFrame>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
+  late final AnimationController _runner;
+  int _shapeEpoch = 0;
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
+    _runner = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+    _scheduleShapeShift();
+  }
+
+  void _scheduleShapeShift() {
+    Future<void>.delayed(
+      Duration(milliseconds: 2200 + (widget.seed % 5) * 400),
+      () {
+        if (!mounted) return;
+        final bool on = widget.enabled ?? ref.read(playaModeProvider);
+        if (on) setState(() => _shapeEpoch++);
+        _scheduleShapeShift();
+      },
     );
   }
 
   @override
   void dispose() {
-    _pulse.dispose();
+    _runner.dispose();
+    super.dispose();
+  }
+
+  _PlayaShape get _shape {
+    final shapes = _PlayaShape.values;
+    return shapes[(widget.seed + _shapeEpoch) % shapes.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool on = widget.enabled ?? ref.watch(playaModeProvider);
+    if (!on) return widget.child;
+
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: AnimatedBuilder(
+        animation: _runner,
+        builder: (context, child) {
+          return CustomPaint(
+            foregroundPainter: _ChromeRunnerPainter(
+              phase: _runner.value,
+              shape: _shape,
+              seed: widget.seed,
+            ),
+            child: ClipPath(
+              clipper: _PlayaShapeClipper(shape: _shape, inset: 4),
+              child: child,
+            ),
+          );
+        },
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _PlayaShapeClipper extends CustomClipper<Path> {
+  _PlayaShapeClipper({required this.shape, required this.inset});
+
+  final _PlayaShape shape;
+  final double inset;
+
+  @override
+  Path getClip(Size size) {
+    final rect = Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = rect.shortestSide / 2;
+    return switch (shape) {
+      _PlayaShape.circle => Path()..addOval(rect),
+      _PlayaShape.triangle => Path()
+        ..moveTo(cx, rect.top)
+        ..lineTo(rect.right, rect.bottom)
+        ..lineTo(rect.left, rect.bottom)
+        ..close(),
+      _PlayaShape.diamond => Path()
+        ..moveTo(cx, rect.top)
+        ..lineTo(rect.right, cy)
+        ..lineTo(cx, rect.bottom)
+        ..lineTo(rect.left, cy)
+        ..close(),
+      _PlayaShape.hexagon => _hexPath(cx, cy, r),
+      _PlayaShape.squircle => Path()
+        ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(r * 0.35))),
+    };
+  }
+
+  Path _hexPath(double cx, double cy, double radius) {
+    final path = Path();
+    for (var i = 0; i < 6; i++) {
+      final angle = (math.pi / 3) * i - math.pi / 2;
+      final p = Offset(cx + math.cos(angle) * radius, cy + math.sin(angle) * radius);
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _PlayaShapeClipper oldClipper) =>
+      oldClipper.shape != shape;
+}
+
+class _ChromeRunnerPainter extends CustomPainter {
+  _ChromeRunnerPainter({
+    required this.phase,
+    required this.shape,
+    required this.seed,
+  });
+
+  final double phase;
+  final _PlayaShape shape;
+  final int seed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final inset = 3.0;
+    final rect = Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
+    final color = PlayaColors.neon[(seed + (phase * 6).floor()) % PlayaColors.neon.length];
+
+    final border = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..color = color.withAlpha(70);
+    _strokeShape(canvas, rect, size, border);
+
+    final runnerPos = _pointOnShape(shape, rect, phase);
+    final glow = Paint()
+      ..color = color
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawCircle(runnerPos, 3.5, glow);
+    canvas.drawCircle(runnerPos, 8, glow..color = color.withAlpha(45));
+
+    final trailPaint = Paint()
+      ..color = color.withAlpha(120)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    final trailStart = _pointOnShape(shape, rect, (phase - 0.08).clamp(0.0, 1.0));
+    canvas.drawLine(trailStart, runnerPos, trailPaint);
+  }
+
+  void _strokeShape(Canvas canvas, Rect rect, Size size, Paint paint) {
+    final cx = rect.center.dx;
+    final cy = rect.center.dy;
+    final r = rect.shortestSide / 2;
+    switch (shape) {
+      case _PlayaShape.circle:
+        canvas.drawCircle(rect.center, r, paint);
+      case _PlayaShape.squircle:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, Radius.circular(r * 0.35)),
+          paint,
+        );
+      case _PlayaShape.triangle:
+        final path = Path()
+          ..moveTo(cx, rect.top)
+          ..lineTo(rect.right, rect.bottom)
+          ..lineTo(rect.left, rect.bottom)
+          ..close();
+        canvas.drawPath(path, paint);
+      case _PlayaShape.diamond:
+        final path = Path()
+          ..moveTo(cx, rect.top)
+          ..lineTo(rect.right, cy)
+          ..lineTo(cx, rect.bottom)
+          ..lineTo(rect.left, cy)
+          ..close();
+        canvas.drawPath(path, paint);
+      case _PlayaShape.hexagon:
+        canvas.drawPath(_PlayaShapeClipper(shape: shape, inset: 0).getClip(size), paint);
+    }
+  }
+
+  Offset _pointOnShape(_PlayaShape shape, Rect rect, double t) {
+    final cx = rect.center.dx;
+    final cy = rect.center.dy;
+    final r = rect.shortestSide / 2;
+    return switch (shape) {
+      _PlayaShape.circle => Offset(
+          cx + math.cos(t * math.pi * 2) * r,
+          cy + math.sin(t * math.pi * 2) * r,
+        ),
+      _PlayaShape.triangle => _edgeLerp([
+          Offset(cx, rect.top),
+          Offset(rect.right, rect.bottom),
+          Offset(rect.left, rect.bottom),
+          Offset(cx, rect.top),
+        ], t),
+      _PlayaShape.diamond => _edgeLerp([
+          Offset(cx, rect.top),
+          Offset(rect.right, cy),
+          Offset(cx, rect.bottom),
+          Offset(rect.left, cy),
+          Offset(cx, rect.top),
+        ], t),
+      _PlayaShape.hexagon => () {
+          final pts = List.generate(7, (i) {
+            if (i == 6) return Offset(cx + math.cos(-math.pi / 2) * r, cy + math.sin(-math.pi / 2) * r);
+            final angle = (math.pi / 3) * i - math.pi / 2;
+            return Offset(cx + math.cos(angle) * r, cy + math.sin(angle) * r);
+          });
+          return _edgeLerp(pts, t);
+        }(),
+      _PlayaShape.squircle => _pointOnRectPerimeter(rect, t * (rect.width + rect.height) * 2),
+    };
+  }
+
+  Offset _edgeLerp(List<Offset> pts, double t) {
+    final total = pts.length - 1;
+    final seg = (t * total).floor().clamp(0, total - 1);
+    final local = (t * total) - seg;
+    return Offset.lerp(pts[seg], pts[seg + 1], local)!;
+  }
+
+  Offset _pointOnRectPerimeter(Rect r, double d) {
+    final w = r.width;
+    final h = r.height;
+    if (d < w) return Offset(r.left + d, r.top);
+    d -= w;
+    if (d < h) return Offset(r.right, r.top + d);
+    d -= h;
+    if (d < w) return Offset(r.right - d, r.bottom);
+    d -= w;
+    return Offset(r.left, r.bottom - d);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ChromeRunnerPainter oldDelegate) =>
+      oldDelegate.phase != phase ||
+      oldDelegate.shape != shape;
+}
+
+/// Moon/sun button — tap toggles theme, long-press toggles playa neon.
+/// When playa is on the icon becomes a live flame in ember colors.
+class ThemePlayaHudButton extends ConsumerStatefulWidget {
+  const ThemePlayaHudButton({
+    super.key,
+    required this.ink,
+    required this.isLight,
+  });
+
+  final Color ink;
+  final bool isLight;
+
+  @override
+  ConsumerState<ThemePlayaHudButton> createState() =>
+      _ThemePlayaHudButtonState();
+}
+
+class _ThemePlayaHudButtonState extends ConsumerState<ThemePlayaHudButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _flame;
+
+  @override
+  void initState() {
+    super.initState();
+    _flame = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
+  }
+
+  @override
+  void dispose() {
+    _flame.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final enabled = ref.watch(playaModeProvider);
-    if (enabled && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!enabled && _pulse.isAnimating) {
-      _pulse.stop();
-      _pulse.value = 0;
+    final playa = ref.watch(playaModeProvider);
+    if (playa && !_flame.isAnimating) {
+      _flame.repeat(reverse: true);
+    } else if (!playa && _flame.isAnimating) {
+      _flame.stop();
+      _flame.value = 0;
     }
+
+    final label = playa
+        ? 'Playa neon on — long press to turn off'
+        : widget.isLight
+            ? 'Switch to dark appearance — long press for Playa neon'
+            : 'Switch to light appearance — long press for Playa neon';
 
     return Semantics(
       button: true,
-      label: enabled ? 'Turn off Playa neon filter' : 'Turn on Playa neon filter',
+      label: label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
           AppHaptics.medium();
+          ref.read(visualThemeProvider.notifier).toggle();
+        },
+        onLongPress: () {
+          AppHaptics.heavy();
           ref.read(playaModeProvider.notifier).toggle();
         },
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Center(
-            child: AnimatedBuilder(
-              animation: _pulse,
-              builder: (context, _) {
-                final glow = enabled ? lerpDouble(0.35, 1, _pulse.value)! : 0.0;
-                return CustomPaint(
-                  size: const Size(24, 24),
-                  painter: _PlayaManIconPainter(
-                    active: enabled,
-                    glow: glow,
-                    inactiveColor: widget.inactiveColor,
-                  ),
-                );
-              },
+        child: PlayaChromeFrame(
+          size: 44,
+          seed: 99,
+          enabled: playa,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _flame,
+                builder: (context, _) {
+                  if (playa) {
+                    final pulse = lerpDouble(0.55, 1, _flame.value)!;
+                    return _FlameIcon(pulse: pulse);
+                  }
+                  return Icon(
+                    widget.isLight
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    size: 22,
+                    color: widget.ink,
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -332,77 +660,46 @@ class _PlayaModeToggleButtonState extends ConsumerState<PlayaModeToggleButton>
   }
 }
 
-class _PlayaManIconPainter extends CustomPainter {
-  _PlayaManIconPainter({
-    required this.active,
-    required this.glow,
-    required this.inactiveColor,
-  });
+class _FlameIcon extends StatelessWidget {
+  const _FlameIcon({required this.pulse});
 
-  final bool active;
-  final double glow;
-  final Color inactiveColor;
+  final double pulse;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-
-    if (active) {
-      final ring = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = const Color(0xFF00F0FF).withAlpha((120 * glow).round())
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3 * glow);
-      canvas.drawCircle(Offset(cx, size.height / 2), size.width * 0.46, ring);
-    }
-
-    final bodyColor = active
-        ? Color.lerp(
-            const Color(0xFFFF6B00),
-            const Color(0xFFFF00E5),
-            glow * 0.5,
-          )!
-        : inactiveColor;
-    stroke.color = bodyColor;
-
-    // Head
-    canvas.drawCircle(Offset(cx, 5.5), 2.2, stroke..style = PaintingStyle.stroke);
-
-    // Arms up
-    final torsoTop = 8.0;
-    final torsoBottom = 14.0;
-    canvas.drawLine(Offset(cx, torsoTop), Offset(cx, torsoBottom), stroke);
-    canvas.drawLine(Offset(cx, torsoTop + 1), Offset(cx - 5, 4), stroke);
-    canvas.drawLine(Offset(cx, torsoTop + 1), Offset(cx + 5, 4), stroke);
-
-    // Legs
-    canvas.drawLine(Offset(cx, torsoBottom), Offset(cx - 4, 19), stroke);
-    canvas.drawLine(Offset(cx, torsoBottom), Offset(cx + 4, 19), stroke);
-
-    // Playa triangle base
-    final tri = Path()
-      ..moveTo(cx - 7, 21)
-      ..lineTo(cx + 7, 21)
-      ..lineTo(cx, 24)
-      ..close();
-    stroke.style = PaintingStyle.stroke;
-    canvas.drawPath(tri, stroke);
-
-    if (active) {
-      final glowPaint = Paint()
-        ..color = const Color(0xFFFF00E5).withAlpha((90 * glow).round())
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 * glow);
-      canvas.drawCircle(Offset(cx, 12), 6, glowPaint);
-    }
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        Icon(
+          Icons.local_fire_department_rounded,
+          size: 24 + pulse * 2,
+          color: PlayaColors.ember.withAlpha((180 * pulse).round()),
+        ),
+        ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => LinearGradient(
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+            colors: [
+              PlayaColors.ember,
+              Color.lerp(PlayaColors.flame, PlayaColors.gold, pulse)!,
+              PlayaColors.gold,
+            ],
+          ).createShader(bounds),
+          child: Icon(
+            Icons.local_fire_department_rounded,
+            size: 22 + pulse,
+            color: Colors.white,
+          ),
+        ),
+        if (pulse > 0.7)
+          Icon(
+            Icons.local_fire_department_rounded,
+            size: 26,
+            color: PlayaColors.magenta.withAlpha((40 * pulse).round()),
+          ),
+      ],
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant _PlayaManIconPainter oldDelegate) =>
-      oldDelegate.active != active ||
-      oldDelegate.glow != glow ||
-      oldDelegate.inactiveColor != inactiveColor;
 }
