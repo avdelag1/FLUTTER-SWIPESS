@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -54,7 +55,7 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 }
 
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   // Bright coral-red reads as active/recording without the harsh blood-red UI.
   static const _recordRed = Color(0xFFFF4D6D);
   static const _recordRedDeep = Color(0xFFE11D48);
@@ -65,6 +66,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   late final DeckAudioNotifier _audioNotifier;
   Timer? _countdownTimer;
   int? _countdown;
+  Timer? _idleTimeoutTimer;
+  Timer? _routeCheckTimer;
   bool _micSessionActive = false;
   String _liveTranscript = '';
   String? _pendingVoiceSubmit;
@@ -182,6 +185,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
     _schedulePrompt();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -198,6 +202,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _idleTimeoutTimer?.cancel();
+    _routeCheckTimer?.cancel();
     _promptTimer?.cancel();
     _countdownTimer?.cancel();
     _micPopCtrl.dispose();
@@ -213,6 +220,19 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void _refresh() {
     if (mounted) setState(() {});
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      if (_micSessionActive || _voiceActive || _voice.isOwnedBy(this)) {
+        _endContinuousSession();
+      }
+    }
+  }
+
 
   void _schedulePrompt() {
     _promptTimer?.cancel();
@@ -275,6 +295,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   Future<void> _endContinuousSession() async {
     _cancelVoiceCountdown();
+    _idleTimeoutTimer?.cancel();
+    _routeCheckTimer?.cancel();
     _micSessionActive = false;
     _stopMicBreathing();
     await _voice.cancel(owner: this);
@@ -308,6 +330,31 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     await _voice.cancel(owner: this);
     if (!mounted || !_micSessionActive) return;
     await _startLiveListening(animatePop: false);
+  }
+
+
+  void _resetIdleTimeout() {
+    _idleTimeoutTimer?.cancel();
+    _routeCheckTimer?.cancel();
+    if (!_micSessionActive) return;
+    _idleTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (!mounted || !_micSessionActive) return;
+      _endContinuousSession();
+    });
+  }
+
+
+  void _startRouteCheck() {
+    _routeCheckTimer?.cancel();
+    _routeCheckTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) {
+        if (_micSessionActive || _voiceActive || _voice.isOwnedBy(this)) {
+          _endContinuousSession();
+        }
+      }
+    });
   }
 
   void _cancelVoiceCountdown() {
@@ -429,6 +476,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       _voiceLevel = 0;
       _micSessionActive = true;
     });
+    _resetIdleTimeout();
+    _startRouteCheck();
 
     final controller = widget.controller;
     final started = await _voice.start(
@@ -437,6 +486,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       initialText: controller?.text ?? '',
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
+        _resetIdleTimeout();
+    _startRouteCheck();
         if (_countdown != null) {
           final locked = _pendingVoiceSubmit ?? '';
           if (!shouldCancelVoiceCountdownForText(
@@ -1001,7 +1052,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    ref.listen(navTabProvider, (prev, next) {
+      if (prev != next) {
+        if (_micSessionActive || _voiceActive || _voice.isOwnedBy(this)) {
+          _endContinuousSession();
+        }
+      }
+    });
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
     final blue = isLight ? const Color(0xFF2563EB) : const Color(0xFF60A5FA);
