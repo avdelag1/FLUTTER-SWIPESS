@@ -8,7 +8,7 @@ final likesRepositoryProvider = Provider<LikesRepository>((ref) {
   return LikesRepository();
 });
 
-class LikedListingsNotifier extends AutoDisposeAsyncNotifier<List<Listing>> {
+class LikedListingsNotifier extends AsyncNotifier<List<Listing>> {
   @override
   Future<List<Listing>> build() {
     return ref.read(likesRepositoryProvider).fetchLikedListings();
@@ -37,7 +37,7 @@ final likedListingsProvider =
       LikedListingsNotifier.new,
     );
 
-class LikedPeopleNotifier extends AutoDisposeAsyncNotifier<List<ProfileLike>> {
+class LikedPeopleNotifier extends AsyncNotifier<List<ProfileLike>> {
   @override
   Future<List<ProfileLike>> build() {
     return ref.read(likesRepositoryProvider).fetchLikedPeople();
