@@ -18,6 +18,9 @@ import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -234,7 +237,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     }
   }
 
-
   void _schedulePrompt() {
     _promptTimer?.cancel();
     _promptTimer = Timer(
@@ -322,6 +324,28 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     }
   }
 
+  Future<void> _finalizeVoiceBeforeSubmit() async {
+    _idleTimeoutTimer?.cancel();
+    _routeCheckTimer?.cancel();
+    _cancelVoiceCountdown();
+    if (_voice.isOwnedBy(this) || _voiceActive || _micSessionActive) {
+      try {
+        await _voice.finish(owner: this);
+      } catch (_) {
+        await _voice.cancel(owner: this);
+      }
+    }
+    _micSessionActive = false;
+    _stopMicBreathing();
+    if (!mounted) return;
+    setState(() {
+      _voiceActive = false;
+      _transcribing = false;
+      _voiceLevel = 0;
+    });
+    _restoreVoiceAudio();
+  }
+
   Future<void> _resumeListeningAfterSend() async {
     if (!_micSessionActive || !mounted) return;
     _liveTranscript = '';
@@ -333,7 +357,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     await _startLiveListening(animatePop: false);
   }
 
-
   void _resetIdleTimeout() {
     _idleTimeoutTimer?.cancel();
     _routeCheckTimer?.cancel();
@@ -343,7 +366,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       _endContinuousSession();
     });
   }
-
 
   void _startRouteCheck() {
     _routeCheckTimer?.cancel();
@@ -369,8 +391,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         _inlineAiLoading ||
         _countdown != null ||
         _voiceSubmitting ||
-        !_voice.isOwnedBy(this) ||
-        !_voice.active) {
+        !_voice.isOwnedBy(this)) {
       return;
     }
 
@@ -414,35 +435,42 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _countdownTimer?.cancel();
     _countdownTimer = null;
 
-    final controllerText = widget.controller?.text.trim() ?? '';
-    final text = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
-        ? _pendingVoiceSubmit!.trim()
-        : controllerText.isNotEmpty
-        ? controllerText
-        : _liveTranscript.trim();
+    try {
+      final controllerText = widget.controller?.text.trim() ?? '';
+      final text = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
+          ? _pendingVoiceSubmit!.trim()
+          : controllerText.isNotEmpty
+          ? controllerText
+          : _liveTranscript.trim();
 
-    _pendingVoiceSubmit = null;
-    setState(() {
-      _countdown = null;
-      _transcribing = false;
-      _voiceLevel = 0;
-    });
-    _voiceSubmitting = false;
+      _pendingVoiceSubmit = null;
+      if (!mounted) return;
+      setState(() {
+        _countdown = null;
+        _transcribing = false;
+        _voiceLevel = 0;
+      });
 
-    if (text.isEmpty) {
-      _showVoiceError('I did not catch that. Please try speaking again.');
-      await _resumeListeningAfterSend();
-      return;
+      if (text.isEmpty) {
+        _showVoiceError('I did not catch that. Please try speaking again.');
+        if (_micSessionActive) await _resumeListeningAfterSend();
+        return;
+      }
+
+      final controller = widget.controller;
+      if (controller != null) {
+        controller.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
+
+      await _finalizeVoiceBeforeSubmit();
+      if (!mounted) return;
+      await _submitSearch(text);
+    } finally {
+      _voiceSubmitting = false;
     }
-
-    final controller = widget.controller;
-    if (controller != null) {
-      controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    }
-    await _submitSearch(text);
   }
 
   Future<void> _toggleVoice() async {
@@ -485,10 +513,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       languageCode: _voiceLocale,
       owner: this,
       initialText: controller?.text ?? '',
+      restartAfterSilence: false,
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
         _resetIdleTimeout();
-    _startRouteCheck();
+        _startRouteCheck();
         if (_countdown != null) {
           final locked = _pendingVoiceSubmit ?? '';
           if (!shouldCancelVoiceCountdownForText(
@@ -585,17 +614,18 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final input = normalizeVoiceTranscript(raw.trim());
     if (input.isEmpty || _inlineAiLoading) return;
 
-    final keepListening = _micSessionActive;
+    if (_micSessionActive || _voice.isOwnedBy(this) || _voiceActive) {
+      await _finalizeVoiceBeforeSubmit();
+      if (!mounted) return;
+    }
 
     if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
       FocusManager.instance.primaryFocus?.unfocus();
-      if (keepListening) await _resumeListeningAfterSend();
       return;
     }
 
     await _runInlineAi(input);
     FocusManager.instance.primaryFocus?.unfocus();
-    if (keepListening) await _resumeListeningAfterSend();
   }
 
   bool _wantsDirectoryContact(String raw) {
@@ -606,6 +636,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   Future<void> _runInlineAi(String input) async {
     if (_inlineAiLoading) return;
+
+    final subscription = ref.read(subscriptionProvider).value;
+    if (subscription != null && subscription.effectiveTier.canUseAI != true) {
+      if (!mounted) return;
+      showPaywall(context, featureName: 'Google Gemini');
+      return;
+    }
+
+    final loc = ref.read(discoveryLocationProvider);
     setState(() {
       _inlineAiLoading = true;
       _inlineQuestion = input;
@@ -643,9 +682,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             ],
             preferredIntent: contactQuery ? 'profiles' : null,
             locationContext: {
-              'passportMode': true,
-              'passportLabel': widget.locationLabel,
-              'radiusKm': 50,
+              'passportMode': false,
+              'passportLabel': loc.label,
+              'userLatitude': loc.latitude,
+              'userLongitude': loc.longitude,
+              'radiusKm': loc.radiusKm,
               'compactDashboard': true,
               'responseLanguage': ref.read(voiceLanguageProvider).displayName,
             },
@@ -654,10 +695,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       if (!mounted) return;
       final parsed = ConciergeParse.of(reply);
       final clean = parsed.cleanContent.trim();
+      final fallback = reply.trim();
       setState(() {
         _inlineAiLoading = false;
-        _inlineAnswer = clean.isNotEmpty ? clean : reply.trim();
-        _inlineLocalBrain = contactQuery ? parsed.localBrain : const [];
+        _inlineAnswer = clean.isNotEmpty
+            ? clean
+            : fallback.isNotEmpty
+            ? fallback
+            : 'I heard you. Try asking in a different way or tap Continue in chat.';
+        _inlineLocalBrain = parsed.localBrain;
         _inlineProfiles = parsed.profiles;
         _inlineListings = parsed.listings;
       });
@@ -667,7 +713,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         _inlineAiLoading = false;
         _inlineAnswer = error.message;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Dashboard inline AI failed: $error\n$stackTrace');
       if (!mounted) return;
       setState(() {
         _inlineAiLoading = false;
@@ -884,7 +931,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final listings = _inlineListings.take(2).toList(growable: false);
     final hasResults =
         brain.isNotEmpty || profiles.isNotEmpty || listings.isNotEmpty;
+    final hasQuestion = (_inlineQuestion?.trim().isNotEmpty ?? false);
     if (!_inlineAiLoading &&
+        !hasQuestion &&
         (answer == null || answer.trim().isEmpty) &&
         !hasResults) {
       return const SizedBox.shrink();

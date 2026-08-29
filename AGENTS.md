@@ -99,6 +99,11 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Do not auto-resume the dashboard microphone after an AI answer. A new phrase starts from a new explicit microphone tap; this avoids duplicate recognizer sessions and repeated transcript text.
 - The AI request must happen only after native voice has finished. A successful transcript with no `ai-concierge` request is a client handoff bug, not an AI-provider outage.
 - Keep Intel Core on the same reliable non-streaming `chatConcierge(... stream: false)` response path unless the backend is changed to true streaming and native + web are both regression-tested.
+- **Regression lock:** If `glow_search_bar.dart` and `intel_core_sheet.dart` diverge on voice handoff (`restartAfterSilence`, `finish` before AI, no post-answer mic resume), treat it as a P0 bug — not an optional improvement.
+- Dashboard inline AI must never collapse to zero height after a completed request. Show loading, answer text, contact cards, or an explicit error string.
+- Dashboard `_runInlineAi` must use the same subscription gate as `BentoDashboardScreen._openAiSearch`.
+- `ai-concierge` `loadContext` must not reference `userMemory`; attach memory on the handler result only (`ctx.userMemory = ...` after `Promise.all`).
+- **Native iOS TestFlight acceptance:** speak → silence → 3→2→1 → one `ai-concierge` POST → inline panel shows reply → mic stays off until user taps mic again.
 
 ### Voice countdown must survive native recognizer segment restarts
 - Native speech engines may end/restart a recognition segment exactly when silence starts the dashboard **3 → 2 → 1** countdown.

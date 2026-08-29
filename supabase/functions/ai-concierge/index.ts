@@ -283,9 +283,6 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
 
   const localBrain = await loadLocalBrain(client, query, body);
 
-  if (category) {
-    try {
-      
   const applyFilters = (queryBuilder: any) => {
     if (seenIds.size > 0) {
       // Supabase not.in expects a comma-separated list or an array depending on the SDK.
@@ -293,6 +290,11 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
     }
     return queryBuilder.limit(30);
   };
+
+  if (category) {
+    try {
+      
+
 
       let queryBuilder = client
         .from("listings")
@@ -343,7 +345,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
     }
   }
 
-  return { category, listings, events, profiles, localBrain, userMemory, peopleFirst, compactDashboard };
+  return { category, listings, events, profiles, localBrain, peopleFirst, compactDashboard };
 }
 
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
