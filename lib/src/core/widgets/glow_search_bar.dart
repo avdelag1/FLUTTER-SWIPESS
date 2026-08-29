@@ -5,6 +5,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -62,6 +64,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   final _random = math.Random();
 
   final LiveVoiceInput _voice = LiveVoiceInput.instance;
+  final _tts = FlutterTts();
   late final DeckAudioNotifier _audioNotifier;
   Timer? _countdownTimer;
   int? _countdown;
@@ -273,6 +276,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   }
 
   Future<void> _endContinuousSession() async {
+    _tts.stop();
     _cancelVoiceCountdown();
     _micSessionActive = false;
     _stopMicBreathing();
@@ -622,6 +626,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         _inlineProfiles = parsed.profiles;
         _inlineListings = parsed.listings;
       });
+      await _speakInlineAnswer(_inlineAnswer ?? '');
     } on AiUnavailableException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -643,7 +648,23 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     widget.onSubmitted?.call(question);
   }
 
+
+  Future<void> _speakInlineAnswer(String text) async {
+    if (text.isEmpty) return;
+    try {
+      final lang = _voiceLocale.split('_').first;
+      await _tts.setLanguage(lang == 'es' ? 'es-MX' : 'en-US');
+      await _tts.setSpeechRate(0.48);
+      await _tts.awaitSpeakCompletion(true);
+      final cleanText = text.replaceAll(RegExp(r'\[[^\]]+\]'), '');
+      if (cleanText.trim().isNotEmpty) {
+        await _tts.speak(cleanText);
+      }
+    } catch (_) {}
+  }
+
   void _dismissInlineAi() {
+    _tts.stop();
     if (!mounted) return;
     setState(() {
       _inlineQuestion = null;
