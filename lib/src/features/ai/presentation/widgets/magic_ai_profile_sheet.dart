@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -156,6 +157,8 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
               maxLines: 4,
               height: 120,
             ),
+            const SizedBox(height: 12),
+            const AiDisclosure(isLight: false),
             const SizedBox(height: 16),
             GestureDetector(
               onTap: _busy ? null : _run,
