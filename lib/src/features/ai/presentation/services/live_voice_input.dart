@@ -55,10 +55,10 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  static const silenceBeforeCountdown = Duration(milliseconds: 2200);
+  static const silenceBeforeCountdown = Duration(milliseconds: 3500);
 
   Duration get _effectiveSilenceBeforeCountdown =>
-      kIsWeb ? const Duration(milliseconds: 2200) : silenceBeforeCountdown;
+      kIsWeb ? const Duration(milliseconds: 3500) : silenceBeforeCountdown;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);

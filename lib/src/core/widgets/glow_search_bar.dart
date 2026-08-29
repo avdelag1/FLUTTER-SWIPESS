@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,8 +58,9 @@ class GlowSearchBar extends ConsumerStatefulWidget {
 class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     with TickerProviderStateMixin {
   static const _voiceLocale = 'en-US';
-  static const _recordRed = Color(0xFFFF1F1F);
-  static const _recordRedDeep = Color(0xFFCC0000);
+  // Bright coral-red reads as active/recording without the harsh blood-red UI.
+  static const _recordRed = Color(0xFFFF4D6D);
+  static const _recordRedDeep = Color(0xFFE11D48);
 
   final _random = math.Random();
 
@@ -113,6 +115,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   bool get _isRecordingGlow =>
       _isListeningSession && _countdown == null && !_transcribing;
 
+  // Android + web provide true live partial transcription. iOS stays on
+  // the Whisper recorder path for accuracy/stability.
+  bool get _useLiveSpeech =>
+      kIsWeb || (!kIsWeb && defaultTargetPlatform == TargetPlatform.android);
+
   bool get _isEditableSearch => widget.controller != null;
 
   bool get _showPrompt =>
@@ -152,26 +159,37 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _voiceRepo = ref.read(voiceTranscribeRepositoryProvider);
     _micPopCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: const Duration(milliseconds: 480),
     );
     _micPopScale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.62, end: 1.34)
-            .chain(CurveTween(curve: Curves.elasticOut)),
-        weight: 72,
+        tween: Tween(
+          begin: 0.84,
+          end: 1.28,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 58,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.34, end: 1.14)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 28,
+        tween: Tween(
+          begin: 1.28,
+          end: 0.99,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 18,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.99,
+          end: 1.07,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 24,
       ),
     ]).animate(_micPopCtrl);
     _micBreathCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1750),
     );
-    _micBreathScale = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _micBreathCtrl, curve: Curves.easeInOut),
+    _micBreathScale = Tween<double>(begin: 1.0, end: 1.045).animate(
+      CurvedAnimation(parent: _micBreathCtrl, curve: Curves.easeInOutCubic),
     );
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
@@ -260,13 +278,22 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       _micBreathCtrl.stop();
       _micBreathCtrl.value = 0;
     }
+    if (_micPopCtrl.value > 0) {
+      unawaited(
+        _micPopCtrl.animateBack(
+          0,
+          duration: const Duration(milliseconds: 190),
+          curve: Curves.easeOutCubic,
+        ),
+      );
+    }
   }
 
   Future<void> _endContinuousSession() async {
     _cancelVoiceCountdown();
     _micSessionActive = false;
     _stopMicBreathing();
-    if (kIsWeb) {
+    if (_useLiveSpeech) {
       await _voice.cancel(owner: this);
     } else if (_whisperRecording) {
       await _stopWhisperCapture(cancel: true);
@@ -284,8 +311,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _handleVoiceLevel(double normalized, {double? rawLevel}) {
     if (!mounted) return;
-    final speaking = normalized > 0.06 ||
-        (rawLevel != null && rawLevel > -54);
+    final speaking = normalized > 0.025 || (rawLevel != null && rawLevel > -60);
     if (_countdown != null && speaking) {
       _cancelVoiceCountdown();
       setState(() => _voiceActive = true);
@@ -296,7 +322,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     if (speaking) {
       _voiceHasSpeech = true;
       if (_countdown == null && _isListeningSession) {
-        if (kIsWeb) {
+        if (_useLiveSpeech) {
           // silence handled by LiveVoiceInput
         } else {
           _armWhisperSilence();
@@ -312,7 +338,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _pendingVoiceSubmit = null;
     widget.controller?.clear();
     _cancelVoiceCountdown();
-    if (kIsWeb) {
+    if (_useLiveSpeech) {
       await _voice.cancel(owner: this);
       if (!mounted || !_micSessionActive) return;
       await _startWebListening(animatePop: false);
@@ -337,7 +363,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void _armWhisperSilence() {
     _silenceTimer?.cancel();
     if (!_whisperRecording || !_voiceHasSpeech || _countdown != null) return;
-    _silenceTimer = Timer(const Duration(milliseconds: 2200), () {
+    _silenceTimer = Timer(const Duration(milliseconds: 3500), () {
       if (mounted && _whisperRecording && _countdown == null) {
         _beginVoiceCountdown();
       }
@@ -389,10 +415,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _ampSub = repo
         .amplitudeStream(interval: const Duration(milliseconds: 60))
         .listen((amp) {
-      if (!mounted || !_whisperRecording) return;
-      final normalized = _normalizeAmplitude(amp.current);
-      _handleVoiceLevel(normalized, rawLevel: amp.current);
-    });
+          if (!mounted || !_whisperRecording) return;
+          final normalized = _normalizeAmplitude(amp.current);
+          _handleVoiceLevel(normalized, rawLevel: amp.current);
+        });
   }
 
   Future<void> _stopWhisperCapture({required bool cancel}) async {
@@ -423,7 +449,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       return;
     }
 
-    if (kIsWeb) {
+    if (_useLiveSpeech) {
       if (!_voice.isOwnedBy(this) || !_voice.active) return;
     } else if (!_whisperRecording) {
       return;
@@ -433,9 +459,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final captured = controllerText.isNotEmpty
         ? controllerText
         : _liveTranscript.trim();
-    if (captured.isEmpty) return;
+    if (_useLiveSpeech && captured.isEmpty) return;
 
-    _pendingVoiceSubmit = captured;
+    _pendingVoiceSubmit = captured.isEmpty ? null : captured;
     _countdownTimer?.cancel();
     setState(() {
       _countdown = 3;
@@ -567,7 +593,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     }
 
     _micSessionActive = true;
-    if (kIsWeb) {
+    if (_useLiveSpeech) {
       await _startWebListening(animatePop: true);
     } else {
       await _startWhisperCapture(animatePop: true);
@@ -848,7 +874,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final sessionActive = _micSessionActive;
     final glow = sessionActive ? _recordRed : blue;
     final deepGlow = sessionActive ? _recordRedDeep : blue;
-    final pulse = 1.0 + (_voiceLevel * .1);
+    final pulse = 1.0 + (_voiceLevel * .035);
+    final diameter = sessionActive ? 31.0 : 28.0;
 
     return Semantics(
       button: true,
@@ -872,29 +899,32 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             return Transform.scale(
               scale: scale,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                width: 28,
-                height: 28,
+                duration: const Duration(milliseconds: 230),
+                curve: Curves.easeOutCubic,
+                width: diameter,
+                height: diameter,
                 decoration: BoxDecoration(
                   color: sessionActive
-                      ? glow
+                      ? glow.withAlpha(245)
                       : blue.withAlpha(isLight ? 18 : 34),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: sessionActive ? glow : blue.withAlpha(90),
-                    width: sessionActive ? 1.6 : 1,
+                    color: sessionActive
+                        ? Colors.white.withAlpha(78)
+                        : blue.withAlpha(90),
+                    width: sessionActive ? 1.1 : 1,
                   ),
                   boxShadow: sessionActive
                       ? [
                           BoxShadow(
-                            color: glow.withAlpha(110),
-                            blurRadius: 14 + (_voiceLevel * 12),
-                            spreadRadius: 1 + (_voiceLevel * 2.2),
+                            color: glow.withAlpha(100),
+                            blurRadius: 15 + (_voiceLevel * 9),
+                            spreadRadius: .5 + (_voiceLevel * 1.2),
                           ),
                           BoxShadow(
-                            color: deepGlow.withAlpha(70),
-                            blurRadius: 22 + (_voiceLevel * 8),
-                            spreadRadius: -1,
+                            color: deepGlow.withAlpha(48),
+                            blurRadius: 27 + (_voiceLevel * 7),
+                            spreadRadius: -4,
                           ),
                         ]
                       : null,
@@ -909,11 +939,35 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                           color: Colors.white,
                         ),
                       )
+                    : _countdown != null
+                    ? AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(
+                              scale: animation,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            ),
+                        child: Text(
+                          '$_countdown',
+                          key: ValueKey<int>(_countdown!),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 16.5,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      )
                     : sessionActive
                     ? const Icon(
                         Icons.mic_rounded,
                         color: Colors.white,
-                        size: 15,
+                        size: 17,
                       )
                     : Icon(Icons.mic_none_rounded, color: blue, size: 16),
               ),
@@ -930,7 +984,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     required Color blue,
   }) {
     final answer = _inlineAnswer;
-    final hasContacts = _inlineLocalBrain.isNotEmpty || _inlineProfiles.isNotEmpty || _inlineListings.isNotEmpty;
+    final hasContacts =
+        _inlineLocalBrain.isNotEmpty ||
+        _inlineProfiles.isNotEmpty ||
+        _inlineListings.isNotEmpty;
     if (!_inlineAiLoading &&
         (answer == null || answer.trim().isEmpty) &&
         !hasContacts) {
@@ -1114,8 +1171,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            height: 44,
+            duration: Duration(milliseconds: voiceVisible ? 360 : 220),
+            curve: voiceVisible ? Curves.easeOutBack : Curves.easeOutCubic,
+            height: voiceVisible ? 48 : 44,
             padding: const EdgeInsets.fromLTRB(6, 0, 3, 0),
             decoration: BoxDecoration(
               color: isLight
@@ -1124,21 +1182,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: voiceVisible
-                    ? sessionGlow
+                    ? sessionGlow.withAlpha(210)
                     : blue.withAlpha(isLight ? 125 : 145),
-                width: voiceVisible ? 2 : .9,
+                width: voiceVisible ? 1.35 : .9,
               ),
               boxShadow: voiceVisible
                   ? [
                       BoxShadow(
-                        color: sessionGlow.withAlpha(72),
-                        blurRadius: 18 + (_voiceLevel * 10),
-                        spreadRadius: -1,
+                        color: sessionGlow.withAlpha(52),
+                        blurRadius: 20 + (_voiceLevel * 8),
+                        spreadRadius: -2,
                       ),
                       BoxShadow(
-                        color: sessionGlowDeep.withAlpha(48),
-                        blurRadius: 28 + (_voiceLevel * 6),
-                        spreadRadius: -4,
+                        color: sessionGlowDeep.withAlpha(28),
+                        blurRadius: 34 + (_voiceLevel * 5),
+                        spreadRadius: -7,
                       ),
                     ]
                   : null,
@@ -1184,44 +1242,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                             ),
                           ),
                         ),
-                      if (_countdown != null)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: Center(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 220),
-                                switchInCurve: Curves.elasticOut,
-                                switchOutCurve: Curves.easeIn,
-                                transitionBuilder: (child, animation) {
-                                  return ScaleTransition(
-                                    scale: animation,
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  '$_countdown',
-                                  key: ValueKey<int>(_countdown!),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: _recordRed,
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1,
-                                    letterSpacing: -1.2,
-                                    shadows: [
-                                      Shadow(
-                                        color: _recordRed.withAlpha(160),
-                                        blurRadius: 14,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                       TextField(
                         focusNode: _focusNode,
                         controller: widget.controller,
@@ -1235,9 +1255,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                         ),
                         cursorColor: blue,
                         decoration: InputDecoration(
-                          hintText: _countdown != null
-                              ? 'Sending in $_countdown…'
-                              : _transcribing
+                          hintText: _transcribing
                               ? 'Transcribing your voice…'
                               : _voiceActive &&
                                     (widget.controller?.text.trim().isEmpty ??
@@ -1245,11 +1263,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                               ? 'Listening… speak naturally'
                               : null,
                           hintStyle: GoogleFonts.plusJakartaSans(
-                            color: _countdown != null
-                                ? _recordRed.withAlpha(220)
-                                : sessionGlow.withAlpha(210),
+                            color: sessionGlow.withAlpha(205),
                             fontWeight: FontWeight.w700,
-                            fontSize: _countdown != null ? 15 : 13.5,
+                            fontSize: 13.5,
                           ),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
@@ -1277,33 +1293,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               ],
             ),
           ),
-          if (voiceVisible) ...[
-            const SizedBox(height: 5),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _countdown != null
-                    ? _liveTranscript.trim().isNotEmpty
-                          ? '“${_liveTranscript.trim()}” · sending in $_countdown…'
-                          : 'Silence detected · sending in $_countdown…'
-                    : _liveTranscript.trim().isNotEmpty
-                    ? 'LIVE · ${_liveTranscript.trim()}'
-                    : 'Listening… speak naturally',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.plusJakartaSans(
-                  color: _liveTranscript.trim().isNotEmpty && _countdown == null
-                      ? ink.withAlpha(225)
-                      : _countdown != null
-                      ? _recordRed
-                      : sessionGlow,
-                  fontWeight: FontWeight.w700,
-                  fontSize: _countdown != null ? 11.5 : 10.5,
-                  height: 1.25,
-                ),
-              ),
-            ),
-          ],
           _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
           const SizedBox(height: 5),
           Align(
