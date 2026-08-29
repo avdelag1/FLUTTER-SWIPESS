@@ -66,6 +66,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
   Timer? _countdownTimer;
   int? _countdown;
   bool _voiceHasSpeech = false;
+  String _liveTranscript = '';
+  String? _pendingVoiceSubmit;
+  bool _voiceSubmitting = false;
 
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
@@ -206,12 +209,34 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
         !_voice.isOwnedBy(this) ||
         !_voice.active ||
         !_voiceHasSpeech ||
-        _inlineAiLoading) {
+        _inlineAiLoading ||
+        _countdown != null ||
+        _voiceSubmitting) {
       return;
     }
+
+    final controllerText = widget.controller?.text.trim() ?? '';
+    final captured = controllerText.isNotEmpty
+        ? controllerText
+        : _liveTranscript.trim();
+    if (captured.isEmpty) return;
+
+    _pendingVoiceSubmit = captured;
     _countdownTimer?.cancel();
-    setState(() => _countdown = 3);
+    setState(() {
+      _countdown = 3;
+      _voiceActive = false;
+      _transcribing = false;
+    });
     unawaited(AppHaptics.countdownTick(3));
+
+    // Freeze the recognizer as soon as silence is confirmed. PWA/Chrome can
+    // emit late duplicate/final callbacks after a phrase; keeping recognition
+    // alive during the countdown could continuously re-arm the UI at "3".
+    // We already captured the transcript, so stopping here makes 3-2-1
+    // deterministic and guarantees the message reaches the dashboard AI.
+    unawaited(_voice.finish(owner: this));
+
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -226,10 +251,58 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       }
       timer.cancel();
       _countdownTimer = null;
-      setState(() => _countdown = null);
       unawaited(AppHaptics.voiceCommit());
-      unawaited(_finishVoiceAndSubmit());
+      unawaited(_submitCapturedVoice());
     });
+  }
+
+  Future<void> _submitCapturedVoice() async {
+    if (_voiceSubmitting) return;
+    _voiceSubmitting = true;
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+
+    try {
+      await _voice.finish(owner: this);
+    } catch (_) {}
+
+    if (!mounted) {
+      _voiceSubmitting = false;
+      _restoreVoiceAudio();
+      return;
+    }
+
+    final controllerText = widget.controller?.text.trim() ?? '';
+    final text = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
+        ? _pendingVoiceSubmit!.trim()
+        : controllerText.isNotEmpty
+        ? controllerText
+        : _liveTranscript.trim();
+
+    _pendingVoiceSubmit = null;
+    setState(() {
+      _countdown = null;
+      _transcribing = false;
+      _voiceActive = false;
+      _voiceLevel = 0;
+      _voiceHasSpeech = false;
+    });
+    _restoreVoiceAudio();
+    _voiceSubmitting = false;
+
+    if (text.isEmpty) {
+      _showVoiceError('I did not catch that. Please try speaking again.');
+      return;
+    }
+
+    final controller = widget.controller;
+    if (controller != null && controller.text.trim().isEmpty) {
+      controller.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    }
+    _submitSearch(text);
   }
 
   Future<void> _finishVoiceAndSubmit() async {
@@ -255,7 +328,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     }
 
     final current = widget.controller?.text.trim() ?? '';
-    final text = current.isNotEmpty ? current : beforeFinish;
+    final text = current.isNotEmpty
+        ? current
+        : _liveTranscript.trim().isNotEmpty
+        ? _liveTranscript.trim()
+        : beforeFinish;
     setState(() {
       _transcribing = false;
       _voiceActive = false;
@@ -287,6 +364,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
     FocusManager.instance.primaryFocus?.unfocus();
     _suppressVoiceAudio();
     _voiceHasSpeech = false;
+    _liveTranscript = widget.controller?.text.trim() ?? '';
+    _pendingVoiceSubmit = null;
     _cancelVoiceCountdown();
     setState(() {
       _transcribing = true;
@@ -300,21 +379,26 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       initialText: controller?.text.trim() ?? '',
       onText: (text) {
         if (!mounted) return;
-        _voiceHasSpeech = text.trim().isNotEmpty;
-        _cancelVoiceCountdown();
+        final clean = text.trim();
+        if (clean.isEmpty) return;
+        _voiceHasSpeech = true;
+        _liveTranscript = clean;
+
+        // Once silence has started the 3-2-1 commit, ignore late recognizer
+        // callbacks. The captured text is already frozen and will be sent.
+        if (_countdown != null || _voiceSubmitting) return;
+
         if (controller != null) {
           controller.value = TextEditingValue(
-            text: text,
-            selection: TextSelection.collapsed(offset: text.length),
+            text: clean,
+            selection: TextSelection.collapsed(offset: clean.length),
           );
-          widget.onChanged?.call(text);
+          widget.onChanged?.call(clean);
         }
-        if (!_voiceActive || _transcribing) {
-          setState(() {
-            _voiceActive = true;
-            _transcribing = false;
-          });
-        }
+        setState(() {
+          _voiceActive = true;
+          _transcribing = false;
+        });
       },
       onSilence: _beginVoiceCountdown,
       onListeningChanged: (listening) {
@@ -399,6 +483,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
       _inlineQuestion = input;
       _inlineAnswer = null;
       _inlineLocalBrain = const [];
+      _liveTranscript = '';
     });
     widget.controller?.clear();
 
@@ -894,7 +979,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   tooltip: 'Send',
-                  onPressed: () => _submitSearch(widget.controller?.text ?? ''),
+                  onPressed: () {
+                    final typed = widget.controller?.text.trim() ?? '';
+                    _submitSearch(typed.isNotEmpty ? typed : _liveTranscript);
+                  },
                   icon: Icon(Icons.arrow_forward_rounded, size: 19, color: ink),
                 ),
               ],
@@ -906,14 +994,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar> {
               alignment: Alignment.centerLeft,
               child: Text(
                 _countdown != null
-                    ? 'Silence detected · sending in $_countdown…'
+                    ? _liveTranscript.trim().isNotEmpty
+                          ? '“${_liveTranscript.trim()}” · sending in $_countdown…'
+                          : 'Silence detected · sending in $_countdown…'
+                    : _liveTranscript.trim().isNotEmpty
+                    ? 'LIVE · ${_liveTranscript.trim()}'
                     : 'Listening… speak naturally',
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
-                  color: blue,
+                  color: _liveTranscript.trim().isNotEmpty && _countdown == null
+                      ? ink.withAlpha(225)
+                      : blue,
                   fontWeight: FontWeight.w700,
                   fontSize: 10.5,
+                  height: 1.25,
                 ),
               ),
             ),

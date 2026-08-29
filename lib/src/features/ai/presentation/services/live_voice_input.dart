@@ -55,10 +55,10 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  static const silenceBeforeCountdown = Duration(milliseconds: 2800);
+  static const silenceBeforeCountdown = Duration(milliseconds: 2200);
 
   Duration get _effectiveSilenceBeforeCountdown =>
-      kIsWeb ? const Duration(milliseconds: 4500) : silenceBeforeCountdown;
+      kIsWeb ? const Duration(milliseconds: 2200) : silenceBeforeCountdown;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -529,10 +529,7 @@ class LiveVoiceInput {
           .sublist(leftWords.length - overlap)
           .map(_wordKey)
           .join(' ');
-      final rightHead = rightWords
-          .take(overlap)
-          .map(_wordKey)
-          .join(' ');
+      final rightHead = rightWords.take(overlap).map(_wordKey).join(' ');
       if (leftTail == rightHead) {
         return _normalizeTranscript(
           '$left ${rightWords.skip(overlap).join(' ')}',
@@ -572,6 +569,9 @@ class LiveVoiceInput {
   }
 
   static String _wordKey(String word) {
-    return word.toLowerCase().replaceAll(RegExp(r"[^\p{L}\p{N}']", unicode: true), '');
+    return word.toLowerCase().replaceAll(
+      RegExp(r"[^\p{L}\p{N}']", unicode: true),
+      '',
+    );
   }
 }
