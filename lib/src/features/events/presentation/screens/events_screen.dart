@@ -489,7 +489,35 @@ class _EventPageState extends ConsumerState<_EventPage>
   Timer? _playbackFeedbackTimer;
 
   Event get event => widget.event;
-  bool get _hasVideo => (event.videoUrl ?? '').trim().isNotEmpty;
+  List<String> get _media {
+    final out = <String>[];
+    final v = event.videoUrl;
+    if (v != null && v.trim().isNotEmpty) out.add(v.trim());
+    for (final img in event.gallery) {
+      if (!out.contains(img)) out.add(img);
+    }
+    if (out.isEmpty && event.imageUrl != null && event.imageUrl!.trim().isNotEmpty) {
+      out.add(event.imageUrl!.trim());
+    }
+    return out;
+  }
+
+  bool _isVideo(String value) {
+    final l = value.toLowerCase();
+    return l.contains('.mp4') ||
+        l.contains('.webm') ||
+        l.contains('.mov') ||
+        l.contains('/videos/');
+  }
+
+  int _mediaIndex = 0;
+  late final PageController _mediaPages = PageController();
+
+  bool get _hasVideo {
+    final m = _media;
+    if (m.isEmpty) return false;
+    return _isVideo(m[_mediaIndex % m.length]);
+  }
 
   @override
   void initState() {
@@ -561,8 +589,10 @@ class _EventPageState extends ConsumerState<_EventPage>
   }
 
   Future<void> _bindVideo() async {
-    final url = event.videoUrl;
-    if (url == null || url.trim().isEmpty) return;
+    final m = _media;
+    if (m.isEmpty) return;
+    final url = m[_mediaIndex % m.length];
+    if (!_isVideo(url)) return;
 
     final next = VideoPlayerController.networkUrl(Uri.parse(url));
     _player = next;
@@ -628,6 +658,7 @@ class _EventPageState extends ConsumerState<_EventPage>
     WidgetsBinding.instance.removeObserver(this);
     _playbackFeedbackTimer?.cancel();
     _player?.dispose();
+    _mediaPages.dispose();
     super.dispose();
   }
 
@@ -735,29 +766,77 @@ class _EventPageState extends ConsumerState<_EventPage>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (ready)
-            RepaintBoundary(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: player.value.size.width,
-                  height: player.value.size.height,
-                  child: VideoPlayer(player),
-                ),
-              ),
-            )
-          else if (image.isNotEmpty)
-            Image.network(
-              image,
-              fit: BoxFit.cover,
-              cacheWidth: (MediaQuery.sizeOf(context).width * 2)
-                  .round()
-                  .clamp(640, 1800),
-              errorBuilder: (_, _, _) =>
-                  const ColoredBox(color: Color(0xFF16161C)),
-            )
+          if (_media.isEmpty)
+            const ColoredBox(color: Color(0xFF16161C))
           else
-            const ColoredBox(color: Color(0xFF16161C)),
+            PageView.builder(
+              controller: _mediaPages,
+              scrollDirection: Axis.horizontal,
+              itemCount: _media.length,
+              onPageChanged: (index) {
+                setState(() => _mediaIndex = index);
+                if (_hasVideo && widget.shouldLoadVideo) {
+                  _bindVideo();
+                } else if (_player != null) {
+                  _player?.dispose();
+                  _player = null;
+                }
+              },
+              itemBuilder: (context, index) {
+                final url = _media[index];
+                final isVid = _isVideo(url);
+                if (isVid && ready) {
+                  return RepaintBoundary(
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: player.value.size.width,
+                        height: player.value.size.height,
+                        child: VideoPlayer(player),
+                      ),
+                    ),
+                  );
+                } else if (!isVid) {
+                  return Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                        .round()
+                        .clamp(640, 1800),
+                    errorBuilder: (_, _, _) =>
+                        const ColoredBox(color: Color(0xFF16161C)),
+                  );
+                }
+                return const ColoredBox(color: Color(0xFF16161C));
+              },
+            ),
+          
+          if (_media.length > 1)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 100,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < _media.length; i++)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      width: i == _mediaIndex ? 14 : 6,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: i == _mediaIndex
+                            ? Colors.white
+                            : Colors.white.withAlpha(100),
+                        borderRadius: BorderRadius.circular(99),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black45, blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
           if (ready)
             Positioned(
               left: 2,
