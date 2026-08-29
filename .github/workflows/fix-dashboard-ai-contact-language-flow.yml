@@ -82,4 +82,5 @@ jobs:
                   supabase/functions/ai-concierge/index.ts
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "fix(ai): compact dashboard contacts and lock voice language"
+          git pull --rebase origin main
           git push origin HEAD:main
