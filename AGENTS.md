@@ -97,6 +97,8 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Busy/client/network/server/audio recognizer transition errors during that restart are recoverable. Retry them quietly with a short backoff; do **not** cancel the countdown or show `Voice recognition stopped` for a transient segment restart.
 - Permission/authorization failures remain user-facing and fatal for that microphone session.
 - Speaking again during the countdown must still cancel countdown and continue the same transcript.
+- **Only actual new recognized transcript text may cancel an active 3 -> 2 -> 1 countdown.** Native `onSoundLevel` / microphone-energy spikes are noisy and can fire when the recognizer restarts after silence; they must never cancel auto-send.
+- Once valid text has been captured and the countdown has started, a recognizer stop/restart error must not abort that countdown. The countdown owns the captured text and must reach 3 -> 2 -> 1 -> submit unless genuinely new transcript text arrives or the user explicitly cancels.
 
 ### Notification permission is foreground-only
 - `AppLifecycleState.paused`, backgrounding, app exit, and reengagement scheduling must **never request notification permission**.

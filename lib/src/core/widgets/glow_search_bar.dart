@@ -287,13 +287,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _restoreVoiceAudio();
   }
 
-  void _handleVoiceLevel(double normalized, {double? rawLevel}) {
+  void _handleVoiceLevel(double normalized) {
     if (!mounted) return;
-    final speaking = normalized > 0.025 || (rawLevel != null && rawLevel > -60);
-    if (_countdown != null && speaking) {
-      _cancelVoiceCountdown();
-      setState(() => _voiceActive = true);
-    }
+    // Native recognizers can emit a brief sound-level spike while a finished
+    // speech segment is restarting. That is not proof the user spoke again and
+    // must never cancel the 3 -> 2 -> 1 auto-send countdown. Only a real new
+    // transcript callback is allowed to cancel an active countdown.
     if ((_voiceLevel - normalized).abs() > .01) {
       setState(() => _voiceLevel = normalized);
     }
@@ -437,7 +436,17 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       initialText: controller?.text ?? '',
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
-        if (_countdown != null) _cancelVoiceCountdown();
+        final cleanText = text.trim();
+        final pendingText = _pendingVoiceSubmit?.trim();
+        // A recognizer restart can occasionally re-publish the same committed
+        // phrase. Do not treat that as fresh speech. A genuinely changed
+        // transcript still cancels auto-send immediately so the user can keep
+        // talking naturally.
+        if (_countdown != null &&
+            cleanText.isNotEmpty &&
+            cleanText != pendingText) {
+          _cancelVoiceCountdown();
+        }
         _liveTranscript = text;
 
         if (controller != null) {
@@ -474,10 +483,24 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       onSoundLevel: (level) {
         if (!mounted) return;
         final normalized = ((level + 45) / 45).clamp(0.0, 1.0).toDouble();
-        _handleVoiceLevel(normalized, rawLevel: level);
+        _handleVoiceLevel(normalized);
       },
       onError: (message) {
         if (!mounted) return;
+        final countdownOwnsCapturedText =
+            _countdown != null &&
+            (_pendingVoiceSubmit?.trim().isNotEmpty ?? false);
+        if (countdownOwnsCapturedText) {
+          // Once silence has captured valid text and started 3 -> 2 -> 1, a
+          // recognizer shutdown/restart error must not abort the auto-sender.
+          // The timer is now authoritative and will submit the captured text.
+          setState(() {
+            _voiceActive = false;
+            _transcribing = false;
+            _voiceLevel = 0;
+          });
+          return;
+        }
         _cancelVoiceCountdown();
         unawaited(_voice.cancel(owner: this));
         _micSessionActive = false;
