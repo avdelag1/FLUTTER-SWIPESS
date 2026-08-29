@@ -53,25 +53,148 @@ jobs:
           print(f'patched remaining Intel language blocks: {count}')
           PY
 
+      - name: Isolate contact drilldown and cap full-chat cards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          glow = Path('lib/src/core/widgets/glow_search_bar.dart')
+          s = glow.read_text()
+          if "import 'dart:convert';" not in s:
+              s = s.replace("import 'dart:async';\n", "import 'dart:async';\nimport 'dart:convert';\n", 1)
+
+          old = """  void _openContactInChat(Map<String, dynamic> data) {
+            final name = (data['name'] ?? data['full_name'] ?? data['title'])
+                ?.toString()
+                .trim();
+            if (name == null || name.isEmpty) return;
+            AppHaptics.selection();
+            _dismissInlineAi();
+            widget.onSubmitted?.call('Tell me only about this person: $name');
+          }
+          """
+          new = """  void _openContactInChat(Map<String, dynamic> data) {
+            final name = (data['name'] ?? data['full_name'] ?? data['title'])
+                ?.toString()
+                .trim();
+            if (name == null || name.isEmpty) return;
+            AppHaptics.selection();
+            final encoded = base64UrlEncode(utf8.encode(jsonEncode(data)));
+            _dismissInlineAi();
+            widget.onSubmitted?.call('__swipess_contact__:$encoded');
+          }
+          """
+          if old not in s:
+              raise SystemExit('compact contact drilldown block not found')
+          s = s.replace(old, new, 1)
+          glow.write_text(s)
+
+          intel = Path('lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart')
+          s = intel.read_text()
+          old = """    final seed = widget.initialQuery.trim();
+            if (seed.isNotEmpty) _privacyAccepted = true;
+            if (seed.isNotEmpty) {
+              _controller.text = seed;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || _bootstrapped) return;
+                _bootstrapped = true;
+                _submit(seed);
+              });
+            }
+          """
+          new = """    final seed = widget.initialQuery.trim();
+            if (seed.isNotEmpty) _privacyAccepted = true;
+            if (seed.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted || _bootstrapped) return;
+                _bootstrapped = true;
+                const prefix = '__swipess_contact__:';
+                if (seed.startsWith(prefix)) {
+                  try {
+                    final decoded = jsonDecode(
+                      utf8.decode(base64Url.decode(seed.substring(prefix.length))),
+                    );
+                    if (decoded is Map) {
+                      final data = Map<String, dynamic>.from(decoded);
+                      final name = (data['name'] ??
+                              data['full_name'] ??
+                              data['title'] ??
+                              'this contact')
+                          .toString()
+                          .trim();
+                      final payload = base64Encode(
+                        utf8.encode(jsonEncode([data])),
+                      );
+                      setState(() {
+                        _messages
+                          ..clear()
+                          ..add(
+                            IntelChatBubble(
+                              id: _newId(),
+                              role: 'assistant',
+                              content:
+                                  'Here is ${name.isEmpty ? 'this contact' : name}. '
+                                  'This chat is focused only on this contact.\\n'
+                                  '[DRAFT:local_brain:{"payload":"$payload"}]',
+                            ),
+                          );
+                      });
+                      _scrollToEnd();
+                      return;
+                    }
+                  } catch (_) {}
+                  setState(() {
+                    _messages
+                      ..clear()
+                      ..add(
+                        IntelChatBubble(
+                          id: _newId(),
+                          role: 'assistant',
+                          content: 'I could not open that contact. Please try again.',
+                        ),
+                      );
+                  });
+                  return;
+                }
+                _controller.text = seed;
+                _submit(seed);
+              });
+            }
+          """
+          if old not in s:
+              raise SystemExit('Intel initial seed block not found')
+          s = s.replace(old, new, 1)
+          intel.write_text(s)
+
+          bubble = Path('lib/src/features/ai/presentation/widgets/intel_message_bubble.dart')
+          s = bubble.read_text()
+          s = s.replace('for (final entry in parsed.localBrain)', 'for (final entry in parsed.localBrain.take(5))', 1)
+          s = s.replace('for (final listing in parsed.listings)', 'for (final listing in parsed.listings.take(3))', 1)
+          s = s.replace('for (final profile in parsed.profiles)', 'for (final profile in parsed.profiles.take(5))', 1)
+          bubble.write_text(s)
+          PY
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
       - name: Format touched Dart files
-        run: dart format lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart lib/src/features/ai/presentation/providers/voice_language_provider.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart
+        run: dart format lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart lib/src/features/ai/presentation/widgets/intel_message_bubble.dart lib/src/features/ai/presentation/providers/voice_language_provider.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart
 
       - name: Dependencies
         run: flutter pub get
 
       - name: Analyze touched Dart files
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart lib/src/features/ai/presentation/providers/voice_language_provider.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart lib/src/features/ai/presentation/widgets/intel_message_bubble.dart lib/src/features/ai/presentation/providers/voice_language_provider.dart lib/src/features/ai/presentation/widgets/voice_language_selector.dart
 
-      - name: Sanity-check Edge Function syntax markers
+      - name: Sanity-check Edge Function and drilldown markers
         run: |
           grep -q "DASHBOARD COMPACT MODE" supabase/functions/ai-concierge/index.ts
           grep -q "LANGUAGE LOCK" supabase/functions/ai-concierge/index.ts
           grep -q "exactNamed" supabase/functions/ai-concierge/index.ts
+          grep -q "__swipess_contact__" lib/src/core/widgets/glow_search_bar.dart
+          grep -q "focused only on this contact" lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
 
       - name: Commit AI flow fix
         run: |
@@ -79,8 +202,10 @@ jobs:
           git config user.email actions@users.noreply.github.com
           git add lib/src/core/widgets/glow_search_bar.dart \
                   lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart \
+                  lib/src/features/ai/presentation/widgets/intel_message_bubble.dart \
                   supabase/functions/ai-concierge/index.ts
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "fix(ai): compact dashboard contacts and lock voice language"
+          git restore .github/scripts/fix_dashboard_ai_contact_language_flow.py pubspec.lock || true
           git pull --rebase origin main
           git push origin HEAD:main
