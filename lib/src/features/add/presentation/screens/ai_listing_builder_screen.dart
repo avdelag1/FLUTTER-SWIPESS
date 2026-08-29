@@ -1,4 +1,3 @@
-import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -118,8 +117,9 @@ class _AiListingBuilderScreenState
       return;
     }
     setState(() => _description.text = polished);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('AI enhance applied')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('AI enhance applied')));
   }
 
   Future<void> _create() async {
@@ -522,7 +522,8 @@ class _AiListingBuilderScreenState
               ),
               GlassTextField(
                 controller: _description,
-                hint: "Describe your listing. E.g. 'Stunning ocean view villa with private pool, 2 bedrooms'...",
+                hint:
+                    "Describe your listing. E.g. 'Stunning ocean view villa with private pool, 2 bedrooms'...",
                 icon: Icons.notes_rounded,
                 maxLines: 5,
                 height: 140,

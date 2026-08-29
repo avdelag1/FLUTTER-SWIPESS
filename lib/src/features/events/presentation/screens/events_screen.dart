@@ -279,8 +279,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 itemBuilder: (context, index) {
                   if (index == events.length) {
                     return PromoteCTACard(
-                      onPromote: () =>
-                          context.push(AppPaths.clientAdvertise),
+                      onPromote: () => context.push(AppPaths.clientAdvertise),
                     );
                   }
 
@@ -290,8 +289,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     active: index == _index,
                     shouldLoadVideo: (index - _index).abs() <= 1,
                     chromeVisible: _chromeVisible,
-                    preparedController:
-                        _preloadedNextIndex == index ? _preloadedNext : null,
+                    preparedController: _preloadedNextIndex == index
+                        ? _preloadedNext
+                        : null,
                     onPreparedConsumed: () => _consumePreparedVideo(index),
                     initialPosition: event.id == _handoffEventId
                         ? _handoffPosition
@@ -496,7 +496,9 @@ class _EventPageState extends ConsumerState<_EventPage>
     for (final img in event.gallery) {
       if (!out.contains(img)) out.add(img);
     }
-    if (out.isEmpty && event.imageUrl != null && event.imageUrl!.trim().isNotEmpty) {
+    if (out.isEmpty &&
+        event.imageUrl != null &&
+        event.imageUrl!.trim().isNotEmpty) {
       out.add(event.imageUrl!.trim());
     }
     return out;
@@ -674,9 +676,11 @@ class _EventPageState extends ConsumerState<_EventPage>
       }
       if (!mounted) return;
       _playbackFeedbackTimer?.cancel();
-      setState(() => _playbackFeedback = shouldPlay
-          ? Icons.play_arrow_rounded
-          : Icons.pause_rounded);
+      setState(
+        () => _playbackFeedback = shouldPlay
+            ? Icons.play_arrow_rounded
+            : Icons.pause_rounded,
+      );
       _playbackFeedbackTimer = Timer(const Duration(milliseconds: 620), () {
         if (mounted) setState(() => _playbackFeedback = null);
       });
@@ -687,7 +691,8 @@ class _EventPageState extends ConsumerState<_EventPage>
     if (_busy) return;
     widget.onChromeInteraction();
 
-    final current = _favoritedOverride ??
+    final current =
+        _favoritedOverride ??
         (ref.read(eventFavoriteProvider(event.id)).value ?? false);
     setState(() {
       _busy = true;
@@ -714,8 +719,9 @@ class _EventPageState extends ConsumerState<_EventPage>
     await SharePlus.instance.share(
       ShareParams(
         text: 'Check out ${event.title} on Swipess! ${event.shareUrl}',
-        sharePositionOrigin:
-            box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+        sharePositionOrigin: box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null,
       ),
     );
   }
@@ -730,9 +736,13 @@ class _EventPageState extends ConsumerState<_EventPage>
         ),
       );
     } else if ((event.organizerInstagram ?? '').isNotEmpty) {
-      await EventConnect.open(EventConnect.instagramUri(event.organizerInstagram));
+      await EventConnect.open(
+        EventConnect.instagramUri(event.organizerInstagram),
+      );
     } else if ((event.organizerFacebook ?? '').isNotEmpty) {
-      await EventConnect.open(EventConnect.facebookUri(event.organizerFacebook));
+      await EventConnect.open(
+        EventConnect.facebookUri(event.organizerFacebook),
+      );
     } else if ((event.organizerWebsite ?? '').isNotEmpty) {
       await EventConnect.open(EventConnect.websiteUri(event.organizerWebsite));
     } else {
@@ -742,7 +752,8 @@ class _EventPageState extends ConsumerState<_EventPage>
 
   @override
   Widget build(BuildContext context) {
-    final favorited = _favoritedOverride ??
+    final favorited =
+        _favoritedOverride ??
         (ref.watch(eventFavoriteProvider(event.id)).value ?? false);
     final soundOn = ref.watch(deckSoundOnProvider);
 
@@ -753,9 +764,6 @@ class _EventPageState extends ConsumerState<_EventPage>
 
     final player = _player;
     final ready = player != null && player.value.isInitialized;
-    final image = event.gallery.isNotEmpty
-        ? event.gallery.first
-        : (event.imageUrl ?? '');
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     return GestureDetector(
@@ -810,7 +818,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                 return const ColoredBox(color: Color(0xFF16161C));
               },
             ),
-          
+
           if (_media.length > 1)
             Positioned(
               top: MediaQuery.paddingOf(context).top + 100,
@@ -935,9 +943,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                   onTap: () {
                     widget.onChromeInteraction();
                     unlockDeckMedia();
-                    ref
-                        .read(deckSoundOnProvider.notifier)
-                        .setSoundOn(!soundOn);
+                    ref.read(deckSoundOnProvider.notifier).setSoundOn(!soundOn);
                     final player = _player;
                     if (player != null && player.value.isInitialized) {
                       player.setVolume(soundOn ? 0 : 1);
@@ -1024,8 +1030,9 @@ class _EventPageState extends ConsumerState<_EventPage>
                           if (event.eventDate != null)
                             _InfoChip(
                               icon: Icons.calendar_today_rounded,
-                              label: DateFormat('MMM d · h:mm a')
-                                  .format(event.eventDate!.toLocal()),
+                              label: DateFormat(
+                                'MMM d · h:mm a',
+                              ).format(event.eventDate!.toLocal()),
                             ),
                           if ((event.location ?? '').isNotEmpty)
                             _InfoChip(
@@ -1056,9 +1063,7 @@ class _EventProgressScrubber extends StatelessWidget {
     if (!value.isInitialized || value.duration <= Duration.zero) return;
     final ratio = (dx / width).clamp(0.0, 1.0);
     await player.seekTo(
-      Duration(
-        milliseconds: (value.duration.inMilliseconds * ratio).round(),
-      ),
+      Duration(milliseconds: (value.duration.inMilliseconds * ratio).round()),
     );
   }
 
@@ -1070,9 +1075,9 @@ class _EventProgressScrubber extends StatelessWidget {
         if (!value.isInitialized || value.duration <= Duration.zero) {
           return const SizedBox.shrink();
         }
-        final progress = (value.position.inMilliseconds /
-                value.duration.inMilliseconds)
-            .clamp(0.0, 1.0);
+        final progress =
+            (value.position.inMilliseconds / value.duration.inMilliseconds)
+                .clamp(0.0, 1.0);
         return LayoutBuilder(
           builder: (context, constraints) => GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -1104,17 +1109,16 @@ class _EventProgressScrubber extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x88FFFFFF),
-                              blurRadius: 8,
-                            ),
+                            BoxShadow(color: Color(0x88FFFFFF), blurRadius: 8),
                           ],
                         ),
                       ),
                     ),
                     Positioned(
-                      left: (constraints.maxWidth * progress - 5)
-                          .clamp(-5.0, constraints.maxWidth - 5),
+                      left: (constraints.maxWidth * progress - 5).clamp(
+                        -5.0,
+                        constraints.maxWidth - 5,
+                      ),
                       top: -3,
                       child: Container(
                         width: 11,
@@ -1123,10 +1127,7 @@ class _EventProgressScrubber extends StatelessWidget {
                           color: Color(0xFFFF4D78),
                           shape: BoxShape.circle,
                           boxShadow: [
-                            BoxShadow(
-                              color: Color(0xAAFF4D78),
-                              blurRadius: 6,
-                            ),
+                            BoxShadow(color: Color(0xAAFF4D78), blurRadius: 6),
                           ],
                         ),
                       ),
@@ -1176,7 +1177,10 @@ class _SavedEventsButton extends StatelessWidget {
                 size: 20,
                 color: AppTheme.brandPrimary,
                 shadows: [
-                  Shadow(color: AppTheme.brandPrimary.withAlpha(153), blurRadius: 8),
+                  Shadow(
+                    color: AppTheme.brandPrimary.withAlpha(153),
+                    blurRadius: 8,
+                  ),
                   Shadow(color: Color(0xCC000000), blurRadius: 3),
                 ],
               ),

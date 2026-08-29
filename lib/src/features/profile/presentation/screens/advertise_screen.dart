@@ -14,7 +14,6 @@ import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -229,8 +228,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       if (mounted) setState(() => _video = file);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not pick video: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not pick video: $e')));
       }
     } finally {
       if (mounted) setState(() => _videoChecking = false);
@@ -345,8 +345,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not submit event: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not submit event: $e')));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -390,8 +391,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(result.userMessage)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.userMessage)));
     } finally {
       if (mounted) setState(() => _checkoutBusy = false);
     }

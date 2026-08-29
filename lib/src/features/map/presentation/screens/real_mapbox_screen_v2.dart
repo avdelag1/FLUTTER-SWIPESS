@@ -25,23 +25,12 @@ class RealMapboxScreenV2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const buildSha = String.fromEnvironment('SWIPESS_BUILD_SHA');
-    const buildNumber = String.fromEnvironment('SWIPESS_BUILD_NUMBER');
-    const buildChannel = String.fromEnvironment('SWIPESS_BUILD_CHANNEL');
-    final shortSha = buildSha.length >= 7 ? buildSha.substring(0, 7) : buildSha;
-    final top = MediaQuery.paddingOf(context).top + 4;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        RealMapboxScreenV3(
-          onClose: onClose,
-          showCitiesOnOpen: showCitiesOnOpen,
-          onMapReady: onMapReady,
-          playIntro: playIntro,
-          onIntroComplete: onIntroComplete,
-        ),
-      ],
+    return RealMapboxScreenV3(
+      onClose: onClose,
+      showCitiesOnOpen: showCitiesOnOpen,
+      onMapReady: onMapReady,
+      playIntro: playIntro,
+      onIntroComplete: onIntroComplete,
     );
   }
 }

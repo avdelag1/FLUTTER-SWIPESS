@@ -20,8 +20,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-bool _webMapboxOpenedThisSession = false;
-
 /// Persistent browser Mapbox discovery.
 ///
 /// Mapbox remains mounted from the globe intro through local discovery. Pins,
@@ -61,52 +59,52 @@ enum _Kind {
 
 extension _KindUi on _Kind {
   Color get color => switch (this) {
-        _Kind.event => const Color(0xFF8B5CF6),
-        _Kind.property => const Color(0xFF14B8A6),
-        _Kind.service => const Color(0xFFF43F5E),
-        _Kind.dining => const Color(0xFFF97316),
-        _Kind.jet => const Color(0xFF0EA5E9),
-        _Kind.yacht => const Color(0xFF2563EB),
-        _Kind.motorcycle => const Color(0xFFFF7A18),
-        _Kind.bicycle => const Color(0xFF22C55E),
-        _Kind.roommate => const Color(0xFF06B6D4),
-        _Kind.seeker => const Color(0xFFEAB308),
-        _Kind.buyer => const Color(0xFF2563EB),
-        _Kind.renter => const Color(0xFF10B981),
-        _Kind.person => const Color(0xFF6366F1),
-      };
+    _Kind.event => const Color(0xFF8B5CF6),
+    _Kind.property => const Color(0xFF14B8A6),
+    _Kind.service => const Color(0xFFF43F5E),
+    _Kind.dining => const Color(0xFFF97316),
+    _Kind.jet => const Color(0xFF0EA5E9),
+    _Kind.yacht => const Color(0xFF2563EB),
+    _Kind.motorcycle => const Color(0xFFFF7A18),
+    _Kind.bicycle => const Color(0xFF22C55E),
+    _Kind.roommate => const Color(0xFF06B6D4),
+    _Kind.seeker => const Color(0xFFEAB308),
+    _Kind.buyer => const Color(0xFF2563EB),
+    _Kind.renter => const Color(0xFF10B981),
+    _Kind.person => const Color(0xFF6366F1),
+  };
 
   IconData get icon => switch (this) {
-        _Kind.event => Icons.celebration_rounded,
-        _Kind.property => Icons.home_rounded,
-        _Kind.service => Icons.handyman_rounded,
-        _Kind.dining => Icons.restaurant_rounded,
-        _Kind.jet => Icons.flight_rounded,
-        _Kind.yacht => Icons.sailing_rounded,
-        _Kind.motorcycle => Icons.two_wheeler_rounded,
-        _Kind.bicycle => Icons.pedal_bike_rounded,
-        _Kind.roommate => Icons.group_rounded,
-        _Kind.seeker => Icons.travel_explore_rounded,
-        _Kind.buyer => Icons.shopping_bag_rounded,
-        _Kind.renter => Icons.key_rounded,
-        _Kind.person => Icons.person_rounded,
-      };
+    _Kind.event => Icons.celebration_rounded,
+    _Kind.property => Icons.home_rounded,
+    _Kind.service => Icons.handyman_rounded,
+    _Kind.dining => Icons.restaurant_rounded,
+    _Kind.jet => Icons.flight_rounded,
+    _Kind.yacht => Icons.sailing_rounded,
+    _Kind.motorcycle => Icons.two_wheeler_rounded,
+    _Kind.bicycle => Icons.pedal_bike_rounded,
+    _Kind.roommate => Icons.group_rounded,
+    _Kind.seeker => Icons.travel_explore_rounded,
+    _Kind.buyer => Icons.shopping_bag_rounded,
+    _Kind.renter => Icons.key_rounded,
+    _Kind.person => Icons.person_rounded,
+  };
 
   String get label => switch (this) {
-        _Kind.event => 'EVENT',
-        _Kind.property => 'PROPERTY',
-        _Kind.service => 'SERVICE',
-        _Kind.dining => 'DINING',
-        _Kind.jet => 'JET',
-        _Kind.yacht => 'YACHT',
-        _Kind.motorcycle => 'MOTO',
-        _Kind.bicycle => 'BIKE',
-        _Kind.roommate => 'ROOMMATE',
-        _Kind.seeker => 'SEEKER',
-        _Kind.buyer => 'BUYER',
-        _Kind.renter => 'RENTER',
-        _Kind.person => 'PEOPLE',
-      };
+    _Kind.event => 'EVENT',
+    _Kind.property => 'PROPERTY',
+    _Kind.service => 'SERVICE',
+    _Kind.dining => 'DINING',
+    _Kind.jet => 'JET',
+    _Kind.yacht => 'YACHT',
+    _Kind.motorcycle => 'MOTO',
+    _Kind.bicycle => 'BIKE',
+    _Kind.roommate => 'ROOMMATE',
+    _Kind.seeker => 'SEEKER',
+    _Kind.buyer => 'BUYER',
+    _Kind.renter => 'RENTER',
+    _Kind.person => 'PEOPLE',
+  };
 }
 
 class _Item {
@@ -194,17 +192,16 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   final Set<String> _justLiked = <String>{};
 
   double get _trayHeight => switch (_trayLevel) {
-        -1 => 0,
-        0 => 52,
-        _ => 188,
-      };
+    -1 => 0,
+    0 => 52,
+    _ => 188,
+  };
 
   @override
   void initState() {
     super.initState();
     // Skip the globe fly-in on open — it exposed a white Mapbox canvas on PWA.
     _openingFlight = false;
-    _webMapboxOpenedThisSession = true;
     unawaited(_loadGps(silent: true));
   }
 
@@ -295,7 +292,9 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       });
       _scheduleProjection();
       if (!silent) {
-        ref.read(discoveryLocationProvider.notifier).setCoordinates(
+        ref
+            .read(discoveryLocationProvider.notifier)
+            .setCoordinates(
               city: 'My Location',
               country: '',
               latitude: position.latitude,
@@ -410,7 +409,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       lng: point.lng,
       title: event.title,
       subtitle: event.location ?? event.locationDetail ?? loc.city,
-      image: event.imageUrl ??
+      image:
+          event.imageUrl ??
           (event.imageUrls.isNotEmpty ? event.imageUrls.first : ''),
       detail: event.price,
       event: event,
@@ -671,7 +671,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
         ref.watch(likedListingIdsProvider).value ?? const <String>{};
     final likedPeople =
         ref.watch(likedPeopleIdsProvider).value ?? const <String>{};
-    final likedEvents = ref.watch(likedEventIdsProvider).value ?? const <String>{};
+    final likedEvents =
+        ref.watch(likedEventIdsProvider).value ?? const <String>{};
     final pad = MediaQuery.paddingOf(context);
 
     final items = _buildItems(
@@ -744,11 +745,14 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   }
                   _scheduleProjection();
                   if (_openingFlight) {
-                    _openingTimer = Timer(const Duration(milliseconds: 500), () {
-                      if (!mounted) return;
-                      setState(() => _openingFlight = false);
-                      unawaited(_flyTo(loc, duration: 1600));
-                    });
+                    _openingTimer = Timer(
+                      const Duration(milliseconds: 500),
+                      () {
+                        if (!mounted) return;
+                        setState(() => _openingFlight = false);
+                        unawaited(_flyTo(loc, duration: 1600));
+                      },
+                    );
                   }
                 },
                 onCameraChangeListener: (_) => _scheduleProjection(),
@@ -795,7 +799,8 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
-              if (!_openingFlight && _locationPixel != null &&
+              if (!_openingFlight &&
+                  _locationPixel != null &&
                   _radiusPixels != null &&
                   loc.radiusKm <= 250 &&
                   onScreen(_locationPixel!, margin: _radiusPixels!))
@@ -818,7 +823,9 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
-              if (!_openingFlight && _locationPixel != null && onScreen(_locationPixel!))
+              if (!_openingFlight &&
+                  _locationPixel != null &&
+                  onScreen(_locationPixel!))
                 Positioned(
                   left: _locationPixel!.dx - 10,
                   top: _locationPixel!.dy - 10,
@@ -828,18 +835,18 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
               // Every regular marker paints first.
               if (!_openingFlight)
                 for (final item in items)
-                if (item.key != _selectedKey)
-                  if (_pixels[item.key] case final Offset pixel)
-                    if (onScreen(pixel))
-                      Positioned(
-                        left: pixel.dx - 24,
-                        top: pixel.dy - 48,
-                        child: _Pin(
-                          item: item,
-                          selected: false,
-                          onTap: () => _select(item, items),
+                  if (item.key != _selectedKey)
+                    if (_pixels[item.key] case final Offset pixel)
+                      if (onScreen(pixel))
+                        Positioned(
+                          left: pixel.dx - 24,
+                          top: pixel.dy - 48,
+                          child: _Pin(
+                            item: item,
+                            selected: false,
+                            onTap: () => _select(item, items),
+                          ),
                         ),
-                      ),
 
               // Selected marker is above regular markers.
               if (!_openingFlight &&
@@ -1038,25 +1045,21 @@ class _LocationDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFF147DFF),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: const [
-            BoxShadow(color: Color(0x55147DFF), blurRadius: 12, spreadRadius: 3),
-          ],
-        ),
-      );
+    width: 20,
+    height: 20,
+    decoration: BoxDecoration(
+      color: const Color(0xFF147DFF),
+      shape: BoxShape.circle,
+      border: Border.all(color: Colors.white, width: 3),
+      boxShadow: const [
+        BoxShadow(color: Color(0x55147DFF), blurRadius: 12, spreadRadius: 3),
+      ],
+    ),
+  );
 }
 
 class _Pin extends StatelessWidget {
-  const _Pin({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
+  const _Pin({required this.item, required this.selected, required this.onTap});
 
   final _Item item;
   final bool selected;
@@ -1064,35 +1067,35 @@ class _Pin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: item.title,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: AnimatedScale(
-            scale: selected ? 1.16 : 1,
-            duration: const Duration(milliseconds: 140),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: item.kind.color,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: item.kind.color.withAlpha(selected ? 130 : 70),
-                    blurRadius: selected ? 18 : 10,
-                    spreadRadius: selected ? 2 : 0,
-                  ),
-                  const BoxShadow(color: Colors.black26, blurRadius: 7),
-                ],
+    button: true,
+    label: item.title,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedScale(
+        scale: selected ? 1.16 : 1,
+        duration: const Duration(milliseconds: 140),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: item.kind.color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: item.kind.color.withAlpha(selected ? 130 : 70),
+                blurRadius: selected ? 18 : 10,
+                spreadRadius: selected ? 2 : 0,
               ),
-              child: Icon(item.kind.icon, color: Colors.white, size: 20),
-            ),
+              const BoxShadow(color: Colors.black26, blurRadius: 7),
+            ],
           ),
+          child: Icon(item.kind.icon, color: Colors.white, size: 20),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _Preview extends StatelessWidget {
@@ -1112,101 +1115,101 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        elevation: 12,
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          width: 236,
-          height: 94,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onOpen,
-                  child: Row(
-                    children: [
-                      _Image(url: item.image, width: 78),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 9, 48, 9),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.kind.label,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: item.kind.color,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                item.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.black,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              Text(
-                                item.subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.black54,
-                                  fontSize: 9.5,
-                                ),
-                              ),
-                              if (item.detail.trim().isNotEmpty)
-                                Text(
-                                  item.detail,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.black87,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                            ],
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(16),
+    elevation: 12,
+    clipBehavior: Clip.antiAlias,
+    child: SizedBox(
+      width: 236,
+      height: 94,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onOpen,
+              child: Row(
+                children: [
+                  _Image(url: item.image, width: 78),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 9, 48, 9),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.kind.label,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: item.kind.color,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 3),
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.black,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            item.subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.black54,
+                              fontSize: 9.5,
+                            ),
+                          ),
+                          if (item.detail.trim().isNotEmpty)
+                            Text(
+                              item.detail,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.black87,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              Positioned(
-                top: 7,
-                right: 7,
-                child: _BareIcon(
-                  icon: Icons.close_rounded,
-                  label: 'Close preview',
-                  onTap: onClose,
-                ),
-              ),
-              Positioned(
-                bottom: 7,
-                right: 7,
-                child: _BareIcon(
-                  icon: liked
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  label: liked ? 'Saved' : 'Like',
-                  color: liked ? const Color(0xFFE53935) : Colors.black87,
-                  onTap: onLike,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      );
+          Positioned(
+            top: 7,
+            right: 7,
+            child: _BareIcon(
+              icon: Icons.close_rounded,
+              label: 'Close preview',
+              onTap: onClose,
+            ),
+          ),
+          Positioned(
+            bottom: 7,
+            right: 7,
+            child: _BareIcon(
+              icon: liked
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+              label: liked ? 'Saved' : 'Like',
+              color: liked ? const Color(0xFFE53935) : Colors.black87,
+              onTap: onLike,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _FloatingIcon extends StatelessWidget {
@@ -1222,28 +1225,28 @@ class _FloatingIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: SizedBox(
-            width: 38,
-            height: 38,
-            child: Center(
-              child: Icon(
-                icon,
-                color: Colors.black87,
-                size: 20,
-                shadows: const [
-                  Shadow(color: Colors.white, blurRadius: 8),
-                  Shadow(color: Colors.black26, blurRadius: 3),
-                ],
-              ),
-            ),
+    button: true,
+    label: label,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: 38,
+        height: 38,
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.black87,
+            size: 20,
+            shadows: const [
+              Shadow(color: Colors.white, blurRadius: 8),
+              Shadow(color: Colors.black26, blurRadius: 3),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _BareIcon extends StatelessWidget {
@@ -1261,18 +1264,18 @@ class _BareIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: label,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: SizedBox(
-            width: 30,
-            height: 30,
-            child: Icon(icon, color: color, size: 18),
-          ),
-        ),
-      );
+    button: true,
+    label: label,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: 30,
+        height: 30,
+        child: Icon(icon, color: color, size: 18),
+      ),
+    ),
+  );
 }
 
 class _FilterRail extends StatelessWidget {
@@ -1283,62 +1286,62 @@ class _FilterRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 36,
-        child: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            colors: [
-              Color(0x00000000),
-              Colors.white,
-              Colors.white,
-              Color(0x00000000),
-            ],
-            stops: [0, .05, .95, 1],
-          ).createShader(bounds),
-          blendMode: BlendMode.dstIn,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            physics: const BouncingScrollPhysics(),
-            itemCount: _filters.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 6),
-            itemBuilder: (context, index) {
-              final filter = _filters[index];
-              final selected = filter.id == active;
-              return GestureDetector(
-                onTap: () => onFilter(filter.id),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: selected ? Colors.black : Colors.white.withAlpha(242),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black12, blurRadius: 4),
-                    ],
+    height: 36,
+    child: ShaderMask(
+      shaderCallback: (bounds) => const LinearGradient(
+        colors: [
+          Color(0x00000000),
+          Colors.white,
+          Colors.white,
+          Color(0x00000000),
+        ],
+        stops: [0, .05, .95, 1],
+      ).createShader(bounds),
+      blendMode: BlendMode.dstIn,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const BouncingScrollPhysics(),
+        itemCount: _filters.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final filter = _filters[index];
+          final selected = filter.id == active;
+          return GestureDetector(
+            onTap: () => onFilter(filter.id),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected ? Colors.black : Colors.white.withAlpha(242),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 4),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    filter.icon,
+                    size: 12,
+                    color: selected ? Colors.white : Colors.black87,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        filter.icon,
-                        size: 12,
-                        color: selected ? Colors.white : Colors.black87,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        filter.title,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: selected ? Colors.white : Colors.black,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 4),
+                  Text(
+                    filter.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: selected ? Colors.white : Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        ),
-      );
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+  );
 }
 
 class _MapSearch extends StatelessWidget {
@@ -1356,46 +1359,46 @@ class _MapSearch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        height: 42,
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(248),
-          borderRadius: BorderRadius.circular(21),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 4)),
-          ],
-        ),
-        child: TextField(
-          controller: controller,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          onChanged: onChanged,
-          onSubmitted: (_) => onSubmit(),
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.black,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            hintText: 'Search Miami, properties, bikes, people…',
-            prefixIcon: const Icon(Icons.search_rounded, size: 17),
-            suffixIcon: busy
-                ? const Padding(
-                    padding: EdgeInsets.all(11),
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 1.7),
-                    ),
-                  )
-                : IconButton(
-                    tooltip: 'Search place',
-                    onPressed: onSubmit,
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  ),
-          ),
-        ),
-      );
+    height: 42,
+    decoration: BoxDecoration(
+      color: Colors.white.withAlpha(248),
+      borderRadius: BorderRadius.circular(21),
+      boxShadow: const [
+        BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 4)),
+      ],
+    ),
+    child: TextField(
+      controller: controller,
+      autofocus: true,
+      textInputAction: TextInputAction.search,
+      onChanged: onChanged,
+      onSubmitted: (_) => onSubmit(),
+      style: GoogleFonts.plusJakartaSans(
+        color: Colors.black,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      decoration: InputDecoration(
+        border: InputBorder.none,
+        hintText: 'Search Miami, properties, bikes, people…',
+        prefixIcon: const Icon(Icons.search_rounded, size: 17),
+        suffixIcon: busy
+            ? const Padding(
+                padding: EdgeInsets.all(11),
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 1.7),
+                ),
+              )
+            : IconButton(
+                tooltip: 'Search place',
+                onPressed: onSubmit,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              ),
+      ),
+    ),
+  );
 }
 
 class _Menu extends StatelessWidget {
@@ -1415,7 +1418,8 @@ class _Menu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget row(IconData icon, String label, VoidCallback onTap) => GestureDetector(
+    Widget row(IconData icon, String label, VoidCallback onTap) =>
+        GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
           child: Padding(
@@ -1444,7 +1448,11 @@ class _Menu extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       child: Column(
@@ -1497,89 +1505,89 @@ class _Tray extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AnimatedContainer(
-        duration: const Duration(milliseconds: 210),
-        height: height,
-        padding: EdgeInsets.fromLTRB(12, level == 0 ? 5 : 8, 8, 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha(248),
-          borderRadius: BorderRadius.circular(level == 0 ? 20 : 24),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 18, offset: Offset(0, 6)),
-          ],
-        ),
-        child: Column(
-          children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: level == 0 ? onExpand : onCollapse,
-              onVerticalDragEnd: (details) {
-                final velocity = details.primaryVelocity ?? 0;
-                if (velocity < -80) onExpand();
-                if (velocity > 80) onCollapse();
-              },
-              child: SizedBox(
-                height: 40,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        level == 0
-                            ? '${items.length} places · ${city.trim().isEmpty ? 'nearby' : city}'
-                            : 'Discover ${city.trim().isEmpty ? 'nearby' : city}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.black,
-                          fontSize: level == 0 ? 12 : 14,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
+    duration: const Duration(milliseconds: 210),
+    height: height,
+    padding: EdgeInsets.fromLTRB(12, level == 0 ? 5 : 8, 8, 8),
+    decoration: BoxDecoration(
+      color: Colors.white.withAlpha(248),
+      borderRadius: BorderRadius.circular(level == 0 ? 20 : 24),
+      boxShadow: const [
+        BoxShadow(color: Colors.black12, blurRadius: 18, offset: Offset(0, 6)),
+      ],
+    ),
+    child: Column(
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: level == 0 ? onExpand : onCollapse,
+          onVerticalDragEnd: (details) {
+            final velocity = details.primaryVelocity ?? 0;
+            if (velocity < -80) onExpand();
+            if (velocity > 80) onCollapse();
+          },
+          child: SizedBox(
+            height: 40,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    level == 0
+                        ? '${items.length} places · ${city.trim().isEmpty ? 'nearby' : city}'
+                        : 'Discover ${city.trim().isEmpty ? 'nearby' : city}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.black,
+                      fontSize: level == 0 ? 12 : 14,
+                      fontWeight: FontWeight.w900,
                     ),
-                    Icon(
-                      level == 0
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      size: 20,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                Icon(
+                  level == 0
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 20,
+                ),
+              ],
             ),
-            if (level > 0)
-              Expanded(
-                child: items.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Nothing new here — liked items stay out of discovery.',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.black54,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        controller: controller,
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: items.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _MiniCard(
-                            item: item,
-                            selected: item.key == selectedKey,
-                            liked: likedKeys.contains(item.key),
-                            onTap: () => onSelect(item),
-                            onOpen: () => onOpen(item),
-                            onLike: () => onLike(item),
-                          );
-                        },
-                      ),
-              ),
-          ],
+          ),
         ),
-      );
+        if (level > 0)
+          Expanded(
+            child: items.isEmpty
+                ? Center(
+                    child: Text(
+                      'Nothing new here — liked items stay out of discovery.',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.black54,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    controller: controller,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return _MiniCard(
+                        item: item,
+                        selected: item.key == selectedKey,
+                        liked: likedKeys.contains(item.key),
+                        onTap: () => onSelect(item),
+                        onOpen: () => onOpen(item),
+                        onLike: () => onLike(item),
+                      );
+                    },
+                  ),
+          ),
+      ],
+    ),
+  );
 }
 
 class _MiniCard extends StatelessWidget {
@@ -1601,86 +1609,84 @@ class _MiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onDoubleTap: onOpen,
-        child: Container(
-          width: 198,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(selected ? 30 : 12),
-                blurRadius: selected ? 8 : 3,
-              ),
-            ],
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    onDoubleTap: onOpen,
+    child: Container(
+      width: 198,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(selected ? 30 : 12),
+            blurRadius: selected ? 8 : 3,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Row(
-            children: [
-              _Image(url: item.image, width: 82),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          _Image(url: item.image, width: 82),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.kind.label,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: item.kind.color,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.black,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
                     children: [
-                      Text(
-                        item.kind.label,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: item.kind.color,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w900,
+                      Expanded(
+                        child: Text(
+                          item.detail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.black87,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.black,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.detail,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.black87,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          _BareIcon(
-                            icon: liked
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            label: liked ? 'Saved' : 'Like',
-                            color: liked
-                                ? const Color(0xFFE53935)
-                                : Colors.black87,
-                            onTap: onLike,
-                          ),
-                        ],
+                      _BareIcon(
+                        icon: liked
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        label: liked ? 'Saved' : 'Like',
+                        color: liked ? const Color(0xFFE53935) : Colors.black87,
+                        onTap: onLike,
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }
 
 class _Image extends StatelessWidget {
@@ -1692,11 +1698,11 @@ class _Image extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget fallback() => Container(
-          width: width,
-          color: const Color(0xFFE5E7EB),
-          alignment: Alignment.center,
-          child: const Icon(Icons.image_outlined, color: Colors.black38),
-        );
+      width: width,
+      color: const Color(0xFFE5E7EB),
+      alignment: Alignment.center,
+      child: const Icon(Icons.image_outlined, color: Colors.black38),
+    );
     if (url.trim().isEmpty) return fallback();
     return SizedBox(
       width: width,

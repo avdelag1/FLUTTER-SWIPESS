@@ -54,8 +54,6 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
   bool _mapLoaded = false;
   int _annotationGeneration = 0;
 
-  static const _darkStyle =
-      'mapbox://styles/avdelag123/cmshydgsr00xz01s65m0x6u4n';
   static const _lightStyle =
       'mapbox://styles/avdelag123/cmshyf3kh00gw01s9gu3yelwz';
 
@@ -189,10 +187,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       final radius = 22.0;
       final path = ui.Path();
       final width = radius * 2;
-      final height = radius * 2.5; 
+      final height = radius * 2.5;
       final left = center.dx - radius;
       final top = center.dy - radius;
-      
+
       path.moveTo(center.dx, top + height);
       path.quadraticBezierTo(left, top + height * 0.7, left, top + radius);
       path.arcToPoint(
@@ -200,7 +198,12 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
         radius: ui.Radius.circular(radius),
         clockwise: true,
       );
-      path.quadraticBezierTo(left + width, top + height * 0.7, center.dx, top + height);
+      path.quadraticBezierTo(
+        left + width,
+        top + height * 0.7,
+        center.dx,
+        top + height,
+      );
 
       canvas.drawPath(
         path.shift(const ui.Offset(0, 4)),
@@ -224,13 +227,23 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       final innerTop = center.dy - innerRadius + 1.8;
 
       innerPath.moveTo(center.dx, innerTop + innerHeight);
-      innerPath.quadraticBezierTo(innerLeft, innerTop + innerHeight * 0.7, innerLeft, innerTop + innerRadius);
+      innerPath.quadraticBezierTo(
+        innerLeft,
+        innerTop + innerHeight * 0.7,
+        innerLeft,
+        innerTop + innerRadius,
+      );
       innerPath.arcToPoint(
         ui.Offset(innerLeft + innerWidth, innerTop + innerRadius),
         radius: ui.Radius.circular(innerRadius),
         clockwise: true,
       );
-      innerPath.quadraticBezierTo(innerLeft + innerWidth, innerTop + innerHeight * 0.7, center.dx, innerTop + innerHeight);
+      innerPath.quadraticBezierTo(
+        innerLeft + innerWidth,
+        innerTop + innerHeight * 0.7,
+        center.dx,
+        innerTop + innerHeight,
+      );
 
       canvas.drawPath(innerPath, ui.Paint()..color = fill);
 
@@ -248,7 +261,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
       )..layout();
       painter.paint(
         canvas,
-        ui.Offset(center.dx - painter.width / 2, top + radius - painter.height / 2),
+        ui.Offset(
+          center.dx - painter.width / 2,
+          top + radius - painter.height / 2,
+        ),
       );
     }
 
@@ -393,7 +409,8 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
         allPins.add(pin);
       } else if (_activeCategory == 'properties' && cat == 'property') {
         allPins.add(pin);
-      } else if (_activeCategory == 'services' && (cat == 'service' || cat == 'worker')) {
+      } else if (_activeCategory == 'services' &&
+          (cat == 'service' || cat == 'worker')) {
         allPins.add(pin);
       }
     }
@@ -546,16 +563,9 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
     context.push(pin.isListing ? '/listing/${pin.id}' : '/profile/${pin.id}');
   }
 
-  void _setRange(int km) {
-    AppHaptics.selection();
-    ref.read(discoveryLocationProvider.notifier).setRadiusKm(km);
-  }
-
   @override
   Widget build(BuildContext context) {
     final loc = ref.watch(discoveryLocationProvider);
-    final listingsAsync = ref.watch(mapListingsProvider);
-    final profilesAsync = ref.watch(mapProfilesProvider);
 
     ref.listen(discoveryLocationProvider, (previous, next) {
       if (previous == null ||
@@ -593,10 +603,13 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
               },
             ),
           ),
-          
+
           // Faded gradient behind top bar
           Positioned(
-            top: 0, left: 0, right: 0, height: 180,
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 180,
             child: IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
@@ -625,7 +638,9 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                     children: [
                       _CircularIconButton(
                         icon: Icons.menu_rounded,
-                        onTap: widget.onClose ?? () => context.go(AppPaths.clientDashboard),
+                        onTap:
+                            widget.onClose ??
+                            () => context.go(AppPaths.clientDashboard),
                       ),
                       Text(
                         'SWIPESS',
@@ -643,7 +658,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Filter Chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -655,7 +670,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                         label: 'All',
                         active: _activeCategory == 'all',
                         onTap: () {
-                          setState(() { _activeCategory = 'all'; _selected = null; });
+                          setState(() {
+                            _activeCategory = 'all';
+                            _selected = null;
+                          });
                           _renderAnnotations();
                         },
                       ),
@@ -665,7 +683,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                         icon: Icons.music_note_rounded,
                         active: _activeCategory == 'events',
                         onTap: () {
-                          setState(() { _activeCategory = 'events'; _selected = null; });
+                          setState(() {
+                            _activeCategory = 'events';
+                            _selected = null;
+                          });
                           _renderAnnotations();
                         },
                       ),
@@ -675,7 +696,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                         icon: Icons.domain_rounded,
                         active: _activeCategory == 'properties',
                         onTap: () {
-                          setState(() { _activeCategory = 'properties'; _selected = null; });
+                          setState(() {
+                            _activeCategory = 'properties';
+                            _selected = null;
+                          });
                           _renderAnnotations();
                         },
                       ),
@@ -685,7 +709,10 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                         icon: Icons.room_service_rounded,
                         active: _activeCategory == 'services',
                         onTap: () {
-                          setState(() { _activeCategory = 'services'; _selected = null; });
+                          setState(() {
+                            _activeCategory = 'services';
+                            _selected = null;
+                          });
                           _renderAnnotations();
                         },
                       ),
@@ -698,19 +725,24 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
 
           if (_citiesOpen)
             Positioned(
-              left: 0, right: 0,
+              left: 0,
+              right: 0,
               top: MediaQuery.paddingOf(context).top + 106,
               child: MapCityChips(
                 activeCity: loc.city,
                 onSelect: (city) {
-                  ref.read(discoveryLocationProvider.notifier).setCoordinates(
-                    city: city.name,
-                    country: city.country,
-                    latitude: city.lat,
-                    longitude: city.lng,
-                  );
+                  ref
+                      .read(discoveryLocationProvider.notifier)
+                      .setCoordinates(
+                        city: city.name,
+                        country: city.country,
+                        latitude: city.lat,
+                        longitude: city.lng,
+                      );
                   if (loc.radiusKm > 500) {
-                    ref.read(discoveryLocationProvider.notifier).setRadiusKm(25);
+                    ref
+                        .read(discoveryLocationProvider.notifier)
+                        .setRadiusKm(25);
                   }
                   setState(() => _citiesOpen = false);
                 },
@@ -732,14 +764,18 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
           ),
 
           Positioned(
-            left: 0, right: 0, bottom: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: _BottomListingSheet(
               pins: visiblePins,
               city: loc.city,
               selectedPin: _selected,
               onPinTap: (pin) {
                 AppHaptics.medium();
-                context.push(pin.isListing ? '/listing/${pin.id}' : '/profile/${pin.id}');
+                context.push(
+                  pin.isListing ? '/listing/${pin.id}' : '/profile/${pin.id}',
+                );
               },
             ),
           ),
@@ -757,12 +793,17 @@ class _CircularIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 44, height: 44,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Material(
@@ -778,7 +819,12 @@ class _CircularIconButton extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, this.icon, required this.active, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    this.icon,
+    required this.active,
+    required this.onTap,
+  });
   final String label;
   final IconData? icon;
   final bool active;
@@ -799,14 +845,22 @@ class _FilterChip extends StatelessWidget {
           color: active ? Colors.black : Colors.white,
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
-            BoxShadow(color: Colors.black.withAlpha(active ? 40 : 15), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withAlpha(active ? 40 : 15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: active ? Colors.white : Colors.black87),
+              Icon(
+                icon,
+                size: 16,
+                color: active ? Colors.white : Colors.black87,
+              ),
               const SizedBox(width: 6),
             ],
             Text(
@@ -825,7 +879,12 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _BottomListingSheet extends StatefulWidget {
-  const _BottomListingSheet({required this.pins, required this.city, this.selectedPin, required this.onPinTap});
+  const _BottomListingSheet({
+    required this.pins,
+    required this.city,
+    this.selectedPin,
+    required this.onPinTap,
+  });
   final List<MapPin> pins;
   final String city;
   final MapPin? selectedPin;
@@ -841,7 +900,8 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
   @override
   void didUpdateWidget(covariant _BottomListingSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedPin != null && widget.selectedPin != oldWidget.selectedPin) {
+    if (widget.selectedPin != null &&
+        widget.selectedPin != oldWidget.selectedPin) {
       final idx = widget.pins.indexOf(widget.selectedPin!);
       if (idx != -1 && _scrollController.hasClients) {
         _scrollController.animateTo(
@@ -866,7 +926,11 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(30), blurRadius: 20, offset: const Offset(0, -5)),
+          BoxShadow(
+            color: Colors.black.withAlpha(30),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
         ],
       ),
       child: SafeArea(
@@ -875,7 +939,14 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2))),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
@@ -883,11 +954,19 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
                 children: [
                   Text(
                     'Discover ${widget.city.isEmpty ? 'Nearby' : widget.city}',
-                    style: GoogleFonts.plusJakartaSans(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   Text(
                     'See all',
-                    style: GoogleFonts.plusJakartaSans(color: const Color(0xFF147DFF), fontSize: 13, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF147DFF),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -895,7 +974,10 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
             if (widget.pins.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 120, top: 40),
-                child: Text('No results found.', style: GoogleFonts.plusJakartaSans(color: Colors.black54)),
+                child: Text(
+                  'No results found.',
+                  style: GoogleFonts.plusJakartaSans(color: Colors.black54),
+                ),
               )
             else
               SizedBox(
@@ -925,7 +1007,11 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
 }
 
 class _ListingCard extends StatelessWidget {
-  const _ListingCard({required this.pin, required this.selected, required this.onTap});
+  const _ListingCard({
+    required this.pin,
+    required this.selected,
+    required this.onTap,
+  });
   final MapPin pin;
   final bool selected;
   final VoidCallback onTap;
@@ -987,28 +1073,51 @@ class _ListingCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     if (imageUrl.isNotEmpty)
-                      Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (c,e,s) => Container(color: Colors.grey[200]))
+                      Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) =>
+                            Container(color: Colors.grey[200]),
+                      )
                     else
                       Container(color: Colors.grey[200]),
                     Positioned(
-                      top: 8, left: 8,
+                      top: 8,
+                      left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: tagColor, borderRadius: BorderRadius.circular(6)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tagColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                         child: Text(
                           tag,
-                          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
                     Positioned(
-                      top: 8, right: 8,
-                      child: Icon(Icons.favorite_border_rounded, color: Colors.white, size: 20),
+                      top: 8,
+                      right: 8,
+                      child: Icon(
+                        Icons.favorite_border_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),
@@ -1021,19 +1130,32 @@ class _ListingCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.black,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_rounded, color: Colors.black54, size: 12),
+                      const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.black54,
+                        size: 12,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           subtitle,
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(color: Colors.black54, fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.black54,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ],
@@ -1041,8 +1163,13 @@ class _ListingCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     price,
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.black,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -1095,4 +1222,3 @@ class _GlassMapButton extends StatelessWidget {
     );
   }
 }
-

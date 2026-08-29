@@ -268,25 +268,19 @@ class _RealMapboxGlobeScreenV2State
 
       var cursor = 0;
       final centerCoordinate = pixels[cursor++];
-      Offset? center;
-      if (centerCoordinate != null) {
-        center = Offset(centerCoordinate.x, centerCoordinate.y);
-      }
+      final center = Offset(centerCoordinate.x, centerCoordinate.y);
 
       double? radius;
       if (loc.radiusKm <= 250 && cursor < pixels.length) {
         final edge = pixels[cursor++];
-        if (center != null && edge != null) {
-          radius = (Offset(edge.x, edge.y) - center).distance;
-          if (!radius.isFinite || radius < 2 || radius > 1800) radius = null;
-        }
+        radius = (Offset(edge.x, edge.y) - center).distance;
+        if (!radius.isFinite || radius < 2 || radius > 1800) radius = null;
       }
 
       final next = <String, Offset>{};
       for (final pin in pins) {
         if (cursor >= pixels.length) break;
         final pixel = pixels[cursor++];
-        if (pixel == null) continue;
         final offset = Offset(pixel.x, pixel.y);
         if (!offset.dx.isFinite || !offset.dy.isFinite) continue;
         next[_pinKey(pin)] = offset;

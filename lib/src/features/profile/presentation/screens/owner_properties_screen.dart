@@ -7,7 +7,6 @@ import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_ui.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
@@ -16,7 +15,6 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'package:flutter_swipes/src/features/swipes/presentation/widgets/listing_thumbnail.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
@@ -508,91 +506,6 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
   }
 }
 
-class _HudStat extends StatelessWidget {
-  const _HudStat({
-    required this.title,
-    required this.value,
-    required this.detail,
-    required this.icon,
-    required this.iconColor,
-  });
-
-  final String title;
-  final String value;
-  final String detail;
-  final IconData icon;
-  final Color iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 108,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
-        decoration: BoxDecoration(
-          color: Colors.black.withAlpha(102),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: MatteSurface.hairline(context)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title.toUpperCase(),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: MatteSurface.muted(context),
-                      fontWeight: FontWeight.w900,
-                      fontStyle: FontStyle.italic,
-                      fontSize: 9,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-                ),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: iconColor.withAlpha(28),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: iconColor.withAlpha(60)),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 16),
-                ),
-              ],
-            ),
-            Spacer(),
-            Text(
-              value,
-              style: GoogleFonts.plusJakartaSans(
-                color: MatteSurface.ink(context),
-                fontWeight: FontWeight.w900,
-                fontStyle: FontStyle.italic,
-                fontSize: 26,
-                height: 1,
-                letterSpacing: -1,
-              ),
-            ),
-            SizedBox(height: 6),
-            Text(
-              detail,
-              style: GoogleFonts.plusJakartaSans(
-                color: MatteSurface.muted(context),
-                fontWeight: FontWeight.w800,
-                fontStyle: FontStyle.italic,
-                fontSize: 9,
-                letterSpacing: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptyGallery extends StatelessWidget {
   const _EmptyGallery({required this.searching, required this.onDeploy});
 
@@ -709,8 +622,9 @@ class _AssetCard extends ConsumerWidget {
     await ref.read(ownerListingsActionsProvider).setStatus(listing.id, status);
     onChanged();
     if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Status → $status')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Status → $status')));
     }
   }
 
@@ -772,8 +686,9 @@ class _AssetCard extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
