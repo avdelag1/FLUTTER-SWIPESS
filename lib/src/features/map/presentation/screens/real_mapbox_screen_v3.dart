@@ -46,11 +46,15 @@ class RealMapboxScreenV3 extends ConsumerStatefulWidget {
     this.onClose,
     this.showCitiesOnOpen = false,
     this.onMapReady,
+    this.playIntro = false,
+    this.onIntroComplete,
   });
 
   final VoidCallback? onClose;
   final bool showCitiesOnOpen;
   final VoidCallback? onMapReady;
+  final bool playIntro;
+  final VoidCallback? onIntroComplete;
 
   @override
   ConsumerState<RealMapboxScreenV3> createState() => _RealMapboxScreenV3State();
@@ -140,6 +144,10 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   Uint8List? _userImage;
 
   bool _loaded = false;
+  bool _uiReady = false;
+  late bool _introComplete;
+  bool _introFlightStarted = false;
+  Completer<void>? _introFlightIdle;
   bool _readySent = false;
   bool _menu = false;
   bool _search = false;
@@ -171,6 +179,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   @override
   void initState() {
     super.initState();
+    _introComplete = !widget.playIntro;
     _cities = widget.showCitiesOnOpen;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_refreshGps());
@@ -201,13 +210,66 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     try {
       await map.setCamera(
         CameraOptions(
+          center: widget.playIntro
+              ? _point(18, -28)
+              : _point(loc.latitude, loc.longitude),
+          zoom: widget.playIntro ? .62 : _zoom(loc.radiusKm),
+          pitch: widget.playIntro ? 0 : _pitch(loc.radiusKm),
+          bearing: widget.playIntro ? -10 : (loc.radiusKm <= 50 ? 10 : 0),
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _playIntro() async {
+    if (!widget.playIntro || _introComplete) return;
+    final map = _map;
+    if (map == null) return;
+
+    // Let the fully rendered round Earth breathe before beginning the flight.
+    await Future<void>.delayed(const Duration(milliseconds: 1400));
+    if (!mounted) return;
+
+    final loc = ref.read(discoveryLocationProvider);
+    try {
+      _introFlightIdle = Completer<void>();
+      _introFlightStarted = true;
+      await map.flyTo(
+        CameraOptions(
           center: _point(loc.latitude, loc.longitude),
           zoom: _zoom(loc.radiusKm),
           pitch: _pitch(loc.radiusKm),
           bearing: loc.radiusKm <= 50 ? 10 : 0,
         ),
+        MapAnimationOptions(duration: 4200, startDelay: 0),
       );
-    } catch (_) {}
+      await _introFlightIdle!.future.timeout(
+        const Duration(milliseconds: 4800),
+        onTimeout: () {},
+      );
+    } catch (_) {
+      try {
+        await map.setCamera(
+          CameraOptions(
+            center: _point(loc.latitude, loc.longitude),
+            zoom: _zoom(loc.radiusKm),
+            pitch: _pitch(loc.radiusKm),
+            bearing: loc.radiusKm <= 50 ? 10 : 0,
+          ),
+        );
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
+  void _onMapIdle() {
+    final arrival = _introFlightIdle;
+    if (_introFlightStarted && arrival != null && !arrival.isCompleted) {
+      arrival.complete();
+    }
   }
 
   Future<void> _onLoaded() async {
@@ -216,12 +278,9 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     } else {
       _loaded = true;
     }
-    if (!_readySent) {
-      _readySent = true;
-      widget.onMapReady?.call();
-    }
     final map = _map;
     if (map == null) return;
+    final intro = _playIntro();
     _radius ??= await map.annotations.createPolygonAnnotationManager();
     _pins ??= await map.annotations.createPointAnnotationManager();
     _userPin ??= await map.annotations.createPointAnnotationManager();
@@ -235,6 +294,20 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
         _selectNearest(p.lat.toDouble(), p.lng.toDouble());
       },
     );
+    await intro;
+    if (!mounted) return;
+    final completedIntroNow = !_introComplete;
+    setState(() {
+      _introComplete = true;
+      _uiReady = true;
+    });
+    if (completedIntroNow) {
+      widget.onIntroComplete?.call();
+    }
+    if (!_readySent) {
+      _readySent = true;
+      widget.onMapReady?.call();
+    }
     await _render();
     if (mounted) unawaited(_refreshGps());
   }
@@ -543,7 +616,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   }
 
   Future<void> _render() async {
-    if (!_loaded || _pins == null || _userPin == null || _radius == null)
+    if (!_uiReady || _pins == null || _userPin == null || _radius == null)
       return;
     final generation = ++_renderGeneration;
     final items = _items();
@@ -800,6 +873,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
             styleUri: MapboxStyles.STANDARD,
             onMapCreated: _onMapCreated,
             onMapLoadedListener: (_) => unawaited(_onLoaded()),
+            onMapIdleListener: (_) => _onMapIdle(),
           ),
           if (!_loaded)
             const Positioned.fill(
@@ -813,7 +887,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 ),
               ),
             ),
-          if (_loaded)
+          if (_uiReady)
             Positioned(
               top: 0,
               left: 0,
@@ -835,7 +909,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 ),
               ),
             ),
-          if (_controls) ...[
+          if (_uiReady && _controls) ...[
             if (_menu || _cities || _search)
               Positioned.fill(
                 child: GestureDetector(
@@ -961,7 +1035,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                   },
                 ),
               ),
-          ] else
+          ] else if (_uiReady)
             Positioned(
               top: pad.top + 7,
               right: 7,
@@ -971,25 +1045,27 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 onTap: () => setState(() => _controls = true),
               ),
             ),
-          Positioned(
-            top: pad.top + 4,
-            left: 7,
-            child: _IconOnly(
-              icon: Icons.arrow_back_ios_new_rounded,
-              label: 'Back',
-              onTap: _closeMap,
+          if (_uiReady) ...[
+            Positioned(
+              top: pad.top + 4,
+              left: 7,
+              child: _IconOnly(
+                icon: Icons.arrow_back_ios_new_rounded,
+                label: 'Back',
+                onTap: _closeMap,
+              ),
             ),
-          ),
-          Positioned(
-            right: 7,
-            bottom: trayHeight + pad.bottom + 11,
-            child: _IconOnly(
-              icon: Icons.my_location_rounded,
-              label: 'My exact location',
-              onTap: _recenter,
+            Positioned(
+              right: 7,
+              bottom: trayHeight + pad.bottom + 11,
+              child: _IconOnly(
+                icon: Icons.my_location_rounded,
+                label: 'My exact location',
+                onTap: _recenter,
+              ),
             ),
-          ),
-          if (selected != null && _tray >= 0)
+          ],
+          if (_uiReady && selected != null && _tray >= 0)
             Positioned(
               left: 13,
               right: 13,
@@ -1004,26 +1080,27 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 },
               ),
             ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 230),
-            curve: Curves.easeOutCubic,
-            left: 8,
-            right: 8,
-            bottom: _tray < 0 ? -220 : 8,
-            height: _tray < 0 ? compact : trayHeight,
-            child: _Tray(
-              items: items,
-              city: loc.city,
-              selected: _selected,
-              expanded: _tray == 1,
-              onSelect: (item) => _selectNearest(item.lat, item.lng),
-              onOpen: _openItem,
-              onSave: (item) => unawaited(_save(item)),
-              onUp: () => setState(() => _tray = 1),
-              onDown: () => setState(() => _tray = _tray == 1 ? 0 : -1),
-              onToggle: () => setState(() => _tray = _tray == 1 ? 0 : 1),
+          if (_uiReady)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 230),
+              curve: Curves.easeOutCubic,
+              left: 8,
+              right: 8,
+              bottom: _tray < 0 ? -220 : 8,
+              height: _tray < 0 ? compact : trayHeight,
+              child: _Tray(
+                items: items,
+                city: loc.city,
+                selected: _selected,
+                expanded: _tray == 1,
+                onSelect: (item) => _selectNearest(item.lat, item.lng),
+                onOpen: _openItem,
+                onSave: (item) => unawaited(_save(item)),
+                onUp: () => setState(() => _tray = 1),
+                onDown: () => setState(() => _tray = _tray == 1 ? 0 : -1),
+                onToggle: () => setState(() => _tray = _tray == 1 ? 0 : 1),
+              ),
             ),
-          ),
         ],
       ),
     );

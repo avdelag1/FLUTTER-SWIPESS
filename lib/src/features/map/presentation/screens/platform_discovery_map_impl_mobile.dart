@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_runtime_config.dart';
-import 'package:flutter_swipes/src/features/map/presentation/screens/mapbox_world_intro_screen.dart';
 import 'package:flutter_swipes/src/features/map/presentation/screens/real_mapbox_screen_v2.dart';
 
 // The globe is a cinematic arrival, not a loading tax. Show it once per app
@@ -56,10 +55,9 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
   void initState() {
     super.initState();
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
-    // Skip the cinematic globe on open — it created a second MapWidget and a
-    // white flash before the live discovery map appeared.
-    _showIntro = false;
-    _nativeMapIntroShownThisSession = true;
+    // The live map now owns the cinematic intro on the same MapWidget, so the
+    // globe can return without recreating Mapbox or flashing between surfaces.
+    _showIntro = !_nativeMapIntroShownThisSession;
     // Token is often configured at cold start. Skip the async bootstrap frame
     // so Map open never flashes a blank/white canvas on iOS.
     _mapboxReady = MapboxRuntimeConfig.isConfigured
@@ -199,19 +197,14 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
             return _unavailable();
           }
 
-          if (_showIntro) {
-            return MapboxWorldIntroScreen(
-              onComplete: () {
-                if (!mounted) return;
-                _nativeMapIntroShownThisSession = true;
-                setState(() => _showIntro = false);
-              },
-            );
-          }
-
           return RealMapboxScreenV2(
             onClose: widget.onClose,
             showCitiesOnOpen: widget.showCitiesOnOpen,
+            playIntro: _showIntro,
+            onIntroComplete: () {
+              _nativeMapIntroShownThisSession = true;
+              _showIntro = false;
+            },
           );
         },
       ),
