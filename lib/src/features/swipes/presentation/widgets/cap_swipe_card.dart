@@ -17,7 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 /// Swipe card with fast media taps, deliberate hold-to-zoom and clean social
-/// feedback. The LIKE treatment is intentionally frameless.
+/// feedback. Swipe labels are small green LIKE / red NOPE text only.
 class CapSwipeCard extends ConsumerStatefulWidget {
   const CapSwipeCard({
     super.key,
@@ -669,40 +669,37 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 ),
               if (widget.likeOpacity > .02)
                 Positioned(
-                  top: 52,
-                  left: 24,
+                  top: 56,
+                  left: 22,
                   child: Opacity(
                     opacity: widget.likeOpacity.clamp(0.0, 1.0),
                     child: Transform.rotate(
                       angle: -10 * math.pi / 180,
                       child: Transform.scale(
-                        scale: .75 + widget.likeOpacity * .45,
+                        scale: .82 + widget.likeOpacity * .28,
                         alignment: Alignment.topLeft,
-                        child: const _LikeFeedback(),
+                        child: _SwipeFeedbackLabel(
+                          label: 'LIKE',
+                          color: const Color(0xFF34D399),
+                        ),
                       ),
                     ),
                   ),
                 ),
               if (widget.nopeOpacity > .02)
                 Positioned(
-                  top: 54,
-                  right: 24,
+                  top: 56,
+                  right: 22,
                   child: Opacity(
                     opacity: widget.nopeOpacity.clamp(0.0, 1.0),
                     child: Transform.rotate(
                       angle: 10 * math.pi / 180,
-                      child: Text(
-                        'NOPE',
-                        style: TextStyle(
+                      child: Transform.scale(
+                        scale: .82 + widget.nopeOpacity * .28,
+                        alignment: Alignment.topRight,
+                        child: _SwipeFeedbackLabel(
+                          label: 'NOPE',
                           color: const Color(0xFFFB7185),
-                          fontSize: 44,
-                          fontWeight: FontWeight.w900,
-                          shadows: [
-                            Shadow(
-                              color: const Color(0xFFFB7185).withAlpha(160),
-                              blurRadius: 20,
-                            ),
-                          ],
                         ),
                       ),
                     ),
@@ -737,32 +734,25 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget _fallback() => const ColoredBox(color: Color(0xFF111827));
 }
 
-class _LikeFeedback extends StatelessWidget {
-  const _LikeFeedback();
+class _SwipeFeedbackLabel extends StatelessWidget {
+  const _SwipeFeedbackLabel({required this.label, required this.color});
+
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.favorite_rounded, color: Color(0xFFFF3040), size: 46),
-        const SizedBox(width: 8),
-        Text(
-          'LIKE',
-          style: TextStyle(
-            color: const Color(0xFFFF3040),
-            fontSize: 46,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.5,
-            shadows: [
-              Shadow(
-                color: const Color(0xFFFF3040).withAlpha(170),
-                blurRadius: 22,
-              ),
-            ],
-          ),
-        ),
-      ],
+    return Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 28,
+        fontWeight: FontWeight.w900,
+        letterSpacing: -0.6,
+        shadows: [
+          Shadow(color: color.withAlpha(130), blurRadius: 12),
+        ],
+      ),
     );
   }
 }
