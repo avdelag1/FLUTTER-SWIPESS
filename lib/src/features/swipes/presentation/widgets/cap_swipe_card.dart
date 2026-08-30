@@ -198,9 +198,18 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   bool _controlPoint(Offset local) {
     final size = context.size;
     if (size == null) return false;
-    if (widget.onBack != null && local.dx <= 72 && local.dy <= 72) return true;
+    if (widget.railVisible &&
+        widget.onBack != null &&
+        local.dx <= 72 &&
+        local.dy <= 72) {
+      return true;
+    }
     final topRight = widget.canUndo && widget.onUndo != null ? 116.0 : 62.0;
-    if (local.dx >= size.width - 68 && local.dy <= topRight) return true;
+    if (widget.railVisible &&
+        local.dx >= size.width - 68 &&
+        local.dy <= topRight) {
+      return true;
+    }
     if (widget.railVisible &&
         local.dx >= size.width - 86 &&
         local.dy >= math.max(64.0, size.height - 520) &&
@@ -424,80 +433,92 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 Positioned(
                   top: 10,
                   left: 10,
-                  child: _GlassCircle(
-                    size: 48,
-                    iconSize: 28,
-                    icon: Icons.chevron_left_rounded,
-                    onTap: widget.onBack!,
+                  child: _HudVisibility(
+                    visible: widget.railVisible,
+                    hiddenOffset: const Offset(-0.14, 0),
+                    child: _GlassCircle(
+                      size: 48,
+                      iconSize: 28,
+                      icon: Icons.chevron_left_rounded,
+                      onTap: widget.onBack!,
+                    ),
                   ),
                 ),
               if (!_zoomed)
                 Positioned(
                   top: 10,
                   right: 10,
-                  child: Column(
-                    children: [
-                      if (widget.canUndo && widget.onUndo != null) ...[
-                        _GlassCircle(
-                          size: 44,
-                          iconSize: 22,
-                          icon: Icons.undo_rounded,
-                          onTap: widget.onUndo!,
+                  child: _HudVisibility(
+                    visible: widget.railVisible,
+                    hiddenOffset: const Offset(0.14, 0),
+                    child: Column(
+                      children: [
+                        if (widget.canUndo && widget.onUndo != null) ...[
+                          _GlassCircle(
+                            size: 44,
+                            iconSize: 22,
+                            icon: Icons.undo_rounded,
+                            onTap: widget.onUndo!,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        _MuteButton(
+                          soundOn: soundOn,
+                          onTap: () {
+                            AppHaptics.selection();
+                            unlockDeckMedia();
+                            ref.read(deckSoundOnProvider.notifier).toggle();
+                          },
                         ),
-                        const SizedBox(height: 10),
                       ],
-                      _MuteButton(
-                        soundOn: soundOn,
-                        onTap: () {
-                          AppHaptics.selection();
-                          unlockDeckMedia();
-                          ref.read(deckSoundOnProvider.notifier).toggle();
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              if (!_zoomed && widget.isTop && widget.railVisible)
+              if (!_zoomed && widget.isTop)
                 Positioned(
                   right: 12,
                   bottom: 120,
-                  child: Column(
-                    children: [
-                      _GlassLabel(
-                        child: Column(
-                          children: [
-                            const Icon(Icons.location_on_rounded,
-                                color: Colors.white, size: 16),
-                            Text(
-                              '${radiusKm}KM',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
+                  child: _HudVisibility(
+                    visible: widget.railVisible,
+                    hiddenOffset: const Offset(0.18, 0),
+                    child: Column(
+                      children: [
+                        _GlassLabel(
+                          child: Column(
+                            children: [
+                              const Icon(Icons.location_on_rounded,
+                                  color: Colors.white, size: 16),
+                              Text(
+                                '${radiusKm}KM',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      _GlassCircle(
-                        size: 58,
-                        iconSize: 22,
-                        icon: Icons.map_rounded,
-                        onTap: () {
-                          AppHaptics.light();
-                          widget.onOpenMap?.call();
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _ActionRail(
-                        onAi: widget.onOpenAi,
-                        onShare: widget.onShare,
-                        onMessage: widget.onMessage,
-                        onInsights: widget.onInsights,
-                        onReport: widget.onReport,
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        _GlassCircle(
+                          size: 58,
+                          iconSize: 22,
+                          icon: Icons.map_rounded,
+                          onTap: () {
+                            AppHaptics.light();
+                            widget.onOpenMap?.call();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _ActionRail(
+                          onAi: widget.onOpenAi,
+                          onShare: widget.onShare,
+                          onMessage: widget.onMessage,
+                          onInsights: widget.onInsights,
+                          onReport: widget.onReport,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               if (!_zoomed)
@@ -816,6 +837,43 @@ class _MuteButton extends StatelessWidget {
               size: 18,
               shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudVisibility extends StatelessWidget {
+  const _HudVisibility({
+    required this.visible,
+    required this.child,
+    this.hiddenOffset = Offset.zero,
+  });
+
+  final bool visible;
+  final Widget child;
+  final Offset hiddenOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    const duration = Duration(milliseconds: 300);
+    const settle = Cubic(0.16, 1, 0.3, 1);
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: duration,
+        curve: Curves.easeOutCubic,
+        child: AnimatedSlide(
+          offset: visible ? Offset.zero : hiddenOffset,
+          duration: duration,
+          curve: settle,
+          child: AnimatedScale(
+            scale: visible ? 1 : 0.92,
+            duration: duration,
+            curve: settle,
+            child: child,
           ),
         ),
       ),
