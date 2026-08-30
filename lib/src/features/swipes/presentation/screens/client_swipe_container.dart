@@ -280,7 +280,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
         await ref
             .read(swipeRepositoryProvider)
             .registerSwipeRight(authUser, listing.id);
-        
+
         ref.read(appNotificationsProvider.notifier).show(
           title: 'Saved',
           message: listing.title ?? 'Added to your likes',
@@ -328,6 +328,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final chrome = ref.watch(chromeRevealProvider);
     final profile = ref.watch(currentProfileProvider).value;
 
+    final cardExpanded = chrome.photoExpanded;
+    final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);
+    final cardCurve = cardExpanded
+        ? const Cubic(0.18, 1.16, 0.28, 1.0)
+        : Curves.easeOutCubic;
+    final chromeDuration = Duration(milliseconds: chrome.chromeVisible ? 360 : 320);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0D),
       extendBody: true,
@@ -355,15 +362,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                   child: SafeArea(
                     bottom: false,
                     child: AnimatedPadding(
-                      duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 500,
-                      ),
-                      curve: Curves.easeOutCubic,
+                      duration: cardDuration,
+                      curve: cardCurve,
                       padding: EdgeInsets.fromLTRB(
                         8,
-                        chrome.chromeVisible ? 76 : 8,
+                        cardExpanded ? 8 : 76,
                         8,
-                        chrome.chromeVisible ? 72 : 12,
+                        cardExpanded ? 12 : 72,
                       ),
                       child: deck.isEmpty
                           ? _exhausted()
@@ -443,29 +448,30 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     ignoring: !chrome.chromeVisible,
                     child: AnimatedOpacity(
                       opacity: chrome.chromeVisible ? 1 : 0,
-                      duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 500,
-                      ),
+                      duration: chromeDuration,
                       curve: Curves.easeOutCubic,
                       child: AnimatedSlide(
                         offset: chrome.chromeVisible
                             ? Offset.zero
-                            : const Offset(0, -0.12),
-                        duration: Duration(
-                          milliseconds: chrome.chromeVisible ? 360 : 500,
-                        ),
+                            : const Offset(0, -0.08),
+                        duration: chromeDuration,
                         curve: Curves.easeOutCubic,
-                        child: AppTopBar(
-                          firstName: profile?.name.split(' ').first,
-                          avatarUrl: profile?.avatarUrl,
-                          onProfileTap: () {
-                            final rootNav =
-                                Navigator.of(context, rootNavigator: true);
-                            if (rootNav.canPop()) {
-                              rootNav.pop();
-                            }
-                            context.go(AppPaths.clientProfile);
-                          },
+                        child: AnimatedScale(
+                          scale: chrome.chromeVisible ? 1 : 0.985,
+                          duration: chromeDuration,
+                          curve: Curves.easeOutCubic,
+                          child: AppTopBar(
+                            firstName: profile?.name.split(' ').first,
+                            avatarUrl: profile?.avatarUrl,
+                            onProfileTap: () {
+                              final rootNav =
+                                  Navigator.of(context, rootNavigator: true);
+                              if (rootNav.canPop()) {
+                                rootNav.pop();
+                              }
+                              context.go(AppPaths.clientProfile);
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -479,45 +485,46 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                     ignoring: !chrome.chromeVisible,
                     child: AnimatedOpacity(
                       opacity: chrome.chromeVisible ? 1 : 0,
-                      duration: Duration(
-                        milliseconds: chrome.chromeVisible ? 360 : 500,
-                      ),
+                      duration: chromeDuration,
                       curve: Curves.easeOutCubic,
                       child: AnimatedSlide(
                         offset: chrome.chromeVisible
                             ? Offset.zero
-                            : const Offset(0, 1.0),
-                        duration: Duration(
-                          milliseconds: chrome.chromeVisible ? 360 : 500,
-                        ),
+                            : const Offset(0, 0.16),
+                        duration: chromeDuration,
                         curve: Curves.easeOutCubic,
-                        child: DashboardDock(
-                          items: defaultDashboardNavItems,
-                          selectedTab: NavTab.dashboard,
-                          onTabSelected: (id) {
-                            if (id == NavTab.dashboard) {
-                              _goDashboard();
-                            } else if (id == NavTab.messages) {
-                              _goMessages();
-                            } else if (id == NavTab.add) {
-                              showCreateListingChooser(context);
-                            } else if (id == NavTab.ai) {
-                              ref
-                                  .read(overlayModalsProvider.notifier)
-                                  .openConcierge();
-                            } else {
-                              final router = GoRouter.of(context);
-                              final rootNav =
-                                  Navigator.of(context, rootNavigator: true);
-                              if (rootNav.canPop()) {
-                                rootNav.pop();
+                        child: AnimatedScale(
+                          scale: chrome.chromeVisible ? 1 : 0.97,
+                          duration: chromeDuration,
+                          curve: Curves.easeOutCubic,
+                          child: DashboardDock(
+                            items: defaultDashboardNavItems,
+                            selectedTab: NavTab.dashboard,
+                            onTabSelected: (id) {
+                              if (id == NavTab.dashboard) {
+                                _goDashboard();
+                              } else if (id == NavTab.messages) {
+                                _goMessages();
+                              } else if (id == NavTab.add) {
+                                showCreateListingChooser(context);
+                              } else if (id == NavTab.ai) {
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .openConcierge();
+                              } else {
+                                final router = GoRouter.of(context);
+                                final rootNav =
+                                    Navigator.of(context, rootNavigator: true);
+                                if (rootNav.canPop()) {
+                                  rootNav.pop();
+                                }
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  router.go(AppPaths.pathForTab(id));
+                                });
+                                ref.read(navTabProvider.notifier).set(id);
                               }
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                router.go(AppPaths.pathForTab(id));
-                              });
-                              ref.read(navTabProvider.notifier).set(id);
-                            }
-                          },
+                            },
+                          ),
                         ),
                       ),
                     ),
