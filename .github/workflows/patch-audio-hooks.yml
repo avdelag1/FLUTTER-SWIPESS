@@ -1,0 +1,32 @@
+name: Apply Swipess audio hooks
+
+on:
+  push:
+    branches: [audio-palette-staging]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audio-palette-staging
+      - name: Apply exact audio hook patch
+        run: python3 .github/scripts/patch_audio_hooks.py
+      - name: Commit patched call sites
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "Audio hooks already applied."
+            exit 0
+          fi
+          git config user.name "swipess-audio-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src
+          git commit -m "feat(audio): wire Swipess sonic feedback"
+          git push origin HEAD:audio-palette-staging
