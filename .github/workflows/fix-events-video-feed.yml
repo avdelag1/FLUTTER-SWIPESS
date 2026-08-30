@@ -1,0 +1,71 @@
+name: Fix Events video feed
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/fix_events_video_feed.py
+      - .github/workflows/fix-events-video-feed.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebase onto latest main before guarded patch
+        shell: bash
+        run: |
+          git fetch origin main
+          git rebase origin/main
+
+      - name: Apply Events video presentation patch
+        run: python3 .github/scripts/fix_events_video_feed.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format Events feed
+        run: dart format lib/src/features/events/presentation/screens/events_screen.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Events feed
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/events/presentation/screens/events_screen.dart
+
+      - name: Run Events regressions
+        run: |
+          flutter test test/event_connect_test.dart --reporter expanded
+          flutter test test/dashboard_event_teaser_test.dart --reporter expanded
+
+      - name: Verify video guarantees
+        shell: bash
+        run: |
+          grep -q "value.trim() == declared" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "_videoPoster(BuildContext context)" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "event-video-live-" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "final stillCurrent" lib/src/features/events/presentation/screens/events_screen.dart
+
+      - name: Verify web release build
+        run: flutter build web --release
+
+      - name: Commit Events video fix to main
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git restore pubspec.lock || true
+          git add -A
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "fix(events): guarantee smooth autoplay video feed"
+          git pull --rebase origin main
+          git push origin HEAD:main
