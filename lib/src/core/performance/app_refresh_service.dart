@@ -25,49 +25,54 @@ import 'package:flutter_swipes/src/core/performance/app_performance_bootstrap.da
 /// hot caches, re-warms interactive surfaces, then reloads the web shell.
 abstract final class AppRefreshService {
   static Future<void> refreshAll(WidgetRef ref) async {
+    if (!ref.mounted) return;
+    final container = ProviderScope.containerOf(ref.context, listen: false);
+    await refreshContainer(container);
+  }
+
+  static Future<void> refreshContainer(ProviderContainer container) async {
     AppHaptics.heavy();
 
     final cache = PaintingBinding.instance.imageCache;
     cache.clear();
     cache.clearLiveImages();
 
-    ref.invalidate(newItemsCountProvider);
-    ref.invalidate(appMarketProvider);
-    ref.invalidate(appSessionProvider);
-    ref.invalidate(eventsListProvider);
-    ref.invalidate(dashboardVideoEventsProvider);
-    ref.invalidate(mapListingsProvider);
-    ref.invalidate(mapProfilesProvider);
-    ref.invalidate(currentProfileProvider);
-    ref.invalidate(vapIdProvider);
-    ref.invalidate(documentsProvider);
-    ref.invalidate(conversationsProvider);
-    ref.invalidate(unreadNotificationsProvider);
-    ref.invalidate(likedListingIdsProvider);
-    ref.invalidate(likedPeopleIdsProvider);
-    ref.invalidate(likedEventIdsProvider);
-    ref.invalidate(likedListingsProvider);
-    ref.invalidate(likedPeopleProvider);
-    ref.invalidate(swipeListingsProvider);
+    container.invalidate(newItemsCountProvider);
+    container.invalidate(appMarketProvider);
+    container.invalidate(appSessionProvider);
+    container.invalidate(eventsListProvider);
+    container.invalidate(dashboardVideoEventsProvider);
+    container.invalidate(mapListingsProvider);
+    container.invalidate(mapProfilesProvider);
+    container.invalidate(currentProfileProvider);
+    container.invalidate(vapIdProvider);
+    container.invalidate(documentsProvider);
+    container.invalidate(conversationsProvider);
+    container.invalidate(unreadNotificationsProvider);
+    container.invalidate(likedListingIdsProvider);
+    container.invalidate(likedPeopleIdsProvider);
+    container.invalidate(likedEventIdsProvider);
+    container.invalidate(likedListingsProvider);
+    container.invalidate(likedPeopleProvider);
+    container.invalidate(swipeListingsProvider);
+
+    // Web reload tears down the widget tree — never touch a WidgetRef after this
+    // point. Invalidate caches, give the elastic pull UI a beat, then reload.
+    if (kIsWeb) {
+      await Future<void>.delayed(const Duration(milliseconds: 140));
+      await hardReloadApp();
+      return;
+    }
 
     await Future.wait<void>([
-      _safe(() => ref.read(subscriptionProvider.notifier).refresh()),
-      _safe(() => ref.read(conversationsProvider.notifier).refresh()),
-      _safe(() => ref.read(documentsProvider.notifier).refresh()),
-      _safe(() => ref.read(likedListingsProvider.notifier).refresh()),
-      _safe(() => ref.read(likedPeopleProvider.notifier).refresh()),
+      _safe(() => container.read(subscriptionProvider.notifier).refresh()),
+      _safe(() => container.read(conversationsProvider.notifier).refresh()),
+      _safe(() => container.read(documentsProvider.notifier).refresh()),
+      _safe(() => container.read(likedListingsProvider.notifier).refresh()),
+      _safe(() => container.read(likedPeopleProvider.notifier).refresh()),
       _safe(() => flushOfflineSwipeQueue()),
-      _safe(
-        () => AppPerformanceBootstrap.warmInteractiveSurfaces(
-          ProviderScope.containerOf(ref.context, listen: false),
-        ),
-      ),
+      _safe(() => AppPerformanceBootstrap.warmInteractiveSurfaces(container)),
     ]);
-
-    if (kIsWeb) {
-      await Future<void>.delayed(const Duration(milliseconds: 180));
-      await hardReloadApp();
-    }
   }
 
   static Future<void> _safe(FutureOr<void> Function() run) async {
