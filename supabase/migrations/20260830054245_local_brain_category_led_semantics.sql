@@ -1,0 +1,4 @@
+-- Migration-history marker.
+-- The final category-led semantic builder is consolidated into
+-- 20260830054000_local_brain_auto_tags_priority_control.sql for clean installs.
+-- Production applied this version as the final precision step.
