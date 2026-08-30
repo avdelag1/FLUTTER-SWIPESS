@@ -100,7 +100,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
     _verticalController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 400),
     );
     _horizontalController.addListener(_tickHorizontal);
     _verticalController.addListener(_tickVertical);
@@ -278,10 +278,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       final dy = _gestureTravel.dy.abs();
       if (max(dx, dy) < _axisLockDistance) return;
 
-      if (dy > dx * 1.08 && widget.listings.length > 1) {
+      if (dy > dx * 0.92 && widget.listings.length > 1) {
         _axis = _GestureAxis.vertical;
         _dragOffset = Offset.zero;
-      } else if (dx > dy * 1.08 || widget.listings.length <= 1) {
+        _verticalTarget = details.delta.dy <= 0
+            ? _VerticalDirection.next
+            : _VerticalDirection.previous;
+      } else if (dx > dy * 0.92 || widget.listings.length <= 1) {
         _axis = _GestureAxis.horizontal;
         _verticalOffset = 0;
       } else {
@@ -299,10 +302,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
 
     final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-    final limit = max(120.0, height * 0.48);
     setState(() {
+      // Full-page travel so the next listing visibly slides in like Events.
       _verticalOffset = (_verticalOffset + details.delta.dy)
-          .clamp(-limit, limit)
+          .clamp(-height, height)
           .toDouble();
     });
   }
@@ -313,7 +316,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (_axis == _GestureAxis.vertical) {
       final velocity = details.velocity.pixelsPerSecond.dy;
       final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-      final threshold = min(110.0, max(64.0, height * 0.14));
+      final threshold = height * 0.22;
       final fling = velocity.abs() > _verticalVelocity;
       if ((_verticalOffset.abs() > threshold || fling) &&
           widget.listings.length > 1) {
@@ -443,7 +446,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     ).animate(
       CurvedAnimation(
         parent: _verticalController,
-        curve: const Cubic(0.22, 1, 0.36, 1),
+        curve: Curves.easeOutCubic,
       ),
     );
     _verticalController.forward(from: 0).then((_) {
@@ -474,7 +477,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     ).animate(
       CurvedAnimation(
         parent: _verticalController,
-        curve: const Cubic(0.22, 1, 0.36, 1),
+        curve: Curves.easeOutCubic,
       ),
     );
     _verticalController.forward(from: 0).then((_) {
@@ -528,9 +531,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             alignment: Alignment.center,
             clipBehavior: Clip.hardEdge,
             children: [
-              if (_verticalMode && widget.listings.length > 1)
+              if (widget.listings.length > 1 &&
+                  (_verticalMode || !_horizontalSwipeActive))
                 _verticalNeighbor(height)
-              else
+              else if (!_verticalMode)
                 for (var i = visibleCount - 1; i > 0; i--)
                   _backCard(i, _relative(i)),
               _topCard(_current, height),
@@ -596,20 +600,16 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? _relative(1)
         : _relative(-1);
     final startY = direction == _VerticalDirection.next ? height : -height;
-    final progress = (_verticalOffset.abs() / height).clamp(0.0, 1.0);
 
     return Positioned.fill(
       child: Transform.translate(
         offset: Offset(0, startY + _verticalOffset),
-        child: Transform.scale(
-          scale: 0.985 + (progress * 0.015),
-          child: IgnorePointer(
-            child: RepaintBoundary(
-              child: CapSwipeCard(
-                listing: listing,
-                isTop: false,
-                railVisible: false,
-              ),
+        child: IgnorePointer(
+          child: RepaintBoundary(
+            child: CapSwipeCard(
+              listing: listing,
+              isTop: false,
+              railVisible: false,
             ),
           ),
         ),
@@ -623,10 +623,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         : _dragOffset.dx < -20
             ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
             : Colors.transparent;
-    final verticalProgress = (_verticalOffset.abs() / height).clamp(0.0, 1.0);
-    final scale = _verticalMode
-        ? 1.0 - (verticalProgress * 0.012)
-        : 1.0 - (_horizontalProgress * 0.05);
+    final scale = _verticalMode ? 1.0 : 1.0 - (_horizontalProgress * 0.05);
     final translation = _verticalMode
         ? Offset(0, _verticalOffset)
         : Offset(_dragOffset.dx, 0);
