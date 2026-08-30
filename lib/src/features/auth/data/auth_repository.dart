@@ -132,7 +132,8 @@ class SupabaseAuthRepository implements AuthRepository {
         );
       }
       try {
-        final referral = _webReferral;
+        final prefs = await SharedPreferences.getInstance();
+        final referral = prefs.getString('ambassador_ref_code');
         final query = <String, String>{
           'oauth_popup': '1',
           if (referral != null) 'ref': referral,
