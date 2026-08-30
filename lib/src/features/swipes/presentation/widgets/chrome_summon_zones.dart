@@ -3,10 +3,9 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
 /// Invisible edge taps that bring the dashboard/deck chrome back.
 ///
-/// Keep these zones at the physical edges only. A previous full-height
-/// vertical-drag detector sat above the content while chrome was hidden and
-/// could win the gesture arena against the page scroll, making scrolling feel
-/// sticky or intermittently broken.
+/// These zones are tap-only. They must never register a vertical drag recognizer
+/// above the reel because even a tiny edge recognizer can steal a fast swipe on
+/// iOS, Android or PWA before the listing deck resolves its own gesture axis.
 class ChromeSummonZones extends StatelessWidget {
   const ChromeSummonZones({
     super.key,
@@ -39,9 +38,6 @@ class ChromeSummonZones extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _summon,
-            onVerticalDragEnd: (details) {
-              if ((details.primaryVelocity ?? 0) > 120) _summon();
-            },
           ),
         ),
         Positioned(
