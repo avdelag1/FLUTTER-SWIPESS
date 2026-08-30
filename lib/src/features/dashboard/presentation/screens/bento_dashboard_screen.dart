@@ -1,4 +1,3 @@
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +7,8 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
+import 'package:flutter_swipes/src/core/widgets/elastic_pull_refresh.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -710,24 +711,12 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
       child: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: const Color(0xFFFF4D00),
-          backgroundColor: isLight ? Colors.white : const Color(0xFF15171C),
-          onRefresh: () async {
-            try {
-              AppHaptics.light();
-            } catch (_) {}
-            ref.invalidate(newItemsCountProvider);
-            ref.invalidate(appMarketProvider);
-            try {
-              await Future.wait([
-                ref.read(newItemsCountProvider.future),
-                ref.read(appMarketProvider.future),
-              ]);
-            } catch (_) {}
-          },
+        child: ElasticPullRefresh(
+          onRefresh: () => AppRefreshService.refreshAll(ref),
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
             slivers: [
               SliverToBoxAdapter(
                 child: Consumer(
