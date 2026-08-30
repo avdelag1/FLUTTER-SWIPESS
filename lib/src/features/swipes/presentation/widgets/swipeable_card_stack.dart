@@ -79,9 +79,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _videoPreloadBehind = 1;
   static const _hapticBands = [0.25, 0.50, 0.75];
   static const _verticalSpring = SpringDescription(
-    mass: 0.42,
-    stiffness: 720,
-    damping: 36,
+    mass: 0.5,
+    stiffness: 600,
+    damping: 44,
   );
   static const _horizontalSnapSpring = SpringDescription(
     mass: 0.65,
@@ -394,6 +394,15 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
   }
 
+  void _maybePulseVerticalHaptics(double height) {
+    if (_axis != _GestureAxis.vertical) return;
+    final threshold = min(140.0, max(72.0, height * 0.18));
+    if (_verticalOffset.abs() >= threshold && (_hapticBandMask & 0x10) == 0) {
+      _hapticBandMask |= 0x10;
+      unawaited(AppHaptics.selection());
+    }
+  }
+
   void _lockAxis() {
     final dx = _gestureTravel.dx.abs();
     final dy = _gestureTravel.dy.abs();
@@ -417,11 +426,14 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       return;
     }
     if (_busy) {
+      if (_verticalController.isAnimating) {
+        _verticalOffset = _verticalController.value;
+      }
       _horizontalController.stop();
       _verticalController.stop();
       _horizontalSpringSnap = false;
       _verticalSpringSnap = false;
-      _verticalController.value = 0;
+      _verticalController.value = _verticalOffset;
     }
     _activePointer = event.pointer;
     _dragArmed = true;
@@ -478,6 +490,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           ? _VerticalDirection.next
           : _VerticalDirection.previous;
     });
+    _maybePulseVerticalHaptics(height);
   }
 
   void _finishPointerDrag() {
@@ -778,8 +791,15 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             clipBehavior: Clip.hardEdge,
             children: [
               if (widget.listings.length > 1 && !_showHorizontalStack) ...[
-                _verticalSlot(height, _relative(1), height + _verticalOffset),
-                _verticalSlot(height, _relative(-1), -height + _verticalOffset),
+                _verticalSlot(
+                  _relative(1),
+                  height + _verticalOffset,
+                ),
+                if (_relative(-1).id != _relative(1).id)
+                  _verticalSlot(
+                    _relative(-1),
+                    -height + _verticalOffset,
+                  ),
               ] else if (_showHorizontalStack)
                 for (var i = visibleCount - 1; i > 0; i--)
                   _backCard(i, _relative(i)),
@@ -848,7 +868,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
   }
 
-  Widget _verticalSlot(double height, Listing listing, double yOffset) {
+  Widget _verticalSlot(Listing listing, double yOffset) {
     return Positioned.fill(
       child: Transform.translate(
         offset: Offset(0, yOffset),
@@ -876,7 +896,15 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
         : Colors.transparent;
     final verticalDrag = _verticalPagingActive;
-    final scale = verticalDrag ? 1.0 : 1.0 - (_horizontalProgress * 0.05);
+    final verticalProgress = verticalDrag
+        ? (_verticalOffset.abs() / height).clamp(0.0, 1.0)
+        : 0.0;
+    final scale = verticalDrag
+        ? 1.0 - (verticalProgress * 0.04)
+        : 1.0 - (_horizontalProgress * 0.05);
+    final cardOpacity = verticalDrag
+        ? (1.0 - (verticalProgress * 0.12)).clamp(0.88, 1.0)
+        : 1.0;
     final translation = verticalDrag
         ? Offset(0, _verticalOffset)
         : Offset(_dragOffset.dx, 0);
@@ -901,7 +929,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             ..rotateY(tiltY)
             ..rotateZ(verticalDrag ? 0 : _rotation)
             ..scaleByDouble(scale, scale, 1, 1),
-          child: Container(
+          child: Opacity(
+            opacity: cardOpacity,
+            child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
@@ -942,6 +972,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                 },
               ),
             ),
+          ),
           ),
         ),
       ),
