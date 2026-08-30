@@ -105,6 +105,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   bool _zoomLocksDrag = false;
   bool _horizontalSpringSnap = false;
   bool _verticalSpringSnap = false;
+  bool _dragArmed = false;
+  int? _activePointer;
+  VelocityTracker? _velocityTracker;
   _GestureAxis _axis = _GestureAxis.undecided;
   _VerticalDirection? _verticalTarget;
   DateTime? _lastWheelAt;
@@ -343,6 +346,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   void _resetGesture() {
     _isDragging = false;
+    _dragArmed = false;
+    _activePointer = null;
     _axis = _GestureAxis.undecided;
     _gestureTravel = Offset.zero;
     _hapticBandMask = 0;
@@ -359,7 +364,25 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
   }
 
-  void _onPanStart(DragStartDetails details) {
+  void _lockAxis() {
+    final dx = _gestureTravel.dx.abs();
+    final dy = _gestureTravel.dy.abs();
+    if (widget.listings.length > 1 && dy > dx * 1.08) {
+      _axis = _GestureAxis.vertical;
+      _dragOffset = Offset.zero;
+      _verticalOffset = _gestureTravel.dy;
+      _verticalTarget = _gestureTravel.dy <= 0
+          ? _VerticalDirection.next
+          : _VerticalDirection.previous;
+      return;
+    }
+    _axis = _GestureAxis.horizontal;
+    _verticalOffset = 0;
+    _verticalTarget = null;
+    _dragOffset = Offset(_gestureTravel.dx, 0);
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
     if (_zoomLocksDrag ||
         (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
@@ -367,58 +390,49 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (_busy) {
       _horizontalController.stop();
       _verticalController.stop();
+      _horizontalSpringSnap = false;
+      _verticalSpringSnap = false;
     }
+    _activePointer = event.pointer;
+    _dragArmed = true;
+    _velocityTracker = VelocityTracker.withKind(event.kind);
+    _velocityTracker!.addPosition(event.timeStamp, event.position);
     setState(() {
-      _isDragging = true;
+      _isDragging = false;
       _axis = _GestureAxis.undecided;
       _gestureTravel = Offset.zero;
       _dragOffset = Offset.zero;
+      _verticalOffset = 0;
+      _verticalTarget = null;
       _hapticBandMask = 0;
     });
   }
 
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (!_isDragging ||
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_dragArmed ||
+        _activePointer != event.pointer ||
         _zoomLocksDrag ||
         (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
     }
+    _velocityTracker?.addPosition(event.timeStamp, event.position);
 
-    _gestureTravel += details.delta;
-    if (_axis == _GestureAxis.undecided) {
-      final dx = _gestureTravel.dx.abs();
-      final dy = _gestureTravel.dy.abs();
-      if (max(dx, dy) < _axisLockDistance) {
-        if (dx > dy * 1.05) {
-          setState(() => _dragOffset = Offset(_gestureTravel.dx, 0));
-        } else if (dy > dx * 1.05 && widget.listings.length > 1) {
-          setState(() {
-            _verticalOffset = _gestureTravel.dy;
-            _verticalTarget = _gestureTravel.dy <= 0
-                ? _VerticalDirection.next
-                : _VerticalDirection.previous;
-          });
-        }
-        return;
-      }
+    final delta = event.delta;
+    _gestureTravel += delta;
+    final dx = _gestureTravel.dx.abs();
+    final dy = _gestureTravel.dy.abs();
 
-      // Vertical reels paging wins on a clearly vertical drag.
-      if (widget.listings.length > 1 && dy > dx * 1.12) {
-        _axis = _GestureAxis.vertical;
-        _dragOffset = Offset.zero;
-        _verticalTarget = _gestureTravel.dy <= 0
-            ? _VerticalDirection.next
-            : _VerticalDirection.previous;
-      } else {
-        _axis = _GestureAxis.horizontal;
-        _verticalOffset = 0;
-        _verticalTarget = null;
-      }
+    if (!_isDragging) {
+      if (max(dx, dy) < _axisLockDistance) return;
+      setState(() => _isDragging = true);
+      _lockAxis();
+    } else if (_axis == _GestureAxis.undecided) {
+      _lockAxis();
     }
 
     if (_axis == _GestureAxis.horizontal) {
       setState(() {
-        _dragOffset = Offset(_dragOffset.dx + details.delta.dx, 0);
+        _dragOffset = Offset(_gestureTravel.dx, 0);
       });
       _maybePulseHorizontalHaptics();
       return;
@@ -428,10 +442,53 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
     final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
     setState(() {
-      _verticalOffset = (_verticalOffset + details.delta.dy)
-          .clamp(-height, height)
-          .toDouble();
+      _verticalOffset = _gestureTravel.dy.clamp(-height, height).toDouble();
+      _verticalTarget = _gestureTravel.dy <= 0
+          ? _VerticalDirection.next
+          : _VerticalDirection.previous;
     });
+  }
+
+  void _finishPointerDrag() {
+    if (!_dragArmed) return;
+    _dragArmed = false;
+    _activePointer = null;
+
+    if (!_isDragging) {
+      setState(_resetGesture);
+      return;
+    }
+
+    final velocity = _velocityTracker?.getVelocity() ?? Velocity.zero;
+
+    if (_axis == _GestureAxis.undecided) {
+      final dx = _gestureTravel.dx.abs();
+      final dy = _gestureTravel.dy.abs();
+      if (dx >= dy) {
+        _axis = _GestureAxis.horizontal;
+        _dragOffset = Offset(_gestureTravel.dx, 0);
+        _onPanEnd(DragEndDetails(velocity: velocity));
+      } else if (widget.listings.length > 1) {
+        _axis = _GestureAxis.vertical;
+        _verticalOffset = _gestureTravel.dy;
+        _onPanEnd(DragEndDetails(velocity: velocity));
+      } else {
+        setState(_resetGesture);
+      }
+      return;
+    }
+
+    _onPanEnd(DragEndDetails(velocity: velocity));
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    if (_activePointer != event.pointer) return;
+    _finishPointerDrag();
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (_activePointer != event.pointer) return;
+    _finishPointerDrag();
   }
 
   void _onPanEnd(DragEndDetails details) {
@@ -471,17 +528,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
 
     setState(_resetGesture);
-  }
-
-  void _onPanCancel() {
-    if (!_isDragging) return;
-    if (_axis == _GestureAxis.vertical && _verticalOffset != 0) {
-      _snapVerticalBack(0);
-    } else if (_axis == _GestureAxis.horizontal && _dragOffset != Offset.zero) {
-      _snapHorizontalBack(0);
-    } else {
-      setState(_resetGesture);
-    }
   }
 
   void _onPointerSignal(PointerSignalEvent event) {
@@ -786,14 +832,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
     return Positioned.fill(
       child: Listener(
+        behavior: HitTestBehavior.translucent,
         onPointerSignal: _onPointerSignal,
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onPanStart: _onPanStart,
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: _onPanEnd,
-          onPanCancel: _onPanCancel,
-          child: Transform(
+        onPointerDown: _onPointerDown,
+        onPointerMove: _onPointerMove,
+        onPointerUp: _onPointerUp,
+        onPointerCancel: _onPointerCancel,
+        child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.0012)
@@ -818,6 +863,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   key: _topCardKey,
                   listing: listing,
                   isTop: true,
+                  deckDragging: _isDragging,
                   likeOpacity: _likeOpacity,
                   nopeOpacity: _nopeOpacity,
                   verticalParallaxOffset:
@@ -843,7 +889,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                 ),
               ),
             ),
-          ),
         ),
       ),
     );

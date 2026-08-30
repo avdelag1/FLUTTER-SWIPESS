@@ -41,6 +41,7 @@ class CapSwipeCard extends ConsumerStatefulWidget {
     this.preparedVideoController,
     this.onPreparedVideoConsumed,
     this.verticalParallaxOffset = 0,
+    this.deckDragging = false,
   });
 
   final Listing listing;
@@ -48,6 +49,7 @@ class CapSwipeCard extends ConsumerStatefulWidget {
   final double likeOpacity;
   final double nopeOpacity;
   final double verticalParallaxOffset;
+  final bool deckDragging;
   final VideoPlayerController? preparedVideoController;
   final VoidCallback? onPreparedVideoConsumed;
   final bool railVisible;
@@ -115,6 +117,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (oldWidget.listing.id != widget.listing.id) {
       _photoIndex = 0;
       _endZoom();
+    }
+    if (widget.deckDragging && !oldWidget.deckDragging) {
+      _cancelHold();
     }
     if (!widget.isTop) {
       _disposeVideo();
@@ -208,7 +213,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
   }
 
+  void _cancelHold() {
+    _holdTimer?.cancel();
+    _holdPending = false;
+    _pointerStart = null;
+    _movedPastCancel = false;
+  }
+
   void _startHold(Offset local) {
+    if (widget.deckDragging) return;
     _holdTimer?.cancel();
     _holdPending = true;
     _movedPastCancel = false;
@@ -263,13 +276,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   void _pointerDown(PointerDownEvent e) {
-    if (!widget.isTop || _controlPoint(e.localPosition)) return;
+    if (!widget.isTop || widget.deckDragging || _controlPoint(e.localPosition)) {
+      return;
+    }
     _startHold(e.localPosition);
   }
 
   void _pointerMove(PointerMoveEvent e) {
+    if (!widget.isTop || widget.deckDragging) return;
     final start = _pointerStart;
-    if (!widget.isTop || start == null) return;
+    if (start == null) return;
     final delta = e.localPosition - start;
     if (!_zoomed && _holdPending && delta.distance > _cancelMovePx) {
       _holdTimer?.cancel();
@@ -702,13 +718,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget _videoWidget() {
     final player = _video;
     if (player == null || !player.value.isInitialized) return _fallback();
-    return RepaintBoundary(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: player.value.size.width,
-          height: player.value.size.height,
-          child: VideoPlayer(player),
+    // Web platform views steal pointer events; let the deck own swipe gestures.
+    return IgnorePointer(
+      ignoring: !_zoomed,
+      child: RepaintBoundary(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: player.value.size.width,
+            height: player.value.size.height,
+            child: VideoPlayer(player),
+          ),
         ),
       ),
     );
