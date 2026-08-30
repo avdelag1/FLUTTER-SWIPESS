@@ -72,8 +72,8 @@ replace_once(
 )
 replace_once(
     'lib/src/features/payments/presentation/widgets/tokens_modal.dart',
-    "      if (result.isSuccess) {\n        await AppHaptics.success();\n      }",
-    "      if (result.isSuccess) {\n        await AppHaptics.success();\n        await AppAudio.instance.playTokensFromPrefs();\n      }",
+    "    if (result.isSuccess) await AppHaptics.success();",
+    "    if (result.isSuccess) {\n      await AppHaptics.success();\n      await AppAudio.instance.playTokensFromPrefs();\n    }",
 )
 
 # Premium upgrade purchase: same premium metallic identity.
