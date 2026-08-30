@@ -79,9 +79,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _videoPreloadBehind = 1;
   static const _hapticBands = [0.25, 0.50, 0.75];
   static const _verticalSpring = SpringDescription(
-    mass: 0.5,
-    stiffness: 600,
-    damping: 44,
+    mass: 0.58,
+    stiffness: 460,
+    damping: 34,
   );
   static const _horizontalSnapSpring = SpringDescription(
     mass: 0.65,
@@ -794,11 +794,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                 _verticalSlot(
                   _relative(1),
                   height + _verticalOffset,
+                  height,
                 ),
                 if (_relative(-1).id != _relative(1).id)
                   _verticalSlot(
                     _relative(-1),
                     -height + _verticalOffset,
+                    height,
                   ),
               ] else if (_showHorizontalStack)
                 for (var i = visibleCount - 1; i > 0; i--)
@@ -825,6 +827,43 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   bool get _showHorizontalStack =>
       _horizontalSwipeActive && !_verticalPagingActive;
+
+  double _verticalSlotProgress(double yOffset, double height) {
+    if (height <= 0) return 0;
+    return (1 - (yOffset.abs() / height)).clamp(0.0, 1.0);
+  }
+
+  ({
+    double scale,
+    double opacity,
+    double rotateX,
+    Alignment alignment,
+  })
+  _verticalSlotMotion(double yOffset, double height) {
+    final progress = _verticalSlotProgress(yOffset, height);
+    final eased = Curves.easeOutCubic.transform(progress);
+    final fromBottom = yOffset >= 0;
+    return (
+      scale: 0.86 + (0.14 * eased),
+      opacity: 0.42 + (0.58 * Curves.easeOut.transform(progress)),
+      rotateX: (fromBottom ? -1 : 1) * (1 - eased) * 0.085,
+      alignment: fromBottom ? Alignment.bottomCenter : Alignment.topCenter,
+    );
+  }
+
+  ({double scale, double opacity, double rotateX, double dim}) _topVerticalMotion(
+    double height,
+  ) {
+    final progress = (_verticalOffset.abs() / height).clamp(0.0, 1.0);
+    final eased = Curves.easeInCubic.transform(progress);
+    final tiltingUp = _verticalOffset < 0;
+    return (
+      scale: 1.0 - (eased * 0.09),
+      opacity: 1.0 - (eased * 0.2),
+      rotateX: (tiltingUp ? 1 : -1) * eased * 0.065,
+      dim: eased * 0.28,
+    );
+  }
 
   double _backCardRiseProgress(int index) {
     if (!_horizontalSwipeActive) return 0.0;
@@ -868,18 +907,30 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
   }
 
-  Widget _verticalSlot(Listing listing, double yOffset) {
+  Widget _verticalSlot(Listing listing, double yOffset, double height) {
+    final motion = _verticalSlotMotion(yOffset, height);
     return Positioned.fill(
       child: Transform.translate(
         offset: Offset(0, yOffset),
-        child: IgnorePointer(
-          child: RepaintBoundary(
-            child: CapSwipeCard(
-              key: ValueKey('deck-${listing.id}'),
-              listing: listing,
-              isTop: false,
-              prepareMedia: true,
-              railVisible: false,
+        child: Transform(
+          alignment: motion.alignment,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0018)
+            ..rotateX(motion.rotateX)
+            ..scaleByDouble(motion.scale, motion.scale, 1, 1),
+          child: Opacity(
+            opacity: motion.opacity.clamp(0.0, 1.0),
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: CapSwipeCard(
+                  key: ValueKey('deck-${listing.id}'),
+                  listing: listing,
+                  isTop: false,
+                  prepareMedia: true,
+                  railVisible: false,
+                  verticalParallaxOffset: _verticalOffset,
+                ),
+              ),
             ),
           ),
         ),
@@ -894,11 +945,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
         : Colors.transparent;
     final verticalDrag = _verticalPagingActive;
-    final verticalProgress = verticalDrag
-        ? (_verticalOffset.abs() / height).clamp(0.0, 1.0)
-        : 0.0;
+    final verticalMotion = verticalDrag ? _topVerticalMotion(height) : null;
     final scale = verticalDrag
-        ? 1.0 - (verticalProgress * 0.03)
+        ? verticalMotion!.scale
         : 1.0 - (_horizontalProgress * 0.05);
     final translation = verticalDrag
         ? Offset(0, _verticalOffset)
@@ -907,6 +956,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final tiltY = verticalDrag
         ? 0.0
         : (_dragOffset.dx / cardWidth).clamp(-1.0, 1.0) * 0.42;
+    final topOpacity = verticalMotion?.opacity ?? 1.0;
+    final topRotateX = verticalMotion?.rotateX ?? 0.0;
+    final topDim = verticalMotion?.dim ?? 0.0;
 
     return Positioned.fill(
       child: Listener(
@@ -919,51 +971,71 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         child: Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0012)
+            ..setEntry(3, 2, 0.0015)
             ..setTranslationRaw(translation.dx, translation.dy, 0)
+            ..rotateX(topRotateX)
             ..rotateY(tiltY)
             ..rotateZ(verticalDrag ? 0 : _rotation)
             ..scaleByDouble(scale, scale, 1, 1),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(140),
-                  blurRadius: 40,
-                  offset: const Offset(0, 18),
+          child: Opacity(
+            opacity: topOpacity.clamp(0.0, 1.0),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(140),
+                        blurRadius: 40,
+                        offset: const Offset(0, 18),
+                      ),
+                      BoxShadow(color: glow, blurRadius: 80, spreadRadius: 4),
+                    ],
+                  ),
+                  child: RepaintBoundary(
+                    child: CapSwipeCard(
+                      key: ValueKey('deck-${listing.id}'),
+                      listing: listing,
+                      isTop: true,
+                      deckDragging: _isDragging,
+                      likeOpacity: _likeOpacity,
+                      nopeOpacity: _nopeOpacity,
+                      verticalParallaxOffset: verticalDrag ? _verticalOffset : 0,
+                      preparedVideoController: _preloadedVideos[listing.id],
+                      onPreparedVideoConsumed: () =>
+                          _consumePreparedVideo(listing.id),
+                      railVisible: widget.railVisible,
+                      canUndo: widget.canUndo,
+                      onBack: widget.onBack,
+                      onUndo: widget.onUndo,
+                      onInsights: () => widget.onInsights?.call(listing),
+                      onShare: () => widget.onShare?.call(listing),
+                      onMessage: () => widget.onMessage?.call(listing),
+                      onReport: () => widget.onReport?.call(listing),
+                      onOpenAi: widget.onOpenAi,
+                      onOpenMap: widget.onOpenMap,
+                      onSummonChrome: widget.onSummonChrome,
+                      onPhotoIndexChanged: _prefetchGalleryNeighbors,
+                      onZoomChanged: (active) {
+                        if (mounted) setState(() => _zoomLocksDrag = active);
+                      },
+                    ),
+                  ),
                 ),
-                BoxShadow(color: glow, blurRadius: 80, spreadRadius: 4),
+                if (verticalDrag && topDim > 0.02)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          color: Colors.black.withAlpha((topDim * 255).round()),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
-            ),
-            child: RepaintBoundary(
-              child: CapSwipeCard(
-                key: ValueKey('deck-${listing.id}'),
-                listing: listing,
-                isTop: true,
-                deckDragging: _isDragging,
-                likeOpacity: _likeOpacity,
-                nopeOpacity: _nopeOpacity,
-                verticalParallaxOffset: verticalDrag ? _verticalOffset : 0,
-                preparedVideoController: _preloadedVideos[listing.id],
-                onPreparedVideoConsumed: () =>
-                    _consumePreparedVideo(listing.id),
-                railVisible: widget.railVisible,
-                canUndo: widget.canUndo,
-                onBack: widget.onBack,
-                onUndo: widget.onUndo,
-                onInsights: () => widget.onInsights?.call(listing),
-                onShare: () => widget.onShare?.call(listing),
-                onMessage: () => widget.onMessage?.call(listing),
-                onReport: () => widget.onReport?.call(listing),
-                onOpenAi: widget.onOpenAi,
-                onOpenMap: widget.onOpenMap,
-                onSummonChrome: widget.onSummonChrome,
-                onPhotoIndexChanged: _prefetchGalleryNeighbors,
-                onZoomChanged: (active) {
-                  if (mounted) setState(() => _zoomLocksDrag = active);
-                },
-              ),
             ),
           ),
         ),

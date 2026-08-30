@@ -489,7 +489,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget _parallaxLayer(Widget child) {
     final offset = widget.verticalParallaxOffset;
     if (offset == 0) return child;
-    return Transform.translate(offset: Offset(0, -offset * 0.62), child: child);
+    return Transform.translate(offset: Offset(0, -offset * 0.78), child: child);
   }
 
   String? _posterUrl() {
