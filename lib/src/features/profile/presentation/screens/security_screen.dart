@@ -18,6 +18,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/core/providers/audio_settings_provider.dart';
 
 /// Capacitor ClientSecurity / settings nested sections.
 class SecurityScreen extends ConsumerStatefulWidget {
@@ -261,18 +262,45 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   List<Widget> _preferences() {
+    final audio = ref.watch(audioSettingsProvider).valueOrNull ?? const AudioSettings();
     return [
       _Panel(
         child: Column(
           children: [
             _PrefSwitch(
-              label: 'Swipe sounds',
-              value: _sounds,
-              onChanged: (v) async {
-                setState(() => _sounds = v);
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('swipe_sounds', v);
+              label: 'Master Audio',
+              value: audio.masterEnabled,
+              onChanged: (v) {
+                ref.read(audioSettingsProvider.notifier).setMaster(v);
+                if (v) AppHaptics.selection();
               },
+            ),
+            Divider(height: 1, color: Colors.transparent),
+            _PrefSwitch(
+              label: 'Swipe sounds',
+              value: audio.swipeEnabled,
+              onChanged: audio.masterEnabled ? (v) {
+                ref.read(audioSettingsProvider.notifier).setSwipe(v);
+                if (v) AppHaptics.selection();
+              } : null,
+            ),
+            Divider(height: 1, color: Colors.transparent),
+            _PrefSwitch(
+              label: 'AI Chat sounds',
+              value: audio.aiEnabled,
+              onChanged: audio.masterEnabled ? (v) {
+                ref.read(audioSettingsProvider.notifier).setAi(v);
+                if (v) AppHaptics.selection();
+              } : null,
+            ),
+            Divider(height: 1, color: Colors.transparent),
+            _PrefSwitch(
+              label: 'Success & Alerts',
+              value: audio.successEnabled,
+              onChanged: audio.masterEnabled ? (v) {
+                ref.read(audioSettingsProvider.notifier).setSuccess(v);
+                if (v) AppHaptics.selection();
+              } : null,
             ),
             Divider(height: 1, color: Colors.transparent),
             _PrefSwitch(
@@ -406,7 +434,7 @@ class _PrefSwitch extends StatelessWidget {
 
   final String label;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
