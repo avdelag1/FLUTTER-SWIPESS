@@ -7,9 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Profile-facing explanation of the SWIPESS active-use loyalty loop.
 ///
-/// The exact cadence is intentionally not exposed in the UI. Users only see
-/// their progress and the automatic reward outcome; the server remains the
-/// source of truth for when a step is earned.
+/// The cadence is intentionally visible: 45 active minutes earns one step and
+/// five completed steps automatically unlock one free token.
 class EngagementRewardCard extends ConsumerWidget {
   const EngagementRewardCard({super.key});
 
@@ -22,6 +21,7 @@ class EngagementRewardCard extends ConsumerWidget {
     );
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
+    final minutesLeft = progress.minutesToNextStep;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -29,17 +29,17 @@ class EngagementRewardCard extends ConsumerWidget {
         Row(
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: AppTheme.brandPrimary.withAlpha(24),
+                color: AppTheme.brandPrimary.withAlpha(25),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: const Icon(
                 Icons.bolt_rounded,
                 color: AppTheme.brandPrimary,
-                size: 19,
+                size: 20,
               ),
             ),
             const SizedBox(width: 11),
@@ -48,21 +48,22 @@ class EngagementRewardCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ACTIVE REWARDS',
+                    'CONSISTENCY CHALLENGE',
                     style: GoogleFonts.plusJakartaSans(
                       color: ink,
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: .5,
+                      letterSpacing: .45,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Use SWIPESS and unlock rewards automatically.',
+                    '45 active minutes = 1 step · 5 steps = 1 free token',
                     style: GoogleFonts.plusJakartaSans(
                       color: muted,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 11.1,
+                      height: 1.3,
+                      fontWeight: FontWeight.w650,
                     ),
                   ),
                 ],
@@ -94,10 +95,10 @@ class EngagementRewardCard extends ConsumerWidget {
         const SizedBox(height: 14),
         Text(
           async.isLoading
-              ? 'Syncing your reward progress…'
+              ? 'Syncing your challenge progress…'
               : progress.steps == 4
-                  ? '4/5 complete · Your next reward is close.'
-                  : '${progress.steps}/5 complete · Keep exploring to unlock the next step.',
+                  ? '4/5 complete · About $minutesLeft active min to the free token.'
+                  : '${progress.steps}/5 complete · About $minutesLeft active min to your next step.',
           style: GoogleFonts.plusJakartaSans(
             color: ink,
             fontSize: 12,
@@ -106,7 +107,7 @@ class EngagementRewardCard extends ConsumerWidget {
         ),
         const SizedBox(height: 7),
         Text(
-          'Complete all 5 steps and your free token is added automatically.',
+          'Only active time counts. When each 45-minute step is completed, Swipess shows the progress banner automatically. Finish all 5 and the token is added to your balance.',
           style: GoogleFonts.plusJakartaSans(
             color: muted,
             fontSize: 10.5,
@@ -131,21 +132,40 @@ class _RewardTrack extends StatelessWidget {
 
     return Row(
       children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppTheme.brandPrimary,
+            border: Border.all(color: Colors.white.withAlpha(35)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.brandPrimary.withAlpha(35),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+        ),
         for (var i = 1; i <= 5; i++) ...[
-          if (i > 1)
-            Expanded(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 260),
-                height: 3,
-                margin: const EdgeInsets.symmetric(horizontal: 5),
-                decoration: BoxDecoration(
-                  color: i <= safe
-                      ? AppTheme.brandPrimary
-                      : muted.withAlpha(35),
-                  borderRadius: BorderRadius.circular(999),
-                ),
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              height: 3,
+              margin: const EdgeInsets.symmetric(horizontal: 5),
+              decoration: BoxDecoration(
+                color: i <= safe
+                    ? (i == 5
+                          ? const Color(0xFFEB4898)
+                          : AppTheme.brandPrimary)
+                    : muted.withAlpha(35),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
+          ),
           AnimatedContainer(
             duration: const Duration(milliseconds: 280),
             width: i == 5 ? 38 : 30,
@@ -155,7 +175,7 @@ class _RewardTrack extends StatelessWidget {
               gradient: i <= safe
                   ? LinearGradient(
                       colors: i == 5
-                          ? const [Color(0xFF7C3AED), Color(0xFFB04BFF)]
+                          ? const [Color(0xFFEB4898), Color(0xFFFF6AAB)]
                           : const [Color(0xFFFF4D00), Color(0xFFFF7A00)],
                     )
                   : null,
@@ -169,7 +189,7 @@ class _RewardTrack extends StatelessWidget {
                   ? [
                       BoxShadow(
                         color: (i == 5
-                                ? const Color(0xFF7C3AED)
+                                ? const Color(0xFFEB4898)
                                 : AppTheme.brandPrimary)
                             .withAlpha(35),
                         blurRadius: 14,
