@@ -5,6 +5,7 @@ on:
     branches:
       - fix/events-video-render
     paths:
+      - tool/patch_events_video_render.py
       - .github/workflows/fix-events-video-render.yml
 
 permissions:
