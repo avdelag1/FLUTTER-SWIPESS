@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -159,9 +159,6 @@ class BentoDashboardScreen extends ConsumerStatefulWidget {
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   final _aiSearchController = TextEditingController();
   final _scroll = ScrollController();
-
-  /// Approximate height reclaimed when the in-scroll search chrome collapses.
-  static const _searchChromeHeight = 188.0;
 
   @override
   void dispose() {
@@ -712,21 +709,12 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     final leftItems = visibleItems.where((i) => i.index.isEven).toList();
     final rightItems = visibleItems.where((i) => i.index.isOdd).toList();
     final safe = MediaQuery.paddingOf(context);
-    // Dock floats at bottom:16 with a 52px pill + safe area; leave room for
-    // card titles at the bottom of the last quick-filter row.
-    final bottomScrollPad = safe.bottom + 16 + 52 + 40;
-
-    ref.listen<double>(chromeVisibilityProvider, (previous, next) {
-      if (!_scroll.hasClients || previous == null) return;
-      final delta = (next - previous) * _searchChromeHeight;
-      if (delta.abs() < 0.5) return;
-      final position = _scroll.position;
-      final target = (position.pixels + delta)
-          .clamp(position.minScrollExtent, position.maxScrollExtent);
-      if ((target - position.pixels).abs() > 0.5) {
-        _scroll.jumpTo(target);
-      }
-    });
+    // Dock floats at bottom:16 with a 52px pill + safe area; extra room so the
+    // last quick-filter row clears the dock even with bounce overscroll.
+    final bottomScrollPad = safe.bottom + 16 + 52 + 56;
+    final scrollPhysics = kIsWeb
+        ? const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics())
+        : const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
 
     return Container(
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
@@ -736,69 +724,30 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           onRefresh: () => AppRefreshService.refreshAll(ref),
           child: CustomScrollView(
             controller: _scroll,
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: ClampingScrollPhysics(),
-            ),
+            cacheExtent: 900,
+            physics: scrollPhysics,
             slivers: [
               SliverToBoxAdapter(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final showChrome = ref.watch(chromeVisibilityProvider) > 0.01;
-                    return TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: 1, end: showChrome ? 1 : 0),
-                      duration: Duration(milliseconds: showChrome ? 420 : 560),
-                      curve: Curves.easeInOutCubic,
-                      child: GlowSearchBar(
-                        hint:
-                            market != null &&
-                                (!market.effectiveOpen ||
-                                    !market.featureEnabled('ai'))
-                            ? 'AI is not active in this market'
-                            : 'What are you looking for?',
-                        onTap: () => _openAiSearch(),
-                        controller: _aiSearchController,
-                        onSubmitted: (val) => _openAiSearch(val),
-                        locationLabel: discovery.city,
-                        dateLabel: discovery.dateLabel,
-                        guestLabel:
-                            '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
-                        onLocationTap: _pickCity,
-                        onDatesTap: _pickDates,
-                        onGuestsTap: _pickGuests,
-                      ),
-                      builder: (context, reveal, child) {
-                        final progress = reveal.clamp(0.0, 1.0).toDouble();
-                        return IgnorePointer(
-                          ignoring: progress < .08,
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              48 * progress,
-                              16,
-                              8 * progress,
-                            ),
-                            child: ClipRect(
-                              child: Align(
-                                alignment: Alignment.topCenter,
-                                heightFactor: progress,
-                                child: Opacity(
-                                  opacity: progress,
-                                  child: Transform.translate(
-                                    offset: Offset(0, -12 * (1 - progress)),
-                                    child: Transform.scale(
-                                      scale: .985 + (.015 * progress),
-                                      alignment: Alignment.topCenter,
-                                      child: child,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 48, 16, 8),
+                  child: GlowSearchBar(
+                    hint:
+                        market != null &&
+                            (!market.effectiveOpen ||
+                                !market.featureEnabled('ai'))
+                        ? 'AI is not active in this market'
+                        : 'What are you looking for?',
+                    onTap: () => _openAiSearch(),
+                    controller: _aiSearchController,
+                    onSubmitted: (val) => _openAiSearch(val),
+                    locationLabel: discovery.city,
+                    dateLabel: discovery.dateLabel,
+                    guestLabel:
+                        '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
+                    onLocationTap: _pickCity,
+                    onDatesTap: _pickDates,
+                    onGuestsTap: _pickGuests,
+                  ),
                 ),
               ),
               SliverPadding(

@@ -53,8 +53,24 @@ class _ElasticPullRefreshState extends State<ElasticPullRefresh>
   bool _onScroll(ScrollNotification notification) {
     if (notification.depth == 0) {
       _scrollPixels = notification.metrics.pixels;
+      if (_scrollPixels > 0.5 && (_armed || _pull > 0)) {
+        _armed = false;
+        _pointerStart = null;
+        if (_pull > 0) unawaited(_resetPull());
+      }
     }
     return false;
+  }
+
+  Future<void> _resetPull() async {
+    if (_pull <= 0) return;
+    await _springTo(0);
+    if (!mounted) return;
+    setState(() {
+      _tracking = false;
+      _pull = 0;
+      _hapticMask = 0;
+    });
   }
 
   void _setPull(double value) {
@@ -94,13 +110,16 @@ class _ElasticPullRefreshState extends State<ElasticPullRefresh>
 
   void _onPointerUp(PointerEvent event) {
     if (_refreshing) return;
+    final hadPull = _tracking || _pull > 0.5;
     _pointerStart = null;
     _armed = false;
+    if (!hadPull) return;
     unawaited(_finishPull());
   }
 
   Future<void> _finishPull({double velocity = 0}) async {
     if (_refreshing) return;
+    if (!_tracking && _pull <= 0.5) return;
     if (_tracking && (_ready || velocity > 900)) {
       await _runRefresh();
       return;
