@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_category_photos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_dashboard_screen.dart';
@@ -78,6 +79,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppPaths.splash,
     refreshListenable: refresh,
     redirect: (context, state) {
+      final refCode = state.uri.queryParameters['ref'];
+      if (refCode != null && refCode.isNotEmpty) {
+        SharedPreferences.getInstance().then((prefs) => prefs.setString('ambassador_ref_code', refCode));
+      }
+      
       final grantedAsync = ref.read(accessGrantedProvider);
       final signedIn = ref.read(currentUserProvider) != null;
       final baseRedirect = AppRedirect.resolve(

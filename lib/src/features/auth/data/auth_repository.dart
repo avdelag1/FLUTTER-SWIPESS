@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/features/auth/data/oauth_popup.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return SupabaseAuthRepository(ref.watch(supabaseClientProvider));
@@ -39,11 +40,7 @@ class SupabaseAuthRepository implements AuthRepository {
 
   static const _resetRedirect = 'https://swipess.com/reset-password';
 
-  String? get _webReferral {
-    if (!kIsWeb) return null;
-    final value = Uri.base.queryParameters['ref']?.trim();
-    return value == null || value.isEmpty ? null : value;
-  }
+
 
   @override
   Future<AuthResponse> signInWithEmailPassword(String email, String password) {
@@ -57,7 +54,8 @@ class SupabaseAuthRepository implements AuthRepository {
     String? name,
   }) async {
     final trimmed = name?.trim() ?? '';
-    final referral = _webReferral;
+    final prefs = await SharedPreferences.getInstance();
+    final referral = prefs.getString('ambassador_ref_code');
 
     String role = 'client';
     try {
