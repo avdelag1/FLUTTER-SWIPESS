@@ -25,8 +25,9 @@ import 'package:flutter_swipes/src/core/performance/app_performance_bootstrap.da
 /// hot caches, re-warms interactive surfaces, then reloads the web shell.
 abstract final class AppRefreshService {
   static Future<void> refreshAll(WidgetRef ref) async {
-    if (!ref.mounted) return;
-    final container = ProviderScope.containerOf(ref.context, listen: false);
+    final context = ref.context;
+    if (!context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
     await refreshContainer(container);
   }
 
