@@ -45,11 +45,8 @@ class WebNotificationsBridge {
     if (!permissionGranted) return;
     cancelReengagement();
 
-    _schedule(
-      const Duration(minutes: 45),
-      'Consistency Challenge ⚡',
-      'Your challenge is waiting. Come back and keep building toward your free token.',
-    );
+    // 45-minute consistency steps are in-app only (GlobalNotice). Background
+    // reminders here are generic re-engagement, never token/challenge copy.
     _schedule(
       const Duration(days: 3),
       'Your matches miss you 👀',

@@ -676,13 +676,13 @@ class _ActionRail extends StatelessWidget {
       children: [
         _RailButton(
           onTap: onAi,
+          accent: const Color(0xFFFF6B35),
           child: Text(
             'AI',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w900,
-              shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
             ),
           ),
         ),
@@ -692,16 +692,15 @@ class _ActionRail extends StatelessWidget {
             Icons.share_rounded,
             size: 22,
             color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
         _RailButton(
           onTap: onMessage,
+          accent: const Color(0xFFFF2D6F),
           child: const Icon(
             Icons.chat_bubble_outline_rounded,
             size: 22,
             color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
         _RailButton(
@@ -710,16 +709,15 @@ class _ActionRail extends StatelessWidget {
             Icons.bar_chart_rounded,
             size: 22,
             color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
         _RailButton(
           onTap: onReport,
+          accent: const Color(0xFFFF4458),
           child: const Icon(
             Icons.flag_outlined,
             size: 22,
             color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
         ),
       ],
@@ -728,19 +726,48 @@ class _ActionRail extends StatelessWidget {
 }
 
 class _RailButton extends StatelessWidget {
-  const _RailButton({required this.child, this.onTap});
+  const _RailButton({required this.child, this.onTap, this.accent});
   final Widget child;
   final VoidCallback? onTap;
+  final Color? accent;
+
+  static const _hotOrange = Color(0xFFFF4458);
+  static const _hotPink = Color(0xFFFF2D6F);
 
   @override
   Widget build(BuildContext context) {
+    final glow = accent ?? _hotPink;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
         AppHaptics.selection();
         onTap?.call();
       },
-      child: SizedBox(width: 46, height: 46, child: Center(child: child)),
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              glow.withAlpha(215),
+              _hotOrange.withAlpha(195),
+            ],
+          ),
+          border: Border.all(color: Colors.white.withAlpha(65)),
+          boxShadow: [
+            BoxShadow(
+              color: glow.withAlpha(100),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: child,
+      ),
     );
   }
 }
