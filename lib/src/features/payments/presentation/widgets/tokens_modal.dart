@@ -210,19 +210,45 @@ class _TokensModalState extends ConsumerState<TokensModal> {
                             const SizedBox(height: 7),
                             SizedBox(
                               height: 34,
-                              child: FilledButton(
-                                onPressed: _buyingId == null
-                                    ? () => _buy(offer)
-                                    : null,
-                                child: _buyingId == offer.id
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('GET'),
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFFF2D6F),
+                                      Color(0xFFFF4458),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF4458).withAlpha(90),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  onPressed: _buyingId == null
+                                      ? () => _buy(offer)
+                                      : null,
+                                  child: _buyingId == offer.id
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text('GET'),
+                                ),
                               ),
                             ),
                           ],
@@ -300,6 +326,10 @@ class _ActiveRewardStrip extends StatelessWidget {
 
   final int steps;
 
+  static const _hotOrange = Color(0xFFFF4458);
+  static const _hotPink = Color(0xFFFF2D6F);
+  static const _hotCoral = Color(0xFFFF6B35);
+
   @override
   Widget build(BuildContext context) {
     final completed = steps.clamp(0, 5);
@@ -307,38 +337,63 @@ class _ActiveRewardStrip extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6).withAlpha(15),
+        gradient: LinearGradient(
+          colors: [
+            _hotPink.withAlpha(28),
+            _hotCoral.withAlpha(22),
+          ],
+        ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFF60A5FA).withAlpha(45)),
+        border: Border.all(color: _hotPink.withAlpha(80)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.card_giftcard_rounded,
-                color: Color(0xFF93C5FD),
-                size: 17,
+              Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [_hotPink, _hotOrange],
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.bolt_rounded,
+                  color: Colors.white,
+                  size: 15,
+                ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'EARN FREE TOKENS WHILE YOU USE SWIPESS',
+                  'CONSISTENCY CHALLENGE',
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: .35,
+                    letterSpacing: .45,
                   ),
                 ),
               ),
-              Text(
-                '$completed/5',
-                style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF93C5FD),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [_hotCoral, _hotOrange],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$completed/5',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
@@ -350,12 +405,17 @@ class _ActiveRewardStrip extends StatelessWidget {
                 if (i > 1)
                   Expanded(
                     child: Container(
-                      height: 2,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      height: 3,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: BoxDecoration(
-                        color: i <= completed
-                            ? const Color(0xFF60A5FA)
-                            : Colors.white.withAlpha(22),
+                        gradient: i <= completed
+                            ? LinearGradient(
+                                colors: i == 5
+                                    ? [_hotPink, _hotOrange]
+                                    : [_hotCoral, _hotOrange],
+                              )
+                            : null,
+                        color: i <= completed ? null : Colors.white.withAlpha(22),
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
@@ -365,12 +425,15 @@ class _ActiveRewardStrip extends StatelessWidget {
                   height: i == 5 ? 28 : 23,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: i <= completed
-                        ? (i == 5
-                              ? const Color(0xFF7C3AED)
-                              : const Color(0xFF2563EB))
-                        : Colors.white.withAlpha(13),
-                    border: Border.all(color: Colors.white.withAlpha(28)),
+                    gradient: i <= completed
+                        ? LinearGradient(
+                            colors: i == 5
+                                ? [_hotPink, _hotOrange]
+                                : [_hotCoral, _hotOrange],
+                          )
+                        : null,
+                    color: i <= completed ? null : Colors.white.withAlpha(13),
+                    border: Border.all(color: Colors.white.withAlpha(35)),
                   ),
                   alignment: Alignment.center,
                   child: i == 5
@@ -398,18 +461,6 @@ class _ActiveRewardStrip extends StatelessWidget {
                 ),
               ],
             ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            completed == 4
-                ? 'Your next reward is close. Keep exploring.'
-                : 'Complete all 5 steps and your free token is added automatically.',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
-              fontSize: 10,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ],
       ),

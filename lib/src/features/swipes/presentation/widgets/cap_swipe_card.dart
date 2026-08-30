@@ -751,27 +751,49 @@ class _GlassCircle extends StatelessWidget {
     required this.onTap,
     this.size = 36,
     this.iconSize = 18,
+    this.accent,
   });
   final IconData icon;
   final VoidCallback onTap;
   final double size;
   final double iconSize;
+  final Color? accent;
+
+  static const _hotOrange = Color(0xFFFF4458);
+  static const _hotPink = Color(0xFFFF2D6F);
 
   @override
   Widget build(BuildContext context) {
+    final glow = accent ?? _hotPink;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: SizedBox(
+      child: Container(
         width: size,
         height: size,
-        child: Center(
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: iconSize,
-            shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              glow.withAlpha(210),
+              _hotOrange.withAlpha(190),
+            ],
           ),
+          border: Border.all(color: Colors.white.withAlpha(70)),
+          boxShadow: [
+            BoxShadow(
+              color: glow.withAlpha(110),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: iconSize,
         ),
       ),
     );

@@ -10,7 +10,6 @@ import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
-import 'package:flutter_swipes/src/features/gamification/presentation/widgets/engagement_reward_card.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
 import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
@@ -61,14 +60,9 @@ class ProfileToolsHub extends ConsumerWidget {
         const SizedBox(height: 26),
         const _SectionHeading(
           title: 'SHARE & EARN',
-          subtitle: 'Grow your profile and earn more Swipess tokens.',
+          subtitle: 'Invite friends and grow your Swipess profile.',
         ),
         const SizedBox(height: 12),
-        _AccentPanel(
-          accent: const Color(0xFFFFC043),
-          child: const EngagementRewardCard(),
-        ),
-        const SizedBox(height: 10),
         _AccentPanel(
           accent: const Color(0xFF57D9FF),
           child: InviteFriendsSection(

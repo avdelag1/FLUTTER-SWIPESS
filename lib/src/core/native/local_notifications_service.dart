@@ -155,9 +155,9 @@ class LocalNotificationsService {
     return _permissionGranted;
   }
 
-  /// Schedule reminders only after the app has left the foreground. Returning
-  /// to Swipess cancels every one of them. The 45-minute reminder is a nudge to
-  /// continue the challenge; it never claims background time earned a step.
+  /// Schedule generic re-engagement reminders only after the app leaves the
+  /// foreground. The 45-minute consistency step is in-app only (see
+  /// [SessionGamificationService] + [GlobalNotice.showEngagement]).
   Future<void> scheduleReengagement() async {
     if (!isSupported) return;
     await initialize();
@@ -184,14 +184,6 @@ class LocalNotificationsService {
     );
 
     try {
-      await _schedule(
-        id: consistencyReminderId,
-        title: 'Consistency Challenge ⚡',
-        body:
-            'Your challenge is waiting. Come back and keep building toward your free token.',
-        after: const Duration(minutes: 45),
-        details: details,
-      );
       await _schedule(
         id: reengageIds[0],
         title: 'Your matches miss you 👀',

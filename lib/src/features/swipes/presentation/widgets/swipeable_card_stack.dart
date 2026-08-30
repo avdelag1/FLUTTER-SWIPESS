@@ -80,6 +80,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _verticalVelocityThreshold = 650.0;
   static const _axisLockDistance = 8.0;
   static const _maxVisibleCards = 3;
+  static const _nextCardRiseDistance = 56.0;
+  static const _nextCardRestScale = 0.925;
   static const _prefetchCards = 4;
   static const _topGalleryWarmCount = 12;
   static const _backGalleryWarmCount = 2;
@@ -594,33 +596,62 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
 
     final visibleCount = min(_maxVisibleCards, widget.listings.length);
-    return Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
-      children: [
-        if (_verticalMode && widget.listings.length > 1)
-          _buildVerticalNeighbor()
-        else
-          for (var i = visibleCount - 1; i > 0; i--)
-            _buildBackCard(i, _listingAtOffset(i)),
-        _buildTopCard(_currentListing),
-      ],
+    return ClipRect(
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.hardEdge,
+        children: [
+          if (_verticalMode && widget.listings.length > 1)
+            _buildVerticalNeighbor()
+          else
+            for (var i = visibleCount - 1; i > 0; i--)
+              _buildBackCard(i, _listingAtOffset(i)),
+          _buildTopCard(_currentListing),
+        ],
+      ),
     );
   }
 
+  bool get _horizontalSwipeActive =>
+      _snapController.isAnimating ||
+      (_isDragging && _gestureAxis == _GestureAxis.horizontal);
+
+  double _backCardRiseProgress(int index) {
+    if (!_horizontalSwipeActive) return 0.0;
+    if (index == 1) {
+      return Curves.easeOutCubic.transform(_swipeProgress);
+    }
+    return _swipeProgress * 0.55;
+  }
+
+  ({double scale, double translateY}) _backCardTransform(int index) {
+    final rise = _backCardRiseProgress(index);
+    if (index == 1) {
+      final scale = _nextCardRestScale + ((1.0 - _nextCardRestScale) * rise);
+      final translateY = _nextCardRiseDistance * (1.0 - rise);
+      return (scale: scale, translateY: translateY);
+    }
+
+    final depthScale = 1.0 - (index * 0.045);
+    final scale = depthScale + (rise * 0.03);
+    final translateY = (index * 18.0) * (1.0 - rise);
+    return (scale: scale, translateY: translateY);
+  }
+
   Widget _buildBackCard(int index, Listing listing) {
-    final progress = _isDragging && _gestureAxis == _GestureAxis.horizontal
-        ? _swipeProgress
-        : 0.0;
-    final scale = 1.0 - (index * 0.04) + (progress * 0.04);
+    final transform = _backCardTransform(index);
     return Positioned.fill(
-      child: Transform.scale(
-        scale: scale,
-        child: IgnorePointer(
-          child: CapSwipeCard(
-            listing: listing,
-            isTop: false,
-            railVisible: false,
+      child: Transform.translate(
+        offset: Offset(0, transform.translateY),
+        child: Transform.scale(
+          scale: transform.scale,
+          alignment: Alignment.bottomCenter,
+          child: IgnorePointer(
+            child: CapSwipeCard(
+              listing: listing,
+              isTop: false,
+              railVisible: false,
+            ),
           ),
         ),
       ),

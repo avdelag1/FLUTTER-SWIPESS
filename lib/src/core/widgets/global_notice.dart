@@ -7,10 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Reusable top-drop notice used for important app-wide feedback.
 ///
-/// The engagement variant mirrors the persistent reward card: every completed
-/// 45 active minutes earns one step, and five steps unlock a free token. It is
-/// deliberately an overlay instead of a SnackBar so the exact same treatment
-/// can appear above any Swipess route without depending on a local Scaffold.
+/// The engagement variant is an in-app-only overlay: it appears after 45
+/// active minutes while the user is inside Swipess, never from background push.
 class GlobalNotice {
   GlobalNotice._();
 
@@ -65,6 +63,10 @@ class _TopEngagementNotice extends StatefulWidget {
 
 class _TopEngagementNoticeState extends State<_TopEngagementNotice>
     with SingleTickerProviderStateMixin {
+  static const _hotOrange = Color(0xFFFF4458);
+  static const _hotPink = Color(0xFFFF2D6F);
+  static const _hotCoral = Color(0xFFFF6B35);
+
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
@@ -109,6 +111,7 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
         ? 540.0
         : double.infinity;
     final completed = widget.tokenAwarded ? 5 : widget.step;
+    final accent = widget.tokenAwarded ? _hotPink : _hotCoral;
 
     return Positioned(
       top: top + 10,
@@ -129,143 +132,155 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                     if ((details.primaryVelocity ?? 0) < -120) _dismiss();
                   },
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(26),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(16, 15, 14, 14),
+                      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: const Color(0xF2111216),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withAlpha(24)),
-                          boxShadow: const [
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: widget.tokenAwarded
+                                ? [
+                                    const Color(0xFF2A0F1E),
+                                    const Color(0xFF1A0A14),
+                                  ]
+                                : [
+                                    const Color(0xFF24120C),
+                                    const Color(0xFF140A08),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(26),
+                          border: Border.all(
+                            color: accent.withAlpha(95),
+                            width: 1.2,
+                          ),
+                          boxShadow: [
                             BoxShadow(
-                              color: Color(0x5C000000),
-                              blurRadius: 32,
-                              spreadRadius: -6,
-                              offset: Offset(0, 14),
+                              color: accent.withAlpha(90),
+                              blurRadius: 28,
+                              spreadRadius: -4,
+                              offset: const Offset(0, 12),
                             ),
                           ],
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: widget.tokenAwarded
-                                        ? const Color(0xFFEB4898).withAlpha(42)
-                                        : const Color(0xFFFF4D00).withAlpha(42),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: widget.tokenAwarded
+                                        ? [_hotPink, _hotOrange]
+                                        : [_hotCoral, _hotOrange],
                                   ),
-                                  alignment: Alignment.center,
-                                  child: Icon(
-                                    widget.tokenAwarded
-                                        ? Icons.card_giftcard_rounded
-                                        : Icons.bolt_rounded,
-                                    size: 21,
-                                    color: widget.tokenAwarded
-                                        ? const Color(0xFFFF8AC2)
-                                        : const Color(0xFFFF7A3D),
-                                  ),
-                                ),
-                                const SizedBox(width: 11),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'CONSISTENCY CHALLENGE',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white,
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: .65,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        widget.tokenAwarded
-                                            ? '5/5 complete · Your free token was added.'
-                                            : '45 active minutes complete · Step ${widget.step}/5 unlocked.',
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white.withAlpha(178),
-                                          fontSize: 10.8,
-                                          height: 1.25,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 9,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: widget.tokenAwarded
-                                        ? const Color(0xFFEB4898).withAlpha(26)
-                                        : const Color(0xFFFF4D00).withAlpha(25),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    widget.tokenAwarded
-                                        ? 'REWARD'
-                                        : '${widget.step}/5',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: widget.tokenAwarded
-                                          ? const Color(0xFFFF8AC2)
-                                          : const Color(0xFFFF8A52),
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: .4,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: accent.withAlpha(120),
+                                      blurRadius: 16,
+                                      spreadRadius: 1,
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                const SizedBox(width: 2),
-                                IconButton(
-                                  tooltip: 'Dismiss',
-                                  onPressed: _dismiss,
-                                  visualDensity: VisualDensity.compact,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints.tightFor(
-                                    width: 32,
-                                    height: 32,
-                                  ),
-                                  icon: Icon(
-                                    Icons.close_rounded,
-                                    color: Colors.white.withAlpha(130),
-                                    size: 17,
-                                  ),
+                                alignment: Alignment.center,
+                                child: Icon(
+                                  widget.tokenAwarded
+                                      ? Icons.card_giftcard_rounded
+                                      : Icons.bolt_rounded,
+                                  size: 22,
+                                  color: Colors.white,
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            _ConsistencyProgress(completed: completed),
-                            const SizedBox(height: 10),
-                            Text(
-                              widget.tokenAwarded
-                                  ? 'Reward claimed automatically. Your next 5-step challenge starts now.'
-                                  : 'Each step takes 45 active minutes. Keep using Swipess to reach the gift.',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white.withAlpha(138),
-                                fontSize: 9.7,
-                                height: 1.28,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'CONSISTENCY CHALLENGE',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: .7,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      widget.tokenAwarded
+                                          ? '5/5 complete · Challenge finished!'
+                                          : 'Step ${widget.step}/5 unlocked',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white.withAlpha(210),
+                                        fontSize: 11.5,
+                                        height: 1.2,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _ConsistencyProgress(completed: completed),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: widget.tokenAwarded
+                                        ? [_hotPink, _hotOrange]
+                                        : [_hotCoral, _hotOrange],
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: accent.withAlpha(100),
+                                      blurRadius: 10,
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  widget.tokenAwarded
+                                      ? 'DONE'
+                                      : '${widget.step}/5',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: .5,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Dismiss',
+                                onPressed: _dismiss,
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 32,
+                                  height: 32,
+                                ),
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white.withAlpha(150),
+                                  size: 17,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -285,6 +300,10 @@ class _ConsistencyProgress extends StatelessWidget {
 
   final int completed;
 
+  static const _hotOrange = Color(0xFFFF4458);
+  static const _hotPink = Color(0xFFFF2D6F);
+  static const _hotCoral = Color(0xFFFF6B35);
+
   @override
   Widget build(BuildContext context) {
     final safe = completed.clamp(0, 5);
@@ -299,14 +318,17 @@ class _ConsistencyProgress extends StatelessWidget {
           Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 320),
-              height: 2.5,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 3,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
-                color: safe >= step
-                    ? (step == 5
-                          ? const Color(0xFFEB4898)
-                          : const Color(0xFFFF4D00))
-                    : Colors.white.withAlpha(28),
+                gradient: safe >= step
+                    ? LinearGradient(
+                        colors: step == 5
+                            ? [_hotPink, _hotOrange]
+                            : [_hotCoral, _hotOrange],
+                      )
+                    : null,
+                color: safe >= step ? null : Colors.white.withAlpha(28),
                 borderRadius: BorderRadius.circular(99),
               ),
             ),
@@ -356,24 +378,32 @@ class _ProgressNode extends StatelessWidget {
   final Widget child;
   final bool reward;
 
+  static const _hotOrange = Color(0xFFFF4458);
+  static const _hotPink = Color(0xFFFF2D6F);
+  static const _hotCoral = Color(0xFFFF6B35);
+
   @override
   Widget build(BuildContext context) {
-    final accent = reward ? const Color(0xFFEB4898) : const Color(0xFFFF4D00);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 320),
       width: reward ? 31 : 28,
       height: reward ? 31 : 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: active ? accent : Colors.white.withAlpha(18),
+        gradient: active
+            ? LinearGradient(
+                colors: reward ? [_hotPink, _hotOrange] : [_hotCoral, _hotOrange],
+              )
+            : null,
+        color: active ? null : Colors.white.withAlpha(18),
         border: Border.all(
-          color: active ? Colors.white.withAlpha(36) : Colors.white.withAlpha(24),
+          color: active ? Colors.white.withAlpha(50) : Colors.white.withAlpha(24),
         ),
         boxShadow: active
             ? [
                 BoxShadow(
-                  color: accent.withAlpha(55),
-                  blurRadius: 12,
+                  color: (reward ? _hotPink : _hotCoral).withAlpha(80),
+                  blurRadius: 14,
                   spreadRadius: 1,
                 ),
               ]
