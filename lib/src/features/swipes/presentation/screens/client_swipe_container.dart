@@ -372,70 +372,79 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                       ),
                       child: deck.isEmpty
                           ? _exhausted()
-                          : SwipeableCardStack(
-                              listings: deck,
-                              railVisible: chrome.railVisible,
-                              canUndo: _undoable != null,
-                              onUndo: _undo,
-                              onBack: _goDashboard,
-                              onSummonChrome: () {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .toggle();
-                              },
-                              onOpenAi: () {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .reveal();
-                                showIntelCoreSheet(context);
-                              },
-                              onOpenMap: () {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .reveal();
-                                ref
-                                    .read(overlayModalsProvider.notifier)
-                                    .openPassportMap();
-                              },
-                              onInsights: (listing) {
-                                ref
-                                    .read(chromeRevealProvider.notifier)
-                                    .reveal();
-                                showListingInsightsSheet(
-                                  context,
-                                  listing: listing,
-                                  onMessage: () => _message(listing),
-                                  onShare: () => showListingShareSheet(
+                          : Listener(
+                              behavior: HitTestBehavior.translucent,
+                              onPointerDown: (_) => ref
+                                  .read(chromeRevealProvider.notifier)
+                                  .keepAlive(),
+                              onPointerSignal: (_) => ref
+                                  .read(chromeRevealProvider.notifier)
+                                  .keepAlive(),
+                              child: SwipeableCardStack(
+                                listings: deck,
+                                railVisible: chrome.railVisible,
+                                canUndo: _undoable != null,
+                                onUndo: _undo,
+                                onBack: _goDashboard,
+                                onSummonChrome: () {
+                                  ref
+                                      .read(chromeRevealProvider.notifier)
+                                      .toggle();
+                                },
+                                onOpenAi: () {
+                                  ref
+                                      .read(chromeRevealProvider.notifier)
+                                      .reveal();
+                                  showIntelCoreSheet(context);
+                                },
+                                onOpenMap: () {
+                                  ref
+                                      .read(chromeRevealProvider.notifier)
+                                      .reveal();
+                                  ref
+                                      .read(overlayModalsProvider.notifier)
+                                      .openPassportMap();
+                                },
+                                onInsights: (listing) {
+                                  ref
+                                      .read(chromeRevealProvider.notifier)
+                                      .reveal();
+                                  showListingInsightsSheet(
                                     context,
                                     listing: listing,
-                                  ),
-                                  onReport: () => showListingReportSheet(
+                                    onMessage: () => _message(listing),
+                                    onShare: () => showListingShareSheet(
+                                      context,
+                                      listing: listing,
+                                    ),
+                                    onReport: () => showListingReportSheet(
+                                      context,
+                                      listing: listing,
+                                    ),
+                                  );
+                                },
+                                onShare: (listing) {
+                                  showListingShareSheet(
                                     context,
                                     listing: listing,
-                                  ),
-                                );
-                              },
-                              onShare: (listing) {
-                                showListingShareSheet(
-                                  context,
-                                  listing: listing,
-                                );
-                              },
-                              onMessage: _message,
-                              onReport: (listing) {
-                                showListingReportSheet(
-                                  context,
-                                  listing: listing,
-                                );
-                              },
-                              onSwiped: (listing, direction) {
-                                setState(() {
-                                  _undoable = listing;
-                                  _deck = List<Listing>.from(deck)
-                                    ..removeWhere((l) => l.id == listing.id);
-                                });
-                                unawaited(_afterSwipe(listing, direction));
-                              },
+                                  );
+                                },
+                                onMessage: _message,
+                                onReport: (listing) {
+                                  showListingReportSheet(
+                                    context,
+                                    listing: listing,
+                                  );
+                                },
+                                onSwiped: (listing, direction) {
+                                  setState(() {
+                                    _undoable = listing;
+                                    _deck = List<Listing>.from(deck)
+                                      ..removeWhere((l) => l.id == listing.id);
+                                  });
+                                  unawaited(_afterSwipe(listing, direction));
+                                },
+                              ),
                             ),
                     ),
                   ),
