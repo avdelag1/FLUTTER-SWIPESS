@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -180,7 +181,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         _completionQueued = false;
         _watchForCompletion(controller);
         await _applySound();
-        if (_canPlay) await controller.play();
+        if (_canPlay) await _playWithWebFallback(controller);
         if (mounted) setState(() {});
         if (_videoPreviewEnabled) unawaited(_preloadNext(videos));
         return;
@@ -208,7 +209,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     }
 
     await _applySound();
-    if (_canPlay) await current.play();
+    if (_canPlay) await _playWithWebFallback(current);
   }
 
   Future<void> _preloadNext(List<Event> videos) async {
@@ -235,7 +236,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
       if (current != null && current.value.isInitialized) {
         await current.seekTo(Duration.zero);
         _completionQueued = false;
-        if (_canPlay) await current.play();
+        if (_canPlay) await _playWithWebFallback(current);
       }
       return;
     }
@@ -270,7 +271,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         _completionQueued = false;
         _watchForCompletion(next);
         await _applySound();
-        if (_canPlay) await next.play();
+        if (_canPlay) await _playWithWebFallback(next);
         if (mounted) setState(() {});
 
         if (previous != null) {
@@ -288,6 +289,20 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
       }
     } finally {
       _switching = false;
+    }
+  }
+
+
+  Future<void> _playWithWebFallback(VideoPlayerController player) async {
+    try {
+      await player.play();
+    } catch (e) {
+      if (kIsWeb) {
+        try {
+          await player.setVolume(0);
+          await player.play();
+        } catch (_) {}
+      }
     }
   }
 
@@ -384,7 +399,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
       if (transferable != null && _current == null) {
         _current = transferable;
         unawaited(_applySound());
-        if (_canPlay) unawaited(transferable.play());
+        if (_canPlay) unawaited(_playWithWebFallback(transferable));
         setState(() {});
       }
     });

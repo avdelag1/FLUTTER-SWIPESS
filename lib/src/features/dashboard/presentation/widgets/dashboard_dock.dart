@@ -302,16 +302,27 @@ const defaultDashboardNavItems = [
     wash: Color(0xFFFF7A45),
   ),
   BottomNavItem(
-    id: NavTab.likes,
-    icon: Icons.local_fire_department_rounded,
-    wash: Color(0xFFE64A8A),
+    id: NavTab.events,
+    icon: Icons.celebration_rounded,
+    wash: Color(0xFFE95B9B),
+    label: 'Events',
   ),
-  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B7BFF)),
+  BottomNavItem(
+    id: NavTab.idCard,
+    icon: Icons.shield_outlined,
+    wash: Color(0xFF8B7CF6),
+  ),
   BottomNavItem(
     id: NavTab.add,
     icon: Icons.add_rounded,
     accent: true,
     wash: Color(0xFFFF5A52),
+  ),
+  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B7BFF)),
+  BottomNavItem(
+    id: NavTab.likes,
+    icon: Icons.local_fire_department_rounded,
+    wash: Color(0xFFE64A8A),
   ),
   BottomNavItem(
     id: NavTab.messages,
@@ -319,9 +330,10 @@ const defaultDashboardNavItems = [
     wash: Color(0xFF5B9CF6),
   ),
   BottomNavItem(
-    id: NavTab.idCard,
-    icon: Icons.shield_outlined,
-    wash: Color(0xFF8B7CF6),
+    id: NavTab.legal,
+    icon: Icons.balance_rounded,
+    wash: Color(0xFF7E88E8),
+    label: 'Lawyers',
   ),
   BottomNavItem(
     id: NavTab.seekers,
@@ -332,17 +344,5 @@ const defaultDashboardNavItems = [
     id: NavTab.filter,
     icon: Icons.tune_rounded,
     wash: Color(0xFFE7A454),
-  ),
-  BottomNavItem(
-    id: NavTab.legal,
-    icon: Icons.balance_rounded,
-    wash: Color(0xFF7E88E8),
-    label: 'Lawyers',
-  ),
-  BottomNavItem(
-    id: NavTab.events,
-    icon: Icons.celebration_rounded,
-    wash: Color(0xFFE95B9B),
-    label: 'Events',
   ),
 ];

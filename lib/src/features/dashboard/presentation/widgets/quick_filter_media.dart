@@ -309,8 +309,19 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final soundOn = ref.read(deckSoundOnProvider);
     final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
     final wantSound = soundOn && (unlocked || !kIsWeb);
-    await player.setVolume(wantSound ? 1 : 0);
-    await player.play();
+    
+    try {
+      await player.setVolume(wantSound ? 1 : 0);
+      await player.play();
+    } catch (e) {
+      // If web browser blocks autoplay due to sound (DOMException), mute and try again.
+      if (kIsWeb && wantSound) {
+        try {
+          await player.setVolume(0);
+          await player.play();
+        } catch (_) {}
+      }
+    }
   }
 
   void _onPlayerTick() {
