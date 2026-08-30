@@ -333,13 +333,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final profile = ref.watch(currentProfileProvider).value;
     final cachedListings = listingsAsync.value;
 
-    final cardExpanded = chrome.photoExpanded;
-    final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);
-    final cardCurve = cardExpanded
-        ? const Cubic(0.18, 1.16, 0.28, 1.0)
-        : Curves.easeOutCubic;
-    final chromeDuration = Duration(milliseconds: chrome.chromeVisible ? 360 : 320);
-
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0D),
       extendBody: true,
@@ -382,6 +375,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }) {
     _ensureDeck(listings);
     final deck = _deck ?? listings;
+    final cardExpanded = chrome.photoExpanded;
+    final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);
+    final cardCurve = cardExpanded
+        ? const Cubic(0.18, 1.16, 0.28, 1.0)
+        : Curves.easeOutCubic;
+    final chromeDuration =
+        Duration(milliseconds: chrome.chromeVisible ? 360 : 320);
 
     return Stack(
               fit: StackFit.expand,

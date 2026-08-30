@@ -18,6 +18,7 @@ class ThemedVapCard extends StatelessWidget {
     required this.docsAsync,
     required this.onPreview,
     required this.onManageDocuments,
+    this.scrollController,
   });
 
   final VapCardTheme theme;
@@ -27,6 +28,7 @@ class ThemedVapCard extends StatelessWidget {
   final AsyncValue<List<LegalDocument>> docsAsync;
   final ValueChanged<LegalDocument> onPreview;
   final VoidCallback onManageDocuments;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +59,7 @@ class ThemedVapCard extends StatelessWidget {
             decorationColor: Colors.transparent,
           ),
           child: SingleChildScrollView(
+            controller: scrollController,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

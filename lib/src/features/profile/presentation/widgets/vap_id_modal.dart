@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/genie_panel.dart';
+import 'package:flutter_swipes/src/core/widgets/swipe_vertical_dismiss.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/widgets/document_preview_dialog.dart';
@@ -34,6 +35,7 @@ class VapIdModal extends ConsumerStatefulWidget {
 class _VapIdModalState extends ConsumerState<VapIdModal> {
   Timer? _controlsTimer;
   Timer? _expandTimer;
+  final _scrollController = ScrollController();
   bool _controlsVisible = true;
   bool _cardExpanded = false;
 
@@ -54,6 +56,7 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
   void dispose() {
     _controlsTimer?.cancel();
     _expandTimer?.cancel();
+    _scrollController.dispose();
     // Restore normal navigation chrome as soon as the presentation closes.
     ref.read(chromeVisibilityProvider.notifier).show();
     super.dispose();
@@ -146,58 +149,63 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
             ? const Cubic(0.18, 1.16, 0.28, 1.0)
             : Curves.easeOutCubic;
 
-        return Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: (_) => _keepControlsAlive(),
-          child: AnimatedPadding(
-            duration: duration,
-            curve: curve,
-            padding: EdgeInsets.fromLTRB(
-              _cardExpanded ? 0 : 6,
-              _cardExpanded ? 0 : 8,
-              _cardExpanded ? 0 : 6,
-              _cardExpanded ? 0 : 8,
-            ),
-            child: AnimatedScale(
-              scale: _cardExpanded ? 1 : 0.988,
+        return SwipeVerticalDismiss(
+          scrollController: _scrollController,
+          onDismiss: dismiss,
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => _keepControlsAlive(),
+            child: AnimatedPadding(
               duration: duration,
               curve: curve,
-              alignment: Alignment.center,
-              child: Stack(
-                fit: StackFit.expand,
-                clipBehavior: Clip.none,
-                children: [
-                  ThemedVapCard(
-                    theme: theme,
-                    data: data,
-                    idNumber: idNumber,
-                    validationUrl: validationUrl,
-                    docsAsync: docs,
-                    onPreview: (doc) =>
-                        showDocumentPreviewDialog(context, doc),
-                    onManageDocuments: _openDocuments,
-                  ),
-                  Positioned(
-                    top: 10,
-                    right: 22,
-                    child: _CardControlDock(
-                      expanded: _controlsVisible,
-                      onExpand: _showControls,
-                      onCollapse: () {
-                        AppHaptics.selection();
-                        _collapseControls();
-                      },
-                      onDocuments: _openDocuments,
-                      onStyle: () {
-                        AppHaptics.selection();
-                        ref.read(vapCardThemeIndexProvider.notifier).cycle();
-                        _armControlsTimer();
-                      },
-                      onEdit: _edit,
-                      onClose: dismiss,
+              padding: EdgeInsets.fromLTRB(
+                _cardExpanded ? 0 : 6,
+                _cardExpanded ? 0 : 8,
+                _cardExpanded ? 0 : 6,
+                _cardExpanded ? 0 : 8,
+              ),
+              child: AnimatedScale(
+                scale: _cardExpanded ? 1 : 0.988,
+                duration: duration,
+                curve: curve,
+                alignment: Alignment.center,
+                child: Stack(
+                  fit: StackFit.expand,
+                  clipBehavior: Clip.none,
+                  children: [
+                    ThemedVapCard(
+                      theme: theme,
+                      data: data,
+                      idNumber: idNumber,
+                      validationUrl: validationUrl,
+                      docsAsync: docs,
+                      scrollController: _scrollController,
+                      onPreview: (doc) =>
+                          showDocumentPreviewDialog(context, doc),
+                      onManageDocuments: _openDocuments,
                     ),
-                  ),
-                ],
+                    Positioned(
+                      top: 10,
+                      right: 22,
+                      child: _CardControlDock(
+                        expanded: _controlsVisible,
+                        onExpand: _showControls,
+                        onCollapse: () {
+                          AppHaptics.selection();
+                          _collapseControls();
+                        },
+                        onDocuments: _openDocuments,
+                        onStyle: () {
+                          AppHaptics.selection();
+                          ref.read(vapCardThemeIndexProvider.notifier).cycle();
+                          _armControlsTimer();
+                        },
+                        onEdit: _edit,
+                        onClose: dismiss,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
