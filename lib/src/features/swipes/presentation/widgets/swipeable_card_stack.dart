@@ -512,7 +512,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (_axis == _GestureAxis.vertical) {
       final velocity = details.velocity.pixelsPerSecond.dy;
       final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-      final threshold = height * 0.16;
+      final threshold = height * 0.5;
       final fling = velocity.abs() > _verticalVelocity;
       if ((_verticalOffset.abs() > threshold || fling) &&
           widget.listings.length > 1) {
