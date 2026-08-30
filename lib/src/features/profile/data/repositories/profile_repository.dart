@@ -170,4 +170,41 @@ class ProfileRepository {
           .eq('user_id', user.id);
     }
   }
+
+  Future<bool> fetchMapVisibleOnPassport() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return true;
+    try {
+      final row = await _client
+          .from('client_profiles')
+          .select('map_visible, map_force_hidden')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (row == null) return true;
+      final userVisible = row['map_visible'] as bool? ?? true;
+      final adminHidden = row['map_force_hidden'] as bool? ?? false;
+      return userVisible && !adminHidden;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> updateMapVisibleOnPassport(bool visible) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+    try {
+      await _client
+          .from('client_profiles')
+          .update({
+            'map_visible': visible,
+            'location_updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('user_id', user.id);
+    } catch (_) {
+      await _client
+          .from('client_profiles')
+          .update({'map_visible': visible})
+          .eq('user_id', user.id);
+    }
+  }
 }

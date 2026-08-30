@@ -38,21 +38,25 @@ final mapProfilesProvider = FutureProvider.autoDispose<List<Profile>>((ref) asyn
         )
         .timeout(const Duration(seconds: 5));
     for (final profile in _parseRows(data)) {
-      if (profile.id != userId && profile.id.isNotEmpty) {
+      if (profile.id != userId &&
+          profile.id.isNotEmpty &&
+          profile.appearsOnMap) {
         merged[profile.id] = profile;
       }
     }
   } catch (_) {}
 
   for (final profile in await cityProfilesFuture) {
-    if (profile.id != userId && profile.id.isNotEmpty) {
+    if (profile.id != userId && profile.id.isNotEmpty && profile.appearsOnMap) {
       merged[profile.id] = profile;
     }
   }
 
   if (merged.isEmpty) {
     for (final profile in await _fallbackProfiles(client, limit, userId)) {
-      if (profile.id != userId && profile.id.isNotEmpty) {
+      if (profile.id != userId &&
+          profile.id.isNotEmpty &&
+          profile.appearsOnMap) {
         merged[profile.id] = profile;
       }
     }
@@ -162,7 +166,7 @@ Future<List<Profile>> _fetchRegisteredCityProfiles(
     var query = client
         .from('client_profiles')
         .select(
-          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
+          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at, map_visible, map_force_hidden',
         );
     query = query.ilike('city', '%$city%');
     if (userId != null) query = query.neq('user_id', userId);
@@ -182,7 +186,7 @@ Future<List<Profile>> _fallbackProfiles(
     var query = client
         .from('client_profiles')
         .select(
-          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at',
+          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at, map_visible, map_force_hidden',
         );
     if (userId != null) query = query.neq('user_id', userId);
     final data = await query.limit(limit).timeout(const Duration(seconds: 5));

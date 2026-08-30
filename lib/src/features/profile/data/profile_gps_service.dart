@@ -73,6 +73,8 @@ class ProfileGpsService {
     required double longitude,
   }) async {
     if (!latitude.isFinite || !longitude.isFinite) return;
+    final visible = await _repository.fetchMapVisibleOnPassport();
+    if (!visible) return;
     if (_isRedundant(userId, latitude, longitude)) return;
 
     _lastUserId = userId;

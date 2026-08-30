@@ -10,6 +10,8 @@ class Profile {
   final bool verified;
   final double? latitude;
   final double? longitude;
+  final bool mapVisible;
+  final bool mapForceHidden;
 
   const Profile({
     required this.id,
@@ -23,6 +25,8 @@ class Profile {
     this.verified = false,
     this.latitude,
     this.longitude,
+    this.mapVisible = true,
+    this.mapForceHidden = false,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -50,10 +54,14 @@ class Profile {
       longitude: json['longitude'] != null
           ? (json['longitude'] as num).toDouble()
           : null,
+      mapVisible: json['map_visible'] as bool? ?? true,
+      mapForceHidden: json['map_force_hidden'] as bool? ?? false,
     );
   }
 
   String get displayName => fullName ?? username ?? 'User';
+
+  bool get appearsOnMap => mapVisible && !mapForceHidden;
 
   /// Backward-compatible alias for older map/UI call sites.
   String get name => displayName;

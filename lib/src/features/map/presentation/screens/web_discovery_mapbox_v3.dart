@@ -13,6 +13,9 @@ import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_p
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_photo_pin.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_pill.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:geolocator/geolocator.dart' as geo;
@@ -396,12 +399,17 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   }
 
   _Item _eventItem(Event event, DiscoveryLocation loc) {
-    final point = _spread(
-      'event:${event.id}',
-      loc.latitude,
-      loc.longitude,
-      baseMeters: 260,
-    );
+    final ({double lat, double lng}) point;
+    if (event.latitude != null && event.longitude != null) {
+      point = (lat: event.latitude!, lng: event.longitude!);
+    } else {
+      point = _spread(
+        'event:${event.id}',
+        loc.latitude,
+        loc.longitude,
+        baseMeters: 260,
+      );
+    }
     return _Item(
       id: event.id,
       kind: _Kind.event,
@@ -945,6 +953,16 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   top: pad.top + (_searchOpen ? 100 : 52),
                   left: 0,
                   right: 0,
+                  child: Center(
+                    child: MapVisibilityPill(
+                      onTap: () => MapVisibilitySheet.show(context),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: pad.top + (_searchOpen ? 148 : 100),
+                  left: 0,
+                  right: 0,
                   child: _FilterRail(
                     active: _filter,
                     onFilter: (value) {
@@ -1074,35 +1092,13 @@ class _Pin extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: item.title,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedScale(
-        scale: selected ? 1.16 : 1,
-        duration: const Duration(milliseconds: 140),
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: item.kind.color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: item.kind.color.withAlpha(selected ? 130 : 70),
-                blurRadius: selected ? 18 : 10,
-                spreadRadius: selected ? 2 : 0,
-              ),
-              const BoxShadow(color: Colors.black26, blurRadius: 7),
-            ],
-          ),
-          child: Icon(item.kind.icon, color: Colors.white, size: 20),
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => MapPhotoPin(
+    imageUrl: item.image,
+    ringColor: item.kind.color,
+    fallbackIcon: item.kind.icon,
+    selected: selected,
+    size: 48,
+    onTap: onTap,
   );
 }
 

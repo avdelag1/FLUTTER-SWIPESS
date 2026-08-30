@@ -12,11 +12,11 @@ class EventRepository {
   Future<List<Event>>? _eventsRequest;
 
   static const _full =
-      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, organizer_name, organizer_photo_url, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
+      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, latitude, longitude, organizer_name, organizer_photo_url, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _withAudio =
-      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
+      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, location, location_detail, latitude, longitude, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _base =
-      'id, title, description, category, image_url, image_urls, video_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
+      'id, title, description, category, image_url, image_urls, video_url, event_date, location, location_detail, latitude, longitude, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _legacy =
       'id, title, description, category, image_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, is_free, price_text, promo_text, discount_tag';
 

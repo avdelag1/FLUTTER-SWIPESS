@@ -16,7 +16,10 @@ import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_p
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/utils/map_photo_pin_bitmap.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_pill.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:geolocator/geolocator.dart' hide Position, LocationSettings;
@@ -141,6 +144,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   PointAnnotationManager? _userPin;
   PolygonAnnotationManager? _radius;
   final Map<_Kind, Uint8List> _pinImages = {};
+  final Map<String, Uint8List> _itemPinImages = {};
   Uint8List? _userImage;
 
   bool _loaded = false;
@@ -523,18 +527,23 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   }
 
   _Item _eventItem(Event event, DiscoveryLocation loc) {
-    final resolved = ListingLocations.resolve(event.location ?? '');
-    final p = _spread(
-      'event:${event.id}',
-      resolved?.lat ?? loc.latitude,
-      resolved?.lng ?? loc.longitude,
-      meters: 180,
-    );
+    final ({double lat, double lng}) point;
+    if (event.latitude != null && event.longitude != null) {
+      point = (lat: event.latitude!, lng: event.longitude!);
+    } else {
+      final resolved = ListingLocations.resolve(event.location ?? '');
+      point = _spread(
+        'event:${event.id}',
+        resolved?.lat ?? loc.latitude,
+        resolved?.lng ?? loc.longitude,
+        meters: 180,
+      );
+    }
     return _Item(
       id: event.id,
       kind: _Kind.event,
-      lat: p.lat,
-      lng: p.lng,
+      lat: point.lat,
+      lng: point.lng,
       title: event.title,
       subtitle: event.location ?? event.locationDetail ?? loc.city,
       image:
@@ -655,15 +664,26 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           ),
         );
       }
-      final annotations = <PointAnnotationOptions>[
-        for (final item in items)
+      final annotations = <PointAnnotationOptions>[];
+      for (final item in items) {
+        final selected = item.key == _selected;
+        final pinCacheKey = '${item.key}|$selected';
+        _itemPinImages[pinCacheKey] ??= await MapPhotoPinBitmap.build(
+          cacheKey: item.key,
+          imageUrl: item.image.trim().isEmpty ? null : item.image,
+          ringColor: item.kind.color,
+          fallbackIcon: item.kind.icon,
+          selected: selected,
+        );
+        annotations.add(
           PointAnnotationOptions(
             geometry: _point(item.lat, item.lng),
-            image: _pinImages[item.kind],
-            iconSize: item.key == _selected ? 1.62 : 1.42,
-            symbolSortKey: item.key == _selected ? 9000 : 5000,
+            image: _itemPinImages[pinCacheKey],
+            iconSize: selected ? 1.62 : 1.42,
+            symbolSortKey: selected ? 9000 : 5000,
           ),
-      ];
+        );
+      }
       if (annotations.isNotEmpty) await _pins!.createMulti(annotations);
     } catch (_) {}
   }
@@ -972,7 +992,17 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               ),
             ),
             Positioned(
-              top: pad.top + 44,
+              top: pad.top + 78,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: MapVisibilityPill(
+                  onTap: () => MapVisibilitySheet.show(context),
+                ),
+              ),
+            ),
+            Positioned(
+              top: pad.top + 118,
               left: 0,
               right: 0,
               child: _Filters(active: _filter, onTap: _setFilter),

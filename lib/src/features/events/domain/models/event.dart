@@ -26,6 +26,8 @@ class Event {
   final String? priceText;
   final String? promoText;
   final String? discountTag;
+  final double? latitude;
+  final double? longitude;
 
   const Event({
     required this.id,
@@ -51,6 +53,8 @@ class Event {
     this.priceText,
     this.promoText,
     this.discountTag,
+    this.latitude,
+    this.longitude,
   });
 
   String get price => priceText ?? (isFree ? 'Free' : '');
@@ -116,6 +120,8 @@ class Event {
       priceText: json['price_text'] as String?,
       promoText: json['promo_text'] as String?,
       discountTag: json['discount_tag'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
