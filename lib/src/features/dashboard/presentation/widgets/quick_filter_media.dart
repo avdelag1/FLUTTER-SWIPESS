@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:video_player/video_player.dart';
 
 bool isQuickFilterVideoUrl(String url) {
@@ -71,12 +72,24 @@ class _VideoPlaybackCoordinator {
     _activeVisibility = 0;
     previous?._pauseForCoordinator(releaseOwnership: false);
   }
+
+  static SwipeDeckMediaHandoffData? captureActiveForDeck(bool wantSound) {
+    final state = _active;
+    if (state == null) return null;
+    return state._captureForDeckHandoff(wantSound);
+  }
 }
 
 /// Called before opening another media surface so the dashboard can never keep
 /// an audible player alive underneath the destination route. This deliberately
 /// does not change the shared sound preference.
 void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
+
+/// Transfers the active quick-filter player into [SwipeDeckMediaHandoff] so the
+/// swipe deck can adopt the same initialized controller on the user's tap.
+SwipeDeckMediaHandoffData? captureQuickFilterVideoForDeck({
+  required bool wantSound,
+}) => _VideoPlaybackCoordinator.captureActiveForDeck(wantSound);
 
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
@@ -325,6 +338,33 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (player.value.isPlaying) unawaited(player.pause());
     }
     if (releaseOwnership) _VideoPlaybackCoordinator.release(this);
+  }
+
+  SwipeDeckMediaHandoffData? _captureForDeckHandoff(bool wantSound) {
+    if (!_VideoPlaybackCoordinator.owns(this)) return null;
+
+    final player = _video;
+    final url = _boundVideoUrl?.trim();
+    if (player == null || url == null || url.isEmpty) return null;
+    if (!player.value.isInitialized) return null;
+
+    _detachPlayerListener(player);
+    _VideoPlaybackCoordinator.release(this);
+    if (_holdsBudgetSlot) {
+      _VideoBudget.release();
+      _holdsBudgetSlot = false;
+    }
+    _video = null;
+    _boundVideoUrl = null;
+    _binding = false;
+    _userPaused = false;
+
+    return SwipeDeckMediaHandoffData(
+      videoUrl: url,
+      position: player.value.position,
+      controller: player,
+      wantSound: wantSound,
+    );
   }
 
   Future<void> _playIfReady() async {

@@ -57,6 +57,12 @@ class DeckAudioNotifier extends Notifier<bool> {
     _persistPreference();
   }
 
+  /// Called on the same user tap that opens another media surface so web
+  /// browsers keep the unlocked audio session for the destination player.
+  void preserveAudibleHandoff() {
+    mediaUnlocked = true;
+  }
+
   /// Temporarily mute every consumer of [deckSoundOnProvider] without changing
   /// the user's saved sound preference. Calls are reference-counted so nested
   /// map/globe layers cannot accidentally restore sound too early.

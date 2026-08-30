@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
@@ -35,10 +36,20 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   final container = ProviderScope.containerOf(context, listen: false);
 
   // This function is entered directly from the dashboard tap. Preserve the
-  // user's sound choice across the route, but silence the old dashboard player
-  // before the destination video starts so there is never overlapping audio.
-  if (container.read(deckSoundOnProvider)) unlockDeckMedia();
-  pauseQuickFilterVideoPlayback();
+  // user's sound choice across the route and unlock web audio in the same
+  // gesture before the destination player starts.
+  final soundOn = container.read(deckSoundOnProvider);
+  unlockDeckMedia();
+  if (soundOn) {
+    container.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
+  }
+
+  final handoff = captureQuickFilterVideoForDeck(wantSound: soundOn);
+  if (handoff != null) {
+    SwipeDeckMediaHandoff.set(handoff);
+  } else {
+    pauseQuickFilterVideoPlayback();
+  }
 
   final overlay = container.read(overlayModalsProvider);
   if (overlay.showConcierge) {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dec
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_match_score.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_match_meter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -224,17 +226,23 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
 
     final soundOn = ref.read(deckSoundOnProvider);
-    if (soundOn) unlockDeckMedia();
+    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+    final wantSound = soundOn && (unlocked || !kIsWeb);
+    if (wantSound) unlockDeckMedia();
+
     try {
-      await player.setVolume(soundOn ? 1 : 0);
+      await player.setVolume(0);
       await player.play();
+      if (wantSound) await player.setVolume(1);
     } catch (_) {
-      // Keep the video alive if a browser briefly rejects audible playback,
-      // then restore volume after muted playback has started when possible.
       try {
         await player.setVolume(0);
         await player.play();
-        if (soundOn && widget.isTop) await player.setVolume(1);
+        if (wantSound && widget.isTop) {
+          try {
+            await player.setVolume(1);
+          } catch (_) {}
+        }
       } catch (_) {}
     }
   }
@@ -282,6 +290,26 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       if (_video != null) _disposeVideo();
       return;
     }
+
+    final handoff = SwipeDeckMediaHandoff.take();
+    if (handoff != null) {
+      final handedUrl = handoff.videoUrl.trim();
+      if (handedUrl == url.trim() && handoff.controller != null) {
+        if (handoff.wantSound) {
+          ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
+        }
+        final controller = handoff.controller!;
+        if (handoff.position > Duration.zero) {
+          try {
+            await controller.seekTo(handoff.position);
+          } catch (_) {}
+        }
+        await _adoptPreparedVideo(url, controller);
+        return;
+      }
+      unawaited(handoff.controller?.dispose());
+    }
+
     if (_boundVideo == url && _video != null) {
       await _applyPlaybackRole(_video!);
       return;
@@ -551,7 +579,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     final radiusKm = ref.watch(discoveryLocationProvider).radiusKm;
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       if (!widget.isTop) return;
-      _video?.setVolume(on ? 1 : 0);
+      final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+      final wantSound = on && (unlocked || !kIsWeb);
+      _video?.setVolume(wantSound ? 1 : 0);
     });
     if (widget.isTop &&
         current != null &&
@@ -559,6 +589,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         _video == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_syncVideo());
+      });
+    } else if (widget.isTop) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final handoff = SwipeDeckMediaHandoff.take();
+        if (handoff != null) unawaited(handoff.controller?.dispose());
       });
     }
 
