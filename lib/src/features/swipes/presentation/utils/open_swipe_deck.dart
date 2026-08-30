@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
@@ -63,7 +65,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
 
   if (!nav.mounted || !context.mounted) return null;
 
-  _warmDeckHeroImage(context, container, categoryId);
+  _warmDeckHeroImages(context, container, categoryId);
 
   // Keep the previous frame visible under a very short fade instead of using
   // MaterialPageRoute's longer platform transition. This removes the dark/
@@ -92,19 +94,39 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   return nav.push(route);
 }
 
-void _warmDeckHeroImage(
+bool _isVideoUrl(String value) {
+  final l = value.toLowerCase();
+  return l.contains('.mp4') ||
+      l.contains('.webm') ||
+      l.contains('.mov') ||
+      l.contains('/videos/');
+}
+
+String? _listingHeroImage(Listing listing) {
+  for (final raw in listing.images) {
+    final url = raw.trim();
+    if (url.isNotEmpty && !_isVideoUrl(url)) return url;
+  }
+  return listing.images.isNotEmpty ? listing.images.first.trim() : null;
+}
+
+void _warmDeckHeroImages(
   BuildContext context,
   ProviderContainer container,
   String categoryId,
 ) {
   final listings = container.read(swipeListingsProvider(categoryId)).value;
   if (listings == null || listings.isEmpty) return;
-  final url = listings.first.images.isNotEmpty
-      ? listings.first.images.first
-      : '';
-  final uri = Uri.tryParse(url);
-  if (url.isEmpty || uri == null) return;
   final width = (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
-  final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
-  unawaited(precacheImage(provider, context).catchError((_) {}));
+  final warmCount = math.min(8, listings.length);
+  for (var i = 0; i < warmCount; i++) {
+    final url = _listingHeroImage(listings[i]);
+    if (url == null) continue;
+    final uri = Uri.tryParse(url);
+    if (uri == null || !(uri.scheme == 'https' || uri.scheme == 'http')) {
+      continue;
+    }
+    final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
+    unawaited(precacheImage(provider, context).catchError((_) {}));
+  }
 }

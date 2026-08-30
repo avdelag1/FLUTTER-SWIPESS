@@ -104,14 +104,65 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         l.contains('/videos/');
   }
 
-  bool get _mediaActive => widget.isTop || widget.prepareMedia;
+  bool get _needsVideo => widget.isTop;
+
+  String? _heroImageUrl() {
+    for (final raw in _media) {
+      if (!_isVideo(raw)) return raw;
+    }
+    return _media.isNotEmpty ? _media.first : null;
+  }
+
+  int _cacheWidth(BuildContext context) =>
+      (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
+
+  void _precacheNeighborHero() {
+    final url = _heroImageUrl();
+    if (url == null) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null || !(uri.scheme == 'https' || uri.scheme == 'http')) {
+      return;
+    }
+    final provider = ResizeImage.resizeIfNeeded(
+      _cacheWidth(context),
+      null,
+      NetworkImage(url),
+    );
+    unawaited(precacheImage(provider, context).catchError((_) {}));
+  }
+
+  Widget _cachedCoverImage(String url) {
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      alignment: const Alignment(0, -.12),
+      cacheWidth: _cacheWidth(context),
+      filterQuality: FilterQuality.low,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _fallback(),
+      frameBuilder: (context, child, frame, loadedSync) {
+        if (loadedSync || frame != null) return child;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            _fallback(),
+            child,
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
     super.initState();
-    if (_mediaActive) {
+    if (widget.isTop) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_syncVideo());
+      });
+    } else if (widget.prepareMedia) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _precacheNeighborHero();
       });
     }
   }
@@ -220,7 +271,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   Future<void> _syncVideo() async {
-    if (!_mediaActive) {
+    if (!widget.isTop) {
       _disposeVideo();
       return;
     }
@@ -248,7 +299,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _boundVideo = url;
     try {
       await next.initialize();
-      if (!mounted || !_mediaActive || _boundVideo != url) {
+      if (!mounted || !widget.isTop || _boundVideo != url) {
         await next.dispose();
         return;
       }
@@ -463,21 +514,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget _videoPoster() {
     final poster = _posterUrl();
     if (poster == null) return _fallback();
-    return Image.network(
-      poster,
-      fit: BoxFit.cover,
-      alignment: const Alignment(0, -.12),
-      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(
-        480,
-        1600,
-      ),
-      filterQuality: FilterQuality.low,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => _fallback(),
-    );
+    return _cachedCoverImage(poster);
   }
 
   Widget _primaryMedia(String? current) {
+    // Neighbor cards stay on a decoded still image so web/PWA never waits on a
+    // platform video view while the user is mid vertical swipe.
+    if (widget.prepareMedia && !widget.isTop) {
+      final still = _heroImageUrl();
+      return still == null ? _fallback() : _cachedCoverImage(still);
+    }
     if (current == null) return _fallback();
     if (_isVideo(current)) {
       final player = _video;
@@ -494,18 +540,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         ],
       );
     }
-    return Image.network(
-      current,
-      fit: BoxFit.cover,
-      alignment: const Alignment(0, -.12),
-      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(
-        480,
-        1600,
-      ),
-      filterQuality: FilterQuality.low,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => _fallback(),
-    );
+    return _cachedCoverImage(current);
   }
 
   @override
@@ -518,7 +553,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       if (!widget.isTop) return;
       _video?.setVolume(on ? 1 : 0);
     });
-    if (_mediaActive &&
+    if (widget.isTop &&
         current != null &&
         _isVideo(current) &&
         _video == null) {

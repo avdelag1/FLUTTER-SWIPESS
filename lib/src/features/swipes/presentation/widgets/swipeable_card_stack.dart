@@ -880,8 +880,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
               isTop: false,
               prepareMedia: true,
               railVisible: false,
-              preparedVideoController: _preloadedVideos[listing.id],
-              onPreparedVideoConsumed: () => _consumePreparedVideo(listing.id),
             ),
           ),
         ),
@@ -900,11 +898,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? (_verticalOffset.abs() / height).clamp(0.0, 1.0)
         : 0.0;
     final scale = verticalDrag
-        ? 1.0 - (verticalProgress * 0.04)
+        ? 1.0 - (verticalProgress * 0.03)
         : 1.0 - (_horizontalProgress * 0.05);
-    final cardOpacity = verticalDrag
-        ? (1.0 - (verticalProgress * 0.12)).clamp(0.88, 1.0)
-        : 1.0;
     final translation = verticalDrag
         ? Offset(0, _verticalOffset)
         : Offset(_dragOffset.dx, 0);
@@ -929,9 +924,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             ..rotateY(tiltY)
             ..rotateZ(verticalDrag ? 0 : _rotation)
             ..scaleByDouble(scale, scale, 1, 1),
-          child: Opacity(
-            opacity: cardOpacity,
-            child: Container(
+          child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
@@ -972,7 +965,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                 },
               ),
             ),
-          ),
           ),
         ),
       ),
