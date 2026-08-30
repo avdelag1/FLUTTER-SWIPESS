@@ -327,6 +327,8 @@ if needle not in text:
     raise SystemExit('guard failed: video AnimatedSwitcher changed')
 text = text.replace(needle, replacement, 1)
 
+# The generic replacement above already changes the old helper call inside this
+# block, so match the post-replacement form here.
 sound_old = '''                _RailAction(
                   icon: soundOn
                       ? Icons.volume_up_rounded
@@ -339,7 +341,7 @@ sound_old = '''                _RailAction(
                     if (player != null && player.value.isInitialized) {
                       player.setVolume(soundOn ? 0 : 1);
                       if (!soundOn && widget.active) {
-                        unawaited(_playWithWebFallback(player));
+                        unawaited(_playReliably(player));
                       }
                     }
                   },
