@@ -34,20 +34,21 @@ class MapVisibilityPill extends ConsumerWidget {
         borderRadius: BorderRadius.circular(999),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: visible ? const Color(0xF2FFFFFF) : const Color(0xF2111318),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: visible
-                  ? const Color(0x22000000)
-                  : Colors.white.withAlpha(36),
+                  ? const Color(0xFF147DFF).withAlpha(120)
+                  : Colors.white.withAlpha(48),
+              width: visible ? 1.4 : 1,
             ),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x26000000),
-                blurRadius: 14,
-                offset: Offset(0, 4),
+                color: Color(0x33000000),
+                blurRadius: 18,
+                offset: Offset(0, 6),
               ),
             ],
           ),
@@ -73,11 +74,11 @@ class MapVisibilityPill extends ConsumerWidget {
                 ),
               const SizedBox(width: 7),
               Text(
-                visible ? 'Visible on map' : 'Not sharing location',
+                visible ? 'Visible on map' : 'Ghost mode — hidden',
                 style: GoogleFonts.plusJakartaSans(
                   color: visible ? const Color(0xFF111318) : Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],

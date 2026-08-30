@@ -222,11 +222,11 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
       await map.setCamera(
         CameraOptions(
           center: widget.playIntro
-              ? _point(18, -28)
+              ? _point(20, -20)
               : _point(loc.latitude, loc.longitude),
-          zoom: widget.playIntro ? .62 : _zoom(loc.radiusKm),
+          zoom: widget.playIntro ? .48 : _zoom(loc.radiusKm),
           pitch: widget.playIntro ? 0 : _pitch(loc.radiusKm),
-          bearing: widget.playIntro ? -10 : (loc.radiusKm <= 50 ? 10 : 0),
+          bearing: widget.playIntro ? -12 : (loc.radiusKm <= 50 ? 10 : 0),
         ),
       );
     } catch (_) {}
@@ -237,8 +237,8 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     final map = _map;
     if (map == null) return;
 
-    // Let the fully rendered round Earth breathe before beginning the flight.
-    await Future<void>.delayed(const Duration(milliseconds: 1400));
+    // Let the fully rendered round Earth breathe before the cinematic zoom.
+    await Future<void>.delayed(const Duration(milliseconds: 2600));
     if (!mounted) return;
 
     final loc = ref.read(discoveryLocationProvider);
@@ -252,10 +252,10 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
           pitch: _pitch(loc.radiusKm),
           bearing: loc.radiusKm <= 50 ? 10 : 0,
         ),
-        MapAnimationOptions(duration: 4200, startDelay: 0),
+        MapAnimationOptions(duration: 7800, startDelay: 0),
       );
       await _introFlightIdle!.future.timeout(
-        const Duration(milliseconds: 4800),
+        const Duration(milliseconds: 8600),
         onTimeout: () {},
       );
     } catch (_) {
@@ -751,12 +751,17 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   }
 
   void _dismissOverlays() {
-    if (!_menu && !_cities && !_search) return;
+    if (!_menu && !_cities && !_search && _selected == null && _tray != 1) {
+      return;
+    }
     setState(() {
       _menu = false;
       _cities = false;
       _search = false;
+      _selected = null;
+      if (_tray == 1) _tray = 0;
     });
+    unawaited(_render());
   }
 
   void _selectNearest(double lat, double lng) {
@@ -1006,7 +1011,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               ),
             ),
           if (_uiReady && _controls) ...[
-            if (_menu || _cities || _search)
+            if (_menu || _cities || _search || _selected != null)
               Positioned.fill(
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
@@ -1118,6 +1123,10 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                     setState(() => _menu = false);
                     MapStatusSheet.show(context);
                   },
+                  onVisibility: () {
+                    setState(() => _menu = false);
+                    MapVisibilitySheet.show(context);
+                  },
                   onTray: () => setState(() {
                     _tray = _tray >= 0 ? -1 : 0;
                     _menu = false;
@@ -1159,6 +1168,27 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                 onTap: () => setState(() => _controls = true),
               ),
             ),
+          if (_loaded && !_uiReady) ...[
+            Positioned(
+              top: pad.top + 4,
+              left: 7,
+              child: _IconOnly(
+                icon: Icons.arrow_back_ios_new_rounded,
+                label: 'Back',
+                onTap: _closeMap,
+              ),
+            ),
+            Positioned(
+              top: pad.top + 78,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: MapVisibilityPill(
+                  onTap: () => MapVisibilitySheet.show(context),
+                ),
+              ),
+            ),
+          ],
           if (_uiReady) ...[
             Positioned(
               top: pad.top + 4,
@@ -1442,6 +1472,7 @@ class _Menu extends StatelessWidget {
     required this.onGps,
     required this.onFriends,
     required this.onStatus,
+    required this.onVisibility,
     required this.onTray,
     required this.onHide,
     required this.onClose,
@@ -1451,6 +1482,7 @@ class _Menu extends StatelessWidget {
   final VoidCallback onGps;
   final VoidCallback onFriends;
   final VoidCallback onStatus;
+  final VoidCallback onVisibility;
   final VoidCallback onTray;
   final VoidCallback onHide;
   final VoidCallback onClose;
@@ -1565,6 +1597,12 @@ class _Menu extends StatelessWidget {
             'Set map status',
             onStatus,
             accent: const Color(0xFF22C55E),
+          ),
+          row(
+            Icons.location_on_rounded,
+            'Map visibility',
+            onVisibility,
+            accent: const Color(0xFF147DFF),
           ),
           row(
             trayVisible

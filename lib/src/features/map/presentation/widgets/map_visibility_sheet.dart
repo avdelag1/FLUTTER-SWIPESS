@@ -12,6 +12,8 @@ class MapVisibilitySheet extends ConsumerWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF111318),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
@@ -72,7 +74,7 @@ class MapVisibilitySheet extends ConsumerWidget {
             subtitle: 'People nearby can discover your profile pin',
             selected: visible,
             loading: loading,
-            onTap: () => _set(ref, true),
+            onTap: () => _set(context, ref, true),
           ),
           const SizedBox(height: 8),
           _OptionTile(
@@ -81,7 +83,7 @@ class MapVisibilitySheet extends ConsumerWidget {
             subtitle: 'Nobody sees your location pin. You stay in ghost mode',
             selected: !visible,
             loading: loading,
-            onTap: () => _set(ref, false),
+            onTap: () => _set(context, ref, false),
           ),
           const SizedBox(height: 18),
           SizedBox(
@@ -112,11 +114,21 @@ class MapVisibilitySheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _set(WidgetRef ref, bool visible) async {
+  Future<void> _set(
+    BuildContext context,
+    WidgetRef ref,
+    bool visible,
+  ) async {
     AppHaptics.selection();
     try {
       await ref.read(mapVisibilityProvider.notifier).setVisible(visible);
-    } catch (_) {}
+      if (context.mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update map visibility')),
+      );
+    }
   }
 }
 

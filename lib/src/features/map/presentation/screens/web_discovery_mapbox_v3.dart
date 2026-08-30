@@ -38,10 +38,14 @@ class WebDiscoveryMapboxV3 extends ConsumerStatefulWidget {
     super.key,
     this.onClose,
     this.showCitiesOnOpen = false,
+    this.playIntro = false,
+    this.onIntroComplete,
   });
 
   final VoidCallback? onClose;
   final bool showCitiesOnOpen;
+  final bool playIntro;
+  final VoidCallback? onIntroComplete;
 
   @override
   ConsumerState<WebDiscoveryMapboxV3> createState() =>
@@ -208,8 +212,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   @override
   void initState() {
     super.initState();
-    // Skip the globe fly-in on open — it exposed a white Mapbox canvas on PWA.
-    _openingFlight = false;
+    _openingFlight = widget.playIntro;
     unawaited(_loadGps(silent: true));
   }
 
@@ -242,10 +245,10 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     if (_openingFlight) {
       await map.setCamera(
         CameraOptions(
-          center: Point(coordinates: Position(-25, 18)),
-          zoom: 1.15,
+          center: Point(coordinates: Position(-20, 20)),
+          zoom: 0.48,
           pitch: 0,
-          bearing: -8,
+          bearing: -12,
         ),
       );
     } else {
@@ -598,14 +601,19 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     }
   }
 
-  void _dismissSelection() {
-    if (_selectedKey == null && !_menuOpen) return;
+  void _dismissOverlays() {
+    if (!_menuOpen && !_searchOpen && _selectedKey == null) return;
     _retireSelectedLike();
     setState(() {
-      _selectedKey = null;
       _menuOpen = false;
+      _searchOpen = false;
+      _selectedKey = null;
     });
     _scheduleProjection();
+  }
+
+  void _dismissSelection() {
+    _dismissOverlays();
   }
 
   void _open(_Item item) {
@@ -796,12 +804,15 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   }
                   _scheduleProjection();
                   if (_openingFlight) {
+                    _openingTimer?.cancel();
                     _openingTimer = Timer(
-                      const Duration(milliseconds: 500),
-                      () {
+                      const Duration(milliseconds: 2600),
+                      () async {
+                        if (!mounted) return;
+                        await _flyTo(loc, duration: 7800);
                         if (!mounted) return;
                         setState(() => _openingFlight = false);
-                        unawaited(_flyTo(loc, duration: 1600));
+                        widget.onIntroComplete?.call();
                       },
                     );
                   }
@@ -916,7 +927,27 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   ),
                 ),
 
+              if (_mapLoaded && _controlsVisible)
+                Positioned(
+                  top: pad.top + 52,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: MapVisibilityPill(
+                      onTap: () => MapVisibilitySheet.show(context),
+                    ),
+                  ),
+                ),
+
               if (_controlsVisible && !_openingFlight) ...[
+                if (_menuOpen || _searchOpen || _selectedKey != null)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: _dismissOverlays,
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
                 Positioned(
                   top: pad.top + 8,
                   left: 58,
@@ -987,17 +1018,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                     ),
                   ),
                 Positioned(
-                  top: pad.top + (_searchOpen ? 100 : 52),
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: MapVisibilityPill(
-                      onTap: () => MapVisibilitySheet.show(context),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: pad.top + (_searchOpen ? 148 : 100),
+                  top: pad.top + 100,
                   left: 0,
                   right: 0,
                   child: _FilterRail(
@@ -1029,6 +1050,10 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                       onStatus: () {
                         setState(() => _menuOpen = false);
                         MapStatusSheet.show(context);
+                      },
+                      onVisibility: () {
+                        setState(() => _menuOpen = false);
+                        MapVisibilitySheet.show(context);
                       },
                       onToggleTray: () => setState(() {
                         _trayLevel = _trayLevel >= 0 ? -1 : 0;
@@ -1473,6 +1498,7 @@ class _Menu extends StatelessWidget {
     required this.onMyLocation,
     required this.onFriends,
     required this.onStatus,
+    required this.onVisibility,
     required this.onToggleTray,
     required this.onHideControls,
     required this.onClose,
@@ -1482,6 +1508,7 @@ class _Menu extends StatelessWidget {
   final VoidCallback onMyLocation;
   final VoidCallback onFriends;
   final VoidCallback onStatus;
+  final VoidCallback onVisibility;
   final VoidCallback onToggleTray;
   final VoidCallback onHideControls;
   final VoidCallback onClose;
@@ -1531,6 +1558,7 @@ class _Menu extends StatelessWidget {
           row(Icons.my_location_rounded, 'My location', onMyLocation),
           row(Icons.people_alt_rounded, 'Nearby friends', onFriends),
           row(Icons.emoji_emotions_rounded, 'Set map status', onStatus),
+          row(Icons.location_on_rounded, 'Map visibility', onVisibility),
           row(
             trayVisible
                 ? Icons.visibility_off_rounded

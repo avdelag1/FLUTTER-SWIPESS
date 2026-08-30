@@ -11,6 +11,8 @@ class MapStatusSheet extends ConsumerWidget {
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF111318),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
@@ -69,7 +71,7 @@ class MapStatusSheet extends ConsumerWidget {
                 _StatusChip(
                   option: option,
                   selected: current == option.key,
-                  onTap: () => _pick(ref, option.key),
+                  onTap: () => _pick(context, ref, option.key),
                 ),
               _StatusChip(
                 option: const MapPresenceOption(
@@ -78,7 +80,7 @@ class MapStatusSheet extends ConsumerWidget {
                   icon: Icons.close_rounded,
                 ),
                 selected: current == null || (current?.isEmpty ?? true),
-                onTap: () => _pick(ref, null),
+                onTap: () => _pick(context, ref, null),
               ),
             ],
           ),
@@ -87,13 +89,23 @@ class MapStatusSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _pick(WidgetRef ref, String? key) async {
+  Future<void> _pick(
+    BuildContext context,
+    WidgetRef ref,
+    String? key,
+  ) async {
     AppHaptics.selection();
     try {
       await ref
           .read(mapStatusProvider.notifier)
           .setStatus(key == null || key.isEmpty ? null : key);
-    } catch (_) {}
+      if (context.mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update map status')),
+      );
+    }
   }
 }
 

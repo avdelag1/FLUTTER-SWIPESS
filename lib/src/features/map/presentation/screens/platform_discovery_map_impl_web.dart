@@ -79,12 +79,14 @@ class _WebDiscoveryMapBootstrapState
   late final Future<bool> _mapboxReady = MapboxRuntimeConfig.ensureConfigured();
   late final bool _hardwareReady = _browserSupportsPersistentMapbox();
   late final DeckAudioNotifier _audioNotifier;
+  late bool _showIntro;
   bool _audioSuppressed = false;
   bool? _lastRouteActive;
 
   @override
   void initState() {
     super.initState();
+    _showIntro = true;
     _audioNotifier = ref.read(deckSoundOnProvider.notifier);
   }
 
@@ -141,6 +143,8 @@ class _WebDiscoveryMapBootstrapState
           return WebDiscoveryMapboxV3(
             onClose: widget.onClose,
             showCitiesOnOpen: widget.showCitiesOnOpen,
+            playIntro: _showIntro,
+            onIntroComplete: () => _showIntro = false,
           );
         }
 
