@@ -158,9 +158,14 @@ class BentoDashboardScreen extends ConsumerStatefulWidget {
 
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   final _aiSearchController = TextEditingController();
+  final _scroll = ScrollController();
+
+  /// Approximate height reclaimed when the in-scroll search chrome collapses.
+  static const _searchChromeHeight = 188.0;
 
   @override
   void dispose() {
+    _scroll.dispose();
     _aiSearchController.dispose();
     super.dispose();
   }
@@ -706,6 +711,22 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         .toList(growable: false);
     final leftItems = visibleItems.where((i) => i.index.isEven).toList();
     final rightItems = visibleItems.where((i) => i.index.isOdd).toList();
+    final safe = MediaQuery.paddingOf(context);
+    // Dock floats at bottom:16 with a 52px pill + safe area; leave room for
+    // card titles at the bottom of the last quick-filter row.
+    final bottomScrollPad = safe.bottom + 16 + 52 + 40;
+
+    ref.listen<double>(chromeVisibilityProvider, (previous, next) {
+      if (!_scroll.hasClients || previous == null) return;
+      final delta = (next - previous) * _searchChromeHeight;
+      if (delta.abs() < 0.5) return;
+      final position = _scroll.position;
+      final target = (position.pixels + delta)
+          .clamp(position.minScrollExtent, position.maxScrollExtent);
+      if ((target - position.pixels).abs() > 0.5) {
+        _scroll.jumpTo(target);
+      }
+    });
 
     return Container(
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
@@ -714,8 +735,9 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         child: ElasticPullRefresh(
           onRefresh: () => AppRefreshService.refreshAll(ref),
           child: CustomScrollView(
+            controller: _scroll,
             physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+              parent: ClampingScrollPhysics(),
             ),
             slivers: [
               SliverToBoxAdapter(
@@ -780,7 +802,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                padding: EdgeInsets.fromLTRB(16, 0, 16, bottomScrollPad),
                 sliver: SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(8),

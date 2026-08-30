@@ -174,6 +174,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
+                final metrics = notification.metrics;
+                // Near the bottom, chrome reveal shrinks the scroll viewport and
+                // makes the last quick-filter row jump back up under the dock.
+                if (metrics.maxScrollExtent > 0 &&
+                    metrics.pixels >= metrics.maxScrollExtent - 40) {
+                  return false;
+                }
                 ref
                     .read(chromeVisibilityProvider.notifier)
                     .onScroll(
