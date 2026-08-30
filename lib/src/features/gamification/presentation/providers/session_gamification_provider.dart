@@ -16,24 +16,23 @@ final sessionGamificationProvider = Provider<SessionGamificationService>((ref) {
   return service;
 });
 
-/// Active-use heartbeat for the SWIPESS loyalty ladder.
+/// Foreground-residency heartbeat for the SWIPESS loyalty ladder.
 ///
-/// Reward time follows the user across every route. It counts while SWIPESS is
-/// foregrounded and the session still looks active. A generous five-minute
-/// activity window lets people read listings, messages, contracts, or client
-/// details without losing credit, while abandoned/background sessions stop.
+/// Reward time follows the user across every route and counts continuously while
+/// SWIPESS is actually in the foreground. Reading a listing, watching a video,
+/// reviewing a contract, or waiting in a chat all remain valid app time even if
+/// the user does not touch the screen for several minutes. As soon as the app is
+/// inactive/hidden/paused/detached, the timer stops and no time is backfilled.
 class SessionGamificationService {
   SessionGamificationService(this.ref);
 
   static const _heartbeatEvery = Duration(seconds: 15);
-  static const _activeWindow = Duration(minutes: 5);
 
   final Ref ref;
   Timer? _timer;
   bool _syncing = false;
   bool _referralChecked = false;
   bool _isForeground = true;
-  DateTime? _lastInteractionAt;
   _GamificationLifecycleObserver? _lifecycleObserver;
   BuildContext? _context;
   int _trackingClients = 0;
@@ -47,14 +46,12 @@ class SessionGamificationService {
 
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     _isForeground = lifecycle == null || lifecycle == AppLifecycleState.resumed;
-    if (_isForeground) _lastInteractionAt = DateTime.now();
 
     if (_lifecycleObserver == null) {
       _lifecycleObserver = _GamificationLifecycleObserver(
         onStateChanged: (state) {
           if (state == AppLifecycleState.resumed) {
             _isForeground = true;
-            _lastInteractionAt = DateTime.now();
             final ctx = _context;
             if (ctx != null) _startForegroundTimer(ctx);
           } else if (state == AppLifecycleState.inactive ||
@@ -62,7 +59,6 @@ class SessionGamificationService {
               state == AppLifecycleState.detached ||
               state == AppLifecycleState.hidden) {
             _isForeground = false;
-            _lastInteractionAt = null;
             _pauseForegroundTimer();
           }
         },
@@ -73,25 +69,15 @@ class SessionGamificationService {
     if (_isForeground) _startForegroundTimer(_context ?? context);
   }
 
-  /// Called from the app-level pointer/scroll listener. No network call happens
-  /// here; it simply keeps the foreground session eligible for reward time.
-  void markActivity() {
-    if (!_isForeground) return;
-    _lastInteractionAt = DateTime.now();
-  }
-
-  bool get _isActivelyUsingApp {
-    if (!_isForeground) return false;
-    final last = _lastInteractionAt;
-    if (last == null) return false;
-    return DateTime.now().difference(last) <= _activeWindow;
-  }
+  /// Kept temporarily for callers from older builds. Foreground residence is
+  /// now authoritative, so pointer activity is intentionally irrelevant.
+  void markActivity() {}
 
   void _startForegroundTimer(BuildContext context) {
     if (_timer != null || !_isForeground) return;
     unawaited(_heartbeat(context, 0));
     _timer = Timer.periodic(_heartbeatEvery, (_) {
-      if (!_isActivelyUsingApp) return;
+      if (!_isForeground) return;
       unawaited(_heartbeat(context, _heartbeatEvery.inSeconds));
     });
   }
@@ -114,7 +100,6 @@ class SessionGamificationService {
     if (observer != null) WidgetsBinding.instance.removeObserver(observer);
     _lifecycleObserver = null;
     _context = null;
-    _lastInteractionAt = null;
   }
 
   void dispose() => _stopCompletely();
@@ -142,7 +127,7 @@ class SessionGamificationService {
   Future<void> _heartbeat(BuildContext context, int activeSeconds) async {
     await _applyPendingReferral();
     if (_syncing || Supabase.instance.client.auth.currentUser == null) return;
-    if (activeSeconds > 0 && !_isActivelyUsingApp) return;
+    if (activeSeconds > 0 && !_isForeground) return;
 
     _syncing = true;
     try {
@@ -170,8 +155,8 @@ class SessionGamificationService {
         tokenAwarded: tokenAwarded,
       );
     } catch (_) {
-      // Missed heartbeats are never backfilled. This prevents background or
-      // abandoned time from turning into reward credit later.
+      // Missed foreground heartbeats are never backfilled. This prevents any
+      // background time from becoming reward credit later.
     } finally {
       _syncing = false;
     }
