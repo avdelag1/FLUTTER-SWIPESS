@@ -22,6 +22,7 @@ import 'package:flutter_swipes/src/features/map/presentation/providers/map_listi
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/direct_request_sheet.dart';
+import 'package:flutter_swipes/src/features/profile/domain/models/user_profile.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 
@@ -71,6 +72,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     super.initState();
     _categoryId = widget.categoryId;
     ref.read(chromeRevealProvider.notifier).reveal();
+    // Deck data is warmed on dashboard boot; kick a read so the route paints
+    // from cache instead of waiting on a fresh fetch.
+    ref.read(swipeListingsProvider(_categoryId));
   }
 
   @override
@@ -327,6 +331,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final listingsAsync = ref.watch(swipeListingsProvider(_categoryId));
     final chrome = ref.watch(chromeRevealProvider);
     final profile = ref.watch(currentProfileProvider).value;
+    final cachedListings = listingsAsync.value;
 
     final cardExpanded = chrome.photoExpanded;
     final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);
@@ -340,22 +345,45 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       extendBody: true,
       body: PullDownToDismiss(
         onDismiss: _goDashboard,
-        child: listingsAsync.when(
-          loading: () => const SizedBox.expand(child: SwipeLoadingSkeleton()),
-          error: (err, _) => SwipeErrorState(
-            isRetrying: _retrying,
-            onRetry: () async {
-              setState(() => _retrying = true);
-              ref.invalidate(swipeListingsProvider(_categoryId));
-              await Future<void>.delayed(const Duration(milliseconds: 400));
-              if (mounted) setState(() => _retrying = false);
-            },
-          ),
-          data: (listings) {
-            _ensureDeck(listings);
-            final deck = _deck ?? listings;
+        child: cachedListings != null
+            ? _deckScaffold(
+                listings: cachedListings,
+                chrome: chrome,
+                profile: profile,
+              )
+            : listingsAsync.when(
+                loading: () =>
+                    const SizedBox.expand(child: SwipeLoadingSkeleton()),
+                error: (err, _) => SwipeErrorState(
+                  isRetrying: _retrying,
+                  onRetry: () async {
+                    setState(() => _retrying = true);
+                    ref.invalidate(swipeListingsProvider(_categoryId));
+                    await Future<void>.delayed(
+                      const Duration(milliseconds: 400),
+                    );
+                    if (mounted) setState(() => _retrying = false);
+                  },
+                ),
+                data: (listings) => _deckScaffold(
+                  listings: listings,
+                  chrome: chrome,
+                  profile: profile,
+                ),
+              ),
+      ),
+    );
+  }
 
-            return Stack(
+  Widget _deckScaffold({
+    required List<Listing> listings,
+    required ChromeRevealState chrome,
+    required UserProfile? profile,
+  }) {
+    _ensureDeck(listings);
+    final deck = _deck ?? listings;
+
+    return Stack(
               fit: StackFit.expand,
               children: [
                 Positioned.fill(
@@ -548,9 +576,5 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
                 ),
               ],
             );
-          },
-        ),
-      ),
-    );
   }
 }

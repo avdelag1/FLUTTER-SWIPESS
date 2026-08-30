@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
 import 'package:go_router/go_router.dart';
 
@@ -49,7 +52,9 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
       return null;
   }
 
-  if (!nav.mounted) return null;
+  if (!nav.mounted || !context.mounted) return null;
+
+  _warmDeckHeroImage(context, container, categoryId);
 
   // Keep the previous frame visible under a very short fade instead of using
   // MaterialPageRoute's longer platform transition. This removes the dark/
@@ -76,4 +81,19 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
 
   if (replace) return nav.pushReplacement(route);
   return nav.push(route);
+}
+
+void _warmDeckHeroImage(
+  BuildContext context,
+  ProviderContainer container,
+  String categoryId,
+) {
+  final listings = container.read(swipeListingsProvider(categoryId)).value;
+  if (listings == null || listings.isEmpty) return;
+  final url = listings.first.images.isNotEmpty ? listings.first.images.first : '';
+  final uri = Uri.tryParse(url);
+  if (url.isEmpty || uri == null) return;
+  final width = (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
+  final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
+  unawaited(precacheImage(provider, context).catchError((_) {}));
 }
