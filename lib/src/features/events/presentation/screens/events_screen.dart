@@ -481,17 +481,23 @@ class _EventPage extends ConsumerStatefulWidget {
 
 class _EventPageState extends ConsumerState<_EventPage>
     with WidgetsBindingObserver {
-  Future<void> _playWithWebFallback(VideoPlayerController? p) async {
-    if (p == null) return;
+  Future<void> _playReliably(VideoPlayerController? player) async {
+    if (player == null || !player.value.isInitialized) return;
+
+    final wantsSound =
+        ref.read(deckSoundOnProvider) && (!kIsWeb || _sessionAudioUnlocked);
     try {
-      await p.play();
+      // Start muted first. This is accepted by browser autoplay policies and
+      // also gives native players a deterministic first frame before audio.
+      await player.setVolume(0);
+      await player.play();
+      if (wantsSound) await player.setVolume(1);
     } catch (_) {
-      if (kIsWeb) {
-        try {
-          await p.setVolume(0);
-          await p.play();
-        } catch (_) {}
-      }
+      // A play() rejection is not an initialization failure. Keep the decoder
+      // mounted so the first frame remains visible and a user tap can retry.
+      try {
+        await player.setVolume(0);
+      } catch (_) {}
     }
   }
 
@@ -500,6 +506,9 @@ class _EventPageState extends ConsumerState<_EventPage>
   bool _busy = false;
   bool _initialApplied = false;
   bool _appActive = true;
+  bool _videoLoading = false;
+  bool _videoFailed = false;
+  bool _sessionAudioUnlocked = !kIsWeb;
   IconData? _playbackFeedback;
   Timer? _playbackFeedbackTimer;
 
@@ -592,7 +601,7 @@ class _EventPageState extends ConsumerState<_EventPage>
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
     if (widget.active) {
-      unawaited(_playWithWebFallback(player));
+      unawaited(_playReliably(player));
     } else {
       unawaited(player.pause());
     }
@@ -601,46 +610,76 @@ class _EventPageState extends ConsumerState<_EventPage>
   Future<void> _adoptTransferredVideo(VideoPlayerController player) async {
     try {
       await player.setLooping(true);
-      await player.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      if (widget.active && _appActive) await _playWithWebFallback(player);
-      if (mounted && identical(_player, player)) setState(() {});
+      await player.setVolume(0);
+      if (mounted && identical(_player, player)) {
+        setState(() {
+          _videoLoading = false;
+          _videoFailed = false;
+        });
+      }
+      if (widget.active && _appActive) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted &&
+              widget.active &&
+              _appActive &&
+              identical(_player, player)) {
+            unawaited(_playReliably(player));
+          }
+        });
+      }
     } catch (_) {
       if (!mounted || !identical(_player, player)) return;
       try {
         await player.dispose();
       } catch (_) {}
       _player = null;
+      setState(() => _videoFailed = true);
       if (widget.shouldLoadVideo && _hasVideo) unawaited(_bindVideo());
     }
   }
 
   Future<void> _bindVideo() async {
-    final m = _media;
-    if (m.isEmpty) return;
-    final url = m[_mediaIndex % m.length];
+    if (_videoLoading) return;
+    final media = _media;
+    if (media.isEmpty) return;
+    final url = media[_mediaIndex % media.length];
     if (!_isVideo(url)) return;
 
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme) return;
-
-    final previous = _player;
-    final next = VideoPlayerController.networkUrl(uri);
-    _player = next;
-    if (previous != null && !identical(previous, next)) {
-      try {
-        await previous.pause();
-      } catch (_) {}
-      try {
-        await previous.dispose();
-      } catch (_) {}
+    if (uri == null || !uri.hasScheme) {
+      if (mounted) setState(() => _videoFailed = true);
+      return;
     }
 
+    if (mounted) {
+      setState(() {
+        _videoLoading = true;
+        _videoFailed = false;
+      });
+    }
+
+    final previous = _player;
+    final next = VideoPlayerController.networkUrl(
+      uri,
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _player = next;
+
     try {
+      if (previous != null && !identical(previous, next)) {
+        try {
+          await previous.setVolume(0);
+          await previous.pause();
+        } catch (_) {}
+        try {
+          await previous.dispose();
+        } catch (_) {}
+      }
+
       await next.initialize();
       await next.setLooping(true);
+      await next.setVolume(0);
 
-      // The user may have horizontally changed media while this network video
-      // was warming. Never let a stale decoder start playing behind an image.
       final current = _media;
       final stillCurrent =
           mounted &&
@@ -652,6 +691,7 @@ class _EventPageState extends ConsumerState<_EventPage>
         try {
           await next.dispose();
         } catch (_) {}
+        if (identical(_player, next)) _player = null;
         return;
       }
 
@@ -666,16 +706,41 @@ class _EventPageState extends ConsumerState<_EventPage>
         _initialApplied = true;
       }
 
-      await next.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      if (widget.active && _appActive) await _playWithWebFallback(next);
-      if (mounted && identical(_player, next)) setState(() {});
+      // Critical: publish `isInitialized` BEFORE awaiting play(). On web/PWA
+      // the play future can be delayed by autoplay policy; the moving-picture
+      // surface must still mount immediately instead of leaving a black card.
+      if (mounted && identical(_player, next)) {
+        setState(() {
+          _videoLoading = false;
+          _videoFailed = false;
+        });
+      }
+
+      if (widget.active && _appActive) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted &&
+              widget.active &&
+              _appActive &&
+              identical(_player, next)) {
+            unawaited(_playReliably(next));
+          }
+        });
+      }
     } catch (_) {
       try {
         await next.dispose();
       } catch (_) {}
-      if (identical(_player, next)) {
-        _player = null;
-        if (mounted) setState(() {});
+      if (identical(_player, next)) _player = null;
+      if (mounted) {
+        setState(() {
+          _videoLoading = false;
+          _videoFailed = true;
+        });
+      }
+    } finally {
+      if (!mounted) return;
+      if (_videoLoading && !identical(_player, next)) {
+        setState(() => _videoLoading = false);
       }
     }
   }
@@ -704,11 +769,7 @@ class _EventPageState extends ConsumerState<_EventPage>
   Future<void> _resumeAfterBackground() async {
     final player = _player;
     if (!mounted || !_appActive || !widget.active || player == null) return;
-    try {
-      final soundOn = ref.read(deckSoundOnProvider);
-      await player.setVolume(soundOn ? 1 : 0);
-      if (_appActive && widget.active) await _playWithWebFallback(player);
-    } catch (_) {}
+    await _playReliably(player);
   }
 
   @override
@@ -722,19 +783,15 @@ class _EventPageState extends ConsumerState<_EventPage>
 
   Future<void> _togglePlayback() async {
     final player = _player;
-    // If a previous network attempt failed, a tap on the poster is also a
-    // natural retry gesture. Do not spawn a duplicate decoder while one is
-    // already initializing.
-    if (player == null) {
+    if (player == null || !player.value.isInitialized) {
       if (_hasVideo && widget.shouldLoadVideo) unawaited(_bindVideo());
       return;
     }
-    if (!player.value.isInitialized) return;
 
     final shouldPlay = !player.value.isPlaying;
     try {
       if (shouldPlay) {
-        await _playWithWebFallback(player);
+        await _playReliably(player);
       } else {
         await player.pause();
       }
@@ -854,10 +911,14 @@ class _EventPageState extends ConsumerState<_EventPage>
     final soundOn = ref.watch(deckSoundOnProvider);
 
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
-      _player?.setVolume(on ? 1 : 0);
-      if (on && widget.active && _appActive) unawaited(_playWithWebFallback(_player));
+      final player = _player;
+      if (player == null || !player.value.isInitialized) return;
+      final audible = on && (!kIsWeb || _sessionAudioUnlocked);
+      unawaited(player.setVolume(audible ? 1 : 0));
+      if (widget.active && _appActive) unawaited(_playReliably(player));
     });
 
+    final effectiveSoundOn = soundOn && (!kIsWeb || _sessionAudioUnlocked);
     final player = _player;
     final ready = player != null && player.value.isInitialized;
     final bottom = MediaQuery.paddingOf(context).bottom;
@@ -924,6 +985,38 @@ class _EventPageState extends ConsumerState<_EventPage>
                                 ),
                               ),
                       ),
+                      if (index == _mediaIndex && !ready)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Center(
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 180),
+                                child: _videoFailed
+                                    ? const Icon(
+                                        Icons.play_circle_fill_rounded,
+                                        key: ValueKey('event-video-retry'),
+                                        color: Colors.white,
+                                        size: 54,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black54,
+                                            blurRadius: 14,
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox(
+                                        key: ValueKey('event-video-loading'),
+                                        width: 30,
+                                        height: 30,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.4,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 }
@@ -1058,18 +1151,23 @@ class _EventPageState extends ConsumerState<_EventPage>
                 ),
                 const SizedBox(height: 8),
                 _RailAction(
-                  icon: soundOn
+                  icon: effectiveSoundOn
                       ? Icons.volume_up_rounded
                       : Icons.volume_off_rounded,
                   onTap: () {
                     widget.onChromeInteraction();
                     unlockDeckMedia();
-                    ref.read(deckSoundOnProvider.notifier).setSoundOn(!soundOn);
+                    _sessionAudioUnlocked = true;
+                    final nextSoundOn = !effectiveSoundOn;
+                    ref
+                        .read(deckSoundOnProvider.notifier)
+                        .setSoundOn(nextSoundOn);
+                    if (mounted) setState(() {});
                     final player = _player;
                     if (player != null && player.value.isInitialized) {
-                      player.setVolume(soundOn ? 0 : 1);
-                      if (!soundOn && widget.active) {
-                        unawaited(_playWithWebFallback(player));
+                      unawaited(player.setVolume(nextSoundOn ? 1 : 0));
+                      if (nextSoundOn && widget.active && _appActive) {
+                        unawaited(_playReliably(player));
                       }
                     }
                   },
