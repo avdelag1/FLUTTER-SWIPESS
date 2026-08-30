@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Cap `useChromeReveal` — header/dock + rail fade after idle on the swipe deck.
+/// Header/dock + card controls stay visible long enough to be useful, then the
+/// deck enters an immersive state. The card itself expands after the chrome
+/// leaves, matching the soft photo-first reveal used across Swipess.
 class ChromeRevealState {
   const ChromeRevealState({this.chromeVisible = true, this.railVisible = true});
 
@@ -22,8 +24,12 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
   Timer? _chromeTimer;
   Timer? _railTimer;
 
-  static const chromeHideMs = 3000;
-  static const railHideMs = 3000;
+  // Three seconds felt rushed on a photo/reel surface. Keep the full HUD long
+  // enough to read and interact with, then soften the side controls first and
+  // let the header/dock disappear a beat later so the photo expansion reads as
+  // an intentional cinematic transition instead of a sudden layout jump.
+  static const railHideMs = 5600;
+  static const chromeHideMs = 6200;
 
   @override
   ChromeRevealState build() {
@@ -51,6 +57,13 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
 
     _clear();
     state = const ChromeRevealState(chromeVisible: true, railVisible: true);
+
+    _railTimer = Timer(const Duration(milliseconds: railHideMs), () {
+      _railTimer = null;
+      if (!state.railVisible) return;
+      state = state.copyWith(railVisible: false);
+    });
+
     _chromeTimer = Timer(const Duration(milliseconds: chromeHideMs), hide);
   }
 

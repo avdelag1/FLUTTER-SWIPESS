@@ -1,13 +1,13 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
-/// Cap `usePullDownToDismiss` — top-edge pull only.
-///
-/// Important for web: no [ImageFiltered]/BackdropFilter here — full-screen
-/// blur filters have caused black/frozen frames in Safari & Chrome.
+/// Top-edge pull-to-dismiss that deliberately stays out of Flutter's gesture
+/// arena. The swipe deck owns vertical/horizontal pan recognition; this wrapper
+/// only observes raw pointer motion that begins in the tiny top edge, so it can
+/// never steal Reels-style vertical paging from listing cards.
 class PullDownToDismiss extends StatefulWidget {
   const PullDownToDismiss({
     super.key,
@@ -26,10 +26,17 @@ class PullDownToDismiss extends StatefulWidget {
 
 class _PullDownToDismissState extends State<PullDownToDismiss>
     with SingleTickerProviderStateMixin {
+  static const _edgeHeight = 56.0;
+
   double _y = 0;
   bool _dragging = false;
   bool _dismissing = false;
   bool _armed = false;
+  int? _pointer;
+  Offset? _origin;
+  Offset? _lastPosition;
+  DateTime? _lastMoveAt;
+  double _velocityY = 0;
   AnimationController? _anim;
 
   @override
@@ -58,80 +65,108 @@ class _PullDownToDismissState extends State<PullDownToDismiss>
     });
   }
 
-  void _onDragStart(DragStartDetails d) {
-    if (_dismissing) return;
-    // Cap: only physical top edge (~56px) can arm pull-dismiss.
-    // Never steal gestures from the card body / side rail / bottom dock.
-    _armed = d.globalPosition.dy <= 56;
-    if (!_armed) return;
-    _anim?.stop();
+  void _resetPointer() {
+    _armed = false;
     _dragging = false;
+    _pointer = null;
+    _origin = null;
+    _lastPosition = null;
+    _lastMoveAt = null;
+    _velocityY = 0;
   }
 
-  void _onDragUpdate(DragUpdateDetails d) {
-    if (!_armed || _dismissing) return;
-    // Require clear downward intent before activating (don't fight horiz swipe).
+  void _onPointerDown(PointerDownEvent event) {
+    if (_dismissing || event.position.dy > _edgeHeight) return;
+    _anim?.stop();
+    _armed = true;
+    _dragging = false;
+    _pointer = event.pointer;
+    _origin = event.position;
+    _lastPosition = event.position;
+    _lastMoveAt = DateTime.now();
+    _velocityY = 0;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_armed || _dismissing || event.pointer != _pointer) return;
+    final origin = _origin;
+    final previous = _lastPosition;
+    if (origin == null || previous == null) return;
+
+    final travel = event.position - origin;
     if (!_dragging) {
-      if (d.delta.dy > 2 && d.delta.dy.abs() > d.delta.dx.abs() * 1.4) {
+      if (travel.dy > 3 && travel.dy.abs() > travel.dx.abs() * 1.4) {
         _dragging = true;
-      } else if (d.delta.dx.abs() > d.delta.dy.abs()) {
-        _armed = false;
+        AppHaptics.light();
+      } else if (travel.dx.abs() > 8 && travel.dx.abs() > travel.dy.abs()) {
+        _resetPointer();
         return;
       } else {
+        _lastPosition = event.position;
+        _lastMoveAt = DateTime.now();
         return;
       }
     }
-    setState(() => _y = math.max(0, _y + d.delta.dy));
+
+    final now = DateTime.now();
+    final lastAt = _lastMoveAt;
+    if (lastAt != null) {
+      final micros = now.difference(lastAt).inMicroseconds;
+      if (micros > 0) {
+        _velocityY =
+            (event.position.dy - previous.dy) * Duration.microsecondsPerSecond /
+            micros;
+      }
+    }
+    _lastPosition = event.position;
+    _lastMoveAt = now;
+    setState(() => _y = math.max(0, travel.dy));
   }
 
-  void _onDragEnd(DragEndDetails d) {
-    if (!_armed || _dismissing) {
-      _armed = false;
-      _dragging = false;
+  void _finishPointer(int pointer) {
+    if (!_armed || _dismissing || pointer != _pointer) {
+      if (pointer == _pointer) _resetPointer();
       return;
     }
-    _armed = false;
-    _dragging = false;
-    final v = d.primaryVelocity ?? 0;
-    if (_y >= widget.threshold || v > 1100) {
+
+    final shouldDismiss =
+        _dragging && (_y >= widget.threshold || _velocityY > 1100);
+    _resetPointer();
+    if (shouldDismiss) {
       _dismissing = true;
       AppHaptics.medium();
-      final h = MediaQuery.sizeOf(context).height;
-      _runTo(h * 0.95, onDone: widget.onDismiss);
-    } else {
+      final height = MediaQuery.sizeOf(context).height;
+      _runTo(height * 0.95, onDone: widget.onDismiss);
+    } else if (_y != 0) {
       _runTo(0);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_y == 0) {
-      return GestureDetector(
-        behavior: HitTestBehavior.deferToChild,
-        onVerticalDragStart: _onDragStart,
-        onVerticalDragUpdate: _onDragUpdate,
-        onVerticalDragEnd: _onDragEnd,
-        child: widget.child,
-      );
-    }
-
-    final t = (_y / 220).clamp(0.0, 1.0);
-    final scale = 1 - (0.22 * Curves.easeOut.transform(t));
-    final opacity = (1 - 0.55 * Curves.easeOut.transform(t)).clamp(0.35, 1.0);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.deferToChild,
-      onVerticalDragStart: _onDragStart,
-      onVerticalDragUpdate: _onDragUpdate,
-      onVerticalDragEnd: _onDragEnd,
-      child: Transform.translate(
+    Widget child = widget.child;
+    if (_y != 0) {
+      final t = (_y / 220).clamp(0.0, 1.0);
+      final eased = Curves.easeOut.transform(t);
+      final scale = 1 - (0.22 * eased);
+      final opacity = (1 - 0.55 * eased).clamp(0.35, 1.0);
+      child = Transform.translate(
         offset: Offset(0, _y),
         child: Transform.scale(
           scale: scale,
           alignment: Alignment.topCenter,
-          child: Opacity(opacity: opacity, child: widget.child),
+          child: Opacity(opacity: opacity, child: child),
         ),
-      ),
+      );
+    }
+
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: (event) => _finishPointer(event.pointer),
+      onPointerCancel: (event) => _finishPointer(event.pointer),
+      child: child,
     );
   }
 }
