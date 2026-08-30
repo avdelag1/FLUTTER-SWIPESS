@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/native/app_lifecycle_service.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/bulk_selection_bar.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/notifications/domain/app_notification.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/utils/notification_navigation.dart';
@@ -25,6 +26,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   final Set<String> _selected = <String>{};
   bool _selecting = false;
   bool _deleting = false;
+  bool _enablingSystemBanners = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(localNotificationsProvider).initialize().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   void _beginSelection([String? id]) {
     AppHaptics.selection();
@@ -46,6 +56,25 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     setState(() {
       if (!_selected.add(id)) _selected.remove(id);
     });
+  }
+
+  Future<void> _enableSystemBanners() async {
+    if (_enablingSystemBanners) return;
+    AppHaptics.medium();
+    setState(() => _enablingSystemBanners = true);
+    final service = ref.read(localNotificationsProvider);
+    final granted = await service.ensurePermission();
+    if (!mounted) return;
+    setState(() => _enablingSystemBanners = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          granted
+              ? 'System notification banners are enabled.'
+              : 'Notifications are still blocked. You can allow them in your device or browser settings.',
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteSelected() async {
@@ -94,6 +123,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(notificationsProvider);
     final top = MediaQuery.paddingOf(context).top;
+    final notificationService = ref.read(localNotificationsProvider);
 
     return NeoNaiveScaffold(
       body: async.when(
@@ -145,6 +175,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     });
                   },
                   onDelete: _deleteSelected,
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: _ExternalNotificationsCard(
+                    supported: notificationService.isSupported,
+                    enabled: notificationService.permissionGranted,
+                    busy: _enablingSystemBanners,
+                    onEnable: _enableSystemBanners,
+                  ),
                 ),
               Expanded(
                 child: items.isEmpty
@@ -192,6 +232,120 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _ExternalNotificationsCard extends StatelessWidget {
+  const _ExternalNotificationsCard({
+    required this.supported,
+    required this.enabled,
+    required this.busy,
+    required this.onEnable,
+  });
+
+  final bool supported;
+  final bool enabled;
+  final bool busy;
+  final VoidCallback onEnable;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final accent = enabled ? const Color(0xFF22C55E) : AppTheme.brandPrimary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: accent.withAlpha(enabled ? 13 : 16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withAlpha(enabled ? 55 : 65)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withAlpha(28),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              enabled
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_none_rounded,
+              color: accent,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  enabled ? 'SYSTEM BANNERS ON' : 'GET BANNERS OUTSIDE SWIPESS',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink,
+                    fontSize: 11.2,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .35,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  supported
+                      ? 'Consistency and return reminders on iOS, Android and supported browser/PWA sessions.'
+                      : 'System notification banners are not available on this device.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: muted,
+                    fontSize: 9.8,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (supported) ...[
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 34,
+              child: TextButton(
+                onPressed: enabled || busy ? null : onEnable,
+                style: TextButton.styleFrom(
+                  foregroundColor: accent,
+                  backgroundColor: accent.withAlpha(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 11),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: busy
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: accent,
+                        ),
+                      )
+                    : Text(
+                        enabled ? 'ENABLED' : 'ENABLE',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9.4,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .45,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
