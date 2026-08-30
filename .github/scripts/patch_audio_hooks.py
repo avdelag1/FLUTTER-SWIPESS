@@ -64,6 +64,18 @@ replace_once(
     "      ref.invalidate(ownerListingsStatsProvider);\n      state = const ListingDraft();\n      await AppAudio.instance.playSuccessFromPrefs();\n      return true;",
 )
 
+# Profile save/finish: same crystal confirmation cue.
+replace_once(
+    'lib/src/features/profile/presentation/screens/edit_profile_screen.dart',
+    "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\n",
+    "import 'package:flutter_swipes/src/core/utils/app_haptics.dart';\nimport 'package:flutter_swipes/src/core/services/app_audio.dart';\n",
+)
+replace_once(
+    'lib/src/features/profile/presentation/screens/edit_profile_screen.dart',
+    "      ref.invalidate(currentProfileProvider);\n      ref.invalidate(mapProfilesProvider);\n      if (!mounted) return;",
+    "      ref.invalidate(currentProfileProvider);\n      ref.invalidate(mapProfilesProvider);\n      await AppAudio.instance.playSuccessFromPrefs();\n      if (!mounted) return;",
+)
+
 # Direct Request/token purchase: premium metallic cue only after verified success.
 replace_once(
     'lib/src/features/payments/presentation/widgets/tokens_modal.dart',
