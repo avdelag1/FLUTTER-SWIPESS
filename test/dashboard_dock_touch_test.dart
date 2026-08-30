@@ -31,7 +31,7 @@ void main() {
     }
   });
 
-  testWidgets('lawyers and events remain tappable at the end of the dock', (
+  testWidgets('events and lawyers remain tappable across dock scrolling', (
     tester,
   ) async {
     NavTab? tapped;
@@ -52,15 +52,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // Events intentionally lives near the front of the current dock ordering.
+    await tester.tap(find.byIcon(Icons.celebration_rounded));
+    await tester.pump();
+    expect(tapped, NavTab.events);
+
+    // Lawyers lives later in the horizontal dock and must remain reachable after
+    // scrolling without a neighboring button stealing the hit target.
     final scroller = find.byType(SingleChildScrollView);
     expect(scroller, findsOneWidget);
     await tester.drag(scroller, const Offset(-280, 0));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.balance_rounded));
+    await tester.pump();
     expect(tapped, NavTab.legal);
-
-    await tester.tap(find.byIcon(Icons.celebration_rounded));
-    expect(tapped, NavTab.events);
   });
 }
