@@ -1,48 +1,73 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_swipes/src/core/native/web_notifications_bridge.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Cap `src/utils/localNotifications.ts` (`@capacitor/local-notifications`).
+/// Swipess system notification service.
 ///
-/// When the app goes to the background we schedule a couple of friendly nudges
-/// a few days out; when the user comes back we cancel them. Net effect: a
-/// reminder only ever fires if they *don't* return on their own.
+/// Native iOS/Android reminders are scheduled through
+/// `flutter_local_notifications`. Web/PWA uses the browser Notification API.
+/// Permission is NEVER requested from a lifecycle/background callback; only an
+/// explicit foreground action may call [ensurePermission].
 class LocalNotificationsService {
   LocalNotificationsService({FlutterLocalNotificationsPlugin? plugin})
     : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
-  /// Stable ids, so we cancel exactly what we scheduled. Same numbers as Cap.
+  /// Stable ids, so we cancel exactly what we scheduled.
+  static const consistencyReminderId = 88003;
   static const reengageIds = [88001, 88002];
 
   static const _channelId = 'swipess_reengagement';
-  static const _channelName = 'Reminders';
+  static const _channelName = 'Swipess reminders';
   static const _channelDescription =
-      'Occasional nudges about new matches and listings.';
+      'Consistency challenge, matches and return reminders.';
+  static const _permissionPreferenceKey =
+      'swipess_notification_permission_granted';
 
   final FlutterLocalNotificationsPlugin _plugin;
 
   bool _ready = false;
   bool _permissionGranted = false;
 
-  /// Route a tapped reminder into the app. Cap read `extra.url` and defaulted
-  /// to `/notifications`.
+  /// Route a tapped native reminder into the app.
   void Function(String route)? onNotificationRoute;
 
-  bool get isSupported =>
+  bool get _nativeSupported =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS);
 
+  bool get isSupported =>
+      kIsWeb ? WebNotificationsBridge.isSupported : _nativeSupported;
+
+  bool get permissionGranted => _permissionGranted;
+
   Future<void> initialize() async {
-    if (_ready || !isSupported) return;
+    if (_ready) return;
+
+    if (kIsWeb) {
+      _permissionGranted = WebNotificationsBridge.permissionGranted;
+      _ready = true;
+      return;
+    }
+
+    if (!_nativeSupported) return;
     tz_data.initializeTimeZones();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _permissionGranted =
+          prefs.getBool(_permissionPreferenceKey) ?? false;
+    } catch (e) {
+      debugPrint('[LocalNotifications] permission preference failed: $e');
+    }
 
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(
-        // Asked for explicitly on the first schedule instead, so a cold start
-        // never opens with a permission sheet in the user's face.
+        // A cold start never opens with a permission sheet in the user's face.
         requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
@@ -61,9 +86,10 @@ class LocalNotificationsService {
     }
   }
 
-  /// A tap that launched the app from cold arrives here rather than through the
-  /// callback above.
+  /// A tap that launched the native app from cold arrives here rather than
+  /// through the callback above.
   Future<void> _resumeLaunchTap() async {
+    if (kIsWeb) return;
     try {
       final details = await _plugin.getNotificationAppLaunchDetails();
       final response = details?.notificationResponse;
@@ -86,9 +112,18 @@ class LocalNotificationsService {
     onNotificationRoute?.call(route);
   }
 
+  /// Request notification permission. This method is intentionally called only
+  /// from explicit foreground UI (for example the Enable button in Pulse Feed).
   Future<bool> ensurePermission() async {
     if (!isSupported) return false;
+    await initialize();
     if (_permissionGranted) return true;
+
+    if (kIsWeb) {
+      _permissionGranted = await WebNotificationsBridge.requestPermission();
+      return _permissionGranted;
+    }
+
     try {
       if (defaultTargetPlatform == TargetPlatform.android) {
         final android = _plugin
@@ -110,6 +145,9 @@ class LocalNotificationsService {
             ) ??
             false;
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_permissionPreferenceKey, _permissionGranted);
     } catch (e) {
       debugPrint('[LocalNotifications] permission error: $e');
       _permissionGranted = false;
@@ -117,13 +155,21 @@ class LocalNotificationsService {
     return _permissionGranted;
   }
 
-  /// Cap's two nudges: three days out, then a week out.
+  /// Schedule reminders only after the app has left the foreground. Returning
+  /// to Swipess cancels every one of them. The 45-minute reminder is a nudge to
+  /// continue the challenge; it never claims background time earned a step.
   Future<void> scheduleReengagement() async {
     if (!isSupported) return;
     await initialize();
-    // Backgrounding the app must never open an OS permission prompt. Permission
-    // is requested only from an explicit foreground user action.
+
+    // Backgrounding the app must never open an OS/browser permission prompt.
     if (!_permissionGranted) return;
+
+    if (kIsWeb) {
+      WebNotificationsBridge.scheduleReengagement();
+      return;
+    }
+
     await cancelReengagement();
 
     const details = NotificationDetails(
@@ -138,6 +184,14 @@ class LocalNotificationsService {
     );
 
     try {
+      await _schedule(
+        id: consistencyReminderId,
+        title: 'Consistency Challenge ⚡',
+        body:
+            'Your challenge is waiting. Come back and keep building toward your free token.',
+        after: const Duration(minutes: 45),
+        details: details,
+      );
       await _schedule(
         id: reengageIds[0],
         title: 'Your matches miss you 👀',
@@ -179,7 +233,14 @@ class LocalNotificationsService {
 
   Future<void> cancelReengagement() async {
     if (!isSupported) return;
+
+    if (kIsWeb) {
+      WebNotificationsBridge.cancelReengagement();
+      return;
+    }
+
     try {
+      await _plugin.cancel(id: consistencyReminderId);
       for (final id in reengageIds) {
         await _plugin.cancel(id: id);
       }
