@@ -262,7 +262,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   List<Widget> _preferences() {
-    final audio = ref.watch(audioSettingsProvider).valueOrNull ?? const AudioSettings();
+    final audio = ref.watch(audioSettingsProvider).value ?? const AudioSettings();
     return [
       _Panel(
         child: Column(
