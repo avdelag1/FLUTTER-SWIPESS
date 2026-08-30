@@ -251,8 +251,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           await player.dispose();
           continue;
         }
+        // Keep neighboring video decoded and ready, but paused. The card
+        // that becomes top will take ownership and start it immediately.
         _preloadedVideos[listing.id] = player;
-        await player.play();
       } catch (_) {
         await player.dispose();
       }
@@ -449,8 +450,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final dy = _gestureTravel.dy.abs();
 
     if (!_isDragging) {
-      final velocity = _velocityTracker?.getVelocity().pixelsPerSecond ??
-          Offset.zero;
+      final velocity =
+          _velocityTracker?.getVelocity().pixelsPerSecond ?? Offset.zero;
       final speed = velocity.distance;
       final minDist = speed > _flickVelocity ? 2.0 : _axisLockDistance;
       if (max(dx, dy) < minDist) return;

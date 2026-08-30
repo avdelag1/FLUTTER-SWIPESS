@@ -727,7 +727,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           onRefresh: () => AppRefreshService.refreshDashboard(ref),
           child: CustomScrollView(
             controller: _scroll,
-            scrollCacheExtent: 900,
+            scrollCacheExtent: const .pixels(900),
             physics: scrollPhysics,
             slivers: [
               SliverToBoxAdapter(

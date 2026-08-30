@@ -144,9 +144,48 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   void _disposeVideo() {
-    _video?.dispose();
+    final player = _video;
     _video = null;
     _boundVideo = null;
+    if (player == null) return;
+    unawaited(() async {
+      try {
+        await player.setVolume(0);
+        if (player.value.isPlaying) await player.pause();
+      } catch (_) {}
+      try {
+        await player.dispose();
+      } catch (_) {}
+    }());
+  }
+
+  Future<void> _applyPlaybackRole(VideoPlayerController player) async {
+    if (!player.value.isInitialized) return;
+
+    // Neighbor cards may be decoded/prepared for instant visual handoff, but
+    // only the top card is allowed to advance frames or own audio.
+    if (!widget.isTop) {
+      try {
+        await player.setVolume(0);
+        if (player.value.isPlaying) await player.pause();
+      } catch (_) {}
+      return;
+    }
+
+    final soundOn = ref.read(deckSoundOnProvider);
+    if (soundOn) unlockDeckMedia();
+    try {
+      await player.setVolume(soundOn ? 1 : 0);
+      await player.play();
+    } catch (_) {
+      // Keep the video alive if a browser briefly rejects audible playback,
+      // then restore volume after muted playback has started when possible.
+      try {
+        await player.setVolume(0);
+        await player.play();
+        if (soundOn && widget.isTop) await player.setVolume(1);
+      } catch (_) {}
+    }
   }
 
   void _setPhoto(int index) {
@@ -169,9 +208,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     widget.onPreparedVideoConsumed?.call();
     try {
       await prepared.setLooping(true);
-      final soundOn = widget.isTop && ref.read(deckSoundOnProvider);
-      await prepared.setVolume(soundOn ? 1 : 0);
-      if (widget.isTop || widget.prepareMedia) await prepared.play();
+      await _applyPlaybackRole(prepared);
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});
@@ -194,7 +231,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       if (_video != null) _disposeVideo();
       return;
     }
-    if (_boundVideo == url && _video != null) return;
+    if (_boundVideo == url && _video != null) {
+      await _applyPlaybackRole(_video!);
+      return;
+    }
 
     final prepared = widget.preparedVideoController;
     if (prepared != null && prepared.value.isInitialized) {
@@ -213,9 +253,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         return;
       }
       await next.setLooping(true);
-      final soundOn = widget.isTop && ref.read(deckSoundOnProvider);
-      await next.setVolume(soundOn ? 1 : 0);
-      if (widget.isTop || widget.prepareMedia) await next.play();
+      await _applyPlaybackRole(next);
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});

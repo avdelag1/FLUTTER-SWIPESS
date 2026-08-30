@@ -38,17 +38,45 @@ class _VideoBudget {
 
 class _VideoPlaybackCoordinator {
   static _QuickFilterMediaState? _active;
+  static double _activeVisibility = 0;
 
-  static void activate(_QuickFilterMediaState state) {
-    if (identical(_active, state)) return;
-    _active?._pauseForCoordinator();
+  static bool activate(_QuickFilterMediaState state, double visibility) {
+    if (identical(_active, state)) {
+      _activeVisibility = visibility;
+      return true;
+    }
+
+    // If two dashboard cards are both partly visible, keep the card that is
+    // most visible instead of letting build/listener order decide who plays.
+    if (_active != null && visibility + 0.04 < _activeVisibility) return false;
+
+    final previous = _active;
     _active = state;
+    _activeVisibility = visibility;
+    previous?._pauseForCoordinator(releaseOwnership: false);
+    return true;
   }
+
+  static bool owns(_QuickFilterMediaState state) => identical(_active, state);
 
   static void release(_QuickFilterMediaState state) {
-    if (identical(_active, state)) _active = null;
+    if (!identical(_active, state)) return;
+    _active = null;
+    _activeVisibility = 0;
+  }
+
+  static void pauseActive() {
+    final previous = _active;
+    _active = null;
+    _activeVisibility = 0;
+    previous?._pauseForCoordinator(releaseOwnership: false);
   }
 }
+
+/// Called before opening another media surface so the dashboard can never keep
+/// an audible player alive underneath the destination route. This deliberately
+/// does not change the shared sound preference.
+void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
 
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
@@ -276,8 +304,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
 
     if (fraction >= 0.50) {
-      _VideoPlaybackCoordinator.activate(this);
-      _playIfReady();
+      if (_VideoPlaybackCoordinator.activate(this, fraction)) {
+        unawaited(_playIfReady());
+      } else {
+        _pauseForCoordinator();
+      }
     } else {
       _pauseForCoordinator();
     }
@@ -287,38 +318,59 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
   }
 
-  void _pauseForCoordinator() {
+  void _pauseForCoordinator({bool releaseOwnership = true}) {
     final player = _video;
     if (player != null && player.value.isInitialized) {
-      player.setVolume(0);
-      if (player.value.isPlaying) player.pause();
+      unawaited(player.setVolume(0));
+      if (player.value.isPlaying) unawaited(player.pause());
     }
-    _VideoPlaybackCoordinator.release(this);
+    if (releaseOwnership) _VideoPlaybackCoordinator.release(this);
   }
 
   Future<void> _playIfReady() async {
-    if (!_canPlay || _userPaused) {
+    if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
+
+    if (!_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
+      _pauseForCoordinator();
       return;
     }
+
     final player = _video;
     if (player == null || !player.value.isInitialized) {
       await _syncVideo(autoPlay: true);
       return;
     }
-    if (_visibleFraction < 0.50) return;
+    if (!_VideoPlaybackCoordinator.owns(this)) return;
+
     final soundOn = ref.read(deckSoundOnProvider);
     final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
     final wantSound = soundOn && (unlocked || !kIsWeb);
-    
+
     try {
       await player.setVolume(wantSound ? 1 : 0);
+      if (!_VideoPlaybackCoordinator.owns(this)) {
+        await player.setVolume(0);
+        return;
+      }
       await player.play();
-    } catch (e) {
-      // If web browser blocks autoplay due to sound (DOMException), mute and try again.
+      if (!_VideoPlaybackCoordinator.owns(this)) {
+        await player.setVolume(0);
+        await player.pause();
+      }
+    } catch (_) {
+      // A stale asynchronous play must never revive a previous dashboard card.
+      if (!_VideoPlaybackCoordinator.owns(this)) {
+        try {
+          await player.setVolume(0);
+          await player.pause();
+        } catch (_) {}
+        return;
+      }
+      // If a browser rejects audible autoplay, keep the one owner moving muted.
       if (kIsWeb && wantSound) {
         try {
           await player.setVolume(0);
-          await player.play();
+          if (_VideoPlaybackCoordinator.owns(this)) await player.play();
         } catch (_) {}
       }
     }
@@ -418,7 +470,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     try {
       await next.initialize();
-      if (!mounted || !_routeActive || !_videoEnabled || _boundVideoUrl != url) {
+      if (!mounted ||
+          !_routeActive ||
+          !_videoEnabled ||
+          _boundVideoUrl != url) {
         await next.setVolume(0);
         await next.dispose();
         return;
@@ -427,7 +482,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       await next.setVolume(0);
       _attachPlayerListener(next);
       if (autoPlay && _visibleFraction >= 0.50) {
-        _VideoPlaybackCoordinator.activate(this);
+        _VideoPlaybackCoordinator.activate(this, _visibleFraction);
         await _playIfReady();
       }
       if (mounted) setState(() {});
@@ -555,7 +610,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final current = sources[_index % sources.length];
     final soundOn = ref.watch(deckSoundOnProvider);
     final player = _video;
-    final videoPlaying = _videoPreviewEnabled &&
+    final videoPlaying =
+        _videoPreviewEnabled &&
         player != null &&
         player.value.isInitialized &&
         player.value.isPlaying;

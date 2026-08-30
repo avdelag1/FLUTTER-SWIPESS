@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/client_swipe_container.dart';
@@ -28,6 +31,12 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   final router = GoRouter.of(context);
   final nav = Navigator.of(context, rootNavigator: true);
   final container = ProviderScope.containerOf(context, listen: false);
+
+  // This function is entered directly from the dashboard tap. Preserve the
+  // user's sound choice across the route, but silence the old dashboard player
+  // before the destination video starts so there is never overlapping audio.
+  if (container.read(deckSoundOnProvider)) unlockDeckMedia();
+  pauseQuickFilterVideoPlayback();
 
   final overlay = container.read(overlayModalsProvider);
   if (overlay.showConcierge) {
@@ -90,7 +99,9 @@ void _warmDeckHeroImage(
 ) {
   final listings = container.read(swipeListingsProvider(categoryId)).value;
   if (listings == null || listings.isEmpty) return;
-  final url = listings.first.images.isNotEmpty ? listings.first.images.first : '';
+  final url = listings.first.images.isNotEmpty
+      ? listings.first.images.first
+      : '';
   final uri = Uri.tryParse(url);
   if (url.isEmpty || uri == null) return;
   final width = (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
