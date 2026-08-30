@@ -154,8 +154,10 @@ class _TopEdgeVerticalDragGestureRecognizer
   final double edgeExtent;
 
   @override
-  bool isPointerAllowed(PointerDownEvent event) {
-    if (event.position.dy > edgeExtent) return false;
+  bool isPointerAllowed(PointerEvent event) {
+    if (event is PointerDownEvent && event.position.dy > edgeExtent) {
+      return false;
+    }
     return super.isPointerAllowed(event);
   }
 }
