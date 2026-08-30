@@ -3,10 +3,12 @@ import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
+import 'package:video_player/video_player.dart';
 
 typedef SwipeCallback = void Function(
   Listing listing,
@@ -72,21 +74,37 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _nextCardRiseDistance = 56.0;
   static const _nextCardRestScale = 0.925;
   static const _prefetchCards = 4;
+  static const _videoPreloadAhead = 2;
+  static const _hapticBands = [0.25, 0.50, 0.75];
+  static const _verticalSpring = SpringDescription(
+    mass: 0.82,
+    stiffness: 360,
+    damping: 28,
+  );
+  static const _horizontalSnapSpring = SpringDescription(
+    mass: 0.65,
+    stiffness: 480,
+    damping: 30,
+  );
 
   final _topCardKey = GlobalKey<CapSwipeCardState>();
   final Set<String> _prefetchedImages = <String>{};
+  final Map<String, VideoPlayerController> _preloadedVideos =
+      <String, VideoPlayerController>{};
 
   late final AnimationController _horizontalController;
   late final AnimationController _verticalController;
   Animation<Offset>? _horizontalAnimation;
-  Animation<double>? _verticalAnimation;
 
   Offset _dragOffset = Offset.zero;
   Offset _gestureTravel = Offset.zero;
   double _verticalOffset = 0;
   int _cursor = 0;
+  int _hapticBandMask = 0;
   bool _isDragging = false;
   bool _zoomLocksDrag = false;
+  bool _horizontalSpringSnap = false;
+  bool _verticalSpringSnap = false;
   _GestureAxis _axis = _GestureAxis.undecided;
   _VerticalDirection? _verticalTarget;
   DateTime? _lastWheelAt;
@@ -141,14 +159,90 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (!identical(oldWidget.listings, widget.listings) ||
         oldWidget.listings.length != widget.listings.length) {
       _prefetchAroundCursor();
+      _preloadListingVideos();
     }
   }
 
   @override
   void dispose() {
+    for (final player in _preloadedVideos.values) {
+      player.dispose();
+    }
+    _preloadedVideos.clear();
     _horizontalController.dispose();
     _verticalController.dispose();
     super.dispose();
+  }
+
+  bool _isVideoUrl(String value) {
+    final l = value.toLowerCase();
+    return l.contains('.mp4') ||
+        l.contains('.webm') ||
+        l.contains('.mov') ||
+        l.contains('/videos/');
+  }
+
+  String? _listingPrimaryVideo(Listing listing) {
+    final media = <String>[...listing.images];
+    final video = listing.videoUrl?.trim();
+    if (video != null && video.isNotEmpty && !media.contains(video)) {
+      media.add(video);
+    }
+    for (final url in media) {
+      if (_isVideoUrl(url)) return url;
+    }
+    return null;
+  }
+
+  void _consumePreparedVideo(String listingId) {
+    _preloadedVideos.remove(listingId);
+    _preloadListingVideos();
+  }
+
+  void _preloadListingVideos() {
+    if (!mounted || widget.listings.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_warmListingVideos());
+    });
+  }
+
+  Future<void> _warmListingVideos() async {
+    if (!mounted || widget.listings.isEmpty) return;
+
+    final keep = <String>{};
+    for (var delta = 1; delta <= _videoPreloadAhead; delta++) {
+      if (widget.listings.length <= 1 && delta > 0) break;
+      final listing = _relative(delta);
+      keep.add(listing.id);
+      if (_preloadedVideos.containsKey(listing.id)) continue;
+
+      final url = _listingPrimaryVideo(listing);
+      if (url == null) continue;
+
+      final player = VideoPlayerController.networkUrl(Uri.parse(url));
+      try {
+        await player.initialize();
+        await player.setLooping(true);
+        await player.setVolume(0);
+        if (!mounted) {
+          await player.dispose();
+          return;
+        }
+        if (_relative(delta).id != listing.id) {
+          await player.dispose();
+          continue;
+        }
+        _preloadedVideos[listing.id] = player;
+      } catch (_) {
+        await player.dispose();
+      }
+    }
+
+    for (final id in _preloadedVideos.keys.toList()) {
+      if (!keep.contains(id)) {
+        _preloadedVideos.remove(id)?.dispose();
+      }
+    }
   }
 
   int _normalize(int index) {
@@ -205,6 +299,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           }
         }
       }
+      _preloadListingVideos();
     });
   }
 
@@ -250,6 +345,18 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _isDragging = false;
     _axis = _GestureAxis.undecided;
     _gestureTravel = Offset.zero;
+    _hapticBandMask = 0;
+  }
+
+  void _maybePulseHorizontalHaptics() {
+    final progress = _horizontalProgress;
+    for (var i = 0; i < _hapticBands.length; i++) {
+      final bit = 1 << i;
+      if (progress >= _hapticBands[i] && (_hapticBandMask & bit) == 0) {
+        _hapticBandMask |= bit;
+        unawaited(AppHaptics.selection());
+      }
+    }
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -266,6 +373,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       _axis = _GestureAxis.undecided;
       _gestureTravel = Offset.zero;
       _dragOffset = Offset.zero;
+      _hapticBandMask = 0;
     });
   }
 
@@ -306,6 +414,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       setState(() {
         _dragOffset = Offset(_dragOffset.dx + details.delta.dx, 0);
       });
+      _maybePulseHorizontalHaptics();
       return;
     }
 
@@ -333,9 +442,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         _animateVertical(
           dy < 0 ? _VerticalDirection.next : _VerticalDirection.previous,
           height,
+          velocity,
         );
       } else {
-        _snapVerticalBack();
+        _snapVerticalBack(velocity);
       }
       return;
     }
@@ -349,7 +459,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           dx >= 0 ? SwipeDirection.right : SwipeDirection.left,
         );
       } else {
-        _snapHorizontalBack();
+        _snapHorizontalBack(velocity);
       }
       return;
     }
@@ -360,9 +470,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _onPanCancel() {
     if (!_isDragging) return;
     if (_axis == _GestureAxis.vertical && _verticalOffset != 0) {
-      _snapVerticalBack();
+      _snapVerticalBack(0);
     } else if (_axis == _GestureAxis.horizontal && _dragOffset != Offset.zero) {
-      _snapHorizontalBack();
+      _snapHorizontalBack(0);
     } else {
       setState(_resetGesture);
     }
@@ -400,6 +510,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _animateHorizontal(SwipeDirection direction) {
     if (_busy || widget.listings.isEmpty) return;
     _isDragging = false;
+    _horizontalSpringSnap = false;
     final width = MediaQuery.sizeOf(context).width;
     final endX = direction == SwipeDirection.right ? width * 1.5 : -width * 1.5;
     _horizontalAnimation = Tween<Offset>(
@@ -423,42 +534,49 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       });
       _horizontalController.reset();
       _prefetchAroundCursor();
+      _preloadListingVideos();
     });
   }
 
-  void _snapHorizontalBack() {
+  void _snapHorizontalBack([double velocity = 0]) {
     if (_horizontalController.isAnimating) return;
     _isDragging = false;
-    _horizontalAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _horizontalController, curve: Curves.easeOutCubic),
+    _horizontalSpringSnap = true;
+    _horizontalAnimation = null;
+    final simulation = SpringSimulation(
+      _horizontalSnapSpring,
+      _dragOffset.dx,
+      0,
+      velocity,
     );
-    _horizontalController.forward(from: 0).then((_) {
+    _horizontalController.animateWith(simulation).then((_) {
       if (!mounted) return;
       setState(() {
         _dragOffset = Offset.zero;
         _resetGesture();
       });
+      _horizontalSpringSnap = false;
       _horizontalController.reset();
     });
   }
 
-  void _animateVertical(_VerticalDirection direction, double height) {
+  void _animateVertical(
+    _VerticalDirection direction,
+    double height, [
+    double velocity = 0,
+  ]) {
     if (_busy || widget.listings.length < 2) return;
     _isDragging = false;
     _verticalTarget = direction;
-    _verticalAnimation = Tween<double>(
-      begin: _verticalOffset,
-      end: direction == _VerticalDirection.next ? -height : height,
-    ).animate(
-      CurvedAnimation(
-        parent: _verticalController,
-        curve: Curves.easeOutCubic,
-      ),
+    _verticalSpringSnap = true;
+    final end = direction == _VerticalDirection.next ? -height : height;
+    final simulation = SpringSimulation(
+      _verticalSpring,
+      _verticalOffset,
+      end,
+      velocity,
     );
-    _verticalController.forward(from: 0).then((_) {
+    _verticalController.animateWith(simulation).then((_) {
       if (!mounted || widget.listings.isEmpty) return;
       setState(() {
         _cursor = _normalize(
@@ -469,48 +587,53 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         _resetGesture();
       });
       AppHaptics.selection();
+      _verticalSpringSnap = false;
       _verticalController.reset();
       _prefetchAroundCursor();
+      _preloadListingVideos();
     });
   }
 
-  void _snapVerticalBack() {
+  void _snapVerticalBack([double velocity = 0]) {
     if (_verticalController.isAnimating) return;
     _isDragging = false;
     _verticalTarget = _verticalOffset < 0
         ? _VerticalDirection.next
         : _VerticalDirection.previous;
-    _verticalAnimation = Tween<double>(
-      begin: _verticalOffset,
-      end: 0,
-    ).animate(
-      CurvedAnimation(
-        parent: _verticalController,
-        curve: Curves.easeOutCubic,
-      ),
+    _verticalSpringSnap = true;
+    final simulation = SpringSimulation(
+      _verticalSpring,
+      _verticalOffset,
+      0,
+      velocity,
     );
-    _verticalController.forward(from: 0).then((_) {
+    _verticalController.animateWith(simulation).then((_) {
       if (!mounted) return;
       setState(() {
         _verticalOffset = 0;
         _verticalTarget = null;
         _resetGesture();
       });
+      _verticalSpringSnap = false;
       _verticalController.reset();
     });
   }
 
   void _tickHorizontal() {
+    if (!mounted || !_horizontalController.isAnimating) return;
+    if (_horizontalSpringSnap) {
+      setState(() => _dragOffset = Offset(_horizontalController.value, 0));
+      return;
+    }
     final animation = _horizontalAnimation;
-    if (mounted && animation != null && _horizontalController.isAnimating) {
+    if (animation != null) {
       setState(() => _dragOffset = animation.value);
     }
   }
 
   void _tickVertical() {
-    final animation = _verticalAnimation;
-    if (mounted && animation != null && _verticalController.isAnimating) {
-      setState(() => _verticalOffset = animation.value);
+    if (mounted && _verticalController.isAnimating && _verticalSpringSnap) {
+      setState(() => _verticalOffset = _verticalController.value);
     }
   }
 
@@ -642,6 +765,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final translation = verticalDrag
         ? Offset(0, _verticalOffset)
         : Offset(_dragOffset.dx, 0);
+    final cardWidth = MediaQuery.sizeOf(context).width;
+    final tiltY = verticalDrag
+        ? 0.0
+        : (_dragOffset.dx / cardWidth).clamp(-1.0, 1.0) * 0.42;
 
     return Positioned.fill(
       child: Listener(
@@ -655,8 +782,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           child: Transform(
             alignment: Alignment.center,
             transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
+              ..setEntry(3, 2, 0.0012)
               ..setTranslationRaw(translation.dx, translation.dy, 0)
+              ..rotateY(tiltY)
               ..rotateZ(verticalDrag ? 0 : _rotation)
               ..scaleByDouble(scale, scale, 1, 1),
             child: Container(
@@ -678,6 +806,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   isTop: true,
                   likeOpacity: _likeOpacity,
                   nopeOpacity: _nopeOpacity,
+                  verticalParallaxOffset:
+                      verticalDrag ? _verticalOffset : 0,
+                  preparedVideoController: _preloadedVideos[listing.id],
+                  onPreparedVideoConsumed: () =>
+                      _consumePreparedVideo(listing.id),
                   railVisible: widget.railVisible,
                   canUndo: widget.canUndo,
                   onBack: widget.onBack,

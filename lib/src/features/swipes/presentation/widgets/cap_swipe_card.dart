@@ -38,12 +38,18 @@ class CapSwipeCard extends ConsumerStatefulWidget {
     this.onSummonChrome,
     this.onPhotoIndexChanged,
     this.onZoomChanged,
+    this.preparedVideoController,
+    this.onPreparedVideoConsumed,
+    this.verticalParallaxOffset = 0,
   });
 
   final Listing listing;
   final bool isTop;
   final double likeOpacity;
   final double nopeOpacity;
+  final double verticalParallaxOffset;
+  final VideoPlayerController? preparedVideoController;
+  final VoidCallback? onPreparedVideoConsumed;
   final bool railVisible;
   final VoidCallback? onBack;
   final VoidCallback? onUndo;
@@ -94,6 +100,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.isTop) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_syncVideo());
+      });
+    }
+  }
+
+  @override
   void didUpdateWidget(covariant CapSwipeCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.listing.id != widget.listing.id) {
@@ -102,7 +118,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
     if (!widget.isTop) {
       _disposeVideo();
-    } else if (oldWidget.listing.id != widget.listing.id || !oldWidget.isTop) {
+    } else if (oldWidget.listing.id != widget.listing.id ||
+        !oldWidget.isTop ||
+        oldWidget.preparedVideoController != widget.preparedVideoController) {
       unawaited(_syncVideo());
     }
   }
@@ -130,6 +148,25 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     unawaited(_syncVideo());
   }
 
+  Future<void> _adoptPreparedVideo(String url, VideoPlayerController prepared) async {
+    final previous = _video;
+    _video = prepared;
+    _boundVideo = url;
+    widget.onPreparedVideoConsumed?.call();
+    try {
+      await prepared.setLooping(true);
+      await prepared.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
+      await prepared.play();
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) setState(() {});
+    } finally {
+      if (previous != null && previous != prepared) {
+        await previous.dispose();
+      }
+    }
+  }
+
   Future<void> _syncVideo() async {
     if (!widget.isTop) {
       _disposeVideo();
@@ -143,6 +180,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return;
     }
     if (_boundVideo == url && _video != null) return;
+
+    final prepared = widget.preparedVideoController;
+    if (prepared != null && prepared.value.isInitialized) {
+      await _adoptPreparedVideo(url, prepared);
+      return;
+    }
 
     final previous = _video;
     final next = VideoPlayerController.networkUrl(Uri.parse(url));
@@ -293,6 +336,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   bool get interceptsDrag => _zoomed;
 
+  /// Listing chrome lags behind the photo during vertical reels paging.
+  Widget _parallaxLayer(Widget child) {
+    final offset = widget.verticalParallaxOffset;
+    if (offset == 0) return child;
+    return Transform.translate(
+      offset: Offset(0, -offset * 0.62),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final media = _media;
@@ -349,13 +402,19 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                           ),
               ),
               if (!_zoomed)
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Color(0x66000000), Color(0xD9000000)],
-                      stops: [.45, .72, 1],
+                _parallaxLayer(
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Color(0x66000000),
+                          Color(0xD9000000),
+                        ],
+                        stops: [.45, .72, 1],
+                      ),
                     ),
                   ),
                 ),
@@ -364,31 +423,34 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   top: 14,
                   left: 56,
                   right: 56,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (var i = 0; i < media.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 4),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 90),
-                          width: i == _photoIndex ? 22 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: i == _photoIndex
-                                ? Colors.white
-                                : Colors.white.withAlpha(110),
-                            borderRadius: BorderRadius.circular(99),
+                  child: _parallaxLayer(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (var i = 0; i < media.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 4),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 90),
+                            width: i == _photoIndex ? 22 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: i == _photoIndex
+                                  ? Colors.white
+                                  : Colors.white.withAlpha(110),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               if (!_zoomed)
                 Positioned(
                   top: 66,
                   left: 18,
-                  child: Column(
+                  child: _parallaxLayer(
+                    Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (widget.listing.hasVerifiedDocuments)
@@ -427,13 +489,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         },
                       ),
                     ],
+                    ),
                   ),
                 ),
               if (!_zoomed && widget.onBack != null)
                 Positioned(
                   top: 10,
                   left: 10,
-                  child: _HudVisibility(
+                  child: _parallaxLayer(
+                    _HudVisibility(
                     visible: widget.railVisible,
                     hiddenOffset: const Offset(-0.14, 0),
                     child: _GlassCircle(
@@ -442,13 +506,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       icon: Icons.chevron_left_rounded,
                       onTap: widget.onBack!,
                     ),
+                    ),
                   ),
                 ),
               if (!_zoomed)
                 Positioned(
                   top: 10,
                   right: 10,
-                  child: _HudVisibility(
+                  child: _parallaxLayer(
+                    _HudVisibility(
                     visible: widget.railVisible,
                     hiddenOffset: const Offset(0.14, 0),
                     child: Column(
@@ -472,13 +538,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         ),
                       ],
                     ),
+                    ),
                   ),
                 ),
               if (!_zoomed && widget.isTop)
                 Positioned(
                   right: 12,
                   bottom: 120,
-                  child: _HudVisibility(
+                  child: _parallaxLayer(
+                    _HudVisibility(
                     visible: widget.railVisible,
                     hiddenOffset: const Offset(0.18, 0),
                     child: Column(
@@ -519,6 +587,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         ),
                       ],
                     ),
+                    ),
                   ),
                 ),
               if (!_zoomed)
@@ -526,7 +595,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   left: 14,
                   right: 72,
                   bottom: 18,
-                  child: Column(
+                  child: _parallaxLayer(
+                    Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -578,6 +648,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         ),
                       ),
                     ],
+                    ),
                   ),
                 ),
               if (widget.likeOpacity > .02)
