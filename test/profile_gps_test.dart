@@ -15,6 +15,9 @@ class _RecordingProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<bool> fetchMapVisibleOnPassport() async => true;
+
+  @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

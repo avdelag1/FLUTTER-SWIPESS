@@ -81,8 +81,8 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('AI can make mistakes'), findsOneWidget);
+    expect(find.textContaining('AI ·'), findsOneWidget);
     expect(find.textContaining('Llama 3.3 (via Groq)'), findsOneWidget);
-    expect(find.textContaining('Gemini, Moonshot & MiniMax fallbacks'), findsOneWidget);
+    expect(find.textContaining('Gemini & MiniMax fallbacks'), findsOneWidget);
   });
 }
