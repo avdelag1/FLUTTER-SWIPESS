@@ -202,7 +202,7 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                                           color: Colors.white.withAlpha(178),
                                           fontSize: 10.8,
                                           height: 1.25,
-                                          fontWeight: FontWeight.w650,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
