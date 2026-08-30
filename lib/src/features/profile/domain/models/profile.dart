@@ -12,6 +12,7 @@ class Profile {
   final double? longitude;
   final bool mapVisible;
   final bool mapForceHidden;
+  final String? mapStatus;
 
   const Profile({
     required this.id,
@@ -27,6 +28,7 @@ class Profile {
     this.longitude,
     this.mapVisible = true,
     this.mapForceHidden = false,
+    this.mapStatus,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,7 @@ class Profile {
           : null,
       mapVisible: json['map_visible'] as bool? ?? true,
       mapForceHidden: json['map_force_hidden'] as bool? ?? false,
+      mapStatus: json['map_status'] as String?,
     );
   }
 

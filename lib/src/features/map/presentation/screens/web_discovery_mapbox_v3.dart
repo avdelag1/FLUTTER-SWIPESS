@@ -13,7 +13,11 @@ import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_p
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/map/domain/map_pin_cluster.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_friends_tray.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_photo_pin.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_status_sheet.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_visibility_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_pill.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_sheet.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/profile.dart';
@@ -188,6 +192,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
   Offset? _locationPixel;
   double? _radiusPixels;
   Map<String, Offset> _pixels = const {};
+  Map<String, int> _clusterExtra = const {};
 
   final _searchController = TextEditingController();
   final _cards = ScrollController();
@@ -523,11 +528,16 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     try {
       final loc = ref.read(discoveryLocationProvider);
       final items = _currentItems();
+      final clusters = MapPinClustering.cluster(
+        items: items,
+        latOf: (item) => item.lat,
+        lngOf: (item) => item.lng,
+      );
       final points = <Point>[
         _point(_gpsLat ?? loc.latitude, _gpsLng ?? loc.longitude),
         if (loc.radiusKm <= 250)
           _point(loc.latitude + loc.radiusKm / 111.32, loc.longitude),
-        for (final item in items) _point(item.lat, item.lng),
+        for (final cluster in clusters) _point(cluster.lat, cluster.lng),
       ];
       final projected = await map.pixelsForCoordinates(points);
       if (!mounted || projected.isEmpty) return;
@@ -543,15 +553,18 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
       }
 
       final next = <String, Offset>{};
-      for (final item in items) {
+      final extras = <String, int>{};
+      for (final cluster in clusters) {
         if (cursor >= projected.length) break;
         final point = projected[cursor++];
-        next[item.key] = Offset(point.x, point.y);
+        next[cluster.head.key] = Offset(point.x, point.y);
+        extras[cluster.head.key] = cluster.extraCount;
       }
       setState(() {
         _locationPixel = locationPixel;
         _radiusPixels = radius;
         _pixels = next;
+        _clusterExtra = extras;
       });
     } catch (_) {
       // A transient projection frame should never blank the map.
@@ -673,6 +686,28 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
     } else {
       context.go(AppPaths.clientDashboard);
     }
+  }
+
+  void _openFriendsTray(List<_Item> items) {
+    final profiles = items
+        .map((item) => item.profile)
+        .whereType<Profile>()
+        .toList(growable: false);
+    MapFriendsTray.show(
+      context,
+      profiles: profiles,
+      onSelect: (profile) {
+        for (final item in items) {
+          if (item.profile?.id == profile.id) {
+            _select(item, items);
+            return;
+          }
+        }
+      },
+      onShareBack: () {
+        unawaited(ref.read(mapVisibilityProvider.notifier).setVisible(true));
+      },
+    );
   }
 
   @override
@@ -860,6 +895,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                           child: _Pin(
                             item: item,
                             selected: false,
+                            extraCount: _clusterExtra[item.key] ?? 0,
                             onTap: () => _select(item, items),
                           ),
                         ),
@@ -875,6 +911,7 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                   child: _Pin(
                     item: selected,
                     selected: true,
+                    extraCount: _clusterExtra[selected.key] ?? 0,
                     onTap: () => _open(selected!),
                   ),
                 ),
@@ -985,6 +1022,14 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                         setState(() => _menuOpen = false);
                         unawaited(_loadGps(silent: false));
                       },
+                      onFriends: () {
+                        setState(() => _menuOpen = false);
+                        _openFriendsTray(items);
+                      },
+                      onStatus: () {
+                        setState(() => _menuOpen = false);
+                        MapStatusSheet.show(context);
+                      },
                       onToggleTray: () => setState(() {
                         _trayLevel = _trayLevel >= 0 ? -1 : 0;
                         _menuOpen = false;
@@ -999,6 +1044,15 @@ class _WebDiscoveryMapboxV3State extends ConsumerState<WebDiscoveryMapboxV3> {
                       onClose: _closeMap,
                     ),
                   ),
+                Positioned(
+                  left: 12,
+                  bottom: _trayHeight + pad.bottom + 18,
+                  child: _FloatingIcon(
+                    label: 'Nearby friends',
+                    icon: Icons.people_alt_rounded,
+                    onTap: () => _openFriendsTray(items),
+                  ),
+                ),
                 Positioned(
                   right: 12,
                   bottom: _trayHeight + pad.bottom + 18,
@@ -1085,11 +1139,17 @@ class _LocationDot extends StatelessWidget {
 }
 
 class _Pin extends StatelessWidget {
-  const _Pin({required this.item, required this.selected, required this.onTap});
+  const _Pin({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+    this.extraCount = 0,
+  });
 
   final _Item item;
   final bool selected;
   final VoidCallback onTap;
+  final int extraCount;
 
   @override
   Widget build(BuildContext context) => MapPhotoPin(
@@ -1098,6 +1158,8 @@ class _Pin extends StatelessWidget {
     fallbackIcon: item.kind.icon,
     selected: selected,
     size: 48,
+    extraCount: extraCount,
+    statusKey: item.profile?.mapStatus,
     onTap: onTap,
   );
 }
@@ -1409,6 +1471,8 @@ class _Menu extends StatelessWidget {
   const _Menu({
     required this.trayVisible,
     required this.onMyLocation,
+    required this.onFriends,
+    required this.onStatus,
     required this.onToggleTray,
     required this.onHideControls,
     required this.onClose,
@@ -1416,6 +1480,8 @@ class _Menu extends StatelessWidget {
 
   final bool trayVisible;
   final VoidCallback onMyLocation;
+  final VoidCallback onFriends;
+  final VoidCallback onStatus;
   final VoidCallback onToggleTray;
   final VoidCallback onHideControls;
   final VoidCallback onClose;
@@ -1463,6 +1529,8 @@ class _Menu extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           row(Icons.my_location_rounded, 'My location', onMyLocation),
+          row(Icons.people_alt_rounded, 'Nearby friends', onFriends),
+          row(Icons.emoji_emotions_rounded, 'Set map status', onStatus),
           row(
             trayVisible
                 ? Icons.visibility_off_rounded

@@ -15,9 +15,11 @@ abstract final class MapPhotoPinBitmap {
     required IconData fallbackIcon,
     bool selected = false,
     double size = 168,
+    int extraCount = 0,
+    IconData? statusIcon,
   }) async {
     final key =
-        '$cacheKey|${imageUrl ?? ''}|${ringColor.toARGB32()}|$selected|$size';
+        '$cacheKey|${imageUrl ?? ''}|${ringColor.toARGB32()}|$selected|$size|$extraCount|${statusIcon?.codePoint}';
     final cached = _cache[key];
     if (cached != null) return cached;
 
@@ -27,6 +29,8 @@ abstract final class MapPhotoPinBitmap {
       fallbackIcon: fallbackIcon,
       selected: selected,
       size: size,
+      extraCount: extraCount,
+      statusIcon: statusIcon,
     );
     _cache[key] = bytes;
     if (_cache.length > 140) {
@@ -41,6 +45,8 @@ abstract final class MapPhotoPinBitmap {
     required IconData fallbackIcon,
     required bool selected,
     required double size,
+    int extraCount = 0,
+    IconData? statusIcon,
   }) async {
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
@@ -99,6 +105,65 @@ abstract final class MapPhotoPinBitmap {
       );
     }
     canvas.restore();
+
+    if (statusIcon != null) {
+      final badgeR = size * 0.11;
+      final badgeCenter = ui.Offset(center.dx + photo * 0.72, center.dy - photo * 0.72);
+      canvas.drawCircle(badgeCenter, badgeR + 2, ui.Paint()..color = Colors.white);
+      canvas.drawCircle(badgeCenter, badgeR, ui.Paint()..color = ringColor);
+      final statusPainter = TextPainter(
+        text: TextSpan(
+          text: String.fromCharCode(statusIcon.codePoint),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: badgeR * 1.2,
+            fontFamily: statusIcon.fontFamily,
+            package: statusIcon.fontPackage,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      statusPainter.paint(
+        canvas,
+        ui.Offset(
+          badgeCenter.dx - statusPainter.width / 2,
+          badgeCenter.dy - statusPainter.height / 2,
+        ),
+      );
+    }
+
+    if (extraCount > 0) {
+      final label = '+$extraCount more';
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final pillW = textPainter.width + 20;
+      final pillH = 26.0;
+      final pillRect = ui.RRect.fromRectAndRadius(
+        ui.Rect.fromCenter(
+          center: ui.Offset(center.dx, center.dy + outer + 18),
+          width: pillW,
+          height: pillH,
+        ),
+        const ui.Radius.circular(99),
+      );
+      canvas.drawRRect(pillRect, ui.Paint()..color = const Color(0xE6111318));
+      textPainter.paint(
+        canvas,
+        ui.Offset(
+          center.dx - textPainter.width / 2,
+          center.dy + outer + 18 - textPainter.height / 2,
+        ),
+      );
+    }
 
     final picture = recorder.endRecording();
     final raster = await picture.toImage(size.toInt(), size.toInt());

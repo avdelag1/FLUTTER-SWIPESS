@@ -166,7 +166,7 @@ Future<List<Profile>> _fetchRegisteredCityProfiles(
     var query = client
         .from('client_profiles')
         .select(
-          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at, map_visible, map_force_hidden',
+          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at, map_visible, map_force_hidden, map_status',
         );
     query = query.ilike('city', '%$city%');
     if (userId != null) query = query.neq('user_id', userId);
@@ -186,7 +186,7 @@ Future<List<Profile>> _fallbackProfiles(
     var query = client
         .from('client_profiles')
         .select(
-          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at, map_visible, map_force_hidden',
+          'user_id, name, city, bio, age, occupation, profile_images, latitude, longitude, location_updated_at, map_visible, map_force_hidden, map_status',
         );
     if (userId != null) query = query.neq('user_id', userId);
     final data = await query.limit(limit).timeout(const Duration(seconds: 5));

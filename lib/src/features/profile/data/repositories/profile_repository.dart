@@ -207,4 +207,29 @@ class ProfileRepository {
           .eq('user_id', user.id);
     }
   }
+
+  Future<String?> fetchMapStatus() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+    try {
+      final row = await _client
+          .from('client_profiles')
+          .select('map_status')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      final status = row?['map_status'] as String?;
+      return status == null || status.trim().isEmpty ? null : status;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> updateMapStatus(String? status) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+    await _client
+        .from('client_profiles')
+        .update({'map_status': status})
+        .eq('user_id', user.id);
+  }
 }

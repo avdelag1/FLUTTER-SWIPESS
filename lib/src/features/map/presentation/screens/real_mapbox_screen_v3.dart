@@ -16,6 +16,11 @@ import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_p
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/map/domain/map_pin_cluster.dart';
+import 'package:flutter_swipes/src/features/map/domain/map_presence_status.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_friends_tray.dart';
+import 'package:flutter_swipes/src/features/map/presentation/widgets/map_status_sheet.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_visibility_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/utils/map_photo_pin_bitmap.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_city_chips.dart';
 import 'package:flutter_swipes/src/features/map/presentation/widgets/map_visibility_pill.dart';
@@ -166,6 +171,8 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
   int _renderGeneration = 0;
   Timer? _renderDebounce;
   final Set<String> _hidden = {};
+  Set<String>? _clusterFilterKeys;
+  final Map<String, MapPinCluster<_Item>> _clusterByHeadKey = {};
 
   @override
   void dispose() {
@@ -614,6 +621,47 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
         .toList(growable: false);
   }
 
+  List<_Item> _trayItems(List<_Item> source) {
+    final keys = _clusterFilterKeys;
+    if (keys == null || keys.isEmpty) return source;
+    return source.where((item) => keys.contains(item.key)).toList(growable: false);
+  }
+
+  List<MapPinCluster<_Item>> _clustersFor(List<_Item> items) {
+    _clusterByHeadKey.clear();
+    final clusters = MapPinClustering.cluster(
+      items: items,
+      latOf: (item) => item.lat,
+      lngOf: (item) => item.lng,
+    );
+    for (final cluster in clusters) {
+      _clusterByHeadKey[cluster.head.key] = cluster;
+    }
+    return clusters;
+  }
+
+  void _openFriendsTray(List<_Item> items) {
+    final profiles = items
+        .map((item) => item.profile)
+        .whereType<Profile>()
+        .toList(growable: false);
+    MapFriendsTray.show(
+      context,
+      profiles: profiles,
+      onSelect: (profile) {
+        for (final item in items) {
+          if (item.profile?.id == profile.id) {
+            _selectNearest(item.lat, item.lng);
+            return;
+          }
+        }
+      },
+      onShareBack: () {
+        unawaited(ref.read(mapVisibilityProvider.notifier).setVisible(true));
+      },
+    );
+  }
+
   Polygon _radiusPolygon(DiscoveryLocation loc) {
     final latDelta = loc.radiusKm / 111.32;
     final cosLat = math.cos(loc.latitude * math.pi / 180).abs();
@@ -636,6 +684,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
       return;
     final generation = ++_renderGeneration;
     final items = _items();
+    final clusters = _clustersFor(items);
     final loc = ref.read(discoveryLocationProvider);
     try {
       await Future.wait([
@@ -665,19 +714,24 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
         );
       }
       final annotations = <PointAnnotationOptions>[];
-      for (final item in items) {
+      for (final cluster in clusters) {
+        final item = cluster.head;
         final selected = item.key == _selected;
-        final pinCacheKey = '${item.key}|$selected';
+        final pinCacheKey = '${item.key}|${cluster.extraCount}|$selected';
+        final status = item.profile?.mapStatus;
+        final statusIcon = MapPresenceStatus.resolve(status)?.icon;
         _itemPinImages[pinCacheKey] ??= await MapPhotoPinBitmap.build(
           cacheKey: item.key,
           imageUrl: item.image.trim().isEmpty ? null : item.image,
           ringColor: item.kind.color,
           fallbackIcon: item.kind.icon,
           selected: selected,
+          extraCount: cluster.extraCount,
+          statusIcon: statusIcon,
         );
         annotations.add(
           PointAnnotationOptions(
-            geometry: _point(item.lat, item.lng),
+            geometry: _point(cluster.lat, cluster.lng),
             image: _itemPinImages[pinCacheKey],
             iconSize: selected ? 1.62 : 1.42,
             symbolSortKey: selected ? 9000 : 5000,
@@ -707,23 +761,35 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
 
   void _selectNearest(double lat, double lng) {
     final items = _items();
-    _Item? best;
+    final clusters = _clustersFor(items);
+    MapPinCluster<_Item>? bestCluster;
     var bestDistance = double.infinity;
-    for (final item in items) {
-      final d = math.pow(item.lat - lat, 2) + math.pow(item.lng - lng, 2);
+    for (final cluster in clusters) {
+      final d =
+          math.pow(cluster.lat - lat, 2) + math.pow(cluster.lng - lng, 2);
       if (d < bestDistance) {
         bestDistance = d.toDouble();
-        best = item;
+        bestCluster = cluster;
       }
     }
-    if (best == null) return;
+    final best = bestCluster?.head;
+    if (best == null || bestCluster == null) return;
+    if (_selected == best.key && bestCluster.extraCount > 0) {
+      AppHaptics.selection();
+      setState(() {
+        _clusterFilterKeys = bestCluster!.items.map((e) => e.key).toSet();
+        _tray = 1;
+      });
+      return;
+    }
     if (_selected == best.key) {
       _openItem(best);
       return;
     }
     AppHaptics.selection();
     setState(() {
-      _selected = best!.key;
+      _selected = best.key;
+      _clusterFilterKeys = null;
       _menu = false;
       _cities = false;
       if (_tray < 0) _tray = 0;
@@ -884,6 +950,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
     ref.listen(mapExcludedEventIdsProvider, (_, __) => _scheduleRender());
 
     final items = _items();
+    final trayItems = _trayItems(items);
     final selected = _selectedItem;
     final pad = MediaQuery.paddingOf(context);
     final height = MediaQuery.sizeOf(context).height;
@@ -1043,6 +1110,14 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                     setState(() => _menu = false);
                     unawaited(_recenter());
                   },
+                  onFriends: () {
+                    setState(() => _menu = false);
+                    _openFriendsTray(items);
+                  },
+                  onStatus: () {
+                    setState(() => _menu = false);
+                    MapStatusSheet.show(context);
+                  },
                   onTray: () => setState(() {
                     _tray = _tray >= 0 ? -1 : 0;
                     _menu = false;
@@ -1095,6 +1170,15 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               ),
             ),
             Positioned(
+              left: 7,
+              bottom: trayHeight + pad.bottom + 11,
+              child: _IconOnly(
+                icon: Icons.people_alt_rounded,
+                label: 'Nearby friends',
+                onTap: () => _openFriendsTray(items),
+              ),
+            ),
+            Positioned(
               right: 7,
               bottom: trayHeight + pad.bottom + 11,
               child: _IconOnly(
@@ -1128,7 +1212,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               bottom: _tray < 0 ? -220 : 8,
               height: _tray < 0 ? compact : trayHeight,
               child: _Tray(
-                items: items,
+                items: trayItems,
                 city: loc.city,
                 selected: _selected,
                 expanded: _tray == 1,
@@ -1356,6 +1440,8 @@ class _Menu extends StatelessWidget {
     required this.trayVisible,
     required this.onCities,
     required this.onGps,
+    required this.onFriends,
+    required this.onStatus,
     required this.onTray,
     required this.onHide,
     required this.onClose,
@@ -1363,6 +1449,8 @@ class _Menu extends StatelessWidget {
   final bool trayVisible;
   final VoidCallback onCities;
   final VoidCallback onGps;
+  final VoidCallback onFriends;
+  final VoidCallback onStatus;
   final VoidCallback onTray;
   final VoidCallback onHide;
   final VoidCallback onClose;
@@ -1465,6 +1553,18 @@ class _Menu extends StatelessWidget {
             'My exact location',
             onGps,
             accent: const Color(0xFF147DFF),
+          ),
+          row(
+            Icons.people_alt_rounded,
+            'Nearby friends',
+            onFriends,
+            accent: const Color(0xFF6557E8),
+          ),
+          row(
+            Icons.emoji_emotions_rounded,
+            'Set map status',
+            onStatus,
+            accent: const Color(0xFF22C55E),
           ),
           row(
             trayVisible
