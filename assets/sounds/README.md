@@ -1,11 +1,11 @@
 # Swipess sound palette
 
-These five short cues are original Swipess interaction sounds created for the app. No third-party sound-effect files are included.
+Original, custom UI sound effects for Swipess. These cues are intentionally short and subtle so they reinforce haptics without competing with media playback.
 
-- `success.mp3` — soft crystal/glass confirmation for successful saves and completed actions.
-- `match.mp3` — warm, low cinematic pulse for mutual matches and accepted direct connections.
-- `ai_blip.mp3` — subtle futuristic micro-blip for AI send/response moments.
-- `swipe.mp3` — fast airy swoosh for left/right card movement.
-- `tokens.mp3` — premium metallic/titanium tap for token and Premium purchases.
+- `success.mp3` — soft crystal confirmation for publishing and profile completion
+- `match.mp3` — deeper cinematic pulse for mutual matches and accepted Direct Requests
+- `ai_blip.mp3` — subtle futuristic tap for AI send/response completion
+- `swipe.mp3` — fast air/paper swoosh when a swipe is committed
+- `tokens.mp3` — premium metallic tap for token purchases and subscription upgrades
 
-The mix is intentionally restrained for phone speakers: short tails, no harsh alarms, no casino-style coin sound, and conservative playback volumes in `AppAudio`.
+All cues respect the in-app audio preferences. Sound playback is enhancement-only and must never block the user action that triggered it.
