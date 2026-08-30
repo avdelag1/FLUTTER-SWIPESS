@@ -50,6 +50,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   String? _handoffEventId;
   Duration? _handoffPosition;
   VideoPlayerController? _handoffController;
+  bool _handoffWantSound = false;
   bool _handoffApplied = false;
   VideoPlayerController? _preloadedNext;
   int? _preloadedNextIndex;
@@ -62,6 +63,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     _handoffEventId = handoff?.eventId;
     _handoffPosition = handoff?.position;
     _handoffController = handoff?.controller;
+    _handoffWantSound = handoff?.wantSound ?? false;
+    if (_handoffWantSound) {
+      unlockDeckMedia();
+      ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
+    }
 
     _chromeVisible = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -301,6 +307,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     initialController: event.id == _handoffEventId
                         ? _handoffController
                         : null,
+                    handoffWantSound:
+                        event.id == _handoffEventId && _handoffWantSound,
                     onToggleChrome: _toggleChrome,
                     onChromeInteraction: _touchChrome,
                     onOpen: () {
@@ -460,6 +468,7 @@ class _EventPage extends ConsumerStatefulWidget {
     required this.onOpen,
     this.initialPosition,
     this.initialController,
+    this.handoffWantSound = false,
     this.preparedController,
     this.onPreparedConsumed,
   });
@@ -473,6 +482,7 @@ class _EventPage extends ConsumerStatefulWidget {
   final VoidCallback onOpen;
   final Duration? initialPosition;
   final VideoPlayerController? initialController;
+  final bool handoffWantSound;
   final VideoPlayerController? preparedController;
   final VoidCallback? onPreparedConsumed;
 
@@ -485,8 +495,11 @@ class _EventPageState extends ConsumerState<_EventPage>
   Future<void> _playReliably(VideoPlayerController? player) async {
     if (player == null || !player.value.isInitialized) return;
 
+    final soundOn = ref.read(deckSoundOnProvider);
+    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
     final wantsSound =
-        ref.read(deckSoundOnProvider) && (!kIsWeb || _sessionAudioUnlocked);
+        soundOn && (unlocked || !kIsWeb || _sessionAudioUnlocked);
+    if (wantsSound) unlockDeckMedia();
     try {
       // Start muted first. This is accepted by browser autoplay policies and
       // also gives native players a deterministic first frame before audio.
@@ -559,6 +572,11 @@ class _EventPageState extends ConsumerState<_EventPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.handoffWantSound) {
+      _sessionAudioUnlocked = true;
+      unlockDeckMedia();
+      ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
+    }
     final transferred = widget.initialController;
     if (transferred != null && transferred.value.isInitialized) {
       _player = transferred;
@@ -954,12 +972,15 @@ class _EventPageState extends ConsumerState<_EventPage>
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       final player = _player;
       if (player == null || !player.value.isInitialized) return;
-      final audible = on && (!kIsWeb || _sessionAudioUnlocked);
+      final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+      final audible = on && (unlocked || !kIsWeb || _sessionAudioUnlocked);
       unawaited(player.setVolume(audible ? 1 : 0));
       if (widget.active && _appActive) unawaited(_playReliably(player));
     });
 
-    final effectiveSoundOn = soundOn && (!kIsWeb || _sessionAudioUnlocked);
+    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+    final effectiveSoundOn =
+        soundOn && (unlocked || !kIsWeb || _sessionAudioUnlocked);
     final player = _player;
     final ready = player != null && player.value.isInitialized;
     final bottom = MediaQuery.paddingOf(context).bottom;

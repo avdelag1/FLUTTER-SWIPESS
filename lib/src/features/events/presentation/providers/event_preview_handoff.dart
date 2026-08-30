@@ -5,6 +5,7 @@ class EventPreviewHandoffData {
     required this.eventId,
     required this.position,
     this.controller,
+    this.wantSound = false,
   });
 
   final String eventId;
@@ -13,6 +14,9 @@ class EventPreviewHandoffData {
   /// Already-initialized dashboard player. When present, the Events feed adopts
   /// this exact controller instead of opening the same network video again.
   final VideoPlayerController? controller;
+
+  /// Whether the dashboard preview was playing with sound when the user tapped.
+  final bool wantSound;
 }
 
 /// One-shot in-memory handoff from the dashboard Events quick filter to the
@@ -30,11 +34,13 @@ class EventPreviewHandoff {
     required String eventId,
     required Duration position,
     VideoPlayerController? controller,
+    bool wantSound = false,
   }) {
     _pending = EventPreviewHandoffData(
       eventId: eventId,
       position: position,
       controller: controller,
+      wantSound: wantSound,
     );
   }
 

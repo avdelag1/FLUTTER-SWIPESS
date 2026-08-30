@@ -310,8 +310,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final current = _current;
     if (current == null) return;
     final soundOn = ref.read(deckSoundOnProvider);
+    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
+    final wantSound = soundOn && (unlocked || !kIsWeb);
     try {
-      await current.setVolume(soundOn && _canPlay ? 1 : 0);
+      await current.setVolume(wantSound && _canPlay ? 1 : 0);
     } catch (_) {}
   }
 
@@ -356,11 +358,19 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final player = _current;
     final transferable =
         player != null && player.value.isInitialized ? player : null;
+    final soundOn = ref.read(deckSoundOnProvider);
+
+    // Keep web audio unlocked in the same tap gesture that opens Events.
+    unlockDeckMedia();
+    if (soundOn) {
+      ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
+    }
 
     EventPreviewHandoff.set(
       eventId: event.id,
       position: transferable?.value.position ?? Duration.zero,
       controller: transferable,
+      wantSound: soundOn,
     );
 
     // Hide the dashboard header/dock before navigation so the very first Events
