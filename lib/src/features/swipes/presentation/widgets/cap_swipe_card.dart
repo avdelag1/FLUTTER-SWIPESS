@@ -42,6 +42,7 @@ class CapSwipeCard extends ConsumerStatefulWidget {
     this.onPreparedVideoConsumed,
     this.verticalParallaxOffset = 0,
     this.deckDragging = false,
+    this.prepareMedia = false,
   });
 
   final Listing listing;
@@ -50,6 +51,7 @@ class CapSwipeCard extends ConsumerStatefulWidget {
   final double nopeOpacity;
   final double verticalParallaxOffset;
   final bool deckDragging;
+  final bool prepareMedia;
   final VideoPlayerController? preparedVideoController;
   final VoidCallback? onPreparedVideoConsumed;
   final bool railVisible;
@@ -101,10 +103,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         l.contains('/videos/');
   }
 
+  bool get _mediaActive => widget.isTop || widget.prepareMedia;
+
   @override
   void initState() {
     super.initState();
-    if (widget.isTop) {
+    if (_mediaActive) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_syncVideo());
       });
@@ -121,10 +125,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (widget.deckDragging && !oldWidget.deckDragging) {
       _cancelHold();
     }
-    if (!widget.isTop) {
+    if (!widget.isTop && !widget.prepareMedia) {
       _disposeVideo();
     } else if (oldWidget.listing.id != widget.listing.id ||
-        !oldWidget.isTop ||
+        oldWidget.isTop != widget.isTop ||
+        oldWidget.prepareMedia != widget.prepareMedia ||
         oldWidget.preparedVideoController != widget.preparedVideoController) {
       unawaited(_syncVideo());
     }
@@ -160,8 +165,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     widget.onPreparedVideoConsumed?.call();
     try {
       await prepared.setLooping(true);
-      await prepared.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      await prepared.play();
+      final soundOn = widget.isTop && ref.read(deckSoundOnProvider);
+      await prepared.setVolume(soundOn ? 1 : 0);
+      if (widget.isTop || widget.prepareMedia) await prepared.play();
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});
@@ -173,7 +179,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   Future<void> _syncVideo() async {
-    if (!widget.isTop) {
+    if (!_mediaActive) {
       _disposeVideo();
       return;
     }
@@ -198,13 +204,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _boundVideo = url;
     try {
       await next.initialize();
-      if (!mounted || !widget.isTop || _boundVideo != url) {
+      if (!mounted || !_mediaActive || _boundVideo != url) {
         await next.dispose();
         return;
       }
       await next.setLooping(true);
-      await next.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      await next.play();
+      final soundOn = widget.isTop && ref.read(deckSoundOnProvider);
+      await next.setVolume(soundOn ? 1 : 0);
+      if (widget.isTop || widget.prepareMedia) await next.play();
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});
@@ -362,6 +369,64 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     );
   }
 
+  String? _posterUrl() {
+    for (final url in _media) {
+      if (!_isVideo(url)) return url;
+    }
+    return null;
+  }
+
+  Widget _videoPoster() {
+    final poster = _posterUrl();
+    if (poster == null) return _fallback();
+    return Image.network(
+      poster,
+      fit: BoxFit.cover,
+      alignment: const Alignment(0, -.12),
+      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600),
+      filterQuality: FilterQuality.low,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _fallback(),
+    );
+  }
+
+  Widget _primaryMedia(String? current) {
+    if (current == null) return _fallback();
+    if (_isVideo(current)) {
+      final player = _video;
+      final ready = player != null && player.value.isInitialized;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          _videoPoster(),
+          if (ready)
+            IgnorePointer(
+              ignoring: !_zoomed,
+              child: RepaintBoundary(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: player.value.size.width,
+                    height: player.value.size.height,
+                    child: VideoPlayer(player),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+    return Image.network(
+      current,
+      fit: BoxFit.cover,
+      alignment: const Alignment(0, -.12),
+      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600),
+      filterQuality: FilterQuality.low,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _fallback(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final media = _media;
@@ -369,9 +434,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     final soundOn = ref.watch(deckSoundOnProvider);
     final radiusKm = ref.watch(discoveryLocationProvider).radiusKm;
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
+      if (!widget.isTop) return;
       _video?.setVolume(on ? 1 : 0);
     });
-    if (widget.isTop && current != null && _isVideo(current) && _video == null) {
+    if (_mediaActive && current != null && _isVideo(current) && _video == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_syncVideo());
       });
@@ -401,21 +467,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     1,
                     1,
                   ),
-                child: current == null
-                    ? _fallback()
-                    : _isVideo(current)
-                        ? _videoWidget()
-                        : Image.network(
-                            current,
-                            fit: BoxFit.cover,
-                            alignment: const Alignment(0, -.12),
-                            cacheWidth: (MediaQuery.sizeOf(context).width * 2)
-                                .round()
-                                .clamp(480, 1600),
-                            filterQuality: FilterQuality.low,
-                            gaplessPlayback: true,
-                            errorBuilder: (_, _, _) => _fallback(),
-                          ),
+                child: _primaryMedia(current),
               ),
               if (!_zoomed)
                 _parallaxLayer(
@@ -706,25 +758,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   ),
                 ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _videoWidget() {
-    final player = _video;
-    if (player == null || !player.value.isInitialized) return _fallback();
-    // Web platform views steal pointer events; let the deck own swipe gestures.
-    return IgnorePointer(
-      ignoring: !_zoomed,
-      child: RepaintBoundary(
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: player.value.size.width,
-            height: player.value.size.height,
-            child: VideoPlayer(player),
           ),
         ),
       ),

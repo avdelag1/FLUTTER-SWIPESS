@@ -73,13 +73,14 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _maxVisibleCards = 3;
   static const _nextCardRiseDistance = 56.0;
   static const _nextCardRestScale = 0.925;
-  static const _prefetchCards = 4;
+  static const _prefetchCards = 6;
   static const _videoPreloadAhead = 2;
+  static const _videoPreloadBehind = 1;
   static const _hapticBands = [0.25, 0.50, 0.75];
   static const _verticalSpring = SpringDescription(
-    mass: 0.82,
-    stiffness: 360,
-    damping: 28,
+    mass: 0.48,
+    stiffness: 620,
+    damping: 34,
   );
   static const _horizontalSnapSpring = SpringDescription(
     mass: 0.65,
@@ -87,7 +88,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     damping: 30,
   );
 
-  final _topCardKey = GlobalKey<CapSwipeCardState>();
   final Set<String> _prefetchedImages = <String>{};
   final Map<String, VideoPlayerController> _preloadedVideos =
       <String, VideoPlayerController>{};
@@ -209,12 +209,21 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     });
   }
 
+  String? _listingHeroImage(Listing listing) {
+    for (final raw in listing.images) {
+      final url = raw.trim();
+      if (url.isNotEmpty && !_isVideoUrl(url)) return url;
+    }
+    return listing.images.isNotEmpty ? listing.images.first.trim() : null;
+  }
+
   Future<void> _warmListingVideos() async {
     if (!mounted || widget.listings.isEmpty) return;
 
     final keep = <String>{};
-    for (var delta = 1; delta <= _videoPreloadAhead; delta++) {
-      if (widget.listings.length <= 1 && delta > 0) break;
+    for (var delta = -_videoPreloadBehind; delta <= _videoPreloadAhead; delta++) {
+      if (delta == 0) continue;
+      if (widget.listings.length <= 1) break;
       final listing = _relative(delta);
       keep.add(listing.id);
       if (_preloadedVideos.containsKey(listing.id)) continue;
@@ -236,6 +245,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           continue;
         }
         _preloadedVideos[listing.id] = player;
+        await player.play();
       } catch (_) {
         await player.dispose();
       }
@@ -287,12 +297,19 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       for (var i = 1; i < count; i++) {
         indices.add(_normalize(_cursor + i));
       }
-      if (widget.listings.length > 1) indices.add(_normalize(_cursor - 1));
+      if (widget.listings.length > 1) {
+        indices.add(_normalize(_cursor - 1));
+        indices.add(_normalize(_cursor - 2));
+      }
 
       for (final index in indices) {
-        final images = widget.listings[index].images;
+        final listing = widget.listings[index];
+        final hero = _listingHeroImage(listing);
+        if (hero != null) _precacheUrl(hero, width);
+
+        final images = listing.images;
         final active = index == _normalize(_cursor);
-        final warmCount = active ? min(12, images.length) : min(2, images.length);
+        final warmCount = active ? min(12, images.length) : min(3, images.length);
         for (final url in images.take(warmCount)) {
           _precacheUrl(url, width);
         }
@@ -383,8 +400,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _onPointerDown(PointerDownEvent event) {
-    if (_zoomLocksDrag ||
-        (_topCardKey.currentState?.interceptsDrag ?? false)) {
+    if (_zoomLocksDrag) {
       return;
     }
     if (_busy) {
@@ -411,8 +427,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _onPointerMove(PointerMoveEvent event) {
     if (!_dragArmed ||
         _activePointer != event.pointer ||
-        _zoomLocksDrag ||
-        (_topCardKey.currentState?.interceptsDrag ?? false)) {
+        _zoomLocksDrag) {
       return;
     }
     _velocityTracker?.addPosition(event.timeStamp, event.position);
@@ -715,9 +730,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             alignment: Alignment.center,
             clipBehavior: Clip.hardEdge,
             children: [
-              if (widget.listings.length > 1 && _showVerticalPaging)
-                _verticalNeighbor(height)
-              else if (_showHorizontalStack)
+              if (widget.listings.length > 1 && !_showHorizontalStack) ...[
+                _verticalSlot(height, _relative(1), height + _verticalOffset),
+                _verticalSlot(height, _relative(-1), -height + _verticalOffset),
+              ] else if (_showHorizontalStack)
                 for (var i = visibleCount - 1; i > 0; i--)
                   _backCard(i, _relative(i)),
               _topCard(_current, height),
@@ -739,9 +755,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           (_axis == _GestureAxis.vertical ||
               (_axis == _GestureAxis.undecided &&
                   _gestureTravel.dy.abs() > _gestureTravel.dx.abs() * 1.05)));
-
-  bool get _showVerticalPaging =>
-      _verticalPagingActive && !_horizontalSwipeActive;
 
   bool get _showHorizontalStack =>
       _horizontalSwipeActive && !_verticalPagingActive;
@@ -788,25 +801,20 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
   }
 
-  Widget _verticalNeighbor(double height) {
-    final direction = _verticalTarget ??
-        (_verticalOffset <= 0
-            ? _VerticalDirection.next
-            : _VerticalDirection.previous);
-    final listing = direction == _VerticalDirection.next
-        ? _relative(1)
-        : _relative(-1);
-    final startY = direction == _VerticalDirection.next ? height : -height;
-
+  Widget _verticalSlot(double height, Listing listing, double yOffset) {
     return Positioned.fill(
       child: Transform.translate(
-        offset: Offset(0, startY + _verticalOffset),
+        offset: Offset(0, yOffset),
         child: IgnorePointer(
           child: RepaintBoundary(
             child: CapSwipeCard(
+              key: ValueKey('deck-${listing.id}'),
               listing: listing,
               isTop: false,
+              prepareMedia: true,
               railVisible: false,
+              preparedVideoController: _preloadedVideos[listing.id],
+              onPreparedVideoConsumed: () => _consumePreparedVideo(listing.id),
             ),
           ),
         ),
@@ -860,7 +868,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
               ),
               child: RepaintBoundary(
                 child: CapSwipeCard(
-                  key: _topCardKey,
+                  key: ValueKey('deck-${listing.id}'),
                   listing: listing,
                   isTop: true,
                   deckDragging: _isDragging,
