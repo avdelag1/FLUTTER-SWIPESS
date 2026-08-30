@@ -7,8 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// Reusable top-drop notice used for important app-wide feedback.
 ///
-/// It deliberately avoids ScaffoldMessenger/SnackBar so notices look identical
-/// on web, iOS and Android and are not affected by route-local scaffolds.
+/// The engagement variant mirrors the persistent reward card: every completed
+/// 45 active minutes earns one step, and five steps unlock a free token. It is
+/// deliberately an overlay instead of a SnackBar so the exact same treatment
+/// can appear above any Swipess route without depending on a local Scaffold.
 class GlobalNotice {
   GlobalNotice._();
 
@@ -27,7 +29,7 @@ class GlobalNotice {
     hide();
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
-    
+
     AppHaptics.heavy();
 
     late final OverlayEntry entry;
@@ -83,7 +85,7 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
     _controller.forward();
-    _dismissTimer = Timer(const Duration(milliseconds: 4600), _dismiss);
+    _dismissTimer = Timer(const Duration(seconds: 7), _dismiss);
   }
 
   Future<void> _dismiss() async {
@@ -104,7 +106,7 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     final maxWidth = MediaQuery.sizeOf(context).width > 620
-        ? 520.0
+        ? 540.0
         : double.infinity;
     final completed = widget.tokenAwarded ? 5 : widget.step;
 
@@ -129,17 +131,19 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                       child: Container(
-                        padding: const EdgeInsets.fromLTRB(16, 14, 14, 13),
+                        padding: const EdgeInsets.fromLTRB(16, 15, 14, 14),
                         decoration: BoxDecoration(
-                          color: const Color(0xEE11141A),
+                          color: const Color(0xF2111216),
                           borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withAlpha(24)),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x55000000),
-                              blurRadius: 30,
-                              offset: Offset(0, 12),
+                              color: Color(0x5C000000),
+                              blurRadius: 32,
+                              spreadRadius: -6,
+                              offset: Offset(0, 14),
                             ),
                           ],
                         ),
@@ -151,23 +155,23 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Container(
-                                  width: 38,
-                                  height: 38,
+                                  width: 42,
+                                  height: 42,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: widget.tokenAwarded
-                                        ? const Color(0xFF7C3AED).withAlpha(52)
-                                        : const Color(0xFF2F80ED).withAlpha(48),
+                                        ? const Color(0xFFEB4898).withAlpha(42)
+                                        : const Color(0xFFFF4D00).withAlpha(42),
                                   ),
                                   alignment: Alignment.center,
                                   child: Icon(
                                     widget.tokenAwarded
                                         ? Icons.card_giftcard_rounded
                                         : Icons.bolt_rounded,
-                                    size: 20,
+                                    size: 21,
                                     color: widget.tokenAwarded
-                                        ? const Color(0xFFC4A7FF)
-                                        : const Color(0xFF8CC4FF),
+                                        ? const Color(0xFFFF8AC2)
+                                        : const Color(0xFFFF7A3D),
                                   ),
                                 ),
                                 const SizedBox(width: 11),
@@ -177,34 +181,59 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        widget.tokenAwarded
-                                            ? 'FREE TOKEN UNLOCKED'
-                                            : 'STEP ${widget.step} OF 5',
+                                        'CONSISTENCY CHALLENGE',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.plusJakartaSans(
                                           color: Colors.white,
                                           fontSize: 12.5,
                                           fontWeight: FontWeight.w900,
-                                          letterSpacing: .6,
+                                          letterSpacing: .65,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 3),
                                       Text(
                                         widget.tokenAwarded
-                                            ? 'You earned it. Your free token is ready.'
-                                            : 'Nice. You’re getting closer to a free token.',
-                                        maxLines: 1,
+                                            ? '5/5 complete · Your free token was added.'
+                                            : '45 active minutes complete · Step ${widget.step}/5 unlocked.',
+                                        maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.white.withAlpha(165),
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white.withAlpha(178),
+                                          fontSize: 10.8,
+                                          height: 1.25,
+                                          fontWeight: FontWeight.w650,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: widget.tokenAwarded
+                                        ? const Color(0xFFEB4898).withAlpha(26)
+                                        : const Color(0xFFFF4D00).withAlpha(25),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    widget.tokenAwarded
+                                        ? 'REWARD'
+                                        : '${widget.step}/5',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: widget.tokenAwarded
+                                          ? const Color(0xFFFF8AC2)
+                                          : const Color(0xFFFF8A52),
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: .4,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
                                 IconButton(
                                   tooltip: 'Dismiss',
                                   onPressed: _dismiss,
@@ -216,14 +245,26 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
                                   ),
                                   icon: Icon(
                                     Icons.close_rounded,
-                                    color: Colors.white.withAlpha(145),
+                                    color: Colors.white.withAlpha(130),
                                     size: 17,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            _FiveStepProgress(completed: completed),
+                            const SizedBox(height: 14),
+                            _ConsistencyProgress(completed: completed),
+                            const SizedBox(height: 10),
+                            Text(
+                              widget.tokenAwarded
+                                  ? 'Reward claimed automatically. Your next 5-step challenge starts now.'
+                                  : 'Each step takes 45 active minutes. Keep using Swipess to reach the gift.',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withAlpha(138),
+                                fontSize: 9.7,
+                                height: 1.28,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -239,61 +280,107 @@ class _TopEngagementNoticeState extends State<_TopEngagementNotice>
   }
 }
 
-class _FiveStepProgress extends StatelessWidget {
-  const _FiveStepProgress({required this.completed});
+class _ConsistencyProgress extends StatelessWidget {
+  const _ConsistencyProgress({required this.completed});
 
   final int completed;
 
   @override
   Widget build(BuildContext context) {
+    final safe = completed.clamp(0, 5);
+
     return Row(
       children: [
-        for (var i = 1; i <= 5; i++) ...[
-          if (i > 1)
-            Expanded(
-              child: Container(
-                height: 2,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: i <= completed
-                      ? const Color(0xFF73B7FF)
-                      : Colors.white.withAlpha(28),
-                  borderRadius: BorderRadius.circular(99),
-                ),
+        _ProgressNode(
+          active: true,
+          child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+        ),
+        for (var step = 1; step <= 5; step++) ...[
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 320),
+              height: 2.5,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: safe >= step
+                    ? (step == 5
+                          ? const Color(0xFFEB4898)
+                          : const Color(0xFFFF4D00))
+                    : Colors.white.withAlpha(28),
+                borderRadius: BorderRadius.circular(99),
               ),
             ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 27,
-            height: 27,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: i <= completed
-                  ? (i == 5 ? const Color(0xFF7C3AED) : const Color(0xFF2F80ED))
-                  : Colors.white.withAlpha(18),
-            ),
-            alignment: Alignment.center,
-            child: i == 5
-                ? Icon(
-                    Icons.card_giftcard_rounded,
-                    size: 14,
-                    color: i <= completed
-                        ? Colors.white
-                        : Colors.white.withAlpha(105),
-                  )
-                : Text(
-                    '$i',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: i <= completed
-                          ? Colors.white
-                          : Colors.white.withAlpha(115),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
           ),
+          if (step == 5)
+            _ProgressNode(
+              active: safe >= 5,
+              reward: true,
+              child: Icon(
+                Icons.card_giftcard_rounded,
+                size: 15,
+                color: safe >= 5 ? Colors.white : Colors.white.withAlpha(105),
+              ),
+            )
+          else
+            _ProgressNode(
+              active: safe >= step,
+              child: safe >= step
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    )
+                  : Text(
+                      '$step',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withAlpha(120),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+            ),
         ],
       ],
+    );
+  }
+}
+
+class _ProgressNode extends StatelessWidget {
+  const _ProgressNode({
+    required this.active,
+    required this.child,
+    this.reward = false,
+  });
+
+  final bool active;
+  final Widget child;
+  final bool reward;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = reward ? const Color(0xFFEB4898) : const Color(0xFFFF4D00);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 320),
+      width: reward ? 31 : 28,
+      height: reward ? 31 : 28,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: active ? accent : Colors.white.withAlpha(18),
+        border: Border.all(
+          color: active ? Colors.white.withAlpha(36) : Colors.white.withAlpha(24),
+        ),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: accent.withAlpha(55),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: child,
     );
   }
 }
