@@ -63,7 +63,7 @@ class EngagementRewardCard extends ConsumerWidget {
                       color: muted,
                       fontSize: 11.1,
                       height: 1.3,
-                      fontWeight: FontWeight.w650,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
