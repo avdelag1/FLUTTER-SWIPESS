@@ -66,10 +66,11 @@ class SwipeableCardStack extends StatefulWidget {
 
 class SwipeableCardStackState extends State<SwipeableCardStack>
     with TickerProviderStateMixin {
-  static const _horizontalThreshold = 72.0;
-  static const _horizontalVelocity = 900.0;
-  static const _verticalVelocity = 650.0;
-  static const _axisLockDistance = 8.0;
+  static const _horizontalThreshold = 68.0;
+  static const _horizontalVelocity = 520.0;
+  static const _verticalVelocity = 380.0;
+  static const _flickVelocity = 260.0;
+  static const _axisLockDistance = 3.0;
   static const _maxVisibleCards = 3;
   static const _nextCardRiseDistance = 56.0;
   static const _nextCardRestScale = 0.925;
@@ -78,9 +79,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _videoPreloadBehind = 1;
   static const _hapticBands = [0.25, 0.50, 0.75];
   static const _verticalSpring = SpringDescription(
-    mass: 0.48,
-    stiffness: 620,
-    damping: 34,
+    mass: 0.42,
+    stiffness: 720,
+    damping: 36,
   );
   static const _horizontalSnapSpring = SpringDescription(
     mass: 0.65,
@@ -448,7 +449,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final dy = _gestureTravel.dy.abs();
 
     if (!_isDragging) {
-      if (max(dx, dy) < _axisLockDistance) return;
+      final velocity = _velocityTracker?.getVelocity().pixelsPerSecond ??
+          Offset.zero;
+      final speed = velocity.distance;
+      final minDist = speed > _flickVelocity ? 2.0 : _axisLockDistance;
+      if (max(dx, dy) < minDist) return;
       setState(() => _isDragging = true);
       _lockAxis();
     } else if (_axis == _GestureAxis.undecided) {
@@ -480,6 +485,24 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _activePointer = null;
 
     if (!_isDragging) {
+      final velocity = _velocityTracker?.getVelocity() ?? Velocity.zero;
+      final speed = velocity.pixelsPerSecond.distance;
+      if (speed >= _flickVelocity) {
+        final vx = velocity.pixelsPerSecond.dx.abs();
+        final vy = velocity.pixelsPerSecond.dy.abs();
+        if (vx >= vy) {
+          _axis = _GestureAxis.horizontal;
+          _dragOffset = Offset(_gestureTravel.dx, 0);
+          _onPanEnd(DragEndDetails(velocity: velocity));
+        } else if (widget.listings.length > 1) {
+          _axis = _GestureAxis.vertical;
+          _verticalOffset = _gestureTravel.dy;
+          _onPanEnd(DragEndDetails(velocity: velocity));
+        } else {
+          setState(_resetGesture);
+        }
+        return;
+      }
       setState(_resetGesture);
       return;
     }

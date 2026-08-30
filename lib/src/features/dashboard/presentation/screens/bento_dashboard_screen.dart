@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,7 +7,6 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
-import 'package:flutter_swipes/src/core/widgets/elastic_pull_refresh.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -712,19 +710,24 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     // Dock floats at bottom:16 with a 52px pill + safe area; extra room so the
     // last quick-filter row clears the dock even with bounce overscroll.
     final bottomScrollPad = safe.bottom + 16 + 52 + 56;
-    final scrollPhysics = kIsWeb
-        ? const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics())
-        : const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    const scrollPhysics = AlwaysScrollableScrollPhysics(
+      parent: BouncingScrollPhysics(),
+    );
 
     return Container(
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
       child: SafeArea(
         bottom: false,
-        child: ElasticPullRefresh(
-          onRefresh: () => AppRefreshService.refreshAll(ref),
+        child: RefreshIndicator(
+          color: isLight ? const Color(0xFF111827) : Colors.white,
+          backgroundColor: isLight ? Colors.white : const Color(0xFF1C2129),
+          displacement: safe.top + 96,
+          edgeOffset: safe.top + 88,
+          strokeWidth: 2.2,
+          onRefresh: () => AppRefreshService.refreshDashboard(ref),
           child: CustomScrollView(
             controller: _scroll,
-            cacheExtent: 900,
+            scrollCacheExtent: 900,
             physics: scrollPhysics,
             slivers: [
               SliverToBoxAdapter(
