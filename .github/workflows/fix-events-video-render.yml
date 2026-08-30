@@ -1,0 +1,75 @@
+name: Fix Events video render
+
+on:
+  push:
+    branches:
+      - fix/events-video-render
+    paths:
+      - .github/workflows/fix-events-video-render.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Preserve guarded patch and switch to latest main
+        shell: bash
+        run: |
+          cp tool/patch_events_video_render.py /tmp/patch_events_video_render.py
+          git fetch origin main
+          git checkout -B main origin/main
+
+      - name: Apply Events first-frame playback repair
+        run: python3 /tmp/patch_events_video_render.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format Events feed
+        run: dart format lib/src/features/events/presentation/screens/events_screen.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Events feed
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/events/presentation/screens/events_screen.dart
+
+      - name: Run Events/dashboard regressions
+        run: |
+          flutter test test/dashboard_event_teaser_test.dart --reporter expanded
+          flutter test test/dashboard_parity_test.dart --reporter expanded
+
+      - name: Verify playback-state guarantees
+        shell: bash
+        run: |
+          grep -q "Start muted first" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "publish.*isInitialized.*BEFORE" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "VideoPlayerOptions(mixWithOthers: true)" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "event-video-loading" lib/src/features/events/presentation/screens/events_screen.dart
+          ! grep -q "_playWithWebFallback" lib/src/features/events/presentation/screens/events_screen.dart
+
+      - name: Verify web release build
+        run: flutter build web --release
+
+      - name: Commit Events repair directly to main
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git restore pubspec.lock || true
+          git add lib/src/features/events/presentation/screens/events_screen.dart
+          if git diff --cached --quiet; then
+            echo "No Events changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(events): mount video before autoplay"
+          git pull --rebase origin main
+          git push origin HEAD:main
