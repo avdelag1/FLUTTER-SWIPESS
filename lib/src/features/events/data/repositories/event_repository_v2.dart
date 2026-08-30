@@ -69,16 +69,20 @@ class EventRepository {
   }
 
   Future<List<Event>> _loadEvents() async {
+    // Try RPC first — it bypasses RLS and always works even when direct
+    // table selects are blocked or columns are missing.
+    final rpcEvents = await _loadEventsFromRpc();
+    if (rpcEvents.isNotEmpty) return rpcEvents;
+
+    // Fallback: try direct table selects with progressively fewer columns.
     for (final select in eventRepositoryProviderFallbackSelects) {
       try {
-        final data = await _withSessionRetry(
-          () => _client
-              .from('events')
-              .select(select)
-              .eq('is_published', true)
-              .order('created_at', ascending: false)
-              .limit(100),
-        );
+        final data = await _client
+            .from('events')
+            .select(select)
+            .eq('is_published', true)
+            .order('created_at', ascending: false)
+            .limit(100);
         final events = (data as List)
             .map((json) => Event.fromJson(json as Map<String, dynamic>))
             .toList();
@@ -95,23 +99,7 @@ class EventRepository {
       }
     }
 
-    final rpcEvents = await _loadEventsFromRpc();
-    if (rpcEvents.isNotEmpty) return rpcEvents;
-
-    try {
-      final data = await _withSessionRetry(
-        () => _client
-            .from('events')
-            .select(_legacy)
-            .eq('is_published', true)
-            .order('event_date', ascending: true),
-      );
-      return (data as List)
-          .map((json) => Event.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return const [];
-    }
+    return const [];
   }
 
   Future<List<Event>> _loadEventsFromRpc() async {
