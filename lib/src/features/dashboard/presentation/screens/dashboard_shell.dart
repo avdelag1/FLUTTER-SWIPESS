@@ -139,13 +139,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
     final profile = ref.watch(currentProfileProvider).value;
     final isLight = ref.watch(isLightThemeProvider);
-    final showChrome = ref.watch(chromeVisibilityProvider);
+    final chromeOpacity = ref.watch(chromeVisibilityProvider);
 
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
     // Profile is a navigation hub — keep header and dock visible while browsing it.
     final persistentChromeVisible = isProfile
         ? shellRouteIsCurrent
-        : (showChrome && shellRouteIsCurrent);
+        : (chromeOpacity > 0.01 && shellRouteIsCurrent);
     final showHeader = persistentChromeVisible;
     // Events deliberately inherits the exact swipe-deck chrome cadence:
     // reveal in 360ms, hide in 500ms, same cubic curve and slide vectors.
@@ -301,11 +301,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             left: 0,
             right: 0,
             child: AnimatedOpacity(
-              opacity: showHeader ? 1 : 0,
+              opacity: showHeader ? (isProfile ? 1.0 : chromeOpacity) : 0,
               duration: chromeMotionDuration,
               curve: IosMotion.enter,
               child: AnimatedSlide(
-                offset: showHeader ? Offset.zero : const Offset(0, -0.12),
+                offset: showHeader ? Offset(0, -0.12 * (1.0 - chromeOpacity)) : const Offset(0, -0.12),
                 duration: chromeMotionDuration,
                 curve: IosMotion.enter,
                 child: IgnorePointer(
@@ -356,12 +356,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             child: IgnorePointer(
               ignoring: !persistentChromeVisible,
               child: AnimatedOpacity(
-                opacity: persistentChromeVisible ? 1 : 0,
+                opacity: persistentChromeVisible ? (isProfile ? 1.0 : chromeOpacity) : 0,
                 duration: chromeMotionDuration,
                 curve: IosMotion.enter,
                 child: AnimatedSlide(
                   offset: persistentChromeVisible
-                      ? Offset.zero
+                      ? Offset(0, 1.0 * (1.0 - chromeOpacity))
                       : const Offset(0, 1.0),
                   duration: chromeMotionDuration,
                   curve: IosMotion.enter,

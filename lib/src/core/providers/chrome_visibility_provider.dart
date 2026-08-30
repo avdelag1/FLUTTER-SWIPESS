@@ -1,30 +1,32 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Shared visibility state for the persistent app chrome.
+/// Chrome visibility with ghostly fade-out on scroll.
 ///
-/// Header, dashboard AI search/filter controls and bottom dock move together:
-/// scroll down to clear the content, scroll up (or return to the top) to bring
-/// navigation back. Small trackpad/touch jitter is ignored so the chrome does
-/// not flicker.
-class ChromeVisibilityNotifier extends Notifier<bool> {
+/// Instead of a hard show/hide toggle, this emits a continuous opacity value
+/// (0.0–1.0) so the header and dock fade out smoothly as the user scrolls
+/// down, and fade back in when scrolling up or returning to the top.
+class ChromeVisibilityNotifier extends Notifier<double> {
   double _downTravel = 0;
   double _upTravel = 0;
 
+  /// How many px of downward scroll fully fades the chrome.
+  static const _fadeDistance = 60.0;
+
   @override
-  bool build() => true;
+  double build() => 1.0;
 
   void show() {
     _downTravel = 0;
-    if (!state) state = true;
+    if (state < 1.0) state = 1.0;
   }
 
   void hide() {
     _upTravel = 0;
-    if (state) state = false;
+    if (state > 0.0) state = 0.0;
   }
 
   void onScroll({required double pixels, required double delta}) {
-    // Always reveal navigation at the top of a page.
+    // Always fully reveal navigation at the top of a page.
     if (pixels <= 8) {
       _downTravel = 0;
       _upTravel = 0;
@@ -36,20 +38,27 @@ class ChromeVisibilityNotifier extends Notifier<bool> {
     if (delta.abs() < 0.35) return;
 
     if (delta > 0) {
+      // Scrolling down — fade out progressively.
       _upTravel = 0;
       _downTravel += delta;
-      if (pixels > 36 && _downTravel >= 14) {
-        hide();
-        _downTravel = 0;
+      if (pixels > 36) {
+        final progress = (_downTravel / _fadeDistance).clamp(0.0, 1.0);
+        final target = 1.0 - progress;
+        if ((state - target).abs() > 0.01) {
+          state = target;
+        }
       }
       return;
     }
 
+    // Scrolling up — fade back in progressively.
     _downTravel = 0;
     _upTravel += -delta;
-    if (_upTravel >= 10) {
-      show();
-      _upTravel = 0;
+    final progress = (_upTravel / (_fadeDistance * 0.6)).clamp(0.0, 1.0);
+    final target = progress;
+    if (target > state) {
+      state = target;
+      if (state >= 1.0) _upTravel = 0;
     }
   }
 
@@ -61,6 +70,6 @@ class ChromeVisibilityNotifier extends Notifier<bool> {
 }
 
 final chromeVisibilityProvider =
-    NotifierProvider<ChromeVisibilityNotifier, bool>(
+    NotifierProvider<ChromeVisibilityNotifier, double>(
       ChromeVisibilityNotifier.new,
     );

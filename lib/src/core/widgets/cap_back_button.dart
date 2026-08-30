@@ -161,7 +161,7 @@ class CapBackButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final followsChrome = _followsProfileChrome(context);
-    final chromeVisible = ref.watch(chromeVisibilityProvider);
+    final chromeVisible = ref.watch(chromeVisibilityProvider) > 0.01;
     final visible = !followsChrome || chromeVisible;
     final iconColor = isLight ? const Color(0xFF111318) : color;
     final shadowColor = isLight

@@ -732,7 +732,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
               SliverToBoxAdapter(
                 child: Consumer(
                   builder: (context, ref, child) {
-                    final showChrome = ref.watch(chromeVisibilityProvider);
+                    final showChrome = ref.watch(chromeVisibilityProvider) > 0.01;
                     return TweenAnimationBuilder<double>(
                       tween: Tween<double>(begin: 1, end: showChrome ? 1 : 0),
                       duration: Duration(milliseconds: showChrome ? 420 : 560),
