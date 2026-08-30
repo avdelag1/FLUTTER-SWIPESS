@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
@@ -69,8 +68,10 @@ class NativeSwipeApp extends ConsumerWidget {
   }
 }
 
-/// Keeps engagement tracking alive across every route and reports actual
-/// interaction to the reward service. Foreground presence alone is not enough.
+/// Keeps reward residency tracking alive across every route. The service uses
+/// Flutter lifecycle state as the source of truth: foreground time counts,
+/// background/hidden/inactive time does not. No pointer or scroll activity is
+/// required, so reading and passive video watching continue to earn time.
 class _EngagementTrackingBootstrap extends ConsumerStatefulWidget {
   const _EngagementTrackingBootstrap({required this.child});
 
@@ -92,10 +93,6 @@ class _EngagementTrackingBootstrapState
     });
   }
 
-  void _markActivity() {
-    ref.read(sessionGamificationProvider).markActivity();
-  }
-
   @override
   void dispose() {
     ref.read(sessionGamificationProvider).stopTracking();
@@ -103,21 +100,5 @@ class _EngagementTrackingBootstrapState
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _markActivity(),
-      onPointerMove: (_) => _markActivity(),
-      onPointerSignal: (event) {
-        if (event is PointerScrollEvent) _markActivity();
-      },
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (_) {
-          _markActivity();
-          return false;
-        },
-        child: widget.child,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => widget.child;
 }
